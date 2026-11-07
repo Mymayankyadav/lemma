@@ -160,12 +160,18 @@ try{
  const foreignEntry='55555555-5555-4555-8555-555555555555';
  const foreignBlock='66666666-6666-4666-8666-666666666666';
  await q('insert into auth.users(id) values($1)',[other]);
- await q("insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)",
-  [owner,'a'.repeat(48),other,'b'.repeat(48)]);
- await q("insert into public.study_entries(id,user_id,source,intent) values($1,$2,'manual','Owner study'),($3,$4,'manual','Other study')",
-  [input.patch.participants[0].id,owner,foreignEntry,other]);
- await q("insert into public.calendar_blocks(id,user_id,kind,title,starts_at,ends_at,time_zone) values($1,$2,'study','Owner block','2026-11-07T08:00:00Z','2026-11-07T09:00:00Z','UTC'),($3,$4,'study','Other block','2026-11-07T08:00:00Z','2026-11-07T09:00:00Z','UTC')",
-  [input.patch.participants[1].id,owner,foreignBlock,other]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [owner,'a'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [other,'b'.repeat(48)]);
+ await q("insert into public.study_entries(id,user_id,source,intent) values($1,$2,'manual','Owner study')",
+  [input.patch.participants[0].id,owner]);
+ await q("insert into public.study_entries(id,user_id,source,intent) values($1,$2,'manual','Other study')",
+  [foreignEntry,other]);
+ await q("insert into public.calendar_blocks(id,user_id,kind,title,starts_at,ends_at,time_zone) values($1,$2,'study','Owner block','2026-11-07T08:00:00Z','2026-11-07T09:00:00Z','UTC')",
+  [input.patch.participants[1].id,owner]);
+ await q("insert into public.calendar_blocks(id,user_id,kind,title,starts_at,ends_at,time_zone) values($1,$2,'study','Other block','2026-11-07T08:00:00Z','2026-11-07T09:00:00Z','UTC')",
+  [foreignBlock,other]);
  const asOwner=async who=>{
   await db.exec('reset role');
   await q("select set_config('request.jwt.claims','{}',false)");

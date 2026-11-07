@@ -343,3 +343,38 @@ insert into public.lemma_undo_tables(table_name) values('overlap_acknowledgement
 insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
   values('overlap_acknowledgements','overlap_acknowledgements_command',true,
     '{"operations":["create","update","delete"],"fields":["participants","starts_at","ends_at","reason","disposition","attributed_to"]}'::jsonb);
+
+
+-- Registry compatibility requires the canonical lemma_log_change trigger name.
+-- N47.1's deployed overlap_ack_log already writes the action once. A deferred
+-- audit assertion runs at transaction end AFTER that trigger without emitting
+-- a second action_change. This fails closed if the original logger is absent.
+create function public.overlap_ack_require_journal() returns trigger
+language plpgsql security definer set search_path='' as $check$
+declare
+  v_id uuid; v_owner uuid;
+begin
+  if tg_op='DELETE' then
+    v_id:=old.id; v_owner:=old.user_id;
+  else
+    v_id:=new.id; v_owner:=new.user_id;
+  end if;
+  if not exists(
+    select 1 from public.actions a join public.action_changes c
+      on c.action_no=a.no
+    where a.txid=pg_catalog.txid_current() and a.user_id=v_owner
+      and c.table_name='overlap_acknowledgements'
+      and c.row_pk->>'id'=v_id::text
+  ) then
+    raise exception 'Overlap write lacks its canonical journal entry';
+  end if;
+  if tg_op='DELETE' then return old; end if;
+  return new;
+end
+$check$;
+revoke all on function public.overlap_ack_require_journal()
+  from public,anon,authenticated,service_role;
+create constraint trigger lemma_log_change
+  after insert or update or delete on public.overlap_acknowledgements
+  deferrable initially deferred for each row
+  execute function public.overlap_ack_require_journal();
