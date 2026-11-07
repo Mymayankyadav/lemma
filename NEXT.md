@@ -215,13 +215,6 @@ Tests: `tests/unit/session-v6/**`
 Scope: src/features/session/v6/** (new), src/features/session/Page.tsx (the flag branch only), tests/unit/session-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N82 v6 sources panel and page text behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
-Tests: `tests/unit/sources-v6/**`
-Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), tests/unit/sources-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N83 v6 review run and done with durable runs behind the shell flag
 Stage: Build · Status: open · Needs: N62.2 · Assigned: —
 Done = with `v6Shell` on, starting from Review creates a durable run (N62's `start`); the run screen shows position/total, reveals and grades through the existing grade path and then `advance`; leaving and returning resumes the same run at the same item without replaying a grade; stale items are skipped with a note; Done shows the run's counts and next arrivals. Flag off: nothing changes.

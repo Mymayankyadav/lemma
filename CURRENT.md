@@ -621,3 +621,7 @@ The N44.2 branch now extends its initial typed envelope validator with a receipt
 ## N80 v6 checkpoint evidence page (chat-73962#h7q2)
 
 The `v6Shell`-gated checkpoint route renders the existing owner-scoped checkpoint detail with criterion, steps, prerequisite states from the path snapshot, source/page citation, recent evidence and recheck prompts, and only sessions explicitly linked to the checkpoint. The legacy checkpoint sheet is unchanged when the flag is off. Tutor actions launch the existing external tutor flow for demonstration, reopening, deferral and recheck; they do not fabricate local server writes or imply a transition has completed. Dedicated v6 unit tests cover state, links, unavailable prerequisites, loading/error, and proposed/done controls. CI verification is pending.
+
+## N82 v6 ordered sources and transcription coverage (chat-73962#h7q2)
+
+Under `v6Shell`, project Sources lists records in stable explicit plan order with their kind, state, page/transcription coverage, outstanding verification and plan-check status. The existing SourceTranscriptionView retains page navigation, `[illegible]` markers in the saved text, confidence checking and Markdown/TeX export. The original source upload, edit and delete controls remain accessible through an expandable management section without duplicating write paths. Twenty rows mount initially. The flag-off presentation is unchanged. Unit tests cover ordering, missing coverage, verification, existing controls and progressive disclosure. CI verification pending.
