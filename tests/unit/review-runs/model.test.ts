@@ -86,6 +86,7 @@ describe('N62.1 durable review run contract and pure invariants',()=>{
   invalid(()=>validateReviewRunItem(item({state:'stale'})));
   invalid(()=>validateReviewRunItem(item({state:'graded',reviewId:'9223372036854775808'})));
   invalid(()=>validateReviewRunItem(item({state:'graded',reviewId:'0'})));
+  invalid(()=>validateReviewRunItem(item({state:'graded',reviewId:73 as never})));
   invalid(()=>validateReviewRunItem(item({state:'stale',staleReason:' '})));
   invalid(()=>validateReviewRunItem(item({expectedCardVersion:0})));
  });

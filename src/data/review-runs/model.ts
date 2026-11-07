@@ -109,7 +109,8 @@ export function validateReviewRunItem(item:ReviewRunItemRecord):ReviewRunItemRec
   return fail('Only graded items may reference a review');
  if((item.state==='stale')!==(item.staleReason!==null))
   return fail('Only stale items carry a reason');
- if(item.reviewId!==null&&(!/^[1-9]\d{0,18}$/.test(item.reviewId)||
+ if(item.reviewId!==null&&(typeof item.reviewId!=='string'||
+  !/^[1-9]\d{0,18}$/.test(item.reviewId)||
   BigInt(item.reviewId)>9223372036854775807n))
   return fail('Review receipt is not a positive bigint');
  if(item.staleReason!==null&&(!item.staleReason.trim()||item.staleReason.length>200))
