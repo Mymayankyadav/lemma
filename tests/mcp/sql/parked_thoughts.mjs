@@ -58,6 +58,8 @@ try{
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,1);
 
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[owner,'1'.repeat(48)]);
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[other,'2'.repeat(48)]);
  const entry=(await q("insert into public.study_entries(user_id,source,intent) values($1,'manual','Plan') returning id",[owner]))[0];
  const anotherEntry=(await q("insert into public.study_entries(user_id,source,intent) values($1,'manual','Other') returning id",[other]))[0];
  const task=(await q("insert into public.tasks(user_id,title) values($1,'Follow up') returning id",[owner]))[0];
@@ -199,6 +201,26 @@ try{
   'conflict','changed payload cannot reuse an operationId');
  assert.equal((await q('select count(*)::int n from public.parked_thoughts where id=$1',
   [thoughtId]))[0].n,1);
+
+
+ // Undo must be available for ordinary CRUD, not only combined conversion.
+ const ephemeral=await command(envelope('create',idBase+'000000000011',
+  {text:'Unscheduled scratch note'}));
+ const undoCreated=(await q('select public.undo_action($1,$2) as value',
+  [owner,ephemeral.actionNo]))[0].value;
+ assert.equal(undoCreated.undone,ephemeral.actionNo);
+ assert.equal((await q('select count(*)::int n from public.parked_thoughts where id=$1',
+  [ephemeral.thought.id]))[0].n,0,'undo removes a just-created thought');
+ const editable=await command(envelope('create',idBase+'000000000012',
+  {text:'Keep original'}));
+ const editedScratch=await command(envelope('edit',idBase+'000000000013',
+  {text:'Changed temporarily'},editable.thought.id,1));
+ const undoEdited=(await q('select public.undo_action($1,$2) as value',
+  [owner,editedScratch.actionNo]))[0].value;
+ assert.equal(undoEdited.undone,editedScratch.actionNo);
+ assert.equal((await q('select text from public.parked_thoughts where id=$1',
+  [editable.thought.id]))[0].text,'Keep original',
+  'undo restores the exact previous edited value');
 
  const editCommand=envelope('edit',idBase+'000000000002',
   {text:'Write the sharp estimate'},thoughtId,1);
