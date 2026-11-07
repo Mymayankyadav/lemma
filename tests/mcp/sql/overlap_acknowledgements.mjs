@@ -38,6 +38,7 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  assert.ok(names.includes('20261107120000_overlap_acknowledgements.sql'));
+ assert.ok(names.includes('20261107123030_overlap_attribution_uuid_case.sql'));
  for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  await q("insert into public.study_entries(id,user_id,source,intent) values($1,$2,'manual','Focus')",[entry,owner]);
@@ -51,6 +52,43 @@ try{
  const attributed=(await insert({disposition:'attribute_to',
   attributed_to:{kind:'entry',id:entry}}))[0];
  assert.equal(attributed.disposition,'attribute_to');
+ // bug #1072: UUID identity is case-insensitive at every SQL boundary.
+ // This read-only helper regression fails on N47.1 before the new migration:
+ // its old JSON-containment comparison treats uppercase and lowercase ID
+ // strings as different participants even though they are one typed UUID.
+ const upperCaseParticipants=[
+  {kind:'entry',id:'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA',version:1},
+  {kind:'block',id:'BBBBBBBB-BBBB-4BBB-8BBB-BBBBBBBBBBBB',version:1},
+ ];
+ const choiceValid=async(list,disposition,choice)=>(await q(
+  'select public.overlap_ack_choice_valid($1::jsonb,$2,$3::jsonb) value',
+  [JSON.stringify(list),disposition,choice===null?null:JSON.stringify(choice)]))[0].value;
+ assert.equal((await q('select public.overlap_ack_participants_valid($1::jsonb) valid',
+  [JSON.stringify(upperCaseParticipants)]))[0].valid,true,
+  'mixed-case typed participant IDs are permitted');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'entry',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ }),true,'equivalent mixed-case UUID must be recognized as exact participant');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'entry',id:'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA',
+ }),true,'unchanged uppercase attribution stays valid');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'block',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ }),false,'typed participant kind must also match');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'entry',id:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+ }),false,'a different valid UUID is not in the set');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'entry',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',owner:'forged',
+ }),false,'extra choice fields remain invalid');
+ assert.equal(await choiceValid(upperCaseParticipants,'attribute_to',{
+  kind:'entry',id:'invalid',
+ }),false,'malformed choice UUID remains invalid');
+ assert.equal(await choiceValid(upperCaseParticipants,'keep_both',null),true,
+  'keep_both still accepts an absent SQL choice');
+ assert.equal(await choiceValid(upperCaseParticipants,'keep_both',{
+  kind:'entry',id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ }),false,'keep_both still forbids an attributed choice');
  await invalid({participants:[participants[0]]});
  await invalid({participants:[participants[0],participants[0]]});
  await invalid({participants:[participants[0],{kind:'unknown',id:block,version:1}]});
