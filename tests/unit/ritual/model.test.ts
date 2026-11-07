@@ -22,3 +22,18 @@ describe('N69 owner-civil closure boundaries',()=>{
   expect(()=>canCloseOwnerDay('2026-11-07',new Date(),'Mars/Phobos')).toThrow();
  });
 });
+
+import {normalizeCarryOverChoices} from '../../../src/features/ritual/model';
+describe('N69 persisted carry-over choices',()=>{
+ it('keeps explicit unfinished selections and a first task',()=>{
+  expect(normalizeCarryOverChoices(['a','b'],new Set(['b']),'a')).toEqual({
+   carryOverTaskIds:['b'],tomorrowFirstTaskId:'a'});
+  expect(normalizeCarryOverChoices([],new Set(),'')).toEqual({
+   carryOverTaskIds:[],tomorrowFirstTaskId:null});
+ });
+ it('refuses stale or duplicated task IDs',()=>{
+  expect(()=>normalizeCarryOverChoices(['a'],new Set(['b']),'')) .toThrow('Stale carry-over');
+  expect(()=>normalizeCarryOverChoices(['a','a'],new Set(),'')).toThrow('Invalid unfinished');
+  expect(()=>normalizeCarryOverChoices(['a'],new Set(),'deleted')).toThrow('no longer unfinished');
+ });
+});

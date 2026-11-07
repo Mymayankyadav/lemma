@@ -15,3 +15,16 @@ export function canCloseOwnerDay(planDate:string,at:Date,zone:string):boolean{
   throw new Error('Invalid owner plan date');
  return planDate<=ownerCivilDate(at,zone);
 }
+
+/** Save explicit carry-over choices without inventing or reviving task IDs. */
+export function normalizeCarryOverChoices(available:readonly string[],
+ carry:ReadonlySet<string>,first:string):{
+ carryOverTaskIds:string[];tomorrowFirstTaskId:string|null
+}{
+ const known=new Set(available);
+ if(known.size!==available.length||available.some(id=>typeof id!=='string'||!id.trim()))
+  throw new Error('Invalid unfinished task list');
+ if([...carry].some(id=>!known.has(id)))throw new Error('Stale carry-over task');
+ if(first&&!known.has(first))throw new Error('Tomorrow first task is no longer unfinished');
+ return {carryOverTaskIds:[...carry],tomorrowFirstTaskId:first||null};
+}

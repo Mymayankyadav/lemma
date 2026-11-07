@@ -5,14 +5,22 @@ import {getDayPlanApi,type DayPlanRecord} from '../../data/day-plans';
 import {getThoughtApi,type ParkedThought} from '../../data/parked-thoughts';
 import {getTaskApi,type TaskRecord} from '../../data/tasks';
 import {getStudyApi,type StudyEntryRecord} from '../../data/study';
-import {canCloseOwnerDay,ownerCivilDate} from './model';
+import {useSettings} from '../../data/hooks';
+import {civilPlanDate} from '../../data/day-plans/model';
+import {canCloseOwnerDay,normalizeCarryOverChoices,ownerCivilDate} from './model';
 const control='min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label font-semibold disabled:opacity-50';
 export default function Page(){
  const navigate=useNavigate(),[params]=useSearchParams();
- const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+ const settings=useSettings();
+ // The authenticated account timezone, not the travelling device, owns today.
+ const zone=settings.data?.timeZone??'UTC';
  const today=ownerCivilDate(new Date(),zone);
  const given=params.get('date');
- const date=given&&/^\d{4}-\d{2}-\d{2}$/.test(given)?given:today;
+ let invalidDate=false;
+ let date=today;
+ if(given!==null){
+  try{date=civilPlanDate(given)}catch{invalidDate=true}
+ }
  const [plan,setPlan]=useState<DayPlanRecord|null>(null);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [thoughts,setThoughts]=useState<ParkedThought[]>([]);
@@ -25,6 +33,7 @@ export default function Page(){
  useEffect(()=>{
   let active=true;setLoading(true);setError(null);
   void (async()=>{
+   if(invalidDate)throw new Error('Invalid owner civil date');
    const plans=await getDayPlanApi().listPlans({from:date,through:date,limit:1});
    const p=plans.items[0]??null;
    const tasksOut:TaskRecord[]=[];
@@ -35,6 +44,7 @@ export default function Page(){
     tasksOut.push(...batch.items);
     cursor=batch.nextCursor;
     if(!cursor)break;
+    if(page===19)throw new Error('Unfinished tasks exceed the bounded ritual listing');
    }
    const thoughtOut:ParkedThought[]=[];
    cursor=null;
@@ -42,6 +52,7 @@ export default function Page(){
     const batch=await getThoughtApi().listThoughts({status:['open'],limit:50,cursor});
     thoughtOut.push(...batch.items);cursor=batch.nextCursor;
     if(!cursor)break;
+    if(page===9)throw new Error('Open thoughts exceed the bounded ritual listing');
    }
    const baseline=Date.parse(date+'T00:00:00Z');
    const entries=await getStudyApi().listStudyEntries({
@@ -50,7 +61,7 @@ export default function Page(){
    });
    const todayEntries=entries.filter(entry=>entry.status==='saved'&&
     entry.intervals.some(interval=>interval.kind==='focus'&&
-     interval.end&&ownerCivilDate(new Date(interval.end),zone)===date));
+     interval.end&&ownerCivilDate(new Date(interval.end),p?.timeZone??zone)===date));
    if(!active)return;
    setPlan(p);setTasks(tasksOut);setThoughts(thoughtOut);setSaved(todayEntries);
    const ritual=p?.ritual??{};
@@ -62,23 +73,26 @@ export default function Page(){
   })().catch(e=>{if(active)setError(e instanceof Error?e.message:'Could not load the day')})
    .finally(()=>{if(active)setLoading(false)});
   return()=>{active=false};
- },[date,zone,reload]);
+ },[date,zone,invalidDate,reload]);
  async function mutate(action:()=>Promise<unknown>){
   if(busy)return;setBusy(true);setError(null);
   try{await action();setReload(x=>x+1)}
   catch(e){setError(e instanceof Error?e.message:'Could not save this change')}
   finally{setBusy(false)}
  }
- const canClose=canCloseOwnerDay(date,new Date(),zone)&&
+ const planZone=plan?.timeZone??zone;
+ const canClose=!loading&&!invalidDate&&!error&&
+  canCloseOwnerDay(date,new Date(),planZone)&&
   plan?.status==='committed'&&thoughts.length===0;
  return <main aria-label="Close day ritual" className="flex min-w-0 flex-col gap-4 pb-24">
   <header className="flex items-center justify-between gap-2">
    <button type="button" className={control} onClick={()=>navigate('/')}>Back to Today</button>
    <h1 className="text-title-s font-semibold">Close the day</h1>
   </header>
-  <p className="text-label text-ink-2"><time dateTime={date}>{date}</time> · {zone}</p>
+  <p className="text-label text-ink-2"><time dateTime={date}>{date}</time> · {planZone}</p>
   {error&&<p role="alert">{error}</p>}
-  {loading?<p role="status">Loading your dated plan and saved work…</p>:!plan?
+  {invalidDate?<p role="alert">Choose a real YYYY-MM-DD date.</p>:
+   settings.isPending||loading?<p role="status">Loading your dated plan and saved work…</p>:!plan?
    <p role="status">No day plan exists for this date. Create one from Today before closing it.</p>:<>
    <section className="rounded-ctl border border-edge p-3">
     <h2 className="font-semibold">Day plan</h2>
@@ -135,10 +149,10 @@ export default function Page(){
     Reopen this date</button>:
     <button className={control} disabled={busy||!canClose}
      onClick={()=>void mutate(()=>getDayPlanApi().closePlan(plan.id,plan.version,{
-      ...plan.ritual,carryOverTaskIds:[...carry],tomorrowFirstTaskId:first||null,
+      ...plan.ritual,...normalizeCarryOverChoices(tasks.map(x=>x.id),carry,first),
      }))}>Close {date}</button>}
    {!canClose&&plan.status!=='closed'&&<p role="status" className="text-label text-ink-2">
-    {date>today?'Future dates cannot be closed.':
+    {date>ownerCivilDate(new Date(),planZone)?'Future dates cannot be closed.':
      thoughts.length?'Resolve the open thoughts before closing.':
      'Commit the day plan before closing.'}
    </p>}
