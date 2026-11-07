@@ -49,10 +49,20 @@ try{
  await assert.rejects(call({...input,patch:{...input.patch,attributed_to:{kind:'entry',id:input.patch.participants[0].id}}}),
   /Attribution must match/);
  await assert.rejects(call({...input,patch:{...input.patch,reason:'x'.repeat(601)}}),/reason exceeds/);
+ await assert.rejects(call({...input,patch:{...input.patch,starts_at:'not-a-date'}}),/date|time|invalid input/i);
+ await assert.rejects(call({...input,patch:{...input.patch,ends_at:null}}),/ends_at must be an instant/);
+ await assert.rejects(call({...input,patch:{...input.patch,ends_at:17}}),/ends_at must be an instant/);
+ await assert.rejects(call({...input,patch:{...input.patch,
+  starts_at:'2026-11-07T08:15:00Z'}}),/Acknowledged window must be nonempty/);
+ await assert.rejects(call({...input,patch:{...input.patch,
+  starts_at:'2026-11-07T09:00:00Z'}}),/Acknowledged window must be nonempty/);
  await assert.rejects(call({...input,patch:{...input.patch,user_id:owner}}),/Unknown patch field/);
  const edit={...input,operation:'update',target:{id:'66666666-6666-4666-8666-666666666666'},
   expectedVersion:2,patch:{reason:'Recorded context'}};
  assert.deepEqual(await call(edit),edit,'partial update allowed with optimistic version');
+ const windowPartial={...edit,patch:{starts_at:'2026-11-07T08:01:00Z'}};
+ assert.deepEqual(await call(windowPartial),windowPartial,
+  'partial instant update defers the final window check to the stored row');
  const completeUpdate={...edit,patch:{
   participants:input.patch.participants,disposition:'attribute_to',
   attributed_to:{kind:'entry',id:input.patch.participants[0].id}}};

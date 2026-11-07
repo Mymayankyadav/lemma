@@ -89,6 +89,24 @@ begin
   if v_op='update' and v_patch='{}'::jsonb then
     raise exception 'Update patch must not be empty';
   end if;
+  -- Temporal fields must be real instants. A complete window must be
+  -- nonempty, even on update; partial update checks use stored context later.
+  if v_patch?'starts_at' then
+    if pg_catalog.jsonb_typeof(v_patch->'starts_at') is distinct from 'string' then
+      raise exception 'starts_at must be an instant';
+    end if;
+    perform (v_patch->>'starts_at')::timestamptz;
+  end if;
+  if v_patch?'ends_at' then
+    if pg_catalog.jsonb_typeof(v_patch->'ends_at') is distinct from 'string' then
+      raise exception 'ends_at must be an instant';
+    end if;
+    perform (v_patch->>'ends_at')::timestamptz;
+  end if;
+  if v_patch?'starts_at' and v_patch?'ends_at' and
+    (v_patch->>'starts_at')::timestamptz >= (v_patch->>'ends_at')::timestamptz then
+    raise exception 'Acknowledged window must be nonempty';
+  end if;
   if v_patch?'participants' and not public.overlap_ack_participants_valid(v_patch->'participants') then
     raise exception 'Participants must be 2-10 unique, versioned block/entry references';
   end if;

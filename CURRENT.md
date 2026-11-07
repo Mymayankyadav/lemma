@@ -426,3 +426,7 @@ The additive `overlap_ack_validate_envelope` function validates authenticated co
 ## N47.2.2 create target UUID validation follow-up (2026-11-07)
 
 The unmerged N47.2.2 read-only envelope validator now checks the UUID shape of a caller-supplied create `target.id`, not only update/delete targets; create may still omit the target for server-generated IDs. The full-migration SQL acceptance includes valid supplied IDs and rejects malformed string, numeric and JSON-null IDs. Existing RLS, registry and undo restrictions are unchanged. This remains the first validation slice; N47.2.3 owns the actual transactional lifecycle and production SQL review.
+
+## N47.2.2 instant-window envelope validation and queue reconciliation (2026-11-07)
+
+The unmerged owner-authenticated overlap-acknowledgement validator checks supplied start/end values are real timestamp-with-timezone instants and rejects empty or reversed complete windows, on both create and update. Partial update windows remain valid to be checked against stored row context by N47.2.3's transaction. Added full-migration PGlite regressions for malformed/null/numeric instants, equal/reversed windows and an accepted partial update, without weakening N47.1 or the owner-SELECT-only and no-registry safeguards. Rebuilt the N47.2 split's NEXT.md against current main so unrelated completed item splits are preserved. The command lifecycle, MCP parity and undo remain pending N47.2.3 and independent production review.
