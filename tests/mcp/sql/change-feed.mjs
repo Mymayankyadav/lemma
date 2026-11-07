@@ -101,7 +101,8 @@ try{
  // domain trigger or editing the projection function. An unregistered
  // resource's journal rows stay excluded until the table is registered.
  const future='future_feed_fixture';
- await db.exec('create table public.future_feed_fixture(id uuid primary key,user_id uuid not null,version int not null)');
+ await db.exec('reset role');
+ await db.exec("create table public.future_feed_fixture(id uuid primary key,user_id uuid not null,version int not null); create trigger lemma_log_change after insert or update or delete on public.future_feed_fixture for each row execute function public.log_change();");
  const futureId='abcdabcd-abcd-4bcd-8bcd-abcdabcdabcd';
  const logFuture=async seq=>q(
   "insert into public.action_changes(action_no,seq,table_name,row_pk,op,new) values($1,$2,$3,$4::jsonb,'insert',$5::jsonb)",
