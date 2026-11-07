@@ -19,15 +19,6 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/registries-dis
 Not: changes to existing migrations, MCP function/tool code, app code, unrelated tables/functions, expanded client access or new dependencies.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
-## N38 Versions and provenance on existing mutable records
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds `version int not null default 1`, `updated_source text` (`app`/`mcp`/`worker`, null for history) and a trigger that bumps `version` and `updated_at` on every update to `settings`, `subjects`, `projects`, `sources`, `source_pages`, `concepts`, `checkpoints`, `styles`, `notes`, `cards`, `proposals`, `card_comments`, `diagnostics` and `misconceptions`. Existing writers keep working unchanged (they do not send a version); expected-version checks are added by later items. No existing row is updated by the migration.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/record-versions.mjs`: every listed table bumps once per update and not on a no-op insert; existing app, MCP, undo and review SQL tests pass unchanged; `mcp_commit` writes still succeed
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-versions.mjs, docs/v6/capability-registry/** (the listed tables' files only), CURRENT.md.
-Not: app or MCP code, other tables, changing existing functions.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
-
 ## N39 Typed planning and focus settings
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.

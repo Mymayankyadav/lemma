@@ -83,6 +83,23 @@ try {
  const alreadyUpdatedList=hasUpdated.map(table=>"'"+table+"'").join(',');
  const columns=await query("select table_name,column_name from information_schema.columns where table_schema='public' and table_name in ("+targetList+") and column_name in ('version','updated_source','updated_at')");
  assert.equal(columns.length,42);
+ // A restored production migration must agree with its declared capability
+ // inventory table by table. N38 was once auto-reverted after an inventory
+ // named settings.version but the local migration had been deleted. This
+ // fails on either missing SQL columns or stale/incorrect registry entries.
+ const installedColumns=new Set(columns.map(row=>row.table_name+'.'+row.column_name));
+ for(const table of tables){
+  const path=new URL('../../../docs/v6/capability-registry/'+table+'.json',import.meta.url);
+  const registry=JSON.parse(await readFile(path,'utf8'));
+  for(const name of ['version','updated_source','updated_at']){
+   assert.ok(installedColumns.has(table+'.'+name),table+'.'+name+' missing from SQL');
+   assert.ok(Object.hasOwn(registry.columns,name),table+'.'+name+' missing from registry');
+   assert.equal(registry.columns[name].classification,
+    name==='version'?'command-managed':'derived',
+    table+'.'+name+' incorrectly classified');
+  }
+ }
+
  const triggers=await query("select c.relname as table_name,t.tgname from pg_trigger t join pg_class c on c.oid=t.tgrelid where c.relname in ("+targetList+") and t.tgname='z_record_version'");
  assert.equal(triggers.length,14);
  const existingTouch=await query("select c.relname as table_name from pg_trigger t join pg_class c on c.oid=t.tgrelid where c.relname in ("+alreadyUpdatedList+") and t.tgname='touch_updated_at'");
