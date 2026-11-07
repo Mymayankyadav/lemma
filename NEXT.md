@@ -51,13 +51,12 @@ Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle ru
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N46 Dated day plans and closures: migration (day_plans)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.day_plans` with `plan_date`, `time_zone` (unique per owner and date), `intention`, `capacity_minutes`, `availability jsonb` with the source versions it was computed from, `status` (`draft`/`previewed`/`committed`/`closed`), `closed_at`, `tomorrow_first_task_id`, `ritual jsonb`; and child table `public.day_plan_items` (plan, task, optional calendar block, `disposition` `placed`/`unplaced`/`carried_over`, reason, position). Operations create, update, `commit` (refuses when any listed task or block version differs from the preview), `close`, `reopen`. Closing one date never marks another date closed; unplaced and carried-over work stays listed.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N46.2 Day-plan items, preview-to-commit invariants and closure commands
+Stage: Build · Status: open · Needs: N46.1 · Assigned: —
+Done = complete N46 on N46.1's owner-bound, one-per-day day_plans headers. Add public.day_plan_items with owner-composite references to its plan, task and optional calendar block, disposition placed/unplaced/carried_over, reason and stable position; keep unplaced/carried-over work listed. Add public.day_plans_command(p jsonb) with versioned owner-create/update, preview, commit, close and reopen; commit must atomically compare every listed task/block version to the availability.sources recorded at preview and refuse stale versions. Closing one date may never affect another; close sets closed_at and reopening clears it. Keep client writes disabled until command_receipts idempotence, action journal, registered undo in lemma_undo_tables and generic mcp_command registration in lemma_command_resources are installed. Ensure same owner IDs throughout, exact retry/conflict semantics and source attribution. Production SQL needs independent review (D8 b).
+Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner isolation, task/block version drift refusal, multiple dates and closure, item dispositions, idempotent retries, undo and MCP parity. Keep N46.1 field, JSON and FK constraints; revise read-only stage assertions only to enforce registered auditable writes.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
 
 ## N47 Overlap acknowledgements: migration (overlap_acknowledgements)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
