@@ -1,6 +1,6 @@
 {
   "table": "study_events",
-  "version": 2,
+  "version": 1,
   "columns": {
     "id": {
       "classification": "derived",
