@@ -40,6 +40,7 @@ try {
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
   assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
   assert.ok(migrations.includes('20261107120115_presets_lifecycle_preview.sql'));
+  assert.ok(migrations.includes('20261107120120_presets_lifecycle_lock.sql'));
   assert.ok(!migrations.includes('20261107120105_presets_lifecycle_preview.sql'),
     'superseded unapplied lifecycle preview migration must not deploy');
   assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
@@ -134,6 +135,8 @@ try {
   const auditBeforePreview=(await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n;
   const preview=async p=>(await q('select public.lemma_preset_lifecycle_preview($1::jsonb) result',
     [JSON.stringify(p)]))[0].result;
+  const locked=async p=>(await q('select public.lemma_preset_lifecycle_lock($1::jsonb) result',
+    [JSON.stringify(p)]))[0].result;
   await as(owner);
   const deleteEnvelope=request('delete',{}, {target:{id},expectedVersion:3});
   const preReference=await preview(deleteEnvelope);
@@ -142,6 +145,21 @@ try {
   assert.equal(preReference.effectiveOperation,'delete');
   assert.equal(preReference.referencesStudyEntries,false);
   assert.equal(preReference.archived,false);
+  assert.deepEqual(await locked(deleteEnvelope),preReference,
+    'row-locked preview must preserve the same owner and version decision');
+  const upperOperation={...deleteEnvelope,operationId:deleteEnvelope.operationId.toUpperCase()};
+  const upperPreview=await preview(upperOperation);
+  const upperLocked=await locked(upperOperation);
+  assert.deepEqual(upperLocked,upperPreview,
+    'locked helper must canonicalize uppercase UUID operationId identically to preview');
+  assert.equal(upperLocked.operationId,deleteEnvelope.operationId.toLowerCase());
+  const upperConflict={...upperOperation,expectedVersion:2};
+  assert.deepEqual(await locked(upperConflict),await preview(upperConflict),
+    'even optimistic conflicts must canonicalize UUID operationId consistently');
+  assert.equal((await locked(request('delete',{}, {target:{id},expectedVersion:2}))).status,'conflict',
+    'stale version after a row lock may not advance');
+  await assert.rejects(locked({...deleteEnvelope,patch:{label:'Tampered'}}),/Lifecycle patch/);
+  await assert.rejects(locked({...deleteEnvelope,target:{id:otherId}}),/Preset not found/);
   assert.equal((await preview(request('archive',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'archive');
   assert.equal((await preview(request('restore',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'restore');
   const versionConflict=await preview(request('delete',{}, {target:{id},expectedVersion:2}));
@@ -178,6 +196,8 @@ try {
  assert.equal(afterReference.effectiveOperation,'archive',
    'deleting a preset with historical entries must archive instead');
  assert.equal(afterReference.referencesStudyEntries,true);
+ assert.equal((await locked(deleteEnvelope)).effectiveOperation,'archive',
+   'locked decision must preserve a referenced preset instead of deleting history');
  assert.equal((await q(refQuery,[owner,id]))[0].referenced,true,
    'linked study entry requires archive instead of physical deletion');
  assert.equal((await q(refQuery,[owner,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']))[0].referenced,false);
@@ -186,12 +206,47 @@ try {
  assert.equal((await q(refQuery,[other,id]))[0].referenced,false);
  await assert.rejects(preview(deleteEnvelope),/Preset not found/,
    'lifecycle preview must not leak foreign owner preset details');
+ await assert.rejects(locked(deleteEnvelope),/Preset not found/,
+   'lifecycle row lock must not leak or lock foreign owner data');
  assert.equal((await preview(request('delete',{}, {target:{id:otherId},expectedVersion:1}))).effectiveOperation,'delete');
  await admin();
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n,
    auditBeforePreview,'read-only lifecycle preview must not generate journal writes');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
    0,'do not activate registry before scoped N41.2.2.2.2 and bug #1024');
+
+  // Snapshot race regression: a STABLE preview retains the outer statement's
+  // original snapshot even when a VOLATILE command advances a preset in the
+  // same statement. The old lock helper called STABLE preview again after
+  // FOR UPDATE and incorrectly returned status=ok/version=3. The fixed helper
+  // must report the current locked tuple's version=4. This deterministic
+  // PGlite case exercises the same stale-snapshot issue as a second session
+  // committing while the row lock waits, without requiring a second PGlite
+  // backend (PGlite intentionally supports only one backend connection).
+  await as(owner);
+  const competingUpdate=request('update',{label:'After old snapshot'},{
+    target:{id},expectedVersion:3});
+  const race=await q(`with advanced as materialized (
+      select public.presets_command($1::jsonb) receipt
+    )
+    select advanced.receipt, public.lemma_preset_lifecycle_lock($2::jsonb) locked
+      from advanced where advanced.receipt ->> 'status' = 'ok'`,
+    [JSON.stringify(competingUpdate),JSON.stringify(deleteEnvelope)]);
+  assert.equal(race.length,1,'the competing update must commit inside the statement');
+  assert.equal(race[0].receipt.status,'ok');
+  assert.equal(race[0].receipt.changed[0].version,4);
+  assert.equal(race[0].locked.status,'conflict',
+    'post-lock recheck cannot reuse the STABLE preview statement snapshot');
+  assert.equal(race[0].locked.currentVersion,4,
+    'post-lock check must use the tuple locked by SELECT FOR UPDATE');
+  const afterRace=await locked({...deleteEnvelope,expectedVersion:4});
+  assert.equal(afterRace.status,'ok');
+  assert.equal(afterRace.currentVersion,4);
+  assert.equal(afterRace.effectiveOperation,'archive',
+    'a matching new version still preserves referenced study-entry history');
+  await admin();
+  assert.equal((await q("select count(*)::int n from public.presets where id=$1",[id]))[0].n,1);
+  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,0);
 
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}
