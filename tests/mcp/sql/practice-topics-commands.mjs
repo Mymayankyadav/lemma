@@ -127,6 +127,9 @@ try{
  // authorize a command or persist event/due-date changes.
  await db.exec('reset role');
  const foreignTopic='66666666-6666-4666-8666-666666666666';
+ // The second-owner fixture needs a matching auth.users parent before its topic row.
+ await q('insert into auth.users(id) values($1)',
+  ['22222222-2222-2222-2222-222222222222']);
  await q("insert into public.practice_topics(id,user_id,title,next_due_date,cadence) values($1,$2,'Local practice','2028-02-25',$3::jsonb)",
   [topic,owner,JSON.stringify({kind:'after_rating',daysByRating:[1,3,7,14]})]);
  await q("insert into public.practice_topics(id,user_id,title,next_due_date,cadence) values($1,$2,'Foreign practice','2028-02-26',$3::jsonb)",
