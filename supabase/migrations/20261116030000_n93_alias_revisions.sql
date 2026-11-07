@@ -144,11 +144,10 @@ create policy source_page_revisions_owner_read on public.source_page_revisions
 grant select on public.source_revisions,public.source_page_revisions to authenticated,service_role;
 grant insert,update,delete on public.source_revisions,public.source_page_revisions to service_role;
 revoke insert,update,delete,truncate on public.source_revisions,public.source_page_revisions from anon,authenticated;
--- Append-only revisions are owner-exportable through the registry but not
--- journalled as changes to the source edit action. Undo of a source edit
--- must not erase its historical citation snapshots or alter legacy counts.
-insert into public.lemma_undo_tables(table_name)
- values('source_revisions'),('source_page_revisions');
+-- Revision snapshots are append-only and intentionally excluded from the
+-- generic undo-action journal: legacy DB-5 requires a source + page edit to
+-- have exactly two action changes, not four. The new tables remain owner-RLS
+-- read-only, with immutable historical versions even after source undo.
 
 create function public.capture_source_revision() returns trigger
  language plpgsql security definer set search_path='' as $rev$

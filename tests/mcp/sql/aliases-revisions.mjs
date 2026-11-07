@@ -37,9 +37,9 @@ try{
  await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'metric','Metric')",[concept1,owner,subject]);
  await q("update public.concepts set slug='distance' where id=$1",[concept1]);
  await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'metric','Other metric')",[concept2,owner,subject2]);
- await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion) values($1,$2,$3,'CP1',1,'Proof','A proof','Prove')",[checkpoint1,owner,project]);
+ await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,$3,'CP1',1,'Proof','A proof','Prove',$4::jsonb)",[checkpoint1,owner,project,JSON.stringify(['Prove the lemma'])]);
  await q("update public.checkpoints set code='CP2' where id=$1",[checkpoint1]);
- await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion) values($1,$2,$3,'CP1',1,'Proof two','B proof','Prove')",[checkpoint2,owner,project2]);
+ await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,$3,'CP1',1,'Proof two','B proof','Prove',$4::jsonb)",[checkpoint2,owner,project2,JSON.stringify(['Prove the theorem'])]);
  
  await q("update public.sources set title='New proof chapter' where id=$1",[source]);
  await q("update public.source_pages set body='beta' where source_id=$1 and page=1",[source]);
@@ -51,7 +51,7 @@ try{
  assert.equal((await q("select snapshot->>'title' value from public.source_revisions where source_id=$1",[source]))[0].value,'Proof chapter');
  assert.equal((await q("select snapshot->>'body' value from public.source_page_revisions where source_id=$1",[source]))[0].value,'alpha');
  const revisionTables=(await q("select table_name from public.lemma_undo_tables where table_name in('record_aliases','source_revisions','source_page_revisions') order by table_name")).map(x=>x.table_name);
- assert.deepEqual(revisionTables,['record_aliases','source_page_revisions','source_revisions']);
+ assert.deepEqual(revisionTables,['record_aliases'],'append-only history must not inflate existing source action counts');
  assert.equal((await q("select count(*)::int n from public.source_page_revisions where source_id=$1",[source]))[0].n,1);
  await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[owner]);
