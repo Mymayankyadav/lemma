@@ -3,7 +3,9 @@
 //              signature is seen on 2+ open PRs (or a PR and main) open/update ONE `incident: <signature>`
 //              issue (labels incident + S1).
 //   main       called by ci.yml after a red main: open/update ONE S0 incident (title = primary signature).
-//   main-green called by ci.yml after a green main: close the main incident, forget main's signatures.
+//   main-green called by ci.yml after a green main: close the main incident, forget main's signatures, then reconcile.
+//   reconcile  called by main-green and the sweep: close PR-origin incidents (S1, or S1 escalated to S0 by the sweep)
+//              whose signature is no longer active (#1013). Main incidents are never touched here.
 // State lives in one CLOSED issue labelled `ci-registry` whose body CI edits (agents never see it as work).
 import { createHash } from 'node:crypto';
 import { readFileSync, existsSync } from 'node:fs';
@@ -62,6 +64,64 @@ export function prune(data, openPrNumbers, now = Date.now()) {
   }
 }
 
+const MAIN_TAG = '<!-- main-incident -->';
+const SIG_RE = /<!--\s*sig:([0-9a-f]+)\s*-->/;
+
+/**
+ * Pure: which open incident issues are resolved (#1013). Only PR-origin incidents are considered: an issue with a
+ * `<!-- sig:HASH -->` marker and neither `<!-- main-incident -->` nor any other marker-owned lifecycle (deploy
+ * incidents carry no sig marker). A PR context is ACTIVE only while its PR is open and the failing run is not older
+ * than the PR's current head commit (a newer push has not failed with this signature yet). The incident is resolved
+ * when main does not report the signature and fewer than 2 active PR contexts remain (the rule that opened it).
+ * Returns { close: [{number, why}], drop: [[sig, ctx], …] } where `drop` lists registry contexts to forget.
+ */
+export function reconcilePlan(data, incidents, openPrs, now = Date.now()) {
+  const heads = new Map(openPrs.map((p) => [p.number, p.headDate ? new Date(p.headDate).getTime() : 0]));
+  const bySig = new Map(Object.keys(data.signatures || {}).map((sig) => [hashOf(sig), sig]));
+  const close = [];
+  const drop = [];
+  const seen = new Set();
+  for (const i of incidents) {
+    if (i.pull_request) continue;
+    const body = i.body || '';
+    if (body.includes(MAIN_TAG)) continue;
+    const m = SIG_RE.exec(body);
+    if (!m) continue;
+    const sig = bySig.get(m[1]);
+    const contexts = sig ? data.signatures[sig].contexts || {} : {};
+    let main = false;
+    let active = 0;
+    for (const [ctx, info] of Object.entries(contexts)) {
+      if (ctx === 'main') { main = true; continue; }
+      const n = Number(ctx.slice(3));
+      const at = new Date(info.at).getTime();
+      const live = heads.has(n) && (!heads.get(n) || at >= heads.get(n)) && now - at <= MAX_AGE_MS;
+      if (live) active++;
+      else if (!seen.has(`${sig}\n${ctx}`)) { seen.add(`${sig}\n${ctx}`); drop.push([sig, ctx]); }
+    }
+    if (main || active >= 2) continue;
+    close.push({ number: i.number, why: active ? `only ${active} open PR still reports it` : 'no open PR reports it any more' });
+  }
+  return { close, drop };
+}
+
+async function reconcile(data, openPulls, incidents) {
+  const openPrs = [];
+  const wanted = new Set();
+  for (const v of Object.values(data.signatures)) for (const c of Object.keys(v.contexts || {})) if (c.startsWith('pr:')) wanted.add(Number(c.slice(3)));
+  for (const p of openPulls) {
+    let headDate = null;
+    if (wanted.has(p.number)) {
+      try { const c = await api('GET', repoPath(`/commits/${p.head.sha}`)); headDate = c.commit?.committer?.date || c.commit?.author?.date || null; } catch { /* unknown head: treat as live */ }
+    }
+    openPrs.push({ number: p.number, headDate });
+  }
+  const plan = reconcilePlan(data, incidents, openPrs);
+  for (const [sig, ctx] of plan.drop) delete data.signatures[sig]?.contexts?.[ctx];
+  prune(data, new Set(openPrs.map((p) => p.number)));
+  return plan;
+}
+
 async function findIncident(hash) {
   const open = await paginate(repoPath('/issues?labels=incident&state=open'));
   return open.find((i) => !i.pull_request && (i.body || '').includes(`<!-- sig:${hash} -->`));
@@ -111,15 +171,22 @@ async function main() {
   const openNums = new Set(open.map((p) => p.number));
   prune(data, openNums);
 
-  if (mode === 'main-green') {
-    for (const v of Object.values(data.signatures)) delete v.contexts.main;
-    prune(data, openNums);
-    await saveRegistry(issue, data);
+  if (mode === 'main-green' || mode === 'reconcile') {
+    if (mode === 'main-green') for (const v of Object.values(data.signatures)) delete v.contexts.main;
     const incidents = await paginate(repoPath('/issues?labels=incident&state=open'));
-    for (const i of incidents.filter((x) => !x.pull_request && (x.body || '').includes('<!-- main-incident -->'))) {
-      await api('POST', repoPath(`/issues/${i.number}/comments`), { body: `main is green again at ${process.env.GITHUB_SHA}. Closing automatically.` });
-      await api('PATCH', repoPath(`/issues/${i.number}`), { state: 'closed', state_reason: 'completed' });
-      console.log(`closed incident #${i.number}`);
+    const plan = await reconcile(data, open, incidents.filter((x) => !x.pull_request));
+    await saveRegistry(issue, data);
+    if (mode === 'main-green') {
+      for (const i of incidents.filter((x) => !x.pull_request && (x.body || '').includes(MAIN_TAG))) {
+        await api('POST', repoPath(`/issues/${i.number}/comments`), { body: `main is green again at ${process.env.GITHUB_SHA}. Closing automatically.` });
+        await api('PATCH', repoPath(`/issues/${i.number}`), { state: 'closed', state_reason: 'completed' });
+        console.log(`closed incident #${i.number}`);
+      }
+    }
+    for (const c of plan.close) {
+      await api('POST', repoPath(`/issues/${c.number}/comments`), { body: `Resolved: ${c.why} (the failing run predates the PR's current head, or the PR is closed). Closing automatically; if the signature fails again on 2+ PRs a new incident opens.` });
+      await api('PATCH', repoPath(`/issues/${c.number}`), { state: 'closed', state_reason: 'completed' });
+      console.log(`reconciled incident #${c.number}: ${c.why}`);
     }
     return;
   }
