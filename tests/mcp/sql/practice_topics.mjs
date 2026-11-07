@@ -74,6 +74,10 @@ try{
  assert.equal(event.user_id,owner);assert.equal(event.version,1);assert.equal(event.voided_at,null);
  assert.equal(new Date((await q('select next_due_date from public.practice_topics where id=$1',[topic.id]))[0].next_due_date).toISOString().slice(0,10),
   '2026-11-10','N43.1 does not invent N43.2 due-date command');
+ await rejects("insert into public.practice_topics(title,version) values('Invalid version',0)");
+ await rejects("insert into public.practice_topics(title,source) values('Forged source','invalid')");
+ await rejects('insert into public.practice_events(topic_id,occurred_at,rating,version) values($1,now(),2,0)',[topic.id]);
+ await rejects("insert into public.practice_events(topic_id,occurred_at,rating,source) values($1,now(),2,'invalid')",[topic.id]);
  for(const rating of [0,5])await rejects("insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),$2)",[topic.id,rating]);
  for(const minutes of [-1,1441])await rejects("insert into public.practice_events(topic_id,occurred_at,rating,minutes) values($1,now(),2,$2)",[topic.id,minutes]);
  await rejects("insert into public.practice_events(topic_id,occurred_at,rating,response) values($1,now(),2,$2)",[topic.id,'x'.repeat(4001)]);
