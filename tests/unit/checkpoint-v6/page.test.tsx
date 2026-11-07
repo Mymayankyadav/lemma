@@ -31,7 +31,6 @@ function makeDetail():CheckpointDetail{
   ]};
 }
 function render(){
- const root=createRoot(document.createElement('div'));
  const node=document.createElement('div');
  document.body.appendChild(node);
  const mounted=createRoot(node);
