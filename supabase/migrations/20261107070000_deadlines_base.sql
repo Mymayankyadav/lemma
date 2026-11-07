@@ -47,9 +47,12 @@ create index deadlines_owner_date on public.deadlines(user_id,status,due_date,id
 create index deadlines_owner_instant on public.deadlines(user_id,status,due_at,id)
   where due_kind='instant';
 alter table public.deadlines enable row level security;
-create policy deadlines_owner on public.deadlines for all to authenticated
-  using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()));
-grant select,insert,update,delete on public.deadlines to authenticated,service_role;
+-- N42.1 exposes owner SELECT only: direct client mutations cannot be undone
+-- until N42.2 registers deadlines in the undo/command registries.
+-- Deny DML by both table grants and the absence of RLS INSERT/UPDATE/DELETE policies.
+create policy deadlines_owner_select on public.deadlines for select to authenticated
+  using (user_id=(select auth.uid()));
+grant select on public.deadlines to authenticated,service_role;
 create trigger deadlines_touch_updated_at before update on public.deadlines
   for each row execute function public.lemma_touch_updated_at();
 create trigger deadlines_log_change after insert or update or delete on public.deadlines

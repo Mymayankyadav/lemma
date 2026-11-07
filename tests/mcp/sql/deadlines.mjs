@@ -78,24 +78,49 @@ try{
  await reject('update public.deadlines set subject_id=$1 where id=$2',
   [otherSubject,mine.id]);
 
+ // N42.1 must not expose writes before command receipts and registered undo.
+ // Verify both ordinary permissions AND RLS independently: if Supabase grants
+ // DML by default, the absent write policies must still prevent owner writes.
+ const grants=(await q(`select
+  has_table_privilege('authenticated','public.deadlines','SELECT') can_read,
+  has_table_privilege('authenticated','public.deadlines','INSERT') can_insert,
+  has_table_privilege('authenticated','public.deadlines','UPDATE') can_update,
+  has_table_privilege('authenticated','public.deadlines','DELETE') can_delete`))[0];
+ assert.deepEqual(grants,{can_read:true,can_insert:false,can_update:false,can_delete:false});
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  const visible=await q('select id from public.deadlines order by id');
  assert.deepEqual(visible.map(r=>r.id),[mine.id]);
  await reject('insert into public.deadlines(user_id,title,kind,due_kind,due_date) values($1,$2,$3,$4,$5)',
-  [other,'Spoofed owner','milestone','date','2026-12-15']);
+  [owner,'Blocked direct insert','milestone','date','2026-12-15']);
+ await reject("update public.deadlines set status='done' where id=$1",[mine.id]);
+ await reject('delete from public.deadlines where id=$1',[mine.id]);
+ await db.exec('reset role');
+ // Test the defensive policy separately with permissive fixture-only grants.
+ // This is not a migration grant and does not loosen the production table.
+ await db.exec('grant insert,update,delete on public.deadlines to authenticated');
+ await q("select set_config('test.uid',$1,false)",[owner]);
+ await db.exec('set role authenticated');
+ await reject('insert into public.deadlines(user_id,title,kind,due_kind,due_date) values($1,$2,$3,$4,$5)',
+  [owner,'RLS blocked','milestone','date','2026-12-15']);
+ assert.deepEqual(await q('update public.deadlines set title=$1 where id=$2 returning id',
+  ['RLS blocked own update',mine.id]),[]);
+ assert.deepEqual(await q('delete from public.deadlines where id=$1 returning id',[mine.id]),[]);
  assert.deepEqual(await q('update public.deadlines set title=$1 where id=$2 returning id',
   ['Cross-owner',theirs.id]),[]);
+ await db.exec('reset role');
+ // Admin-only setup still exercises triggers and the domain invariants.
  const modified=(await q("update public.deadlines set status='done' where id=$1 returning *",[mine.id]))[0];
  assert.equal(modified.status,'done');
  assert.ok(new Date(modified.updated_at).getTime()>=new Date(mine.updated_at).getTime());
- await db.exec('reset role');
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='deadlines'"))[0].n,3,
   'two inserts and one status change are audited, failed writes are not');
  const fks=await q("select condeferrable from pg_constraint where conrelid='public.deadlines'::regclass and contype='f'");
  assert.equal(fks.filter(row=>row.condeferrable).length,3);
  const policies=await q("select policyname from pg_policies where tablename='deadlines'");
- assert.ok(policies.some(r=>r.policyname==='deadlines_owner'));
+ assert.ok(policies.some(r=>r.policyname==='deadlines_owner_select'));
+ assert.ok(policies.every(r=>r.cmd==='SELECT'||r.cmd==='select'),
+  'no owner DML policy until N42.2');
  const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/deadlines.json',import.meta.url),'utf8'));
  const cols=await q("select column_name from information_schema.columns where table_schema='public' and table_name='deadlines'");
  assert.deepEqual(Object.keys(doc.columns).sort(),cols.map(c=>c.column_name).sort(),
