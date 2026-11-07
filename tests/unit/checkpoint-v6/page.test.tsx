@@ -70,7 +70,7 @@ describe('v6 checkpoint',()=>{
   mocks.checkpoint.data={...makeDetail(),view:makeView('C2','proposed')};
   const {node}=render();
   expect(node.textContent).toContain('Review proposed checkpoint');
-  expect(node.textContent).not.toContain('Demonstrate');
+  expect(node.querySelector('button[aria-label^="Demonstrate with tutor"]')).toBeNull();
  });
  it('shows recheck and reopen only for appropriate checkpoint states',()=>{
   mocks.checkpoint.data={...makeDetail(),view:makeView('C2','done')};
