@@ -36,13 +36,13 @@ Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row,
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
 Not: app or MCP code (N79, N87), other tables.
 
-## N41 Activity presets: migration (presets)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.presets` with label, optional subject/project/checkpoint links, `mode` (`pomodoro`/`flowtime`/`open`), focus/break/long-break minutes, cycles, `position`, `archived_at`. Operations create, update, reorder, archive, restore and delete (delete only when no study entry references it; otherwise archive). Renaming or archiving never changes past entries.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/presets.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N41.2 Activity preset commands, archive, undo and MCP parity
+Stage: Build · Status: open · Needs: N41.1 · Assigned: —
+Done = finish N41 on top of N41.1's owner-scoped presets table and indexed typed configuration. Add public.presets_command(p jsonb) as a security-invoker, owner-bound, versioned action-receipt command with create, update, reorder, archive, restore and delete (delete only when no study entry refers to the preset; otherwise archive). Preserve prior entry labels/links on rename/archive. Use the N36.2 undo and command registries: insert presets into lemma_undo_tables, register presets_command with a field/operation JSON schema in lemma_command_resources, make MCP dispatch service-role-only under p_user, and ensure existing commands and N36 tests remain compatible. Validate operationId retries, changed-payload conflict, stale expectedVersion, cross-owner references and unchanged other-owner data.
+Owner-authorized (D1, D8): production SQL needs independent review; never replace undo_action or mcp_command.
+Tests: tests/mcp/sql/presets-command.mjs (full-migration PGlite command lifecycle, registry, retry, stale-version, owner RLS, deletion/archive semantics, undo and MCP parity); all existing SQL suites unchanged.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets-command.mjs, docs/v6/capability-registry/presets.json, CURRENT.md.
+Not: changes to earlier migrations, app/MCP function code, other tables/functions or existing test assertions.
 
 ## N42 Deadlines and milestones: migration (deadlines)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -200,7 +200,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-correcti
 Not: app or MCP code, other functions.
 
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41 · Assigned: —
+Stage: Build · Status: open · Needs: N51, N41.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged
@@ -280,7 +280,7 @@ Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
-Stage: Build · Status: open · Needs: N66, N71, N41 · Assigned: —
+Stage: Build · Status: open · Needs: N66, N71, N41.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.

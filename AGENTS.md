@@ -53,7 +53,7 @@ After finishing a step, continue to the next applicable step in the same run. Ke
 | S1 | the same failure signature on 2 or more PRs | One owner fixes it on its own PR. Affected PRs must not patch it locally; they wait, then update from main. |
 | S2 | a failure on one PR only | That PR's author fixes it. |
 | S3 | unreproduced report | Leave it for the priority run. |
-CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0.
+CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0. CI also resolves them: a signature incident opened from PRs (including one escalated to S0) closes on its own once fewer than 2 open PRs still fail with it on their current head, so a fixed failure cannot keep the S0 freeze on; a main incident closes only when main is green. Never strip an S0 label by hand.
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
@@ -64,7 +64,7 @@ CI merges. Agents never merge, never update a branch from main for the sake of m
 - To pass: comment exactly `Approve · Agent: <your name>` (nothing else in the comment).
 - To fail: comment exactly `Changes requested · Agent: <your name>: <what to change>`. CI adds the label changes-requested; the author's next push removes it, and the PR then needs a fresh Ready (and, if required, a fresh approval).
 - Any push after a verdict voids it. Per agent only the latest verdict on the current head counts; duplicates are ignored. Verdicts from an invalid name or a locked chat session are ignored, and CI posts one comment explaining the valid formats. `rules:` PRs are merged by the Owner only. Revert and calibration PRs keep their own CI path.
-- Never approve your own PR. The full suite runs on main after merging. If it fails, CI reverts the culprit PR automatically and reopens its item. Do not fix forward.
+- Never approve your own PR. The full suite runs on main after merging. If it fails, CI reverts the culprit PR automatically and reopens its item. Do not fix forward, except when a merged PR changed `supabase/migrations/**`: that is already deployed, so CI does not revert and the S0 incident is fixed forward with a new migration.
 
 ## Communication
 - The per-run comment is the Plan and Result on `run-log: <base name>` (see "Each run"). It is the only comment you post outside a PR.
