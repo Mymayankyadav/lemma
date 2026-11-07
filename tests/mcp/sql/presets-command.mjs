@@ -39,6 +39,7 @@ try {
   const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
   assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
+  assert.ok(migrations.includes('20261107120105_presets_lifecycle_preview.sql'));
   assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
     'superseded unmerged version must not be redeployed out of order');
   for(const f of migrations)await db.exec(await readFile(new URL(f,dir),'utf8'));
@@ -127,6 +128,36 @@ try {
   assert.equal(owned.length,2);
   assert.deepEqual(owned.map(v=>[v.user_id,v.label,v.version,v.position]),
     [[owner,'Math revised',3,7],[other,'Other owner',1,0]]);
+  // N41.2.2.2.1 previews archive/restore/delete without enabling writes.
+  const auditBeforePreview=(await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n;
+  const preview=async p=>(await q('select public.lemma_preset_lifecycle_preview($1::jsonb) result',
+    [JSON.stringify(p)]))[0].result;
+  await as(owner);
+  const deleteEnvelope=request('delete',{}, {target:{id},expectedVersion:3});
+  const preReference=await preview(deleteEnvelope);
+  assert.equal(preReference.status,'ok');
+  assert.equal(preReference.currentVersion,3);
+  assert.equal(preReference.effectiveOperation,'delete');
+  assert.equal(preReference.referencesStudyEntries,false);
+  assert.equal(preReference.archived,false);
+  assert.equal((await preview(request('archive',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'archive');
+  assert.equal((await preview(request('restore',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'restore');
+  const versionConflict=await preview(request('delete',{}, {target:{id},expectedVersion:2}));
+  assert.equal(versionConflict.status,'conflict');
+  assert.equal(versionConflict.currentVersion,3);
+  await assert.rejects(preview({...deleteEnvelope,user_id:other}),/Unknown lifecycle envelope field/);
+  await assert.rejects(preview({...deleteEnvelope,operation:'create'}),/Unsupported preset lifecycle/);
+  await assert.rejects(preview({...deleteEnvelope,resource:'other'}),/Unsupported lifecycle resource/);
+  await assert.rejects(preview({...deleteEnvelope,schemaVersion:2}),/schemaVersion/);
+  await assert.rejects(preview({...deleteEnvelope,patch:{label:'Bypass'}}),/Lifecycle patch/);
+  await assert.rejects(preview({...deleteEnvelope,expectedVersion:0}),/expectedVersion/);
+  await assert.rejects(preview({...deleteEnvelope,expectedVersion:2147483648}),/exceeds int4/);
+  await assert.rejects(preview({...deleteEnvelope,target:{id,user_id:other}}),/Unknown lifecycle target/);
+  await assert.rejects(preview({...deleteEnvelope,target:{id:'not-a-uuid'}}),/uuid/i);
+  await assert.rejects(preview({...deleteEnvelope,target:{id:otherId}}),/Preset not found/);
+  await db.exec('set role anon');
+  await assert.rejects(preview(deleteEnvelope),/permission denied|Authentication required/i);
+  await admin();
   const registered=(await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n;
   assert.equal(registered,0,'registry activation belongs to N41.2.2, preserving N41.1 historical assertions');
  // N41.2.2.1: owner-bound reference detection, before and after N52's
@@ -140,13 +171,25 @@ try {
  await q("insert into public.study_entries(user_id,source,intent,preset_id) values($1,'manual','Preset reference fixture',$2)",
    [owner,id]);
  await as(owner);
+ const afterReference=await preview(deleteEnvelope);
+ assert.equal(afterReference.status,'ok');
+ assert.equal(afterReference.effectiveOperation,'archive',
+   'deleting a preset with historical entries must archive instead');
+ assert.equal(afterReference.referencesStudyEntries,true);
  assert.equal((await q(refQuery,[owner,id]))[0].referenced,true,
    'linked study entry requires archive instead of physical deletion');
  assert.equal((await q(refQuery,[owner,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']))[0].referenced,false);
  await as(other);
  await assert.rejects(q(refQuery,[owner,id]),/Not authorized/);
  assert.equal((await q(refQuery,[other,id]))[0].referenced,false);
+ await assert.rejects(preview(deleteEnvelope),/Preset not found/,
+   'lifecycle preview must not leak foreign owner preset details');
+ assert.equal((await preview(request('delete',{}, {target:{id:otherId},expectedVersion:1}))).effectiveOperation,'delete');
  await admin();
+ assert.equal((await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n,
+   auditBeforePreview,'read-only lifecycle preview must not generate journal writes');
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
+   0,'do not activate registry before scoped N41.2.2.2.2 and bug #1024');
 
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}
