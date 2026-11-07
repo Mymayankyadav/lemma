@@ -28,7 +28,7 @@ create table public.day_plan_items (
   constraint day_plan_items_owner_position unique (user_id,plan_id,position),
   constraint day_plan_items_plan_owner_fk
     foreign key (user_id,plan_id) references public.day_plans(user_id,id)
-    on delete cascade deferrable initially immediate,
+    on delete no action deferrable initially immediate,
   constraint day_plan_items_task_owner_fk
     foreign key (user_id,task_id) references public.tasks(user_id,id)
     deferrable initially immediate,
