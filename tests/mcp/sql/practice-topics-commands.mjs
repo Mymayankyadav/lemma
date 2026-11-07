@@ -92,5 +92,35 @@ try{
   'validation must precede command and undo activation');
  await db.exec('set role anon');
  await assert.rejects(call(input),/permission denied|Authentication required/);
+ // N43.2.2.1: exactly one finite 1–3650-day delay per 1–4 rating.
+ // The actual record transaction must choose the base civil day and keep
+ // a reversible due/last-practiced snapshot; this helper makes no writes.
+ await db.exec('reset role');
+ const cadenceDays=async(c,r)=>(await q(
+  'select public.lemma_practice_cadence_days($1::jsonb,$2::integer) n',
+  [JSON.stringify(c),r]))[0].n;
+ for(const day of [1,7,3650]){
+  const fixed={kind:'fixed_days',days:day};
+  for(const rating of [1,2,3,4])
+   assert.equal(await cadenceDays(fixed,rating),day,
+    'fixed delay independent of rating');
+ }
+ const perRating={kind:'after_rating',daysByRating:[1,3,7,14]};
+ for(let rating=1;rating<=4;rating++)
+  assert.equal(await cadenceDays(perRating,rating),perRating.daysByRating[rating-1],
+   'rating chooses zero-based cadence element');
+ for(const cadence of [
+  {kind:'fixed_days',days:0},{kind:'fixed_days',days:3651},
+  {kind:'fixed_days',days:1.5},{kind:'after_rating',daysByRating:[1,2,3]},
+  {kind:'after_rating',daysByRating:[1,2,3,0]},
+  {kind:'after_rating',daysByRating:[1,2,3,4],extra:true},
+  {kind:'unknown',days:7},null,
+ ])await assert.rejects(cadenceDays(cadence,2),/Invalid practice cadence/);
+ for(const rating of [0,5,null])
+  await assert.rejects(cadenceDays(perRating,rating),/Practice rating/);
+ const grants=await q("select has_function_privilege('anon','public.lemma_practice_cadence_days(jsonb,integer)','EXECUTE') anon,has_function_privilege('authenticated','public.lemma_practice_cadence_days(jsonb,integer)','EXECUTE') authenticated");
+ assert.deepEqual(grants[0],{anon:false,authenticated:true},
+  'delay helper is not accessible to anonymous callers');
+
  console.log('PASS N43.2.1 practice topic/event envelope, owner auth and read-only stage');
 }finally{await db.close()}
