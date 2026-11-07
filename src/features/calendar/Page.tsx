@@ -8,6 +8,8 @@ import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
 import { WeekView } from './views/WeekView';
 import { MonthView } from './views/MonthView';
+import {DueDayItems,dueForDay,emptyCalendarDues,type CalendarDues} from './deadlines/DueDayItems';
+import {loadCalendarDues} from './deadlines/load';
 import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay, type LoggedSlice } from './model';
 
 const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
@@ -59,6 +61,7 @@ function V6Calendar() {
   const date = validDayKey(rawDay) ? rawDay : dayKey(new Date(), zone);
   const [entries, setEntries] = useState<StudyEntryRecord[]>([]);
   const [blocks, setBlocks] = useState<CalendarBlockRecord[]>([]);
+  const [dues, setDues] = useState<CalendarDues>(emptyCalendarDues);
   const [phase, setPhase] = useState<'loading' | 'ready' | 'error'>('loading');
   const [readError, setReadError] = useState('');
   const [actionError, setActionError] = useState('');
@@ -79,10 +82,14 @@ function V6Calendar() {
     const range = view === 'month' ? monthBounds(date, zone).range :
       calendarRange(view === 'week' ? weekStartDay(date) : date, zone, view === 'day' ? 1 : 7);
     const api = getStudyApi();
-    void Promise.all([api.listStudyEntries(range), api.listCalendarBlocks(range)])
-      .then(([nextEntries, nextBlocks]) => {
+    // Load owner-only due and projected records alongside saved study data.
+    // Their read-only presence never changes dayCapacity or saved effort totals.
+    void Promise.all([api.listStudyEntries(range),api.listCalendarBlocks(range),
+      loadCalendarDues()])
+      .then(([nextEntries,nextBlocks,nextDues]) => {
         if (!active) return;
-        setEntries(nextEntries); setBlocks(nextBlocks); setPhase('ready');
+        setEntries(nextEntries);setBlocks(nextBlocks);setDues(nextDues);
+        setPhase('ready');
       })
       .catch(error => {
         if (!active) return;
@@ -193,20 +200,23 @@ function V6Calendar() {
     {phase === 'ready' && view === 'agenda' && <div aria-label="Next seven days" className="flex flex-col gap-3">
       {groups.map(group => <Slab as="section" key={group.day} className="flex flex-col gap-2 p-3">
         <h2 className="text-body font-semibold text-ink">{dateLabel(group.day, zone)}</h2>
-        {group.entries.length === 0 && group.blocks.length === 0 && <p className="text-label text-ink-2">Nothing planned.</p>}
+        {group.entries.length === 0 && group.blocks.length === 0 &&
+          !dueForDay(group.day,date,zone,dues).length &&
+          <p className="text-label text-ink-2">Nothing planned.</p>}
         {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} />)}
         {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone}/></article>)}
+        <DueDayItems date={group.day} firstVisible={date} zone={zone} dues={dues}/>
       </Slab>)}
     </div>}
 
     {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone}
-      entries={entries} blocks={blocks} onDay={selected => {
+      entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
 
     {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone}
-      entries={entries} blocks={blocks} onDay={selected => {
+      entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
@@ -236,7 +246,10 @@ function V6Calendar() {
       </Slab>
       <Slab as="section" aria-label="Day schedule" className="p-3">
         <h2 className="mb-3 text-body font-semibold">Day schedule</h2>
-        {slots.every(row => row.entries.length === 0 && row.blocks.length === 0) && <p className="mb-3 text-label text-ink-2">Nothing planned.</p>}
+        {slots.every(row => row.entries.length === 0 && row.blocks.length === 0) &&
+          dueForDay(date,date,zone,dues).length===0 &&
+          <p className="mb-3 text-label text-ink-2">Nothing planned.</p>}
+        <DueDayItems date={date} firstVisible={date} zone={zone} dues={dues}/>
         <div className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge pb-2 text-caption font-semibold text-ink-2">
           <span>Hour</span><span>Logged study</span><span>Planned blocks</span>
         </div>
