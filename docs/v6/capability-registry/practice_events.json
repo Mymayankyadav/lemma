@@ -1,0 +1,91 @@
+{
+  "table": "practice_events",
+  "version": 1,
+  "description": "N43.1 owner-scoped manual practice storage; N43.2 owns transactional due-date, lifecycle and void commands.",
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "server-owned identity and provenance (N43.2 command)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "server-owned identity and provenance (N43.2 command)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "topic_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "occurred_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "rating": {
+      "classification": "owner-editable",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "response": {
+      "classification": "owner-editable",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "voided_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "N43.2 practice_topics_command (planned); N37 registry discovery",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "server-owned identity and provenance (N43.2 command)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "server-owned identity and provenance (N43.2 command)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "server-owned identity and provenance (N43.2 command)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    }
+  }
+}
