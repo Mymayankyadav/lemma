@@ -147,6 +147,15 @@ try {
   assert.equal(preReference.archived,false);
   assert.deepEqual(await locked(deleteEnvelope),preReference,
     'row-locked preview must preserve the same owner and version decision');
+  const upperOperation={...deleteEnvelope,operationId:deleteEnvelope.operationId.toUpperCase()};
+  const upperPreview=await preview(upperOperation);
+  const upperLocked=await locked(upperOperation);
+  assert.deepEqual(upperLocked,upperPreview,
+    'locked helper must canonicalize uppercase UUID operationId identically to preview');
+  assert.equal(upperLocked.operationId,deleteEnvelope.operationId.toLowerCase());
+  const upperConflict={...upperOperation,expectedVersion:2};
+  assert.deepEqual(await locked(upperConflict),await preview(upperConflict),
+    'even optimistic conflicts must canonicalize UUID operationId consistently');
   assert.equal((await locked(request('delete',{}, {target:{id},expectedVersion:2}))).status,'conflict',
     'stale version after a row lock may not advance');
   await assert.rejects(locked({...deleteEnvelope,patch:{label:'Tampered'}}),/Lifecycle patch/);

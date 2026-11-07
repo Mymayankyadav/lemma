@@ -7,6 +7,7 @@ language plpgsql volatile security invoker set search_path = '' as $lock$
 declare
   v_owner uuid;
   v_id uuid;
+  v_operation_id uuid;
   v_expected integer;
   v_operation text;
   v_current public.presets%rowtype;
@@ -19,6 +20,8 @@ begin
   v_owner := (select auth.uid());
   if v_owner is null then raise exception 'Authentication required'; end if;
   v_id := (v_preview ->> 'id')::uuid;
+  -- Normalise UUID output to the same casing as the existing preview.
+  v_operation_id := (p->>'operationId')::uuid;
   -- A row lock serializes archive/restore/delete with concurrent updates and
   -- with another owner-bound command. Never lock or expose a foreign preset.
   select * into v_current from public.presets
@@ -32,7 +35,7 @@ begin
   v_operation := p->>'operation';
   if v_current.version is distinct from v_expected then
     return pg_catalog.jsonb_build_object(
-      'operationId',p->>'operationId','status','conflict',
+      'operationId',v_operation_id::text,'status','conflict',
       'id',v_id,'currentVersion',v_current.version);
   end if;
   -- A fresh VOLATILE statement evaluates the reference guard only after the
@@ -43,7 +46,7 @@ begin
       into v_referenced;
   end if;
   return pg_catalog.jsonb_build_object(
-    'operationId',p->>'operationId','status','ok',
+    'operationId',v_operation_id::text,'status','ok',
     'id',v_id,'currentVersion',v_current.version,
     'archived',v_current.archived_at is not null,
     'effectiveOperation',case when v_operation='delete' and v_referenced
