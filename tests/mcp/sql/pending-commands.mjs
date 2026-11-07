@@ -111,9 +111,14 @@ try{
  assert.deepEqual(await tick(),{executed:0,failed:0,processed:0});
  await as('',null);
  await q("update public.pending_commands set not_before=now()-interval '1 second' where id=$1",[id]);
+ // Emulate the exact single-statement cron DO body: the postgres job
+ // must enter service_role locally, or both worker and MCP dispatcher refuse.
+ // This exercises the privilege boundary even without pg_cron in PGlite.
+ await db.exec("do $pending_tick$ begin execute 'SET LOCAL ROLE service_role'; "+
+   "perform public.lemma_run_due_commands(); end $pending_tick$;");
  await as('','service_role');
- assert.deepEqual(await tick(),{executed:1,failed:0,processed:1});
- assert.deepEqual(await tick(),{executed:0,failed:0,processed:0});
+ assert.deepEqual(await tick(),{executed:0,failed:0,processed:0},
+  'cron block executed the due row once before direct worker retry');
  await as('',null);
  const complete=(await q('select status,result from public.pending_commands where id=$1',[id]))[0];
  assert.equal(complete.status,'succeeded');
