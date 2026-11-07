@@ -125,9 +125,11 @@ export function validateStudyEventQuery(query:StudyEventQuery={}):Required<
  Pick<StudyEventQuery,'limit'|'includeVoided'>> & StudyEventQuery {
  if(!object(query))return fail('Event query must be an object');
  only(query,['entryId','kind','includeVoided','limit','cursor']);
- const limit=query.limit??20;
- if(!Number.isSafeInteger(limit)||limit<1||limit>50)
+ const limitRaw:unknown=query.limit;
+ if(limitRaw!==undefined&&(typeof limitRaw!=='number'||!Number.isSafeInteger(limitRaw)||
+  limitRaw<1||limitRaw>50))
   return fail('Event page limit must be 1–50');
+ const limit=limitRaw===undefined?20:limitRaw as number;
  if(query.includeVoided!==undefined&&typeof query.includeVoided!=='boolean')
   return fail('Invalid voided filter');
  const entryId=query.entryId===undefined?undefined:studyEventId(query.entryId);
