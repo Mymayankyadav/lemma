@@ -89,8 +89,10 @@ begin
      or pg_catalog.length(v_patch->>'reason')>600) then
     raise exception 'reason exceeds 600 characters or is not a string';
   end if;
-  if v_patch?'disposition' and v_patch->>'disposition' not in
-      ('keep_both','attribute_to') then
+  if v_patch?'disposition' and (
+    pg_catalog.jsonb_typeof(v_patch->'disposition') is distinct from 'string'
+    or v_patch->>'disposition' not in ('keep_both','attribute_to')
+  ) then
     raise exception 'Invalid disposition';
   end if;
   if v_op='create' and not public.overlap_ack_choice_valid(

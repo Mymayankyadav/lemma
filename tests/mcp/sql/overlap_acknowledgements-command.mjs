@@ -49,6 +49,8 @@ try{
  assert.deepEqual(await call(edit),edit,'partial update allowed with optimistic version');
  await assert.rejects(call({...edit,expectedVersion:0}),/positive integer/);
  await assert.rejects(call({...edit,patch:{}}),/Update patch/);
+ await assert.rejects(call({...edit,patch:{disposition:null}}),/Invalid disposition/);
+ await assert.rejects(call({...input,patch:{...input.patch,disposition:null}}),/Invalid disposition/);
  await assert.rejects(call({...edit,target:{}}),/target.id must be/);
  const deletion={...edit,operation:'delete',patch:{}};
  assert.deepEqual(await call(deletion),deletion);
