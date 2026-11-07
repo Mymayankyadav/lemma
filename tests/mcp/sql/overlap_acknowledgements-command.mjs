@@ -47,6 +47,17 @@ try{
  const edit={...input,operation:'update',target:{id:'66666666-6666-4666-8666-666666666666'},
   expectedVersion:2,patch:{reason:'Recorded context'}};
  assert.deepEqual(await call(edit),edit,'partial update allowed with optimistic version');
+ const completeUpdate={...edit,patch:{
+  participants:input.patch.participants,disposition:'attribute_to',
+  attributed_to:{kind:'entry',id:input.patch.participants[0].id}}};
+ assert.deepEqual(await call(completeUpdate),completeUpdate,
+  'complete update attribution agrees with participant set');
+ await assert.rejects(call({...completeUpdate,patch:{...completeUpdate.patch,
+   attributed_to:{kind:'entry',id:'55555555-5555-4555-8555-555555555555'}}}),
+  /Attribution must match an acknowledged participant/);
+ const partialAttribution={...edit,patch:{disposition:'attribute_to'}};
+ assert.deepEqual(await call(partialAttribution),partialAttribution,
+  'partial updates need existing-row context and stay accepted');
  await assert.rejects(call({...edit,expectedVersion:0}),/positive integer/);
  await assert.rejects(call({...edit,patch:{}}),/Update patch/);
  await assert.rejects(call({...edit,patch:{disposition:null}}),/Invalid disposition/);

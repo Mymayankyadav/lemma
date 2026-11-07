@@ -95,7 +95,12 @@ begin
   ) then
     raise exception 'Invalid disposition';
   end if;
-  if v_op='create' and not public.overlap_ack_choice_valid(
+  -- A complete update patch must be self-consistent, just like create.
+  -- Partial updates need the stored row and are checked by N47.2.3.
+  if (v_op='create' or (v_op='update'
+    and v_patch?'participants' and v_patch?'disposition'
+    and v_patch?'attributed_to'))
+    and not public.overlap_ack_choice_valid(
       v_patch->'participants',v_patch->>'disposition',v_patch->'attributed_to'
     ) then
     raise exception 'Attribution must match an acknowledged participant';
