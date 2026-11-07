@@ -324,12 +324,16 @@ try{
  assert.equal(mcp.status,'ok');
  assert.equal(mcp.thought.user_id,owner);
  assert.equal(mcp.thought.source,'mcp');
- assert.equal((await q('select source from public.actions where no=$1',
-  [mcp.actionNo]))[0].source,'chatgpt',
+ // Test fixture service_role intentionally lacks BYPASSRLS. Inspect protected
+ // journal/registry metadata as the harness, never by granting a client policy.
+ await admin();
+ const mcpAction=(await q('select user_id,source from public.actions where no=$1',
+  [mcp.actionNo]))[0];
+ assert.equal(mcpAction.user_id,owner,'journal records the bridged owner');
+ assert.equal(mcpAction.source,'chatgpt',
   'MCP thought rows retain coarse mcp provenance, actions use dispatcher source');
  assert.equal((await q('select count(*)::int n from public.lemma_command_resources where resource=$1',
   ['parked_thoughts']))[0].n,1);
- await admin();
 
  console.log('PASS N44.1/N44.2 owner-scoped read-only storage, status invariants, cross-owner FKs, and no unaudited DML');
 }finally{await db.close();}
