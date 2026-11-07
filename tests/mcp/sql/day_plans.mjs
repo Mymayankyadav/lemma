@@ -138,6 +138,8 @@ try{
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,disposition,reason,position) values($1,$2,$3,$4,'carried_over','Tomorrow',3)",[owner,day.id,task.id,block.id]);
  await invalid("update public.day_plan_items set disposition='unplaced',reason='No capacity' where id=$1",[placed.id]);
  await invalid("update public.day_plan_items set reason='   ' where id=$1",[carried.id]);
+ await invalid("update public.day_plan_items set reason=null where id=$1",[unplaced.id]);
+ await invalid("update public.day_plan_items set calendar_block_id=$1 where id=$2",[block.id,unplaced.id]);
  await invalid("delete from public.calendar_blocks where id=$1",[block.id]);
  await invalid("delete from public.day_plans where id=$1",[day.id]);
  await invalid("update public.day_plan_items set user_id=$1 where id=$2",[other,placed.id]);
