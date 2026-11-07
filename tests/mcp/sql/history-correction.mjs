@@ -131,6 +131,9 @@ try{
   [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
  assert.equal(mcp.status,'ok');
  assert.ok(mcp.revisedEventId);
+ // PGlite's synthetic service_role has no BYPASSRLS; inspect the owner
+ // action as the bootstrap administrator after the MCP call has committed.
+ await db.exec('reset role');
  const act=(await q('select user_id,source from public.actions where no=$1',[mcp.actionNo]))[0];
  assert.equal(act.user_id,owner);
  assert.equal(act.source,'chatgpt');
