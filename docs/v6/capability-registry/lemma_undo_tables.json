@@ -82,6 +82,12 @@
       "table_name": "parked_thoughts"
     },
     {
+      "table_name": "day_plans"
+    },
+    {
+      "table_name": "day_plan_items"
+    },
+    {
       "table_name": "study_goals"
     }
   ],
