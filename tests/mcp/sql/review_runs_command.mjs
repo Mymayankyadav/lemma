@@ -124,6 +124,37 @@ try {
   checkEqual(abandoned.run.status,'abandoned');
   checkEqual(abandoned.run.paused_at,null);
   assert.ok(abandoned.run.ended_at);
+  // Multi-card budget regression: time must bound the selected queue,
+  // not just toggle selection. Preserve the authoritative ordered prefix.
+  await db.exec('reset role');
+  const projectId=(await q("select id from public.projects where user_id=$1 and slug='rr-a'",[owner]))[0].id;
+  for(let i=0;i<4;i++){
+    const note=(await q('insert into public.notes(user_id,project_id,front,back) values($1,$2,$3,$4) returning id',
+      [owner,projectId,'Budget Q '+i,'Budget A '+i]))[0].id;
+    await q('insert into public.cards(user_id,note_id,ord) values($1,$2,1)',[owner,note]);
+  }
+  await as(owner);
+  const eligible=await q("select chosen.value->>'cardId' id from public.review_items($1::text[],null,null,true,false) with ordinality as chosen(value,rank) order by chosen.rank",
+    [['project:rr-a']]);
+  assert.ok(eligible.length>=4,'fixture must expose >=4 selector cards');
+  const budgetPatch={...startPatch,card_budget:10};
+  const [oneMinute]=await cmd('start',{...budgetPatch,minute_budget:1});
+  const [fourMinutes,fourEnvelope]=await cmd('start',{...budgetPatch,minute_budget:4});
+  checkEqual(oneMinute.itemCount,1,'one planning minute selects one card');
+  checkEqual(fourMinutes.itemCount,4,'four planning minutes select four cards');
+  const chosenOne=await q('select card_id from public.review_run_items where run_id=$1 order by position',[oneMinute.run.id]);
+  const chosenFour=await q('select card_id from public.review_run_items where run_id=$1 order by position',[fourMinutes.run.id]);
+  assert.deepEqual(chosenOne.map(x=>x.card_id),eligible.slice(0,1).map(x=>x.id),
+    'one minute preserves authoritative first-card ordering');
+  assert.deepEqual(chosenFour.map(x=>x.card_id),eligible.slice(0,4).map(x=>x.id),
+    'four minutes preserve the same ordered review_items prefix');
+  assert.deepEqual((await q('select public.review_runs_command($1::jsonb) receipt',
+    [JSON.stringify(fourEnvelope)]))[0].receipt,fourMinutes,'minute-bound retry is idempotent');
+  const [cardLimited]=await cmd('start',{...budgetPatch,card_budget:2,minute_budget:40});
+  checkEqual(cardLimited.itemCount,2,'card budget remains an independent cap');
+  const [zeroMinutes]=await cmd('start',{...budgetPatch,minute_budget:0});
+  checkEqual(zeroMinutes.itemCount,0,'zero minutes produces an empty queue');
+  checkEqual(zeroMinutes.run.status,'exhausted','zero-minute run is exhausted');
   // A zero-card budget is a valid empty snapshot, not a phantom review.
   const [zeroBudget]=await cmd('start',{...startPatch,card_budget:0});
   checkEqual(zeroBudget.status,'ok');

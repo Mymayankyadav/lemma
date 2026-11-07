@@ -36,14 +36,16 @@
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
       "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)",
+      "description": "Queue card cap, independently limited by the per-card one-minute planning reservation."
     },
     "minute_budget": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
       "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)",
+      "description": "Planning capacity: one selected card reserves one minute. Queue size is min(card_budget,minute_budget) in review_items order; no elapsed-time guarantee."
     },
     "scheduler_version": {
       "classification": "owner-editable",

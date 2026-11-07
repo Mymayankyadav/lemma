@@ -159,9 +159,10 @@ begin
     values(v_owner,v_filters,v_decks,v_card_budget,v_minute_budget,
       v_scheduler,v_settings_version,v_source) returning * into v_run;
 
-    -- Exactly the same SQL selector, order, siblings, owner filters and daily
-    -- quota as the connector's review_items RPC. Snapshot immutable card IDs
-    -- and versions; the client never supplies or invents the queue.
+    -- Preserve review_items owner/quota order. The selector has no per-card
+    -- duration estimate, so use a deterministic planning reservation of ONE
+    -- minute per card; this limits queue slots, not actual time spent.
+    -- Card and minute budgets are independent caps; zero means empty queue.
     if v_minute_budget>0 and v_card_budget>0 then
       for v_candidate in
         select c.id,c.version from public.review_items(
@@ -169,7 +170,7 @@ begin
           with ordinality as chosen(value,rank)
         join public.cards c on c.id=(chosen.value->>'cardId')::uuid
           and c.user_id=v_owner
-        order by chosen.rank limit v_card_budget
+        order by chosen.rank limit pg_catalog.least(v_card_budget,v_minute_budget)
       loop
         insert into public.review_run_items(user_id,run_id,position,card_id,
           expected_card_version,source)
