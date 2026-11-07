@@ -1,0 +1,94 @@
+{
+  "table": "proposal_drafts",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Draft UUID; created by audited owner command"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Owner ACL and receipt scope"
+    },
+    "proposal_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Owner-composite FK to proposal"
+    },
+    "target_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Owner-scoped target UUID for conflict checking"
+    },
+    "base_versions": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Immutable expected proposal and target versions"
+    },
+    "payload": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Complete proposed replacement payload, never partial patch"
+    },
+    "draft_version": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Positive optimistic version, increments on each lifecycle update"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Draft, saved, submitted, or discarded lifecycle state"
+    },
+    "edited_at": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Last draft edit time"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Record creation time"
+    },
+    "updated_at": {
+      "classification": "command-managed",
+      "appPath": "N63.2 proposal drafts adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command via lemma_command_resources (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N49 journal and undo; account purge N103 (planned)",
+      "description": "Recorded lifecycle update time"
+    }
+  }
+}
