@@ -41,13 +41,6 @@ Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/c
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
 Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
 
-## N60.2 Day plans: persistent demo, transactional live commands and closure
-Stage: Build · Status: open · Needs: N46.2 · Assigned: —
-Done = complete N60 with N60.1's typed DayPlanApi, owner civil-date/time-zone rules, bounded capacity, availability source-version comparisons, closure consistency and explicit placed/unplaced/carried_over items. Add a tab-local persistent src/data/day-plans/demo.ts fixture and live.ts plus index.ts/getDayPlanApi()/setDayPlanApiForTests(). Demo must implement create/update/preview/commit/close/reopen with optimistic version checks and same-date uniqueness, reload-safe records and isolated keyset pages 1–50 with exact totals, preserved unplaced tasks/reasons, per-date ritual/closure and no false completion of future dates. Live reads owner-scoped day_plans/day_plan_items and calls public.day_plans_command through one server transaction per mutation; each operation uses a fresh operationId that is reused on uncertain retry, identical conflict mapping, and NO client owner field. Commit must atomically recheck all snapshot source versions on the server, never rely only on N60.1's client advisory comparePlanSources. Close sets closedAt only for the chosen date; reopen clears it and never affects another plan. Ensure MCP/app receipts and item dispositions stay in parity with N46.2's registered command once that migration is deployed.
-Tests: tests/unit/day-plans/** for demo reload, owner-day uniqueness, multiple dates and closure independence, all operations, version drift, source staleness, unplaced/carry-over visibility, bounded cursor pages/total, live envelopes/retry operationId, conflict mapping, no caller owner field. Retain N60.1 pure-model tests.
-Scope: src/data/day-plans/**, tests/unit/day-plans/**, CURRENT.md.
-Not: other data modules, UI, supabase/**, new dependencies.
-
 ## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
 Stage: Build · Status: open · Needs: N49 · Assigned: —
 Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
@@ -135,13 +128,6 @@ Tests: `tests/unit/time-log/**`
 Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route only), tests/unit/time-log/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61.2.2.2, N74 · Assigned: —
-Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
-Tests: `tests/unit/calendar/overlaps.test.tsx`
-Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N76 v6 Progress: goals and range-correct statistics behind the shell flag
 Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
@@ -156,12 +142,6 @@ Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57.2 · Assigned: —
-Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
-Tests: `tests/unit/practice-ui/**`
-Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
