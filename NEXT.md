@@ -34,13 +34,12 @@ Tests: tests/mcp/sql/practice-topics-commands.mjs with real full-migration PGlit
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice-topics-commands.mjs, docs/v6/capability-registry/practice_topics.json, docs/v6/capability-registry/practice_events.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: existing migrations, src/data/**, UI, card reviews, FSRS, unrelated RPCs or tables.
 
-## N44 Parked thoughts: migration (parked_thoughts)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.parked_thoughts` with optional study entry link, text, `status` (`open`/`converted`/`dismissed`), `destination_kind`/`destination_id`, `resolved_at`. Operations create, edit, dismiss, reopen, delete and `convert_to_task`, which in the same transaction creates the task (same validation as `task_command`, receipt includes the task) and marks the thought converted; a retried `operationId` never creates a second task.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/parked_thoughts.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N44.2 Parked thought commands and atomic conversion to task
+Stage: Build · Status: open · Needs: N44.1 · Assigned: —
+Done = finish N44 on the read-only owner-scoped parked_thoughts table from N44.1. Add a reviewed additive migration with the authenticated security-invoker parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task. Atomically create one task with task_command-equivalent validation and mark the thought converted with its real task ID; retry of the same operationId must replay the receipt without creating another task. Reject owner spoofing, linked foreign-owner entry/task, changed-payload retry, stale expectedVersion and an invalid state transition. Enable audited writes only together with lemma_log_change, lemma_undo_tables registration and a lemma_command_resources entry, so app and service-role MCP dispatch share the command and all writes are undoable. Preserve existing task_command, study_command, undo_action and MCP code unchanged. Production SQL review required (D1/D8).
+Tests: extend tests/mcp/sql/parked_thoughts.mjs with full-migration PGlite command lifecycle, idempotent atomic task conversion, optimistic conflicts, owner isolation, action receipts, undo and MCP parity. Keep the N44.1 schema, owner-FK and status assertions; replace the deliberately read-only stage guard with stronger tests proving every newly permitted client mutation is command-receipted, journalled and undoable.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changing existing migrations, app/MCP code, unrelated resources/functions or protected files.
 
 ## N45 Study goals: migration (study_goals)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
