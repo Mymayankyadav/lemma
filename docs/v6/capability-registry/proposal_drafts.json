@@ -1,0 +1,83 @@
+{
+  "table": "proposal_drafts",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "proposal_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "target_id": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "base_proposal_version": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "base_versions": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "payload": {
+      "classification": "owner-editable",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "draft_version": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "status": {
+      "classification": "owner-editable",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "edited_at": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "N63.2 draft adapter (planned)",
+      "mcpPath": "N49 proposal_drafts_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and proposal FK"
+    }
+  }
+}
