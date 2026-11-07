@@ -236,10 +236,10 @@ try{
  assert.equal((await command(envelope('edit',idBase+'000000000003',
   {text:'Modified stale retry'},thoughtId,1))).status,'conflict');
 
- const dismissed=await command(envelope('dismiss',idBase+'000000000004',
+ const dismissedReceipt=await command(envelope('dismiss',idBase+'000000000004',
   {},thoughtId,2));
- assert.equal(dismissed.thought.status,'dismissed');
- assert.ok(dismissed.thought.resolved_at);
+ assert.equal(dismissedReceipt.thought.status,'dismissed');
+ assert.ok(dismissedReceipt.thought.resolved_at);
  await assert.rejects(command(envelope('convert_to_task',idBase+'000000000005',
   {title:'Invalid resolved conversion'},thoughtId,3)),/Only open thoughts/);
  const reopened=await command(envelope('reopen',idBase+'000000000006',
@@ -255,11 +255,11 @@ try{
  assert.equal((await q('select version from public.parked_thoughts where id=$1',
   [thoughtId]))[0].version,4);
 
- const conversion=envelope('convert_to_task',idBase+'000000000009',
+ const conversionCommand=envelope('convert_to_task',idBase+'000000000009',
   {title:'Prove inequality',body:'Write down both bounds',
    estimate_minutes:35,priority:'high',due_kind:'date',
    due_date:'2026-11-09',position:0},thoughtId,4);
- const convertedReceipt=await command(conversion);
+ const convertedReceipt=await command(conversionCommand);
  assert.equal(convertedReceipt.status,'ok');
  assert.equal(convertedReceipt.thought.status,'converted');
  assert.equal(convertedReceipt.thought.destination_kind,'task');
@@ -275,11 +275,11 @@ try{
   'one action journals both conversion rows for one undo');
  const beforeReplay=(await q('select count(*)::int n from public.tasks where id=$1',
   [convertedReceipt.task.id]))[0].n;
- assert.equal((await command(conversion)).task.id,convertedReceipt.task.id);
+ assert.equal((await command(conversionCommand)).task.id,convertedReceipt.task.id);
  assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
   [convertedReceipt.task.id]))[0].n,beforeReplay,
   'retry cannot create a second task');
- assert.equal((await command({...conversion,patch:{title:'Different'}})).status,
+ assert.equal((await command({...conversionCommand,patch:{title:'Different'}})).status,
   'conflict');
  const undone=(await q('select public.undo_action($1,$2) as value',
   [owner,convertedReceipt.actionNo]))[0].value;
