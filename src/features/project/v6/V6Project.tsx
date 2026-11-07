@@ -26,6 +26,7 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
   const [showSessions, setShowSessions] = useState(false);
   const [showSources, setShowSources] = useState(false);
   const [sessionLimit, setSessionLimit] = useState(20);
+  const [sourceLimit, setSourceLimit] = useState(20);
   const sessions: SessionSummary[] = useMemo(() => [...detail.sessions].sort((a, b) =>
     Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.number - a.number), [detail.sessions]);
   return <section aria-label="Project evidence" className="flex flex-col gap-3">
@@ -58,6 +59,15 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
         {showSources ? 'Hide sources' : 'Show sources'} ({detail.sources.length})
       </button>
       {showSources && <div id="v6-project-source-list" className="mt-3 flex flex-col gap-2">
+        {detail.sources.length === 0 ? <p className="text-label text-ink-2">No sources yet.</p> :
+          detail.sources.slice(0, sourceLimit).map(source =>
+            <p key={source.id} className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink">
+              <Tex source={source.title} />
+            </p>)}
+        {sourceLimit < detail.sources.length && <button type="button" className={action}
+          onClick={() => setSourceLimit(value => value + 20)}>Show 20 more sources</button>}
+      </div>}
+      {showSources && <div className="mt-4 border-t border-edge pt-4" aria-label="Detailed project sources">
         <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>
