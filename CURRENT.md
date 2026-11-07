@@ -517,3 +517,7 @@ A second newly created after-row trigger named lemma_log_change checks that dead
 ## N42.2.2 finite civil-date validation correction (chat-51673#r8k2)
 
 The full-migration SQL acceptance also probes invalid real calendar dates (2026-02-30). The deadline command now translates PostgreSQL invalid_datetime_format/datetime_field_overflow during the typed date cast into the stable `Invalid civil deadline date` error, before any row mutation or receipt is stored. Original invalid-input and safety assertions remain intact, with a dedicated regression expecting the exact error. No deployed migration or RLS policy changed.
+
+## N43.1 practice SQL stage-aware regression (bug #1075, chat-21963#n6w4)
+
+The full-migration `tests/mcp/sql/practice_topics.mjs` now verifies the original N43.1 owner-only SELECT, no journal trigger and no undo registration at the exact N43.1 migration boundary, even if the later N43.2 command is present. After all migrations, it still checks owner/FK/cadence constraints and direct DML denial; once N43.2 activates, it requires both practice tables in the undo registry, the journal triggers, and owner-correct fixture insert audit records. Without N43.2 the staged zero-registration/no-journal assertions remain mandatory. This removes the confirmed full-migration contradiction without changing SQL or weakening the original N43.1 safety guarantees.
