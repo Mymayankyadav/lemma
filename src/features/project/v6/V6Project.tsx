@@ -4,6 +4,7 @@ import { useProject } from '../../../data/hooks';
 import type { CheckpointUi, ProjectDetail, SessionSummary } from '../../../data/types';
 import { currentCheckpointIndex, groupCheckpointStages } from '../../../ui/timeline/progress';
 import { FastTex as Tex } from '../../../ui/FastTex';
+import { SourcesPanel } from '../SourcesPanel';
 
 const action = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber hover:bg-fill-1';
 const statuses: Record<CheckpointUi, string> = {
@@ -25,7 +26,6 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
   const [showSessions, setShowSessions] = useState(false);
   const [showSources, setShowSources] = useState(false);
   const [sessionLimit, setSessionLimit] = useState(20);
-  const [sourceLimit, setSourceLimit] = useState(20);
   const sessions: SessionSummary[] = useMemo(() => [...detail.sessions].sort((a, b) =>
     Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.number - a.number), [detail.sessions]);
   return <section aria-label="Project evidence" className="flex flex-col gap-3">
@@ -57,14 +57,8 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
         className={action + ' w-full text-left'} onClick={() => setShowSources(value => !value)}>
         {showSources ? 'Hide sources' : 'Show sources'} ({detail.sources.length})
       </button>
-      {showSources && <div id="v6-project-source-list" className="mt-3 flex flex-col gap-2">
-        {detail.sources.length === 0 ? <p className="text-label text-ink-2">No sources yet.</p> :
-          detail.sources.slice(0, sourceLimit).map(source =>
-            <p key={source.id} className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink">
-              <Tex source={source.title} />
-            </p>)}
-        {sourceLimit < detail.sources.length && <button type="button" className={action}
-          onClick={() => setSourceLimit(value => value + 20)}>Show 20 more sources</button>}
+      {showSources && <div id="v6-project-source-list" className="mt-3">
+        <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>
   </section>;

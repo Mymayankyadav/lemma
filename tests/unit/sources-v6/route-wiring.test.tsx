@@ -4,7 +4,14 @@ import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router';
 import V6Project from '../../../src/features/project/v6/V6Project';
 
+// The flagged route must render the REAL N82 panel; only external data and
+// transcription APIs are stubbed so a missing mount fails this regression.
+vi.mock('../../../src/flags',()=>({isFlagOn:()=>true}));
+vi.mock('../../../src/features/project/SourceTranscriptionView',()=>({
+ SourceTranscriptionView:()=> <p>Existing transcription controls</p>,
+}));
 vi.mock('../../../src/data/hooks',()=>({
+ useSourceTranscriptionStats:()=>({data:[],isPending:false,isError:false}),
  useProject:()=>({isPending:false,isError:false,data:{
   project:{id:'project',title:'Math path',goal:'Understand proof',status:'active'},
   subject:{glyph:'π',name:'Math'},checkpoints:[],done:0,total:0,sessions:[],
