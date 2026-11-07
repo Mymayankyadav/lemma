@@ -31,7 +31,9 @@ const safeRead=():Store|null=>{
    if(typeof p.id!=='string'||!p.id||seen.has(p.id)||dates.has(p.planDate)||
       !Number.isSafeInteger(p.version)||p.version<1)return null;
    seen.add(p.id);dates.add(p.planDate);
-   civilPlanDate(p.planDate);normalizeDayPlan(p);
+   civilPlanDate(p.planDate);normalizeDayPlan({planDate:p.planDate,timeZone:p.timeZone,
+    intention:p.intention,capacityMinutes:p.capacityMinutes,availability:p.availability,
+    tomorrowFirstTaskId:p.tomorrowFirstTaskId,ritual:p.ritual});
    validatePlanClosure(p.status,p.closedAt);
   }
   if(store.items.some(i=>!seen.has(i.planId)||!Number.isSafeInteger(i.version)||i.version<1))return null;
@@ -58,7 +60,7 @@ const pageSize=(n:number|undefined):number=>{
  if(!Number.isSafeInteger(result)||result<1||result>50)return error('invalid','Day-plan pages must contain 1–50 rows');
  return result;
 };
-function ownerDay(date:string,zone:string):string{
+function ownerDay(zone:string):string{
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
  const part=(name:string)=>parts.find(p=>p.type===name)?.value??'';
  return part('year')+'-'+part('month')+'-'+part('day');
@@ -190,7 +192,7 @@ export function createDemoDayPlanApi(resolve:Resolver=actualVersion):DayPlanApi{
   async closePlan(id,version,ritual){
    const row=expected(id,version);
    if(row.status!=='committed')error('conflict','Only committed plans can close');
-   if(row.planDate>ownerDay(row.planDate,row.timeZone))
+   if(row.planDate>ownerDay(row.timeZone))
     error('invalid','A future date cannot be closed');
    const normalized=normalizeDayPlan({planDate:row.planDate,timeZone:row.timeZone,
     ritual:ritual??row.ritual});
