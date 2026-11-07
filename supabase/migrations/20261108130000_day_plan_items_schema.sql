@@ -22,8 +22,9 @@ create table public.day_plan_items (
     check (disposition = 'placed' or
       (calendar_block_id is null and reason is not null
        and reason ~ '[^[:space:]]')),
+  -- Match the N60.1 public model: any nonnegative int4 is a valid stable position.
   position integer not null constraint day_plan_items_position_check
-    check (position between 0 and 999999),
+    check (position between 0 and 2147483647),
   version integer not null default 1 constraint day_plan_items_version_check
     check (version > 0),
   source text not null default 'app' constraint day_plan_items_source_check
@@ -263,7 +264,7 @@ begin
       pg_catalog.jsonb_typeof(v_item->'task_id') is distinct from 'string' or
       pg_catalog.jsonb_typeof(v_item->'position') is distinct from 'number' or
       (v_item->>'position') !~ '^(0|[1-9][0-9]*)$' or
-      (v_item->>'position')::numeric>999999 or
+      (v_item->>'position')::numeric>2147483647 or
       v_item->>'disposition' not in ('placed','unplaced','carried_over') then
       raise exception 'Invalid day-plan item';
     end if;

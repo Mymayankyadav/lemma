@@ -134,7 +134,14 @@ try{
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,reason,position) values($1,$2,$3,$4,'Queue',3)",[owner,day.id,task.id,foreignBlock.id]);
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,reason,position) values($1,$2,$3,'lost','Queue',3)",[owner,day.id,task.id]);
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',-1)",[owner,day.id,task.id]);
- await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',1000000)",[owner,day.id,task.id]);
+ // N60.1 accepts every nonnegative int4, including values beyond 999,999.
+ // Create and remove two otherwise-valid items before the RLS row-count cases.
+ const highOne=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',1000000) returning position,id",[owner,day.id,task.id]))[0];
+ const highMax=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483647) returning position,id",[owner,day.id,task.id]))[0];
+ assert.equal(highOne.position,1000000);
+ assert.equal(highMax.position,2147483647);
+ await q("delete from public.day_plan_items where id=$1 or id=$2",[highOne.id,highMax.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483648)",[owner,day.id,task.id]);
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,$4,3)",[owner,day.id,task.id,'x'.repeat(1201)]);
  // Each negative case has otherwise-valid owner/plan/task/position fields:
  // the disposition invariants must cause the rejection, not a different FK.
@@ -200,6 +207,28 @@ try{
  const shown=act(preview);
  assert.equal(shown.status,'previewed');
  assert.ok(preview.changed.some(x=>x.resource==='day_plan_items'));
+ // Preview must apply the same full int4 bounds as the merged N60.1 model.
+ const boundaryPlan=act(await command(commandInput('create',{
+  plan_date:'2026-11-28',time_zone:'UTC'})));
+ const boundaryItems=[
+  {...previewItems[0],position:1000000},
+  {...previewItems[1],position:2147483647}
+ ];
+ const boundaryPreview=act(await command(commandInput('preview',{
+  availability:await snapshot(),items:boundaryItems},{id:boundaryPlan.id},1)));
+ assert.equal(boundaryPreview.status,'previewed');
+ assert.deepEqual((await q("select position from public.day_plan_items where plan_id=$1 order by position",
+  [boundaryPlan.id])).map(x=>x.position),[1000000,2147483647],
+  'preview persists exact int4-range position values');
+ for (const position of [-1,2147483648]) {
+  await assert.rejects(command(commandInput('preview',{
+   availability:await snapshot(),items:[{...boundaryItems[0],position}]},
+   {id:boundaryPlan.id},boundaryPreview.version)),
+   /Invalid day-plan item/,'preview rejects values outside the complete int4 range');
+ }
+ assert.deepEqual((await q("select position from public.day_plan_items where plan_id=$1 order by position",
+  [boundaryPlan.id])).map(x=>x.position),[1000000,2147483647],
+  'invalid previews must never overwrite valid boundary placements');
  assert.deepEqual((await q('select disposition from public.day_plan_items where plan_id=$1 order by position',
   [newPlan.id])).map(x=>x.disposition),['placed','carried_over']);
  assert.equal((await command(commandInput('commit',{}, {id:newPlan.id},shown.version+1))).status,
