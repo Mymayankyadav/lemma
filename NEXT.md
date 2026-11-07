@@ -94,13 +94,6 @@ Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, docs/v6/capability-registry/study_entries.json, CURRENT.md.
 Not: app or MCP code, other functions.
 
-## N53 Pending decisions with a server executor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.pending_commands` (operation ID, resource, payload, `not_before`, `undo_until`, `status` `scheduled`/`executing`/`succeeded`/`failed`/`cancelled`, result, error class) and `public.pending_command(p)` to schedule, extend or cancel a registered-resource command, plus `public.lemma_run_due_commands()` that executes due rows once each through the registry (row lock, idempotent on retry). It runs from the existing scheduled `notify` tick (one call added in `supabase/functions/notify/tick-core.ts`), never from a browser timer. The app's delayed-approval toasts may later use it; nothing changes for current flows.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/pending-commands.mjs` (due execution exactly once, cancel before due, extension, failure recorded, second owner, undo of the executed command) and a unit test for the tick call
-Scope: supabase/migrations/<one new additive file>, supabase/functions/notify/tick-core.ts (one call), tests/mcp/sql/pending-commands.mjs, tests/unit/notify/pending-tick.test.ts, docs/v6/capability-registry/pending_commands.json (new), CURRENT.md.
-Not: other notify behaviour, MCP code, app code.
 
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —

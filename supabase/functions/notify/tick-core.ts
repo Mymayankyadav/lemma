@@ -16,6 +16,13 @@ export interface TickDelivery {
  failed:number;
 }
 export interface TickAdapters {
+ /** N53: service-role RPC adapter. This executes at most one due command per
+  * transaction, independently of owners' notification preferences. Adapters
+  * must not start a write once signal.aborted. Older notification-only
+  * adapters can omit this until the production edge tick is connected. */
+ runDueCommands?:(signal:AbortSignal)=>Promise<{
+  processed:number;succeeded:number;failed:number;
+ }>;
  /** Enumerate only settings.notify.enabled owners. Never return device keys. */
  listEnabledOwners:(signal:AbortSignal)=>Promise<readonly string[]>;
  /** Exactly one owner-scoped notify_candidates read; never a global scan. */
@@ -81,6 +88,24 @@ export async function runNotifyTick(
  const summary:TickSummary={owners:0,queued:0,sent:0,skipped:0,failed:0,ms:0,timedOut:false};
  try{
   if(controller.signal.aborted)return summary;
+  // N53 delayed commands must run even if no owner has reminders enabled.
+  // The adapter invokes the service-role-only lemma_run_due_commands RPC,
+  // never a browser timer. It is isolated from notification delivery errors.
+  if(deps.runDueCommands){
+   try{
+    const due=await within(deps.runDueCommands(controller.signal));
+    if(controller.signal.aborted)return summary;
+    if(!due||!safeCount(due.processed,1)||
+       !safeCount(due.succeeded,due.processed)||
+       !safeCount(due.failed,due.processed)||
+       due.succeeded+due.failed!==due.processed)
+     throw Error('Invalid pending command execution result');
+    summary.failed+=due.failed;
+   }catch{
+    if(controller.signal.aborted)return summary;
+    summary.failed++;
+   }
+  }
   let owners:readonly string[];
   try{owners=await within(deps.listEnabledOwners(controller.signal))}
   catch{summary.failed=controller.signal.aborted?0:1;return summary};

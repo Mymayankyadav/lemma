@@ -1,0 +1,119 @@
+{
+  "table": "pending_commands",
+  "version": 1,
+  "description": "N53 owner-specific deferred command queue. Exactly-once nested operationId consumption; only owner SELECT RLS, command-only scheduling, service-role-only due runner. Result actionNo identifies the target resource's reversible journal action.",
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "resource": {
+      "classification": "owner-editable",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "payload": {
+      "classification": "owner-editable",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "not_before": {
+      "classification": "owner-editable",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "undo_until": {
+      "classification": "owner-editable",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "result": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "error_class": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "executed_action_no": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "attempts": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "public.pending_command(jsonb) via owner-authenticated app RPC; scheduled notify tick",
+      "mcpPath": "N53 registered target command via public.mcp_command, service-role-only due executor",
+      "exportPolicy": "owner-scoped export (N95 planned); omit private execution errors",
+      "deletionPolicy": "owner account purge (N103 planned); executed resource undo is separate from queue status"
+    }
+  }
+}
