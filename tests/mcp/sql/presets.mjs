@@ -94,9 +94,9 @@ try {
  assert.equal(table[0].relrowsecurity,true);
  const policies=await q("select policyname from pg_policies where tablename='presets'");
  assert.ok(policies.some(x=>x.policyname==='presets_owner'));
- // N41.2 activates the reviewed command/undo registry entry, not an
- // unimplemented dispatcher target in this migration.
- const registry=await q("select count(*)::int n from public.lemma_command_resources where resource='presets'");
- assert.equal(registry[0].n,0);
+ // N41.2.2.2.2.2 activates the reviewed command/undo registry entry for the
+ // implemented presets_command (full migration sequence runs above).
+ const registry=await q("select command_fn from public.lemma_command_resources where resource='presets'");
+ assert.deepEqual(registry.map(r=>r.command_fn),['presets_command']);
  console.log('PASS N41.1 activity presets schema, defaults, FKs, owner RLS, validation and action journal');
 } finally {await db.close();}

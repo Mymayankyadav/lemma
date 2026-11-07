@@ -74,6 +74,9 @@
     },
     {
       "table_name": "tasks"
+    },
+    {
+      "table_name": "presets"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",
