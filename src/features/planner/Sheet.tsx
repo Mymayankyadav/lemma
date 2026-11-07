@@ -1,6 +1,6 @@
 // N68 v6 owner planner: read-only preview first, no unattended block writes.
 // A day-plan commit always rechecks task/block versions in one server command.
-import {useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {getDayPlanApi} from '../../data/day-plans';
 import {getTaskApi,type TaskRecord} from '../../data/tasks';
 import {getStudyApi,type CalendarBlockRecord} from '../../data/study';
@@ -34,6 +34,12 @@ async function readTasks():Promise<TaskRecord[]>{
 }
 export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const notify=useToast(),dialog=useRef<HTMLDialogElement>(null);
+ const [opened,setOpened]=useState(false);
+ useEffect(()=>{
+  if(!opened||!dialog.current)return;
+  const node=dialog.current;
+  if(typeof node.showModal==='function'&&!node.open)node.showModal();
+ },[opened]);
  const ownerZone=zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
  const anchor=date??ownerDay(ownerZone);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
@@ -81,8 +87,12 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   finally{setLoading(false);}
  }
  function show(){
-  dialog.current?.showModal();
+  setOpened(true);
   void load();
+ }
+ function close(){
+  dialog.current?.close();
+  setOpened(false);
  }
  function changeMove(key:string,part:'start'|'end',value:string,
   original:Move){
@@ -166,7 +176,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
     await getDayPlanApi().commitPlan(plan.id,previewed.record.version);
     anyCommitted=true;
    }
-   dialog.current?.close();
+   close();
    notify('Study placements committed. Review them in Calendar.',{tone:'success'});
   }catch(e){
    // Compensation is only valid before a durable plan commits. Do not
@@ -183,10 +193,11 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  }
  return <>
   <button type="button" className={button} onClick={show}>Plan study tasks</button>
-  <dialog ref={dialog} aria-label="Plan study tasks" className="max-h-[85dvh] w-[min(95vw,580px)] overflow-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink">
+  {opened&&<dialog ref={dialog} onClose={()=>setOpened(false)}
+   aria-label="Plan study tasks" className="max-h-[85dvh] w-[min(95vw,580px)] overflow-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink">
    <div className="flex items-center justify-between gap-3">
     <h2 className="text-title-s font-semibold">Plan study tasks</h2>
-    <button type="button" className={button} onClick={()=>dialog.current?.close()}>Close</button>
+    <button type="button" className={button} onClick={close}>Close</button>
    </div>
    <p className="mt-2 text-label text-ink-2">Owner time zone: {ownerZone}. Times below are ISO instants.</p>
    <label className="mt-3 flex flex-col gap-1 text-label">Days to preview
@@ -233,6 +244,6 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
      disabled={busy||!!selection.error||!selection.items?.selected.length}
      onClick={()=>void commit()}>{busy?'Committing…':'Commit selected placements'}</button>
    </section>}
-  </dialog>
+  </dialog>}
  </>;
 }
