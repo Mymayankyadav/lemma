@@ -43,6 +43,84 @@ function seed():Snapshot {
   };
   return {schema:1,rows:[first,second]};
 }
+
+/**
+ * Build demo examples from owner-visible StudyApi records, not fictional IDs.
+ * On the pristine study demo only, introduce two visible busy blocks that
+ * genuinely overlap saved focus intervals. No production or injected live
+ * adapter is ever written; later loads only read the persisted study records.
+ */
+async function seedFromStudy():Promise<Snapshot>{
+  const api=getStudyApi();
+  if(api.mode!=='demo')return {schema:1,rows:[]};
+  const center=Date.now(),windowMs=14*24*60*60*1000;
+  const range={start:new Date(center-windowMs).toISOString(),
+    end:new Date(center+windowMs).toISOString()};
+  const [entries,initialBlocks]=await Promise.all([
+    api.listStudyEntries(range),api.listCalendarBlocks(range),
+  ]);
+  const saved=entries.filter(e=>e.status==='saved');
+  const blocks=[...initialBlocks];
+  type Match={entry:typeof saved[number];block:typeof blocks[number];
+    start:number;end:number};
+  const match=(entry:typeof saved[number]):Match|undefined=>{
+    for(const span of entry.intervals){
+      if(span.kind!=='focus'||!span.end)continue;
+      for(const block of blocks){
+        const start=Math.max(Date.parse(span.start),Date.parse(block.startsAt));
+        const end=Math.min(Date.parse(span.end),Date.parse(block.endsAt));
+        if(start<end)return {entry,block,start,end};
+      }
+    }
+    return undefined;
+  };
+  const pristine=saved.length===3&&entries.length===3&&blocks.length===2&&
+    entries.every(e=>e.version===1)&&blocks.every(b=>b.version===1);
+  const matches:Match[]=[];
+  for(const entry of saved){
+    if(matches.length===2)break;
+    let found=match(entry);
+    if(!found&&pristine){
+      const span=entry.intervals.find(i=>i.kind==='focus'&&i.end&&
+        Date.parse(i.end)>Date.parse(i.start));
+      if(span?.end){
+        const start=Date.parse(span.start),end=Date.parse(span.end);
+        const inside=start+Math.min(60_000,Math.floor((end-start)/4));
+        if(inside<end){
+          const created=await api.createCalendarBlock({
+            kind:'busy',title:'Demo: overlapping commitment',
+            startsAt:new Date(inside).toISOString(),
+            endsAt:new Date(Math.min(end,inside+10*60_000)).toISOString(),
+            timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC',
+          });
+          blocks.push(created.record);
+          found=match(entry);
+        }
+      }
+    }
+    if(found)matches.push(found);
+  }
+  const created=new Date().toISOString();
+  const ids=['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'];
+  return {schema:1,rows:matches.map((m,index)=>{
+    const participants:OverlapParticipant[]=[
+      {kind:'block',id:m.block.id,version:m.block.version},
+      {kind:'entry',id:m.entry.id,version:m.entry.version},
+    ];
+    return {
+      id:ids[index],participants,startsAt:new Date(m.start).toISOString(),
+      endsAt:new Date(m.end).toISOString(),
+      reason:index===0?'Plan overlap':'Protect study time',
+      disposition:index===0?'keep_both':'attribute_to',
+      attributedTo:index===0?null:{kind:'block' as const,id:m.block.id},
+      version:1,source:'app' as const,createdAt:created,updatedAt:created,
+    };
+  })};
+}
+// Coordinate simultaneous first reads from independently created adapters.
+let pendingStudySeed:Promise<Snapshot>|null=null;
+
 function newId():string {
   if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();
   if(!globalThis.crypto?.getRandomValues)
@@ -142,8 +220,30 @@ function receipt<T>(record:T):{record:T;actionNo:null} {
   return {record:clone(record),actionNo:null};
 }
 export function createDemoOverlapApi(resolveCurrent:ResolveCurrent=fromStudy):OverlapApi {
-  let snapshot=storage()??seed();
-  persist(snapshot);
+  // Injected-resolver tests retain their deterministic static fixture.
+  // The default resolver cannot treat hard-coded UUIDs as real study rows.
+  const stored=storage();
+  const dynamic=resolveCurrent===fromStudy&&!stored;
+  let snapshot=stored??(dynamic?{schema:1 as const,rows:[]}:seed());
+  if(!dynamic)persist(snapshot);
+  let initialized=!dynamic;
+  let initializing:Promise<void>|null=null;
+  const ready=async():Promise<void>=>{
+    if(initialized)return;
+    if(!initializing)initializing=(async()=>{
+      const existing=storage();
+      if(existing){snapshot=existing;return}
+      if(!pendingStudySeed){
+        pendingStudySeed=seedFromStudy().finally(()=>{pendingStudySeed=null});
+      }
+      const seeded=await pendingStudySeed;
+      snapshot=storage()??seeded;
+      persist(snapshot);
+    })().then(()=>{initialized=true},error=>{
+      initializing=null;throw error;
+    });
+    await initializing;
+  };
   const current=():Snapshot=>{snapshot=storage()??snapshot;return snapshot};
   const save=(rows:Saved[]):void=>{snapshot={schema:1,rows};persist(snapshot)};
   const lookup=(key:string):Saved=>{
@@ -169,6 +269,7 @@ export function createDemoOverlapApi(resolveCurrent:ResolveCurrent=fromStudy):Ov
   return {
     mode:'demo',
     async listAcknowledgements(query:OverlapQuery={}):Promise<OverlapPage<OverlapAcknowledgement>> {
+      await ready();
       const q=validateOverlapQuery(query),limit=q.limit??20;
       const filter=JSON.stringify({from:q.from??null,to:q.to??null,stale:q.stale??null});
       const cursor=decode(q.cursor,filter);
@@ -186,10 +287,12 @@ export function createDemoOverlapApi(resolveCurrent:ResolveCurrent=fromStudy):Ov
           encode({v:1,filter,start:last.startsAt,id:last.id}):null};
     },
     async getAcknowledgement(key:string){
+      await ready();
       const target=id(key),row=current().rows.find(r=>r.id===target);
       return row?view(row):null;
     },
     async createAcknowledgement(input:NewOverlapAcknowledgement){
+      await ready();
       const normalized=validateNewOverlap(input);
       const at=nowAfter();
       const row:Saved={...normalized,id:newId(),source:'app',
@@ -199,6 +302,7 @@ export function createDemoOverlapApi(resolveCurrent:ResolveCurrent=fromStudy):Ov
       return receipt(await view(row));
     },
     async updateAcknowledgement(key:string,expected:number,patch:OverlapPatch){
+      await ready();
       const row=lookup(key);version(row,expected);
       const validated=validateOverlapPatch(inputOf(row),patch);
       const normalized=validateNewOverlap({...inputOf(row),...validated});
@@ -211,6 +315,7 @@ export function createDemoOverlapApi(resolveCurrent:ResolveCurrent=fromStudy):Ov
       return receipt(await view(updated));
     },
     async deleteAcknowledgement(key:string,expected:number){
+      await ready();
       const row=lookup(key);version(row,expected);
       save(current().rows.filter(r=>r.id!==row.id));
       return receipt({id:row.id});
