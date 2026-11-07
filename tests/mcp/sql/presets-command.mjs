@@ -189,7 +189,9 @@ try {
  assert.equal((await q(refQuery,[owner,id]))[0].referenced,false);
  await assert.rejects(q(refQuery,[other,id]),/Not authorized/);
  await admin();
- await q('alter table public.study_entries add column preset_id uuid');
+ // bug #1110: N52 adds study_entries.preset_id (owner-composite FK) in a later migration; the
+ // in-memory fixture only adds it when the full migration set does not already provide it.
+ await q('alter table public.study_entries add column if not exists preset_id uuid');
  await q("insert into public.study_entries(user_id,source,intent,preset_id) values($1,'manual','Preset reference fixture',$2)",
    [owner,id]);
  await as(owner);
@@ -372,6 +374,23 @@ try {
   await as(owner);
   await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) value',
     [owner,'claude',JSON.stringify(request('create',{label:'Bypass'}))]),/permission denied|Service role required/);
+
+  // bug #1051: an authenticated client cannot forge MCP/worker provenance through session settings
+  for (const forged of ['chatgpt','worker']) {
+    await as(owner);
+    await q("select set_config('lemma.source',$1,false),set_config('lemma.tool','forged',false),set_config('lemma.summary','forged',false)",[forged]);
+    const spoof=await call(request('create',{label:`GUC ${forged}`}));
+    assert.equal(spoof.status,'ok');
+    await admin();
+    assert.equal((await preset(spoof.changed[0].id)).source,'app',`row provenance is app despite lemma.source=${forged}`);
+    const j=(await q('select source,tool,summary from public.actions where no=$1',[spoof.actionNo]))[0];
+    assert.deepEqual({source:j.source,tool:j.tool,summary:j.summary},{source:'app',tool:'presets',summary:'Preset create'},
+      'journal provenance is app, not the forged settings');
+  }
+  await admin();
+  await q("select set_config('lemma.source','',false),set_config('lemma.tool','',false),set_config('lemma.summary','',false)");
+  const trusted=await mcp(owner,'claude',request('create',{label:'Trusted MCP'}));
+  assert.equal((await preset(trusted.changed[0].id)).source,'mcp','service-role dispatcher keeps MCP provenance');
 
   console.log('PASS N41.2 presets_command create/update/reorder/archive/restore/delete, receipts, versions, owner isolation, undo and MCP parity');
 } finally {await db.close();}
