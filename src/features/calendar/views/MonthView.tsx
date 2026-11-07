@@ -1,16 +1,19 @@
 import type {CalendarBlockRecord, StudyEntryRecord} from '../../../data/study/contract';
 import {calendarRange, dayKey, monthDays} from '../model';
+import {DueDayItems,dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
 
 interface MonthViewProps {
   date: string;
   zone: string;
   entries: StudyEntryRecord[];
   blocks: CalendarBlockRecord[];
+  dues?:CalendarDues;
   onDay: (day: string) => void;
   firstDay?: number;
 }
 /** Real civil dates, including the adjacent dates needed to fill the grid. */
-export function MonthView({date, zone, entries, blocks, onDay, firstDay = 1}: MonthViewProps) {
+export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topics:[]},
+  onDay, firstDay = 1}: MonthViewProps) {
   const grid = monthDays(date, zone, entries, blocks, firstDay);
   const today = dayKey(new Date(), zone);
   const formatter = new Intl.DateTimeFormat('en', {timeZone: zone, month: 'long', year: 'numeric'});
@@ -29,6 +32,7 @@ export function MonthView({date, zone, entries, blocks, onDay, firstDay = 1}: Mo
       {grid.days.map(day=>{
         const logged = Math.round(day.capacity.logged);
         const blocksCount = day.blocks.length;
+        const dueCount=dueForDay(day.day,grid.first,zone,dues).length;
         const isToday = day.day === today;
         return <button key={day.day} type="button"
           data-month-day={day.day} data-outside-month={!day.inMonth||undefined}
@@ -43,8 +47,20 @@ export function MonthView({date, zone, entries, blocks, onDay, firstDay = 1}: Mo
           <span className="text-[11px] tabular-nums" aria-label={blocksCount+' blocks'}>
             {blocksCount} {blocksCount===1?'block':'blocks'}
           </span>
+          {dueCount>0&&<span className="text-[11px] tabular-nums text-ink">
+            {dueCount} due</span>}
         </button>;
       })}
     </div>
+    {grid.days.some(day=>dueForDay(day.day,grid.first,zone,dues).length>0)&&
+      <section aria-label="Month deadlines and practice" className="mt-4 space-y-3">
+        <h3 className="text-label font-semibold text-ink">Deadlines and practice</h3>
+        {grid.days.filter(day=>dueForDay(day.day,grid.first,zone,dues).length>0)
+          .map(day=><section key={day.day} className="space-y-1">
+            <h4 className="text-caption font-semibold text-ink-2">{day.day}</h4>
+            <DueDayItems date={day.day} firstVisible={grid.first}
+              zone={zone} dues={dues}/>
+          </section>)}
+      </section>}
   </section>;
 }

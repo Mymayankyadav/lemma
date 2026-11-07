@@ -64,7 +64,13 @@ try{
  assert.ok(after.changes.every(x=>x.cursor>page.nextCursor));
  await assert.rejects(q('select public.changes_since(0,101)'),/Invalid change feed/);
  await as(b);
- assert.equal((await q('select public.changes_since(0,100) result'))[0].result.changes.length,0);
+ // This fixture also inserted the other owner's settings row; its own
+ // journal event must remain visible. The owner's study mutations must not.
+ const otherFeed=(await q('select public.changes_since(0,100) result'))[0].result.changes;
+ assert.equal(otherFeed.filter(x=>x.resource==='settings').length,1,
+  'second owner still sees their own settings write');
+ assert.equal(otherFeed.some(x=>x.resource==='study_entries'),false,
+  'another owner must never see the first owner study lifecycle');
  assert.deepEqual(await q('select cursor from public.owner_changes where user_id=$1',[a]),[]);
  await db.exec('reset role');
  // Regression: real undo-registered resources have non-UUID and composite
