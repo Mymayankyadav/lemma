@@ -1,5 +1,5 @@
--- N50.2.2.1: optional owner-checked related record metadata for study events.
--- No authenticated write permissions, command routing or undo are enabled.
+-- N50.2.2: optional owner-checked related links and receipt-backed lifecycle.
+-- No unaudited authenticated table writes are enabled; commands use the journal.
 -- A related reference is a historical association: a later deletion can
 -- leave a dangling ID, which consumers must treat as unavailable.
 alter table public.study_events
@@ -16,32 +16,25 @@ create index study_events_owner_related on public.study_events
 create function public.study_events_related_owner_check() returns trigger
 language plpgsql security invoker set search_path='' as $related$
 begin
-  -- Undo restores a previously journalled snapshot; its historical related
-  -- record may since have been deleted. Ordinary writes remain checked.
-  if pg_catalog.current_setting('lemma.tool',true)='undo' then return new; end if;
-  -- Keep historical references readable/editable when the target was later
-  -- deleted: an unrelated note/kind/time change must not relink the event.
-  if tg_op='UPDATE' and new.user_id is not distinct from old.user_id
-    and new.related_kind is not distinct from old.related_kind
-    and new.related_id is not distinct from old.related_id then
-    return new;
-  end if;
   if new.related_id is null then return new; end if;
   -- Lookup by composite owner and UUID. Each target's ID is unique and its
   -- owner cannot be supplied by an unauthenticated event envelope.
   if new.related_kind='task' then
     if not exists(select 1 from public.tasks t
-      where t.id=new.related_id and t.user_id=new.user_id for share) then
+      where t.id=new.related_id and t.user_id=new.user_id
+      for share) then
       raise exception 'Related task not found for this owner' using errcode='23503';
     end if;
   elsif new.related_kind='calendar_block' then
     if not exists(select 1 from public.calendar_blocks b
-      where b.id=new.related_id and b.user_id=new.user_id for share) then
+      where b.id=new.related_id and b.user_id=new.user_id
+      for share) then
       raise exception 'Related calendar block not found for this owner' using errcode='23503';
     end if;
   elsif new.related_kind='study_entry' then
     if not exists(select 1 from public.study_entries e
-      where e.id=new.related_id and e.user_id=new.user_id for share) then
+      where e.id=new.related_id and e.user_id=new.user_id
+      for share) then
       raise exception 'Related study entry not found for this owner' using errcode='23503';
     end if;
   else
@@ -54,22 +47,6 @@ create trigger study_events_related_owner before insert or update of
   related_kind,related_id,user_id on public.study_events
   for each row execute function public.study_events_related_owner_check();
 
-
--- The N50.1 BEFORE touch trigger advances a version on every ordinary UPDATE.
--- Generic undo_action must restore the previously journalled version exactly,
--- not silently advance it while reverting the event's other columns.
--- Same signature and original semantics for every non-undo UPDATE.
-create or replace function public.study_events_touch_version() returns trigger
-language plpgsql security invoker set search_path='' as $touch$
-begin
-  if pg_catalog.current_setting('lemma.tool',true)='undo' then
-    return new;
-  end if;
-  new.version:=old.version+1;
-  new.updated_at:=pg_catalog.clock_timestamp();
-  return new;
-end
-$touch$;
 
 -- N50.2.2: owner-checked, journalled event command with exact receipts.
 -- The N50.1 study_events_log trigger already journals every mutation. The
@@ -196,8 +173,12 @@ begin
     where e.id=v_id and e.user_id=v_owner returning * into v_new;
    elsif v_op='restore' then
     if v_old.voided_at is null then raise exception 'Study event is not voided'; end if;
+    -- Restoring a historical event must recheck its related owner link.
+    -- Self-assigning these two columns invokes the existing owner trigger;
+    -- a removed task/block/entry cannot be silently resurrected as live.
     update public.study_events e set
-      voided_at=null,source=v_source
+      voided_at=null,related_kind=e.related_kind,related_id=e.related_id,
+      source=v_source
     where e.id=v_id and e.user_id=v_owner returning * into v_new;
    end if;
   end if;

@@ -164,16 +164,6 @@ try{
   {target:{id:eventId},expectedVersion:4}));
  assert.equal(onlyRelated.changed[0].version,5,'related-only patch is a valid edit');
  assert.equal((await q('select related_id from public.study_events where id=$1',[eventId]))[0].related_id,null);
- // Update inverses must restore exact versions; the original touch trigger
- // is compatible for normal DML but must not re-increment during undo_action.
- const undoneEdit=(await q('select public.undo_action($1::uuid,$2::bigint,false) result',
-  [owner,onlyRelated.actionNo]))[0].result;
- assert.equal(Number(undoneEdit.undone),Number(onlyRelated.actionNo));
- const original=(await q('select version,related_kind,related_id,voided_at from public.study_events where id=$1',[eventId]))[0];
- assert.equal(original.version,4,'generic undo restores prior optimistic version');
- assert.equal(original.related_kind,'study_entry');
- assert.equal(original.related_id,entry);
- assert.equal(original.voided_at,null);
  const fresh=await command(op('record',{entry_id:entry,kind:'urge'}));
  assert.equal(fresh.status,'ok');
  const freshId=fresh.changed[0].id;
@@ -181,38 +171,79 @@ try{
   [owner,fresh.actionNo]))[0].result;
  assert.equal(Number(undo.undone),Number(fresh.actionNo));
  assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[freshId]))[0].n,0);
- await assert.rejects(q("insert into public.study_events(user_id,entry_id,kind) values($1,$2,'notice')",[owner,entry]),
-  /permission denied|row.level security/i);
- // An ordinary void also rolls back to the exact prior row/version.
- const voidable=await command(op('record',{entry_id:entry,kind:'notice'}));
- const voidableId=voidable.changed[0].id;
+
+ // Every mutation must be undoable, not only a brand-new record insert.
+ // Inverse updates may advance version via study_events_touch_version, but
+ // they must restore all owner-editable values and the visible void state.
+ const undoAction=async actionNo=>(await q(
+  'select public.undo_action($1::uuid,$2::bigint,false) result',
+  [owner,actionNo]))[0].result;
+ const currentRow=async key=>(await q(
+  'select kind,note,related_kind,related_id,voided_at,version from public.study_events where id=$1',
+  [key]))[0];
+ const editBaseline=await command(op('record',{entry_id:entry,kind:'drift',
+  duration_minutes:4,note:'Original',related_kind:'task',related_id:task}));
+ const editId=editBaseline.changed[0].id;
+ const changedEdit=await command(op('edit',{
+  note:'Revised',related_kind:'study_entry',related_id:entry,
+ },{target:{id:editId},expectedVersion:1}));
+ assert.equal(changedEdit.status,'ok');
+ assert.equal((await currentRow(editId)).related_id,entry);
+ const undoEdited=await undoAction(changedEdit.actionNo);
+ assert.equal(Number(undoEdited.undone),Number(changedEdit.actionNo));
+ assert.equal((await currentRow(editId)).note,'Original');
+ assert.equal((await currentRow(editId)).related_kind,'task');
+ assert.equal((await currentRow(editId)).related_id,task);
+ const currentAfterUndo=await currentRow(editId);
+ assert.equal(currentAfterUndo.kind,'drift');
  const voidChange=await command(op('void',{},{
-  target:{id:voidableId},expectedVersion:1}));
- assert.equal(voidChange.changed[0].version,2);
- const undoVoid=(await q('select public.undo_action($1::uuid,$2::bigint,false) result',
-  [owner,voidChange.actionNo]))[0].result;
- assert.equal(Number(undoVoid.undone),Number(voidChange.actionNo));
- const voidState=(await q('select version,voided_at from public.study_events where id=$1',
-  [voidableId]))[0];
- assert.equal(voidState.version,1);
- assert.equal(voidState.voided_at,null);
- // Historical relations survive deletion of the referenced owner row.
- const historical=await command(op('record',{entry_id:entry,kind:'notice',
-  related_kind:'task',related_id:task}));
- assert.equal(historical.status,'ok');
- const historicId=historical.changed[0].id;
+  target:{id:editId},expectedVersion:currentAfterUndo.version}));
+ assert.ok((await currentRow(editId)).voided_at);
+ const undoneVoid=await undoAction(voidChange.actionNo);
+ assert.equal(Number(undoneVoid.undone),Number(voidChange.actionNo));
+ assert.equal((await currentRow(editId)).voided_at,null,
+  'undo void must make the same owner event visible again');
+ const restoredCandidate=await command(op('record',{entry_id:entry,
+  kind:'notice',note:'Retain void history'}));
+ const restoreId=restoredCandidate.changed[0].id;
+ const beforeRestore=await command(op('void',{},{
+  target:{id:restoreId},expectedVersion:1}));
+ const restoredOnce=await command(op('restore',{},{
+  target:{id:restoreId},expectedVersion:beforeRestore.changed[0].version}));
+ assert.equal((await currentRow(restoreId)).voided_at,null);
+ const undoRestored=await undoAction(restoredOnce.actionNo);
+ assert.equal(Number(undoRestored.undone),Number(restoredOnce.actionNo));
+ assert.ok((await currentRow(restoreId)).voided_at,
+  'undo restore preserves the original voided history');
+ // Restoring a reference to an owner task removed after void is refused.
+ // Historical voided events remain readable, but cannot reactivate a
+ // dangling task association even though related_kind/id are unchanged.
+ const removedTask='88888888-8888-4888-8888-888888888888';
  await db.exec('reset role');
- await q('delete from public.tasks where id=$1',[task]);
+ await q("insert into public.tasks(id,user_id,title) values($1,$2,'Soon removed')",
+  [removedTask,owner]);
  await ownerRole(owner);
- const noteFix=await command(op('edit',{note:'Task later removed'},
-  {target:{id:historicId},expectedVersion:1}));
- assert.equal(noteFix.status,'ok');
- assert.equal(noteFix.changed[0].version,2);
- assert.equal((await q('select related_id from public.study_events where id=$1',
-  [historicId]))[0].related_id,task);
+ const linkedBeforeRemoval=await command(op('record',{
+  entry_id:entry,kind:'notice',related_kind:'task',related_id:removedTask}));
+ const linkedId=linkedBeforeRemoval.changed[0].id;
+ const held=await command(op('void',{},{
+  target:{id:linkedId},expectedVersion:1}));
+ await db.exec('reset role');
+ await q('delete from public.tasks where id=$1',[removedTask]);
+ await ownerRole(owner);
+ await assert.rejects(command(op('restore',{},{
+  target:{id:linkedId},expectedVersion:held.changed[0].version})),
+ /Related task not found for this owner/);
+ assert.ok((await currentRow(linkedId)).voided_at,
+  'failed restore must retain its original version and voided history');
+ // The related trigger also refuses linking an existing event to another
+ // owner's task, not just a create envelope.
  await assert.rejects(command(op('edit',{
   related_kind:'task',related_id:otherTask},
-  {target:{id:historicId},expectedVersion:2})),/Related task not found for this owner/);
+  {target:{id:editId},expectedVersion:(await currentRow(editId)).version})),
+ /Related task not found for this owner/);
+ await assert.rejects(q("insert into public.study_events(user_id,entry_id,kind) values($1,$2,'notice')",[owner,entry]),
+  /permission denied|row.level security/i);
  await ownerRole(other);
  assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[eventId]))[0].n,0);
  await assert.rejects(command(op('edit',{note:'steal'},
@@ -234,6 +265,35 @@ try{
   [mcp.actionNo]))[0].source,'chatgpt');
  assert.equal((await q("select count(*)::int n from public.action_changes where action_no=$1 and table_name='study_events'",
   [mcp.actionNo]))[0].n,1,'one canonical log entry, no duplicate journal marker');
+
+ // Service-role MCP operations preserve owner binding and provenance
+ // across edit, void, restore; all are command-receipted, never direct DML.
+ const mcpId=mcp.changed[0].id;
+ const mcpSteps=[
+  op('edit',{note:'Changed through MCP'},{target:{id:mcpId},expectedVersion:1}),
+  op('void',{}, {target:{id:mcpId},expectedVersion:2}),
+  op('restore',{}, {target:{id:mcpId},expectedVersion:3}),
+ ];
+ for(const [stepIndex,envelope] of mcpSteps.entries()){
+  const result=(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+   [owner,'chatgpt',JSON.stringify(envelope)]))[0].result;
+  assert.equal(result.status,'ok');
+  assert.equal(result.changed[0].version,stepIndex+2);
+  assert.ok(result.actionNo>0);
+  const replay=(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+   [owner,'chatgpt',JSON.stringify(envelope)]))[0].result;
+  assert.deepEqual(replay,result,'MCP replay is exact for every lifecycle operation');
+  const source=(await q('select source from public.actions where no=$1',
+   [result.actionNo]))[0].source;
+  assert.equal(source,'chatgpt','MCP action provenance is not forged as app');
+ }
+ await db.exec('reset role');
+ assert.equal((await q('select source,note,voided_at from public.study_events where id=$1',
+  [mcpId]))[0].source,'mcp');
+ assert.equal((await q('select note from public.study_events where id=$1',
+  [mcpId]))[0].note,'Changed through MCP');
+ assert.equal((await q('select voided_at from public.study_events where id=$1',
+  [mcpId]))[0].voided_at,null);
  const registry=(await q("select command_fn,mcp_ok from public.lemma_command_resources where resource='study_events'"))[0];
  assert.deepEqual(registry,{command_fn:'study_events_command',mcp_ok:true});
 
