@@ -223,7 +223,12 @@ export function createLiveStudyEventApi():StudyEventApi{
    if(!previous)return fail('not_found','Study event not visible to owner');
    if(previous.voidedAt!==null)
     return fail('conflict','Cannot edit a voided study event');
-   applyStudyEventPatch(previous,changes);
+   // Validate only the editable row projection; never pass server-managed
+   // id/version/source/void state into the strict N64.1 write validator.
+   const {entryId,kind,durationMinutes,note,relatedKind,relatedId}=previous;
+   applyStudyEventPatch({
+    entryId,kind,durationMinutes,note,relatedKind,relatedId,
+   },changes);
    return write('edit',columns(changes),
     async change=>checkedRead(change,'edit',id),id,expected);
   },

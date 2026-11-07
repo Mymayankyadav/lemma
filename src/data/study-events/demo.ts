@@ -215,7 +215,12 @@ export function createDemoStudyEventApi():StudyEventApi{
    await ready();
    const before=lookup(key);checkVersion(before,expectedVersion);
    if(before.voidedAt!==null)return fail('conflict','Cannot edit a voided study event');
-   const valid=applyStudyEventPatch(before,patch);
+   // Pure input validation must never see command-managed fields such as
+   // id, source, version or voidedAt from the persisted record.
+   const {entryId,kind,durationMinutes,note,relatedKind,relatedId}=before;
+   const valid=applyStudyEventPatch({
+    entryId,kind,durationMinutes,note,relatedKind,relatedId,
+   },patch);
    await assertLinks(valid);
    // No awaits between the final version check and save.
    checkVersion(lookup(key),expectedVersion);
