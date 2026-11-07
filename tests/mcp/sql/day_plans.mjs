@@ -267,6 +267,9 @@ try{
   'owner-RLS reads never see a foreign plan');
  await db.exec('reset role');
  await q("select set_config('test.uid','',false)");
+ // Generic MCP dispatch deliberately fails without a real registered owner.
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2) on conflict (user_id) do nothing',
+  [owner,'1'.repeat(48)]);
  await db.exec('set role service_role');
  const mcpInput=commandInput('create',{plan_date:'2026-11-25',time_zone:'UTC'});
  const mcp=(await q("select public.mcp_command($1::uuid,'chatgpt',$2::jsonb) receipt",
