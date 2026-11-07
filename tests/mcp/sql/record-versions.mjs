@@ -93,7 +93,12 @@ try {
   const old=await record(table);
   const {where,args}=records[table];
   // A caller's attempt to set version=999 is always replaced by OLD+1.
-  await query('update public.'+table+' set version=999 where '+where,args);
+  // A caller may not forge provenance while bumping a row's version.
+  // The trigger always chooses the authenticated audit context instead.
+  if(table==='subjects')
+   await query('update public.'+table+' set version=999,updated_source=\'worker\' where '+where,args);
+  else
+   await query('update public.'+table+' set version=999 where '+where,args);
   const updated=await record(table);
   assert.equal(updated.version,2,table+' increments once on UPDATE');
   assert.equal(updated.updated_source,'mcp',table+' attributes chat writes to MCP');
