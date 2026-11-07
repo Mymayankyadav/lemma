@@ -272,6 +272,7 @@ try{
  // The preceding readback deliberately reset the fixture to the default
  // role. Re-enter the authenticated MCP bridge's required service role.
  await db.exec('set role service_role');
+ const mcpActionNos=[];
  const mcpSteps=[
   op('edit',{note:'Changed through MCP'},{target:{id:mcpId},expectedVersion:1}),
   op('void',{}, {target:{id:mcpId},expectedVersion:2}),
@@ -286,11 +287,16 @@ try{
   const replay=(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
    [owner,'chatgpt',JSON.stringify(envelope)]))[0].result;
   assert.deepEqual(replay,result,'MCP replay is exact for every lifecycle operation');
-  const source=(await q('select source from public.actions where no=$1',
-   [result.actionNo]))[0].source;
-  assert.equal(source,'chatgpt','MCP action provenance is not forged as app');
+  // The fixture service_role has no direct SELECT on the journal.
+  mcpActionNos.push(result.actionNo);
  }
  await db.exec('reset role');
+ for(const no of mcpActionNos){
+  const action=(await q('select source,user_id from public.actions where no=$1',[no]))[0];
+  assert.ok(action,'Each MCP lifecycle write has an owner journal action');
+  assert.equal(action.source,'chatgpt','MCP action provenance is not forged as app');
+  assert.equal(action.user_id,owner,'MCP journal action stays owner-bound');
+ }
  assert.equal((await q('select source,note,voided_at from public.study_events where id=$1',
   [mcpId]))[0].source,'mcp');
  assert.equal((await q('select note from public.study_events where id=$1',
