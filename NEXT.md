@@ -19,12 +19,19 @@ Tests: extend tests/mcp/sql/practice-topics-commands.mjs with full lifecycle, ra
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice-topics-commands.mjs, docs/v6/capability-registry/practice_topics.json, docs/v6/capability-registry/practice_events.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: old migrations, other app modules, UI, cards/reviews/FSRS, generic undo_action or mcp_command replacement, protected paths.
 
-## N44.2 Parked thought commands and atomic conversion to task
-Stage: Build · Status: open · Needs: N44.1 · Assigned: —
-Done = finish N44 on the read-only owner-scoped parked_thoughts table from N44.1. Add a reviewed additive migration with the authenticated security-invoker parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task. Atomically create one task with task_command-equivalent validation and mark the thought converted with its real task ID; retry of the same operationId must replay the receipt without creating another task. Reject owner spoofing, linked foreign-owner entry/task, changed-payload retry, stale expectedVersion and an invalid state transition. Enable audited writes only together with lemma_log_change, lemma_undo_tables registration and a lemma_command_resources entry, so app and service-role MCP dispatch share the command and all writes are undoable. Preserve existing task_command, study_command, undo_action and MCP code unchanged. Production SQL review required (D1/D8).
-Tests: extend tests/mcp/sql/parked_thoughts.mjs with full-migration PGlite command lifecycle, idempotent atomic task conversion, optimistic conflicts, owner isolation, action receipts, undo and MCP parity. Keep the N44.1 schema, owner-FK and status assertions; replace the deliberately read-only stage guard with stronger tests proving every newly permitted client mutation is command-receipted, journalled and undoable.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: changing existing migrations, app/MCP code, unrelated resources/functions or protected files.
+## N44.2.2 Parked thought owner lifecycle and undo
+Stage: Build · Status: open · Needs: N44.2.1 · Assigned: —
+Done = Implement authenticated, owner-bound parked_thoughts_command for create/edit/dismiss/reopen/delete with expectedVersion conflicts, operationId receipt/replay, owner-linked study entries, journal and registered undo in one transaction. Do not expose unaudited authenticated DML or convert_to_task yet. Independent production SQL review required.
+Tests: extend tests/mcp/sql/parked_thoughts.mjs for receipt-backed owner lifecycle, denied writes, conflicts, journal, undo and isolation.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, CURRENT.md.
+Not: earlier migrations, atomic task conversion, app/MCP code, unrelated functions, protected paths.
+
+## N44.2.3 Atomic task conversion and MCP parity
+Stage: Build · Status: open · Needs: N44.2.2 · Assigned: —
+Done = Finish N44.2 by compatibly extending parked_thoughts_command with atomic convert_to_task: create one real owner-bound task, mark the thought converted with its actual task ID, and write one idempotent operationId receipt for both changes, rejecting stale versions and changed-payload retries. Register lemma_command_resources for service-role mcp_command parity, journal/undo both records, and preserve blocked direct table DML. Independent SQL review and PR body Replaces function: parked_thoughts_command (reviewer verified signature and behaviour) required.
+Tests: extend tests/mcp/sql/parked_thoughts.mjs for atomic conversion, owner isolation, undo, retry, conflicts and MCP dispatch without loosening existing assertions.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: existing migrations, task_command, study_command, undo_action, app code, protected paths.
 
 ## N45 Study goals: migration (study_goals)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -80,7 +87,7 @@ Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
 
 ## N58.2.3 Parked thought atomic conversion and owner-RLS live adapter
-Stage: Build · Status: open · Needs: N44.2, N44.2.2 · Assigned: —
+Stage: Build · Status: open · Needs: N44.2.3, N44.2.2 · Assigned: —
 Done = complete N58.2 using the N58.1 typed ThoughtApi, validation and transitions plus N58.2.2's reload-safe demo CRUD/paging. Implement atomic convertToTask in demo without a fake destination or orphan task, and src/data/parked-thoughts/live.ts plus index.ts/getThoughtApi()/setThoughtApiForTests(). The live adapter must issue every create/edit/dismiss/reopen/delete/convert operation through owner-RLS parked_thoughts_command envelopes after N44.2, with a fresh operationId per new action reused on uncertain retry, optimistic version conflict mapping, no caller owner fields and bounded owner reads. One convert action returns both a real TaskRecord and a resolved thought from a single transaction receipt; failed/retried conversion must not leave a partially converted thought or duplicate task. Preserve storage isolation and existing cards/reviews. N44.2 remains a prerequisite while split PR #1039 is unmerged; afterward N44.2.2 must be done before implementing live writes.
 Tests: extend tests/unit/parked-thoughts/** with atomic demo conversion and reload, live RPC envelopes for every operation, retry identity, stale/conflict mapping, owner isolation and bounded pages; retain N58.1 and N58.2.2 regressions.
 Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.

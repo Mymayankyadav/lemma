@@ -42,6 +42,8 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  assert.ok(names.includes('20261107062517_parked_thoughts.sql'));
+ assert.ok(names.includes('20261108010000_parked_thought_envelopes.sql'));
+
  for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
  const docs=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/parked_thoughts.json',import.meta.url),'utf8'));
  const columns=(await q("select attname from pg_attribute where attrelid='public.parked_thoughts'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname).sort();
@@ -97,5 +99,80 @@ try{
  assert.equal((await q('select text from public.parked_thoughts where id=$1',[open.id]))[0].text,'Prove an estimate');
  assert.equal((await q('select count(*)::int n from public.parked_thoughts'))[0].n,4);
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
+
+
+ // N44.2.1: independently executable owner-bound command-envelope checks.
+ // The helper is read-only: no authenticated DML, registry or undo yet.
+ const validate=async p=>(await q(
+  'select public.parked_thoughts_validate_envelope($1::jsonb) value',
+  [JSON.stringify(p)]))[0].value;
+ const valid={operationId:'11111111-1111-4111-8111-111111111111',
+  schemaVersion:1,resource:'parked_thoughts',operation:'create',
+  patch:{text:'Return to this lemma'}};
+ await as(owner);
+ assert.deepEqual(await validate(valid),valid);
+ const suppliedCreateId={...valid,target:{id:open.id}};
+ assert.deepEqual(await validate(suppliedCreateId),suppliedCreateId);
+ await assert.rejects(validate({...valid,target:{id:'not-a-uuid'}}),/uuid/i);
+ await assert.rejects(validate({...valid,target:{id:null}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...valid,target:{id:''}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...valid,target:{id:42}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...valid,user_id:other}),/Unknown command field/);
+ await assert.rejects(validate({...valid,operation:'archive'}),/Unsupported thought operation/);
+ await assert.rejects(validate({...valid,schemaVersion:2}),/schemaVersion must be 1/);
+ await assert.rejects(validate({...valid,patch:{text:' '}}),/Thought text/);
+ await assert.rejects(validate({...valid,patch:{text:'Valid',user_id:other}}),/Unknown patch field/);
+ await assert.rejects(validate({...valid,operationId:'not-a-uuid'}),/uuid/i);
+ const edit={...valid,operation:'edit',target:{id:open.id},expectedVersion:1,
+  patch:{text:'Updated text'}};
+ assert.deepEqual(await validate(edit),edit);
+ await assert.rejects(validate({...edit,expectedVersion:0}),/positive integer/);
+ await assert.rejects(validate({...edit,target:{}}),/target.id is required/);
+ await assert.rejects(validate({...edit,target:{id:''}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...edit,patch:{}}),/Edit patch/);
+ await assert.rejects(validate({...edit,patch:{text:null}}),/Thought text/);
+ await assert.rejects(validate({...edit,target:{id:open.id,user_id:other}}),/Unknown target field/);
+ await assert.rejects(validate({...edit,patch:{text:'x'.repeat(4001)}}),/Thought text/);
+ await assert.rejects(validate({...edit,patch:{study_entry_id:'not-a-uuid'}}),/uuid/i);
+ const removal={...edit,operation:'delete',patch:{}};
+ assert.deepEqual(await validate(removal),removal);
+ await assert.rejects(validate({...removal,patch:{text:'forged'}}),/Unknown patch field/);
+ const conversion={...edit,operation:'convert_to_task',patch:{title:'Finish lemma'}};
+ assert.deepEqual(await validate(conversion),conversion);
+ const completeTask={...conversion,patch:{title:'Finish lemma',
+  body:'Write up proof',estimate_minutes:45,priority:'normal',
+  due_kind:'date',due_date:'2026-11-09',due_at:null,position:0,subject_id:owner}};
+ assert.deepEqual(await validate(completeTask),completeTask,
+  'conversion envelope accepts the task_command create field names');
+ await assert.rejects(validate({...conversion,patch:{
+  ...conversion.patch,description:'not a task column'}}),/Unknown patch field/,
+  'legacy description cannot silently drop the task body');
+ await assert.rejects(validate({...conversion,patch:{
+  ...conversion.patch,status:'completed'}}),/Unknown patch field/,
+  'new task conversion must not pre-set terminal status');
+ const high={...conversion,patch:{...conversion.patch,priority:'high'}};
+ assert.deepEqual(await validate(high),high);
+ for(const bad of [null,'urgent',7])
+  await assert.rejects(validate({...conversion,patch:{...conversion.patch,priority:bad}}),
+   /Invalid task priority/);
+ assert.deepEqual(await validate({...conversion,patch:{
+  ...conversion.patch,subject_id:owner,project_id:null}}),
+  {...conversion,patch:{...conversion.patch,subject_id:owner,project_id:null}},
+  'valid typed task owner links or explicit null remain allowed');
+ for(const field of ['subject_id','project_id','checkpoint_id']){
+  for(const bad of [42,false,{'id':owner}])
+   await assert.rejects(validate({...conversion,patch:{...conversion.patch,[field]:bad}}),
+    new RegExp('Task '+field+' must be a UUID'));
+  await assert.rejects(validate({...conversion,patch:{...conversion.patch,[field]:'not-a-uuid'}}),
+   /uuid/i);
+ }
+ await assert.rejects(validate({...conversion,patch:{title:' '}}),/Task title required/);
+ await assert.rejects(validate({...edit,operation:'dismiss',patch:{text:'Ignored'}}),
+  /Unknown patch field/);
+ await db.exec('set role anon');
+ await assert.rejects(validate(valid),/permission denied|Authentication required/);
+ await admin();
+ assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,0);
  console.log('PASS N44.1 owner-scoped read-only storage, status invariants, cross-owner FKs, and no unaudited DML');
 }finally{await db.close();}

@@ -466,6 +466,7 @@ An additive migration creates `public.practice_topics` and `public.practice_even
 The real full-migration PGlite test covers owner-only SELECT visibility and denial of unaudited authenticated writes, forged owners and cross-owner FK rejection, both cadence representations and invalid boundaries, required and optional event constraints, absence of premature journal/undo registry entries and exact capability columns. No event recording, due-date advancement, void inverse, command RPC, old migration, card/review or FSRS write is implemented in N43.1; N43.2 remains for all lifecycle commands and transactional invariants. Production SQL requires independent review and CI; remote deployment is not asserted.
 
 N43.1 staged schema migration is renamed to `20261107123000_v6_practice_topics_schema.sql` before any deployment to prevent the 20261107003500 migration-order collision with already-applied 20261107040000 and already deployed N41.2.1 20261107060000 and concurrent unmerged N42 20261107070000 / N45 20261107110000. The PR must remain unready until all earlier migrations are deployed and checked; no production write or applied history version is changed.
+ 
 
 ## N64.1 typed study events contract and pure validation (N64 split)
 
@@ -521,3 +522,23 @@ The full-migration SQL acceptance also probes invalid real calendar dates (2026-
 ## N41.2.2.2.2.2 preset lifecycle writes, undo and MCP (finishes N41)
 
 One additive migration `20261110020000_presets_lifecycle_command.sql` compatibly replaces `public.presets_command(jsonb)` (same signature and grants; create/update/reorder unchanged) to add archive, restore and delete. Lifecycle operations keep the receipt-first owner+operationId lock and run `lemma_preset_lifecycle_lock()` in the same transaction, so version and study-entry reference decisions are made after the row lock; a delete of a referenced preset archives instead. Every write journals one action and an exactly-once receipt (replay survives physical deletion). `presets` is registered in `lemma_undo_tables` (its journal trigger takes the standard name `lemma_log_change`) and in `lemma_command_resources`, so `undo_action` and the service-role `mcp_command` dispatcher work for presets with MCP attribution. Tests: `tests/mcp/sql/presets-command.mjs`.
+
+## N44.2.1 read-only parked-thought command-envelope validator (N44.2 split)
+
+An additive migration creates an authenticated security-invoker validator for parked-thought command envelopes. It authenticates the caller and validates schema, operation IDs, lifecycle operations, expected versions, target UUIDs, caller-controlled fields, thought text and required conversion title without writing data. PGlite acceptance exercises valid envelopes, spoofed ownership fields, invalid lifecycle payloads, missing/stale version shapes and anonymous rejection. The N44.1 read-only RLS, absence of registry/undo entries and existing schema tests remain intact. Optional conversion priority must be a low/normal/high string, not null or an unrecognized value. N44.2.2 remains for audited owner lifecycle and undo; N44.2.3 remains for atomic task conversion and MCP parity before direct client writes.
+
+## N44.2.1 dependency-safe split follow-up (2026-11-07)
+
+The read-only parked-thought validator remains unchanged and does not expose writes. N44.2's remaining command lifecycle is now split into N44.2.2 (authenticated owner lifecycle/receipts) and N44.2.3 (atomic task conversion, undo and MCP parity), and the N58.2.3 live-adapter dependency explicitly waits for the completion sub-item. Additional full-migration validator assertions reject explicit null text and nonempty delete patches while preserving the accepted delete envelope and all prior regressions. Production SQL migration review and safe ordering remain required before deployment.
+
+## N44.2.1 typed create targets and current-main dependency reconciliation (2026-11-07)
+
+The read-only parked-thought command-envelope validator now checks a supplied create target ID has JSON string type and parses as UUID, rejecting explicit null, numbers and malformed UUIDs; omitted create IDs remain valid for future server allocation. Added full-migration PGlite cases for supplied valid/invalid IDs, without weakening earlier status/RLS/no-write assertions. Empty explicit target UUID strings are also rejected on create and edit, rather than silently being treated as omitted IDs. Also reconciles N44.2.2/N44.2.3 split bookkeeping against current main without carrying unrelated preset queue revisions into this PR. No existing migration or protected paths are modified; deploy ordering still requires review.
+
+## N44.2.1 conversion link shape checks and queue reconciliation (2026-11-07)
+
+The read-only parked-thought envelope validator now validates optional conversion subject, project and checkpoint links as UUID strings (or explicit JSON null to clear an optional link), rejecting forged malformed link types before a later transactional task command. Its full-migration PGlite cases cover accepted UUID/null links and invalid number, object, boolean or malformed UUID values. Main's concurrent NEXT/CURRENT updates are preserved; the remaining N44.2.2 owner lifecycle and N44.2.3 atomic conversion remain unimplemented and must deploy in order after independent review.
+
+## N44.2.1 task-conversion envelope field parity (2026-11-07)
+
+The staged parked-thought conversion validator now shares the real task_command create field spellings: body, estimate_minutes, due_kind, due_date, due_at and position alongside title, priority and optional owner-link IDs. It rejects the unsupported description alias and externally supplied task status, leaving N44.2.3 responsible for fully validating and atomically creating the task with the thought's versioned conversion. Full-migration PGlite assertions accept a representative valid conversion field envelope and reject unsupported fields. No authenticated table writes, undo registration or MCP route is activated.
