@@ -208,13 +208,6 @@ Tests: `tests/unit/settings-v6/planning.test.tsx`
 Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
 Not: other screens, other settings sections, supabase/**.
 
-## N80 v6 checkpoint page behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/p/:slug/cp/:code` shows the criterion and steps, prerequisite states, evidence and rechecks with their tutor sessions, source/page citations and the existing demonstrate/reopen/defer/recheck actions, from the existing hooks. Flag off: nothing changes.
-Tests: `tests/unit/checkpoint-v6/**`
-Scope: src/features/checkpoint/v6/** (new), src/features/checkpoint/Page.tsx (the flag branch only), tests/unit/checkpoint-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N81 v6 session page behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, `/s/:slug/:n` shows the tutor session goal, events in order with outcomes, resume question and note, linked checkpoint and study time, and the existing resume/end actions. Flag off: nothing changes.
