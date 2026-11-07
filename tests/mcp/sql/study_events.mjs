@@ -71,5 +71,20 @@ try{
  assert.deepEqual(Object.keys(docs.columns).sort(),cols.sort(),'registry covers every column');
  const policies=await q("select policyname from pg_policies where tablename='study_events'");
  assert.deepEqual(policies.map(x=>x.policyname),['study_events_owner_read']);
+ // bug #1109: the generic undo path restores the exact prior version and timestamp;
+ // every other update still advances them.
+ const before=(await q('select version,updated_at from public.study_events where id=$1',[drift.id]))[0];
+ const restored=(await q(`with c as (select set_config('lemma.tool','undo',true))
+   update public.study_events set version=1,voided_at=null,updated_at='2026-11-01T00:00:00Z'
+   from c where id=$1 returning version,voided_at,updated_at`,[drift.id]))[0];
+ assert.equal(restored.version,1,'undo keeps the restored version');
+ assert.equal(restored.voided_at,null);
+ assert.equal(new Date(restored.updated_at).toISOString(),'2026-11-01T00:00:00.000Z','undo keeps the restored timestamp');
+ const ordinary=(await q(`with c as (select set_config('lemma.tool','study',true))
+   update public.study_events set version=1 from c where id=$1 returning version,updated_at`,[drift.id]))[0];
+ assert.equal(ordinary.version,2,'an ordinary update still advances the version and ignores a caller-supplied one');
+ assert.ok(new Date(ordinary.updated_at)>new Date('2026-11-02T00:00:00Z'));
+ assert.ok(before.version>=1);
+
  console.log('PASS N50.1 notices, drift-only durations, audit/void, FK and owner RLS');
 }finally{await db.close()}

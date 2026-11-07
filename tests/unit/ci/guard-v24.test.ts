@@ -41,6 +41,12 @@ describe('v2.4 one-hour lease',()=>{
   expect(isLeaseExpired({lastActivity:0,now:5*H,waiting:waitingOnCi({ready,checks:{'fast-gate':'failure',scope:'success'}})})).toBe(true)
   expect(isLeaseExpired({lastActivity:0,now:5*H,waiting:waitingOnCi({ready:null,checks:{'fast-gate':'success',scope:'success'}})})).toBe(true)
  })
+ it('a changes-requested PR is waiting on its author, not on CI, so its lease still expires',()=>{
+  const ready={agent:'lemma-1'}
+  expect(waitingOnCi({ready,checks:{},labels:[{name:'changes-requested'}]})).toBe(false)
+  expect(waitingOnCi({ready,checks:{},labels:[{name:'needs-review'}]})).toBe(true)
+  expect(isLeaseExpired({lastActivity:0,now:5*H,waiting:waitingOnCi({ready,checks:{},labels:['changes-requested']})})).toBe(true)
+ })
  it('AGENTS.md states the 1 hour lease, takeover in step 4 and the split limits',()=>{
   const md=readFileSync('AGENTS.md','utf8')
   expect(md).toContain('no commit and no comment for 1 hour, CI adds the label lease-expired')
@@ -48,5 +54,7 @@ describe('v2.4 one-hour lease',()=>{
   expect(md).toContain('A sub-item (an id with a dot) is never split again')
   expect(md).toContain('sub-item .1 must contain the hardest part of the item end to end')
   expect(md).not.toMatch(/for 3 hours, CI adds the label lease-expired/)
+  expect(md).toContain("only when `current_setting('role',true)='service_role'`")
+  expect(md).toContain('revokes `insert, update, delete, truncate` from `anon, authenticated` explicitly')
  })
 })
