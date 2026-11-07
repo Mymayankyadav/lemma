@@ -31,29 +31,6 @@
       }
     },
     {
-      "resource": "study_goals",
-      "command_fn": "study_goals_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "archive",
-          "restore",
-          "delete"
-        ],
-        "fields": [
-          "period",
-          "start_date",
-          "end_date",
-          "time_zone",
-          "subject_id",
-          "project_id",
-          "target_minutes"
-        ]
-      }
-    },
-    {
       "resource": "study_intervals",
       "command_fn": "study_command",
       "mcp_ok": true,
@@ -228,6 +205,29 @@
           "tomorrow_first_task_id",
           "ritual",
           "items"
+        ]
+      }
+    },
+    {
+      "resource": "study_goals",
+      "command_fn": "study_goals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "time_zone",
+          "subject_id",
+          "project_id",
+          "target_minutes"
         ]
       }
     },
