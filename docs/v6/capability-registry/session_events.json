@@ -64,6 +64,41 @@
       "mcpPath": "N90 historical corrections (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "occurred_at": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "preserve effective event timestamp until owner purge"
+    },
+    "superseded_by": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner history replacement chain retained until purge"
+    },
+    "voided_at": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "voided event retained until owner purge"
+    },
+    "correction_reason": {
+      "classification": "owner-editable",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "audit reason retained until owner purge"
+    },
+    "actor": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "provenance retained until owner purge"
     }
   }
 }

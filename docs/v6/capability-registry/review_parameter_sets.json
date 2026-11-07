@@ -1,0 +1,41 @@
+{
+  "table": "review_parameter_sets",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "N91 history corrections",
+      "mcpPath": "N91 history corrections",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N91 history corrections",
+      "mcpPath": "N91 history corrections",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade"
+    },
+    "scheduler_version": {
+      "classification": "derived",
+      "appPath": "N91 history corrections",
+      "mcpPath": "N91 history corrections",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade"
+    },
+    "params": {
+      "classification": "command-managed",
+      "appPath": "N91 history corrections",
+      "mcpPath": "N91 history corrections",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade"
+    },
+    "captured_at": {
+      "classification": "derived",
+      "appPath": "N91 history corrections",
+      "mcpPath": "N91 history corrections",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade"
+    }
+  }
+}
