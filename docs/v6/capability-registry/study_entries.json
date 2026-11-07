@@ -120,6 +120,94 @@
       "mcpPath": "N51 study_command v2",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
+    },
+    "mode": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Captured pomodoro/flowtime/open timer mode, open before start"
+    },
+    "preset_id": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Optional owner-composite FK to preset; snapshot immutably at start"
+    },
+    "config": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Snapshot of effective preset or owner focus_defaults at start"
+    },
+    "phase": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Focus/break/long-break phase state"
+    },
+    "cycle": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Timer cycle counter"
+    },
+    "phase_ends_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Scheduled end of current phase, null in flowtime/open"
+    },
+    "energy": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Optional low/steady/high energy label"
+    },
+    "lease_device": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Current device lease holder (not an owner identifier)"
+    },
+    "lease_version": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Monotonic lease generation"
+    },
+    "lease_expires_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Lease expiration UTC instant"
+    },
+    "excluded_intervals": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Explicit reasoned excluded spans ledger, no double count"
     }
   }
 }
