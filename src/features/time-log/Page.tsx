@@ -196,7 +196,7 @@ export default function TimeLog(){
   <div className="flex flex-wrap items-end gap-2">
    <label className="text-label">Week starting
     <input aria-label="Week starting" className={field} type="date" value={day}
-     onChange={e=>setDay(e.target.value)}/></label>
+     onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDay(e.target.value);}}/></label>
    <button className={action} onClick={()=>setDay(addDays(day,-7))}>Previous week</button>
    <button className={action} onClick={()=>setDay(addDays(day,7))}>Next week</button>
    <button className={action} disabled={busy||loading} onClick={exportCsv}>Export visible range CSV</button>
