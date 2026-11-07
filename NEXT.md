@@ -178,13 +178,6 @@ Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N86 v6 Atlas editing in the list behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the v6 Atlas list adds create concept, edit name/blurb, reparent, link/unlink prerequisite or related, pin/unpin and merge, each through the existing write paths with an impact note for merges; cycles are refused with a reason. Flag off: nothing changes.
-Tests: `tests/unit/atlas-v6/edit.test.tsx`
-Scope: src/features/atlas/v6/**, tests/unit/atlas-v6/edit.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N91 Evidence and review history correction
 Stage: Build · Status: open · Needs: N38 · Assigned: —
 Done = one additive migration: `session_events` gains `occurred_at` (read as `coalesce(occurred_at, created_at)`), `superseded_by`, `voided_at`, `correction_reason`, `actor`; `reviews` gains `scheduler_version`, `params_id` (FK to a new `review_parameter_sets` snapshot of the weights and settings used) and `operation_id`; new functions `correct_session_event`, `void_session_event` (re-derive checkpoint state from remaining evidence) and `correct_review`, `void_review` (rebuild the affected card's schedule from its remaining history with the recorded parameters, or a disclosed replacement state), all owner-checked, journaled and undoable, registered in `lemma_command_resources`.
