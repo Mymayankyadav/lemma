@@ -152,8 +152,91 @@ try{
   await as(owner);
   assert.deepEqual(await q('select id from public.study_goals where id=$1',
     [otherRow.changed[0].id]),[]);
+  // N45 full lifecycle: owner-version conflict, overlap-safe restore, undo
+  // and generic service-role MCP are delivered in this one migration.
+  const envelope=(operation,patch={},target=null,version=null)=>({
+    ...make(patch),operation,
+    ...(target?{target:{id:target}}:{}),
+    ...(version!==null?{expectedVersion:version}:{})
+  });
+  const updateReq=envelope('update',{target_minutes:300},id,1);
+  const updated=await call(updateReq);
+  assert.equal(updated.status,'ok');
+  assert.equal(updated.changed[0].version,2);
+  assert.equal((await q('select target_minutes from public.study_goals where id=$1',[id]))[0].target_minutes,300);
+  assert.deepEqual(await call(updateReq),updated);
+  assert.equal((await call({...updateReq,patch:{target_minutes:301}})).status,'conflict');
+  const stale=await call(envelope('update',{target_minutes:310},id,1));
+  assert.equal(stale.status,'conflict');assert.equal(stale.conflict.currentVersion,2);
+  const archived=await call(envelope('archive',{},id,2));
+  assert.equal(archived.status,'ok');assert.equal(archived.changed[0].version,3);
+  assert.ok((await q('select archived_at from public.study_goals where id=$1',[id]))[0].archived_at);
+  await rejects(envelope('update',{target_minutes:320},id,3),/archived goal/);
+  await rejects(envelope('archive',{},id,3),/already archived/);
+  // An archived period can be occupied by another active goal with the same
+  // exact scope. Restoring must recheck the complete overlap constraint.
+  const blocker=await call(envelope('create',{
+    ...data,start_date:'2026-11-04',end_date:'2026-11-05'}));
+  assert.equal(blocker.status,'ok');
+  await rejects(envelope('restore',{},id,3),/Overlapping active goal/);
+  assert.ok((await q('select archived_at from public.study_goals where id=$1',[id]))[0].archived_at);
+  const deletedBlocker=await call(envelope('delete',{},blocker.changed[0].id,1));
+  assert.equal(deletedBlocker.status,'ok');
+  const restored=await call(envelope('restore',{},id,3));
+  assert.equal(restored.status,'ok');assert.equal(restored.changed[0].version,4);
+  assert.equal((await q('select archived_at from public.study_goals where id=$1',[id]))[0].archived_at,null);
+  const deleteRequest=envelope('delete',{},id,4);
+  const deleted=await call(deleteRequest);
+  assert.equal(deleted.status,'ok');
+  assert.equal((await q('select count(*)::int n from public.study_goals where id=$1',[id]))[0].n,0);
+  assert.deepEqual(await call(deleteRequest),deleted,'physical delete must remain idempotent');
+  const deletedUndo=(await q('select public.undo_action($1,$2,false) result',
+   [owner,deleted.actionNo]))[0].result;
+  assert.equal(deletedUndo.undone,deleted.actionNo);
+  assert.equal((await q('select version from public.study_goals where id=$1',[id]))[0].version,4);
+  // Undoing a versioned update must restore the old version exactly; the
+  // overlap trigger must not increment versions on the generic inverse.
+  const undoCreate=await call(envelope('create',{
+   ...data,start_date:'2028-01-01',end_date:'2028-01-07',
+   target_minutes:15}));
+  const undoId=undoCreate.changed[0].id;
+  const undoUpdate=await call(envelope('update',{target_minutes:20},undoId,1));
+  assert.equal(undoUpdate.changed[0].version,2);
+  const inverse=(await q('select public.undo_action($1,$2,false) result',
+   [owner,undoUpdate.actionNo]))[0].result;
+  assert.equal(inverse.undone,undoUpdate.actionNo);
+  const restoredOriginal=(await q('select target_minutes,version from public.study_goals where id=$1',
+   [undoId]))[0];
+  assert.equal(restoredOriginal.target_minutes,15);
+  assert.equal(restoredOriginal.version,1);
+  await as(other);
+  await rejects(envelope('update',{target_minutes:999},id,4),/not found for owner/);
+  await rejects(envelope('delete',{},id,4),/not found for owner/);
+  await as(owner);
+  assert.deepEqual(await q('select id from public.study_goals where user_id=$1',[other]),[]);
+  // The app cannot claim MCP provenance through arbitrary set_config GUCs.
+  await q("select set_config('lemma.source','worker',false)");
+  const hardened=await call(envelope('update',{target_minutes:25},undoId,1));
+  assert.equal(hardened.status,'ok');
+  assert.equal(hardened.goal.source,'app');
+  await q("select set_config('lemma.source','',false)");
   await admin();
-  assert.equal((await q('select count(*)::int n from public.study_goals'))[0].n,6,
+  await db.exec('set role service_role');
+  const mcpInput=envelope('create',{
+   ...data,start_date:'2029-01-01',end_date:'2029-01-07'});
+  const mcp=(await q("select public.mcp_command($1::uuid,'chatgpt',$2::jsonb) receipt",
+    [owner,JSON.stringify(mcpInput)]))[0].receipt;
+  assert.equal(mcp.status,'ok');
+  assert.ok(mcp.actionNo);
+  await admin();
+  assert.equal((await q('select source from public.study_goals where id=$1',
+    [mcp.changed[0].id]))[0].source,'mcp');
+  assert.equal((await q('select source from public.actions where no=$1',
+    [mcp.actionNo]))[0].source,'chatgpt');
+  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_goals'"))[0].n,1);
+  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_goals'"))[0].n,1);
+  await admin();
+  assert.equal((await q('select count(*)::int n from public.study_goals'))[0].n,8,
     'includes two independent forged-GUC regression inserts');
   const docs=JSON.parse(await readFile(
     new URL('../../../docs/v6/capability-registry/study_goals.json',import.meta.url),'utf8'));
@@ -165,5 +248,5 @@ try{
     for(const prop of ['appPath','mcpPath','exportPolicy','deletionPolicy'])
       assert.ok(docs.columns[field][prop]);
   }
-  console.log('PASS N45.1 secure create, owner RLS, overlap, receipt/retry, bounds and registry');
+  console.log('PASS N45 create/update/archive/restore/delete, exact undo, MCP, RLS, conflict, overlap and registry');
 }finally{await db.close()}

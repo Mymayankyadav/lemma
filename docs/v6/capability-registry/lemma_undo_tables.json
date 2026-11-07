@@ -80,6 +80,9 @@
     },
     {
       "table_name": "parked_thoughts"
+    },
+    {
+      "table_name": "study_goals"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

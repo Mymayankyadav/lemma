@@ -5,100 +5,100 @@
     "id": {
       "classification": "derived",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "period": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "start_date": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "end_date": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "time_zone": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "subject_id": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "project_id": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "target_minutes": {
       "classification": "owner-editable",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "archived_at": {
       "classification": "command-managed",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "version": {
       "classification": "derived",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "src/data/study-goals/ (N59.1 demo; N59.2 live planned)",
-      "mcpPath": "N45.2 registered study_goals_command through N37 (planned)",
+      "mcpPath": "N45 registered study_goals_command via generic MCP dispatcher",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45.2)"
+      "deletionPolicy": "owner account purge (N103 planned); journal undo registration (N45)"
     }
   }
 }

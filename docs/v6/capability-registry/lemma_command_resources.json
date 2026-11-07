@@ -182,6 +182,29 @@
           "checkpoint_id"
         ]
       }
+    },
+    {
+      "resource": "study_goals",
+      "command_fn": "study_goals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "time_zone",
+          "subject_id",
+          "project_id",
+          "target_minutes"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

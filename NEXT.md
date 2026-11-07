@@ -11,13 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N45.2 Study goals: lifecycle, undo and MCP completion
-Stage: Build · Status: open · Needs: N45.2.1 · Assigned: —
-Done = complete N45 on the owner-scoped public.study_goals table and secure, receipt-backed create command from N45.1. Add version-checked update, archive, restore and delete to public.study_goals_command via one additive compatible replacement migration. Retain the server-enforced active same-owner/period/scope date-overlap invariant, inclusive civil dates, owner-bound references and historical records. Register study_goals in public.lemma_undo_tables and public.lemma_command_resources (with a field/operation JSON schema, mcp_ok=true); verify undo and service-role mcp_command dispatch under p_user, idempotent receipts, conflicts and versions. Do not enable unaudited authenticated DML.
-Owner-authorized (D1, D8): production SQL requires independent review; PR body line Replaces function: study_goals_command (reviewer verified signature and behaviour).
-Tests: tests/mcp/sql/study_goals-command.mjs, plus unchanged N45.1 and existing D7 SQL tests.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals-command.mjs, docs/v6/capability-registry/study_goals.json, CURRENT.md.
-Not: changing N45.1 or older migrations, app or MCP function code, existing test assertions, other tables/functions.
 
 ## N46.2 Day-plan items, preview-to-commit invariants and closure commands
 Stage: Build · Status: open · Needs: N46.1 · Assigned: —
@@ -25,6 +18,8 @@ Done = complete N46 on N46.1's owner-bound, one-per-day day_plans headers. Add p
 Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner isolation, task/block version drift refusal, multiple dates and closure, item dispositions, idempotent retries, undo and MCP parity. Keep N46.1 field, JSON and FK constraints; revise read-only stage assertions only to enforce registered auditable writes.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
+
+
 
 ## N49 Proposal drafts: migration (proposal_drafts)
 Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
@@ -49,7 +44,7 @@ Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
 Not: edits to other src/data/** modules, supabase/**, UI, protected files or new dependencies.
 
 ## N59.2 Study goals live adapter (remaining after N59 split)
-Stage: Build · Status: open · Needs: N59.1, N45.2 · Assigned: —
+Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
 Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
