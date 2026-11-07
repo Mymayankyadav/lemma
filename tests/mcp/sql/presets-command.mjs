@@ -126,5 +126,57 @@ try {
     [[owner,'Math revised',3,7],[other,'Other owner',1,0]]);
   const registered=(await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n;
   assert.equal(registered,0,'registry activation belongs to N41.2.2, preserving N41.1 historical assertions');
+
+  // N41.2.2.1: delete is versioned, owner-scoped, journaled and retry-safe.
+  await as(owner);
+  const spare=await call(request('create',{label:'Temporary preset'}));
+  const spareId=spare.changed[0].id;
+  const staleDelete=await call(request('delete',{},{
+    target:{id:spareId},expectedVersion:88}));
+  assert.equal(staleDelete.status,'conflict');
+  assert.equal((await q('select count(*)::int n from public.presets where id=$1',
+    [spareId]))[0].n,1);
+  await assert.rejects(call(request('delete',{label:'not allowed'},{
+    target:{id:spareId},expectedVersion:1})),/Unknown preset patch field/);
+  const deletion=request('delete',{},{
+    target:{id:spareId},expectedVersion:1});
+  const deleted=await call(deletion);
+  assert.equal(deleted.status,'ok');
+  assert.equal(deleted.changed[0].id,spareId);
+  assert.equal(deleted.changed[0].deleted,true);
+  assert.equal((await q('select count(*)::int n from public.presets where id=$1',
+    [spareId]))[0].n,0);
+  assert.deepEqual(await call(deletion),deleted,'deletion receipt must be replay-safe');
+  const deletionChange=await q(
+    "select count(*)::int n from public.action_changes where table_name='presets' and row_pk->>'id'=$1",
+    [spareId]);
+  assert.equal(deletionChange[0].n,2,'create and delete each journal one change');
+
+  // Future N52 adds study_entries.preset_id. Simulate its persisted link now:
+  // delete must archive, without rewriting the saved study-entry reference.
+  await admin();
+  await db.exec('alter table public.study_entries add column if not exists preset_id uuid');
+  await q("insert into public.study_entries(user_id,source,status,preset_id) values($1,'manual','saved',$2)",
+    [owner,id]);
+  await as(owner);
+  const referencedDelete=request('delete',{},{
+    target:{id},expectedVersion:3});
+  const archived=await call(referencedDelete);
+  assert.equal(archived.status,'ok');
+  assert.equal(archived.changed[0].version,4);
+  const stillHere=(await q('select archived_at,version,source from public.presets where id=$1',[id]))[0];
+  assert.ok(stillHere.archived_at,'referenced delete archives instead of erasing');
+  assert.equal(stillHere.version,4);
+  assert.equal(stillHere.source,'app');
+  assert.equal((await q('select count(*)::int n from public.study_entries where preset_id=$1',
+    [id]))[0].n,1,'historical reference must remain');
+  assert.deepEqual(await call(referencedDelete),archived,'archive fallback replays receipt');
+  await assert.rejects(call(request('delete',{},{
+    target:{id},expectedVersion:4})),/already archived/);
+  await as(other);
+  await assert.rejects(call(request('delete',{},{
+    target:{id},expectedVersion:4})),/Preset not found/);
+  await admin();
+  assert.equal((await q('select count(*)::int n from public.presets where id=$1',[id]))[0].n,1);
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}

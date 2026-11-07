@@ -11,13 +11,13 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N41.2.2 Activity preset archive, restore, delete, undo and MCP parity
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = finish the N41.2.1 owner-scoped presets_command (create/update/reorder and versioned idempotent receipts are already implemented) with archive, restore, and delete. Delete physically only if no study entry refers to the preset; otherwise archive, never rewriting historical entry labels/links. In one later additive migration compatibly replace presets_command and register presets in lemma_undo_tables and lemma_command_resources (with field/operation schema and mcp_ok=true). The existing mcp_command must dispatch it as service_role under p_user, with the same owner/source, journal, receipt, retry and conflict behaviour as N41.2.1 and no changes to undo_action or mcp_command. A separate existing-test conflict is recorded as bug #1024: the older full-migration N41.1 test asserts the presets registry entry remains absent, so the historical check must first be corrected in an independently scoped fix rather than modified here.
-Owner-authorized (D1, D8): production SQL needs independent review. PR body must include Replaces function: presets_command (reviewer verified signature and behaviour).
-Tests: extend tests/mcp/sql/presets-command.mjs with archive/restore/delete, referenced-delete archival, registry, service-role MCP, undo, source attribution and second-owner parity; existing SQL suites unchanged and passing.
+## N41.2.2.2 Activity preset archive, restore, undo and MCP parity
+Stage: Build · Status: open · Needs: N41.2.2.1 · Assigned: —
+Done = finish N41.2.2 after the N41.2.2.1 safely deleted unreferenced presets and archived referenced deletes: add explicit archive/restore with versioned receipts and source attribution; register presets in lemma_undo_tables and lemma_command_resources with field/operation schema and mcp_ok=true, and verify service-role mcp_command dispatch under p_user, undo and second-owner isolation without changing undo_action or mcp_command. Correct separately tracked historical-test bug #1024 in an independently scoped fix before registry activation.
+Owner-authorized (D1, D8): deploys on merge and requires independent review. PR body: Replaces function: presets_command (reviewer verified signature and behaviour).
+Tests: extend tests/mcp/sql/presets-command.mjs with archive/restore, registry, service-role MCP, undo, source attribution and second-owner parity, keeping existing suites passing.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets-command.mjs, docs/v6/capability-registry/presets.json, CURRENT.md.
-Not: changes to earlier migrations, existing test assertions, app/MCP code, other tables/functions.
+Not: earlier migrations, existing test assertions, app/MCP code, other tables/functions.
 
 ## N42 Deadlines and milestones: migration (deadlines)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -167,7 +167,7 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-correcti
 Not: app or MCP code, other functions.
 
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41.2.2 · Assigned: —
+Stage: Build · Status: open · Needs: N51, N41.2.2.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged
@@ -247,7 +247,7 @@ Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
-Stage: Build · Status: open · Needs: N66, N71, N41.2.2 · Assigned: —
+Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
