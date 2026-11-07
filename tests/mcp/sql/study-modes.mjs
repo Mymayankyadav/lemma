@@ -5,8 +5,10 @@ const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
 const checkEqual=(actual,expected,description)=>{
  const stack=new Error().stack?.split('\n')[2]||'';
- const at=stack.match(/:(\d+):\d+\)?$/)?.[1]||'unknown';
- return assert.equal(actual,expected,description??('N52_ASSERT_LINE_'+at));
+ const at=Number(stack.match(/:(\d+):\d+\)?$/)?.[1]||0);
+ let n=at,letters='';
+ while(n>0){letters=String.fromCharCode(65+(n-1)%26)+letters;n=Math.floor((n-1)/26);}
+ return assert.equal(actual,expected,description??('TIMER_ASSERT_AT_'+(letters||'UNKNOWN')));
 };
 const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
 const owner='11111111-1111-1111-1111-111111111111';
