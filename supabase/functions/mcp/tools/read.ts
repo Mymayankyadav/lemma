@@ -6,10 +6,15 @@ import { cut, capped, date, pageRange, number, validPdfPageIndex } from '../text
 import { sourceLine } from '../v3.ts';
 import {readStudyRecords} from './study-read.ts';
 import {readTaskRecords} from './task-read.ts';
-import {registeredResources} from './registry.ts';
+import {registeredResources,readRegisteredResource} from './registry.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
+  if(a.what&&/^[a-z][a-z0-9_]{0,60}$/.test(a.what)&&
+    !['plan','plan_revisions','checkpoint','session','sources','outline',
+      'cards','feedback','concepts','projects','prompt','diagnostics',
+      'study_entries','calendar_blocks','tasks'].includes(a.what))
+    return readRegisteredResource(c,a,'get');
   if(a.what==='tasks')return readTaskRecords(c,a,'get');
   if(a.what==='study_entries'||a.what==='calendar_blocks')return readStudyRecords(c,a,'get');
   if(a.what==='prompt'){const st=await settings(c),p=a.project?await project(c,a.project):null;return ['OWNER',st.master_prompt||'(no master prompt)',p?.prompt||''].filter(Boolean).join('\n');}
@@ -147,6 +152,9 @@ export async function readPages(c:Context,a:any):Promise<string>{
  return parts.join('\\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
+  if(a.resource&&a.resource!=='tasks'&&a.resource!=='study_entries'&&
+   a.resource!=='calendar_blocks')
+   return readRegisteredResource(c,a,'search');
   if(a.resource==='tasks')return readTaskRecords(c,a,'search');
   if(a.resource==='study_entries'||a.resource==='calendar_blocks')return readStudyRecords(c,a,'search');
   const p=await project(c,a.project);

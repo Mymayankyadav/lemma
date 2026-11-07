@@ -89,8 +89,9 @@ export function buildServer(c:Context):McpServer{
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
   register('get',"Read records.",z.object({
-    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources']),project:optProject,
-    id:S().max(20).optional(),limit:z.number().int().min(1).max(50).optional(),
+    what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources'])
+      .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),project:optProject,
+    id:S().max(80).optional(),limit:z.number().int().min(1).max(50).optional(),
     start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional()
   }),true,(a,ctx)=>get(ctx,a));
   register('read_pages',"Read PDF pages.",z.object({
@@ -99,7 +100,8 @@ export function buildServer(c:Context):McpServer{
   }),true,(a,ctx)=>readPages(ctx,a));
   register('search',"Search records.",z.object({
     query:S().min(2).max(120),project:optProject,source:S().max(20).optional(),limit:z.number().int().min(1).max(8).optional(),
-    resource:z.enum(['study_entries','calendar_blocks','tasks']).optional(),
+    resource:z.enum(['study_entries','calendar_blocks','tasks'])
+      .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)).optional(),
     start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional()
   }),true,(a,ctx)=>search(ctx,a));
   register('save_pages',"Save PDF text.",z.object({
