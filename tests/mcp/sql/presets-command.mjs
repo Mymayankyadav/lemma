@@ -248,5 +248,78 @@ try {
   assert.equal((await q("select count(*)::int n from public.presets where id=$1",[id]))[0].n,1);
   assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,0);
 
+  // N41.2.2.2.2.2.1: receipt-first lifecycle replay before row lookup.
+  // The helper is read-only; a privileged in-memory receipt fixture
+  // models the eventual atomic delete response with a now-absent target.
+  assert.ok(migrations.includes('20261110010000_presets_lifecycle_receipt_probe.sql'));
+  const probe=async envelope=>(await q(
+    'select public.lemma_preset_lifecycle_receipt_probe($1::jsonb) result',
+    [JSON.stringify(envelope)]))[0].result;
+  const absentId='77777777-7777-4777-8777-777777777777';
+  const deletedRequest=request('delete',{},{
+    target:{id:absentId},expectedVersion:4,
+  });
+  await as(owner);
+  const beforeProbeActions=(await q('select count(*)::int n from public.actions'))[0].n;
+  const beforeProbeRows=(await q('select count(*)::int n from public.presets'))[0].n;
+  assert.deepEqual(await probe(deletedRequest),{
+    operationId:deletedRequest.operationId,status:'new',
+  },'unknown lifecycle operationId must be new without side effects');
+  const oldCommandReused=request('archive',{},{
+    target:{id},expectedVersion:4,operationId:create.operationId,
+  });
+  const reusedLegacy=await probe(oldCommandReused);
+  assert.equal(reusedLegacy.status,'conflict',
+    'new lifecycle operation may not reuse an existing create operationId');
+  assert.match(reusedLegacy.receipt.conflict.reason,/different payload/);
+  const resultForDeleted={operationId:deletedRequest.operationId,status:'ok',
+    changed:[{id:absentId,version:4}],actionNo:42};
+  await admin();
+  await q("insert into public.command_receipts(user_id,operation_id,resource,result) values($1,$2,'presets',$3::jsonb)",
+    [owner,deletedRequest.operationId,JSON.stringify({
+      ...resultForDeleted,_request:deletedRequest,
+    })]);
+  await as(owner);
+  const replay=await probe(deletedRequest);
+  assert.deepEqual(replay,{operationId:deletedRequest.operationId,status:'replay',
+    receipt:resultForDeleted},
+    'an exact deleted-row retry replays the stored receipt without row access');
+  const changedPayload=await probe({...deletedRequest,expectedVersion:5});
+  assert.equal(changedPayload.status,'conflict');
+  assert.equal(changedPayload.receipt.status,'conflict');
+  assert.equal(changedPayload.receipt.actionNo,null);
+  assert.match(changedPayload.receipt.conflict.reason,/different payload/);
+  // Original JSON is canonicalized, but UUID casing in the caller payload is
+  // still relevant to exact command-receipt equality.
+  const casingChanged=await probe({
+    ...deletedRequest,operationId:deletedRequest.operationId.toUpperCase(),
+  });
+  assert.equal(casingChanged.status,'conflict');
+  for(const malformed of [
+    {...deletedRequest,user_id:other},
+    {...deletedRequest,patch:{label:'forged'}},
+    {...deletedRequest,target:{id:absentId,user_id:other}},
+    {...deletedRequest,expectedVersion:0},
+    {...deletedRequest,expectedVersion:2147483648},
+    {...deletedRequest,operationId:null},
+    {...deletedRequest,target:{id:42}},
+    {...deletedRequest,resource:'other'},
+    {...deletedRequest,operation:'create'},
+  ])await assert.rejects(probe(malformed),
+    /Unknown|patch|target|expectedVersion|operationId|resource|operation|UUID/i);
+  await as(other);
+  const otherStatus=await probe(deletedRequest);
+  assert.equal(otherStatus.status,'new',
+    'operationId and stored receipt must be isolated to the authenticated owner');
+  await db.exec('set role anon');
+  await assert.rejects(probe(deletedRequest),/permission denied|Authentication required/i);
+  await admin();
+  assert.equal((await q('select count(*)::int n from public.actions'))[0].n,
+    beforeProbeActions,'probe must not write an action journal');
+  assert.equal((await q('select count(*)::int n from public.presets'))[0].n,
+    beforeProbeRows,'probe must not change preset records');
+  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
+    0,'N41.2.2.2.2.2.1 must not activate generic MCP dispatch');
+
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}
