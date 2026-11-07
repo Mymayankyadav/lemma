@@ -137,7 +137,7 @@ describe('N75 exact half-open owner Calendar overlap model',()=>{
   expect(matchingAcknowledgement(row,[acknowledgement(row)])?.id).toBe(uid(90));
   expect(matchingAcknowledgement(row,[acknowledgement(row,true)])).toBeNull();
   expect(matchingAcknowledgement(row,[{...acknowledgement(row),
-   participants:row.participants.map((p,i)=>i===0?{...p,version:2}:p)])).toBeNull();
+   participants:row.participants.map((p,i)=>i===0?{...p,version:2}:p)}])).toBeNull();
   expect(matchingAcknowledgement(row,[{...acknowledgement(row),
    endsAt:time('09:46')}])).toBeNull();
  });
