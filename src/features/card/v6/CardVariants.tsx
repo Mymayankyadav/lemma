@@ -16,8 +16,9 @@ export function describeDue(value:string|null,now=Date.now()):string{
  return days<=0?'Due now':days===1?'Tomorrow':'In '+days+' days';
 }
 const duration=(value:number)=>Number.isFinite(value)&&value>0?
- Math.round(value*10)/10+' d':'New';
-const count=(value:number|undefined)=>Number.isSafeInteger(value)&&value!>=0?value:0;
+ Math.round(value)+' d':'New';
+const count=(value:number|undefined):number=>typeof value==='number'&&
+ Number.isSafeInteger(value)&&value>=0?value:0;
 export default function CardVariants({
  variants,status,onEdit,onToggleStatus,busy=false,
 }:{
