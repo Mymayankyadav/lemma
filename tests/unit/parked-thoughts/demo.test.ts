@@ -1,5 +1,6 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {createDemoThoughtApi} from '../../../src/data/parked-thoughts/demo';
+import {createDemoTaskApi} from '../../../src/data/tasks/demo';
 
 const KEY='lemma.v6.demo.parked-thoughts.v1';
 beforeEach(()=>{
@@ -88,11 +89,41 @@ describe('N58.2.2 parked thoughts demo lifecycle and paging',()=>{
   expect(await api.getThought('demo-thought-2')).toBeNull();
   await expect(api.deleteThought('demo-thought-2',1)).rejects.toMatchObject({code:'not_found'});
  });
- it('refuses fake two-write task conversion and leaves both stores intact',async()=>{
+ it('atomically converts into a real TaskApi task, persists both and survives reload',async()=>{
   const api=createDemoThoughtApi();
-  const before=await api.getThought('demo-thought-1');
-  await expect(api.convertToTask('demo-thought-1',1,{title:'Real task'})).rejects.toThrow(/Atomic task conversion/);
-  expect(await api.getThought('demo-thought-1')).toEqual(before);
-  expect(sessionStorage.getItem('lemma.v6.demo.tasks.v1')).toBeNull();
+  const converted=await api.convertToTask('demo-thought-1',1,{
+   title:'Prove the original lemma',estimateMinutes:35,priority:'high',
+  });
+  expect(converted.actionNo).toBeNull();
+  expect(converted.record.thought).toMatchObject({
+   id:'demo-thought-1',status:'converted',destinationKind:'task',
+   destinationId:converted.record.task.id,version:2,
+  });
+  expect(converted.record.task).toMatchObject({
+   title:'Prove the original lemma',estimateMinutes:35,priority:'high',
+   status:'backlog',version:1,
+  });
+  expect((await createDemoTaskApi().getTask(converted.record.task.id))?.title)
+   .toBe('Prove the original lemma');
+  expect((await createDemoThoughtApi().getThought('demo-thought-1'))?.destinationId)
+   .toBe(converted.record.task.id);
+  expect((await createDemoThoughtApi().listThoughts()).total).toBe(1);
+  await expect(createDemoThoughtApi().convertToTask('demo-thought-1',1,
+   {title:'Duplicate'})).rejects.toMatchObject({code:'conflict'});
+  await expect(createDemoThoughtApi().convertToTask('demo-thought-1',2,
+   {title:'Duplicate'})).rejects.toMatchObject({code:'invalid'});
+  expect((await createDemoTaskApi().listTasks({status:['backlog']})).items.filter(x=>
+   x.title==='Prove the original lemma')).toHaveLength(1);
+ });
+ it('fails conversion without creating orphan tasks or resolving the thought',async()=>{
+  const api=createDemoThoughtApi(),before=await api.getThought('demo-thought-2');
+  const stored=sessionStorage.getItem('lemma.v6.demo.tasks.v1');
+  await expect(api.convertToTask('demo-thought-2',1,{
+   title:'Invalid task',priority:'forged' as never,
+  })).rejects.toThrow();
+  expect(await api.getThought('demo-thought-2')).toEqual(before);
+  expect(sessionStorage.getItem('lemma.v6.demo.tasks.v1')).toBe(stored);
+  await expect(api.convertToTask('demo-thought-2',2,{title:'Stale'}))
+   .rejects.toMatchObject({code:'conflict'});
  });
 });
