@@ -1,133 +1,133 @@
 {
   "table": "review_runs",
   "version": 1,
-  "description": "N48.1 staged owner-only readable durable review queue; N48.2 adds receipt-backed lifecycle and MCP parity",
+  "description": "N48.1 owner-scoped durable review runs; N48.2 adds receipt-backed commands and undo",
   "columns": {
     "id": {
       "classification": "derived",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "filters": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "selected_deck_ids": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "card_budget": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "minute_budget": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "scheduler_version": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "settings_version": {
       "classification": "owner-editable",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "status": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "position": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "revealed": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "started_at": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "paused_at": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "ended_at": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "version": {
       "classification": "derived",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "N62 review runs data API and N83 review run screen (planned)",
-      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "mcpPath": "N48.2 review_runs_command (registered through lemma_command_resources)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+      "deletionPolicy": "N48.2 journalled undo; N103 owner purge (planned)"
     }
   }
 }
