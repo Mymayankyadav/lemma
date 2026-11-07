@@ -39,6 +39,16 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  assert.ok(migrations.includes('20261116100000_pending_commands.sql'));
+ // The production scheduler is a single minute-wise pg_cron command. PGlite
+ // does not ship pg_cron, so guard the install and verify the actual SQL
+ // contract without creating an imaginary in-memory cron extension.
+ const migrationSql=await readFile(new URL('20261116100000_pending_commands.sql',dir),'utf8');
+ assert.match(migrationSql,/pg_available_extensions/);
+ assert.match(migrationSql,/create extension if not exists pg_cron/i);
+ assert.match(migrationSql,/cron\\.schedule\\(\\s*'lemma-run-due-commands'\\s*,\\s*'\\* \\* \\* \\* \\*'/);
+ assert.match(migrationSql,/SET LOCAL ROLE service_role/);
+ assert.match(migrationSql,/PERFORM public\\.lemma_run_due_commands\\(\\)/);
+
  for(const name of migrations)await db.exec(await readFile(new URL(name,dir),'utf8'));
  const fields=(await q("select attname from pg_attribute where attrelid='public.pending_commands'::regclass and attnum>0 and not attisdropped"))
   .map(x=>x.attname).sort();

@@ -258,3 +258,30 @@ end
 $worker$;
 revoke all on function public.lemma_run_due_commands() from public,anon,authenticated;
 grant execute on function public.lemma_run_due_commands() to service_role;
+
+
+-- Production scheduler. Supabase has pg_cron on hosted PostgreSQL, but
+-- disposable PGlite databases do not. The migration must remain replayable
+-- under both installations; only schedule when this extension is available.
+--
+-- pg_cron runs a job with its creator's DB role (normally postgres, not the
+-- non-login PostgREST role service_role). Both the worker and mcp_command
+-- correctly require the real role GUC to be service_role. Execute ONE
+-- anonymous SQL block per tick: trusted postgres changes to service_role
+-- locally for this one transaction and then calls the already owner-scoped
+-- service-only worker. The role change is never provided by a browser.
+do $install_pending_commands_cron$
+begin
+ if exists (
+  select 1 from pg_catalog.pg_available_extensions
+   where name='pg_cron'
+ ) then
+  create extension if not exists pg_cron;
+  perform cron.schedule('lemma-run-due-commands','* * * * *',
+   'DO $pending_tick$ BEGIN
+     EXECUTE ''SET LOCAL ROLE service_role'';
+     PERFORM public.lemma_run_due_commands();
+    END $pending_tick$;');
+ end if;
+end
+$install_pending_commands_cron$;
