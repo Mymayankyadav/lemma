@@ -1,7 +1,7 @@
 {
   "table": "day_plan_items",
   "version": 1,
-  "description": "N46.2.1 SELECT-only owner-scoped plan placements; N46.2.2 activates transactional day-plan commands and undo.",
+  "description": "N46.2.1 SELECT-only owner-scoped plan placements; N46.2.2 activates transactional day-plan commands and undo. N46.2 atomically writes preview items with owner journal, undo and MCP dispatch via day_plans_command.",
   "columns": {
     "id": {
       "classification": "derived",
