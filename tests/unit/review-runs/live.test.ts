@@ -185,3 +185,66 @@ describe('N62.2 authenticated review-run live adapter',()=>{
   }
  });
 });
+
+
+describe('N62.2 live command transition coverage',()=>{
+ it('starts only through server card selection; never supplies client card IDs',async()=>{
+  const api=createLiveReviewRunApi();
+  fake.client.rpc.mockImplementation(async(_name:string,call:{p:Row})=>{
+   expect(call.p).toMatchObject({schemaVersion:1,resource:'review_runs',
+    operation:'start',patch:{filters:{kind:'due'},card_budget:5,
+     scheduler_version:'fsrs-5',settings_version:1,
+     selected_deck_ids:['project:analysis']}});
+   expect(call.p).not.toHaveProperty('user_id');
+   expect(call.p.patch).not.toHaveProperty('card_ids');
+   fake.data.review_runs.push(run(3));
+   return {data:{status:'ok',changed:[{resource:'review_runs',
+    id:uuid(3),version:1}],actionNo:31},error:null};
+  });
+  const started=await api.startRun({filters:{kind:'due'},
+   selectedDeckIds:['project:analysis'],cardBudget:5,
+   settingsVersion:1,schedulerVersion:'fsrs-5'});
+  expect(started).toMatchObject({actionNo:31,
+   record:{id:uuid(3),status:'running',source:'app'}});
+  expect(fake.client.insert).not.toHaveBeenCalled();
+ });
+ it('links a stale skip by server receipt and verifies both updated rows',async()=>{
+  const api=createLiveReviewRunApi();
+  fake.client.rpc.mockImplementation(async(_name:string,call:{p:Row})=>{
+   expect(call.p.operation).toBe('advance');
+   expect(call.p.patch).toEqual({kind:'stale',item_id:uuid(1000),
+    reason:'Card version changed'});
+   fake.data.review_runs[0]={...fake.data.review_runs[0],
+    status:'exhausted',ended_at:at,position:1,version:2};
+   fake.data.review_run_items[0]={...fake.data.review_run_items[0],
+    state:'stale',stale_reason:'Card version changed',version:2};
+   return {data:{status:'ok',changed:[
+    {resource:'review_runs',id:uuid(1),version:2},
+    {resource:'review_run_items',id:uuid(1000),version:2}
+   ],actionNo:41},error:null};
+  });
+  const receipt=await api.advanceRun(uuid(1),1,{kind:'stale',
+   itemId:uuid(1000),reason:' Card version changed '});
+  expect(receipt).toMatchObject({actionNo:41,
+   record:{run:{status:'exhausted',position:1},item:{
+    state:'stale',staleReason:'Card version changed',reviewId:null}}});
+  expect(fake.client.rpc).toHaveBeenCalledTimes(1);
+  expect(fake.client.update).not.toHaveBeenCalled();
+ });
+ it('supports complete and abandon with optimistic versions',async()=>{
+  const api=createLiveReviewRunApi();
+  fake.client.rpc.mockImplementation(async(_name:string,call:{p:Row})=>{
+   const key=(call.p.target as {id:string}).id;
+   expect(call.p.patch).toEqual({});
+   expect(call.p).not.toHaveProperty('user_id');
+   const status=call.p.operation==='complete'?'completed':'abandoned';
+   fake.data.review_runs=fake.data.review_runs.map(r=>r.id===key?{
+    ...r,status,ended_at:at,paused_at:null,version:2}:r);
+   return {data:{status:'ok',changed:[{resource:'review_runs',
+    id:key,version:2}],actionNo:60},error:null};
+  });
+  expect((await api.completeRun(uuid(1),1)).record.status).toBe('completed');
+  expect((await api.abandonRun(uuid(2),1)).record.status).toBe('abandoned');
+  expect(fake.client.rpc).toHaveBeenCalledTimes(2);
+ });
+});
