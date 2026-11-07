@@ -90,13 +90,12 @@ Tests: `tests/mcp/sql/study_events.mjs` per the lane rules, plus the lifecycle r
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N56 Deadlines and milestones: app module (src/data/deadlines)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/deadlines/` for the records and operations of N42, including every lifecycle operation it names.
-Tests: `tests/unit/deadlines/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/deadlines/** (new), tests/unit/deadlines/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
+## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
+Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —
+Done = complete N56 after N56.1's typed contract, isolated demo adapter and getDeadlineApi/setDeadlineApiForTests facade. Implement the owner-RLS live deadline adapter for every N42 operation: create, update, complete, reopen, cancel, restore and delete through public.deadlines_command with stable operationId across retries, optimistic expectedVersion, actionNo receipts and typed conflict mapping. Preserve civil due dates versus instants, read-only projected project/checkpoint targets, exact status-filtered bounded 1–50 keyset pages, and never send owner IDs in browser commands. Replace the live placeholder in the existing module facade.
+Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, including retries, each operation, conflicts, owner RLS, projected read-only targets and 50+ row cursor walk; N56.1 demo tests remain green.
+Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
+Not: other data folders, UI, supabase/**, new dependencies.
 
 ## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -260,7 +259,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
