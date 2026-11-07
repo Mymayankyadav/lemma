@@ -398,8 +398,59 @@ create trigger study_intervals_timer_lease_guard
  before insert or update or delete on public.study_intervals
  for each row execute function public.lemma_study_timer_interval_guard();
 
--- Compatible replacement: original N51 operations retain their bodies;
--- new study modes use the owner-bound helper above.
+
+-- Lease check for original N11/N51 commands; a lost acknowledgement is
+-- replayed by the caller *before* checking the current lease generation.
+create function public.lemma_study_timer_lease_conflict(p jsonb,p_owner uuid)
+returns jsonb language plpgsql security invoker set search_path='' as $lease_check$
+declare
+ v_resource text:=p->>'resource'; v_op text:=p->>'operation';
+ v_target_id uuid; v_entry public.study_entries%rowtype;
+ v_operation_id uuid:=(p->>'operationId')::uuid;
+begin
+ if p_owner is null or (select auth.uid()) is distinct from p_owner then
+   raise exception 'Timer lease owner authorization required'; end if;
+ if v_resource not in ('study_entries','study_intervals')
+   or v_op in ('take_lease','next_phase','exclude_minutes') then return null; end if;
+ if v_resource='study_entries' then
+   if v_op='create' then return null; end if;
+   v_target_id:=nullif(p->'target'->>'id','')::uuid;
+ elsif v_op='create' then
+   v_target_id:=nullif(p->'patch'->>'entry_id','')::uuid;
+ else
+   select i.entry_id into v_target_id from public.study_intervals i
+     where i.id=(p->'target'->>'id')::uuid and i.user_id=p_owner;
+ end if;
+ if v_target_id is null then return null; end if;
+ select * into v_entry from public.study_entries e
+   where e.id=v_target_id and e.user_id=p_owner for update;
+ if not found or v_entry.lease_device is null
+   or v_entry.lease_expires_at<=pg_catalog.clock_timestamp()
+   or v_entry.status not in ('draft','running','paused') then return null; end if;
+ if pg_catalog.jsonb_typeof(p->'device') is distinct from 'string'
+   or p->>'device' is distinct from v_entry.lease_device
+   or pg_catalog.jsonb_typeof(p->'leaseVersion') is distinct from 'number'
+   or p->>'leaseVersion' !~ '^[1-9][0-9]*$'
+   or (p->>'leaseVersion')::numeric>2147483647 then
+   return pg_catalog.jsonb_build_object('operationId',v_operation_id,
+     'status','conflict','changed','[]'::jsonb,'actionNo',null,
+     'conflict',pg_catalog.jsonb_build_object('reason',
+       'active timer lease belongs to another device',
+       'leaseVersion',v_entry.lease_version));
+ end if;
+ if (p->>'leaseVersion')::integer is distinct from v_entry.lease_version then
+   return pg_catalog.jsonb_build_object('operationId',v_operation_id,
+     'status','conflict','changed','[]'::jsonb,'actionNo',null,
+     'conflict',pg_catalog.jsonb_build_object('reason','timer lease generation changed',
+       'leaseVersion',v_entry.lease_version));
+ end if;
+ return null;
+end
+$lease_check$;
+revoke all on function public.lemma_study_timer_lease_conflict(jsonb,uuid)
+ from public,anon;
+grant execute on function public.lemma_study_timer_lease_conflict(jsonb,uuid)
+ to authenticated,service_role;
 
 create function public.lemma_study_command_v2_compat(p jsonb)
 returns jsonb
@@ -419,8 +470,7 @@ declare
   v_receipt jsonb;
   v_bad text;
   v_action_no bigint;
-  v_timer_id uuid;
-  v_timer public.study_entries%rowtype;
+  v_timer_conflict jsonb;
 begin
   v_owner := (select auth.uid());
   if v_owner is null then raise exception 'Authentication required'; end if;
@@ -475,180 +525,10 @@ begin
   end if;
   v_resource := p ->> 'resource';
   v_operation := p ->> 'operation';
-  -- Existing study writes keep their original semantics until a live lease
-  -- exists. When a lease is active, its opaque device ID and lease generation
-  -- are required for the exact same command; readers remain unaffected.
-  -- All other N51 operations retain their original validated patch grammar.
-  if v_resource in ('study_entries','study_intervals') and v_operation not in
-       ('take_lease','next_phase','exclude_minutes') then
-    v_timer_id:=null;
-    if v_resource='study_entries' and v_operation<>'create' then
-      v_timer_id:=nullif(p->'target'->>'id','')::uuid;
-    elsif v_resource='study_intervals' then
-      if v_operation='create' then
-        v_timer_id:=nullif(p->'patch'->>'entry_id','')::uuid;
-      else
-        select i.entry_id into v_timer_id from public.study_intervals i
-          where i.user_id=v_owner and i.id=(p->'target'->>'id')::uuid;
-      end if;
-    end if;
-    if v_timer_id is not null then
-      select * into v_timer from public.study_entries e
-        where e.id=v_timer_id and e.user_id=v_owner for update;
-      if found and v_timer.lease_device is not null and
-         v_timer.lease_expires_at>pg_catalog.clock_timestamp() and
-         v_timer.status in ('draft','running','paused') then
-        if pg_catalog.jsonb_typeof(p->'device') is distinct from 'string'
-           or p->>'device' is distinct from v_timer.lease_device
-           or pg_catalog.jsonb_typeof(p->'leaseVersion') is distinct from 'number'
-           or p->>'leaseVersion' !~ '^[1-9][0-9]*
-    -- Only new operations go to the v2 helper. All existing N11 lifecycle
-    -- operations continue through their original function unchanged.
-    perform pg_catalog.set_config('lemma.source',
-      case when current_setting('role',true)='service_role' and
-         pg_catalog.current_setting('lemma.source',true) in
-          ('claude','chatgpt','other','system')
-        then pg_catalog.current_setting('lemma.source',true)
-        when current_setting('role',true)='service_role' then 'other'
-        else 'app' end,true);
-    return public.study_command_correction(p,v_owner,v_operation_id);
-  end if;
-  if v_resource in ('study_entries','study_intervals') then
-    v_receipt := public.study_command_lifecycle(p,v_owner,v_operation_id);
-    -- The N11.2 helper already persisted this receipt; attach the journal action.
-    if v_receipt ->> 'status' = 'ok' then
-      select a.no into v_action_no from public.actions a
-        where a.txid = pg_catalog.txid_current() and a.user_id = v_owner;
-      if v_action_no is null then raise exception 'Study change has no journal action'; end if;
-      v_receipt := pg_catalog.jsonb_set(v_receipt, '{actionNo}', pg_catalog.to_jsonb(v_action_no));
-      update public.command_receipts set result = v_receipt
-        where user_id = v_owner and operation_id = v_operation_id;
-    end if;
-    return v_receipt;
-  end if;
-  if v_resource is distinct from 'calendar_blocks' then
-    raise exception 'Unsupported resource: %', v_resource;
-  end if;
-  if v_operation not in ('create', 'update', 'delete') or v_operation is null then
-    raise exception 'Unsupported operation: %', v_operation;
-  end if;
-  v_patch := case when v_operation = 'delete' then coalesce(p -> 'patch', '{}'::jsonb) else p -> 'patch' end;
-  if pg_catalog.jsonb_typeof(v_patch) is distinct from 'object' then
-    raise exception 'patch must be an object';
-  end if;
-  select k into v_bad from pg_catalog.jsonb_object_keys(v_patch) as t(k)
-    where k <> all(case when v_operation = 'delete' then array[]::text[]
-        else array['kind','title','starts_at','ends_at','time_zone',
-                   'status','subject_id','project_id','checkpoint_id','session_id','task_id'] end)
-    limit 1;
-  if v_bad is not null then raise exception 'Unknown patch field: %', v_bad; end if;
-
-  v_target := coalesce(p -> 'target','{}'::jsonb);
-  if pg_catalog.jsonb_typeof(v_target) is distinct from 'object' then
-    raise exception 'target must be an object';
-  end if;
-  select k into v_bad from pg_catalog.jsonb_object_keys(v_target) as t(k)
-    where k <> 'id' limit 1;
-  if v_bad is not null then raise exception 'Unknown target field: %', v_bad; end if;
-
-  if v_operation = 'create' then
-    if p ? 'expectedVersion' and (p ->> 'expectedVersion') is distinct from '0' then
-      raise exception 'create expectedVersion must be absent or 0';
-    end if;
-    v_id := coalesce(nullif(v_target ->> 'id', '')::uuid, pg_catalog.gen_random_uuid());
-    insert into public.calendar_blocks(
-      id,user_id,kind,title,starts_at,ends_at,time_zone,status,
-      subject_id,project_id,checkpoint_id,session_id,task_id
-    ) values (
-      v_id,v_owner,v_patch ->> 'kind',v_patch ->> 'title',
-      (v_patch ->> 'starts_at')::timestamptz,(v_patch ->> 'ends_at')::timestamptz,
-      v_patch ->> 'time_zone',coalesce(v_patch ->> 'status','planned'),
-      (v_patch ->> 'subject_id')::uuid,(v_patch ->> 'project_id')::uuid,
-      (v_patch ->> 'checkpoint_id')::uuid,(v_patch ->> 'session_id')::uuid,
-      (v_patch ->> 'task_id')::uuid
-    ) returning * into v_block;
-  else
-    if nullif(v_target ->> 'id','') is null then
-      raise exception 'target.id required for update';
-    end if;
-    if pg_catalog.jsonb_typeof(p -> 'expectedVersion') is distinct from 'number' then
-      raise exception 'expectedVersion required for update';
-    end if;
-    v_id := (v_target ->> 'id')::uuid;
-    v_expected := (p ->> 'expectedVersion')::integer;
-    select * into v_block from public.calendar_blocks
-      where id = v_id and user_id = v_owner for update;
-    if not found then raise exception 'Calendar block not found'; end if;
-    if v_block.version is distinct from v_expected then
-      v_receipt := pg_catalog.jsonb_build_object(
-        'operationId',v_operation_id::text,'status','conflict',
-        'changed',pg_catalog.jsonb_build_array(),'actionNo',null,
-        'current',pg_catalog.to_jsonb(v_block),
-        'conflict',pg_catalog.jsonb_build_object(
-          'expectedVersion',v_expected,'currentVersion',v_block.version)
-      );
-    else
-      if v_operation = 'delete' then
-        delete from public.calendar_blocks where id = v_id and user_id = v_owner;
-        v_block.version := v_block.version + 1;
-      else
-      -- The existing row supplies omitted keys; explicit null stays null.
-      -- The allow-list forbids owner, ID, and version edits.
-      select * into v_new from pg_catalog.jsonb_populate_record(v_block, v_patch);
-      update public.calendar_blocks set
-        kind = v_new.kind, title = v_new.title,
-        starts_at = v_new.starts_at, ends_at = v_new.ends_at,
-        time_zone = v_new.time_zone, status = v_new.status,
-        subject_id = v_new.subject_id, project_id = v_new.project_id,
-        checkpoint_id = v_new.checkpoint_id, session_id = v_new.session_id,
-        task_id = v_new.task_id,
-        version = version + 1
-      where id = v_id and user_id = v_owner
-      returning * into v_block;
-      end if;
-    end if;
-  end if;
-
-  if v_receipt is null then
-    v_receipt := pg_catalog.jsonb_build_object(
-      'operationId',v_operation_id::text,'status','ok',
-      'changed',pg_catalog.jsonb_build_array(
-        pg_catalog.jsonb_build_object('id',v_block.id,'version',v_block.version)
-      ),
-      'actionNo',null
-    );
-  end if;
-  if v_receipt ->> 'status' = 'ok' then
-    select a.no into v_action_no from public.actions a
-      where a.txid = pg_catalog.txid_current() and a.user_id = v_owner;
-    if v_action_no is null then raise exception 'Calendar change has no journal action'; end if;
-    v_receipt := pg_catalog.jsonb_set(v_receipt, '{actionNo}', pg_catalog.to_jsonb(v_action_no));
-  end if;
-  insert into public.command_receipts(user_id,operation_id,resource,result)
-    values(v_owner,v_operation_id,v_resource,v_receipt);
-  return v_receipt;
-end
-$study$;
-
-           or (p->>'leaseVersion')::numeric>2147483647 then
-          return pg_catalog.jsonb_build_object('operationId',v_operation_id,
-            'status','conflict','changed','[]'::jsonb,'actionNo',null,
-            'conflict',pg_catalog.jsonb_build_object(
-              'reason','active timer lease belongs to another device',
-              'leaseVersion',v_timer.lease_version));
-        end if;
-        if (p->>'leaseVersion')::integer<>v_timer.lease_version then
-          return pg_catalog.jsonb_build_object('operationId',v_operation_id,
-            'status','conflict','changed','[]'::jsonb,'actionNo',null,
-            'conflict',pg_catalog.jsonb_build_object(
-              'reason','timer lease generation changed',
-              'leaseVersion',v_timer.lease_version));
-        end if;
-      end if;
-    end if;
-  end if;
-  -- The authorised invoker command is the audit boundary for both N11 and
-  -- N52 study writes; direct owner-table DML cannot spoof an active lease.
+  -- N52 adds an owner/device guard for legacy writes, without changing
+  -- their command grammar, journal, receipt or optimistic version behavior.
+  v_timer_conflict:=public.lemma_study_timer_lease_conflict(p,v_owner);
+  if v_timer_conflict is not null then return v_timer_conflict; end if;
   if v_resource in ('study_entries','study_intervals') then
     perform pg_catalog.set_config('lemma.tool','study',true);
   end if;
@@ -786,10 +666,9 @@ $study$;
 end
 $study$;
 
--- Keep the established SQL public API as a tiny compatibility delegate.
--- Its owner-bound N11/N51 body is in the NEW invoker function above, which
--- now also performs N52 lease and timer dispatch, avoiding any inline
--- data-rewriting statements in this replacement DDL.
+
+-- Same public study_command signature, all old behavior delegated to a new
+-- SECURITY INVOKER compatibility body plus owner-scoped N52 branches.
 revoke all on function public.lemma_study_command_v2_compat(jsonb) from public,anon;
 grant execute on function public.lemma_study_command_v2_compat(jsonb)
  to authenticated,service_role;
@@ -797,4 +676,3 @@ create or replace function public.study_command(p jsonb) returns jsonb
 language sql volatile security invoker set search_path='' as $n52_delegate$
  select public.lemma_study_command_v2_compat(p)
 $n52_delegate$;
-
