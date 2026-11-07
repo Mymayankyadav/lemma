@@ -271,9 +271,18 @@ begin
      if v_patch->>'due_date' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
       raise exception 'Invalid task due_date'; end if;
     end if;
+    -- Task instants must be finite and zoned: never inherit server TimeZone.
     if v_patch?'due_at' and v_patch->'due_at'<>'null'::jsonb then
-     if v_patch->>'due_at' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T' then
-      raise exception 'Invalid task due_at'; end if;
+     if v_patch->>'due_at' !~
+       '^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]([.][0-9]{1,6})?(Z|[+-](0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)$'
+       then raise exception 'Invalid task due_at: explicit timezone required'; end if;
+     begin
+      if not pg_catalog.isfinite((v_patch->>'due_at')::timestamptz) then
+       raise exception 'Invalid task due_at: finite instant required'; end if;
+     exception
+      when invalid_datetime_format or datetime_field_overflow then
+       raise exception 'Invalid task due_at: malformed calendar instant';
+     end;
     end if;
     insert into public.tasks(
       user_id,title,body,subject_id,project_id,checkpoint_id,

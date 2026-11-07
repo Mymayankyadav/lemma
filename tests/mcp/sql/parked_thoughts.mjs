@@ -258,6 +258,43 @@ try{
  assert.equal((await q('select version from public.parked_thoughts where id=$1',
   [thoughtId]))[0].version,4);
 
+ // Invalid or timezone-naive conversion instants must never create a task
+ // or resolve a thought; valid zoned instants retain their absolute time.
+ const beforeInvalidDue=(await q(
+  'select count(*)::int n from public.tasks where user_id=$1',[owner]))[0].n;
+ let invalidDueNo=20;
+ for(const dueAt of [
+  '2026-11-07T08:00:00', '2026-11-07T08:00:00+15:00',
+  '2026-11-07T08:00:00+14:30', 'infinity',
+  '2026-02-30T08:00:00Z'
+ ]) {
+  await assert.rejects(command(envelope('convert_to_task',
+   idBase+String(invalidDueNo++).padStart(12,'0'),{
+    title:'Do not create from ambiguous instant',
+    due_kind:'instant',due_at:dueAt,
+   },thoughtId,4)),/Invalid task due_at/,
+   'conversion must reject timezone-naive, invalid-offset and bad civil dates');
+  assert.equal((await q('select count(*)::int n from public.tasks where user_id=$1',
+   [owner]))[0].n,beforeInvalidDue,'invalid instant must not create task');
+  const untouched=(await q(
+   'select status,version,destination_id from public.parked_thoughts where id=$1',
+   [thoughtId]))[0];
+  assert.equal(untouched.status,'open');
+  assert.equal(untouched.version,4);
+  assert.equal(untouched.destination_id,null);
+ }
+ const zonedThought=await command(envelope('create',
+  idBase+'000000000030',{text:'Zoned instant conversion'}));
+ const zoneReceipt=await command(envelope('convert_to_task',
+  idBase+'000000000031',{
+    title:'Respect explicit timezone',due_kind:'instant',
+    due_at:'2026-11-09T09:30:00+05:30',
+  },zonedThought.thought.id,1));
+ assert.equal(zoneReceipt.status,'ok');
+ assert.equal(new Date(zoneReceipt.task.due_at).toISOString(),
+  '2026-11-09T04:00:00.000Z',
+  'explicit offset must not be reinterpreted in server timezone');
+
  const conversionCommand=envelope('convert_to_task',idBase+'000000000009',
   {title:'Prove inequality',body:'Write down both bounds',
    estimate_minutes:35,priority:'high',due_kind:'date',
