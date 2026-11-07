@@ -189,7 +189,9 @@ try {
  assert.equal((await q(refQuery,[owner,id]))[0].referenced,false);
  await assert.rejects(q(refQuery,[other,id]),/Not authorized/);
  await admin();
- await q('alter table public.study_entries add column preset_id uuid');
+ // bug #1110: N52 adds study_entries.preset_id (owner-composite FK) in a later migration; the
+ // in-memory fixture only adds it when the full migration set does not already provide it.
+ await q('alter table public.study_entries add column if not exists preset_id uuid');
  await q("insert into public.study_entries(user_id,source,intent,preset_id) values($1,'manual','Preset reference fixture',$2)",
    [owner,id]);
  await as(owner);
