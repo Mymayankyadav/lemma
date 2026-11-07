@@ -103,6 +103,7 @@ try{
  assert.equal(graded.review_id,reviewA);assert.equal(graded.state,'graded');
  const stale=(await q("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,stale_reason) values($1,$2,2,$3,1,'stale','Card version changed') returning *",[owner,runA.id,cardA]))[0];
  assert.equal(stale.state,'stale');
+ const commandInstalled=(await q("select to_regprocedure('public.review_runs_command(jsonb)') is not null as yes"))[0].yes;
  for(const table of ['review_runs','review_run_items']){
   assert.equal((await q("select relrowsecurity from pg_class where oid=('public.'||$1)::regclass",[table]))[0].relrowsecurity,true);
   const policy=await q('select cmd from pg_policies where tablename=$1',[table]);
@@ -110,7 +111,8 @@ try{
   const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/'+table+'.json',import.meta.url),'utf8'));
   const cols=(await q("select attname from pg_attribute where attrelid=('public.'||$1)::regclass and attnum>0 and not attisdropped",[table])).map(x=>x.attname).sort();
   assert.deepEqual(Object.keys(doc.columns).sort(),cols,'exact capability registry coverage');
-  assert.equal((await q('select count(*)::int n from public.lemma_undo_tables where table_name=$1',[table]))[0].n,0);
+  assert.equal((await q('select count(*)::int n from public.lemma_undo_tables where table_name=$1',[table]))[0].n,Number(commandInstalled),
+    'N48.1 stays unregistered until N48.2 installs its audited command');
  }
  await as(owner);
  const rows=await q('select id from public.review_runs order by id');
@@ -141,8 +143,16 @@ try{
  assert.equal((await q('select count(*)::int n from public.review_runs where id=$1',[runA.id]))[0].n,1);
  assert.equal((await q('select count(*)::int n from public.review_run_items where id=$1',[item.id]))[0].n,1);
  const registered=(await q("select count(*)::int n from public.lemma_command_resources where resource='review_runs'"))[0].n;
- assert.equal(registered,0,'N48.2 registers only after command is implemented');
+ assert.equal(registered,Number(commandInstalled),
+  'N48.2 registration must exist exactly when its command is installed');
  const journal=await q("select table_name from public.action_changes where table_name in ('review_runs','review_run_items')");
- assert.deepEqual(journal,[],'staged records are not prematurely journalled');
+ if(commandInstalled){
+  assert.ok(journal.some(x=>x.table_name==='review_runs'),
+   'command activation journals run changes');
+  assert.ok(journal.some(x=>x.table_name==='review_run_items'),
+   'command activation journals queued-item changes');
+ }else{
+  assert.deepEqual(journal,[],'N48.1 staging must not create unaudited journal entries');
+ }
  console.log('PASS N48.1 durable review run storage, card/review links, owner RLS and immutable staging');
 }finally{await db.close();}
