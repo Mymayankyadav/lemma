@@ -376,3 +376,7 @@ The reviewed N36.2 registry-backed `undo_action` and `mcp_command` migration, re
 ## N38 version/provenance queue reconciliation (2026-11-07)
 
 The original additive N38 migration `20261106201000_record_versions.sql` and its all-14-table PGlite acceptance have already been restored to main and applied to production by the earlier S0 recovery. N38 remained open in NEXT.md after automatic revert bookkeeping. This item removes that stale queue block and strengthens the existing SQL test to reject caller-forged `updated_source='worker'` during MCP-attributed updates. The previously reviewed migration and all fourteen tables remain unchanged; no duplicate DDL or new dependency is introduced.
+
+## N41.2.1 (2026-11-07): preset command foundation
+
+The N41.1 owner-scoped `presets` table now has a direct, security-invoker `presets_command(jsonb)` for create and update, with a private request-backed receipt, operationId retry/conflict detection, owner isolation, optimistic version checks, allowlisted patch fields and action journaling. The app's existing create/update RPC path can use it. Reorder, archive, restore and delete remain unavailable until N41.2.2 registers the complete command for MCP dispatch and undo. The existing N41.1 full-migration registry assertion remains valid until that registration. Tests: `tests/mcp/sql/presets-command.mjs`.
