@@ -149,12 +149,6 @@ Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57.2 · Assigned: —
-Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
-Tests: `tests/unit/practice-ui/**`
-Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
