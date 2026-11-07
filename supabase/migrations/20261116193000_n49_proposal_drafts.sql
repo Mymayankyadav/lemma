@@ -34,7 +34,7 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
   owner uuid:=(select auth.uid());v_role text:=pg_catalog.current_setting('role',true);
   op text;oid uuid;draft public.proposal_drafts%rowtype;proposal public.proposals%rowtype;
   expected integer;patch jsonb;v_target jsonb;v_id uuid;
-  previous jsonb;reply jsonb;v_action bigint;bad_field text;v_status text;
+  previous jsonb;reply jsonb;v_action bigint;bad_field text;v_revision jsonb;
  begin
   if owner is null or v_role not in ('authenticated','service_role') then
    raise exception 'Authenticated owner required';end if;
@@ -118,6 +118,12 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
     reply:=pg_catalog.jsonb_build_object('status','conflict','operationId',oid,
       'reason','Stale draft version','currentVersion',draft.draft_version,
       'actionNo',null,'changed','[]'::jsonb);
+   elsif exists(select 1 from public.proposal_drafts newer
+       where newer.user_id=owner and newer.proposal_id=draft.proposal_id
+         and newer.status in ('draft','saved')
+         and (newer.created_at,newer.id)>(draft.created_at,draft.id)) then
+    reply:=pg_catalog.jsonb_build_object('status','conflict','operationId',oid,
+      'reason','Newer draft exists','actionNo',null,'changed','[]'::jsonb);
    elsif draft.status not in ('draft','saved') then
     raise exception 'Draft is terminal'; 
    elsif op='discard' then
@@ -132,6 +138,7 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
      where id=draft.id and user_id=owner returning * into draft;
    elsif op='submit' then
     if patch<>'{}'::jsonb then raise exception 'Submit uses previously saved payload';end if;
+    if draft.status<>'saved' then raise exception 'Save the draft before submitting';end if;
     select * into proposal from public.proposals
      where id=draft.proposal_id and user_id=owner for update;
     if not found or proposal.status<>'pending' or proposal.withdrawn_at is not null then
@@ -139,11 +146,10 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
     if proposal.version<>draft.base_proposal_version then
      raise exception 'Proposal changed since draft creation';end if;
     perform public.lemma_proposal_assert_versions(owner,draft.base_versions);
-    -- Submit edits pending proposal only. Approval remains an independent
-    -- owner decision through approve_proposal and is never implied here.
-    update public.proposals set payload=draft.payload,
-      payload_version=payload_version+1
-     where id=proposal.id and user_id=owner;
+    -- N92's audited edit path creates an explicit successor and withdraws
+    -- the original. Draft submit alone NEVER calls approve_proposal.
+    select public.revise_proposal(proposal.id,draft.payload,null,draft.base_versions)
+      into v_revision;
     update public.proposal_drafts set status='submitted',draft_version=draft_version+1,
      edited_at=pg_catalog.clock_timestamp() where id=draft.id and user_id=owner
      returning * into draft;
@@ -155,8 +161,12 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
    if v_action is null then raise exception 'Draft command has no audit action';end if;
    reply:=pg_catalog.jsonb_build_object('status','ok','operationId',oid,
      'actionNo',v_action,'changed',pg_catalog.jsonb_build_array(
-       pg_catalog.jsonb_build_object('id',draft.id,'version',draft.draft_version)),
-     'draft',pg_catalog.to_jsonb(draft));
+       pg_catalog.jsonb_build_object('resource','proposal_drafts','id',draft.id,'version',draft.draft_version))
+       ||case when v_revision is not null then pg_catalog.jsonb_build_array(
+         pg_catalog.jsonb_build_object('resource','proposals','id',v_revision->>'id',
+           'version',v_revision->'version')) else '[]'::jsonb end,
+     'draft',pg_catalog.to_jsonb(draft),
+     'revisedProposalId',v_revision->>'id');
   end if;
   insert into public.command_receipts(user_id,operation_id,resource,result)
    values(owner,oid,'proposal_drafts',

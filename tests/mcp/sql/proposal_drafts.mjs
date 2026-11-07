@@ -25,6 +25,8 @@ try {
  assert(names.includes('20261116193000_n49_proposal_drafts.sql'));
  for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[owner,'a'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[other,'b'.repeat(48)]);
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','cyan')",[sub,owner]);
  await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'axioms','Axioms','Study')",[project,owner,sub]);
  await q("insert into public.proposals(id,user_id,project_id,kind,payload,reason,origin) values($1,$2,$3,'card',$4::jsonb,'Revise','chatgpt')",[proposal,owner,project,JSON.stringify({front:'One',back:'One answer'})]);
@@ -44,12 +46,59 @@ try {
  assert.equal(saved.draft.draft_version,2);
  assert.equal((await command(op('save',{payload:{front:'Stale'}},{id},1))).status,'conflict');
  assert.equal((await q('select status from public.proposals where id=$1',[proposal]))[0].status,'pending');
- const submit=await command(op('submit',{}, {id},2));
+ const submitRequest=op('submit',{}, {id},2);
+ const submit=await command(submitRequest);
  assert.equal(submit.status,'ok');assert.equal(submit.draft.status,'submitted');
- assert.equal((await q("select payload->>'front' front from public.proposals where id=$1",[proposal]))[0].front,'Final');
- assert.equal((await q('select status from public.proposals where id=$1',[proposal]))[0].status,'pending','submit is not approval');
+ assert.equal((await command(submitRequest)).revisedProposalId,submit.revisedProposalId,
+   'same submit receipt replays without a second successor');
+ assert.ok(submit.revisedProposalId,'submission returns the versioned N92 successor');
+ assert.equal((await q("select payload->>'front' front from public.proposals where id=$1",
+  [submit.revisedProposalId]))[0].front,'Final');
+ assert.ok((await q("select withdrawn_at from public.proposals where id=$1",[proposal]))[0].withdrawn_at,
+   'N92 revision withdraws the original proposal, rather than rewriting it');
+ assert.equal((await q('select status from public.proposals where id=$1',[submit.revisedProposalId]))[0].status,
+  'pending','submit is never an approval');
+ assert.equal((await q("select count(*)::int n from public.proposals where revised_from=$1",[proposal]))[0].n,1);
+ assert.equal(submit.changed.length,2,'receipt identifies the draft and its successor');
+ // Undo reverses the entire single journal action: parent withdraw, new
+ // revision, and submitted draft (without losing the saved draft).
+ await db.exec('reset role');
+ await q("select set_config('test.uid',$1,false)",[owner]);
+ const undone=(await q('select public.undo_action($1,$2,false) value',[owner,submit.actionNo]))[0].value;
+ assert.equal(Number(undone.undone),Number(submit.actionNo));
+ assert.equal((await q('select count(*)::int n from public.proposals where id=$1',
+  [submit.revisedProposalId]))[0].n,0);
+ assert.equal((await q('select withdrawn_at from public.proposals where id=$1',[proposal]))[0].withdrawn_at,null);
+ assert.equal((await q('select status from public.proposal_drafts where id=$1',[id]))[0].status,'saved');
+ await db.exec('set role authenticated');
+ await q("select set_config('test.uid',$1,false)",[owner]);
+ // Create a second draft of the same pending proposal: the older saved
+ // draft cannot silently overwrite the more recent draft.
+ const newer=await command(op('create',{proposal_id:proposal,payload:{front:'Newer',back:'Newer A'}}));
+ const stale=await command(op('save',{payload:{front:'Old overwritten'}},{id},2));
+ assert.equal(stale.status,'conflict');assert.match(stale.reason,/Newer draft/);
+ const discarded=await command(op('discard',{}, {id:newer.draft.id},1));
+ assert.equal(discarded.draft.status,'discarded');
+ await assert.rejects(command(op('save',{}, {id},2)),/Save needs a complete payload/);
+ // Owner isolation is enforced even through the security-definer RPC.
  await q("select set_config('test.uid',$1,false)",[other]);
  await assert.rejects(command(op('discard',{}, {id},3)),/not found for owner/i);
+ // MCP service_role must operate as the supplied owner, not as service_role's
+ // own user. It uses identical receipt semantics and provenance.
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpRequest=op('create',{proposal_id:proposal,payload:{front:'MCP',back:'MCP A'}});
+ const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) result',
+  [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
+ assert.equal(mcp.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.proposal_drafts where id=$1',
+  [mcp.draft.id]))[0].n,1);
+ const mcpAction=(await q('select source,user_id from public.actions where no=$1',[mcp.actionNo]))[0];
+ assert.equal(mcpAction.source,'chatgpt');
+ assert.equal(mcpAction.user_id,owner);
+ await db.exec('reset role');
+
  await db.exec('reset role');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='proposal_drafts'"))[0].n,1);
  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='proposal_drafts'"))[0].n,1);
