@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Link,useNavigate} from 'react-router';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {CalendarDays,Clock3,RotateCcw,Target} from 'lucide-react';
 import {getApi} from '../../data';
 import {useSettings} from '../../data/hooks';
@@ -153,5 +153,9 @@ function LegacyReviewDonePage(){
 }
 
 export default function Page(){
- return isFlagOn('v6Shell')?<ReviewDoneV6/>:<LegacyReviewDonePage/>;
+ const [search]=useSearchParams();
+ // Existing local reminder/legacy rounds have no durable run ID and retain
+ // their Done page, including reminder offers and the ordinary Done action.
+ return isFlagOn('v6Shell')&&search.has('run')?
+  <ReviewDoneV6/>:<LegacyReviewDonePage/>;
 }

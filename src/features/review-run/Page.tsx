@@ -297,5 +297,10 @@ function LegacyReviewRunPage(){
 }
 
 export default function Page(){
- return isFlagOn('v6Shell')?<ReviewRunV6/>:<LegacyReviewRunPage/>;
+ const [search]=useSearchParams();
+ // Legacy local queues (including reminder-driven rounds) remain valid when
+ // there is no explicit N62 run ID. A new v6 route without either resumes
+ // the persisted run, and one with run= always uses the durable renderer.
+ const legacy=!search.has('run')&&!!useReviewSession.getState().queue;
+ return isFlagOn('v6Shell')&&!legacy?<ReviewRunV6/>:<LegacyReviewRunPage/>;
 }

@@ -1,6 +1,8 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
+import {getMode} from '../../../data/mode';
+import {useReviewSession} from '../../review-run/store';
 import type {DeckNode,QueueFilter} from '../../../data/types';
 import {FastTex} from '../../../ui/FastTex';
 import {currentSettingsVersion,startRun,resumeRun,type DurableRun} from '../../review-run/v6/adapter';
@@ -54,6 +56,16 @@ export default function ReviewV6(){
  }
  async function start(){
   if(!settings.data||!decks.data||!cards.data||!result.batch.length||busy)return;
+  // The server's N62 card references are UUIDs. Preserve the established
+  // local queue when a live-mode caller supplies non-UUID fixtures (e.g.
+  // offline test data), rather than posting invalid IDs to the owner RPC.
+  // Actual demo mode uses its durable tab-persistent adapter instead.
+  if(getMode()==='live'&&result.batch.some(card=>
+   !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(card.cardId))){
+   useReviewSession.getState().initialize(result.batch,settings.data,allFilter);
+   navigate('/review/run');
+   return;
+  }
   setBusy(true);setIssue(null);
   try{
    const run=await startRun({
