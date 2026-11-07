@@ -79,13 +79,6 @@ Tests: `tests/unit/study/modes.test.ts`
 Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
 Not: UI, supabase/**, other `src/data/**` folders.
 
-## N68 v6 planner sheet: preview and commit placements behind the shell flag
-Stage: Build · Status: open · Needs: N67, N65, N60.2 · Assigned: —
-Done = with `v6Shell` on, a Plan action on Today and Calendar opens a titled native dialog that previews placements for the selected tasks over the chosen days (from N67), lets the owner deselect or move items, and commits only the selected placements as study blocks with `taskId` and the day plan's `commit` (refused with an explanation when a task or block changed since the preview); unplaced work stays listed with its reason; one toast with Undo. Flag off: nothing changes.
-Tests: `tests/unit/planner/sheet.test.tsx` (preview, deselect, stale-preview refusal, unplaced reasons, Undo)
-Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and src/features/calendar/Page.tsx (opening the sheet only), tests/unit/planner/sheet.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N69 v6 day ritual and closure behind the shell flag
 Stage: Build · Status: open · Needs: N60.2, N58.2.3 · Assigned: —
 Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
