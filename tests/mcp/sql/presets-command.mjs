@@ -1,5 +1,5 @@
 // N41.2.1: full-migration PGlite create/update/reorder command acceptance.
-// N41.2.2 will test archive/restore/delete, registry, undo, and MCP parity.
+// N41.2.2.2.2.2 (end of file): archive/restore/delete, registry, undo and MCP parity.
 import assert from 'node:assert/strict';
 import {readdir,readFile} from 'node:fs/promises';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
@@ -110,9 +110,11 @@ try {
     target:{id},expectedVersion:3})),/Unknown preset patch field/);
   await assert.rejects(call(request('create',{label:'Bad',subject_id:otherSubject})),
     /constraint|violates/i);
-  await assert.rejects(call(request('archive',{},{
-    target:{id},expectedVersion:3})),/Unsupported preset operation/,
-    'archive/restore/delete intentionally finish in N41.2.2');
+  await assert.rejects(call(request('archive',{label:'x'},{
+    target:{id},expectedVersion:3})),/Lifecycle patch/,
+    'lifecycle operations accept no patch fields');
+  await assert.rejects(call(request('purge',{},{
+    target:{id},expectedVersion:3})),/Unsupported preset operation/);
 
   await as(other);
   const second=await call(request('create',{label:'Other owner'}));
@@ -179,7 +181,7 @@ try {
   await assert.rejects(preview(deleteEnvelope),/permission denied|Authentication required/i);
   await admin();
   const registered=(await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n;
-  assert.equal(registered,0,'registry activation belongs to N41.2.2, preserving N41.1 historical assertions');
+  assert.equal(registered,1,'N41.2.2.2.2.2 registers presets_command for mcp_command');
  // N41.2.2.1: owner-bound reference detection, before and after N52's
  // optional preset_id column. All schema simulation is in memory only.
  await as(owner);
@@ -213,7 +215,7 @@ try {
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n,
    auditBeforePreview,'read-only lifecycle preview must not generate journal writes');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
-   0,'do not activate registry before scoped N41.2.2.2.2 and bug #1024');
+   1,'exactly one presets registry row');
 
   // Snapshot race regression: a STABLE preview retains the outer statement's
   // original snapshot even when a VOLATILE command advances a preset in the
@@ -246,7 +248,130 @@ try {
     'a matching new version still preserves referenced study-entry history');
   await admin();
   assert.equal((await q("select count(*)::int n from public.presets where id=$1",[id]))[0].n,1);
-  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,0);
+  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,1);
 
-  console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
+  // N41.2.2.2.2.2: archive/restore/delete writes, receipts, undo and MCP parity.
+  const mcp=async (ownerId,source,p)=>{
+    await admin();await db.exec('set role service_role');
+    try{return (await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) value',
+      [ownerId,source,JSON.stringify(p)]))[0].value;}finally{await admin();}
+  };
+  const undo=async (ownerId,actionNo)=>{
+    await as(ownerId);
+    try{return (await q('select public.undo_action($1::uuid,$2::bigint,false) value',[ownerId,actionNo]))[0].value;}
+    finally{await admin();}
+  };
+  const preset=async pid=>(await q('select * from public.presets where id=$1',[pid]))[0];
+  const counts=async()=>(await q(`select (select count(*)::int from public.actions) actions,
+    (select count(*)::int from public.command_receipts) receipts`))[0];
+  await admin();
+  const registry=(await q("select command_fn,mcp_ok,\"schema\" from public.lemma_command_resources where resource='presets'"))[0];
+  assert.equal(registry.command_fn,'presets_command');
+  assert.equal(registry.mcp_ok,true);
+  assert.deepEqual(registry.schema.operations,['create','update','reorder','archive','restore','delete']);
+  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='presets'"))[0].n,1);
+  const logTriggers=await q(`select t.tgname from pg_trigger t join pg_proc f on f.oid=t.tgfoid
+    where t.tgrelid='public.presets'::regclass and not t.tgisinternal and f.proname='log_change'`);
+  assert.deepEqual(logTriggers.map(r=>r.tgname),['lemma_log_change'],'exactly one journal trigger, standard name');
+
+  await as(owner);
+  const fresh=(await call(request('create',{label:'Lifecycle'}))).changed[0].id;
+  const archive=request('archive',{}, {target:{id:fresh},expectedVersion:1});
+  const archived=await call(archive);
+  assert.equal(archived.status,'ok');
+  assert.equal(archived.effectiveOperation,'archive');
+  assert.deepEqual(archived.changed,[{id:fresh,version:2}]);
+  assert.ok(Number.isSafeInteger(archived.actionNo)&&archived.actionNo>0);
+  let lr=await preset(fresh);
+  assert.ok(lr.archived_at,'archive sets archived_at');
+  assert.equal(lr.source,'app');
+  const before=await counts();
+  assert.deepEqual(await call(archive),archived,'exact replay returns the stored receipt');
+  assert.deepEqual(await counts(),before,'replay journals nothing and stores no receipt');
+  const reusedLifecycle=await call({...archive,operation:'restore'});
+  assert.equal(reusedLifecycle.status,'conflict');
+  assert.match(reusedLifecycle.conflict.reason,/different payload/);
+  await assert.rejects(call(request('archive',{}, {target:{id:fresh},expectedVersion:2})),/already archived/);
+  const staleLifecycle=await call(request('restore',{}, {target:{id:fresh},expectedVersion:1}));
+  assert.equal(staleLifecycle.status,'conflict');
+  assert.equal(staleLifecycle.actionNo,null);
+  assert.equal(staleLifecycle.conflict.currentVersion,2);
+  assert.equal(staleLifecycle.current.version,2);
+  assert.equal((await preset(fresh)).version,2,'optimistic conflict does not write');
+  const restored=await call(request('restore',{}, {target:{id:fresh},expectedVersion:2}));
+  assert.equal(restored.status,'ok');
+  assert.equal(restored.effectiveOperation,'restore');
+  assert.equal((await preset(fresh)).archived_at,null);
+  await assert.rejects(call(request('restore',{}, {target:{id:fresh},expectedVersion:3})),/not archived/);
+
+  // undo of the restore re-archives; journal and version follow the original lr
+  const undoneRestore=await undo(owner,restored.actionNo);
+  assert.equal(undoneRestore.undone,restored.actionNo);
+  await as(owner);
+  lr=await preset(fresh);
+  assert.ok(lr.archived_at,'undo of restore puts archived_at back');
+  assert.equal(lr.version,2);
+
+  // unreferenced delete is physical; replay survives deletion; undo restores the lr
+  await as(owner);
+  const doomed=(await call(request('create',{label:'Doomed',focus_minutes:50}))).changed[0].id;
+  const del=request('delete',{}, {target:{id:doomed},expectedVersion:1});
+  const deleted=await call(del);
+  assert.equal(deleted.status,'ok');
+  assert.equal(deleted.effectiveOperation,'delete');
+  assert.deepEqual(deleted.changed,[{id:doomed,version:1,deleted:true}]);
+  assert.equal(await preset(doomed),undefined,'unreferenced preset is deleted');
+  assert.deepEqual(await call(del),deleted,'receipt replay works after physical deletion');
+  await assert.rejects(call(request('delete',{}, {target:{id:doomed},expectedVersion:1})),/Preset not found/);
+  await undo(owner,deleted.actionNo);
+  await as(owner);
+  lr=await preset(doomed);
+  assert.equal(lr.label,'Doomed','undo restores a deleted preset');
+  assert.equal(lr.focus_minutes,50);
+  assert.equal(lr.user_id,owner);
+
+  // a preset referenced by a study entry is archived, never deleted (history is kept)
+  const kept=await call(request('delete',{}, {target:{id},expectedVersion:4}));
+  assert.equal(kept.status,'ok');
+  assert.equal(kept.effectiveOperation,'archive','referenced delete archives instead');
+  lr=await preset(id);
+  assert.ok(lr&&lr.archived_at,'referenced preset still exists, archived');
+  assert.equal(lr.version,5);
+  await admin();
+  assert.equal((await q('select count(*)::int n from public.study_entries where preset_id=$1',[id]))[0].n,1,
+    'study entry history unchanged');
+  await as(owner);
+  await assert.rejects(call(request('delete',{}, {target:{id},expectedVersion:5})),/referenced by study entries and already archived/);
+
+  // owner separation: another owner can neither see nor change these presets
+  await as(other);
+  await assert.rejects(call(request('archive',{}, {target:{id:doomed},expectedVersion:1})),/Preset not found/);
+  await assert.rejects(call(request('delete',{}, {target:{id},expectedVersion:5})),/Preset not found/);
+  await db.exec('set role anon');
+  await assert.rejects(call(request('archive',{}, {target:{id:doomed},expectedVersion:1})),/permission denied|Authentication required/);
+
+  // MCP parity: the registered dispatcher runs the same command with MCP attribution
+  const viaMcp=request('archive',{}, {target:{id:doomed},expectedVersion:1});
+  const mcpArchived=await mcp(owner,'claude',viaMcp);
+  assert.equal(mcpArchived.status,'ok');
+  assert.equal(mcpArchived.effectiveOperation,'archive');
+  await admin();
+  lr=await preset(doomed);
+  assert.ok(lr.archived_at);
+  assert.equal(lr.source,'mcp','MCP writes are attributed to mcp');
+  assert.equal((await q('select source from public.actions where no=$1',[mcpArchived.actionNo]))[0].source,'claude');
+  assert.deepEqual(await mcp(owner,'claude',viaMcp),mcpArchived,'MCP replay returns the same receipt');
+  // undo before the next MCP call: a later connector-client change on settings would block it (D7 rule)
+  await undo(owner,mcpArchived.actionNo);
+  assert.equal((await preset(doomed)).archived_at,null,'undo works for MCP lifecycle writes');
+  const mcpCreate=await mcp(owner,'chatgpt',request('create',{label:'From MCP'}));
+  assert.equal(mcpCreate.status,'ok');
+  assert.equal((await preset(mcpCreate.changed[0].id)).user_id,owner);
+  await assert.rejects(mcp(owner,'claude',request('archive',{}, {target:{id:otherId},expectedVersion:1})),/Preset not found/,
+    'MCP cannot reach another owner preset');
+  await as(owner);
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) value',
+    [owner,'claude',JSON.stringify(request('create',{label:'Bypass'}))]),/permission denied|Service role required/);
+
+  console.log('PASS N41.2 presets_command create/update/reorder/archive/restore/delete, receipts, versions, owner isolation, undo and MCP parity');
 } finally {await db.close();}
