@@ -562,6 +562,34 @@ Adds src/data/study-events/demo.ts, live.ts and index.ts using N64.1's strict ev
 
 N64.2 CI correction: fixed strict N64.1 patch validation in both demo and live edit flows by passing only entryId/kind/durationMinutes/note/relatedKind/relatedId from stored records, not their server-managed id/version/source/void metadata. This addresses all four linked CI unit failures without modifying or weakening the regression tests. Reverification pending.
 
+## N47.2.2 overlap acknowledgement command envelope validator (N47.2 split)
+
+The additive `overlap_ack_validate_envelope` function validates authenticated command envelopes, operation IDs, versioned update/delete targets, allowed create/update/delete fields, participant structure and exact disposition attribution without changing any table data. A full-migration PGlite test covers valid/invalid envelopes, versions, owner-field rejection, participants, read-only state and anon denial. N47.1's owner SELECT-only RLS, staleness trigger and original tests remain intact. N47.2.3 adds transactional commands, undo/registry registration and service-role MCP parity before write permissions are enabled.
+
+## N47.2.2 create target UUID validation follow-up (2026-11-07)
+
+The unmerged N47.2.2 read-only envelope validator now checks the UUID shape of a caller-supplied create `target.id`, not only update/delete targets; create may still omit the target for server-generated IDs. The full-migration SQL acceptance includes valid supplied IDs and rejects malformed string, numeric and JSON-null IDs. Existing RLS, registry and undo restrictions are unchanged. This remains the first validation slice; N47.2.3 owns the actual transactional lifecycle and production SQL review.
+
+## N47.2.2 instant-window envelope validation and queue reconciliation (2026-11-07)
+
+The unmerged owner-authenticated overlap-acknowledgement validator checks supplied start/end values are real timestamp-with-timezone instants and rejects empty or reversed complete windows, on both create and update. Partial update windows remain valid to be checked against stored row context by N47.2.3's transaction. Added full-migration PGlite regressions for malformed/null/numeric instants, equal/reversed windows and an accepted partial update, without weakening N47.1 or the owner-SELECT-only and no-registry safeguards. Rebuilt the N47.2 split's NEXT.md against current main so unrelated completed item splits are preserved. The command lifecycle, MCP parity and undo remain pending N47.2.3 and independent production review.
+
+## N47.2.2 finite, explicitly zoned ISO instants (2026-11-07)
+
+The read-only command envelope validator now rejects timezone-naive timestamps, Postgres infinity literals and malformed timezone offsets before PostgreSQL timestamp parsing. It accepts explicit ISO-8601 `Z` or valid numeric-offset windows, checks fully supplied start/end ordering and leaves partial updates for the future transaction to resolve against stored records. Full-migration regression cases cover create/update invalid instants on both fields, valid offset windows and preserved partial updates; staged RLS and registry/undo restrictions are unchanged.
+
+## N47.2.2 explicit-null attribution during keep-both transitions (2026-11-07)
+
+The new read-only overlap acknowledgement envelope validator accepts a JSON-null `attributed_to` alongside `keep_both` on create and on complete updates, matching the nullable typed N61.1 API and the SQL NULL interpretation in N47.1's choice guard. It still refuses JSON-null attribution with `attribute_to`, and still checks real participant membership for non-null attribution. Full-migration PGlite regressions cover all three cases. No write permission, command registration, journal or older migration changed; N47.2.3 must implement transactional owner-bound lifecycle and undo.
+
+## N47.2.2 typed attribution shapes on partial updates (2026-11-07)
+
+The read-only overlap acknowledgement envelope validator now checks every provided non-null `attributed_to` choice even in partial updates: it must be an object with only `kind` (block/entry) and a valid UUID `id`. Scalar, array, missing, invalid-kind, malformed-UUID and extra-key choices are rejected before any future transactional write. Explicit null and typed partial choices remain valid, while final participant membership is deferred to N47.2.3's stored-row transaction. Full-migration PGlite positive/negative regressions were added; RLS, journal, registered commands and existing migrations remain unchanged.
+
+## N47.2 audited overlap acknowledgement lifecycle (chat-21963#n6w4)
+
+The lease-expired N47.2 PR was converted from a validation-only split to the complete item without touching existing migrations. Its strict owner-authenticated envelope validator now feeds an owner-checked, receipt-backed create/update/delete RPC. The command locks real participants to check owner, version and retained attribution against the complete resulting patch, serializes exact operationId retries, returns changed-payload/stale-version conflicts, and records one reversible action via N47.1's existing overlap_ack_log trigger. Both undo_action and generic service-role mcp_command use new command-registry/undo metadata; no direct authenticated table writes are enabled. The existing overlap_ack_guard receives a compatible undo-only bypass to preserve prior snapshots when the generic inverse restores rows, retaining the original version and staleness checks for ordinary writes. The expanded full-migration PGlite regression verifies owner separation, all three operations, immutable receipt replay, stale participants, linked ownership, journal count, create/update/delete undo and MCP provenance. SQL review and CI are required before deploy; no production mutation was performed by this agent.
+
 ## N50.2.2 complete owner-only study-event command lifecycle (chat-62804#p9h6)
 
 The additive `20261110000000_study_events_related_links.sql` migration adds owner-checked optional related task/block/entry links and a receipt-idempotent `study_events_command` with record, edit, void and restore. The existing study_events row audit and version triggers remain the only real writers; a no-op `lemma_log_change` marker satisfies the registry convention without duplicate journaling. All commands validate owner-linked study entries, kinds/durations and related pairs, reject stale versions and altered-retry payloads, preserve voided history, expose undo_action and service-role MCP dispatch, and forbid unaudited authenticated table DML. Existing envelope and N50.1 invariants stay in tests; new full-migration SQL assertions cover the lifecycle, owner isolation, retries, journal, undo and MCP. This is not a production deployment claim; reviewed merge only after checks and migration-history gate.
