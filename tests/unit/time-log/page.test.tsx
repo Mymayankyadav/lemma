@@ -2,10 +2,11 @@ import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
-import TimeLog,{csvLog,visibleLogRange} from '../../../src/features/time-log/Page';
+import TimeLog,{csvLog,visibleLogRange,visibleLogRecords} from '../../../src/features/time-log/Page';
 import {setStudyApiForTests} from '../../../src/data/study';
 import {emptyStudyApi,type StudyEntryRecord,type StudyApi} from '../../../src/data/study/contract';
 import {isFlagOn} from '../../../src/flags';
+import {getMode} from '../../../src/data/mode';
 vi.mock('../../../src/flags',()=>({isFlagOn:vi.fn(()=>true)}));
 const at='2026-11-06T09:00:00.000Z',end='2026-11-06T09:30:00.000Z';
 function row(id='row-1',version=1):StudyEntryRecord{
@@ -15,18 +16,18 @@ function row(id='row-1',version=1):StudyEntryRecord{
 }
 function api(initial:StudyEntryRecord[]=[row()]){
  let rows=[...initial];
- const client={...emptyStudyApi('demo'),
+ const client={...emptyStudyApi(getMode()),
   listStudyEntries:vi.fn(async()=>rows.slice()),
   correctStudyEntry:vi.fn(async(id:string,version:number,patch:Record<string,unknown>)=>{
    rows=rows.map(r=>r.id===id?{...r,version:version+1,...patch}:r);
    return {record:rows.find(r=>r.id===id)!,actionNo:1};
   }),
   voidStudyEntry:vi.fn(async(id:string,version:number)=>{
-   rows=rows.map(r=>r.id===id?{...r,version:version+1,voidedAt:at}:r);
+   rows=rows.map(r=>r.id===id?{...r,version:version+1,status:'discarded',voidedAt:at}:r);
    return {record:rows[0],actionNo:1};
   }),
   restoreStudyEntry:vi.fn(async(id:string,version:number)=>{
-   rows=rows.map(r=>r.id===id?{...r,version:version+1,voidedAt:null}:r);
+   rows=rows.map(r=>r.id===id?{...r,version:version+1,status:'saved',voidedAt:null}:r);
    return {record:rows[0],actionNo:1};
   }),
   splitStudyEntry:vi.fn(async(id:string,version:number)=>{
@@ -67,6 +68,11 @@ async function change(node:HTMLInputElement|HTMLTextAreaElement,value:string){
  await act(async()=>{setter.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));});
 }
 describe('N73 time log',()=>{
+ it('retains only explicitly voided discarded entries for a restore action',()=>{
+  const saved=row('saved'),voided={...row('voided'),status:'discarded' as const,voidedAt:at},
+   unsaved={...row('ordinary-discard'),status:'discarded' as const,voidedAt:null};
+  expect(visibleLogRecords([saved,voided,unsaved]).map(e=>e.id).sort()).toEqual(['saved','voided']);
+ });
  it('uses owner civil boundaries and exports escaped values, unknown ratings and intervals',()=>{
   const range=visibleLogRange('2026-11-01','Asia/Kolkata');
   expect(range.start).toBe('2026-10-31T18:30:00.000Z');
@@ -97,7 +103,10 @@ describe('N73 time log',()=>{
  it('voids and then restores via versioned actions',async()=>{
   const client=api();await render();await click(button('Edit entry'));await click(button('Void entry'));
   await vi.waitFor(()=>expect(client.voidStudyEntry).toHaveBeenCalledWith('row-1',1));
-  await click(button('Edit entry'));await click(button('Restore entry'));
+  expect(host.textContent).toContain('Voided');
+  await click(button('Edit entry'));
+  expect(button('Restore entry')).toBeDefined();
+  await click(button('Restore entry'));
   await vi.waitFor(()=>expect(client.restoreStudyEntry).toHaveBeenCalledWith('row-1',2));
  });
  it('validates manual approximate time and refuses reversal',async()=>{

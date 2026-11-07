@@ -25,6 +25,12 @@ export function visibleLogRange(day:string,zone:string):StudyRange{
 export function logDate(entry:StudyEntryRecord,zone:string):string{
  return localDay(entry.intervals[0]?.start??entry.savedAt??entry.createdAt,zone);
 }
+export function visibleLogRecords(entries:StudyEntryRecord[]):StudyEntryRecord[]{
+ return entries.filter(e=>(e.status==='saved'||(e.status==='discarded'&&!!e.voidedAt))&&
+  e.intervals.some(i=>i.end!==null)).sort((a,b)=>
+  Date.parse(b.intervals[0]?.start??b.createdAt)-
+  Date.parse(a.intervals[0]?.start??a.createdAt)||a.id.localeCompare(b.id));
+}
 export function csvLog(entries:StudyEntryRecord[],zone:string):string{
  const cell=(v:unknown)=>'"'+String(v??'').replace(/"/g,'""')+'"';
  const head=['date','entry_id','intent','source','approximate','status','voided','rating','reflection',
@@ -89,6 +95,13 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
   return value;
  }
  const disabled=busy||submitting;
+ if(entry.voidedAt)return <section aria-label={'Restore '+entry.intent}
+  className="mt-3 rounded-ctl border border-edge bg-fill-1 p-3">
+  <p className="text-label">This saved entry was voided. Its intervals are retained for restoration.</p>
+  <button type="button" className={action+' mt-2'} disabled={disabled}
+   onClick={()=>{void commit(()=>api.restoreStudyEntry(entry.id,entry.version));}}>Restore entry</button>
+  {error&&<p role="alert" className="mt-2 text-label">{error}</p>}
+ </section>;
  return <section aria-label={'Edit '+entry.intent} className="mt-3 rounded-ctl border border-edge bg-fill-1 p-3">
   <h4 className="font-semibold">Edit saved time</h4>
   <label className="mt-2 block text-label">Intent
@@ -119,9 +132,7 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
    <button className={action} disabled={disabled||!splitAt} onClick={()=>{
     void commit(()=>api.splitStudyEntry(entry.id,entry.version,splitAt));
    }}>Split saved entry</button>
-   {entry.voidedAt?
-    <button className={action} disabled={disabled} onClick={()=>{void commit(()=>api.restoreStudyEntry(entry.id,entry.version));}}>Restore entry</button>:
-    <button className={action} disabled={disabled} onClick={()=>{void commit(()=>api.voidStudyEntry(entry.id,entry.version));}}>Void entry</button>}
+   <button className={action} disabled={disabled} onClick={()=>{void commit(()=>api.voidStudyEntry(entry.id,entry.version));}}>Void entry</button>
   </div>
   {error&&<p role="alert" className="mt-2 text-label">{error}</p>}
  </section>;
@@ -138,18 +149,14 @@ export default function TimeLog(){
  const range=useMemo(()=>visibleLogRange(day,zone),[day,zone]);
  async function refresh(){
   const all=await api.listStudyEntries(range);
-  setRows(all.filter(e=>e.status==='saved'&&e.intervals.some(i=>i.end!==null))
-   .sort((a,b)=>Date.parse(b.intervals[0]?.start??b.createdAt)-
-    Date.parse(a.intervals[0]?.start??a.createdAt)||a.id.localeCompare(b.id)));
+  setRows(visibleLogRecords(all));
  }
  useEffect(()=>{
   if(!enabled)return;
   let alive=true;setLoading(true);setError('');setPage(0);setSelected(null);
   void api.listStudyEntries(range).then(all=>{
    if(!alive)return;
-   setRows(all.filter(e=>e.status==='saved'&&e.intervals.some(i=>i.end!==null))
-    .sort((a,b)=>Date.parse(b.intervals[0]?.start??b.createdAt)-
-     Date.parse(a.intervals[0]?.start??a.createdAt)||a.id.localeCompare(b.id)));
+   setRows(visibleLogRecords(all));
   }).catch(e=>{if(alive)setError(e instanceof Error?e.message:'Unable to load time log.');})
    .finally(()=>{if(alive)setLoading(false);});
   return ()=>{alive=false;};
