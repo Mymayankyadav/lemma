@@ -100,13 +100,6 @@ Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no imp
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
-## N64.2 Study notices, drift and urge events: demo and live adapters
-Stage: Build · Status: open · Needs: N64.1 · Assigned: —
-Done = finish N64 using N64.1's typed study-event contract and strict pure validators. Add an isolated, reload-persistent demo adapter for notice/drift/urge events with record/edit/void/restore, version conflicts, kind/duration and related-record integrity, and deterministic 1–50 filter-bound cursor paging. Wire getStudyEventApi/setStudyEventApiForTests to demo or live by mode. Implement owner-RLS live reads and public.study_events_command envelopes for record/edit/void/restore using a fresh operationId per action and the exact same envelope for unknown-outcome retries, typed conflict and validation failures, owner-safe related entry/task/block links, and post-receipt readback. Do not send or accept caller owner/source/void metadata; keep direct authenticated table writes disabled and never falsely claim a command exists before the N50.2 lifecycle migration lands.
-Tests: tests/unit/study-events/**, extending N64.1's pure model cases with demo lifecycle, isolated reload, deep clones, >50-row cursor walking and filter binding; mocked live queries and each RPC envelope, same-operationId replay, stale-version mapping and no owner field. Preserve N64.1 regression assertions.
-Scope: src/data/study-events/**, tests/unit/study-events/**, CURRENT.md.
-Not: other src/data/** folders, UI, supabase/**, new dependencies or protected paths.
-
 ## N51 Study command v2: saved-entry correction and block task links
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds `calendar_blocks.task_id` (owner-composite FK to `tasks`, deferrable) so a block can carry a task; new operations on `study_entries`: `correct` (edit intent/links/rating/reflection and replace its intervals with a validated union, end after start, no 24-hour cap at DST), `split` (one saved entry into two at an instant, preserving the exact union), `void` and `restore`, and `create_manual` (a saved entry with `approximate=true` and its intervals). Calendar block create/update accept `task_id`. Every existing operation behaves exactly as before.
