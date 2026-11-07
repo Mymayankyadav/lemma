@@ -44,6 +44,11 @@ describe('v6 session page',()=>{
   expect(orderedSessionEvents(input).map(e=>e.id)).toEqual([2,1,4]);
   expect(input.map(e=>e.id)).toEqual([4,1,2]);
  });
+ it('sorts malformed legacy timestamps deterministically instead of mutating records',()=>{
+  const records=[event(3,'invalid'),event(2,'2026-11-01T10:00:00Z'),event(1,'invalid')];
+  expect(orderedSessionEvents(records).map(record=>record.id)).toEqual([1,3,2]);
+  expect(records.map(record=>record.id)).toEqual([3,2,1]);
+ });
  it('renders saved summary, resume question, note, outcome, time and checkpoint link',()=>{
   const {node}=render();
   const text=node.textContent??'';

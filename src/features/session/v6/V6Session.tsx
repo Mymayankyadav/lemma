@@ -10,7 +10,10 @@ const control='inline-flex min-h-11 items-center justify-center rounded-ctl bord
 
 /** Present the actual recorded chronology, not a guessed tutor reasoning order. */
 export function orderedSessionEvents(events:readonly SessionEvent[]):SessionEvent[]{
- return [...events].sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt)||a.id-b.id);
+ return [...events].sort((a,b)=>{
+  const first=Date.parse(a.createdAt),second=Date.parse(b.createdAt);
+  return (Number.isFinite(first)?first:0)-(Number.isFinite(second)?second:0)||a.id-b.id;
+ });
 }
 
 /** Only the session's stored status tells us whether ending is still applicable. */
