@@ -63,6 +63,34 @@ try{
  assert.equal((await q("select public.resolve_alias('checkpoint','CP1',$1) id",[project]))[0].id,checkpoint1);
  assert.equal((await q("select public.resolve_alias('checkpoint','CP1',$1) id",[project2]))[0].id,checkpoint2);
  await assert.rejects(q("select public.resolve_alias('checkpoint','CP1')"),/Ambiguous alias/);
+ // Authenticated clients can pre-set arbitrary lemma.tool values. These
+ // SECURITY DEFINER triggers must not confuse that with trusted undo.
+ await q("select set_config('lemma.tool','undo',false)");
+ await q("update public.projects set slug='restored-proofs' where id=$1",[project]);
+ await q("update public.concepts set slug='normed-distance' where id=$1",[concept1]);
+ await q("update public.checkpoints set code='CP3' where id=$1",[checkpoint1]);
+ await q("update public.sources set title='Spoofed source edit' where id=$1",[source]);
+ await q("update public.source_pages set body='gamma' where source_id=$1 and page=1",[source]);
+ assert.equal((await q("select public.resolve_alias('project','axioms') id"))[0].id,project,
+   'spoofed undo must not suppress the previous project slug');
+ assert.equal((await q("select public.resolve_alias('concept','distance',$1) id",[subject]))[0].id,concept1,
+   'spoofed undo must not suppress the previous concept slug');
+ assert.equal((await q("select public.resolve_alias('checkpoint','CP2',$1) id",[project]))[0].id,checkpoint1,
+   'spoofed undo must not suppress previous checkpoint code');
+ assert.equal((await q("select count(*)::int n from public.source_revisions where source_id=$1",[source]))[0].n,2,
+   'spoofed tool cannot suppress a meaningful source revision');
+ assert.equal((await q("select count(*)::int n from public.source_page_revisions where source_id=$1",[source]))[0].n,2,
+   'spoofed tool cannot suppress a meaningful page revision');
+ await q("select set_config('lemma.tool','',false)");
+ // Generic undo is another real content transition, not a license to
+ // destroy history. It must restore the page and record exactly one prior
+ // snapshot for that inverse edit (without touching the original snapshots).
+ const undoNo=(await q("select max(no) no from public.actions where user_id=$1",[owner]))[0].no;
+ const undo=(await q("select public.undo_action($1,$2,false) result",[owner,undoNo]))[0].result;
+ assert.equal(Number(undo.undone),Number(undoNo));
+ assert.equal((await q("select body from public.source_pages where source_id=$1 and page=1",[source]))[0].body,'beta');
+ const oldPages=(await q("select snapshot->>'body' body from public.source_page_revisions where source_id=$1 order by version",[source])).map(x=>x.body);
+ assert.deepEqual(oldPages,['alpha','beta','gamma'],'undo preserves an immutable one-per-version history chain');
  await assert.rejects(q("insert into public.record_aliases(user_id,kind,old_value,target_id) values($1,'project','forged',$2)",[owner,project]),/permission denied|row.level security/i);
  await q("select set_config('test.uid',$1,false)",[other]);
  assert.equal((await q("select public.resolve_alias('project','proofs') id"))[0].id,null);

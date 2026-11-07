@@ -44,18 +44,16 @@ create function public.capture_record_alias() returns trigger
                      when 'checkpoint' then (to_jsonb(old)->>'project_id')::uuid
                      else null end;
    if v_old_value is distinct from v_new_value or old_scope is distinct from new_scope then
-    -- Generic undo should not invent new immutable aliases.
-    if not (pg_catalog.current_setting('lemma.tool',true)='undo'
-            and current_user not in ('authenticated','anon')) then
-     insert into public.record_aliases(user_id,kind,scope_id,old_value,target_id)
-       values(owner,k,old_scope,v_old_value,target)
-       on conflict do nothing;
-     select target_id into collision from public.record_aliases a
-      where user_id=owner and kind=k and scope_id is not distinct from old_scope
-        and a.old_value=v_old_value limit 1;
-     if collision is distinct from target then
-      raise exception 'Historic alias belongs to another record';
-     end if;
+    -- Never trust caller-settable lemma.tool, even inside SECURITY DEFINER.
+    -- Undo is itself a historical rename: keep its old identifier resolvable.
+    insert into public.record_aliases(user_id,kind,scope_id,old_value,target_id)
+      values(owner,k,old_scope,v_old_value,target)
+      on conflict do nothing;
+    select target_id into collision from public.record_aliases a
+     where user_id=owner and kind=k and scope_id is not distinct from old_scope
+       and a.old_value=v_old_value limit 1;
+    if collision is distinct from target then
+     raise exception 'Historic alias belongs to another record';
     end if;
    end if;
   end if;
@@ -153,8 +151,8 @@ create function public.capture_source_revision() returns trigger
  language plpgsql security definer set search_path='' as $rev$
  declare before_json jsonb;after_json jsonb;v_version integer;
  begin
-  if pg_catalog.current_setting('lemma.tool',true)='undo'
-   and current_user not in ('authenticated','anon') then return new;end if;
+  -- Record every meaningful edit including legitimate undo. The provenance
+  -- GUC is caller-settable; SECURITY DEFINER current_user is NOT caller proof.
   before_json:=to_jsonb(old)-'version'-'updated_at'-'updated_source';
   after_json:=to_jsonb(new)-'version'-'updated_at'-'updated_source';
   if before_json is not distinct from after_json then return new;end if;
