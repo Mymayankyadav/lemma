@@ -52,3 +52,47 @@ describe('N68 multi-part selection and invalid preview inputs',()=>{
   expect(preview.placements[0].start).toBe('2026-11-09T09:00:00Z');
  });
 });
+
+import {act} from 'react';
+import {createRoot,type Root} from 'react-dom/client';
+import {vi} from 'vitest';
+import PlannerLaunch from '../../../src/features/planner/Sheet';
+
+const services=vi.hoisted(()=>({
+ tasks:vi.fn(),blocks:vi.fn(),entries:vi.fn(),plans:vi.fn(),
+}));
+vi.mock('../../../src/data/tasks',()=>({
+ getTaskApi:()=>({listTasks:services.tasks}),
+}));
+vi.mock('../../../src/data/study',()=>({
+ getStudyApi:()=>({listCalendarBlocks:services.blocks,
+  listStudyEntries:services.entries}),
+}));
+vi.mock('../../../src/data/day-plans',()=>({
+ getDayPlanApi:()=>({listPlans:services.plans}),
+}));
+vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
+
+describe('N68 v6 native Planner launch lifecycle',()=>{
+ it('does not create a dialog before opening, and removes it after close',async()=>{
+  services.tasks.mockResolvedValue({items:[],total:0,nextCursor:null});
+  services.blocks.mockResolvedValue([]);
+  services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  const host=document.createElement('div');document.body.append(host);
+  const root:Root=createRoot(host);
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-07" zone="UTC"/>));
+   expect(host.querySelector('dialog')).toBeNull();
+   const launch=host.querySelector<HTMLButtonElement>('button');
+   await act(async()=>launch?.click());
+   await vi.waitFor(()=>expect(host.querySelector('dialog')).not.toBeNull());
+   const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(x=>x.textContent==='Close');
+   await act(async()=>close?.click());
+   expect(host.querySelector('dialog')).toBeNull();
+  }finally{
+   await act(async()=>root.unmount());host.remove();
+  }
+ });
+});
