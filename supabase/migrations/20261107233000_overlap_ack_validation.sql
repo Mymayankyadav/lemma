@@ -1,6 +1,5 @@
--- N47.2.2: reusable, owner-authenticated envelope validation for
--- overlap acknowledgement commands. No DML or table policy changes.
--- N47.2.3 installs the auditable command, undo registration and MCP mapping.
+-- N47.2: owner-scoped envelope validation and audited overlap lifecycle.
+-- Existing N47.1 tables and migrations are unchanged.
 create function public.overlap_ack_validate_envelope(p jsonb) returns jsonb
 language plpgsql security invoker set search_path='' as $validate$
 declare
@@ -159,3 +158,188 @@ end
 $validate$;
 revoke all on function public.overlap_ack_validate_envelope(jsonb) from public,anon;
 grant execute on function public.overlap_ack_validate_envelope(jsonb) to authenticated,service_role;
+
+
+-- The N47.1 guard must not rewrite historical versions during generic undo.
+-- Outside the verified undo_action path its original participant checks and
+-- monotonic version/timestamp semantics are unchanged.
+create or replace function public.overlap_ack_guard() returns trigger
+language plpgsql security invoker set search_path='' as $overlap_guard$
+begin
+  if pg_catalog.current_setting('lemma.tool',true)='undo' then
+    return new;
+  end if;
+  if public.overlap_ack_is_stale(new.user_id,new.participants) then
+    raise exception 'Overlap participants are missing, not owned or stale';
+  end if;
+  if tg_op='UPDATE' then
+    new.version:=old.version+1;
+    new.updated_at:=pg_catalog.clock_timestamp();
+  end if;
+  return new;
+end
+$overlap_guard$;
+
+-- N47.1 already installed one AFTER audit trigger named overlap_ack_log.
+-- Do not create another log trigger: every row mutation must journal once.
+create function public.overlap_ack_write_owned(p jsonb) returns jsonb
+language plpgsql security definer set search_path='' as $overlap_command$
+declare
+  v_owner uuid; v_role text; v_source text;
+  v_op_id uuid; v_op text; v_target jsonb; v_patch jsonb;
+  v_row_id uuid; v_expected integer; v_old public.overlap_acknowledgements%rowtype;
+  v_new public.overlap_acknowledgements%rowtype;
+  v_stored jsonb; v_receipt jsonb; v_changed jsonb; v_action bigint;
+  v_participants jsonb; v_disposition text; v_choice jsonb;
+  v_starts timestamptz; v_ends timestamptz; v_reason text;
+  v_part jsonb; v_part_id uuid; v_version integer;
+begin
+  v_owner:=(select auth.uid());
+  v_role:=pg_catalog.current_setting('role',true);
+  if v_owner is null or v_role not in ('authenticated','service_role') then
+    raise exception 'Authentication required';
+  end if;
+  if p is null or pg_catalog.jsonb_typeof(p) is distinct from 'object'
+     or pg_catalog.jsonb_typeof(p->'operationId') is distinct from 'string' then
+    raise exception 'Invalid overlap command envelope or operationId';
+  end if;
+  v_op_id:=(p->>'operationId')::uuid;
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(v_owner::text||':'||v_op_id::text,0));
+  select r.result into v_stored from public.command_receipts r
+    where r.user_id=v_owner and r.operation_id=v_op_id;
+  if found then
+    if v_stored->'_request'=p then return v_stored-'_request'; end if;
+    return pg_catalog.jsonb_build_object('operationId',v_op_id,
+      'status','conflict','changed','[]'::jsonb,'actionNo',null,
+      'conflict',pg_catalog.jsonb_build_object(
+        'reason','operationId reused with a different payload'));
+  end if;
+  -- Never trust client owner/source/version keys. The invoker validator
+  -- rejects extra envelope fields, malformed target IDs and invalid shapes.
+  perform public.overlap_ack_validate_envelope(p);
+  v_op:=p->>'operation';
+  v_target:=coalesce(p->'target','{}'::jsonb);
+  v_patch:=coalesce(p->'patch','{}'::jsonb);
+  v_source:=case when v_role='service_role' then 'mcp' else 'app' end;
+  if v_role<>'service_role' then
+    perform pg_catalog.set_config('lemma.source','app',true);
+    perform pg_catalog.set_config('lemma.tool','overlap_acknowledgements_command',true);
+  end if;
+  perform pg_catalog.set_config('lemma.summary',
+    pg_catalog.left('Overlap acknowledgement '||v_op,200),true);
+
+  if v_op='create' then
+    v_row_id:=coalesce((v_target->>'id')::uuid,pg_catalog.gen_random_uuid());
+    v_participants:=v_patch->'participants';
+    v_disposition:=v_patch->>'disposition';
+    v_choice:=nullif(v_patch->'attributed_to','null'::jsonb);
+    v_starts:=(v_patch->>'starts_at')::timestamptz;
+    v_ends:=(v_patch->>'ends_at')::timestamptz;
+    v_reason:=v_patch->>'reason';
+  else
+    v_row_id:=(v_target->>'id')::uuid;
+    v_expected:=(p->>'expectedVersion')::integer;
+    select * into v_old from public.overlap_acknowledgements a
+      where a.id=v_row_id and a.user_id=v_owner for update;
+    if not found then raise exception 'Overlap acknowledgement not found for owner'; end if;
+    if v_old.version is distinct from v_expected then
+      v_receipt:=pg_catalog.jsonb_build_object('operationId',v_op_id,
+        'status','conflict','changed','[]'::jsonb,'actionNo',null,
+        'conflict',pg_catalog.jsonb_build_object(
+          'expectedVersion',v_expected,'currentVersion',v_old.version));
+    elsif v_op='update' then
+      v_participants:=case when v_patch?'participants'
+        then v_patch->'participants' else v_old.participants end;
+      v_disposition:=case when v_patch?'disposition'
+        then v_patch->>'disposition' else v_old.disposition end;
+      v_choice:=case when v_patch?'attributed_to'
+        then nullif(v_patch->'attributed_to','null'::jsonb)
+        else v_old.attributed_to end;
+      v_starts:=case when v_patch?'starts_at'
+        then (v_patch->>'starts_at')::timestamptz else v_old.starts_at end;
+      v_ends:=case when v_patch?'ends_at'
+        then (v_patch->>'ends_at')::timestamptz else v_old.ends_at end;
+      v_reason:=case when v_patch?'reason' then v_patch->>'reason'
+        else v_old.reason end;
+    end if;
+  end if;
+  if v_receipt is null then
+    if v_op<>'delete' then
+      if not public.overlap_ack_participants_valid(v_participants)
+         or not public.overlap_ack_choice_valid(v_participants,v_disposition,v_choice)
+         or v_starts is null or v_ends is null or v_starts>=v_ends then
+        raise exception 'Invalid overlap participants, attribution or time window';
+      end if;
+      -- Hold participant row locks through the DML; a concurrently changed
+      -- version cannot validate and then slip into a committed acknowledgement.
+      for v_part in select value from pg_catalog.jsonb_array_elements(v_participants)
+        as parts(value) order by value->>'kind',value->>'id'
+      loop
+        v_part_id:=(v_part->>'id')::uuid;
+        v_version:=null;
+        if v_part->>'kind'='block' then
+          select b.version into v_version from public.calendar_blocks b
+            where b.user_id=v_owner and b.id=v_part_id for share;
+        else
+          select e.version into v_version from public.study_entries e
+            where e.user_id=v_owner and e.id=v_part_id for share;
+        end if;
+        if not found or v_version is distinct from (v_part->>'version')::integer then
+          raise exception 'Overlap participants are missing, not owned or stale';
+        end if;
+      end loop;
+      if v_op='create' then
+        insert into public.overlap_acknowledgements(
+          id,user_id,participants,starts_at,ends_at,reason,
+          disposition,attributed_to,source
+        ) values(v_row_id,v_owner,v_participants,v_starts,v_ends,v_reason,
+          v_disposition,v_choice,v_source)
+        returning * into v_new;
+      else
+        update public.overlap_acknowledgements a set
+          participants=v_participants,starts_at=v_starts,ends_at=v_ends,
+          reason=v_reason,disposition=v_disposition,attributed_to=v_choice,
+          source=v_source
+        where a.id=v_row_id and a.user_id=v_owner
+        returning * into v_new;
+      end if;
+      v_changed:=pg_catalog.jsonb_build_array(
+        pg_catalog.jsonb_build_object('id',v_row_id,'version',v_new.version));
+    else
+      delete from public.overlap_acknowledgements a
+        where a.id=v_row_id and a.user_id=v_owner;
+      v_changed:=pg_catalog.jsonb_build_array(
+        pg_catalog.jsonb_build_object('id',v_row_id,'version',v_old.version+1));
+    end if;
+    select a.no into v_action from public.actions a
+      where a.txid=pg_catalog.txid_current() and a.user_id=v_owner;
+    if v_action is null then
+      raise exception 'Overlap mutation has no reversible action journal';
+    end if;
+    v_receipt:=pg_catalog.jsonb_build_object('operationId',v_op_id,
+      'status','ok','changed',v_changed,'actionNo',v_action);
+  end if;
+  insert into public.command_receipts(user_id,operation_id,resource,result)
+    values(v_owner,v_op_id,'overlap_acknowledgements',
+      v_receipt||pg_catalog.jsonb_build_object('_request',p));
+  return v_receipt;
+end
+$overlap_command$;
+
+-- The public browser entrypoint is an invoker RPC, not direct row DML.
+create function public.overlap_acknowledgements_command(p jsonb) returns jsonb
+language sql volatile security invoker set search_path='' as $call$
+  select public.overlap_ack_write_owned(p)
+$call$;
+revoke all on function public.overlap_ack_write_owned(jsonb) from public,anon;
+revoke all on function public.overlap_acknowledgements_command(jsonb) from public,anon;
+grant execute on function public.overlap_ack_write_owned(jsonb) to authenticated,service_role;
+grant execute on function public.overlap_acknowledgements_command(jsonb) to authenticated,service_role;
+
+-- Existing overlap_ack_log is the single audit trigger; undo_action and
+-- mcp_command consume only these registry rows, with no generic replacements.
+insert into public.lemma_undo_tables(table_name) values('overlap_acknowledgements');
+insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
+  values('overlap_acknowledgements','overlap_acknowledgements_command',true,
+    '{"operations":["create","update","delete"],"fields":["participants","starts_at","ends_at","reason","disposition","attributed_to"]}'::jsonb);
