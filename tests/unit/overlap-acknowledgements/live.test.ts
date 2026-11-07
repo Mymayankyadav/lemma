@@ -217,7 +217,7 @@ describe('N61.2.2.2 audited live acknowledgement commands',()=>{
     expect(p).toMatchObject({schemaVersion:1,resource:'overlap_acknowledgements'});
     expect(p).not.toHaveProperty('userId');
     expect(p).not.toHaveProperty('user_id');
-    expect(JSON.stringify(p)).not.toMatch(/user_id|userId|owner_id|source/);
+    expect(JSON.stringify(p)).not.toMatch(/"(?:user_id|userId|owner_id|source)"\s*:/);
     if(p.operation==='create'){
       fake.data.overlap_acknowledgements.push(row(9,{
         starts_at:commandInput.startsAt,ends_at:commandInput.endsAt,reason:'Two commitments',

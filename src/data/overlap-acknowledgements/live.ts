@@ -296,7 +296,10 @@ export function createLiveOverlapApi(options:{commandReady?:boolean}={}):Overlap
       expectedVersion(expected);
       const before=await adapter.getAcknowledgement(target);
       if(!before)return fail('not_found','Overlap acknowledgement not found');
-      const validated=validateOverlapPatch(before,patch);
+      const original={participants:before.participants,
+        startsAt:before.startsAt,endsAt:before.endsAt,reason:before.reason,
+        disposition:before.disposition,attributedTo:before.attributedTo};
+      const validated=validateOverlapPatch(original,patch);
       return write('update',{target:{id:target},expectedVersion:expected,
         patch:columns(validated)},async changed=>{
         if(changed.id!==target)return server('Updated the wrong acknowledgement');
