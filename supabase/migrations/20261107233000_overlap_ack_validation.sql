@@ -132,7 +132,7 @@ begin
     and v_patch?'attributed_to'))
     and not public.overlap_ack_choice_valid(
       v_patch->'participants',v_patch->>'disposition',
-      pg_catalog.nullif(v_patch->'attributed_to','null'::jsonb)
+      nullif(v_patch->'attributed_to','null'::jsonb)
     ) then
     raise exception 'Attribution must match an acknowledged participant';
   end if;
