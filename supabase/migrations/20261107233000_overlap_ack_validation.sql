@@ -123,6 +123,22 @@ begin
   ) then
     raise exception 'Invalid disposition';
   end if;
+  -- A partial update cannot yet check participant membership against the
+  -- stored row, but every supplied non-null choice must already be well-typed.
+  if v_patch?'attributed_to' and v_patch->'attributed_to'<>'null'::jsonb then
+    if pg_catalog.jsonb_typeof(v_patch->'attributed_to') is distinct from 'object'
+      or pg_catalog.jsonb_typeof(v_patch->'attributed_to'->'kind') is distinct from 'string'
+      or v_patch->'attributed_to'->>'kind' not in ('block','entry')
+      or pg_catalog.jsonb_typeof(v_patch->'attributed_to'->'id') is distinct from 'string'
+      or nullif(v_patch->'attributed_to'->>'id','') is null then
+      raise exception 'Invalid attribution choice';
+    end if;
+    select k into v_bad
+      from pg_catalog.jsonb_object_keys(v_patch->'attributed_to') as keys(k)
+      where k<>all(array['kind','id']) limit 1;
+    if v_bad is not null then raise exception 'Invalid attribution choice'; end if;
+    perform (v_patch->'attributed_to'->>'id')::uuid;
+  end if;
   -- A complete update patch must be self-consistent, just like create.
   -- Partial updates need the stored row and are checked by N47.2.3.
   -- Treat explicit JSON null as a cleared optional attribution. The N47.1

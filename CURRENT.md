@@ -478,3 +478,7 @@ The read-only command envelope validator now rejects timezone-naive timestamps, 
 ## N47.2.2 explicit-null attribution during keep-both transitions (2026-11-07)
 
 The new read-only overlap acknowledgement envelope validator accepts a JSON-null `attributed_to` alongside `keep_both` on create and on complete updates, matching the nullable typed N61.1 API and the SQL NULL interpretation in N47.1's choice guard. It still refuses JSON-null attribution with `attribute_to`, and still checks real participant membership for non-null attribution. Full-migration PGlite regressions cover all three cases. No write permission, command registration, journal or older migration changed; N47.2.3 must implement transactional owner-bound lifecycle and undo.
+
+## N47.2.2 typed attribution shapes on partial updates (2026-11-07)
+
+The read-only overlap acknowledgement envelope validator now checks every provided non-null `attributed_to` choice even in partial updates: it must be an object with only `kind` (block/entry) and a valid UUID `id`. Scalar, array, missing, invalid-kind, malformed-UUID and extra-key choices are rejected before any future transactional write. Explicit null and typed partial choices remain valid, while final participant membership is deferred to N47.2.3's stored-row transaction. Full-migration PGlite positive/negative regressions were added; RLS, journal, registered commands and existing migrations remain unchanged.

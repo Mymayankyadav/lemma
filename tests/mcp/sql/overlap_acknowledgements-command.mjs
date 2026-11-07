@@ -103,6 +103,21 @@ try{
  await assert.rejects(call({...completeUpdate,patch:{...completeUpdate.patch,
    attributed_to:{kind:'entry',id:'55555555-5555-4555-8555-555555555555'}}}),
   /Attribution must match an acknowledged participant/);
+ const validPartialChoice={...edit,patch:{attributed_to:{
+  kind:'entry',id:input.patch.participants[0].id}}};
+ assert.deepEqual(await call(validPartialChoice),validPartialChoice,
+  'partial update permits a typed choice until stored membership is known');
+ const clearedPartialChoice={...edit,patch:{attributed_to:null}};
+ assert.deepEqual(await call(clearedPartialChoice),clearedPartialChoice,
+  'partial update can clear the optional choice');
+ for(const badChoice of [17,'entry',false,[],{}, {kind:'entry'}, 
+  {kind:'other',id:input.patch.participants[0].id},
+  {kind:'entry',id:17}, {kind:'entry',id:''},
+  {kind:'entry',id:'not-a-uuid'},
+  {kind:'entry',id:input.patch.participants[0].id,user_id:owner}]){
+   await assert.rejects(call({...edit,patch:{attributed_to:badChoice}}),
+    /Invalid attribution choice|uuid/i,'invalid partial attributed_to choice rejected');
+ }
  const partialAttribution={...edit,patch:{disposition:'attribute_to'}};
  assert.deepEqual(await call(partialAttribution),partialAttribution,
   'partial updates need existing-row context and stay accepted');
