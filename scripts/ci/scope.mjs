@@ -9,8 +9,8 @@ import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 import { migrationFindings, existingFunctionNames } from './migrations.mjs';
 import { checkConflict } from './conflicts.mjs';
 
-const MAX_OPEN_PRS = 12;
-const MAX_PRS_PER_AGENT = 2; // v2.0: start the next item while CI checks the first
+const MAX_OPEN_PRS = 20; // v2.6 (Owner): was 12
+const MAX_PRS_PER_AGENT = 3; // v2.0: start the next item while CI checks the first; v2.6 (Owner): was 2
 const NEXT = 'NEXT.md';
 const CALIBRATION = 'ci/perf-calibration.md';
 
@@ -35,6 +35,18 @@ export function classifyTitle(title) {
 const fail = (rule, what, how) => ({ rule, msg: `[${rule}] ${what} To comply: ${how}` });
 
 /** Pure evaluation. ctx is described in main(); returns { failures, warnings, kind }. */
+// v2.6: half of all PR gate runs on 2026-11-07 were CI "merge main" commits, and 49 of 50 of those were caused by
+// PRs appending a new `## ` section to the end of CURRENT.md (every merge made every other open PR conflict). Item notes
+// now go in their own new file docs/current/<id>.md, which never conflicts. PRs opened before the cutover keep the old
+// way so in-flight work is not disturbed.
+export const CURRENT_NOTE_CUTOVER = '2026-11-07T15:30:00Z';
+/** Pure: does this PR add a new `## ` section to CURRENT.md? (Editing an existing section is still allowed.) */
+export function addsCurrentSection(files) {
+  const f = (files || []).find((x) => x.filename === 'CURRENT.md' && x.status !== 'removed');
+  if (!f || f.patch === undefined) return false;
+  return patchLines(f.patch).added.some((l) => /^## /.test(l));
+}
+
 export function evaluateScope(ctx) {
   const failures = [];
   const warnings = [];
@@ -157,6 +169,12 @@ export function evaluateScope(ctx) {
       'never edit, rename or delete an existing migration; in a NEW migration only create things (tables, columns, indexes, policies, new functions, grants). To change an existing function, keep its signature and behaviour compatible and add the PR body line "Replaces function: <name> (reviewer verified signature and behaviour)". Anything that drops, renames, retypes, deletes, revokes or rewrites existing data needs an Owner `rules:` PR.'));
   }
 
+  // R5c v2.6: item notes go in docs/current/<id>.md, not in a new CURRENT.md section (see CURRENT_NOTE_CUTOVER)
+  if ((kind === 'item' || kind === 'bug' || kind === 'incident') && !isCi && ctx.createdAt && ctx.createdAt >= CURRENT_NOTE_CUTOVER && addsCurrentSection(files)) {
+    failures.push(fail('CURRENT-NOTE', 'This PR adds a new section to CURRENT.md. Every PR appending there made every other open PR conflict and re-run CI (v2.6).',
+      `move that section into a new file docs/current/${kind === 'item' ? 'N' + cls.id : kind + '-' + cls.number}.md (same text, starting with its "## " heading) and leave CURRENT.md unchanged, unless you are correcting an existing section in place. The note satisfies any "record in CURRENT.md" in your item's Done.`));
+  }
+
   // R5a v2.4: only a top-level item may be split. Repeated splits shipped the easy first piece and pushed the hard
   // remainder down (N41 reached N41.2.2.2.2.2); a sub-item is finished, or escalated to the priority run.
   if (kind === 'item' && cls.split && cls.id.includes('.') && !/^(priority|owner-setup)/.test(line1?.agent || '')) {
@@ -170,8 +188,8 @@ export function evaluateScope(ctx) {
     const hasTest = live.some((f) => isTestFile(f.filename));
     const hasCode = live.some((f) => !isTestFile(f.filename));
     if (!hasTest || !hasCode) {
-      failures.push(fail('SPLIT-IMPLEMENTS', `An "N${cls.id} split" PR must also implement sub-item N${cls.id}.1 in the same PR, but it changes ${live.length ? live.map((f) => f.filename).join(', ') : 'only ' + NEXT}${hasTest ? ' (no code or CURRENT.md change)' : ' (no test file)'}.`,
-        `in this same PR add the code for N${cls.id}.1 (or, if its test passes on main, the CURRENT.md note its Done asks for) and its test; ${NEXT} alone is not enough.`));
+      failures.push(fail('SPLIT-IMPLEMENTS', `An "N${cls.id} split" PR must also implement sub-item N${cls.id}.1 in the same PR, but it changes ${live.length ? live.map((f) => f.filename).join(', ') : 'only ' + NEXT}${hasTest ? ' (no code or docs/current note)' : ' (no test file)'}.`,
+        `in this same PR add the code for N${cls.id}.1 (or, if its test passes on main, the docs/current/<id>.md note its Done asks for) and its test; ${NEXT} alone is not enough.`));
     }
   }
 
@@ -236,7 +254,7 @@ async function main() {
   const cls = classifyTitle(pr.title);
   const ctx = {
     title: pr.title, body: pr.body || '', files,
-    baseNext: await getText(NEXT, pr.base.sha), headNext: await getText(NEXT, pr.head.sha),
+    baseNext: await getText(NEXT, pr.base.sha), headNext: await getText(NEXT, pr.head.sha), createdAt: pr.created_at,
     openPrs: (await paginate(repoPath('/pulls?state=open'))).filter((p) => p.number !== number).map((p) => ({ number: p.number, body: p.body || '' })),
     protectedCfg: readJson('ci/protected.json'),
     existingFunctions: existingFunctionNames(), // from the checked-out BASE branch
