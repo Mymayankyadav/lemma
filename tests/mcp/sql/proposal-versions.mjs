@@ -133,6 +133,41 @@ try{
   /authorized command/);
  await assert.rejects(q("select public.revise_proposal($1,'{}'::jsonb)",[successor.id]),
   /target changed|unavailable/,'expected versions also validated before revision');
+ // Incident #1149: a revision that has already been APPROVED still
+ // supersedes its parent permanently; otherwise both cards are created.
+ await admin();
+ const originalCardProposal=await insertProposal({
+  front:'Which metric is complete?',back:'The norm',type:'basic',kind:'definition'},'card');
+ await as(owner);
+ const revisedCard=(await q('select public.revise_proposal($1,$2::jsonb) result',[
+  originalCardProposal,JSON.stringify({
+   front:'Which measure is complete?',back:'The norm',type:'basic',kind:'definition'})
+ ]) )[0].result;
+ const notesBefore=(await q('select count(*)::int count from public.notes where user_id=$1',[owner]))[0].count;
+ const appliedRevision=(await q('select public.approve_proposal($1) result',[revisedCard.id]))[0].result;
+ assert.ok(appliedRevision.note_no,'approved revision has an actual card effect');
+ assert.equal((await row(revisedCard.id)).status,'approved');
+ const notesAfter=(await q('select count(*)::int count from public.notes where user_id=$1',[owner]))[0].count;
+ assert.equal(notesAfter,notesBefore+1,'approved successor creates one note');
+ await assert.rejects(call('reopen_proposal',[originalCardProposal]),
+  /supersedes/,'approved successor must permanently supersede parent');
+ await assert.rejects(q('select public.approve_proposal($1)',[originalCardProposal]),
+  /not active and pending/,'withdrawn parent cannot apply again');
+ assert.ok((await row(originalCardProposal)).withdrawn_at);
+ assert.equal((await q('select count(*)::int count from public.notes where user_id=$1',[owner]))[0].count,
+  notesBefore+1,'reopen and double approval must never create a second note');
+ // Conservative lineage rule also blocks reopening after the successor is
+ // itself withdrawn or rejected; an unrelated withdrawn proposal still reopens.
+ await admin();
+ const rejectedParent=await insertProposal({
+  front:'Question 1',back:'Answer 1',type:'basic'},'card');
+ await as(owner);
+ const rejectedChild=(await q('select public.revise_proposal($1,$2::jsonb) result',[
+  rejectedParent,JSON.stringify({front:'Question 2',back:'Answer 2',type:'basic'})
+ ]))[0].result;
+ await q('select public.reject_proposal($1)',[rejectedChild.id]);
+ await assert.rejects(call('reopen_proposal',[rejectedParent]),/supersedes/);
+
  await as(other);
  await assert.rejects(q('select public.withdraw_proposal($1)',[p4]),/not found for owner/);
  await assert.rejects(q('select public.reopen_proposal($1)',[p3]),/not found for owner/);
