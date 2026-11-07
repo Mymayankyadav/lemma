@@ -86,6 +86,30 @@
       "mcpPath": "server-owned identity and provenance (N43.2 command)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N43.2 domain archive/delete/void, N36.2 registered undo, N103 owner purge (planned)"
+    },
+    "prior_due_date": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "registered practice_topics_command via mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "undoable event history / owner purge",
+      "description": "prior civil due day saved at the moment of record; inverse restores it"
+    },
+    "prior_practiced_at": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "registered practice_topics_command via mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "undoable event history / owner purge",
+      "description": "prior last-practiced instant saved for exact void inverses"
+    },
+    "recorded_due_date": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (N57.2 planned)",
+      "mcpPath": "registered practice_topics_command via mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "undoable event history / owner purge",
+      "description": "effective due day after this event; checked before inverse"
     }
   }
 }
