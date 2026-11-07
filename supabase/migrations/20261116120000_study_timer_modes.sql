@@ -389,7 +389,7 @@ begin
      or (old.lease_device is not null
        and old.lease_expires_at>pg_catalog.clock_timestamp())
    ) then
-   raise exception 'Active timer lease or protected timer fields require an audited study command';
+   raise exception 'Active timer lease requires an audited study command; protected timer fields require an audited study command';
  end if;
  return new;
 end
@@ -407,7 +407,7 @@ create function public.lemma_study_timer_metadata_write_guard() returns trigger
 language plpgsql security invoker set search_path='' as $metadata_guard$
 begin
  if current_user='authenticated' then
-   raise exception 'Active timer lease or protected timer fields require an audited study command';
+   raise exception 'Active timer lease requires an audited study command; protected timer fields require an audited study command';
  end if;
  return new;
 end
