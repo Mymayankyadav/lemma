@@ -40,7 +40,8 @@ try{
   grant execute on function auth.uid() to authenticated;`);
  const directory=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(directory)).filter(f=>f.endsWith('.sql')&&!f.includes('_storage')).sort();
- assert.ok(names.includes('20261107120030_day_plans_header.sql'));
+ assert.ok(names.includes('20261107120110_day_plans_header.sql'));
+ assert.ok(!names.includes('20261107120030_day_plans_header.sql'), 'superseded unapplied migration version must not recur');
  assert.ok(!names.includes('20261107090000_day_plans_header.sql'),
    'superseded N46 migration version must not remain');
  for(const name of names)await db.exec(await readFile(new URL(name,directory),'utf8'));
