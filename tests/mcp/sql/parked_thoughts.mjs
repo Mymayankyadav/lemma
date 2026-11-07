@@ -41,7 +41,7 @@ try{
   grant execute on function auth.uid() to authenticated;`);
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
- assert.ok(names.includes('20261107060000_parked_thoughts.sql'));
+ assert.ok(names.includes('20261107062517_parked_thoughts.sql'));
  for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
  const docs=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/parked_thoughts.json',import.meta.url),'utf8'));
  const columns=(await q("select attname from pg_attribute where attrelid='public.parked_thoughts'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname).sort();
