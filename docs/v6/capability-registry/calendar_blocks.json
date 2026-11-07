@@ -92,6 +92,13 @@
       "mcpPath": "supabase/functions/mcp/tools/study.ts",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "task_id": {
+      "classification": "owner-editable",
+      "appPath": "N65 study block/task links (planned)",
+      "mcpPath": "N51 study_command v2",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
     }
   }
 }
