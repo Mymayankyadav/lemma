@@ -121,7 +121,6 @@ Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
 Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
@@ -134,13 +133,6 @@ Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
 Tests: `tests/unit/sources-v6/**`
 Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), tests/unit/sources-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N83 v6 review run and done with durable runs behind the shell flag
-Stage: Build · Status: open · Needs: N62.2 · Assigned: —
-Done = with `v6Shell` on, starting from Review creates a durable run (N62's `start`); the run screen shows position/total, reveals and grades through the existing grade path and then `advance`; leaving and returning resumes the same run at the same item without replaying a grade; stale items are skipped with a note; Done shows the run's counts and next arrivals. Flag off: nothing changes.
-Tests: `tests/unit/review-run-v6/**`
-Scope: src/features/review-run/v6/** and src/features/review-done/v6/** (new), src/features/review-run/Page.tsx and src/features/review-done/Page.tsx (the flag branches only), src/features/review/v6/** (starting a run only), tests/unit/review-run-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N84 v6 card detail and editor behind the shell flag
@@ -171,14 +163,6 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/history-correction.mjs` (each correction re-derives state, history and schedule agree, undo, second owner, existing grade and session tests unchanged)
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/history-correction.mjs, docs/v6/capability-registry/session_events.json, docs/v6/capability-registry/reviews.json, docs/v6/capability-registry/review_parameter_sets.json, CURRENT.md.
 Not: app or MCP code, changing existing grade functions.
-
-## N92 Proposal versions, grouping, citations and withdrawal
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration: `proposals` gains `payload_version`, `base_target_versions jsonb`, `group_id`, structured `citations jsonb` (source, version, page) and `withdrawn_at`, `revised_from`; new functions `withdraw_proposal`, `revise_proposal`, `reopen_proposal`; approval through the existing path accepts optional expected versions (a compatible replacement of the approve function, PR body line `Replaces function: <name> (reviewer verified signature and behaviour)`).
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal-versions.mjs` (stale approval refused when versions are given, unchanged when not, withdraw/revise/reopen, grouping, existing proposal tests unchanged)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal-versions.mjs, docs/v6/capability-registry/proposals.json, CURRENT.md.
-Not: app or MCP code.
 
 ## N37 MCP: generic commands and resource discovery
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
