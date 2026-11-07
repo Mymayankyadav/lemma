@@ -78,7 +78,14 @@ try{
  await as(other);
  assert.equal((await q('select count(*)::int n from public.practice_topics'))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.practice_events'))[0].n,0);
- assert.equal((await q('update public.practice_topics set title=$1 where id=$2 returning id',['Foreign',topic.id])).length,0);
+ // A direct cross-owner UPDATE either affects no RLS-visible rows or is
+ // refused by the table ACL: both forbid an unaudited write.
+ try {
+  assert.equal((await q('update public.practice_topics set title=$1 where id=$2 returning id',
+   ['Foreign',topic.id])).length,0);
+ } catch(e) {
+  assert.match(String(e),/permission denied|row.level security/i);
+ }
  await assert.rejects(q('insert into public.practice_events(user_id,topic_id,occurred_at,rating) values($1,$2,now(),2)',[owner,topic.id]),/row-level security|permission denied/i);
  await assert.rejects(q('insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),2)',[topic.id]),/row-level security|permission denied/i);
  const foreign=(await q("insert into public.subjects(name,glyph,hue) values('Geometry','△','violet') returning id"))[0];
