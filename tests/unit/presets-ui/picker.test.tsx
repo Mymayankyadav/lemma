@@ -5,6 +5,9 @@ import PresetPicker,{focusPresetChoice,loadActiveFocusPresets}
  from '../../../src/features/focus/PresetPicker';
 import {getPresetApi} from '../../../src/data/presets';
 import type {PresetApi,PresetRecord} from '../../../src/data/presets/contract';
+import TodayFocus from '../../../src/features/focus/TodayFocus';
+import {setStudyApiForTests} from '../../../src/data/study';
+import type {StudyApi} from '../../../src/data/study/contract';
 
 vi.mock('../../../src/data/presets',()=>({getPresetApi:vi.fn()}));
 const example=(i:number,archivedAt:string|null=null):PresetRecord=>({
@@ -31,7 +34,7 @@ beforeEach(()=>{
  vi.mocked(getPresetApi).mockReturnValue(api);
  host=document.createElement('div');document.body.append(host);root=createRoot(host);
 });
-afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.clearAllMocks()});
+afterEach(async()=>{await act(async()=>root.unmount());host.remove();setStudyApiForTests(null);window.history.replaceState({},'', '/');vi.clearAllMocks()});
 
 describe('N77 Focus activity preset picker',()=>{
  it('loads active presets without exposing archive rows or writing server data',async()=>{
@@ -86,4 +89,37 @@ describe('N77 Focus activity preset picker',()=>{
   expect(host.querySelector('[role="alert"]')).toBeNull();
   expect(host.querySelectorAll('option')).toHaveLength(3);
  });
+ it('mounts the preset choice at v6 Focus start and passes its intention and owner links',async()=>{
+  window.history.replaceState({},'','/?flags=v6Shell');
+  const startStudyEntry=vi.fn(async()=>{throw Error('Test stopped the start before persistence')});
+  setStudyApiForTests({
+   mode:'demo',
+   activeStudyEntry:vi.fn(async()=>null),
+   listStudyEntries:vi.fn(async()=>[]),
+   startStudyEntry,
+  } as unknown as StudyApi);
+  const focusHost=document.createElement('div');document.body.append(focusHost);
+  const focusRoot=createRoot(focusHost);
+  try{
+   await act(async()=>{focusRoot.render(<TodayFocus/>);await Promise.resolve()});
+   await vi.waitFor(()=>expect(focusHost.querySelector('select[aria-label="Focus activity"]')).not.toBeNull());
+   const selector=focusHost.querySelector<HTMLSelectElement>('[aria-label="Focus activity"]')!;
+   await act(async()=>{
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!.call(selector,'preset-2');
+    selector.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+   expect(focusHost.querySelector<HTMLInputElement>('[aria-label="Focus intention"]')?.value).toBe('Activity 2');
+   await act(async()=>{
+    [...focusHost.querySelectorAll('button')].find(b=>b.textContent==='Start focus')!.click();
+    await Promise.resolve();
+   });
+   expect(startStudyEntry).toHaveBeenCalledWith(expect.objectContaining({
+    intent:'Activity 2',source:'timer',
+    subjectId:'subject-a',projectId:'project-b',checkpointId:null,
+   }));
+  }finally{
+   await act(async()=>focusRoot.unmount());focusHost.remove();
+  }
+ });
+
 });

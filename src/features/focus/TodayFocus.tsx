@@ -4,6 +4,9 @@ import type {StudyEntryRecord,StudyRange} from '../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
+import FocusNotices from './FocusNotices';
+import PresetPicker,{type FocusPresetChoice} from './PresetPicker';
+import {isFlagOn} from '../../flags';
 
 const FOCUS_CAP=25;
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
@@ -42,6 +45,7 @@ export default function TodayFocus(){
  const [focus,setFocus]=useState<FocusState>(idleFocus);
  const [logged,setLogged]=useState(0);
  const [intent,setIntent]=useState(''),[note,setNote]=useState('');
+ const [chosenPreset,setChosenPreset]=useState<FocusPresetChoice|null>(null);
  const [editedMinutes,setEditedMinutes]=useState('0');
  const [now,setNow]=useState(()=>new Date().toISOString());
  const [opened,setOpened]=useState(false),[loading,setLoading]=useState(true);
@@ -82,7 +86,10 @@ export default function TodayFocus(){
   setBusy(true);setError('');
   const at=new Date().toISOString();
   try{
-   const result=await api.startStudyEntry({intent:intent.trim()||'Focused study',source:'timer',startedAt:at});
+   const result=await api.startStudyEntry({intent:intent.trim()||'Focused study',source:'timer',startedAt:at,
+    ...(chosenPreset?{subjectId:chosenPreset.subjectId,projectId:chosenPreset.projectId,
+      checkpointId:chosenPreset.checkpointId}:{}),
+   });
    // Server-owned interval timestamps are authoritative in live mode.
    setActive(result.record);setFocus(focusFromEntry(result.record));setNote(result.record.reflection??'');
    setNow(at);setOpened(true);
@@ -148,6 +155,8 @@ export default function TodayFocus(){
      placeholder="What will you work on?" maxLength={200}
      className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 text-body text-ink"/>
    </label>}
+   {!active&&isFlagOn('v6Shell')&&<PresetPicker selectedPresetId={chosenPreset?.presetId??null}
+    disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice)setIntent(choice.intent);}}/>}
    <button type="button" ref={heroTrigger} onClick={()=>{void start();}}
     disabled={busy||loading} className="mt-3 min-h-11 rounded-ctl bg-amber px-5 text-label font-semibold text-amber-ink disabled:opacity-60">
     {active?'Return to focus':'Start focus'}
@@ -178,5 +187,6 @@ export default function TodayFocus(){
    onPause={()=>{void transition('pause');}} onResume={()=>{void transition('resume');}}
    onBreak={()=>{void transition('break');}} onFinish={finish}
    onSave={()=>{void save(false);}} onDiscard={()=>{void save(true);}}/>
+  {active&&<FocusNotices entryId={active.id}/>}
  </>;
 }
