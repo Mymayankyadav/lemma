@@ -116,6 +116,48 @@
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
       "description": "N38: server timestamp set on UPDATE"
+    },
+    "payload_version": {
+      "classification": "command-managed",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
+    },
+    "base_target_versions": {
+      "classification": "owner-editable",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
+    },
+    "group_id": {
+      "classification": "command-managed",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
+    },
+    "citations": {
+      "classification": "owner-editable",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
+    },
+    "withdrawn_at": {
+      "classification": "command-managed",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
+    },
+    "revised_from": {
+      "classification": "command-managed",
+      "appPath": "N92 proposal lifecycle (new RPC)",
+      "mcpPath": "N90 proposal commands (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge via FK cascade; audited lifecycle"
     }
   }
 }
