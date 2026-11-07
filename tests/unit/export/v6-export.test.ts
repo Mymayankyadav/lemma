@@ -5,7 +5,7 @@ import {liveClient} from '../../../src/data/live/client';
 vi.mock('../../../src/data/live/client',()=>({liveClient:vi.fn()}));
 type Row=Record<string,unknown>;
 const owner='11111111-1111-4111-8111-111111111111';
-function harness(registered:string[],data:Record<string,Row[]>,error:string|null=null){
+function harness(registered:string[],data:Record<string,Row[]>,error:string|null=null,unsafeLeak=false){
  const reads:Array<{table:string;fields:string[];start:number;end:number}>=[];
  const from=vi.fn((table:string)=>{
   const filters:Array<[string,unknown]>=[];
@@ -19,7 +19,8 @@ function harness(registered:string[],data:Record<string,Row[]>,error:string|null
      if(error)return {data:null,error:{message:error}};
      return {data:registered.map(table_name=>({table_name})).slice(start,end+1),error:null};
     }
-    const rows=(data[table]??[]).filter(row=>filters.every(([field,value])=>row[field]===value));
+    // Simulate a compromised/misconfigured RLS response in the negative test.
+    const rows=(data[table]??[]).filter(row=>unsafeLeak||filters.every(([field,value])=>row[field]===value));
     return {data:rows.slice(start,end+1),error:null};
    }
   };
@@ -84,7 +85,7 @@ describe('N95 owner registry-driven account export',()=>{
   await expect(new LiveAdapter().exportAll()).rejects.toThrow(/duplicate table/);
   harness(['tasks;DROP TABLE'],{});
   await expect(new LiveAdapter().exportAll()).rejects.toThrow(/invalid or duplicate/);
-  harness(['tasks'],{tasks:[{id:'foreign',user_id:'someone-else'}]});
+  harness(['tasks'],{tasks:[{id:'foreign',user_id:'someone-else'}]},null,true);
   await expect(new LiveAdapter().exportAll()).rejects.toThrow(/foreign owner/);
  });
 });
