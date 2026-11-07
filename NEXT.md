@@ -19,13 +19,13 @@ Tests: strengthen tests/mcp/sql/presets-command.mjs for archive/restore/delete, 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/presets-command.mjs, docs/v6/capability-registry/presets.json, CURRENT.md.
 Not: earlier migrations, other modules, app/MCP functions, unrelated existing test assertions or protected files.
 
-## N42.2 Deadlines versioned command, projections, undo and MCP parity
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = complete N42 on N42.1's owner-scoped public.deadlines table (title, kind, exclusive civil due date or instant, optional owner-composite links, strict estimate fields, status, version, action journal and owner-SELECT-only RLS already implemented; direct authenticated DML and write policies must be added compatibly with the versioned command and registry activation in N42.2). Add public.deadlines_command(p jsonb) with versioned and idempotent create, update, complete, reopen, cancel, restore and delete (changed-payload conflict, stale expectedVersion and second-owner rejection); register deadlines in lemma_undo_tables and lemma_command_resources, make the existing mcp_command service-role dispatcher work under p_user with owner/source/receipt parity. Add a read-only, owner-scoped read function that unions physical deadlines with projected project target dates and checkpoint due dates, clearly labelled by origin and never copied into deadlines rows. N42.1 test covers the schema, FK, RLS, dates and checks; this final stage must exercise full command lifecycle, retries, undo, read projections and MCP parity.
-Owner-authorized (D1, D8): production SQL needs independent review.
-Tests: extend tests/mcp/sql/deadlines.mjs for every command lifecycle, operationId and version conflict, second-owner isolation, undo, registered service-role MCP dispatch, and read-only project/checkpoint projection parity; existing suites unchanged.
+## N42.2.2 Deadline command lifecycle, undo and MCP parity
+Stage: Build · Status: open · Needs: N42.2.1 · Assigned: —
+Done = finish N42.2 after N42.2.1's owner-scoped, bounded, read-only public.deadline_feed union of physical deadlines and live project/checkpoint projections. Add an authenticated, security-invoker public.deadlines_command(p jsonb) that implements versioned and receipt-idempotent create, update, complete, reopen, cancel, restore and delete. Reject owner spoofing, changed-payload operationId retries, stale expectedVersion, foreign-owner links and invalid transitions; ensure unchanged retries never duplicate actions. Enable owner-bound write policies only together with journalled command writes, lemma_undo_tables and lemma_command_resources registration, so service-role mcp_command dispatch has the same effective owner, source, receipt and undo semantics. Retain the existing N42.1 schema constraints and N42.2.1 projections with no copied target rows.
+Owner-authorized (D1, D8): deploys on merge, production SQL needs independent review.
+Tests: extend tests/mcp/sql/deadlines.mjs to exercise all operations, idempotency, conflicts, owner isolation, undo, full-migration registry and MCP parity while preserving N42.1 and N42.2.1 assertions.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/deadlines.json, CURRENT.md.
-Not: changes to existing migrations or SQL tests, other tables, study_command, task_command, undo_action, mcp_command, app code or unrelated functions.
+Not: old migrations, other tables, study_command, task_command, undo_action, mcp_command, app code or existing test expectations.
 
 ## N43.2.2.2 Practice topic transactional commands, event due inverse, audit, undo and MCP
 Stage: Build · Status: open · Needs: N43.2.2.1 · Assigned: —
