@@ -32,6 +32,8 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(migrations.includes('20261107070000_deadlines_base.sql'));
+ assert.ok(migrations.includes('20261107123040_deadline_feed.sql'),
+   'the unapplied N42.2.1 function uses the next forward migration version');
  for(const migration of migrations)await db.exec(await readFile(new URL(migration,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
@@ -128,5 +130,73 @@ try{
  for(const [field,meta] of Object.entries(doc.columns)){
   assert.ok(meta.classification&&meta.appPath&&meta.mcpPath&&meta.exportPolicy&&meta.deletionPolicy,field);
  }
+
+ // N42.2.1: physical and projected deadlines share one owner-scoped feed.
+ // Source dates remain civil dates, and refreshing the source changes the
+ // projection without materializing any additional deadline row.
+ const ownProject='66666666-6666-6666-6666-666666666666';
+ const foreignProject='77777777-7777-7777-7777-777777777777';
+ const ownCheckpoint='88888888-8888-8888-8888-888888888888';
+ const foreignCheckpoint='99999999-9999-9999-9999-999999999999';
+ // The action journal requires one owner per statement/transaction.
+ await q(`insert into public.projects(id,user_id,slug,title,target_date)
+   values($1,$2,'math-plan','Mathematics path','2026-12-15')`,
+   [ownProject,owner]);
+ await q(`insert into public.projects(id,user_id,slug,title,target_date)
+   values($1,$2,'foreign-plan','Foreign path','2026-11-29')`,
+   [foreignProject,other]);
+ await q(`insert into public.checkpoints
+   (id,user_id,project_id,code,position,title,objective,criterion,steps,due_on)
+   values($1,$2,$3,'CP1',1,'Algebra checkpoint','Show mastery','Solve','["Practice"]'::jsonb,'2026-12-02')`,
+   [ownCheckpoint,owner,ownProject]);
+ await q(`insert into public.checkpoints
+   (id,user_id,project_id,code,position,title,objective,criterion,steps,due_on)
+   values($1,$2,$3,'CP1',1,'Foreign checkpoint','Other work','Explain','["Explain"]'::jsonb,'2026-12-03')`,
+   [foreignCheckpoint,other,foreignProject]);
+ await q("select set_config('test.uid',$1,false)",[owner]);
+ await db.exec('set role authenticated');
+ const feed=await q('select * from public.deadline_feed()');
+ assert.equal(feed.length,3,'one physical deadline and two owner projections');
+ const byOrigin=Object.fromEntries(feed.map(row=>[row.origin,row]));
+ assert.deepEqual(Object.keys(byOrigin).sort(),['checkpoint','deadline','project']);
+ assert.equal(byOrigin.deadline.source_id,mine.id,'physical owner deadline ID');
+ assert.equal(byOrigin.deadline.projected,false,'physical deadlines not projected');
+ assert.equal(byOrigin.deadline.status,'done','physical status stays authoritative');
+ assert.equal(byOrigin.deadline.due_kind,'date','physical civil due kind');
+ assert.equal(byOrigin.project.source_id,ownProject,'project projection source ID');
+ assert.equal(byOrigin.project.projected,true,'project has projected marker');
+ assert.equal(byOrigin.project.project_id,ownProject,'project join ID');
+ assert.equal(new Date(String(byOrigin.project.due_date)).toISOString().slice(0,10),
+   '2026-12-15','project due date retains its civil day across PGlite date decoding');
+ assert.equal(byOrigin.checkpoint.source_id,ownCheckpoint,'checkpoint projection source ID');
+ assert.equal(byOrigin.checkpoint.checkpoint_id,ownCheckpoint,'checkpoint projection join ID');
+ assert.equal(byOrigin.checkpoint.project_id,ownProject,'checkpoint parent project ID');
+ assert.equal(byOrigin.checkpoint.projected,true,'checkpoint is projected');
+ assert.equal(new Date(String(byOrigin.checkpoint.due_date)).toISOString().slice(0,10),
+   '2026-12-02','checkpoint due date retains its civil day across PGlite date decoding');
+ assert.equal((await q('select origin from public.deadline_feed(1,1)'))[0].origin,
+   'checkpoint','bounded pages have stable due-date ordering');
+ await db.exec('reset role');
+ assert.equal((await q('select count(*)::int n from public.deadlines'))[0].n,2,
+   'projections never create physical deadlines');
+ await q('update public.projects set target_date=null where id=$1',[ownProject]);
+ await q('update public.checkpoints set due_on=null where id=$1',[ownCheckpoint]);
+ await q("select set_config('test.uid',$1,false)",[owner]);
+ await db.exec('set role authenticated');
+ assert.deepEqual((await q('select origin from public.deadline_feed()')).map(x=>x.origin),
+   ['deadline'],'clearing source dates removes projections without writes');
+ await db.exec('reset role');
+ await q("select set_config('test.uid',$1,false)",[other]);
+ await db.exec('set role authenticated');
+ const foreignFeed=await q('select origin,source_id from public.deadline_feed()');
+ assert.deepEqual(foreignFeed.map(x=>x.source_id).sort(),
+   [theirs.id,foreignProject,foreignCheckpoint].sort(),
+   'a second owner sees only her own physical and projected rows');
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ assert.deepEqual(await q('select origin from public.deadline_feed()'),[],
+   'an unsigned session cannot read the projections');
+ assert.equal((await q('select count(*)::int n from public.deadlines'))[0].n,2);
+
  console.log('PASS N42.1 owner deadlines schema, date/instant exclusivity, estimates, FKs, RLS, audit and inventory');
 }finally{await db.close()}
