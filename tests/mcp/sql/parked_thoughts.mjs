@@ -1,5 +1,5 @@
-// N44.1: full-migration in-memory PGlite, no production connection.
-// Storage remains read-only until the auditable N44.2 command is installed.
+// N44.1/N44.2: full-migration in-memory PGlite, no production connection.
+// Direct DML remains blocked; versioned owner RPCs are receipted and undoable.
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
@@ -54,8 +54,8 @@ try{
  const fks=await q("select conname,condeferrable from pg_constraint where conrelid='public.parked_thoughts'::regclass and contype='f'");
  for(const key of ['parked_thoughts_entry_owner_fk','parked_thoughts_task_owner_fk'])
   assert.ok(fks.some(x=>x.conname===key&&x.condeferrable),'owner FK required: '+key);
- assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='parked_thoughts'"))[0].n,0);
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='parked_thoughts'"))[0].n,1);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,1);
 
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  const entry=(await q("insert into public.study_entries(user_id,source,intent) values($1,'manual','Plan') returning id",[owner]))[0];
@@ -98,11 +98,11 @@ try{
  await admin();
  assert.equal((await q('select text from public.parked_thoughts where id=$1',[open.id]))[0].text,'Prove an estimate');
  assert.equal((await q('select count(*)::int n from public.parked_thoughts'))[0].n,4);
- assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
+ assert.ok((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n>=4,'every privileged seed write is journalled');
 
 
- // N44.2.1: independently executable owner-bound command-envelope checks.
- // The helper is read-only: no authenticated DML, registry or undo yet.
+ // N44.2 validator: owner-bound command-envelope checks.
+ // Direct table DML is read-only; the validated RPC performs audited writes.
  const validate=async p=>(await q(
   'select public.parked_thoughts_validate_envelope($1::jsonb) value',
   [JSON.stringify(p)]))[0].value;
@@ -172,7 +172,136 @@ try{
  await db.exec('set role anon');
  await assert.rejects(validate(valid),/permission denied|Authentication required/);
  await admin();
- assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,0);
- console.log('PASS N44.1 owner-scoped read-only storage, status invariants, cross-owner FKs, and no unaudited DML');
+ assert.ok((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n>=4,'every privileged seed write is journalled');
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,1);
+
+ // N44.2 transactional command: durable receipts, versions and atomic task creation.
+ const command=async p=>(await q(
+  'select public.parked_thoughts_command($1::jsonb) as value',
+  [JSON.stringify(p)]))[0].value;
+ const envelope=(operation,operationId,patch={},target=null,expectedVersion=null)=>({
+  operationId,schemaVersion:1,resource:'parked_thoughts',operation,
+  ...(target?{target:{id:target}}:{}),
+  ...(expectedVersion!==null?{expectedVersion}:{}),patch
+ });
+ const idBase='aaaaaaaa-aaaa-4aaa-8aaa-';
+ const create=envelope('create',idBase+'000000000001',
+  {text:'Write the estimate',study_entry_id:entry.id});
+ await as(owner);
+ const created=await command(create);
+ assert.equal(created.status,'ok');assert.ok(created.actionNo);
+ assert.equal(created.thought.status,'open');
+ assert.equal(created.thought.study_entry_id,entry.id);
+ const thoughtId=created.thought.id;
+ assert.equal((await command(create)).thought.id,thoughtId,
+  'verbatim retry returns the original inserted thought');
+ assert.equal((await command({...create,patch:{text:'Different text'}})).status,
+  'conflict','changed payload cannot reuse an operationId');
+ assert.equal((await q('select count(*)::int n from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].n,1);
+
+ const editCommand=envelope('edit',idBase+'000000000002',
+  {text:'Write the sharp estimate'},thoughtId,1);
+ const edited=await command(editCommand);
+ assert.equal(edited.status,'ok');
+ assert.equal(edited.thought.version,2);
+ assert.equal(edited.thought.text,'Write the sharp estimate');
+ const stale=await command(envelope('edit',idBase+'000000000003',
+  {text:'Stale edit'},thoughtId,1));
+ assert.equal(stale.status,'conflict');
+ assert.equal(stale.conflict.currentVersion,2);
+ assert.equal(stale.current.id,thoughtId);
+ assert.equal((await command(envelope('edit',idBase+'000000000003',
+  {text:'Modified stale retry'},thoughtId,1))).status,'conflict');
+
+ const dismissed=await command(envelope('dismiss',idBase+'000000000004',
+  {},thoughtId,2));
+ assert.equal(dismissed.thought.status,'dismissed');
+ assert.ok(dismissed.thought.resolved_at);
+ await assert.rejects(command(envelope('convert_to_task',idBase+'000000000005',
+  {title:'Invalid resolved conversion'},thoughtId,3)),/Only open thoughts/);
+ const reopened=await command(envelope('reopen',idBase+'000000000006',
+  {},thoughtId,3));
+ assert.equal(reopened.thought.status,'open');
+ assert.equal(reopened.thought.resolved_at,null);
+ assert.equal(reopened.thought.version,4);
+ await assert.rejects(command(envelope('reopen',idBase+'000000000007',
+  {},thoughtId,4)),/Only dismissed thoughts/);
+ await assert.rejects(command(envelope('convert_to_task',idBase+'000000000008',
+  {title:'Due kind mismatch',due_kind:'date'},thoughtId,4)),
+  /constraint|violates/i,'bad task must roll back the thought and task');
+ assert.equal((await q('select version from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].version,4);
+
+ const conversion=envelope('convert_to_task',idBase+'000000000009',
+  {title:'Prove inequality',body:'Write down both bounds',
+   estimate_minutes:35,priority:'high',due_kind:'date',
+   due_date:'2026-11-09',position:0},thoughtId,4);
+ const convertedReceipt=await command(conversion);
+ assert.equal(convertedReceipt.status,'ok');
+ assert.equal(convertedReceipt.thought.status,'converted');
+ assert.equal(convertedReceipt.thought.destination_kind,'task');
+ assert.equal(convertedReceipt.thought.destination_id,convertedReceipt.task.id);
+ assert.equal(convertedReceipt.task.user_id,owner);
+ assert.equal(convertedReceipt.task.title,'Prove inequality');
+ assert.equal(convertedReceipt.task.status,'backlog');
+ assert.equal(convertedReceipt.changed.length,2);
+ const txChanges=await q('select table_name from public.action_changes where action_no=$1',
+   [convertedReceipt.actionNo]);
+ assert.deepEqual(txChanges.map(x=>x.table_name).sort(),
+  ['parked_thoughts','tasks'],
+  'one action journals both conversion rows for one undo');
+ const beforeReplay=(await q('select count(*)::int n from public.tasks where id=$1',
+  [convertedReceipt.task.id]))[0].n;
+ assert.equal((await command(conversion)).task.id,convertedReceipt.task.id);
+ assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
+  [convertedReceipt.task.id]))[0].n,beforeReplay,
+  'retry cannot create a second task');
+ assert.equal((await command({...conversion,patch:{title:'Different'}})).status,
+  'conflict');
+ const undone=(await q('select public.undo_action($1,$2) as value',
+  [owner,convertedReceipt.actionNo]))[0].value;
+ assert.equal(undone.undone,convertedReceipt.actionNo);
+ assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
+  [convertedReceipt.task.id]))[0].n,0);
+ assert.equal((await q('select status,version from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].status,'open');
+
+ const removed=await command(envelope('delete',idBase+'00000000000a',
+  {},thoughtId,4));
+ assert.equal(removed.status,'ok');
+ assert.equal((await q('select count(*)::int n from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].n,0);
+ const restored=(await q('select public.undo_action($1,$2) as value',
+  [owner,removed.actionNo]))[0].value;
+ assert.equal(restored.undone,removed.actionNo);
+ assert.equal((await q('select status from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].status,'open');
+
+ // A second owner cannot edit or link the first owner's data, including through
+ // the security-definer helper (which must not accept a caller owner field).
+ await as(other);
+ await assert.rejects(command(envelope('edit',idBase+'00000000000b',
+  {text:'Steal'},thoughtId,4)),/Thought not found/);
+ await assert.rejects(command(envelope('create',idBase+'00000000000c',
+  {text:'Foreign',study_entry_id:entry.id})),/foreign key|violates/i);
+ await assert.rejects(command({...create,operationId:idBase+'00000000000d',
+  user_id:owner}),/Unknown command field/);
+
+ // Service-role dispatcher delegates with an explicit owner and receives the
+ // same verified receipt. The command's own owner check remains authoritative.
+ await admin();
+ await db.exec('set role service_role');
+ const mcpCommand=envelope('create',idBase+'00000000000e',
+  {text:'From connected tutor'});
+ const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) as value',
+  [owner,'chatgpt',JSON.stringify(mcpCommand)]))[0].value;
+ assert.equal(mcp.status,'ok');
+ assert.equal(mcp.thought.user_id,owner);
+ assert.equal(mcp.thought.source,'mcp');
+ assert.equal((await q('select count(*)::int n from public.lemma_command_resources where resource=$1',
+  ['parked_thoughts']))[0].n,1);
+ await admin();
+
+ console.log('PASS N44.1/N44.2 owner-scoped read-only storage, status invariants, cross-owner FKs, and no unaudited DML');
 }finally{await db.close();}
