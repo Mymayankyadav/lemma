@@ -206,5 +206,38 @@ try {
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
    0,'do not activate registry before scoped N41.2.2.2.2 and bug #1024');
 
+  // Snapshot race regression: a STABLE preview retains the outer statement's
+  // original snapshot even when a VOLATILE command advances a preset in the
+  // same statement. The old lock helper called STABLE preview again after
+  // FOR UPDATE and incorrectly returned status=ok/version=3. The fixed helper
+  // must report the current locked tuple's version=4. This deterministic
+  // PGlite case exercises the same stale-snapshot issue as a second session
+  // committing while the row lock waits, without requiring a second PGlite
+  // backend (PGlite intentionally supports only one backend connection).
+  await as(owner);
+  const competingUpdate=request('update',{label:'After old snapshot'},{
+    target:{id},expectedVersion:3});
+  const race=await q(`with advanced as materialized (
+      select public.presets_command($1::jsonb) receipt
+    )
+    select advanced.receipt, public.lemma_preset_lifecycle_lock($2::jsonb) locked
+      from advanced where advanced.receipt ->> 'status' = 'ok'`,
+    [JSON.stringify(competingUpdate),JSON.stringify(deleteEnvelope)]);
+  assert.equal(race.length,1,'the competing update must commit inside the statement');
+  assert.equal(race[0].receipt.status,'ok');
+  assert.equal(race[0].receipt.changed[0].version,4);
+  assert.equal(race[0].locked.status,'conflict',
+    'post-lock recheck cannot reuse the STABLE preview statement snapshot');
+  assert.equal(race[0].locked.currentVersion,4,
+    'post-lock check must use the tuple locked by SELECT FOR UPDATE');
+  const afterRace=await locked({...deleteEnvelope,expectedVersion:4});
+  assert.equal(afterRace.status,'ok');
+  assert.equal(afterRace.currentVersion,4);
+  assert.equal(afterRace.effectiveOperation,'archive',
+    'a matching new version still preserves referenced study-entry history');
+  await admin();
+  assert.equal((await q("select count(*)::int n from public.presets where id=$1",[id]))[0].n,1);
+  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,0);
+
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}
