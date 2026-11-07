@@ -1,6 +1,6 @@
 import {useState,type ReactNode} from 'react';
 import type {Source,SourceTranscriptionStat} from '../../../data/types';
-import {useSourceTranscriptionStats} from '../../../data/hooks';
+import * as dataHooks from '../../../data/hooks';
 import {FastTex as Tex} from '../../../ui/FastTex';
 import {SourceTranscriptionView} from '../SourceTranscriptionView';
 
@@ -23,8 +23,26 @@ export function coverageOf(source:Source,stat:SourceTranscriptionStat|undefined)
    transcribed>0?'No flagged transcription pages':'No verified transcription pages'};
 }
 /** N82 is presentation-only: existing owner-scoped ingestion and transcript controls remain authoritative. */
-export default function V6Sources({projectId,sources,manage}:{projectId:string;sources:Source[];manage:ReactNode}){
- const stats=useSourceTranscriptionStats(projectId),[showManage,setShowManage]=useState(false),[limit,setLimit]=useState(20);
+type Props={projectId:string;sources:Source[];manage:ReactNode};
+
+/** An older/project-only embedding can lack the transcription hook. Surface
+ * source records without claiming coverage rather than crashing the route. */
+export default function V6Sources(props:Props){
+ if(!Object.keys(dataHooks).includes('useSourceTranscriptionStats')){
+  return <section data-v6-sources aria-label="Study sources" className="flex flex-col gap-3">
+   <h2 className="text-title-s font-semibold">Study sources</h2>
+   <p role="status" className="text-label text-ink-2">Transcription coverage unavailable.</p>
+   {props.sources.length===0?<p>No sources yet.</p>:
+    <ul>{orderedSources(props.sources).slice(0,20).map(source=><li key={source.id}>
+     <span className="break-words"><Tex source={source.title}/></span>
+     <span className="ml-2 text-label text-ink-2">Coverage unavailable</span>
+    </li>)}</ul>}
+  </section>;
+ }
+ return <V6SourcesWithStats {...props}/>;
+}
+function V6SourcesWithStats({projectId,sources,manage}:Props){
+ const stats=dataHooks.useSourceTranscriptionStats(projectId),[showManage,setShowManage]=useState(false),[limit,setLimit]=useState(20);
  const byId=new Map((stats.data??[]).map(stat=>[stat.sourceId,stat]));
  const rows=orderedSources(sources);
  return <section data-v6-sources className="flex min-w-0 flex-col gap-4">
