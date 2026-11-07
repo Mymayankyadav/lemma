@@ -117,12 +117,12 @@ Tests: tests/unit/day-plans/** for demo reload, owner-day uniqueness, multiple d
 Scope: src/data/day-plans/**, tests/unit/day-plans/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, new dependencies.
 
-## N61.2 Overlap acknowledgements demo, live adapter and owner command parity
-Stage: Build · Status: open · Needs: N61.1 · Assigned: —
-Done = finish the N61 app module using N61.1's typed overlap contract and SQL-matching pure validation. Implement an isolated getOverlapApi()/setOverlapApiForTests() facade and a tab-local reload-persistent demo adapter with representative valid block/study-entry participants, immutable owner-scoped records, exact 1–50 pages and filter-bound opaque cursors. Compute stale per acknowledgement from current participant versions without hiding unrelated acknowledgements. Implement a live adapter with authenticated owner-RLS bounded reads and version-sensitive computed stale state, and all N47.2 overlap_acknowledgements_command create/update/delete envelopes (one fresh operationId per user action, identical envelope on uncertain retry, conflict mapping, no owner identity accepted or sent), no direct DML. Enforce the exact SQL 2–10 participant and attribution invariants. Preserve complete version/source/receipt semantics; do not fabricate successful writes before the N47.2 command exists.
-Tests: tests/unit/overlap-acknowledgements/** (demo lifecycle and reload, staleness, filters and pages, live envelope per operation, retry reuses operationId, conflict mapping, second-owner read boundaries and no owner field sent). Preserve N61.1 pure validation tests.
+## N61.2.2 Overlap acknowledgement live RPC adapter, facade and owner parity
+Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
+Done = complete N61.2 after N61.1's typed contract/validation and N61.2.1's isolated tab-persistent demo CRUD and dynamic staleness. Implement the mode-aware getOverlapApi()/setOverlapApiForTests() facade and src/data/overlap-acknowledgements/live.ts using authenticated owner-RLS reads of public.overlap_acknowledgements, plus current owner participant versions for the computed stale state without hiding other conflicts. Implement exact 1–50 keyset pages, filter-bound opaque cursors, and get by ID. Send every create/update/delete as an owner-free versioned rpc('overlap_acknowledgements_command', envelope) mutation, generating one fresh operationId per user action and reusing the exact envelope on ambiguous or post-write retries; never issue direct table DML. Map currentVersion and changed-payload conflict receipts, source/action numbers and read-after-write to the typed contract. Validate participant ownership and version on the server via N47.2.3 before writes; no fake success if N47.2.3 has not deployed. Preserve N61.2.1 demo and N61.1 validation semantics without changes.
+Tests: tests/unit/overlap-acknowledgements/live.test.ts (mocked owner RLS read pages, all envelopes, stable retry IDs, optimistic conflicts, partial owner visibility, current participant staleness, source receipts and no caller owner field), plus existing N61.1 and N61.2.1 tests unchanged.
 Scope: src/data/overlap-acknowledgements/**, tests/unit/overlap-acknowledgements/**, CURRENT.md.
-Not: other src/data/** folders, UI, supabase/**, existing test assertion changes.
+Not: other src/data/** folders, UI, supabase/**, existing test assertion changes, new dependencies.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
 ## N62 Durable review runs: app module (src/data/review-runs)
@@ -256,7 +256,7 @@ Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (ne
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61.2, N74 · Assigned: —
+Stage: Build · Status: open · Needs: N61.2.2, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
 Tests: `tests/unit/calendar/overlaps.test.tsx`
 Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
