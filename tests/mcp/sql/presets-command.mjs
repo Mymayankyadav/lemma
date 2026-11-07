@@ -259,9 +259,14 @@ try {
   const deletedRequest=request('delete',{},{
     target:{id:absentId},expectedVersion:4,
   });
-  await as(owner);
+  // Compare the same unfiltered view on both sides: authenticated role
+  // is owner-RLS limited, whereas the final verification is administrator.
+  // A mixed-role count is *not* a valid read-only side-effect assertion.
+  await admin();
   const beforeProbeActions=(await q('select count(*)::int n from public.actions'))[0].n;
   const beforeProbeRows=(await q('select count(*)::int n from public.presets'))[0].n;
+  const beforeProbeChanges=(await q('select count(*)::int n from public.action_changes'))[0].n;
+  await as(owner);
   assert.deepEqual(await probe(deletedRequest),{
     operationId:deletedRequest.operationId,status:'new',
   },'unknown lifecycle operationId must be new without side effects');
@@ -328,6 +333,8 @@ try {
     beforeProbeActions,'probe must not write an action journal');
   assert.equal((await q('select count(*)::int n from public.presets'))[0].n,
     beforeProbeRows,'probe must not change preset records');
+  assert.equal((await q('select count(*)::int n from public.action_changes'))[0].n,
+    beforeProbeChanges,'probe must not create any action-change entry');
   assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n,
     0,'N41.2.2.2.2.2.1 must not activate generic MCP dispatch');
 
