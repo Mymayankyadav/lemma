@@ -144,12 +144,12 @@ try{
    values($1,$2,'foreign-plan','Foreign path','2026-11-29')`,
    [foreignProject,other]);
  await q(`insert into public.checkpoints
-   (id,user_id,project_id,code,position,title,objective,criterion,due_on)
-   values($1,$2,$3,'CP1',1,'Algebra checkpoint','Show mastery','Solve', '2026-12-02')`,
+   (id,user_id,project_id,code,position,title,objective,criterion,steps,due_on)
+   values($1,$2,$3,'CP1',1,'Algebra checkpoint','Show mastery','Solve','["Practice"]'::jsonb,'2026-12-02')`,
    [ownCheckpoint,owner,ownProject]);
  await q(`insert into public.checkpoints
-   (id,user_id,project_id,code,position,title,objective,criterion,due_on)
-   values($1,$2,$3,'CP1',1,'Foreign checkpoint','Other work','Explain','2026-12-03')`,
+   (id,user_id,project_id,code,position,title,objective,criterion,steps,due_on)
+   values($1,$2,$3,'CP1',1,'Foreign checkpoint','Other work','Explain','["Explain"]'::jsonb,'2026-12-03')`,
    [foreignCheckpoint,other,foreignProject]);
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
