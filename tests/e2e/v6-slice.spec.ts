@@ -20,6 +20,9 @@ async function displayedMinutes(page:Page):Promise<number>{
 test('N20 saved Focus appears in Today, Calendar Day and Progress Day with the same minutes',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:844});
+ // The +6-minute assertion tests one civil day, not midnight rollover.
+ // Use a real-running browser clock fixed to a safe afternoon start.
+ await page.clock.install({time:new Date('2026-11-06T15:00:00.000Z')});
  await emptyStudy(page);
  await visit(page,'/');
  const original=await displayedMinutes(page);
@@ -50,6 +53,9 @@ test('N20 saved Focus appears in Today, Calendar Day and Progress Day with the s
 test('N20 discarded Focus never contributes to Calendar or Progress totals',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:390,height:844});
+ // Keep the discarded-minute assertions on one predictable civil day.
+ // The installed browser clock still advances in real time.
+ await page.clock.install({time:new Date('2026-11-06T15:00:00.000Z')});
  await emptyStudy(page);
  await visit(page,'/');
  const before=await displayedMinutes(page);
