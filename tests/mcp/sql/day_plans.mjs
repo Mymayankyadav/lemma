@@ -40,7 +40,9 @@ try{
   grant execute on function auth.uid() to authenticated;`);
  const directory=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(directory)).filter(f=>f.endsWith('.sql')&&!f.includes('_storage')).sort();
- assert.ok(names.includes('20261107090000_day_plans_header.sql'));
+ assert.ok(names.includes('20261107120030_day_plans_header.sql'));
+ assert.ok(!names.includes('20261107090000_day_plans_header.sql'),
+   'superseded N46 migration version must not remain');
  for(const name of names)await db.exec(await readFile(new URL(name,directory),'utf8'));
  const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/day_plans.json',import.meta.url),'utf8'));
  const columns=(await q("select attname from pg_attribute where attrelid='public.day_plans'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname).sort();
