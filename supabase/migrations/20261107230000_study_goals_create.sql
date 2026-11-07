@@ -42,6 +42,9 @@ create policy study_goals_owner_read on public.study_goals
   for select to authenticated using(user_id=(select auth.uid()));
 grant select on public.study_goals to authenticated;
 grant select,insert,update,delete on public.study_goals to service_role;
+-- Supabase may grant new tables to browser roles by default; owner-only
+-- SELECT must be enforced by both ACL and RLS, without relying on RLS alone.
+revoke insert,update,delete,truncate on public.study_goals from anon,authenticated;
 
 -- The scope includes nullable IDs; NULL means unscoped, not a wildcard.
 -- Lock per owner, then check active inclusive date-range overlap. This also

@@ -36,6 +36,9 @@ try{
      as $bytes$select decode(repeat('00',n),'hex')$bytes$;
     grant usage on schema auth to authenticated;
     grant execute on function auth.uid() to authenticated;`);
+  // Emulate Supabase's automatic browser table grants. The brand-new study
+  // goals table must explicitly revoke all unaudited write privileges.
+  await db.exec('alter default privileges in schema public grant insert,update,delete,truncate on tables to anon,authenticated');
   const dir=new URL('../../../supabase/migrations/',import.meta.url);
   const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
   assert.ok(names.includes('20261107230000_study_goals_create.sql'));
@@ -64,8 +67,15 @@ try{
     has_function_privilege('authenticated','public.study_goals_command(jsonb)','EXECUTE') owner`))[0];
   assert.equal(tablePriv.read,true);
   assert.equal(tablePriv.anon,false);assert.equal(tablePriv.owner,true);
-  // Default table grants may expose write privileges; RLS alone must still
-  // prevent direct unaudited owner DML without going through the command.
+  for(const role of ['anon','authenticated']){
+    for(const privilege of ['INSERT','UPDATE','DELETE','TRUNCATE']){
+      assert.equal((await q('select has_table_privilege($1,$2,$3) allowed',
+        [role,'public.study_goals',privilege]))[0].allowed,false,
+        `New study goals must revoke ${privilege} from ${role} even under default grants`);
+    }
+  }
+  // ACL denial complements the owner-SELECT-only RLS barrier; tested under
+  // the simulated Supabase default table grants above.
   await db.exec('set role anon');
   await rejects(make({period:'week'}),/permission denied|Authentication required/i);
   await as(owner);
