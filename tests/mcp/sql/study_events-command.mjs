@@ -173,17 +173,19 @@ try{
  assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[freshId]))[0].n,0);
 
  // Every mutation must be undoable, not only a brand-new record insert.
- // Inverse updates may advance version via study_events_touch_version, but
- // they must restore all owner-editable values and the visible void state.
+ // The N50.2.2 compatible undo-only trigger bypass must restore the EXACT
+ // prior version and timestamps, as well as content and void status.
  const undoAction=async actionNo=>(await q(
   'select public.undo_action($1::uuid,$2::bigint,false) result',
   [owner,actionNo]))[0].result;
  const currentRow=async key=>(await q(
-  'select kind,note,related_kind,related_id,voided_at,version from public.study_events where id=$1',
+  'select kind,note,related_kind,related_id,voided_at,version,created_at,updated_at from public.study_events where id=$1',
   [key]))[0];
  const editBaseline=await command(op('record',{entry_id:entry,kind:'drift',
   duration_minutes:4,note:'Original',related_kind:'task',related_id:task}));
  const editId=editBaseline.changed[0].id;
+ const beforeEditRow=await currentRow(editId);
+ assert.equal(beforeEditRow.version,1);
  const changedEdit=await command(op('edit',{
   note:'Revised',related_kind:'study_entry',related_id:entry,
  },{target:{id:editId},expectedVersion:1}));
@@ -196,6 +198,8 @@ try{
  assert.equal((await currentRow(editId)).related_id,task);
  const currentAfterUndo=await currentRow(editId);
  assert.equal(currentAfterUndo.kind,'drift');
+ assert.deepEqual(currentAfterUndo,beforeEditRow,
+  'undo edit must restore the full original version and timestamps');
  const voidChange=await command(op('void',{},{
   target:{id:editId},expectedVersion:currentAfterUndo.version}));
  assert.ok((await currentRow(editId)).voided_at);
@@ -203,11 +207,16 @@ try{
  assert.equal(Number(undoneVoid.undone),Number(voidChange.actionNo));
  assert.equal((await currentRow(editId)).voided_at,null,
   'undo void must make the same owner event visible again');
+ assert.deepEqual(await currentRow(editId),beforeEditRow,
+  'undo void must restore the exact pre-void version and timestamps');
  const restoredCandidate=await command(op('record',{entry_id:entry,
   kind:'notice',note:'Retain void history'}));
  const restoreId=restoredCandidate.changed[0].id;
  const beforeRestore=await command(op('void',{},{
   target:{id:restoreId},expectedVersion:1}));
+ const beforeRestoreRow=await currentRow(restoreId);
+ assert.equal(beforeRestoreRow.version,2);
+ assert.ok(beforeRestoreRow.voided_at);
  const restoredOnce=await command(op('restore',{},{
   target:{id:restoreId},expectedVersion:beforeRestore.changed[0].version}));
  assert.equal((await currentRow(restoreId)).voided_at,null);
@@ -215,6 +224,8 @@ try{
  assert.equal(Number(undoRestored.undone),Number(restoredOnce.actionNo));
  assert.ok((await currentRow(restoreId)).voided_at,
   'undo restore preserves the original voided history');
+ assert.deepEqual(await currentRow(restoreId),beforeRestoreRow,
+  'undo restore must reinstate the exact voided state, version and timestamps');
  // Restoring a reference to an owner task removed after void is refused.
  // Historical voided events remain readable, but cannot reactivate a
  // dangling task association even though related_kind/id are unchanged.

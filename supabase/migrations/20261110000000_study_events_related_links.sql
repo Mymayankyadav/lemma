@@ -47,6 +47,22 @@ create trigger study_events_related_owner before insert or update of
   related_kind,related_id,user_id on public.study_events
   for each row execute function public.study_events_related_owner_check();
 
+-- Compatible replacement of N50.1's version/timestamp trigger for D8 undo:
+-- generic undo_action writes the journalled old row, including its exact
+-- version and updated_at. Only its trusted inverse path may preserve them.
+-- Every ordinary app/MCP write must still advance version and updated_at.
+create or replace function public.study_events_touch_version() returns trigger
+language plpgsql security invoker set search_path='' as $touch_undo$
+begin
+ if pg_catalog.current_setting('lemma.tool',true)='undo' then
+  return new;
+ end if;
+ new.version:=old.version+1;
+ new.updated_at:=pg_catalog.clock_timestamp();
+ return new;
+end
+$touch_undo$;
+
 
 -- N50.2.2: owner-checked, journalled event command with exact receipts.
 -- The N50.1 study_events_log trigger already journals every mutation. The
