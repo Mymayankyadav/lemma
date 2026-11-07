@@ -25,12 +25,12 @@ describe('N70 owner-bound Today plan and honest empty data',()=>{
   expect(nextPlannedBlock(plan,[item],[block],'2026-11-07T13:00:00Z')).toBeNull();
  });
  it('uses bounded owner pages and refuses cursor loops without inventing a plan',async()=>{
-  setDayPlanApiForTests({mode:'demo',listPlans:vi.fn(async()=>({items:[],total:0,nextCursor:null}))} as unknown as DayPlanApi);
-  setStudyApiForTests({mode:'demo',listCalendarBlocks:vi.fn(async()=>[])} as unknown as StudyApi);
+  setDayPlanApiForTests({mode:'live',listPlans:vi.fn(async()=>({items:[],total:0,nextCursor:null}))} as unknown as DayPlanApi);
+  setStudyApiForTests({mode:'live',listCalendarBlocks:vi.fn(async()=>[])} as unknown as StudyApi);
   try{
    const empty=await readTodayPlan('2026-11-07','UTC');
    expect(empty).toEqual({plan:null,items:[],blocks:[]});
-   setDayPlanApiForTests({mode:'demo',listPlans:vi.fn(async()=>({
+   setDayPlanApiForTests({mode:'live',listPlans:vi.fn(async()=>({
     items:[plan],total:2,nextCursor:'same',
    }))} as unknown as DayPlanApi);
    await expect(readTodayPlan('2026-11-07','UTC')).rejects.toThrow(/Repeated day-plan cursor/);
