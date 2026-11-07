@@ -32,7 +32,7 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(migrations.includes('20261107070000_deadlines_base.sql'));
- assert.ok(migrations.includes('20261107123030_deadline_feed.sql'),
+ assert.ok(migrations.includes('20261107123040_deadline_feed.sql'),
    'the unapplied N42.2.1 function uses the next forward migration version');
  for(const migration of migrations)await db.exec(await readFile(new URL(migration,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
