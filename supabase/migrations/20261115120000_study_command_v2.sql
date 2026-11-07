@@ -16,7 +16,7 @@ create index calendar_blocks_owner_task on public.calendar_blocks(user_id,task_i
 -- helper functions stay untouched; only study_command dispatch is extended.
 create function public.study_command_correction(
  p jsonb, v_owner uuid, v_operation_id uuid
-) returns jsonb language plpgsql security invoker set search_path='' as $v2$
+) returns jsonb language plpgsql security invoker set search_path='' as $correction$
 declare
  v_op text := p->>'operation';
  v_patch jsonb := coalesce(p->'patch','{}'::jsonb);
@@ -263,7 +263,7 @@ begin
    v_receipt||pg_catalog.jsonb_build_object('_request',p));
  return v_receipt;
 end
-$v2$;
+$correction$;
 revoke all on function public.study_command_correction(jsonb,uuid,uuid)
  from public,anon;
 grant execute on function public.study_command_correction(jsonb,uuid,uuid)
