@@ -11,13 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N43.2.2.2.2 Practice topic/event receipt-backed writes, inverse, undo and MCP
-Stage: Build · Status: open · Needs: N43.2.2.2.1 · Assigned: —
-Done = finish N43.2 using N43.1's owner-scoped practice tables, N43.2.1's operation envelope validator, N43.2.2.1's pure cadence delay and N43.2.2.2.1's owner-scoped due preview. In a new additive migration implement receipt-idempotent practice_topics_command for topic create/update/archive/restore/delete and event record/void, with owner/version checks under row locks and exactly-once operationId replay/changed-payload conflict. Server command selects the authoritative base civil date (never blindly trusts a preview), advances the due date by rating-dependent whole days, saves prior due/last-practiced state on every recorded event and restores exact inverse or refuses stale/out-of-order voids. Journal topic and event changes and register both in lemma_undo_tables plus lemma_command_resources for service-role MCP parity only alongside safe undoable writes; keep authenticated DML command-only, preserve existing study/task/undo_action, no card/review/FSRS changes.
-Owner-authorized (D1, D8): independently review production SQL; hold approval until all lower-version migrations are verified applied.
-Tests: extend tests/mcp/sql/practice-topics-commands.mjs with full lifecycle, rating/civil dates, inverse with multiple events, other-owner and stale-version rejection, changed-payload receipt replay, journaling and compatible undo_action and service-role MCP. Retain N43.1, N43.2.1, N43.2.2.1 and N43.2.2.2.1 regressions.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice-topics-commands.mjs, docs/v6/capability-registry/practice_topics.json, docs/v6/capability-registry/practice_events.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: old migrations, other app modules, UI, cards/reviews/FSRS, generic undo_action or mcp_command replacement, protected paths.
 
 ## N44.2 Parked thought commands and atomic conversion to task
 Stage: Build · Status: open · Needs: N44.1 · Assigned: —
@@ -33,16 +26,6 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle rules above
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
-
-
-
-## N48.2 Versioned review run lifecycle and registry-backed undo (D8 b)
-Stage: Build · Status: open · Needs: N48.1 · Assigned: —
-Done = finish N48 after N48.1's read-only, owner-scoped review_runs and review_run_items schema. One forward-only additive migration installs owner-bound versioned review_runs_command with start/pause/resume/advance/abandon/complete, durable operationId receipts, identical SQL card selection and counts as the connector, deck filters and budgets, scheduler/settings version checks, and owner action journaling. Start snapshots ordered card IDs and expected versions; resume never grades a card; advance links only a previously committed owner review receipt and marks changed-version cards stale with a reason. Add both tables to lemma_undo_tables and register review_runs in lemma_command_resources for service-role MCP parity, preserving existing undo_action/mcp_command and card/review grading behaviour.
-Owner-authorized (D1, D8): production SQL needs independent review.
-Tests: tests/mcp/sql/review_runs_command.mjs full-migration PGlite, owner isolation, same SQL selection/counts, retry/receipt parity, stale card version, card grade never replayed, journal/undo and service-role MCP.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/review_runs_command.mjs, docs/v6/capability-registry/review_runs.json, docs/v6/capability-registry/review_run_items.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: existing migrations, app code, FSRS/card grading, unrelated functions/tables, protected CI or dependency changes.
 
 ## N49 Proposal drafts: migration (proposal_drafts)
 Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
@@ -86,14 +69,6 @@ Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit 
 Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no implicit approval, duplicate/changed-payload operationId, conflict views and source version drift, bounded pages and cursor filter locks, live envelopes per operation with retry and no owner field, typed error mapping. Retain N63.1 pure-model tests.
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
-
-## N51 Study command v2: saved-entry correction and block task links
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(d), one migration replaces `study_command` compatibly and adds `calendar_blocks.task_id` (owner-composite FK to `tasks`, deferrable) so a block can carry a task; new operations on `study_entries`: `correct` (edit intent/links/rating/reflection and replace its intervals with a validated union, end after start, no 24-hour cap at DST), `split` (one saved entry into two at an instant, preserving the exact union), `void` and `restore`, and `create_manual` (a saved entry with `approximate=true` and its intervals). Calendar block create/update accept `task_id`. Every existing operation behaves exactly as before.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/study-correction.mjs` (each operation, union preserved, overlapping intervals rejected, a voided entry leaves Calendar/Progress reads, undo reverts each, retry/conflict, second owner, `mcp_command` path) and the existing study SQL tests unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-correction.mjs, docs/v6/capability-registry/study_entries.json, docs/v6/capability-registry/calendar_blocks.json, CURRENT.md.
-Not: app or MCP code, other functions.
 
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
 Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
