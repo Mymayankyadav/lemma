@@ -59,7 +59,9 @@ export interface OverlapApi {
   deleteAcknowledgement(id:string,expectedVersion:number):Promise<StudyReceipt<{id:string}>>;
 }
 export class OverlapError extends Error {
-  constructor(public readonly code:'invalid'|'conflict'|'not_found',message:string){
+  constructor(public readonly code:'invalid'|'conflict'|'not_found',
+    message:string,public readonly currentVersion?:number,
+    public readonly conflictReason?:string){
     super(message);this.name='OverlapError';
   }
 }
