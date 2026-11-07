@@ -269,6 +269,9 @@ try{
  // Service-role MCP operations preserve owner binding and provenance
  // across edit, void, restore; all are command-receipted, never direct DML.
  const mcpId=mcp.changed[0].id;
+ // The preceding readback deliberately reset the fixture to the default
+ // role. Re-enter the authenticated MCP bridge's required service role.
+ await db.exec('set role service_role');
  const mcpSteps=[
   op('edit',{note:'Changed through MCP'},{target:{id:mcpId},expectedVersion:1}),
   op('void',{}, {target:{id:mcpId},expectedVersion:2}),
