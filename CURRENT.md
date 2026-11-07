@@ -399,6 +399,10 @@ After a CI revert of the earlier merged N56.1 slice, this PR restores the exact 
 
 Takeover correction (Agent: chat-51673#r8k2): the demo validator rejects non-existent civil dates inside timezone-aware ISO instants (such as February 30), rather than relying on JavaScript Date.parse's rollover. A regression verifies invalid instant create calls do not persist rows. The N56.2 live adapter remains outstanding.
 
+## N57.1 practice topics/events typed contract and demo (N57 split)
+
+Adds `src/data/practice-topics/` with the typed `PracticeTopicApi` covering topic creation, edit, archive/restore/delete, two validated fixed-days/after-rating cadence shapes, and linked practice event recording/voiding. The isolated `lemma.v6.demo.practice-topics.v1` sessionStorage adapter has owner-style fixtures, reload and corrupt-snapshot recovery, clone-safe records, optimistic topic/event versions, referentially safe deletion, active/archived and event filters, exact 1–50 cursor pages and an inverse due-date snapshot for voiding only the latest live practice event. The injectable `getPracticeTopicApi()` facade resolves demo mode; live mode intentionally remains read-empty and rejects writes pending N57.2. Ten focused Vitest cases cover cadence bounds, lifecycle, rating-based due dates, rollback, stale versions, 50+ pages, filter-bound cursors, persistence, invalid caller fields and injection. No migrations, app/MCP code or existing test assertions are changed.
+
 ## N47.2.2 overlap acknowledgement command envelope validator (N47.2 split)
 
 The additive `overlap_ack_validate_envelope` function validates authenticated command envelopes, operation IDs, versioned update/delete targets, allowed create/update/delete fields, participant structure and exact disposition attribution without changing any table data. A full-migration PGlite test covers valid/invalid envelopes, versions, owner-field rejection, participants, read-only state and anon denial. N47.1's owner SELECT-only RLS, staleness trigger and original tests remain intact. N47.2.3 adds transactional commands, undo/registry registration and service-role MCP parity before write permissions are enabled.
