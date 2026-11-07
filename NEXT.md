@@ -28,14 +28,6 @@ Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/record-version
 Not: app or MCP code, other tables, changing existing functions.
 Reverted: 2026-11-06 — unit/tests/unit/contract/capability-registry.test.ts::N40 complete capability registry > classifies every existing public column from every CREATE TABLE/ADD COLUMN migration :: Stale/nonexistent column settings.version
 
-## N39 Typed planning and focus settings
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = one additive migration adds to `public.settings`, with defaults and check constraints in explicit units: `week_start int` (0–6, default 1), `clock_24h boolean`, `focus_defaults jsonb` (mode `pomodoro`/`flowtime`/`open`, focus/break/long-break minutes, cycles, Flowtime break ratio, long-session guard minutes), `planning jsonb` (daily window start/end local times, gap minutes, maximum consecutive minutes, daily minimum qualifying minutes, daily intention on/off), `review_budget jsonb` (cards, minutes, reserve review time in plans), `attention jsonb` (opt-in drift and urge prompts), and a validation function used by the checks. Unknown keys inside these objects are preserved by every writer.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/settings-typed.mjs`: defaults on an existing settings row, every bound and unit rejected outside range, partial patches keep unknown keys, existing settings writes unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/settings-typed.mjs, docs/v6/capability-registry/settings.json, CURRENT.md.
-Not: app or MCP code (N79, N87), other tables.
-
 ## N41.2 Activity preset commands, archive, undo and MCP parity
 Stage: Build · Status: open · Needs: N41.1 · Assigned: —
 Done = finish N41 on top of N41.1's owner-scoped presets table and indexed typed configuration. Add public.presets_command(p jsonb) as a security-invoker, owner-bound, versioned action-receipt command with create, update, reorder, archive, restore and delete (delete only when no study entry refers to the preset; otherwise archive). Preserve prior entry labels/links on rename/archive. Use the N36.2 undo and command registries: insert presets into lemma_undo_tables, register presets_command with a field/operation JSON schema in lemma_command_resources, make MCP dispatch service-role-only under p_user, and ensure existing commands and N36 tests remain compatible. Validate operationId retries, changed-payload conflict, stale expectedVersion, cross-owner references and unchanged other-owner data.
