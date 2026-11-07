@@ -96,12 +96,14 @@ try {
   // A caller may not forge provenance while bumping a row's version.
   // The trigger always chooses the authenticated audit context instead.
   if(table==='subjects')
-   await query('update public.'+table+' set version=999,updated_source=\'worker\' where '+where,args);
+   await query('update public.'+table+' set version=999,updated_source=\'worker\',updated_at=\'2000-01-01T00:00:00Z\' where '+where,args);
   else
    await query('update public.'+table+' set version=999 where '+where,args);
   const updated=await record(table);
   assert.equal(updated.version,2,table+' increments once on UPDATE');
   assert.equal(updated.updated_source,'mcp',table+' attributes chat writes to MCP');
+  if(table==='subjects')assert.ok(new Date(updated.updated_at).getTime()>Date.parse('2020-01-01T00:00:00Z'),
+   'caller-forged historical updated_at must be replaced by the version trigger');
   assert.ok(new Date(updated.updated_at).getTime()>=new Date(old.updated_at).getTime(),
    table+' refreshes the timestamp');
  }
