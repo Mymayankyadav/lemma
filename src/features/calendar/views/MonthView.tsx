@@ -1,5 +1,7 @@
 import type {CalendarBlockRecord, StudyEntryRecord} from '../../../data/study/contract';
-import {calendarRange, dayKey, monthDays} from '../model';
+import {calendarRange,dayKey,monthBounds,monthDays} from '../model';
+import {OverlapMarkers,useCalendarOverlaps} from '../overlaps/OverlapMarkers';
+import {overlapWindows} from '../overlaps/model';
 import {DueDayItems,dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
 
 interface MonthViewProps {
@@ -15,6 +17,9 @@ interface MonthViewProps {
 export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topics:[]},
   onDay, firstDay = 1}: MonthViewProps) {
   const grid = monthDays(date, zone, entries, blocks, firstDay);
+  const viewRange=monthBounds(date,zone,firstDay).range;
+  const controls=useCalendarOverlaps(viewRange);
+  const conflicts=overlapWindows(entries,blocks,viewRange);
   const today = dayKey(new Date(), zone);
   const formatter = new Intl.DateTimeFormat('en', {timeZone: zone, month: 'long', year: 'numeric'});
   const label = formatter.format(new Date(calendarRange(date, zone).start));
@@ -33,6 +38,10 @@ export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topic
         const logged = Math.round(day.capacity.logged);
         const blocksCount = day.blocks.length;
         const dueCount=dueForDay(day.day,grid.first,zone,dues).length;
+        const range=calendarRange(day.day,zone);
+        const overlapCount=conflicts.filter(row=>
+          Date.parse(row.startsAt)<Date.parse(range.end)&&
+          Date.parse(row.endsAt)>Date.parse(range.start)).length;
         const isToday = day.day === today;
         return <button key={day.day} type="button"
           data-month-day={day.day} data-outside-month={!day.inMonth||undefined}
@@ -49,9 +58,16 @@ export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topic
           </span>
           {dueCount>0&&<span className="text-[11px] tabular-nums text-ink">
             {dueCount} due</span>}
+          {overlapCount>0&&<span className="text-[11px] font-semibold text-ink">
+            {overlapCount} conflict{overlapCount===1?'':'s'}</span>}
         </button>;
       })}
     </div>
+    {conflicts.length>0&&<section aria-label="Month overlap acknowledgements"
+      className="mt-4 space-y-2">
+      <h3 className="text-label font-semibold text-ink">Time conflicts</h3>
+      <OverlapMarkers windows={conflicts} controls={controls} zone={zone}/>
+    </section>}
     {grid.days.some(day=>dueForDay(day.day,grid.first,zone,dues).length>0)&&
       <section aria-label="Month deadlines and practice" className="mt-4 space-y-3">
         <h3 className="text-label font-semibold text-ink">Deadlines and practice</h3>
