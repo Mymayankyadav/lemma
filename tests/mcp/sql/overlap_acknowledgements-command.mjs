@@ -84,6 +84,17 @@ try{
  const fullUpdateOffset={...edit,patch:{starts_at:'2026-11-07T13:30:00+05:30',
   ends_at:'2026-11-07T13:45:00+05:30'}};
  assert.deepEqual(await call(fullUpdateOffset),fullUpdateOffset,'complete update accepts offset window');
+ const clearedCreate={...input,patch:{...input.patch,attributed_to:null}};
+ assert.deepEqual(await call(clearedCreate),clearedCreate,
+  'keep_both create accepts explicit null as a cleared attribution');
+ const clearedUpdate={...edit,patch:{
+  participants:input.patch.participants,disposition:'keep_both',attributed_to:null}};
+ assert.deepEqual(await call(clearedUpdate),clearedUpdate,
+  'full update can clear an earlier attributed participant with JSON null');
+ await assert.rejects(call({...clearedUpdate,patch:{
+  ...clearedUpdate.patch,disposition:'attribute_to'}}),
+  /Attribution must match an acknowledged participant/,
+  'attribute_to must not accept a missing/null participant choice');
  const completeUpdate={...edit,patch:{
   participants:input.patch.participants,disposition:'attribute_to',
   attributed_to:{kind:'entry',id:input.patch.participants[0].id}}};

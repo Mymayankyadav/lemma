@@ -458,3 +458,7 @@ The unmerged owner-authenticated overlap-acknowledgement validator checks suppli
 ## N47.2.2 finite, explicitly zoned ISO instants (2026-11-07)
 
 The read-only command envelope validator now rejects timezone-naive timestamps, Postgres infinity literals and malformed timezone offsets before PostgreSQL timestamp parsing. It accepts explicit ISO-8601 `Z` or valid numeric-offset windows, checks fully supplied start/end ordering and leaves partial updates for the future transaction to resolve against stored records. Full-migration regression cases cover create/update invalid instants on both fields, valid offset windows and preserved partial updates; staged RLS and registry/undo restrictions are unchanged.
+
+## N47.2.2 explicit-null attribution during keep-both transitions (2026-11-07)
+
+The new read-only overlap acknowledgement envelope validator accepts a JSON-null `attributed_to` alongside `keep_both` on create and on complete updates, matching the nullable typed N61.1 API and the SQL NULL interpretation in N47.1's choice guard. It still refuses JSON-null attribution with `attribute_to`, and still checks real participant membership for non-null attribution. Full-migration PGlite regressions cover all three cases. No write permission, command registration, journal or older migration changed; N47.2.3 must implement transactional owner-bound lifecycle and undo.

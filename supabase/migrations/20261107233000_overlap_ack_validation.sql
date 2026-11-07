@@ -125,11 +125,14 @@ begin
   end if;
   -- A complete update patch must be self-consistent, just like create.
   -- Partial updates need the stored row and are checked by N47.2.3.
+  -- Treat explicit JSON null as a cleared optional attribution. The N47.1
+  -- helper expects SQL NULL for keep_both; attribute_to still needs a participant.
   if (v_op='create' or (v_op='update'
     and v_patch?'participants' and v_patch?'disposition'
     and v_patch?'attributed_to'))
     and not public.overlap_ack_choice_valid(
-      v_patch->'participants',v_patch->>'disposition',v_patch->'attributed_to'
+      v_patch->'participants',v_patch->>'disposition',
+      pg_catalog.nullif(v_patch->'attributed_to','null'::jsonb)
     ) then
     raise exception 'Attribution must match an acknowledged participant';
   end if;
