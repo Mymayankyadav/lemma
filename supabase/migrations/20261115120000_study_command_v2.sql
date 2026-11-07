@@ -317,6 +317,15 @@ begin
         'conflict',pg_catalog.jsonb_build_object(
           'reason','operationId reused with a different payload'));
     end if;
+    -- An N51 action cannot claim the operationId of an earlier v1 action.
+    -- Old v1 replay itself remains byte-for-byte compatible.
+    if p->>'resource'='study_entries' and p->>'operation' in
+      ('create_manual','correct','split','void','restore') then
+      return pg_catalog.jsonb_build_object('operationId',v_operation_id,
+        'status','conflict','changed','[]'::jsonb,'actionNo',null,
+        'conflict',pg_catalog.jsonb_build_object(
+          'reason','operationId already belongs to a legacy command'));
+    end if;
     return v_receipt;
   end if;
 

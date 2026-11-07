@@ -127,6 +127,16 @@ try {
  const blockId=block.changed[0].id;
  assert.equal((await q('select task_id from public.calendar_blocks where id=$1',
   [blockId]))[0].task_id,task.id);
+ // Legacy v1 retries retain their original response. A new N51 operation
+ // cannot steal their already-consumed operationId to report false success.
+ const legacy=envelope('create',{...timeBlock,title:'Older block'},null,null,'calendar_blocks');
+ const legacyResult=await command(legacy);
+ assert.deepEqual(await command(legacy),legacyResult);
+ const collision=await command(envelope('create_manual',
+   {intent:'Wrongly replayed manual',intervals:spans},
+   null,null,'study_entries',legacy.operationId));
+ assert.equal(collision.status,'conflict',
+  'new operations reject legacy receipt operationId collisions');
  const upd=await command(envelope('update',{task_id:null},blockId,block.changed[0].version,'calendar_blocks'));
  assert.equal(upd.status,'ok');
  assert.equal((await q('select task_id from public.calendar_blocks where id=$1',[blockId]))[0].task_id,null);
