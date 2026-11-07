@@ -89,6 +89,23 @@ try{
    'select * from public.study_entries where id=$1',[id]))[0];
  await as(owner);
  let flow=await get(newDraft);
+ // The browser has owner RLS UPDATE rights. Neither a missing lease nor a
+ // forged lemma.tool provenance may bypass the captured snapshot or ledger.
+ const unleasedBefore=JSON.stringify(flow);
+ const actionRowsBefore=(await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",[newDraft]))[0].n;
+ for(const attack of [
+   "update public.study_entries set config='{\"mode\":\"open\"}'::jsonb where id=$1",
+   "update public.study_entries set excluded_intervals='[]'::jsonb where id=$1",
+   "update public.study_entries set phase='long_break' where id=$1",
+ ])await assert.rejects(q(attack,[newDraft]),/protected timer fields require an audited study command/);
+ await q("select set_config('lemma.tool','study',false)");
+ await assert.rejects(q("update public.study_entries set config='{\"mode\":\"open\"}'::jsonb where id=$1",[newDraft]),
+   /protected timer fields require an audited study command/);
+ await q("select set_config('lemma.tool','',false)");
+ checkEqual(JSON.stringify(await get(newDraft)),unleasedBefore,
+  'forged no-lease direct writes cannot mutate the captured timer');
+ checkEqual((await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",[newDraft]))[0].n,actionRowsBefore,
+  'rejected unleased writes never journal');
  const firstTake=req('take_lease',{device:'owner-device-a',lease_minutes:3},
    newDraft,flow.version);
  const taken=await command(firstTake);
@@ -185,6 +202,20 @@ try{
  await as(other);
  await assert.rejects(command(req('take_lease',{device:'foreign'},newDraft,1)),
    /not found for owner/);
+ // Expiry removes the device claim, not the immutability requirement.
+ await db.exec('reset role');
+ await q("update public.study_entries set lease_expires_at=now()-interval '1 second' where id=$1",[newDraft]);
+ await as(owner);
+ const expiredBefore=JSON.stringify(await get(newDraft));
+ const expiredJournalBefore=(await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",[newDraft]))[0].n;
+ for(const attack of [
+   "update public.study_entries set config='{\"mode\":\"pomodoro\"}'::jsonb where id=$1",
+   "update public.study_entries set excluded_intervals='[]'::jsonb where id=$1",
+ ])await assert.rejects(q(attack,[newDraft]),/protected timer fields require an audited study command/);
+ checkEqual(JSON.stringify(await get(newDraft)),expiredBefore,
+  'expired lease still forbids direct config and exclusion tampering');
+ checkEqual((await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",[newDraft]))[0].n,expiredJournalBefore,
+  'rejected expired-lease updates never journal');
  // Release the one-active-owner slot and exercise a two-cycle Pomodoro.
  await db.exec('reset role');
  await q("update public.study_entries set status='saved' where id=$1",[newDraft]);

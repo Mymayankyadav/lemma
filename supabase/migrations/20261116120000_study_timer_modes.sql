@@ -362,20 +362,34 @@ revoke all on function public.lemma_study_timer_command(jsonb,uuid,uuid)
 grant execute on function public.lemma_study_timer_command(jsonb,uuid,uuid)
  to authenticated,service_role;
 
--- A browser owning a live lease cannot bypass the lease by PATCHing rows
--- directly. Existing pre-N52 writes remain untouched unless an active lease
--- is present; trusted study_command/undo journal paths set lemma.tool.
+-- Authenticated table UPDATE is already granted by N10. Protect all
+-- server-managed timer fields and its immutable captured configuration even
+-- with no live lease. Checking lemma.tool here would be forgeable by an owner
+-- (set_config is public), so trust the current effective SQL role instead.
+-- The owner-checked study_command compatibility dispatcher runs as SECURITY
+-- DEFINER; its nested writes and the existing SECURITY DEFINER undo_action
+-- execute with the function owner while untrusted direct DML does not.
 create function public.lemma_study_timer_entry_guard() returns trigger
 language plpgsql security invoker set search_path='' as $entry_guard$
 begin
- if pg_catalog.current_setting('role',true)='authenticated'
-   and coalesce(pg_catalog.current_setting('lemma.tool',true),'') not in ('study','undo')
-   and (old.lease_device is not null and
-         old.lease_expires_at>pg_catalog.clock_timestamp()
-        or old.lease_device is distinct from new.lease_device
-        or old.lease_version is distinct from new.lease_version
-        or old.lease_expires_at is distinct from new.lease_expires_at) then
-   raise exception 'Active timer lease requires an audited study command';
+ if current_user='authenticated'
+   and (
+     old.mode is distinct from new.mode
+     or old.config is distinct from new.config
+     or old.phase is distinct from new.phase
+     or old.cycle is distinct from new.cycle
+     or old.phase_ends_at is distinct from new.phase_ends_at
+     or old.energy is distinct from new.energy
+     or old.excluded_intervals is distinct from new.excluded_intervals
+     or old.lease_device is distinct from new.lease_device
+     or old.lease_version is distinct from new.lease_version
+     or old.lease_expires_at is distinct from new.lease_expires_at
+     or (old.preset_id is distinct from new.preset_id
+       and (old.status<>'draft' or new.status<>'draft'))
+     or (old.lease_device is not null
+       and old.lease_expires_at>pg_catalog.clock_timestamp())
+   ) then
+   raise exception 'Active timer lease or protected timer fields require an audited study command';
  end if;
  return new;
 end
@@ -473,7 +487,7 @@ grant execute on function public.lemma_study_timer_lease_conflict(jsonb,uuid)
 
 create function public.lemma_study_command_v2_compat(p jsonb)
 returns jsonb
-language plpgsql security invoker set search_path = ''
+language plpgsql security definer set search_path = ''
 as $study$
 declare
   v_owner uuid;
@@ -686,8 +700,10 @@ end
 $study$;
 
 
--- Same public study_command signature, all old behavior delegated to a new
--- SECURITY INVOKER compatibility body plus owner-scoped N52 branches.
+-- Same public study_command signature and authenticated JWT owner checks.
+-- The compatibility body uses DEFINER only so the trigger can distinguish
+-- authenticated direct DML from vetted study_command/undo writes; it still
+-- derives v_owner from auth.uid(), never the caller's payload.
 revoke all on function public.lemma_study_command_v2_compat(jsonb) from public,anon;
 grant execute on function public.lemma_study_command_v2_compat(jsonb)
  to authenticated,service_role;
