@@ -96,6 +96,9 @@ try {
  const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) result',
   [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
  eq(mcp.status,'ok');
+ // PGlite's synthetic service_role has no BYPASSRLS. Check persisted
+ // owner rows as the administrator after the MCP bridge commits.
+ await db.exec('reset role');
  eq((await q('select count(*)::int n from public.proposal_drafts where id=$1',
   [mcp.draft.id]))[0].n,1);
  const mcpAction=(await q('select source,user_id from public.actions where no=$1',[mcp.actionNo]))[0];
