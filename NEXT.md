@@ -27,13 +27,12 @@ Tests: extend tests/mcp/sql/deadlines.mjs to exercise all operations, idempotenc
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/deadlines.mjs, docs/v6/capability-registry/deadlines.json, CURRENT.md.
 Not: old migrations, other tables, study_command, task_command, undo_action, mcp_command, app code or existing test expectations.
 
-## N43 Manual practice topics and practice events: migration (practice_topics)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.practice_topics` with title, optional subject/concept/checkpoint links, `next_due_date`, `cadence jsonb` (`fixed_days` with days, or `after_rating` with days per rating), `last_practiced_at`, `archived_at`; and child table `public.practice_events` (topic, `occurred_at`, rating 1–4, optional response text, minutes, `voided_at`). Operations topic create/update/archive/restore/delete, `record` (inserts an event, advances `next_due_date` by the cadence, undoable), `void_event` (restores the previous due date). Never reads or writes cards, reviews or FSRS state.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/practice_topics.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice_topics.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N43.2.2 Practice topic receipt-backed lifecycle, due-date inverse, undo and MCP
+Stage: Build · Status: open · Needs: N43.2.1 · Assigned: —
+Done = finish N43.2 using N43.2.1's owner-authenticated, side-effect-free practice_topics_validate_envelope, and N43.1's owner-RLS schema. Install audited authenticated practice_topics_command for create/update/archive/restore/delete and record/void_event, validating current topic/event ownership and optimistic versions under transaction locks; add journal triggers and register practice_topics and practice_events in lemma_undo_tables with tested compatible undo inverse. Record must advance the next_due_date by fixed_days or daysByRating[rating-1] using civil-day arithmetic while saving each event's before snapshot, and void_event must restore the precise previous due/last-practiced state across multiple events or return a stale-version conflict. Repeated operationId must replay the same receipt, changed-payload reuse must conflict; second-owner linked subject/concept/checkpoint or topic/event is forbidden. Activate command registry for service-role mcp_command parity only when all writes are undoable, preserving study/task commands and existing undo_action behavior. Production SQL requires independent review and safe lower-version deployment order.
+Tests: extend tests/mcp/sql/practice-topics-commands.mjs with full PGlite owner isolation, every lifecycle and cadence boundary, event inverse, stale/conflict and changed-payload retries, journal/action receipts, undo and service-role MCP dispatch. Preserve the N43.2.1 validator and N43.1 read-only stage regressions by explicitly testing the staged compatibility where necessary.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice-topics-commands.mjs, docs/v6/capability-registry/practice_topics.json, docs/v6/capability-registry/practice_events.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: earlier migrations, src/data/**, UI, card reviews, FSRS, unrelated functions/RPCs or protected files.
 
 ## N44.2 Parked thought commands and atomic conversion to task
 Stage: Build · Status: open · Needs: N44.1 · Assigned: —
@@ -138,12 +137,12 @@ Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no imp
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
-## N64 Study notices, drift and urge events: app module (src/data/study-events)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/study-events/` for the records and operations of N50, including every lifecycle operation it names.
-Tests: `tests/unit/study-events/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/study-events/** (new), tests/unit/study-events/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N64.2 Study notices, drift and urge events: demo and live adapters
+Stage: Build · Status: open · Needs: N64.1 · Assigned: —
+Done = finish N64 using N64.1's typed study-event contract and strict pure validators. Add an isolated, reload-persistent demo adapter for notice/drift/urge events with record/edit/void/restore, version conflicts, kind/duration and related-record integrity, and deterministic 1–50 filter-bound cursor paging. Wire getStudyEventApi/setStudyEventApiForTests to demo or live by mode. Implement owner-RLS live reads and public.study_events_command envelopes for record/edit/void/restore using a fresh operationId per action and the exact same envelope for unknown-outcome retries, typed conflict and validation failures, owner-safe related entry/task/block links, and post-receipt readback. Do not send or accept caller owner/source/void metadata; keep direct authenticated table writes disabled and never falsely claim a command exists before the N50.2 lifecycle migration lands.
+Tests: tests/unit/study-events/**, extending N64.1's pure model cases with demo lifecycle, isolated reload, deep clones, >50-row cursor walking and filter binding; mocked live queries and each RPC envelope, same-operationId replay, stale-version mapping and no owner field. Preserve N64.1 regression assertions.
+Scope: src/data/study-events/**, tests/unit/study-events/**, CURRENT.md.
+Not: other src/data/** folders, UI, supabase/**, new dependencies or protected paths.
 
 ## N51 Study command v2: saved-entry correction and block task links
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -227,7 +226,7 @@ Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58.2.3, N64 · Assigned: —
+Stage: Build · Status: open · Needs: N58.2.3, N64.2 · Assigned: —
 Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
 Tests: `tests/unit/focus/park-notice.test.tsx`
 Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
