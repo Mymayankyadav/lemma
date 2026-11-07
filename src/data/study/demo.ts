@@ -327,7 +327,7 @@ export function createDemoStudyApi(): StudyApi {
       const right:StudyInterval[]=[];
       for (const span of entry.intervals) {
         if (span.end === null) fail('invalid','A saved interval may not be open');
-        const start=Date.parse(span.start),end=Date.parse(span.end);
+        const start=Date.parse(span.start),end=Date.parse(span.end!);
         if (end<=boundary) left.push({...span});
         else if(start>=boundary) right.push({...span});
         else {

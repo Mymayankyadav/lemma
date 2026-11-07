@@ -283,7 +283,7 @@ export function createLiveStudyApi(): StudyApi {
       return entryWrite('save', key, currentVersion, change);
     },
     discardStudyEntry(key, expectedVersion) { return entryWrite('discard', key, expectedVersion); },
-    correctStudyEntry(key, expectedVersion, patch) {
+    async correctStudyEntry(key, expectedVersion, patch) {
       return entryWrite('correct',key,expectedVersion,correctionPatch(patch));
     },
     async splitStudyEntry(key, expectedVersion, at) {
@@ -293,9 +293,10 @@ export function createLiveStudyApi(): StudyApi {
       if(response.changed.length!==2 || response.changed[0].id!==key ||
          !response.changed[1].id || response.changed[1].id===key)
         fail('invalid','Unexpected split receipt');
-      const [original,created]=await Promise.all([
-        readStudy(key),readStudy(response.changed[1].id),
-      ]);
+      // Read both server-specified IDs in a deterministic sequence.
+      // Avoid racing two lazy Supabase client imports on a cold live route.
+      const original=await readStudy(key);
+      const created=await readStudy(response.changed[1].id);
       return receipt({original,created},response);
     },
     voidStudyEntry(key, expectedVersion) {

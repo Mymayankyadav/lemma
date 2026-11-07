@@ -250,7 +250,11 @@ describe('N65 live StudyApi N51 owner RPC parity',()=>{
   expect(h.calls[2].p).toMatchObject({resource:'study_entries',
    patch:{intent:'Manual from server',
     intervals:[{kind:'focus',started_at:t(0),ended_at:t(30)}]}});
-  expect(JSON.stringify(h.calls[2].p)).not.toMatch(/user_id|source|approximate/);
+  // Match exact forbidden keys, not substrings of legitimate `resource`.
+  for (const forbidden of ['user_id','userId','source','approximate','voided_at']) {
+   expect(h.calls[2].p).not.toHaveProperty(forbidden);
+   expect(h.calls[2].p.patch).not.toHaveProperty(forbidden);
+  }
   expect(new Set(h.calls.map(x=>x.p.operationId)).size).toBe(3);
  });
  it('adds, updates and clears task_id in calendar block commands and maps readback',async()=>{
