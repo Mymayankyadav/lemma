@@ -120,7 +120,7 @@ export default function Activities(){
   {loading?<p role="status">Loading activities…</p>:null}
   {error?<p role="alert" className="text-label text-again">{error}</p>:null}
   {notice?<p role="status" className="text-label text-ink-2">{notice}</p>:null}
-  <form aria-label={editing?'Edit activity':'Create activity'}
+  <form aria-label={editing?'Edit activity':'Create activity'} noValidate
    onSubmit={submit} className="space-y-3 rounded-slab border border-edge p-4">
    <h3 className="text-body font-semibold">{editing?'Edit activity':'New activity'}</h3>
    <label className="block text-label">Name
