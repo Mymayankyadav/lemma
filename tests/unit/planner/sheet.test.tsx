@@ -42,3 +42,13 @@ describe('N68 owner-directed preview selection',()=>{
   expect(selectPlannerPlacements(preview,new Set()).unplaced).toHaveLength(3);
  });
 });
+
+describe('N68 multi-part selection and invalid preview inputs',()=>{
+ it('rejects a moved interval ending before it begins without changing source',()=>{
+  expect(()=>selectPlannerPlacements(preview,new Set(['task-a']),new Map([
+   ['task-a:1',{date:'2026-11-09',start:'2026-11-09T12:00:00Z',
+    end:'2026-11-09T11:00:00Z'}],
+  ]))).toThrow('Invalid moved planner interval');
+  expect(preview.placements[0].start).toBe('2026-11-09T09:00:00Z');
+ });
+});
