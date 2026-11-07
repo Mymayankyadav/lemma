@@ -9,8 +9,8 @@ import { renderFeedback, upsertFeedback, setCheckOutput } from './feedback.mjs';
 import { migrationFindings, existingFunctionNames } from './migrations.mjs';
 import { checkConflict } from './conflicts.mjs';
 
-const MAX_OPEN_PRS = 12;
-const MAX_PRS_PER_AGENT = 2; // v2.0: start the next item while CI checks the first
+const MAX_OPEN_PRS = 20; // v2.6 (Owner): was 12
+const MAX_PRS_PER_AGENT = 3; // v2.0: start the next item while CI checks the first; v2.6 (Owner): was 2
 const NEXT = 'NEXT.md';
 const CALIBRATION = 'ci/perf-calibration.md';
 

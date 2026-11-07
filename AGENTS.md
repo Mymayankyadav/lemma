@@ -13,10 +13,10 @@ After reading CURRENT.md and NEXT.md, post one comment on your closed issue `run
 1. An open S0 incident with no claimant: claim it and fix it. If it is already claimed, do not touch it. While an S0 is open CI merges nothing, except the claimant's `incident #<n>` PR (see Incidents).
 2. Your own open PR with a failing check, a `merge-conflict: FAILED` comment, or the changes-requested label: fix it. Read the CI comment on the PR first: it names the exact failing rule, check or conflicting files and how to comply. A conflicted PR gets no fast-gate run at all until the conflict is resolved. Conflicts only in CURRENT.md or NEXT.md you never fix: CI merges main into your branch and keeps both sides (commit `ci: merge main (bookkeeping only: …)`); your Ready and approvals still count. Pull before your next push. Fix a conflict yourself only when CI's comment says it could not.
 3. Review one PR labelled needs-review that you did not author (see Review and merge). Review only PRs with that label; CI adds it only to PRs that need a review.
-4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge): go straight on to the next step. If you have no unfinished PR and fewer than 2 open PRs, take over one open PR labelled lease-expired (not CI's) instead of starting a new item (see Claiming).
+4. Continue your own unfinished PR toward its Done. When you believe Done is met, push and comment exactly `Ready · Agent: <name>` in the same run. Do not wait for checks (see Review and merge): go straight on to the next step. If you have no unfinished PR and fewer than 3 open PRs, take over one open PR labelled lease-expired (not CI's) instead of starting a new item (see Claiming).
 5. An open S1 incident with no claimant.
 6. An issue labelled bug + confirmed with no open PR, if no other bug PR is open.
-7. The top NEXT.md item with Status open, all Needs done, and Assigned empty or your name, if you have fewer than 2 open PRs.
+7. The top NEXT.md item with Status open, all Needs done, and Assigned empty or your name, if you have fewer than 3 open PRs.
 8. One issue labelled bug without confirmed: try to reproduce it (see Bugs). Do this at most once per bug; if you cannot run tests, skip it.
 9. Nothing applies: end the run.
 
@@ -27,7 +27,7 @@ After finishing a step, continue to the next applicable step in the same run. Ke
 - Line 1 of the PR body: `Agent: <your name> · Item: <id>`. There is no lease: the open PR is the claim.
 - An item PR also deletes its item's whole block from NEXT.md (from your first push is fine), so the item leaves main exactly when CI merges the PR. `scope` fails (NEXT-MD-DONE) an item PR that keeps it. An id in a Needs line that is no longer in NEXT.md is done.
 - One PR per item: `scope` fails a PR whose Item already has another open PR. When the PR's Agent has made no commit and no comment for 1 hour, CI adds the label lease-expired (not while the Agent's Ready is newer than the last push, no required check failed and no review asked for changes: that PR is waiting on CI or a reviewer). To take it over, push commits to the existing PR's branch and change its line 1 to your name; never open a second PR for the item.
-- Limits: 2 open PRs per agent, at most 12 open PRs in total.
+- Limits: 3 open PRs per agent, at most 20 open PRs in total.
 - Push as rarely as you can: every push re-runs CI. Put all your changes for a PR into one commit per run, including your docs/current note and NEXT.md (with the REST API: create one tree with every changed file, one commit on top of the branch head, then update the branch ref). Never push a commit that only changes CURRENT.md or NEXT.md; when that is all that changed since a green fast-gate, or when the only other changes came from merging main, CI reuses the earlier result anyway.
 - Stay inside the item's Scope. Anything else goes in a new issue, not in the PR.
 - Never edit AGENTS.md, .github/**, ci/**, scripts/ci/**, test thresholds or budgets (the paths in ci/protected.json), and never delete, skip or loosen a test. Only PRs titled `rules:` from the priority run may do these things. The required check `scope` enforces this; the required check `fast-gate` runs typecheck, lint, affected tests and a smoke run. When either fails, CI writes the exact failing rule or check and how to comply into one comment on the PR (edited in place on later failures) and into the check's output summary; you cannot read CI logs, so use that comment.
@@ -54,7 +54,7 @@ After finishing a step, continue to the next applicable step in the same run. Ke
 | S1 | the same failure signature on 2 or more PRs | One owner fixes it on its own PR. Affected PRs must not patch it locally; they wait, then update from main. |
 | S2 | a failure on one PR only | That PR's author fixes it. |
 | S3 | unreproduced report | Leave it for the priority run. |
-CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0. CI also resolves them: a signature incident opened from PRs (including one escalated to S0) closes on its own once fewer than 2 open PRs still fail with it on their current head, so a fixed failure cannot keep the S0 freeze on; a main incident closes only when main is green. Never strip an S0 label by hand.
+CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0. CI also resolves them: a signature incident opened from PRs (including one escalated to S0) closes on its own once fewer than 3 open PRs still fail with it on their current head, so a fixed failure cannot keep the S0 freeze on; a main incident closes only when main is green. Never strip an S0 label by hand.
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
