@@ -97,13 +97,12 @@ Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, inc
 Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
 
-## N57 Manual practice topics and practice events: app module (src/data/practice-topics)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/practice-topics/` for the records and operations of N43, including every lifecycle operation it names.
-Tests: `tests/unit/practice-topics/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/practice-topics/** (new), tests/unit/practice-topics/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
-Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
+## N57.2 Manual practice topics/events live RPC adapter
+Stage: Build · Status: open · Needs: N57.1 · Assigned: —
+Done = finish the N57 app module on the N57.1 typed PracticeTopicApi, validated demo lifecycle and getPracticeTopicApi/setPracticeTopicApiForTests facade. Implement src/data/practice-topics/live.ts and wire live mode in index.ts to authenticated owner-RLS reads of public.practice_topics and public.practice_events, with exact 1–50 keyset pages and filter-bound opaque cursors. Implement create/update/archive/restore/delete topic, record practice (cadence next_due_date advance), and void event (previous due date restore) using rpc('practice_topics_command', envelope); use an independent operationId per user action and reuse the identical envelope on uncertain retry, map changed-payload/version conflicts and never send or trust caller owner ID. Preserve demo semantics, record/event versions and owner isolation; N43.2 owns server command/undo/MCP registration and may ship independently.
+Tests: tests/unit/practice-topics/live.test.ts (mocked owner-scoped pages and facade, full operation envelopes, immutable operationId retry, conflict mapping, cursor integrity, denial of caller ownership, all topic/event lifecycle operations); retain N57.1 demo tests.
+Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
+Not: other src/data/**, app screens, supabase/**, MCP, new dependencies or existing test assertions.
 
 ## N58.2 Parked thoughts: demo and live lifecycle (remaining after N58 split)
 Stage: Build · Status: open · Needs: N58.2.1 · Assigned: —
@@ -259,7 +258,7 @@ Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route on
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57 · Assigned: —
+Stage: Build · Status: open · Needs: N56.2, N57.2 · Assigned: —
 Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
 Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
 Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
@@ -287,7 +286,7 @@ Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/P
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N78 v6 practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N57 · Assigned: —
+Stage: Build · Status: open · Needs: N57.2 · Assigned: —
 Done = with `v6Shell` on, `/practice` (lazy route) lists topics due first, with record practice (rating, optional response, minutes), cadence edit, archive/restore and event void; it never touches card review. Flag off: nothing changes.
 Tests: `tests/unit/practice-ui/**`
 Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
