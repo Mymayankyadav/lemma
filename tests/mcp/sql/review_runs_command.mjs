@@ -33,7 +33,10 @@ try {
   assert.ok(files.includes('20261111020000_review_runs_command.sql'));
   for(const file of files)await db.exec(await readFile(new URL(file,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
-  for(const id of [owner,other])await q('insert into public.settings(user_id) values($1)',[id]);
+  // The isolated extensions.gen_random_bytes test stub returns zeros; assign
+  // distinct valid owner secrets rather than triggering settings' unique key.
+  for(const [id,secret] of [[owner,'a'.repeat(48)],[other,'b'.repeat(48)]])
+    await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[id,secret]);
   async function seed(uidValue,slug){
     const subject=(await q("insert into public.subjects(user_id,name,glyph,hue) values($1,$2,'☆','amber') returning id",[uidValue,'R '+slug]))[0].id;
     const project=(await q("insert into public.projects(user_id,subject_id,slug,title,goal,status) values($1,$2,$3,$4,'Review','active') returning id",[uidValue,subject,slug,'R '+slug]))[0].id;
