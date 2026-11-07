@@ -13,6 +13,8 @@ import {EuclidAppearance} from '../EuclidAppearance';
 import {SubjectsPanel} from '../SubjectsPanel';
 import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from './StudyDefaults';
+import Planning from './Planning';
+import Focus from './Focus';
 import Reminders from './Reminders';
 import ExportSettings from './Export';
 
@@ -26,14 +28,20 @@ export const SETTINGS_SECTIONS = [
   {id:'connector',label:'Connector'},
   {id:'export',label:'Export'},
 ] as const;
-export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id'];
+const V6_SETTINGS_SECTIONS=[
+ ...SETTINGS_SECTIONS.slice(0,3),
+ {id:'focus',label:'Focus'},{id:'planning',label:'Planning'},
+ ...SETTINGS_SECTIONS.slice(3),
+] as const;
+export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'focus'|'planning';
 
-export function settingsTabDestination(current:SettingsSection,key:string):SettingsSection|null {
-  const index=SETTINGS_SECTIONS.findIndex(section=>section.id===current);
-  if(key==='Home')return SETTINGS_SECTIONS[0].id;
-  if(key==='End')return SETTINGS_SECTIONS[SETTINGS_SECTIONS.length-1].id;
-  if(key==='ArrowRight'||key==='ArrowDown')return SETTINGS_SECTIONS[(index+1)%SETTINGS_SECTIONS.length].id;
-  if(key==='ArrowLeft'||key==='ArrowUp')return SETTINGS_SECTIONS[(index+SETTINGS_SECTIONS.length-1)%SETTINGS_SECTIONS.length].id;
+export function settingsTabDestination(current:SettingsSection,key:string,
+ sections:readonly {id:SettingsSection}[]=SETTINGS_SECTIONS):SettingsSection|null {
+  const index=sections.findIndex(section=>section.id===current);
+  if(key==='Home')return sections[0].id;
+  if(key==='End')return sections[sections.length-1].id;
+  if(key==='ArrowRight'||key==='ArrowDown')return sections[(index+1)%sections.length].id;
+  if(key==='ArrowLeft'||key==='ArrowUp')return sections[(index+sections.length-1)%sections.length].id;
   return null;
 }
 export function SettingsNavigation({selected,onSelect}:{
@@ -41,7 +49,7 @@ export function SettingsNavigation({selected,onSelect}:{
   onSelect:(section:SettingsSection)=>void;
 }) {
   const keyDown=(event:KeyboardEvent<HTMLButtonElement>,current:SettingsSection)=>{
-    const next=settingsTabDestination(current,event.key);
+    const next=settingsTabDestination(current,event.key,V6_SETTINGS_SECTIONS);
     if(next===null)return;
     event.preventDefault();
     onSelect(next);
@@ -49,7 +57,7 @@ export function SettingsNavigation({selected,onSelect}:{
   };
   return <nav aria-label="Settings sections">
     <div role="tablist" aria-label="Settings sections" className="flex flex-wrap gap-2">
-      {SETTINGS_SECTIONS.map(section=><button key={section.id} type="button"
+      {V6_SETTINGS_SECTIONS.map(section=><button key={section.id} type="button"
         id={'v6-settings-tab-'+section.id} role="tab"
         aria-controls="v6-settings-panel" aria-selected={selected===section.id}
         tabIndex={selected===section.id?0:-1}
@@ -115,6 +123,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>
     </Slab>;
     if(selected==='study')return <StudyDefaults settings={data!}/>;
+    if(selected==='focus')return <Focus settings={data!}/>;
+    if(selected==='planning')return <Planning settings={data!}/>;
     if(selected==='subjects')return <SubjectsPanel/>;
     if(selected==='connector')return <Slab className="space-y-4 p-5">
       <h2 className="text-title-s font-semibold">Connector</h2>

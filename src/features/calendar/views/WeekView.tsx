@@ -1,6 +1,8 @@
 import type { CalendarBlockRecord, StudyEntryRecord } from '../../../data/study/contract';
 import { calendarRange, weekDays } from '../model';
 import {DueDayItems,dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
+import {OverlapMarkers,useCalendarOverlaps} from '../overlaps/OverlapMarkers';
+import {overlapWindows} from '../overlaps/model';
 
 export interface WeekViewProps {
   date: string;
@@ -23,6 +25,9 @@ function time(instant: string, zone: string): string {
 export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]},
   onDay,firstDay=1}:WeekViewProps) {
   const days=weekDays(date,zone,entries,blocks,firstDay);
+  const viewRange=calendarRange(days[0].day,zone,7);
+  const controls=useCalendarOverlaps(viewRange);
+  const conflicts=overlapWindows(entries,blocks,viewRange);
   return <section aria-label="Calendar week" className="min-w-0">
     <h2 className="mb-2 text-body font-semibold text-ink">Week of {label(days[0].day,zone)}</h2>
     <div className="max-w-full overflow-x-auto" role="region" aria-label="Week schedule">
@@ -50,6 +55,10 @@ export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]}
             </article>)}
             <DueDayItems date={day.day} firstVisible={days[0].day}
               zone={zone} dues={dues} compact/>
+            <OverlapMarkers zone={zone} controls={controls} compact
+              windows={conflicts.filter(conflict=>
+                Date.parse(conflict.startsAt)<Date.parse(day.range.end)&&
+                Date.parse(conflict.endsAt)>Date.parse(day.range.start))}/>
             {day.blocks.map(({block,lane})=><article key={block.id} data-lane={lane}
               style={{marginInlineStart:Math.min(lane,5)*4}}
               className="rounded-ctl border border-edge p-1 text-caption text-ink">

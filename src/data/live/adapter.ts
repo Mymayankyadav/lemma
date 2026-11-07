@@ -5,7 +5,7 @@ import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, pr
 import { projectProgress, conceptStatus } from '../../lib/derive'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
-import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph } from '../types'
+import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, Settings } from '../types'
 import { LemmaError, notImplemented } from '../api'
 import { mergeNotifyPrefs } from '../notify'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
@@ -24,6 +24,20 @@ function homeReviewOutlook(db:ReturnType<typeof liveClient>,uid:string):Promise<
  const clear=()=>{if(outlookPending?.promise===promise)outlookPending=null}
  void promise.then(clear,clear)
  return promise
+}
+
+/** N79: keep N39's typed JSON fields and display preferences in the live contract.
+ * The SQL trigger merges object patches to preserve unrecognized future keys. */
+function settingsWithV6(row:Row):Settings {
+ return {
+  ...settingsRow(row),
+  focusDefaults:row.focus_defaults??undefined,
+  planning:row.planning??undefined,
+  reviewBudget:row.review_budget??undefined,
+  attention:row.attention??undefined,
+  weekStart:row.week_start??1,
+  clock24h:row.clock_24h??true,
+ };
 }
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
@@ -170,23 +184,25 @@ export class LiveAdapter implements LemmaApi {
     }
 
   }
-  return settingsRow(result)
+  return settingsWithV6(result)
  }
  async getSettings(...args: Parameters<LemmaApi['getSettings']>): ReturnType<LemmaApi['getSettings']> {
   const db=liveClient(), uid=await owner(db)
-  return settingsRow(checked(await db.from('settings').select('*').eq('user_id',uid).single()) as Row)
+  return settingsWithV6(checked(await db.from('settings').select('*').eq('user_id',uid).single()) as Row)
  }
  async updateSettings(...args: Parameters<LemmaApi['updateSettings']>): ReturnType<LemmaApi['updateSettings']> {
   const [patch]=args
   const db=liveClient(), uid=await owner(db)
   const dbPatch=toDb(patch)
+  // N39's column is clock_24h, not generic camelCase clock24h.
+  if ('clock24h' in patch){dbPatch.clock_24h=patch.clock24h;delete dbPatch.clock24h}
   if(patch.notify && typeof patch.notify==='object'){
    const before=await this.getSettings()
    dbPatch.notify=mergeNotifyPrefs(before.notify,patch.notify)
   }
   for (const key of ['connector_secret','connector_last_client','connector_last_seen_at','user_id']) delete dbPatch[key]
   if(!Object.keys(dbPatch).length) return this.getSettings()
-  return settingsRow(checked(await db.from('settings').update(dbPatch).eq('user_id',uid).select('*').single()) as Row)
+  return settingsWithV6(checked(await db.from('settings').update(dbPatch).eq('user_id',uid).select('*').single()) as Row)
  }
  async rotateConnectorSecret(...args: Parameters<LemmaApi['rotateConnectorSecret']>): ReturnType<LemmaApi['rotateConnectorSecret']> {
   const db=liveClient(), uid=await owner(db)
@@ -194,7 +210,7 @@ export class LiveAdapter implements LemmaApi {
   crypto.getRandomValues(bytes)
   const secret=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('')
   const row=checked(await db.from('settings').update({connector_secret:secret}).eq('user_id',uid).select('*').single())
-  return settingsRow(row as unknown as Row)
+  return settingsWithV6(row as unknown as Row)
  }
  async listStyles(...args: Parameters<LemmaApi['listStyles']>): ReturnType<LemmaApi['listStyles']> {
   const db=liveClient(), uid=await owner(db)
