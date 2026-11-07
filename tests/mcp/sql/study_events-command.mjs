@@ -16,12 +16,20 @@ const call=async p=>(await q('select public.study_events_validate_envelope($1::j
 const bad=(p,re)=>assert.rejects(call(p),re);
 try{
  await db.exec("create role anon;create role authenticated;create role service_role;create schema auth;create schema extensions;create table auth.users(id uuid primary key);");
- await db.exec("create function auth.uid() returns uuid language sql as $auth$ select nullif(current_setting('test.uid',true),'')::uuid $auth$;");
+ await db.exec("create function auth.uid() returns uuid language sql as $auth$ select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,nullif(current_setting('test.uid',true),'')::uuid) $auth$;");
  await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $bytes$select decode(repeat('00',n),'hex')$bytes$;grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(names.includes('20261107120117_study_events_envelope.sql'));
- for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
+ const activation='20261110000000_study_events_related_links.sql';
+ assert.ok(names.includes(activation));
+ for(const name of names){
+  if(name===activation){
+   assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_events'"))[0].n,0,'N50.1 command remains absent before activation');
+   assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_events'"))[0].n,0,'N50.1 not undo-registered before activation');
+  }
+  await db.exec(await readFile(new URL(name,dir),'utf8'));
+ }
  const acl=(await q("select has_function_privilege('anon','public.study_events_validate_envelope(jsonb)','execute') anon,has_function_privilege('authenticated','public.study_events_validate_envelope(jsonb)','execute') member"))[0];
  assert.deepEqual(acl,{anon:false,member:true});
  await q("select set_config('test.uid',$1,false)",[owner]);
@@ -75,8 +83,8 @@ try{
  await db.exec('reset role');
  assert.equal((await q('select count(*)::int n from public.study_events'))[0].n,0);
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='study_events'"))[0].n,0);
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_events'"))[0].n,0);
- assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_events'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_events'"))[0].n,1,'N50.2 activates the validated command');
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_events'"))[0].n,1,'N50.2 enables audited undo');
  // N50.2.2.1: retain all prior envelope/empty-registry assertions above,
  // then check owner-bound related links as privileged fixture writes.
  const other='22222222-2222-2222-2222-222222222222';
@@ -106,9 +114,88 @@ try{
  const docs=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/study_events.json',import.meta.url),'utf8'));
  const cols=(await q("select attname from pg_attribute where attrelid='public.study_events'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname);
  assert.deepEqual(Object.keys(docs.columns).sort(),cols.sort(),'all related columns inventoried');
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_events'"))[0].n,0,
-   'no premature write routing in first related-link slice');
- assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_events'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='study_events'"))[0].n,1,
+   'command activated only after N50.1/N50.2.1 staged boundaries');
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='study_events'"))[0].n,1,'N50.2 undo registration');
 
- console.log('PASS N50.2.1 and N50.2.2.1 authenticated envelopes, drift-only minutes and immutable stage');
+ // Full N50.2.2 command: owner binding, exact retry, lifecycle, undo and MCP.
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[owner,'1'.repeat(48)]);
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[other,'2'.repeat(48)]);
+ const ownerRole=async who=>{
+  await db.exec('reset role');
+  await q("select set_config('request.jwt.claims','{}',false)");
+  await q("select set_config('test.uid',$1,false)",[who]);
+  await db.exec('set role authenticated');
+ };
+ const command=async value=>(await q('select public.study_events_command($1::jsonb) result',
+  [JSON.stringify(value)]))[0].result;
+ const op=(operation,patch={},extra={})=>req(operation,patch,extra);
+ await ownerRole(owner);
+ const recordRun=op('record',{entry_id:entry,kind:'drift',duration_minutes:12,
+  related_kind:'task',related_id:task});
+ const recorded=await command(recordRun);
+ assert.equal(recorded.status,'ok');assert.ok(recorded.actionNo>0);
+ const eventId=recorded.changed[0].id;
+ assert.equal(recorded.changed[0].version,1);
+ assert.deepEqual(await command(recordRun),recorded,'retry is receipt-only');
+ const mismatch=await command({...recordRun,patch:{...recordRun.patch,duration_minutes:20}});
+ assert.equal(mismatch.status,'conflict','same operationId with altered payload never writes');
+ const wrong=await command(op('edit',{note:'stale'},
+  {target:{id:eventId},expectedVersion:9}));
+ assert.equal(wrong.status,'conflict');
+ assert.equal(wrong.conflict.currentVersion,1);
+ const edited=await command(op('edit',{kind:'notice',duration_minutes:null,note:'Reframed',
+  related_kind:'study_entry',related_id:entry},{target:{id:eventId},expectedVersion:1}));
+ assert.equal(edited.status,'ok');assert.equal(edited.changed[0].version,2);
+ assert.equal((await q('select kind,note,related_kind from public.study_events where id=$1',[eventId]))[0].related_kind,'study_entry');
+ await assert.rejects(command(op('edit',{duration_minutes:20},
+  {target:{id:eventId},expectedVersion:2})),/Only drift/);
+ const voided=await command(op('void',{}, {target:{id:eventId},expectedVersion:2}));
+ assert.equal(voided.changed[0].version,3);
+ assert.ok((await q('select voided_at from public.study_events where id=$1',[eventId]))[0].voided_at);
+ await assert.rejects(command(op('edit',{note:'forged'}, {target:{id:eventId},expectedVersion:3})),/Voided/);
+ const restored=await command(op('restore',{}, {target:{id:eventId},expectedVersion:3}));
+ assert.equal(restored.changed[0].version,4);
+ assert.equal((await q('select voided_at from public.study_events where id=$1',[eventId]))[0].voided_at,null);
+ await assert.rejects(command(op('record',{entry_id:otherEntry,kind:'notice'})),/Study entry not found for owner/);
+ await assert.rejects(command(op('record',{entry_id:entry,kind:'notice',related_kind:'task',related_id:otherTask})),/Related task not found/);
+ await assert.rejects(command(op('record',{entry_id:entry,kind:'notice',related_kind:'task'})),/supplied together/);
+ const onlyRelated=await command(op('edit',{related_kind:null,related_id:null},
+  {target:{id:eventId},expectedVersion:4}));
+ assert.equal(onlyRelated.changed[0].version,5,'related-only patch is a valid edit');
+ assert.equal((await q('select related_id from public.study_events where id=$1',[eventId]))[0].related_id,null);
+ const fresh=await command(op('record',{entry_id:entry,kind:'urge'}));
+ assert.equal(fresh.status,'ok');
+ const freshId=fresh.changed[0].id;
+ const undo=(await q('select public.undo_action($1::uuid,$2::bigint,false) result',
+  [owner,fresh.actionNo]))[0].result;
+ assert.equal(Number(undo.undone),Number(fresh.actionNo));
+ assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[freshId]))[0].n,0);
+ await assert.rejects(q("insert into public.study_events(user_id,entry_id,kind) values($1,$2,'notice')",[owner,entry]),
+  /permission denied|row.level security/i);
+ await ownerRole(other);
+ assert.equal((await q('select count(*)::int n from public.study_events where id=$1',[eventId]))[0].n,0);
+ await assert.rejects(command(op('edit',{note:'steal'},
+  {target:{id:eventId},expectedVersion:5})),/not found for owner/);
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpRequest=op('record',{entry_id:entry,kind:'notice'});
+ const mcp=(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+  [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
+ assert.equal(mcp.status,'ok');
+ const mcpRetry=(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+  [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
+ assert.deepEqual(mcpRetry,mcp,'MCP replay must not create new event or action');
+ await db.exec('reset role');
+ assert.equal((await q('select source from public.study_events where id=$1',
+  [mcp.changed[0].id]))[0].source,'mcp');
+ assert.equal((await q('select source from public.actions where no=$1',
+  [mcp.actionNo]))[0].source,'chatgpt');
+ assert.equal((await q("select count(*)::int n from public.action_changes where action_no=$1 and table_name='study_events'",
+  [mcp.actionNo]))[0].n,1,'one canonical log entry, no duplicate journal marker');
+ const registry=(await q("select command_fn,mcp_ok from public.lemma_command_resources where resource='study_events'"))[0];
+ assert.deepEqual(registry,{command_fn:'study_events_command',mcp_ok:true});
+
+ console.log('PASS N50.2.2 study events lifecycle, receipts, owner links, journal, undo and MCP');
 }finally{await db.close()}
