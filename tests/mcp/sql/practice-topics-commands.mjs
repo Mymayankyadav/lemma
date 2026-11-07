@@ -24,7 +24,20 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(migrations.includes('20261107123010_practice_topics_envelope.sql'));
- for(const name of migrations)await db.exec(await readFile(new URL(name,dir),'utf8'));
+ const activation='20261107222020_practice_commands.sql';
+ assert.ok(migrations.includes(activation));
+ // Preserve every staged no-journal/no-registry assertion at its original
+ // pre-activation point, rather than deleting or weakening it.
+ for(const name of migrations){
+  if(name===activation){
+   for(const table of ['practice_topics','practice_events']){
+    assert.equal((await q('select count(*)::int n from public.lemma_undo_tables where table_name=$1',[table]))[0].n,0);
+    assert.equal((await q('select count(*)::int n from public.action_changes where table_name=$1',[table]))[0].n,0);
+   }
+   assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='practice_topics'"))[0].n,0);
+  }
+  await db.exec(await readFile(new URL(name,dir),'utf8'));
+ }
  await q('insert into auth.users(id) values($1)',[owner]);
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
@@ -85,11 +98,11 @@ try{
  for(const table of ['practice_topics','practice_events']){
   const policies=await q('select cmd from pg_policies where tablename=$1',[table]);
   assert.deepEqual(policies.map(x=>x.cmd),['SELECT'],'no unaudited writes');
-  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,0);
-  assert.equal((await q("select count(*)::int n from public.action_changes where table_name=$1",[table]))[0].n,0);
+  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,1,'post-activation undo registration');
+  assert.ok((await q("select count(*)::int n from public.action_changes where table_name=$1",[table]))[0].n>=0,'journal table is readable');
  }
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='practice_topics'"))[0].n,0,
-  'validation must precede command and undo activation');
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='practice_topics'"))[0].n,1,
+  'command and undo activate after the original validation stage');
  await db.exec('set role anon');
  await assert.rejects(call(input),/permission denied|Authentication required/);
  // N43.2.2.1: exactly one finite 1–3650-day delay per 1–4 rating.
@@ -171,13 +184,126 @@ try{
   'preview only executable by authorized authenticated callers');
  assert.equal((await q('select count(*)::int n from public.practice_events'))[0].n,0,
   'read-only preview never records practice');
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='practice_topics'"))[0].n,0,
-  'no lifecycle command activated by preview');
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='practice_topics'"))[0].n,1,
+  'preview itself makes no registration changes once the lifecycle is activated');
  await q("select set_config('test.uid','',false)");
  await db.exec('set role anon');
  await assert.rejects(duePreview(topic,1,'2028-02-28'),
   /permission denied|Authentication required/i);
  await db.exec('reset role');
+
+ // N43.2.2.2.2 full seven-operation lifecycle and reversible event history.
+ await db.exec('reset role');
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+  [owner,'1'.repeat(48)]);
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+  ['22222222-2222-2222-2222-222222222222','2'.repeat(48)]);
+ let sequence=0;
+ const cmdEnvelope=(operation,fields={})=>({
+  operationId:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(++sequence).padStart(12,'0'),
+  schemaVersion:1,resource:'practice_topics',operation,...fields
+ });
+ const cmd=async p=>(await q('select public.practice_topics_command($1::jsonb) result',
+  [JSON.stringify(p)]))[0].result;
+ const ver=(operation,id,version,patch={})=>cmd(cmdEnvelope(operation,{
+  target:{id},expectedVersion:version,patch}));
+ const assertAction=r=>{
+  assert.equal(r.status,'ok');
+  assert.ok(Number.isSafeInteger(r.actionNo)&&r.actionNo>0);
+ };
+ const getTopic=async id=>(await q('select * from public.practice_topics where id=$1',[id]))[0];
+ const asOwner=async id=>{
+  await db.exec('reset role');
+  await q("select set_config('request.jwt.claims','{}',false)");
+  await q("select set_config('test.uid',$1,false)",[id]);
+  await db.exec('set role authenticated');
+ };
+ const civil=v=>new Date(v).toISOString().slice(0,10);
+ await asOwner(owner);
+ const create=cmdEnvelope('create',{patch:{title:'Full practice lifecycle',
+  cadence:{kind:'after_rating',daysByRating:[1,3,7,14]},
+  next_due_date:'2028-02-25'}});
+ const initial=await cmd(create);assertAction(initial);
+ const id=initial.changed[0].id;
+ assert.deepEqual(await cmd(create),initial,'same operationId replays exact original receipt');
+ const changedPayload=await cmd({...create,patch:{...create.patch,title:'Different retry'}});
+ assert.equal(changedPayload.status,'conflict');
+ const stale=await ver('update',id,12,{title:'Stale'});
+ assert.equal(stale.status,'conflict');
+ assert.equal(stale.conflict.currentVersion,1);
+ const updated=await ver('update',id,1,{title:'Updated practice'});assertAction(updated);
+ const archived=await ver('archive',id,2);assertAction(archived);
+ assert.ok((await getTopic(id)).archived_at);
+ await assert.rejects(ver('record',id,3,{rating:2}),/Archived practice topic/);
+ const restored=await ver('restore',id,3);assertAction(restored);
+ assert.equal((await getTopic(id)).archived_at,null);
+ const first=await ver('record',id,4,{rating:1,occurred_at:'2028-02-28T12:00:00Z'});
+ assertAction(first);
+ assert.equal(civil((await getTopic(id)).next_due_date),'2028-02-29');
+ const firstEvent=first.changed.find(x=>x.table==='practice_events').id;
+ // A tie cannot be ordered for safe inverse replay: IDs are not chronological.
+ await assert.rejects(ver('record',id,5,{
+  rating:2,occurred_at:'2028-02-28T12:00:00Z'
+ }),/Out-of-order practice event/);
+ assert.equal((await getTopic(id)).version,5,'rejecting tied instant keeps topic version');
+ assert.equal((await q('select count(*)::int n from public.practice_events where topic_id=$1',
+  [id]))[0].n,1,'rejecting tied instant cannot create a practice event');
+ const second=await ver('record',id,5,{rating:4,occurred_at:'2028-03-02T12:00:00Z'});
+ assertAction(second);
+ assert.equal(civil((await getTopic(id)).next_due_date),'2028-03-16');
+ const secondEvent=second.changed.find(x=>x.table==='practice_events').id;
+ await assert.rejects(ver('void_event',firstEvent,1),
+  /Stale event inverse/,'older record cannot erase a later due-date advance');
+ const secondUndo=await ver('void_event',secondEvent,1);assertAction(secondUndo);
+ assert.equal(civil((await getTopic(id)).next_due_date),'2028-02-29');
+ const firstUndo=await ver('void_event',firstEvent,1);assertAction(firstUndo);
+ assert.equal(civil((await getTopic(id)).next_due_date),'2028-02-25');
+ assert.equal((await getTopic(id)).last_practiced_at,null);
+ await assert.rejects(ver('void_event',firstEvent,2),/Event already voided/);
+ const historyDelete=await ver('delete',id,8);assertAction(historyDelete);
+ assert.ok((await getTopic(id)).archived_at,'historical topic delete archives');
+ assert.equal((await q('select count(*)::int n from public.practice_events where topic_id=$1',[id]))[0].n,2);
+ const emptyTopic=await cmd(cmdEnvelope('create',{patch:{title:'Undoable empty topic'}}));
+ assertAction(emptyTopic);
+ const emptyId=emptyTopic.changed[0].id;
+ const removed=await ver('delete',emptyId,1);assertAction(removed);
+ assert.equal(await getTopic(emptyId),undefined);
+ await q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,removed.actionNo]);
+ assert.equal((await getTopic(emptyId)).title,'Undoable empty topic');
+ await asOwner('22222222-2222-2222-2222-222222222222');
+ await assert.rejects(ver('update',id,9,{title:'Steal'}),/not found for owner/);
+ const theirs=await cmd(cmdEnvelope('create',{patch:{title:'Other owner topic'}}));
+ assertAction(theirs);
+ await asOwner(owner);
+ assert.equal((await q('select count(*)::int n from public.practice_topics where id=$1',
+  [theirs.changed[0].id]))[0].n,0);
+ await assert.rejects(q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,theirs.actionNo]),/not yours|Not authorized/);
+ await assert.rejects(q("insert into public.practice_topics(user_id,title) values($1,'Bypass')",
+  [owner]),/permission denied|row.level security/);
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpInput=cmdEnvelope('create',{patch:{title:'Connector topic'}});
+ const mcp=async p=>(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
+  [owner,'chatgpt',JSON.stringify(p)]))[0].result;
+ const linked=await mcp(mcpInput);assertAction(linked);
+ assert.deepEqual(await mcp(mcpInput),linked);
+ await db.exec('reset role');
+ assert.equal((await getTopic(linked.changed[0].id)).source,'mcp');
+ const journal=(await q('select source,user_id from public.actions where no=$1',
+  [linked.actionNo]))[0];
+ assert.equal(journal.source,'chatgpt');
+ assert.equal(journal.user_id,owner);
+ const resource=await q("select command_fn,mcp_ok from public.lemma_command_resources where resource='practice_topics'");
+ assert.deepEqual(resource,[{command_fn:'practice_topics_command',mcp_ok:true}]);
+ for(const table of ['practice_topics','practice_events']){
+  assert.equal((await q('select count(*)::int n from public.lemma_undo_tables where table_name=$1',
+   [table]))[0].n,1);
+  assert.ok((await q('select count(*)::int n from public.action_changes where table_name=$1',
+   [table]))[0].n>=2);
+ }
 
  console.log('PASS N43.2.1 practice topic/event envelope, owner auth and read-only stage');
 }finally{await db.close()}

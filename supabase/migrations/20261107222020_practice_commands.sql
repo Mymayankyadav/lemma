@@ -1,0 +1,199 @@
+-- N43.2.2.2.2 full owner-bound practice lifecycle; no unrelated migrations.
+-- Historical inverse fields are added rather than rewriting already persisted events.
+alter table public.practice_events
+ add column prior_due_date date,
+ add column prior_practiced_at timestamptz,
+ add column recorded_due_date date;
+
+create trigger lemma_log_change after insert or update or delete
+ on public.practice_topics for each row execute function public.log_change();
+create trigger lemma_log_change after insert or update or delete
+ on public.practice_events for each row execute function public.log_change();
+
+-- All DML stays behind this definer implementation. The public RPC remains
+-- SECURITY INVOKER, and no authenticated INSERT/UPDATE/DELETE table grant or
+-- write RLS policy is added; caller identity is checked from auth.uid().
+create function public.practice_topics_write_owned(p jsonb) returns jsonb
+language plpgsql security definer set search_path='' as $practice$
+declare
+ v_owner uuid; v_op_id uuid; v_op text; v_patch jsonb; v_target uuid;
+ v_row public.practice_topics%rowtype; v_new public.practice_topics%rowtype;
+ v_candidate public.practice_topics%rowtype;
+ v_event public.practice_events%rowtype;
+ v_event_id uuid; v_recorded timestamptz; v_delay integer;
+ v_stored jsonb; v_receipt jsonb; v_changed jsonb;
+ v_expected integer; v_action bigint; v_bad text; v_src text;
+ v_due date; v_prior_due date; v_prior_practiced timestamptz;
+begin
+ v_owner:=(select auth.uid());
+ if v_owner is null then raise exception 'Authentication required'; end if;
+ perform public.practice_topics_validate_envelope(p);
+ v_op_id:=(p->>'operationId')::uuid;
+ perform pg_catalog.pg_advisory_xact_lock(
+  pg_catalog.hashtextextended(v_owner::text||':'||v_op_id::text,0));
+ select result into v_stored from public.command_receipts
+  where user_id=v_owner and operation_id=v_op_id;
+ if found then
+  if v_stored->'_request'=p then return v_stored-'_request'; end if;
+  return pg_catalog.jsonb_build_object('operationId',v_op_id,
+    'status','conflict','changed','[]'::jsonb,'actionNo',null,
+    'conflict',pg_catalog.jsonb_build_object('reason','operationId reused with a different payload'));
+ end if;
+ v_op:=p->>'operation';
+ v_patch:=coalesce(p->'patch','{}'::jsonb);
+ if p->'target'?'id' then v_target:=(p->'target'->>'id')::uuid; end if;
+ if v_op<>'create' then v_expected:=(p->>'expectedVersion')::integer; end if;
+ if coalesce(current_setting('role',true),'')='service_role' then
+  v_src:='mcp';
+ else
+  v_src:='app';
+  perform pg_catalog.set_config('lemma.source','app',true);
+  perform pg_catalog.set_config('lemma.tool','practice_topics',true);
+ end if;
+ perform pg_catalog.set_config('lemma.summary',
+  pg_catalog.left('Practice '||v_op,200),true);
+ if v_op='create' then
+  v_target:=coalesce(v_target,pg_catalog.gen_random_uuid());
+  insert into public.practice_topics(
+   id,user_id,title,subject_id,concept_id,checkpoint_id,
+   next_due_date,cadence,source
+  ) values(v_target,v_owner,v_patch->>'title',
+   (v_patch->>'subject_id')::uuid,(v_patch->>'concept_id')::uuid,
+   (v_patch->>'checkpoint_id')::uuid,(v_patch->>'next_due_date')::date,
+   coalesce(v_patch->'cadence','{"kind":"fixed_days","days":7}'::jsonb),v_src
+  ) returning * into v_new;
+  v_changed:=pg_catalog.jsonb_build_array(
+   pg_catalog.jsonb_build_object('id',v_target,'version',v_new.version,'table','practice_topics'));
+ elsif v_op='void_event' then
+  -- Lock topic first, then event: record and void follow the same lock order.
+  select e.topic_id into v_target from public.practice_events e
+   where e.id=v_target and e.user_id=v_owner;
+  if not found then raise exception 'Practice event not found for owner'; end if;
+  select * into v_row from public.practice_topics t
+   where t.id=v_target and t.user_id=v_owner for update;
+  if not found then raise exception 'Practice topic not found for owner'; end if;
+  select * into v_event from public.practice_events e
+   where e.id=(p->'target'->>'id')::uuid and e.user_id=v_owner for update;
+  if not found then raise exception 'Practice event not found for owner'; end if;
+  if v_event.version is distinct from v_expected then
+   v_receipt:=pg_catalog.jsonb_build_object('operationId',v_op_id,'status','conflict',
+    'changed','[]'::jsonb,'actionNo',null,
+    'conflict',pg_catalog.jsonb_build_object(
+      'expectedVersion',v_expected,'currentVersion',v_event.version));
+  else
+   if v_event.voided_at is not null then raise exception 'Event already voided'; end if;
+   if v_event.recorded_due_date is null or
+      v_row.next_due_date is distinct from v_event.recorded_due_date or
+      v_row.last_practiced_at is distinct from v_event.occurred_at or
+      exists(select 1 from public.practice_events newer
+       where newer.user_id=v_owner and newer.topic_id=v_target
+        and newer.voided_at is null and newer.id<>v_event.id
+        and (newer.occurred_at,newer.id)>(v_event.occurred_at,v_event.id))
+     then raise exception 'Stale event inverse: newer practice must be undone first'; end if;
+   update public.practice_events e set voided_at=pg_catalog.clock_timestamp(),
+     version=e.version+1,updated_at=pg_catalog.clock_timestamp(),source=v_src
+     where e.id=v_event.id and e.user_id=v_owner returning * into v_event;
+   update public.practice_topics t set
+     next_due_date=v_event.prior_due_date,
+     last_practiced_at=v_event.prior_practiced_at,
+     version=t.version+1,updated_at=pg_catalog.clock_timestamp(),source=v_src
+     where t.id=v_target and t.user_id=v_owner returning * into v_new;
+   v_changed:=pg_catalog.jsonb_build_array(
+    pg_catalog.jsonb_build_object('id',v_event.id,'version',v_event.version,'table','practice_events'),
+    pg_catalog.jsonb_build_object('id',v_new.id,'version',v_new.version,'table','practice_topics'));
+  end if;
+ else
+  select * into v_row from public.practice_topics t
+    where t.id=v_target and t.user_id=v_owner for update;
+  if not found then raise exception 'Practice topic not found for owner'; end if;
+  if v_row.version is distinct from v_expected then
+   v_receipt:=pg_catalog.jsonb_build_object('operationId',v_op_id,'status','conflict',
+    'changed','[]'::jsonb,'actionNo',null,
+    'conflict',pg_catalog.jsonb_build_object(
+      'expectedVersion',v_expected,'currentVersion',v_row.version));
+  else
+   if v_op in ('update','archive','record') and v_row.archived_at is not null then
+    raise exception 'Archived practice topic is read-only'; end if;
+   if v_op='restore' and v_row.archived_at is null then
+    raise exception 'Only archived practice topics can be restored'; end if;
+   if v_op='record' then
+    v_recorded:=coalesce((v_patch->>'occurred_at')::timestamptz,pg_catalog.clock_timestamp());
+    -- Equal instants make inverse ordering ambiguous; UUID order is not chronology.
+    if v_row.last_practiced_at is not null and v_recorded<=v_row.last_practiced_at then
+     raise exception 'Out-of-order practice event'; end if;
+    v_delay:=public.lemma_practice_cadence_days(v_row.cadence,(v_patch->>'rating')::integer);
+    v_due:=(v_recorded at time zone 'UTC')::date+v_delay;
+    v_prior_due:=v_row.next_due_date;
+    v_prior_practiced:=v_row.last_practiced_at;
+    insert into public.practice_events(
+      user_id,topic_id,occurred_at,rating,response,minutes,source,
+      prior_due_date,prior_practiced_at,recorded_due_date
+    ) values(v_owner,v_row.id,v_recorded,(v_patch->>'rating')::integer,
+      v_patch->>'response',(v_patch->>'minutes')::integer,v_src,
+      v_prior_due,v_prior_practiced,v_due)
+      returning * into v_event;
+    update public.practice_topics t set next_due_date=v_due,
+      last_practiced_at=v_recorded,version=t.version+1,
+      updated_at=pg_catalog.clock_timestamp(),source=v_src
+      where t.id=v_row.id and t.user_id=v_owner returning * into v_new;
+    v_changed:=pg_catalog.jsonb_build_array(
+     pg_catalog.jsonb_build_object('id',v_event.id,'version',v_event.version,'table','practice_events'),
+     pg_catalog.jsonb_build_object('id',v_new.id,'version',v_new.version,'table','practice_topics'));
+   elsif v_op='delete' and not exists(
+     select 1 from public.practice_events e
+      where e.topic_id=v_row.id and e.user_id=v_owner) then
+    delete from public.practice_topics t where t.id=v_row.id and t.user_id=v_owner;
+    v_changed:=pg_catalog.jsonb_build_array(
+      pg_catalog.jsonb_build_object('id',v_row.id,'version',v_row.version+1,'table','practice_topics'));
+   else
+    if v_op='update' then
+     select * into v_candidate from pg_catalog.jsonb_populate_record(v_row,v_patch);
+     update public.practice_topics t set
+      title=v_candidate.title,subject_id=v_candidate.subject_id,
+      concept_id=v_candidate.concept_id,checkpoint_id=v_candidate.checkpoint_id,
+      next_due_date=v_candidate.next_due_date,cadence=v_candidate.cadence,
+      version=t.version+1,updated_at=pg_catalog.clock_timestamp(),source=v_src
+      where t.id=v_row.id and t.user_id=v_owner returning * into v_new;
+    elsif v_op='restore' then
+     update public.practice_topics t set archived_at=null,
+       version=t.version+1,updated_at=pg_catalog.clock_timestamp(),source=v_src
+       where t.id=v_row.id and t.user_id=v_owner returning * into v_new;
+    else
+     if v_row.archived_at is not null then raise exception 'Topic already archived'; end if;
+     update public.practice_topics t set archived_at=pg_catalog.clock_timestamp(),
+       version=t.version+1,updated_at=pg_catalog.clock_timestamp(),source=v_src
+       where t.id=v_row.id and t.user_id=v_owner returning * into v_new;
+    end if;
+    v_changed:=pg_catalog.jsonb_build_array(
+      pg_catalog.jsonb_build_object('id',v_new.id,'version',v_new.version,'table','practice_topics'));
+   end if;
+  end if;
+ end if;
+ if v_receipt is null then
+  select a.no into v_action from public.actions a
+    where a.txid=pg_catalog.txid_current() and a.user_id=v_owner;
+  if v_action is null then raise exception 'Practice write missing audit journal'; end if;
+  v_receipt:=pg_catalog.jsonb_build_object('operationId',v_op_id,'status','ok',
+   'changed',v_changed,'actionNo',v_action);
+ end if;
+ insert into public.command_receipts(user_id,operation_id,resource,result)
+ values(v_owner,v_op_id,'practice_topics',
+  v_receipt||pg_catalog.jsonb_build_object('_request',p));
+ return v_receipt;
+end
+$practice$;
+create function public.practice_topics_command(p jsonb) returns jsonb
+language sql volatile security invoker set search_path='' as $command$
+ select public.practice_topics_write_owned(p)
+$command$;
+revoke all on function public.practice_topics_write_owned(jsonb) from public,anon;
+revoke all on function public.practice_topics_command(jsonb) from public,anon;
+grant execute on function public.practice_topics_write_owned(jsonb) to authenticated,service_role;
+grant execute on function public.practice_topics_command(jsonb) to authenticated,service_role;
+
+insert into public.lemma_undo_tables(table_name) values('practice_topics'),('practice_events');
+insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
+ values('practice_topics','practice_topics_command',true,
+ '{"operations":["create","update","archive","restore","delete","record","void_event"],
+ "fields":["title","subject_id","concept_id","checkpoint_id","next_due_date",
+ "cadence","rating","occurred_at","response","minutes"]}'::jsonb);
