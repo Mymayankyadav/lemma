@@ -61,7 +61,7 @@ try{
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY['project:proof','project:proof'],'fsrs-5',1)",[owner]);
  await reject("update public.review_runs set selected_deck_ids=ARRAY['project:proof','project:proof'] where id=$1",[runA.id]);
  const safeFilters={study:{statuses:['running',{category:'proof'}]},limit:20};
- const safeRun=(await q("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,$2::jsonb,'fsrs-5',1) returning filters",[owner,JSON.stringify(safeFilters)]))[0];
+ const safeRun=(await q("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,$2::jsonb,'fsrs-5',1) returning id,filters",[owner,JSON.stringify(safeFilters)]))[0];
  assert.deepEqual(safeRun.filters,safeFilters,'nested, owner-neutral JSON remains valid');
  const invalidFilters=[
   {ownerId:'forged-owner'},
@@ -114,7 +114,8 @@ try{
  }
  await as(owner);
  const rows=await q('select id from public.review_runs order by id');
- assert.deepEqual(rows.map(x=>x.id),[runA.id]);
+ assert.deepEqual(rows.map(x=>x.id),[runA.id,safeRun.id].sort(),
+  'owner sees both the original run and the valid nested-filter run');
  const listed=await q('select id from public.review_run_items order by position');
  assert.deepEqual(listed.map(x=>x.id),[item.id,graded.id,stale.id]);
  for(const table of ['review_runs','review_run_items']){
