@@ -68,7 +68,7 @@ describe('N37 registered MCP metadata and generic command',()=>{
  it('keeps 24 MCP tool names with an additive resources enum inside get',()=>{
   const source=readFileSync('supabase/functions/mcp/server.ts','utf8');
   expect(source).toContain("'calendar_blocks','tasks','resources'");
-  expect(source.match(/registerTool\\('study'/g)).toHaveLength(1);
+  expect(source.match(/registerTool\('study'/g)).toHaveLength(1);
   expect(source).not.toContain("registerTool('resources'");
  });
 });
