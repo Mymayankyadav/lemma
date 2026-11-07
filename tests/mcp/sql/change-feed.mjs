@@ -97,6 +97,29 @@ try{
  const withStringKey=(await q('select public.changes_since(0,100) result'))[0].result.changes;
  assert.equal(withStringKey.find(x=>x.resource==='notes')?.record_id,'N',
   'non-UUID journal IDs retain their source identifier verbatim');
+ // Future undo-registry additions are picked up without installing another
+ // domain trigger or editing the projection function. An unregistered
+ // resource's journal rows stay excluded until the table is registered.
+ const future='future_feed_fixture';
+ await db.exec('create table public.future_feed_fixture(id uuid primary key,user_id uuid not null,version int not null)');
+ const futureId='abcdabcd-abcd-4bcd-8bcd-abcdabcdabcd';
+ const logFuture=async seq=>q(
+  "insert into public.action_changes(action_no,seq,table_name,row_pk,op,new) values($1,$2,$3,$4::jsonb,'insert',$5::jsonb)",
+  [lastAction,seq,future,JSON.stringify({id:futureId}),
+   JSON.stringify({id:futureId,user_id:a,version:1})]);
+ const preCount=(await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n;
+ await db.exec('reset role');
+ await logFuture(1000);
+ assert.equal((await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n,
+  preCount,'unregistered journal tables do not generate owner deltas');
+ await q('insert into public.lemma_undo_tables(table_name) values($1)',[future]);
+ await logFuture(1001);
+ await as(a);
+ const later=(await q('select public.changes_since(0,100) result'))[0].result.changes;
+ assert.equal(later.filter(x=>x.resource===future).length,1,
+  'newly registered owner table projects writes without a function replacement');
+ assert.equal(later.find(x=>x.resource===future)?.record_id,futureId);
+
  await assert.rejects(q('select public.lemma_prune_owner_changes()'),
   /Only the scheduled service role|permission denied/i,
   'authenticated clients may never prune other owners\u0027 deltas');
@@ -107,6 +130,8 @@ try{
  await db.exec('set role service_role');
  const pruned=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
  assert.ok(pruned>=2);
+ const repeated=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(repeated,0,'retention prune is idempotent without newly expired rows');
  await as(a);
  const reset=(await q('select public.changes_since(1,100) result'))[0].result;
  assert.equal(reset.reset,true,'pruning announces a replay/reset for stale cursors');
@@ -114,6 +139,14 @@ try{
  assert.equal(initial.reset,true,
   'even an initial cursor zero needs a full projection rebuild after retention');
  assert.ok(reset.changes.every(x=>x.cursor>oldest));
+ assert.ok(reset.changes.some(x=>x.resource===future),
+  'retention preserves newer dynamically registered resource deltas');
+ await as(b);
+ assert.deepEqual(await q('select user_id from public.owner_change_retention where user_id=$1',[a]),[],
+  'retention watermark is owner-RLS protected independently of the event feed');
+ const otherReset=(await q('select public.changes_since(0,100) result'))[0].result;
+ assert.equal(otherReset.reset,false,
+  'one owner\u0027s retention cannot force a second owner to reset');
  // The existing service-role MCP dispatcher writes through the same
  // journal, so it must contribute exactly one owner-scoped change.
  await db.exec('reset role');
