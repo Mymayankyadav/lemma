@@ -1,7 +1,6 @@
 import {describe,expect,it,vi} from 'vitest';
 import {registeredResources} from '../../../supabase/functions/mcp/tools/registry';
 import {study} from '../../../supabase/functions/mcp/tools/study';
-import {get} from '../../../supabase/functions/mcp/tools/read';
 import type {Context} from '../../../supabase/functions/mcp/db';
 import {readFileSync} from 'node:fs';
 
@@ -54,9 +53,9 @@ describe('N37 registered MCP metadata and generic command',()=>{
   }
   expect(rpc).not.toHaveBeenCalled();
  });
- it('lists only registered service-capable schemas through the existing get tool',async()=>{
+ it('lists only registered service-capable schemas with the tool registry helper',async()=>{
   const {c,from}=context();
-  const result=JSON.parse(await get(c,{what:'resources'}));
+  const result=JSON.parse(await registeredResources(c));
   expect(result.resources).toEqual([
    {resource:'day_plans',operations:['create','close'],fields:['plan_date','ritual']},
    {resource:'future_journal',operations:['record','archive'],fields:['title','note']},
@@ -68,6 +67,8 @@ describe('N37 registered MCP metadata and generic command',()=>{
  it('keeps 24 MCP tool names with an additive resources enum inside get',()=>{
   const source=readFileSync('supabase/functions/mcp/server.ts','utf8');
   expect(source).toContain("'calendar_blocks','tasks','resources'");
+  const read=readFileSync('supabase/functions/mcp/tools/read.ts','utf8');
+  expect(read).toContain("if(a.what==='resources')return registeredResources(c)");
   expect(source.match(/registerTool\('study'/g)).toHaveLength(1);
   expect(source).not.toContain("registerTool('resources'");
  });
