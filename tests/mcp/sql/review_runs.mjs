@@ -101,6 +101,18 @@ try{
  }
  await reject("insert into public.review_runs(scheduler_version,settings_version) values('fsrs-5',1)");
  await reject("insert into public.review_run_items(run_id,position,card_id,expected_card_version) values($1,3,$2,1)",[runA.id,cardA]);
+ await as(other);
+ assert.deepEqual((await q('select id from public.review_runs')).map(x=>x.id),[runB.id],
+  'a second owner sees only their own run');
+ assert.deepEqual(await q('select id from public.review_run_items'),[],
+  'a second owner cannot read another owner\'s queued cards');
+ await db.exec('reset role');
+ await db.exec('set role anon');
+ for(const table of ['review_runs','review_run_items']){
+  try {assert.deepEqual(await q('select id from public.'+table),[],
+    'anonymous users cannot read durable review data');}
+  catch(e){assert.match(String(e),/permission denied|row.level security/i);}
+ }
  await db.exec('reset role');
  assert.equal((await q('select count(*)::int n from public.review_runs where id=$1',[runA.id]))[0].n,1);
  assert.equal((await q('select count(*)::int n from public.review_run_items where id=$1',[item.id]))[0].n,1);
