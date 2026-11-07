@@ -517,3 +517,7 @@ A second newly created after-row trigger named lemma_log_change checks that dead
 ## N42.2.2 finite civil-date validation correction (chat-51673#r8k2)
 
 The full-migration SQL acceptance also probes invalid real calendar dates (2026-02-30). The deadline command now translates PostgreSQL invalid_datetime_format/datetime_field_overflow during the typed date cast into the stable `Invalid civil deadline date` error, before any row mutation or receipt is stored. Original invalid-input and safety assertions remain intact, with a dedicated regression expecting the exact error. No deployed migration or RLS policy changed.
+
+## N41.2.2.2.2.2 preset lifecycle writes, undo and MCP (finishes N41)
+
+One additive migration `20261110020000_presets_lifecycle_command.sql` compatibly replaces `public.presets_command(jsonb)` (same signature and grants; create/update/reorder unchanged) to add archive, restore and delete. Lifecycle operations keep the receipt-first owner+operationId lock and run `lemma_preset_lifecycle_lock()` in the same transaction, so version and study-entry reference decisions are made after the row lock; a delete of a referenced preset archives instead. Every write journals one action and an exactly-once receipt (replay survives physical deletion). `presets` is registered in `lemma_undo_tables` (its journal trigger takes the standard name `lemma_log_change`) and in `lemma_command_resources`, so `undo_action` and the service-role `mcp_command` dispatcher work for presets with MCP attribution. Tests: `tests/mcp/sql/presets-command.mjs`.
