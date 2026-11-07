@@ -164,13 +164,6 @@ Tests: `tests/unit/review-run-v6/**`
 Scope: src/features/review-run/v6/** and src/features/review-done/v6/** (new), src/features/review-run/Page.tsx and src/features/review-done/Page.tsx (the flag branches only), src/features/review/v6/** (starting a run only), tests/unit/review-run-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N84 v6 card detail and editor behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/cards/:no` shows the note's variants, scheduling state, review history and comments with the existing edit, suspend/restore, reschedule, reset and comment actions; the editor previews mathematics and keeps the existing save path. Flag off: nothing changes.
-Tests: `tests/unit/card-v6/**`
-Scope: src/features/card/v6/** (new), src/features/card/Page.tsx (the flag branch only), tests/unit/card-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N85 v6 plan review with proposal drafts behind the shell flag
 Stage: Build · Status: open · Needs: N63.2 · Assigned: —
 Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
