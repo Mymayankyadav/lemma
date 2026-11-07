@@ -110,6 +110,14 @@
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "undoable event history / owner purge",
       "description": "effective due day after this event; checked before inverse"
+    },
+    "record_order": {
+      "classification": "derived",
+      "appPath": "src/data/practice-topics/live.ts (server-assigned; not caller-editable)",
+      "mcpPath": "registered practice_topics_command via mcp_command",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "undo preserves event order / owner purge",
+      "description": "server insertion sequence used to enforce safe inverse when occurred_at instants coincide"
     }
   }
 }

@@ -263,6 +263,31 @@ try{
  const historyDelete=await ver('delete',id,8);assertAction(historyDelete);
  assert.ok((await getTopic(id)).archived_at,'historical topic delete archives');
  assert.equal((await q('select count(*)::int n from public.practice_events where topic_id=$1',[id]))[0].n,2);
+ // Equal occurred_at values may be inserted in different transactions. UUID
+ // lexical order is unrelated to history order and must never permit voiding
+ // an earlier active event while its newer successor still exists.
+ const tieTopic=await cmd(cmdEnvelope('create',{patch:{title:'Equal-time history',
+  cadence:{kind:'fixed_days',days:1},next_due_date:'2028-02-25'}}));
+ assertAction(tieTopic);
+ const tieId=tieTopic.changed[0].id;
+ const tieAt='2028-03-03T09:00:00Z';
+ const tieFirst=await ver('record',tieId,1,{rating:1,occurred_at:tieAt});
+ assertAction(tieFirst);
+ const tieSecond=await ver('record',tieId,2,{rating:1,occurred_at:tieAt});
+ assertAction(tieSecond);
+ const tied=await q('select id,record_order from public.practice_events where topic_id=$1 order by record_order',[tieId]);
+ assert.equal(tied.length,2);
+ assert.ok(Number(tied[1].record_order)>Number(tied[0].record_order),
+  'server sequence orders equal-time records independently of random UUIDs');
+ assert.equal(civil((await getTopic(tieId)).next_due_date),'2028-03-04');
+ await assert.rejects(ver('void_event',tied[0].id,1),/Stale event inverse/,
+  'voiding older live record must fail even if its UUID sorts after newer UUID');
+ const tieVoidSecond=await ver('void_event',tied[1].id,1);
+ assertAction(tieVoidSecond);
+ assert.equal(civil((await getTopic(tieId)).next_due_date),'2028-03-04');
+ const tieVoidFirst=await ver('void_event',tied[0].id,1);
+ assertAction(tieVoidFirst);
+ assert.equal(civil((await getTopic(tieId)).next_due_date),'2028-02-25');
  const emptyTopic=await cmd(cmdEnvelope('create',{patch:{title:'Undoable empty topic'}}));
  assertAction(emptyTopic);
  const emptyId=emptyTopic.changed[0].id;
