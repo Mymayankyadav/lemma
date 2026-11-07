@@ -206,15 +206,35 @@ try{
   'conflict','optimistic stale version must not commit');
  const committed=await command(commandInput('commit',{}, {id:newPlan.id},shown.version));
  const committedPlan=act(committed);assert.equal(committedPlan.status,'committed');
- const closed=await command(commandInput('close',{ritual:{reflection:'Done'}},
+ const closedReceipt=await command(commandInput('close',{ritual:{reflection:'Done'}},
   {id:newPlan.id},committedPlan.version));
- const closedPlan=act(closed);
+ const closedPlan=act(closedReceipt);
  assert.equal(closedPlan.status,'closed');assert.ok(closedPlan.closed_at);
  const reOpened=await command(commandInput('reopen',{}, {id:newPlan.id},closedPlan.version));
  const reopened=act(reOpened);assert.equal(reopened.status,'committed');
  assert.equal(reopened.closed_at,null,'reopen clears closure instant');
  const second=act(await command(commandInput('create',{plan_date:'2026-11-21',time_zone:'UTC'})));
  assert.equal(second.status,'draft');
+
+ // Generic undo must restore both simple creates and multi-row preview writes.
+ const createUndo=await command(commandInput('create',
+  {plan_date:'2026-11-26',time_zone:'UTC'}));
+ const createdUndoPlan=act(createUndo);
+ await q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,createUndo.actionNo]);
+ assert.equal((await q('select count(*)::int n from public.day_plans where id=$1',
+  [createdUndoPlan.id]))[0].n,0,'undo removes an auditable plan creation');
+ const previewUndoPlan=act(await command(commandInput('create',
+  {plan_date:'2026-11-27',time_zone:'UTC'})));
+ const previewUndo=await command(commandInput('preview',
+  {availability:await snapshot(),items:previewItems},{id:previewUndoPlan.id},1));
+ act(previewUndo);
+ await q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,previewUndo.actionNo]);
+ assert.equal((await q('select status from public.day_plans where id=$1',[previewUndoPlan.id]))[0].status,
+  'draft','undo restores original previewed header state');
+ assert.equal((await q('select count(*)::int n from public.day_plan_items where plan_id=$1',
+  [previewUndoPlan.id]))[0].n,0,'undo removes all preview-created placements');
  assert.equal((await q('select status from public.day_plans where id=$1',[newPlan.id]))[0].status,
   'committed','other dates cannot be altered by create/close');
  const staleCreated=act(await command(commandInput('create',{plan_date:'2026-11-22',time_zone:'UTC'})));
