@@ -17,7 +17,7 @@ function op(operation,patch={},target={},expectedVersion){
 const command=async input=>(await q('select public.proposal_drafts_command($1::jsonb) result',[JSON.stringify(input)]))[0].result;
 try {
  await db.exec("create role anon;create role authenticated;create role service_role;create schema auth;create schema extensions;create table auth.users(id uuid primary key)");
- await db.exec("create function auth.uid() returns uuid language sql as $auth$select nullif(current_setting('test.uid',true),'')::uuid $auth$");
+ await db.exec("create function auth.uid() returns uuid language sql as $auth$select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,nullif(current_setting('test.uid',true),'')::uuid) $auth$");
  await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $bytes$select decode(repeat('00',n),'hex')$bytes$");
  await db.exec("grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
