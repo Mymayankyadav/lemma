@@ -65,7 +65,10 @@ jobs:
         if: steps.credentials.outputs.ready == 'true'
         run: |
           if [[ -d supabase/migrations ]]; then
-            supabase db push
+            # v2.5: --include-all also applies an unapplied migration whose timestamp is older than the latest one
+            # already on the database. Parallel PRs merge out of timestamp order; without it the deploy stopped (S0
+            # incident #1016). Migrations are additive-only and pass the full SQL suite before merging.
+            supabase db push --linked --include-all
           else
             echo "::notice::No migrations yet; DB-1 supplies the new schema."
           fi
