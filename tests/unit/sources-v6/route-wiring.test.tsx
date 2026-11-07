@@ -33,6 +33,9 @@ describe('v6 sources route integration',()=>{
   expect(toggle).toBeTruthy();
   act(()=>toggle!.click());
   expect(node.querySelector('[data-v6-sources]')).not.toBeNull();
+  expect(node.textContent).toContain('Study sources');
+  expect(node.querySelector('[aria-label="Coverage for Lecture notes"]')).not.toBeNull();
+  expect(node.getElementsByTagName('h2').length).toBeGreaterThan(0);
   act(()=>root.unmount());node.remove();
  });
 });
