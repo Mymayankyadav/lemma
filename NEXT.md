@@ -65,12 +65,12 @@ Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N50.2.2 Study events: related links, versioned lifecycle, undo and MCP
-Stage: Build · Status: open · Needs: N50.2.1 · Assigned: —
-Done = complete N50.2 after N50.2.1's authenticated, side-effect-free study_events_validate_envelope and N50.1's owner-scoped study_events table. Add optional related_kind/related_id with owner-bound references, transactional owner-only study_events_command supporting record, edit, void, restore, receipt replay, changed-payload and stale version conflicts. Recheck current kind, drift-only positive duration, related/entry ownership and versions under lock; preserve voided history. Register study_events in lemma_undo_tables and lemma_command_resources for action journal, undo and service-role MCP parity; block unaudited direct DML and prevent forged provenance. Production SQL requires independent review.
-Tests: extend tests/mcp/sql/study_events-command.mjs with actual lifecycle, related owner links, retries, conflicts, journal, undo, MCP and second-owner refusal; preserve the N50.2.1 full-migration assertions and N50.1 SQL test.
+## N50.2.2.2 Study events receipt-backed lifecycle, related validation and undo/MCP
+Stage: Build · Status: open · Needs: N50.2.2.1 · Assigned: —
+Done = complete N50.2.2 using the N50.2.1 authenticated study_events_validate_envelope and N50.2.2.1 owner-bound related_kind/related_id schema. Add an owner-locked study_events_command(p jsonb) for record, edit, void and restore with optimistic expectedVersion, exact operationId replay, changed-payload conflicts, undoable journal writes and verified service-role mcp_command dispatch; add the related fields to the command envelope without accepting caller owner or source. Recheck the existing study entry and optional task, calendar block or study-entry related row under the verified owner at write time, and validate the complete resulting kind/drift-duration tuple on edit. Preserve historical voided events. Register study_events in lemma_undo_tables and lemma_command_resources atomically with exposing audited writes; keep direct unaudited authenticated table DML forbidden. Production SQL requires independent review (D1/D8).
+Tests: extend tests/mcp/sql/study_events-command.mjs with full lifecycle, related owner validation, other-owner refusal, stale version and operationId conflicts, exact retries, action journal, undo and service-role MCP parity. Retain N50.2.1 envelope and N50.2.2.1 owner-bound related-link regressions and unchanged N50.1 suite.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: earlier migrations, existing test loosening, app/MCP code, unrelated tables/functions or protected paths.
+Not: existing migrations, protected paths, unrelated resources, app/MCP code or weaker existing tests.
 
 ## N56.2 Deadlines and milestones live adapter (remaining after N56 split)
 Stage: Build · Status: open · Needs: N56.1, N42.2.2 · Assigned: —
