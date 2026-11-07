@@ -157,19 +157,21 @@ try{
  assert.equal(feed.length,3,'one physical deadline and two owner projections');
  const byOrigin=Object.fromEntries(feed.map(row=>[row.origin,row]));
  assert.deepEqual(Object.keys(byOrigin).sort(),['checkpoint','deadline','project']);
- assert.equal(byOrigin.deadline.source_id,mine.id);
- assert.equal(byOrigin.deadline.projected,false);
+ assert.equal(byOrigin.deadline.source_id,mine.id,'physical owner deadline ID');
+ assert.equal(byOrigin.deadline.projected,false,'physical deadlines not projected');
  assert.equal(byOrigin.deadline.status,'done','physical status stays authoritative');
- assert.equal(byOrigin.deadline.due_kind,'date');
- assert.equal(byOrigin.project.source_id,ownProject);
- assert.equal(byOrigin.project.projected,true);
- assert.equal(byOrigin.project.project_id,ownProject);
- assert.equal(String(byOrigin.project.due_date).slice(0,10),'2026-12-15');
- assert.equal(byOrigin.checkpoint.source_id,ownCheckpoint);
- assert.equal(byOrigin.checkpoint.checkpoint_id,ownCheckpoint);
- assert.equal(byOrigin.checkpoint.project_id,ownProject);
- assert.equal(byOrigin.checkpoint.projected,true);
- assert.equal(String(byOrigin.checkpoint.due_date).slice(0,10),'2026-12-02');
+ assert.equal(byOrigin.deadline.due_kind,'date','physical civil due kind');
+ assert.equal(byOrigin.project.source_id,ownProject,'project projection source ID');
+ assert.equal(byOrigin.project.projected,true,'project has projected marker');
+ assert.equal(byOrigin.project.project_id,ownProject,'project join ID');
+ assert.equal(new Date(String(byOrigin.project.due_date)).toISOString().slice(0,10),
+   '2026-12-15','project due date retains its civil day across PGlite date decoding');
+ assert.equal(byOrigin.checkpoint.source_id,ownCheckpoint,'checkpoint projection source ID');
+ assert.equal(byOrigin.checkpoint.checkpoint_id,ownCheckpoint,'checkpoint projection join ID');
+ assert.equal(byOrigin.checkpoint.project_id,ownProject,'checkpoint parent project ID');
+ assert.equal(byOrigin.checkpoint.projected,true,'checkpoint is projected');
+ assert.equal(new Date(String(byOrigin.checkpoint.due_date)).toISOString().slice(0,10),
+   '2026-12-02','checkpoint due date retains its civil day across PGlite date decoding');
  assert.equal((await q('select origin from public.deadline_feed(1,1)'))[0].origin,
    'checkpoint','bounded pages have stable due-date ordering');
  await db.exec('reset role');
