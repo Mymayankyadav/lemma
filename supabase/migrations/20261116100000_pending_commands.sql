@@ -61,6 +61,11 @@ begin
     or pg_catalog.jsonb_typeof(p->'operationId') is distinct from 'string' then
   raise exception 'Invalid pending command envelope'; end if;
  v_control_id:=(p->>'operationId')::uuid;
+ -- A scheduled execution reserves this receipt ID until the worker runs.
+ -- Never let a later control envelope consume that ID ahead of dispatch.
+ if exists(select 1 from public.pending_commands q
+  where q.user_id=v_owner and q.operation_id=v_control_id) then
+   raise exception 'operationId reserved for pending execution'; end if;
  v_op:=p->>'operation';
  if v_op not in ('schedule','extend','cancel') or v_op is null then
   raise exception 'Unknown pending operation'; end if;

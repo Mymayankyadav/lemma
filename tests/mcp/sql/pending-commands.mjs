@@ -47,14 +47,17 @@ try{
  const acl=(await q("select has_function_privilege('anon','public.pending_command(jsonb)','execute') anon,has_function_privilege('authenticated','public.pending_command(jsonb)','execute') app,has_function_privilege('authenticated','public.lemma_run_due_commands()','execute') no_worker,has_function_privilege('service_role','public.lemma_run_due_commands()','execute') worker"))[0];
  assert.deepEqual(acl,{anon:false,app:true,no_worker:false,worker:true});
  await q('insert into auth.users(id) values($1),($2)',[A,B]);
- for(const owner of [A,B])await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
-  [owner,'a'.repeat(48)]);
+ for(const [owner,secret] of [[A,'a'.repeat(48)],[B,'b'.repeat(48)]])
+  await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[owner,secret]);
  await as(A);
  const req=schedule(task('Scheduled task'));
  const created=await api(req);
  assert.equal(created.status,'ok');
  const id=created.changed[0].id;
  assert.deepEqual(await api(req),created,'same schedule operationId is idempotent');
+ await assert.rejects(api(change('cancel',id,1,{
+  operationId:req.payload.operationId
+ })),/reserved for pending execution/);
  assert.equal((await api({...req,undoUntil:future(120)})).status,'conflict');
  const extend=change('extend',id,1,{notBefore:future(40),undoUntil:future(100)});
  const changed=await api(extend);
