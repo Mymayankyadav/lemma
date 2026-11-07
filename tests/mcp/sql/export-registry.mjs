@@ -15,6 +15,14 @@ try{
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const files=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  for(const f of files)await db.exec(await readFile(new URL(f,dir),'utf8'));
+ // Registry discovery is an intentionally unresolved server-authorization
+ // blocker (#1156): an authenticated browser must not gain this grant via N95.
+ const registryAcl=(await q("select has_table_privilege('authenticated','public.lemma_undo_tables','SELECT') as can_read,has_table_privilege('authenticated','public.lemma_undo_tables','INSERT') as can_write"))[0];
+ assert.deepEqual(registryAcl,{can_read:false,can_write:false});
+ await db.exec('set role authenticated');
+ await assert.rejects(q('select table_name from public.lemma_undo_tables limit 1'),
+  /permission denied|not authorized/i,'browser cannot read the undo registry today');
+ await db.exec('reset role');
  const registry=(await q('select table_name from public.lemma_undo_tables order by table_name'))
   .map(r=>r.table_name);
  assert.ok(registry.length>20,'registry includes v6 owner resources');

@@ -80,6 +80,20 @@ describe('N95 owner registry-driven account export',()=>{
   await expect(new LiveAdapter().exportAll()).rejects
    .toThrow(/authenticated registry read is not enabled/);
  });
+ it('paginates registry discovery beyond one hundred names, never a fixed client array',async()=>{
+  const tables=Array.from({length:101},(_,i)=>'resource_'+String(i).padStart(3,'0'));
+  const h=harness(tables,{});
+  const out=await exportData();
+  expect(out.manifest.tables).toHaveLength(101);
+  expect(Object.keys(out.tables)).toHaveLength(101);
+  expect(h.reads.filter(r=>r.table==='lemma_undo_tables').map(r=>[r.start,r.end]))
+   .toEqual([[0,99],[100,199]]);
+ });
+ it('refuses a registry with no visible tables instead of writing an empty backup',async()=>{
+  harness([],{});
+  await expect(new LiveAdapter().exportAll()).rejects
+   .toThrow(/Export registry is empty/);
+ });
  it('refuses duplicate, malformed or foreign-owner data',async()=>{
   harness(['tasks','tasks'],{});
   await expect(new LiveAdapter().exportAll()).rejects.toThrow(/duplicate table/);
