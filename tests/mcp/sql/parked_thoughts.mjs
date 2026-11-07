@@ -115,6 +115,7 @@ try{
  assert.deepEqual(await validate(suppliedCreateId),suppliedCreateId);
  await assert.rejects(validate({...valid,target:{id:'not-a-uuid'}}),/uuid/i);
  await assert.rejects(validate({...valid,target:{id:null}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...valid,target:{id:''}}),/target.id must be a UUID/);
  await assert.rejects(validate({...valid,target:{id:42}}),/target.id must be a UUID/);
  await assert.rejects(validate({...valid,user_id:other}),/Unknown command field/);
  await assert.rejects(validate({...valid,operation:'archive'}),/Unsupported thought operation/);
@@ -127,6 +128,7 @@ try{
  assert.deepEqual(await validate(edit),edit);
  await assert.rejects(validate({...edit,expectedVersion:0}),/positive integer/);
  await assert.rejects(validate({...edit,target:{}}),/target.id is required/);
+ await assert.rejects(validate({...edit,target:{id:''}}),/target.id must be a UUID/);
  await assert.rejects(validate({...edit,patch:{}}),/Edit patch/);
  await assert.rejects(validate({...edit,patch:{text:null}}),/Thought text/);
  await assert.rejects(validate({...edit,target:{id:open.id,user_id:other}}),/Unknown target field/);

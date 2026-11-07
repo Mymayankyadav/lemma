@@ -469,7 +469,7 @@ The read-only parked-thought validator remains unchanged and does not expose wri
 
 ## N44.2.1 typed create targets and current-main dependency reconciliation (2026-11-07)
 
-The read-only parked-thought command-envelope validator now checks a supplied create target ID has JSON string type and parses as UUID, rejecting explicit null, numbers and malformed UUIDs; omitted create IDs remain valid for future server allocation. Added full-migration PGlite cases for supplied valid/invalid IDs, without weakening earlier status/RLS/no-write assertions. Also reconciles N44.2.2/N44.2.3 split bookkeeping against current main without carrying unrelated preset queue revisions into this PR. No existing migration or protected paths are modified; deploy ordering still requires review.
+The read-only parked-thought command-envelope validator now checks a supplied create target ID has JSON string type and parses as UUID, rejecting explicit null, numbers and malformed UUIDs; omitted create IDs remain valid for future server allocation. Added full-migration PGlite cases for supplied valid/invalid IDs, without weakening earlier status/RLS/no-write assertions. Empty explicit target UUID strings are also rejected on create and edit, rather than silently being treated as omitted IDs. Also reconciles N44.2.2/N44.2.3 split bookkeeping against current main without carrying unrelated preset queue revisions into this PR. No existing migration or protected paths are modified; deploy ordering still requires review.
 
 ## N44.2.1 conversion link shape checks and queue reconciliation (2026-11-07)
 

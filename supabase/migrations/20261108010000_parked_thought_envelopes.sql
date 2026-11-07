@@ -47,7 +47,9 @@ begin
     where k <> 'id' limit 1;
   if v_bad is not null then raise exception 'Unknown target field: %',v_bad; end if;
   -- When create supplies a target ID, it must be a typed UUID as on edits.
-  if v_target?'id' and pg_catalog.jsonb_typeof(v_target->'id') is distinct from 'string' then
+  if v_target?'id' and
+    (pg_catalog.jsonb_typeof(v_target->'id') is distinct from 'string'
+     or nullif(v_target->>'id','') is null) then
     raise exception 'target.id must be a UUID';
   end if;
   if v_operation <> 'create' and nullif(v_target->>'id','') is null then
