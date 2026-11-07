@@ -1,7 +1,7 @@
 {
   "table": "day_plans",
   "version": 1,
-  "description": "N46.1 read-only owner plan headers; N46.2 supplies items and command lifecycle",
+  "description": "N46.1 read-only owner plan headers; N46.2 supplies items and command lifecycle N46.2 adds owner-receipt lifecycle, preview/commit source version checks, undo and MCP registration.",
   "columns": {
     "id": {
       "classification": "derived",
