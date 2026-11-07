@@ -1,0 +1,90 @@
+{
+  "table": "study_events",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "entry_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "occurred_at": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "duration_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "note": {
+      "classification": "owner-editable",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "voided_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "source": {
+      "classification": "command-managed",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/study-events/ (N64 planned)",
+      "mcpPath": "N50.2 registered study_events command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); domain undo registration N50.2"
+    }
+  }
+}
