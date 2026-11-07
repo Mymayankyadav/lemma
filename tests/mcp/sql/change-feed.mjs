@@ -50,22 +50,34 @@ try{
  const removed=await cmd('delete',id,2);
  assert.equal(removed.status,'ok');
  const page=(await q('select public.changes_since(0,2) as result'))[0].result;
- assert.equal(page.changes.length,2);
+ assert.equal(page.changes.length,2,`unexpected owner feed: ${JSON.stringify(page.changes)}`);
  assert.ok(page.changes.every(x=>x.resource==='study_entries'||x.resource==='settings'));
  assert.ok(page.changes[0].cursor<page.changes[1].cursor);
  const all=(await q('select public.changes_since(0,100) as result'))[0].result;
  const changes=all.changes.filter(x=>x.resource==='study_entries');
- assert.equal(changes.length,3,'one feed row per journalled mutation');
+ assert.equal(changes.length,3,`expected one row per mutation: ${JSON.stringify(changes)}`);
  assert.deepEqual(changes.map(x=>x.op),['insert','update','delete']);
  assert.equal(changes[0].record_id,id);
  assert.ok(changes[2].tombstone);
- assert.equal(changes[2].version,2);
+ assert.equal(changes[2].version,2,`delete must retain old version: ${JSON.stringify(changes[2])}`);
  const after=(await q('select public.changes_since($1,100) result',[page.nextCursor]))[0].result;
  assert.ok(after.changes.every(x=>x.cursor>page.nextCursor));
  await assert.rejects(q('select public.changes_since(0,101)'),/Invalid change feed/);
  await as(b);
  assert.equal((await q('select public.changes_since(0,100) result'))[0].result.changes.length,0);
  assert.deepEqual(await q('select cursor from public.owner_changes where user_id=$1',[a]),[]);
+ await db.exec('reset role');
+ // Regression: real undo-registered resources have non-UUID and composite
+ // primary keys. The feed must never abort the original action by casting
+ // e.g. a legacy note key "N" to uuid.
+ const lastAction=(await q('select no from public.actions where user_id=$1 order by no desc limit 1',
+  [a]))[0].no;
+ await q("insert into public.action_changes(action_no,seq,table_name,row_pk,op,new) values($1,999,'notes',$2::jsonb,'insert',$3::jsonb)",
+  [lastAction,JSON.stringify({id:'N'}),JSON.stringify({id:'N',version:1})]);
+ await as(a);
+ const withStringKey=(await q('select public.changes_since(0,100) result'))[0].result.changes;
+ assert.equal(withStringKey.find(x=>x.resource==='notes')?.record_id,'N',
+  'non-UUID journal IDs retain their source identifier verbatim');
  await db.exec('reset role');
  const oldest=changes[1].cursor;
  await q("update public.owner_changes set committed_at=now()-interval '31 days' where user_id=$1 and cursor<=$2",
@@ -77,5 +89,26 @@ try{
  const reset=(await q('select public.changes_since(1,100) result'))[0].result;
  assert.equal(reset.reset,true,'pruning announces a replay/reset for stale cursors');
  assert.ok(reset.changes.every(x=>x.cursor>oldest));
- console.log('PASS N54 owner-scoped journal projection, paging, tombstones and reset');
+ // The existing service-role MCP dispatcher writes through the same
+ // journal, so it must contribute exactly one owner-scoped change.
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpPayload={schemaVersion:1,resource:'tasks',operation:'create',
+  operationId:'aaaaaaaa-aaaa-4aaa-8aaa-000000000090',
+  patch:{title:'MCP journal test'}};
+ const mcp=(await q("select public.mcp_command($1::uuid,'chatgpt',$2::jsonb) receipt",
+  [a,JSON.stringify(mcpPayload)]))[0].receipt;
+ assert.equal(mcp.status,'ok');
+ await as(a);
+ const mcpItems=(await q('select public.changes_since(0,100) result'))[0]
+  .result.changes.filter(x=>x.resource==='tasks');
+ assert.equal(mcpItems.length,1,'MCP write appears exactly once');
+ assert.equal(mcpItems[0].record_id,mcp.changed[0].id);
+ await as(b);
+ assert.equal((await q('select public.changes_since(0,100) result'))[0]
+  .result.changes.some(x=>x.record_id===mcp.changed[0].id),false,
+  'second owner cannot read the MCP action delta');
+
+ console.log('PASS N54 owner-scoped journal projection, paging, non-UUID keys, tombstones, MCP and reset');
 }finally{await db.close()}

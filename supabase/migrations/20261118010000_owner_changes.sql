@@ -6,7 +6,7 @@ create table public.owner_changes (
  cursor bigint generated always as identity primary key,
  user_id uuid not null references auth.users(id) on delete cascade,
  resource text not null,
- record_id uuid not null,
+ record_id text not null,
  version integer not null check(version>0),
  op text not null check(op in ('insert','update','delete')),
  tombstone boolean not null,
@@ -35,7 +35,7 @@ create function public.lemma_owner_changes_log() returns trigger
 language plpgsql security definer set search_path='' as $feed$
 declare
  v_owner uuid;
- v_record uuid;
+ v_record text;
  v_version integer;
  v_source jsonb;
 begin
@@ -46,9 +46,10 @@ begin
  perform pg_catalog.pg_advisory_xact_lock(
   pg_catalog.hashtextextended('owner_changes:'||v_owner::text,0));
  v_source:=case when new.op='delete' then new.old else new.new end;
- v_record:=coalesce(
-  nullif(new.row_pk->>'id','')::uuid,
-  pg_catalog.md5(new.table_name||':'||new.row_pk::text)::uuid);
+ -- The journal owns many legacy keys (text, bigint and composites), not
+ -- only UUIDs. Preserve a simple ID verbatim; serialize a composite PK.
+ -- UUID casting here must never abort another resource's journal write.
+ v_record:=coalesce(nullif(new.row_pk->>'id',''),new.row_pk::text);
  v_version:=coalesce(nullif(v_source->>'version','')::integer,1);
  insert into public.owner_changes(user_id,resource,record_id,version,op,tombstone)
   values(v_owner,new.table_name,v_record,v_version,new.op,new.op='delete');

@@ -1,7 +1,7 @@
 {
   "table": "owner_changes",
   "version": 1,
-  "description": "N54 owner-scoped append-only journal projection from registered undo tables; N54.1 app catch-up and scheduled prune integration planned",
+  "description": "N54 append-only, owner-scoped action journal feed. Record IDs are actual simple primary-key text (UUID, numeric or legacy text), or JSON text for composite PKs. The cursor is per-owner commit-ordered and retention watermarks require replay/reset; the service-role 30-day pruning helper awaits periodic notify invocation within the allowed scope.",
   "columns": {
     "cursor": {
       "classification": "derived",
