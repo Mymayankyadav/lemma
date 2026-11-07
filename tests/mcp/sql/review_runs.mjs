@@ -53,9 +53,10 @@ try{
  await reject("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,'[]'::jsonb,'fsrs-5',1)",[owner]);
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY[''], 'fsrs-5',1)",[owner]);
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY[NULL]::text[], 'fsrs-5',1)",[owner]);
- for(const [field,value] of [['card_budget',-1],['minute_budget',1441],['position',-1],['settings_version',0]]){
-  await reject('insert into public.review_runs(user_id,scheduler_version,settings_version,'+field+') values($1,\\'fsrs-5\\',1,$2)',[owner,value]);
+ for(const [field,value] of [['card_budget',-1],['minute_budget',1441],['position',-1]]){
+  await reject("insert into public.review_runs(user_id,scheduler_version,settings_version,"+field+") values($1,'fsrs-5',1,$2)",[owner,value]);
  }
+ await reject("insert into public.review_runs(user_id,scheduler_version,settings_version) values($1,'fsrs-5',0)",[owner]);
  await reject("insert into public.review_runs(user_id,scheduler_version,settings_version,status) values($1,'fsrs-5',1,'paused')",[owner]);
  await reject("insert into public.review_runs(user_id,scheduler_version,settings_version,status) values($1,'fsrs-5',1,'completed')",[owner]);
  await reject("insert into public.review_runs(user_id,scheduler_version,settings_version,ended_at) values($1,'fsrs-5',1,now())",[owner]);

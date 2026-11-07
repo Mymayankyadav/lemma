@@ -6,7 +6,7 @@ create function public.lemma_review_deck_keys_valid(p text[])
 returns boolean language sql immutable set search_path = '' as $deck$
   select p is not null and pg_catalog.cardinality(p) <= 256
     and not exists (
-      select 1 from pg_catalog.unnest(p) as k
+      select 1 from pg_catalog.unnest(p) as deck(k)
       where k is null or pg_catalog.length(pg_catalog.btrim(k)) = 0
         or pg_catalog.length(k) > 180
     )
