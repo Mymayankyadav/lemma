@@ -108,7 +108,7 @@ begin
   if pg_catalog.jsonb_typeof(v_patch->'due_at') is distinct from 'string'
      or v_patch->>'due_at' !~
       '^[0-9]{4}-(0[1-9]|1[0-2])-([0-2][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]([.][0-9]{1,6})?(Z|[+-](0[0-9]|1[0-3]):[0-5][0-9]|[+-]14:00)$' then
-   raise exception 'Deadline instant needs finite ISO timezone'; end if;
+   raise exception 'Invalid deadline instant: finite ISO timezone required'; end if;
   perform (v_patch->>'due_at')::timestamptz;
  end if;
  for v_bad in select value from pg_catalog.unnest(
@@ -241,3 +241,37 @@ insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
  '{"operations":["create","update","complete","reopen","cancel","restore","delete"],
  "fields":["title","kind","due_kind","due_date","due_at","subject_id",
  "project_id","checkpoint_id","remaining_minutes","estimate_source"]}'::jsonb);
+
+-- The pre-existing deadlines_log_change trigger already records each row
+-- exactly once. This AFTER guard runs later by trigger-name order and verifies
+-- the registry's canonical lemma_log_change trigger contract, without logging
+-- a second change or manufacturing a duplicate action.
+create function public.deadlines_require_journal() returns trigger
+language plpgsql security definer set search_path='' as $check_journal$
+declare
+ v_id uuid;
+ v_owner uuid;
+begin
+ if tg_op='DELETE' then
+  v_id:=old.id; v_owner:=old.user_id;
+ else
+  v_id:=new.id; v_owner:=new.user_id;
+ end if;
+ if not exists (
+  select 1 from public.actions a
+    join public.action_changes c on c.action_no=a.no
+    where a.txid=pg_catalog.txid_current() and a.user_id=v_owner
+      and c.table_name='deadlines'
+      and c.row_pk->>'id'=v_id::text
+ ) then
+  raise exception 'Deadline change missing its journal record';
+ end if;
+ if tg_op='DELETE' then return old; end if;
+ return new;
+end
+$check_journal$;
+revoke all on function public.deadlines_require_journal()
+ from public,anon,authenticated,service_role;
+create trigger lemma_log_change
+ after insert or update or delete on public.deadlines
+ for each row execute function public.deadlines_require_journal();

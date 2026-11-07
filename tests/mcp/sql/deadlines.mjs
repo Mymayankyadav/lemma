@@ -240,6 +240,10 @@ try{
  await asOwner(owner);
  const original=make('Mathematics examination');
  const created=await cmd(original);action(created);
+ assert.equal((await q("select count(*)::int n from public.action_changes where action_no=$1 and table_name='deadlines'",
+  [created.actionNo]))[0].n,1,
+  'canonical journal-guard trigger preserves exactly one audit change');
+
  const id=created.changed[0].id;
  assert.equal(created.changed[0].version,1);
  assert.equal((await get(id)).user_id,owner);
