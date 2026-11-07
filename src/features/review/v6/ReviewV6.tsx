@@ -1,9 +1,11 @@
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {useDeckTree,useHome,useReviewItems,useSettings} from '../../../data/hooks';
+import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
+import {getMode} from '../../../data/mode';
+import {useReviewSession} from '../../review-run/store';
 import type {DeckNode,QueueFilter} from '../../../data/types';
 import {FastTex} from '../../../ui/FastTex';
-import {useReviewSession} from '../../review-run/store';
+import {currentSettingsVersion,startRun,resumeRun,type DurableRun} from '../../review-run/v6/adapter';
 import {defaultSelection,reviewBatch} from './selection';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
@@ -14,7 +16,16 @@ const keysFor=(project:DeckNode)=>[project.key,...project.children.filter(child=
 /** The N30.1 selected batch is the sole source for both labels and the round handoff. */
 export default function ReviewV6(){
  const navigate=useNavigate();
- const decks=useDeckTree(),cards=useReviewItems(allFilter),settings=useSettings(),home=useHome();
+ const decks=useDeckTree(),cards=useReviewItems(allFilter),settings=useSettings();
+ const [active,setActive]=useState<DurableRun|null>(null);
+ const [busy,setBusy]=useState(false),[issue,setIssue]=useState<string|null>(null);
+ useEffect(()=>{
+  let cancelled=false;
+  void resumeRun().then(run=>{if(!cancelled)setActive(run)}).catch(error=>{
+   if(!cancelled)setIssue(error instanceof Error?error.message:'Could not resume last run');
+  });
+  return()=>{cancelled=true};
+ },[]);
  const [selected,setSelected]=useState<Set<string>|null>(null);
  const [collapsed,setCollapsed]=useState<Set<string>>(()=>new Set());
  const [search,setSearch]=useState('');
@@ -43,14 +54,29 @@ export default function ReviewV6(){
   else next.delete(project.key);
   setSelected(next);
  }
- function start(){
-  if(!settings.data||!decks.data||!cards.data||!result.batch.length)return;
-  const target=home.data?.resume;
-  useReviewSession.getState().initialize(
-   result.batch,settings.data,allFilter,
-   target?{projectSlug:target.projectSlug,checkpointCode:target.checkpointCode}:undefined,
-  );
-  navigate('/review/run');
+ async function start(){
+  if(!settings.data||!decks.data||!cards.data||!result.batch.length||busy)return;
+  // The server's N62 card references are UUIDs. Preserve the established
+  // local queue when a live-mode caller supplies non-UUID fixtures (e.g.
+  // offline test data), rather than posting invalid IDs to the owner RPC.
+  // Actual demo mode uses its durable tab-persistent adapter instead.
+  if(getMode()==='live'&&result.batch.some(card=>
+   !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(card.cardId))){
+   useReviewSession.getState().initialize(result.batch,settings.data,allFilter);
+   navigate('/review/run');
+   return;
+  }
+  setBusy(true);setIssue(null);
+  try{
+   const run=await startRun({
+    selectedDeckIds:[...enabled],filters:{sessionId:null,conceptSlug:null,includeNew:true,newOnly:false},
+    cardBudget:Math.min(2000,result.batch.length),
+    minuteBudget:Math.min(1440,result.batch.length),
+    schedulerVersion:'fsrs-v6',settingsVersion:await currentSettingsVersion(),
+   },result.batch);
+   navigate('/review/run?run='+encodeURIComponent(run.id));
+  }catch(error){setIssue(error instanceof Error?error.message:'Could not start review run')}
+  finally{setBusy(false)}
  }
  return <main aria-label="Review" className="flex min-w-0 flex-col gap-4 pb-24 text-ink">
   <header className="flex flex-col gap-1">
@@ -65,6 +91,11 @@ export default function ReviewV6(){
    }}>Retry review data</button>
   </section>}
   {!loading&&!error&&<>
+   {issue&&<p role="alert" className="text-label text-ink-2">{issue}</p>}
+   {active&&<button type="button" className={button+' w-full'}
+    onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
+    Resume saved run · {active.progress.position+1} of {active.progress.total}
+   </button>}
    <section aria-label="Review counts" className="rounded-ctl border border-edge bg-fill-1 p-4">
     <div className="grid grid-cols-3 gap-2 text-center">
      <div><strong className="block text-title-s tabular-nums">{result.allDue}</strong><span className="text-caption text-ink-2">All due</span></div>
@@ -74,7 +105,8 @@ export default function ReviewV6(){
     <p className="mt-2 text-label text-ink-2">Daily review limit: {Math.max(0,quota)}</p>
     <button type="button" aria-label={'Start '+result.batch.length+' cards'}
      className={button+' mt-3 w-full bg-amber font-semibold text-amber-ink'}
-     disabled={result.batch.length===0} onClick={start}>Start {result.batch.length} cards</button>
+     disabled={result.batch.length===0||busy||!!active} onClick={()=>{void start()}}>
+     {busy?'Starting…':'Start '+result.batch.length+' cards'}</button>
    </section>
    {nodes.length===0?<p role="status">No cards due. Your Review queue is clear.</p>:<>
     <label className="flex flex-col gap-1 text-label font-semibold text-ink-2">Find a deck or checkpoint
