@@ -5,121 +5,121 @@
     "id": {
       "classification": "derived",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "label": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "subject_id": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "project_id": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "checkpoint_id": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "mode": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "focus_minutes": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "break_minutes": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "long_break_minutes": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "cycles": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "position": {
       "classification": "owner-editable",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "archived_at": {
       "classification": "command-managed",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "version": {
       "classification": "derived",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "src/data/presets/live.ts (N55)",
-      "mcpPath": "N41.2 registered presets_command via N37 (planned)",
+      "mcpPath": "presets_command via registered mcp_command (N41.2.2.2.2.2)",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N41.2)"
+      "deletionPolicy": "owner account purge (N103 planned); undo_action via lemma_undo_tables (N41.2.2.2.2.2); delete of a referenced preset archives"
     }
   }
 }
