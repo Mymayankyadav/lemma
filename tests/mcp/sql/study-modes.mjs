@@ -40,6 +40,9 @@ try{
  assert.equal(row.config.break_minutes,7);assert.equal(row.config.cycles,3);
  assert.equal(row.phase,'focus');assert.equal(row.cycle,1);assert.ok(row.phase_ends_at);
  await db.exec('reset role');
+ // Existing N11 schema permits only one running or paused entry per owner.
+ // Finish this test fixture before starting the next timer.
+ await q("update public.study_entries set status='saved' where id=$1",[draft]);
  await q("update public.presets set focus_minutes=45 where id=$1",[preset]);
  await q("update public.settings set focus_defaults='{\"mode\":\"flowtime\",\"focus_minutes\":40,\"break_minutes\":10,\"long_break_minutes\":15,\"cycles\":4,\"flowtime_break_ratio\":0.25}'::jsonb where user_id=$1",[owner]);
  row=(await q('select mode,config from public.study_entries where id=$1',[draft]))[0];

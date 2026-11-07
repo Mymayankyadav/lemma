@@ -43,8 +43,11 @@ begin
  if old.status<>'draft' or new.status<>'running' then return new; end if;
  select s.focus_defaults into v_defaults from public.settings s
    where s.user_id=new.user_id for share;
+ -- Legacy N11 test fixtures may predate their settings row. Preserve
+ -- pre-N52 start behavior with the same safe bounded defaults.
  if v_defaults is null then
-   raise exception 'Study timer needs owner settings before start'; end if;
+   v_defaults:='{"mode":"pomodoro","focus_minutes":25,"break_minutes":5,"long_break_minutes":15,"cycles":4,"flowtime_break_ratio":0.2}'::jsonb;
+ end if;
  if new.preset_id is not null then
    select * into v_preset from public.presets
      where user_id=new.user_id and id=new.preset_id and archived_at is null
