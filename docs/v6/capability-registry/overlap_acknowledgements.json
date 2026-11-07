@@ -5,86 +5,87 @@
     "id": {
       "classification": "derived",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "participants": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "starts_at": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "ends_at": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "reason": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "disposition": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "attributed_to": {
       "classification": "owner-editable",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "version": {
       "classification": "derived",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "src/data/overlap-acknowledgements/ (N61 planned)",
-      "mcpPath": "N47.2 registered overlap command via N37 (planned)",
+      "mcpPath": "N47.2 registered public.overlap_acknowledgements_command via mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); undo through N47.2"
+      "deletionPolicy": "owner purge (N103 planned); reversible domain command with generic undo_action (N47.2)"
     }
-  }
+  },
+  "description": "N47.1 owner-scoped overlap storage, N47.2 receipt-backed audited command lifecycle, reversible action journal and generic MCP"
 }
