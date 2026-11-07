@@ -43,7 +43,7 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
     p->>'schemaVersion' is distinct from '1' or
     pg_catalog.jsonb_typeof(p->'operationId') is distinct from 'string' then
    raise exception 'Invalid proposal draft envelope';end if;
-  select k into bad_field from pg_catalog.jsonb_object_keys(p) k
+  select k into bad_field from pg_catalog.jsonb_object_keys(p) as keys(k)
    where k not in ('schemaVersion','resource','operationId','operation',
       'target','expectedVersion','patch') limit 1;
   if bad_field is not null then raise exception 'Unexpected draft command field %',bad_field;end if;
@@ -56,7 +56,7 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
   if pg_catalog.jsonb_typeof(v_target) is distinct from 'object' or
      pg_catalog.jsonb_typeof(patch) is distinct from 'object' then
    raise exception 'Draft target and patch must be objects';end if;
-  select k into bad_field from pg_catalog.jsonb_object_keys(patch) k
+  select k into bad_field from pg_catalog.jsonb_object_keys(patch) as keys(k)
    where k not in ('proposal_id','target_id','payload','base_versions') limit 1;
   if bad_field is not null then raise exception 'Unexpected draft patch field %',bad_field;end if;
   if op <> 'create' and patch ?| array['proposal_id','target_id','base_versions'] then

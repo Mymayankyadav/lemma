@@ -43,7 +43,7 @@ try {
  assert.equal((await q('select status from public.proposals where id=$1',[proposal]))[0].status,'pending');
  const submit=await command(op('submit',{}, {id},2));
  assert.equal(submit.status,'ok');assert.equal(submit.draft.status,'submitted');
- assert.equal((await q('select payload->>\\'front\\' front from public.proposals where id=$1',[proposal]))[0].front,'Final');
+ assert.equal((await q("select payload->>'front' front from public.proposals where id=$1",[proposal]))[0].front,'Final');
  assert.equal((await q('select status from public.proposals where id=$1',[proposal]))[0].status,'pending','submit is not approval');
  await q("select set_config('test.uid',$1,false)",[other]);
  await assert.rejects(command(op('discard',{}, {id},3)),/not found for owner/i);
