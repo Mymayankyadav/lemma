@@ -57,13 +57,13 @@ Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rule
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N47 Overlap acknowledgements: migration (overlap_acknowledgements)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.overlap_acknowledgements` with `participants jsonb` (kind `block`/`entry`, id, version), window start/end, optional reason, `disposition` (`keep_both`/`attribute_to` with the chosen participant). Operations create, update, delete. Reads mark an acknowledgement stale when any participant's current version differs, so it no longer suppresses that conflict; acknowledging one overlap never hides another.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/overlap_acknowledgements.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N47.2 Overlap acknowledgement command lifecycle and MCP/undo parity
+Stage: Build · Status: open · Needs: N47.2.1 · Assigned: —
+Done = complete N47 on N47.1's owner-scoped overlap_acknowledgements schema and version-aware staleness function. Add an owner-bound, receipt-idempotent overlap_acknowledgements_command with create, update and delete; reject changed operationId payloads, stale expected versions, a cross-owner participant, and a changed participant version. Register the table in lemma_undo_tables and the command in lemma_command_resources for service-role mcp_command parity. Reads flag an acknowledgement stale when any participant version has changed, without hiding other conflicts; attribute_to requires a participant in the exact acknowledged set. Keep authenticated table writes command-only.
+Owner-authorized (D1, D8): production SQL requires independent review.
+Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (lifecycle, receipts, concurrency, owner checks, stale reads, undo and MCP parity) and unchanged N47.1 SQL suite.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements-command.mjs, docs/v6/capability-registry/overlap_acknowledgements.json, CURRENT.md.
+Not: changes to earlier migrations, app or MCP function code, other tables/functions, existing test assertions.
 
 ## N48 Durable review runs: migration (review_runs)
 Stage: Build · Status: open · Needs: N36.2, N38 · Assigned: —

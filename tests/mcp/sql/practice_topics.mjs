@@ -32,7 +32,9 @@ try{
   assert.equal(doc.table,table);
   assert.deepEqual(Object.keys(doc.columns).sort(),columns,'exact registry coverage for '+table);
   assert.equal((await q("select relrowsecurity from pg_class where oid=('public.'||$1)::regclass",[table]))[0].relrowsecurity,true);
-  assert.equal((await q("select count(*)::int n from pg_policies where tablename=$1",[table]))[0].n,1);
+  const policies=await q("select cmd from pg_policies where tablename=$1",[table]);
+  assert.deepEqual(policies.map(x=>x.cmd),['SELECT'],
+   'only owner-scoped SELECT RLS is permitted before receipt-backed writes');
   assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name=$1",[table]))[0].n,0,
    'N43.1 must not register owner rows for undo before the N43.2 command exists');
  }
