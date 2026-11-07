@@ -117,13 +117,6 @@ Tests: `tests/unit/study/modes.test.ts`
 Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
 Not: UI, supabase/**, other `src/data/**` folders.
 
-## N67 Planner placement engine (pure)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = `src/features/planner/model.ts` deterministically places selected tasks into free time for a bounded date range: availability from `settings.planning` (with documented defaults until N39 lands), existing planned/busy blocks and saved effort as occupied, gap and maximum-consecutive limits, priority then due order, splitting a task only when allowed; it returns placements, the remaining capacity per day and unplaced tasks each with a reason (`no_capacity`, `after_due`, `too_long`, `no_estimate`); overload and empty days produce suggestions (smaller next step, move to the next free day) without silently overbooking. DST and the owner's zone handled; unknown availability is not zero.
-Tests: `tests/unit/planner/model.test.ts` (fixtures for empty day, overloaded day, due-before-capacity, DST day, gap/consecutive limits, determinism)
-Scope: src/features/planner/model.ts (new), tests/unit/planner/model.test.ts, CURRENT.md.
-Not: UI, `src/data/**`, supabase/**.
-
 ## N68 v6 planner sheet: preview and commit placements behind the shell flag
 Stage: Build · Status: open · Needs: N67, N65, N60.2 · Assigned: —
 Done = with `v6Shell` on, a Plan action on Today and Calendar opens a titled native dialog that previews placements for the selected tasks over the chosen days (from N67), lets the owner deselect or move items, and commits only the selected placements as study blocks with `taskId` and the day plan's `commit` (refused with an explanation when a task or block changed since the preview); unplaced work stays listed with its reason; one toast with Undo. Flag off: nothing changes.
@@ -164,13 +157,6 @@ Stage: Build · Status: open · Needs: N65 · Assigned: —
 Done = with `v6Shell` on, `/log` (lazy route) lists saved entries by day in bounded pages with their intervals; edit (intent, links, rating, reflection, intervals), split at a time, void and restore through the N65 operations, add a manual approximate entry, and export the visible range as CSV; Calendar and Progress reflect each change after refresh; missing rating is unknown, not poor. Flag off: nothing changes.
 Tests: `tests/unit/time-log/**`
 Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route only), tests/unit/time-log/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57.2 · Assigned: —
-Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
-Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
-Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
