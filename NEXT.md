@@ -110,13 +110,6 @@ Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, b
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
 
-## N65 StudyApi: corrections, manual entries and block task links
-Stage: Build · Status: open · Needs: N51 · Assigned: —
-Done = the study contract gains, additively, `correctStudyEntry`, `splitStudyEntry`, `voidStudyEntry`, `restoreStudyEntry`, `createManualStudyEntry` (approximate flag) and `taskId` on calendar blocks, implemented in the demo and live adapters with the N51 envelope.
-Tests: `tests/unit/study/corrections.test.ts` (demo and mocked live for each operation, union preserved, conflicts)
-Scope: src/data/study/**, tests/unit/study/corrections.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
-
 ## N66 StudyApi: timer modes, phases, drift exclusion and lease
 Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
 Done = the study contract gains, additively, mode/preset/config/phase/cycle/energy/lease fields and `nextPhase`, `takeLease`, `excludeMinutes`, in both adapters with the N52 envelope; the live adapter keeps one device lease per tab and renews it while visible.

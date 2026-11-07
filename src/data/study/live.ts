@@ -2,13 +2,15 @@
 // No owner ID is accepted from callers: all reads and commands run through Supabase RLS.
 import { LemmaError } from '../api';
 import type {
-  CalendarBlockPatch, CalendarBlockRecord, NewCalendarBlock, NewStudyEntry,
-  StudyApi, StudyEntryRecord, StudyInterval, StudyRange, StudyReceipt,
+  CalendarBlockPatch, CalendarBlockRecord, ClosedStudyIntervalInput, NewCalendarBlock,
+  NewManualStudyEntry, NewStudyEntry, StudyApi, StudyCorrectionPatch, StudyEntryRecord,
+  StudyInterval, StudyRange, StudyReceipt,
 } from './contract';
 
 type ObjectRow = Record<string, unknown>;
 type Resource = 'study_entries' | 'study_intervals' | 'calendar_blocks';
-type Operation = 'create' | 'start' | 'pause' | 'resume' | 'break' | 'save' | 'discard' | 'update' | 'delete';
+type Operation = 'create' | 'start' | 'pause' | 'resume' | 'break' | 'save' | 'discard' | 'update' | 'delete' |
+  'create_manual' | 'correct' | 'split' | 'void' | 'restore';
 interface Changed { id: string; version: number }
 interface CommandReceipt { status: 'ok' | 'conflict'; changed: Changed[]; actionNo?: number | null; conflict?: { currentVersion?: number } }
 const LIMIT = 500;
@@ -71,6 +73,8 @@ function mapStudy(data: ObjectRow): StudyEntryRecord {
     version: Number(data.version), createdAt: String(data.created_at),
     updatedAt: String(data.updated_at), savedAt: data.saved_at == null ? null : String(data.saved_at),
     intervals: mapIntervals(data.study_intervals),
+    ...(typeof data.approximate === 'boolean' ? {approximate:data.approximate} : {}),
+    ...(data.voided_at !== undefined ? {voidedAt:data.voided_at as string | null} : {}),
   };
 }
 function mapBlock(data: ObjectRow): CalendarBlockRecord {
@@ -81,15 +85,62 @@ function mapBlock(data: ObjectRow): CalendarBlockRecord {
     version: Number(data.version), subjectId: data.subject_id as string | null,
     projectId: data.project_id as string | null, checkpointId: data.checkpoint_id as string | null,
     sessionId: data.session_id as string | null,
+    ...(data.task_id !== undefined ? {taskId:data.task_id as string | null} : {}),
   };
 }
 function blockPatch(patch: CalendarBlockPatch): ObjectRow {
   const columns: ObjectRow = {...linkColumns(patch)};
   for (const [from, to] of [
     ['kind','kind'],['title','title'],['startsAt','starts_at'],
-    ['endsAt','ends_at'],['timeZone','time_zone'],['status','status'],
+    ['endsAt','ends_at'],['timeZone','time_zone'],['status','status'],['taskId','task_id'],
   ] as const) if (patch[from] !== undefined) columns[to] = patch[from];
   return columns;
+}
+/** N51 server correction uses a complete, timezone-explicit interval array. */
+function absoluteTime(value:string):string {
+ if (typeof value!=='string'||!/(Z|[+-]\d{2}:\d{2})$/.test(value))
+  fail('invalid','N51 correction requires absolute ISO instants');
+ return timestamp(value);
+}
+function closedIntervals(input:ClosedStudyIntervalInput[]):ObjectRow[] {
+ if (!Array.isArray(input)||input.length<1||input.length>1000)
+  fail('invalid','N51 requires 1–1000 closed intervals');
+ const out=input.map((span)=>{
+  if (!span||!['focus','break'].includes(span.kind))
+   fail('invalid','Invalid study interval kind');
+  const started_at=absoluteTime(span.start),ended_at=absoluteTime(span.end);
+  if (ended_at<=started_at||Date.parse(ended_at)>Date.now())
+   fail('invalid','Invalid corrected study interval bounds');
+  return {kind:span.kind,started_at,ended_at};
+ }).sort((a,b)=>a.started_at.localeCompare(b.started_at));
+ for(let i=1;i<out.length;i++){
+  if(out[i-1].ended_at>out[i].started_at)
+   fail('invalid','Corrected study intervals overlap');
+ }
+ return out;
+}
+function correctionPatch(patch:StudyCorrectionPatch):ObjectRow {
+ if (!patch||typeof patch!=='object'||!Object.keys(patch).length)
+  fail('invalid','Correction patch must not be empty');
+ const out:ObjectRow={...linkColumns(patch)};
+ if(patch.intent!==undefined){
+  if(typeof patch.intent!=='string'||!patch.intent.trim())
+   fail('invalid','Saved entry intent must not be blank');
+  out.intent=patch.intent.trim();
+ }
+ if(patch.reflection!==undefined){
+  if(patch.reflection!==null&&typeof patch.reflection!=='string')
+   fail('invalid','Reflection must be text');
+  out.reflection=patch.reflection;
+ }
+ if(patch.rating!==undefined){
+  if(patch.rating!==null&&![1,2,3,4,5].includes(patch.rating))
+   fail('invalid','Rating must be 1–5');
+  out.rating=patch.rating;
+ }
+ if(patch.intervals!==undefined)out.intervals=closedIntervals(patch.intervals);
+ if(!Object.keys(out).length)fail('invalid','Correction patch must change at least one field');
+ return out;
 }
 async function readStudy(key: string): Promise<StudyEntryRecord> {
   const api = await client();
@@ -232,6 +283,39 @@ export function createLiveStudyApi(): StudyApi {
       return entryWrite('save', key, currentVersion, change);
     },
     discardStudyEntry(key, expectedVersion) { return entryWrite('discard', key, expectedVersion); },
+    correctStudyEntry(key, expectedVersion, patch) {
+      return entryWrite('correct',key,expectedVersion,correctionPatch(patch));
+    },
+    async splitStudyEntry(key, expectedVersion, at) {
+      const response=await command('study_entries','split',{
+        target:{id:key},expectedVersion,patch:{at:absoluteTime(at)},
+      });
+      if(response.changed.length!==2 || response.changed[0].id!==key ||
+         !response.changed[1].id || response.changed[1].id===key)
+        fail('invalid','Unexpected split receipt');
+      const [original,created]=await Promise.all([
+        readStudy(key),readStudy(response.changed[1].id),
+      ]);
+      return receipt({original,created},response);
+    },
+    voidStudyEntry(key, expectedVersion) {
+      return entryWrite('void',key,expectedVersion);
+    },
+    restoreStudyEntry(key, expectedVersion) {
+      return entryWrite('restore',key,expectedVersion);
+    },
+    async createManualStudyEntry(input) {
+      if (!input || typeof input.intent!=='string'||!input.intent.trim())
+        fail('invalid','Manual study entry needs an intent');
+      const patch=correctionPatch(input);
+      // N51 always stores source=manual, status=saved and approximate=true;
+      // never permit owner/source/approximate to be forged by an app envelope.
+      const result=await command('study_entries','create_manual',{patch});
+      const record=await readStudy(result.changed[0].id);
+      if (record.source!=='manual'||record.status!=='saved'||record.approximate!==true)
+        fail('invalid','Manual entry receipt does not match the saved server record');
+      return receipt(record,result);
+    },
     async listCalendarBlocks(range) {
       const {start,end} = bounds(range);
       const api = await client();
@@ -240,13 +324,20 @@ export function createLiveStudyApi(): StudyApi {
       return rows.map(mapBlock);
     },
     async createCalendarBlock(input: NewCalendarBlock) {
+      if (input.taskId!==undefined && input.taskId!==null &&
+         (typeof input.taskId!=='string'||!input.taskId.trim()))
+        fail('invalid','Invalid task association');
       const response = await command('calendar_blocks','create',{patch:{
         kind: input.kind, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt,
         time_zone: input.timeZone, ...linkColumns(input),
+        ...(input.taskId!==undefined ? {task_id:input.taskId} : {}),
       }});
       return receipt(await readBlock(response.changed[0].id), response);
     },
     async updateCalendarBlock(key, expectedVersion, patch: CalendarBlockPatch) {
+      if (patch.taskId!==undefined && patch.taskId!==null &&
+         (typeof patch.taskId!=='string'||!patch.taskId.trim()))
+        fail('invalid','Invalid task association');
       const response = await command('calendar_blocks','update',{
         target:{id:key}, expectedVersion, patch:blockPatch(patch),
       });

@@ -1,8 +1,9 @@
 // Tab-local v6 demo study data. All elapsed time comes from persisted interval timestamps.
 import { LemmaError } from '../api';
 import type {
-  CalendarBlockPatch, CalendarBlockRecord, NewCalendarBlock, NewStudyEntry,
-  StudyApi, StudyEntryRecord, StudyInterval, StudyRange, StudyReceipt,
+  CalendarBlockPatch, CalendarBlockRecord, ClosedStudyIntervalInput, NewCalendarBlock,
+  NewManualStudyEntry, NewStudyEntry, StudyApi, StudyCorrectionPatch, StudyEntryRecord,
+  StudyInterval, StudyRange, StudyReceipt,
 } from './contract';
 
 const STORAGE_KEY = 'lemma.v6.demo.study.v1';
@@ -95,6 +96,46 @@ function closeOpen(entry: StudyEntryRecord, at: string): StudyInterval[] {
   if (!last || last.end !== null) return fail('invalid', 'No open study interval');
   period(last.start, at);
   return [...entry.intervals.slice(0, -1), { ...last, end: at }];
+}
+/** Editable saved minutes are represented as focus spans so loggedMinutes sees the edit. */
+/** N51 accepts only fully closed, absolute, nonoverlapping intervals.
+ * Validate the entire replacement before touching the persisted snapshot. */
+function absolute(value: string, label: string): string {
+ if (typeof value !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])-([0-2]\d|3[01])T([01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:0\d|1[0-3]):[0-5]\d|[+-]14:00)$/.test(value))
+  fail('invalid', label + ' must be an absolute ISO instant');
+ return instant(value, label);
+}
+function correctedIntervals(input: ClosedStudyIntervalInput[]): StudyInterval[] {
+ if (!Array.isArray(input) || input.length < 1 || input.length > 1000)
+  fail('invalid', 'Saved corrections require 1–1000 closed intervals');
+ const rows = input.map((span): StudyInterval => {
+  if (!span || !['focus','break'].includes(span.kind))
+   fail('invalid', 'Invalid interval kind');
+  const start = absolute(span.start, 'interval start');
+  const end = absolute(span.end, 'interval end');
+  period(start, end);
+  if (Date.parse(end) > Date.now()) fail('invalid', 'Interval may not end in the future');
+  return {id:id(),kind:span.kind,start,end};
+ }).sort((a,b) => a.start.localeCompare(b.start));
+ for (let i=1;i<rows.length;i++) {
+  if (Date.parse(rows[i-1].end!) > Date.parse(rows[i].start))
+   fail('invalid', 'Corrected study intervals must not overlap');
+ }
+ return rows;
+}
+function checkCorrection(input: StudyCorrectionPatch): void {
+ if (!input || typeof input !== 'object' || !Object.keys(input).length)
+  fail('invalid', 'Correction must change at least one field');
+ if (input.intent !== undefined && (typeof input.intent !== 'string' || !input.intent.trim()))
+  fail('invalid', 'Correction intent must not be blank');
+ if (input.reflection !== undefined && input.reflection !== null && typeof input.reflection !== 'string')
+  fail('invalid', 'Reflection must be text');
+ if (input.rating !== undefined && input.rating !== null && ![1,2,3,4,5].includes(input.rating))
+  fail('invalid', 'Rating must be 1–5');
+}
+function ensureSaved(entry: StudyEntryRecord): void {
+ if (entry.status !== 'saved' || entry.voidedAt)
+  fail('conflict', 'Only active saved entries can be edited, split or voided');
 }
 /** Editable saved minutes are represented as focus spans so loggedMinutes sees the edit. */
 function withEditedMinutes(intervals: StudyInterval[], minutes: number, at: string): StudyInterval[] {
@@ -245,6 +286,83 @@ export function createDemoStudyApi(): StudyApi {
       return storeEntry({ ...entry, status: 'discarded', intervals: [], savedAt: null,
         updatedAt: new Date().toISOString(), version: entry.version + 1 });
     },
+    async createManualStudyEntry(input: NewManualStudyEntry) {
+      if (!input || typeof input.intent !== 'string' || !input.intent.trim())
+        fail('invalid', 'Manual entry requires an intent');
+      checkCorrection(input);
+      const intervals = correctedIntervals(input.intervals);
+      const now = new Date().toISOString();
+      const record: StudyEntryRecord = {
+        ...links(input),id:id(),source:'manual',status:'saved',approximate:true,
+        intent:input.intent.trim(),reflection:input.reflection ?? null,
+        rating:input.rating ?? null,createdAt:now,updatedAt:now,savedAt:now,
+        voidedAt:null,version:1,intervals,
+      };
+      snapshot.entries.push(record);
+      persist(snapshot);
+      return asReceipt(record);
+    },
+    async correctStudyEntry(key, expectedVersion, patch: StudyCorrectionPatch) {
+      const entry=entryById(key);
+      version(entry, expectedVersion);
+      ensureSaved(entry);
+      checkCorrection(patch);
+      const intervals=patch.intervals === undefined
+        ? entry.intervals : correctedIntervals(patch.intervals);
+      const next:StudyEntryRecord={
+        ...entry,...links({...entry,...patch}),
+        intent:patch.intent === undefined ? entry.intent : patch.intent.trim(),
+        reflection:patch.reflection === undefined ? entry.reflection : patch.reflection,
+        rating:patch.rating === undefined ? entry.rating : patch.rating,
+        intervals,version:entry.version+1,updatedAt:new Date().toISOString(),
+      };
+      return storeEntry(next);
+    },
+    async splitStudyEntry(key, expectedVersion, at) {
+      const entry=entryById(key);
+      version(entry, expectedVersion);
+      ensureSaved(entry);
+      const boundary=Date.parse(absolute(at,'split instant'));
+      const left:StudyInterval[]=[];
+      const right:StudyInterval[]=[];
+      for (const span of entry.intervals) {
+        if (span.end === null) fail('invalid','A saved interval may not be open');
+        const start=Date.parse(span.start),end=Date.parse(span.end);
+        if (end<=boundary) left.push({...span});
+        else if(start>=boundary) right.push({...span});
+        else {
+          left.push({...span,end:new Date(boundary).toISOString()});
+          right.push({...span,id:id(),start:new Date(boundary).toISOString()});
+        }
+      }
+      if (!left.length || !right.length)
+        fail('invalid','Split must retain nonempty intervals on both sides');
+      const now=new Date().toISOString();
+      const original:StudyEntryRecord={...entry,intervals:left,
+        version:entry.version+1,updatedAt:now};
+      const created:StudyEntryRecord={...entry,id:id(),intervals:right,
+        version:1,createdAt:now,updatedAt:now};
+      snapshot.entries=snapshot.entries.map(e=>e.id===key?original:e);
+      snapshot.entries.push(created);
+      persist(snapshot);
+      return asReceipt({original,created});
+    },
+    async voidStudyEntry(key, expectedVersion) {
+      const entry=entryById(key);
+      version(entry, expectedVersion);
+      ensureSaved(entry);
+      const now=new Date().toISOString();
+      return storeEntry({...entry,status:'discarded',voidedAt:now,
+        version:entry.version+1,updatedAt:now});
+    },
+    async restoreStudyEntry(key, expectedVersion) {
+      const entry=entryById(key);
+      version(entry, expectedVersion);
+      if (entry.status!=='discarded' || !entry.voidedAt)
+        fail('conflict','Only a voided saved entry may be restored');
+      return storeEntry({...entry,status:'saved',voidedAt:null,
+        version:entry.version+1,updatedAt:new Date().toISOString()});
+    },
     async listCalendarBlocks(range) {
       const [start, end] = bounds(range);
       return clone(snapshot.blocks.filter(b => Date.parse(b.startsAt) < end && Date.parse(b.endsAt) > start)
@@ -260,9 +378,13 @@ export function createDemoStudyApi(): StudyApi {
         fail('invalid', 'IANA time zone is required');
       try { new Intl.DateTimeFormat('en-US', { timeZone: input.timeZone }).format(); }
       catch { fail('invalid', 'Invalid IANA time zone'); }
+      if (input.taskId !== undefined && input.taskId !== null &&
+          (typeof input.taskId !== 'string' || !input.taskId.trim()))
+        fail('invalid', 'Invalid task link');
       const record: CalendarBlockRecord = {
         ...links(input), id: id(), kind: input.kind, title: input.title.trim(), startsAt,
         endsAt, timeZone: input.timeZone, status: 'planned', version: 1,
+        ...(input.taskId !== undefined ? {taskId:input.taskId} : {}),
       };
       snapshot.blocks.push(record);
       persist(snapshot);
@@ -276,6 +398,9 @@ export function createDemoStudyApi(): StudyApi {
       next.startsAt = instant(next.startsAt, 'block start');
       next.endsAt = instant(next.endsAt, 'block end');
       period(next.startsAt, next.endsAt);
+      if (next.taskId !== undefined && next.taskId !== null &&
+          (typeof next.taskId !== 'string' || !next.taskId.trim()))
+        fail('invalid', 'Invalid task link');
       if (typeof next.timeZone !== 'string' || !next.timeZone.trim())
         fail('invalid', 'IANA time zone is required');
       try { new Intl.DateTimeFormat('en-US', { timeZone: next.timeZone }).format(); }
