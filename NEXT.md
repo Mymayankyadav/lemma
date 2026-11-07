@@ -11,15 +11,12 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-
 ## N46.2 Day-plan items, preview-to-commit invariants and closure commands
 Stage: Build · Status: open · Needs: N46.1 · Assigned: —
 Done = complete N46 on N46.1's owner-bound, one-per-day day_plans headers. Add public.day_plan_items with owner-composite references to its plan, task and optional calendar block, disposition placed/unplaced/carried_over, reason and stable position; keep unplaced/carried-over work listed. Add public.day_plans_command(p jsonb) with versioned owner-create/update, preview, commit, close and reopen; commit must atomically compare every listed task/block version to the availability.sources recorded at preview and refuse stale versions. Closing one date may never affect another; close sets closed_at and reopening clears it. Keep client writes disabled until command_receipts idempotence, action journal, registered undo in lemma_undo_tables and generic mcp_command registration in lemma_command_resources are installed. Ensure same owner IDs throughout, exact retry/conflict semantics and source attribution. Production SQL needs independent review (D8 b).
 Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner isolation, task/block version drift refusal, multiple dates and closure, item dispositions, idempotent retries, undo and MCP parity. Keep N46.1 field, JSON and FK constraints; revise read-only stage assertions only to enforce registered auditable writes.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
-
-
 
 ## N49 Proposal drafts: migration (proposal_drafts)
 Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
@@ -94,13 +91,6 @@ Done = `src/data/sync/` polls `changes_since` while the app is visible (and on f
 Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, backoff when hidden)
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
-
-## N65 StudyApi: corrections, manual entries and block task links
-Stage: Build · Status: open · Needs: N51 · Assigned: —
-Done = the study contract gains, additively, `correctStudyEntry`, `splitStudyEntry`, `voidStudyEntry`, `restoreStudyEntry`, `createManualStudyEntry` (approximate flag) and `taskId` on calendar blocks, implemented in the demo and live adapters with the N51 envelope.
-Tests: `tests/unit/study/corrections.test.ts` (demo and mocked live for each operation, union preserved, conflicts)
-Scope: src/data/study/**, tests/unit/study/corrections.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
 
 ## N66 StudyApi: timer modes, phases, drift exclusion and lease
 Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
@@ -185,13 +175,6 @@ Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `fo
 Tests: `tests/unit/settings-v6/planning.test.tsx`
 Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
 Not: other screens, other settings sections, supabase/**.
-
-## N81 v6 session page behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/s/:slug/:n` shows the tutor session goal, events in order with outcomes, resume question and note, linked checkpoint and study time, and the existing resume/end actions. Flag off: nothing changes.
-Tests: `tests/unit/session-v6/**`
-Scope: src/features/session/v6/** (new), src/features/session/Page.tsx (the flag branch only), tests/unit/session-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
