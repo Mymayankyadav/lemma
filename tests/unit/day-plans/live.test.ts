@@ -72,6 +72,21 @@ describe('N60.2 journalled owner-bound live day plan mutations',()=>{
    planDate:'2020-11-07',timeZone:'Asia/Kolkata'}))
    .rejects.toThrow(/unaudited/i);
  });
+ it('validates an explicit closure ritual without sending read-only metadata',async()=>{
+  persisted={...ROW,status:'closed',closed_at:'2026-11-07T15:00:00Z',
+   ritual:{reviewed:true},version:3};
+  rpc.mockResolvedValue({data:{status:'ok',actionNo:16,
+   changed:[{resource:'day_plans',id:ID,version:3}],
+   plan:persisted},error:null});
+  const api=createLiveDayPlanApi();
+  const closed=await api.closePlan(ID,2,{reviewed:true});
+  expect(closed).toMatchObject({actionNo:16,record:{status:'closed',
+   ritual:{reviewed:true},version:3}});
+  const args=rpc.mock.calls[0][1] as {p:Record<string,unknown>};
+  expect(args.p).toMatchObject({resource:'day_plans',operation:'close',
+   target:{id:ID},expectedVersion:2,patch:{ritual:{reviewed:true}}});
+  expect(JSON.stringify(args.p)).not.toMatch(/user_id|ownerId|createdAt|updatedAt/);
+ });
  it('refuses future-day closure and foreign or missing owner reads before writing',async()=>{
   persisted={...ROW,plan_date:'2099-11-07',status:'committed',version:2};
   const api=createLiveDayPlanApi();

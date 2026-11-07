@@ -341,7 +341,15 @@ export function createLiveDayPlanApi():DayPlanApi{
     return fail('invalid','Future owner dates cannot be closed');
    const patch:Row={};
    if(ritual!==undefined){
-    const value=normalizeDayPlan({...plan,ritual});
+    // The strict model accepts only new-plan fields. Passing the fetched
+    // DayPlanRecord wholesale would include read-only id/status/version and
+    // incorrectly reject every real close with a supplied ritual.
+    const value=normalizeDayPlan({
+     planDate:plan.planDate,timeZone:plan.timeZone,
+     intention:plan.intention,capacityMinutes:plan.capacityMinutes,
+     availability:plan.availability,
+     tomorrowFirstTaskId:plan.tomorrowFirstTaskId,ritual,
+    });
     patch.ritual=value.ritual;
    }
    return write('close',{target:{id:plan.id},expectedVersion:expected,patch});

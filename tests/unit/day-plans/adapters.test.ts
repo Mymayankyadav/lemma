@@ -76,7 +76,7 @@ describe('N60.2 persistent demo day plans',()=>{
   await expect(api.closePlan(c.id,c.version)).rejects.toMatchObject({code:'invalid'});
  });
  it('binds keyset cursors to filters, returns exact totals, and bounds plan and item pages',async()=>{
-  const {api}=make();
+  const {api,setSources}=make();
   for(let day=1;day<=53;day++){
    const date=new Date(Date.UTC(2020,0,day)).toISOString().slice(0,10);
    await api.createPlan({...begin(),planDate:date});
@@ -94,12 +94,33 @@ describe('N60.2 persistent demo day plans',()=>{
   const items=Array.from({length:52},(_,i)=>({
    taskId:'task-'+i,position:i,disposition:'unplaced' as const,reason:'No slot',
   }));
-  await api.previewPlan(row.id,1,items,{sources:[]});
+  // Each candidate must be captured in the preview source-version snapshot.
+  // The server refuses an empty snapshot even when all items are unplaced.
+  await expect(api.previewPlan(row.id,1,items,{sources:[]}))
+   .rejects.toMatchObject({code:'invalid'});
+  const snapshot:PlanAvailability={sources:items.map(x=>({
+   resource:'tasks',id:x.taskId,version:1,
+  }))};
+  setSources(snapshot);
+  await api.previewPlan(row.id,1,items,snapshot);
   const page=await api.listItems(row.id,{limit:50});
   expect(page.total).toBe(52);
   expect(page.items).toHaveLength(50);
   const next=await api.listItems(row.id,{limit:50,cursor:page.nextCursor});
   expect(next.items).toHaveLength(2);
   expect(next.items[0].position).toBe(50);
+ });
+ it('invalidates old previews and drops placements on a draft edit',async()=>{
+  const {api,setSources}=make();
+  const plan=(await api.createPlan(begin())).record;
+  setSources(sources());
+  const preview=(await api.previewPlan(plan.id,1,[{
+   taskId:'task-1',disposition:'unplaced',reason:'No time',position:0,
+  }],sources())).record;
+  expect((await api.listItems(plan.id)).total).toBe(1);
+  const edited=(await api.updatePlan(plan.id,preview.version,{intention:'Changed'})).record;
+  expect(edited).toMatchObject({status:'draft',availability:{sources:[]},version:3});
+  expect((await api.listItems(plan.id)).total).toBe(0);
+  await expect(api.commitPlan(plan.id,edited.version)).rejects.toMatchObject({code:'conflict'});
  });
 });
