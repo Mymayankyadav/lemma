@@ -132,6 +132,36 @@ describe('N61.2.2.1 read-only owner-RLS overlap adapter',()=>{
   await expect(api.listAcknowledgements({cursor:'bad/cursor'}))
     .rejects.toMatchObject({code:'invalid'});
  });
+ it('chunks owner-visible participant version reads past fifty distinct IDs',async()=>{
+  const api=createLiveOverlapApi();
+  const make=(kind:'block'|'entry',n:number)=>participant(uuid(n),kind);
+  fake.data.overlap_acknowledgements=Array.from({length:60},(_,i)=>row(i+1,{
+    participants:[make('block',300+i),make('entry',400+i)],
+  }));
+  fake.data.calendar_blocks=Array.from({length:60},(_,i)=>({
+    id:uuid(300+i),version:1,user_id:owner,
+  }));
+  fake.data.study_entries=Array.from({length:60},(_,i)=>({
+    id:uuid(400+i),version:1,user_id:owner,
+  }));
+  const all=await api.listAcknowledgements({limit:50});
+  expect(all).toMatchObject({total:60});
+  expect(all.items).toHaveLength(50);
+  expect(all.nextCursor).not.toBeNull();
+  expect(all.items.every(r=>r.stale===false)).toBe(true);
+  const currentReads=fake.reads.filter(r=>r.table==='calendar_blocks'||
+    r.table==='study_entries');
+  expect(currentReads).toHaveLength(4);
+  expect(currentReads.every(r=>r.filters.find(f=>f[0]==='in')!==undefined)).toBe(true);
+  expect(currentReads.every(r=>(r.filters.find(f=>f[0]==='in')?.[2] as string[]).length<=50))
+    .toBe(true);
+  // More than fifty distinct participants across kinds still require
+  // separate owner-visible RLS queries, never a global service-role lookup.
+  fake.data.study_entries=fake.data.study_entries.slice(0,59);
+  const stale=await api.listAcknowledgements({stale:true});
+  expect(stale.items.map(r=>r.id)).toEqual([uuid(60)]);
+ });
+
  it('pushes time-window filters to RLS reads and uses half-open overlap',async()=>{
   const api=createLiveOverlapApi();
   const end=new Date(Date.parse(at)+2*60_000).toISOString();
