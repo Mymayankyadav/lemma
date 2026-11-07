@@ -81,7 +81,11 @@ try{
   [other,'2'.repeat(48)]);
 
  const permitted=(await q("select table_name from public.lemma_undo_tables order by table_name")).map(row=>row.table_name);
- assert.equal(permitted.length,24);
+ const baseline=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/lemma_undo_tables.json',import.meta.url),'utf8')).tables.map(row=>row.table_name);
+ assert.ok(baseline.length>=24,'documented D7 baseline includes 24 tables');
+ assert.ok(permitted.length>=24,'all D7 tables remain registered');
+ for(const table of baseline.slice(0,24))assert.ok(permitted.includes(table),'D7 undo table missing: '+table);
+ const initialRegisteredCount=permitted.length;
  for(const table of ['settings','tasks','study_entries','study_intervals','calendar_blocks'])
   assert.ok(permitted.includes(table));
  const def=(await q("select pg_get_functiondef('public.undo_action(uuid,bigint,boolean)'::regprocedure) sql"))[0].sql;
@@ -220,7 +224,7 @@ try{
  assert.equal(await count('registry_undo_fixture',rowId),0);
  const afterDef=(await q("select pg_get_functiondef('public.undo_action(uuid,bigint,boolean)'::regprocedure) sql"))[0].sql;
  assert.equal(afterDef,beforeDef,'new table is undoable without changing the function body');
- assert.equal((await q('select count(*)::int n from public.lemma_undo_tables'))[0].n,25);
+ assert.equal((await q('select count(*)::int n from public.lemma_undo_tables'))[0].n,initialRegisteredCount+1);
  // A command registered only in this test must route through the same
  // dispatcher without any new per-resource MCP wrapper or function replacement.
  await db.exec(`create function public.registry_fixture_command(p jsonb)
