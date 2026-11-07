@@ -525,3 +525,7 @@ One additive migration `20261110020000_presets_lifecycle_command.sql` compatibly
 ## N43.1 practice SQL stage-aware regression (bug #1075, chat-21963#n6w4)
 
 The full-migration `tests/mcp/sql/practice_topics.mjs` now verifies the original N43.1 owner-only SELECT, no journal trigger and no undo registration at the exact N43.1 migration boundary, even if the later N43.2 command is present. After all migrations, it still checks owner/FK/cadence constraints and direct DML denial; once N43.2 activates, it requires both practice tables in the undo registry, the journal triggers, and owner-correct fixture insert audit records. Without N43.2 the staged zero-registration/no-journal assertions remain mandatory. This removes the confirmed full-migration contradiction without changing SQL or weakening the original N43.1 safety guarantees.
+
+## Bug #1086: N48.1 full-migration regression remains valid after N48.2
+
+The N48.1 PGlite regression now keeps the original owner-only reads, FK checks, state constraints and direct-DML refusal. It checks the staged migration's zero registration and zero command journal triggers before any later migrations, then requires either zero registration for an unactivated command or complete undo/command registration and journal entries once N48.2 installs `review_runs_command`. The dedicated `tests/mcp/sql/review_runs_registration_compat.mjs` covers both stage boundaries; existing tests are not skipped or weakened. This fixes confirmed bug #1086 and unblocks the independently scoped N48.2 feature PR.
