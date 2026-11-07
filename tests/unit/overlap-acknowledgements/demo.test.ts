@@ -1,5 +1,6 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {createDemoOverlapApi} from '../../../src/data/overlap-acknowledgements/demo';
+import {getStudyApi,setStudyApiForTests} from '../../../src/data/study';
 import type {NewOverlapAcknowledgement,OverlapParticipant} from
   '../../../src/data/overlap-acknowledgements/contract';
 
@@ -29,6 +30,55 @@ beforeEach(()=>{
 afterEach(()=>{sessionStorage.clear();vi.useRealTimers()});
 
 describe('N61.2.1 owner-scoped demo overlap acknowledgements',()=>{
+
+  it('seeds real owner-visible overlaps through the default study resolver and detects edits',async()=>{
+    // This is the production default resolver, not the injected matching fake.
+    const previous=window.location.href;
+    window.history.replaceState({},'', '?demo=1');
+    setStudyApiForTests(null);
+    try{
+      const api=createDemoOverlapApi();
+      const initial=await api.listAcknowledgements();
+      expect(initial.items).toHaveLength(2);
+      expect(initial.items.map(r=>r.disposition))
+        .toEqual(['keep_both','attribute_to']);
+      expect(initial.items.map(r=>r.stale)).toEqual([false,false]);
+      const study=getStudyApi();
+      for(const ack of initial.items){
+        const visible=await study.listCalendarBlocks({
+          start:ack.startsAt,end:ack.endsAt,
+        });
+        const block=ack.participants.find(p=>p.kind==='block')!;
+        expect(visible.some(b=>b.id===block.id&&b.version===block.version))
+          .toBe(true);
+        const entries=await study.listStudyEntries({
+          start:ack.startsAt,end:ack.endsAt,
+        });
+        const entry=ack.participants.find(p=>p.kind==='entry')!;
+        expect(entries.some(e=>e.id===entry.id&&e.version===entry.version))
+          .toBe(true);
+      }
+      const first=initial.items[0],block=first.participants.find(p=>p.kind==='block')!;
+      await study.updateCalendarBlock(block.id,block.version,{title:'Changed plan'});
+      expect((await api.getAcknowledgement(first.id))?.stale).toBe(true);
+      expect((await api.getAcknowledgement(initial.items[1].id))?.stale).toBe(false);
+      expect((await createDemoOverlapApi().getAcknowledgement(first.id))?.stale)
+        .toBe(true);
+      expect(sessionStorage.getItem(KEY)).not.toContain('"stale"');
+      // Reset only overlap storage: existing study blocks must be reused.
+      const allRange={start:new Date(Date.now()-14*86400_000).toISOString(),
+        end:new Date(Date.now()+14*86400_000).toISOString()};
+      const before=(await study.listCalendarBlocks(allRange)).length;
+      sessionStorage.removeItem(KEY);
+      const regenerated=await createDemoOverlapApi().listAcknowledgements();
+      expect(regenerated.items.every(r=>!r.stale)).toBe(true);
+      expect((await study.listCalendarBlocks(allRange)).length).toBe(before);
+    }finally{
+      setStudyApiForTests(null);
+      window.history.replaceState({},'',previous);
+    }
+  });
+
   it('seeds two distinct block/entry overlaps and computes current staleness',async()=>{
     const resolve=resolver(),api=createDemoOverlapApi(resolve);
     const all=await api.listAcknowledgements();
