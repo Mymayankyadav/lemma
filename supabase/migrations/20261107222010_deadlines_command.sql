@@ -102,7 +102,11 @@ begin
   if pg_catalog.jsonb_typeof(v_patch->'due_date') is distinct from 'string'
      or v_patch->>'due_date' !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
    raise exception 'Invalid civil deadline date'; end if;
-  perform (v_patch->>'due_date')::date;
+  begin
+   perform (v_patch->>'due_date')::date;
+  exception when datetime_field_overflow or invalid_datetime_format then
+   raise exception 'Invalid civil deadline date';
+  end;
  end if;
  if v_patch?'due_at' and v_patch->'due_at'<>'null'::jsonb then
   if pg_catalog.jsonb_typeof(v_patch->'due_at') is distinct from 'string'

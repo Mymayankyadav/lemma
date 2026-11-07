@@ -513,3 +513,7 @@ A new additive migration installs public.deadlines_command(jsonb), a SECURITY IN
 ## N42.2.2 deadline audit-trigger compatibility fix (chat-51673#r8k2)
 
 A second newly created after-row trigger named lemma_log_change checks that deadlines_log_change (already deployed in N42.1) recorded the exact owner/row/action first. Trigger name order makes this a fail-closed journal-integrity check, NOT a duplicate log write. This satisfies the existing registry validation without modifying or removing the deployed trigger or loosening its audit. The full-migration SQL regression asserts exactly one change per command mutation, and the instant validation exception now uniformly begins Invalid deadline. Both changes stay inside the new additive migration and existing test scope.
+
+## N42.2.2 finite civil-date validation correction (chat-51673#r8k2)
+
+The full-migration SQL acceptance also probes invalid real calendar dates (2026-02-30). The deadline command now translates PostgreSQL invalid_datetime_format/datetime_field_overflow during the typed date cast into the stable `Invalid civil deadline date` error, before any row mutation or receipt is stored. Original invalid-input and safety assertions remain intact, with a dedicated regression expecting the exact error. No deployed migration or RLS policy changed.

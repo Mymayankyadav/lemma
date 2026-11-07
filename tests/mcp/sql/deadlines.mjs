@@ -279,6 +279,8 @@ try{
   await assert.rejects(versioned('update',id,6,patch),
    /Unknown deadline patch|Invalid deadline|violates|check constraint/i);
  }
+ await assert.rejects(cmd(make('Explicit invalid calendar day',{due_date:'2026-02-30'})),
+  /Invalid civil deadline date/);
  for(const bad of [make(' '),make('Date',{due_date:'2026-02-30'}),
   make('Naive',{due_kind:'instant',due_date:null,due_at:'2026-12-25T12:00:00'}),
   make('Infinity',{due_kind:'instant',due_date:null,due_at:'infinity'}),
