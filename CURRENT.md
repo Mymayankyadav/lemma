@@ -369,6 +369,10 @@ Adds one owner-settings migration for six typed fields: week start, 24-hour cloc
 
 The first N58 app slice adds `src/data/parked-thoughts/contract.ts` with typed owner-visible thought records, optional study-entry references, status and version, explicit task destination only after conversion, and an API contract for versioned create/edit/dismiss/reopen/delete and one-receipt convert-to-task. `src/data/parked-thoughts/model.ts` validates nonempty private text, allowed patch fields, no caller-supplied owner/destination, real resolution instants and the only permitted open/dismissed/converted lifecycle transitions. Five unit regressions test validation, dismiss/reopen, conversion requiring a real task ID, duplicate terminal transitions and absent links. N58.2 remains for demo persistence, bounded pages, live command RPC and same-transaction task conversion/retry. No existing task API, backend, UI or migration is modified; CI verification is pending.
 
+## N36.2 registry dispatcher queue reconciliation (2026-11-07)
+
+The reviewed N36.2 registry-backed `undo_action` and `mcp_command` migration, resource inventories and full-migration PGlite acceptance were already restored to main by the earlier S0 recovery; adding a second migration would duplicate deployed SQL. The N36.2 queue item remained open following CI's revert bookkeeping. This PR closes that stale queue entry and adds a focused create/undo assertion for a standalone study entry routed through the registry dispatcher. No new migration or production contract is introduced.
+
 ## N38 version/provenance queue reconciliation (2026-11-07)
 
 The original additive N38 migration `20261106201000_record_versions.sql` and its all-14-table PGlite acceptance have already been restored to main and applied to production by the earlier S0 recovery. N38 remained open in NEXT.md after automatic revert bookkeeping. This item removes that stale queue block and strengthens the existing SQL test to reject caller-forged `updated_source='worker'` during MCP-attributed updates. The previously reviewed migration and all fourteen tables remain unchanged; no duplicate DDL or new dependency is introduced.
