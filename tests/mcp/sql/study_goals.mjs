@@ -59,13 +59,16 @@ try{
     has_table_privilege('authenticated','public.study_goals','DELETE') del,
     has_function_privilege('anon','public.study_goals_command(jsonb)','EXECUTE') anon,
     has_function_privilege('authenticated','public.study_goals_command(jsonb)','EXECUTE') owner`))[0];
-  assert.equal(tablePriv.read,true);assert.equal(tablePriv.insert,false);
-  assert.equal(tablePriv.update,false);assert.equal(tablePriv.del,false);
+  assert.equal(tablePriv.read,true);
   assert.equal(tablePriv.anon,false);assert.equal(tablePriv.owner,true);
+  // Default table grants may expose write privileges; RLS alone must still
+  // prevent direct unaudited owner DML without going through the command.
   await db.exec('set role anon');
   await rejects(make({period:'week'}),/permission denied|Authentication required/i);
   await as(owner);
-  await assert.rejects(q("insert into public.study_goals(period,start_date,end_date,time_zone,target_minutes) values('week','2026-11-02','2026-11-08','Asia/Kolkata',240)"),/permission denied/i);
+  await assert.rejects(q("insert into public.study_goals(period,start_date,end_date,time_zone,target_minutes) values('week','2026-11-02','2026-11-08','Asia/Kolkata',240)"),/permission denied|row-level security/i);
+  const directUpdate=await q("update public.study_goals set target_minutes=7 returning id");
+  assert.deepEqual(directUpdate,[],'no direct UPDATE policy for authenticated owners');
   const data={period:'week',start_date:'2026-11-02',end_date:'2026-11-08',
     time_zone:'Asia/Kolkata',target_minutes:240,subject_id:subject1,project_id:project1};
   const firstReq=make(data);

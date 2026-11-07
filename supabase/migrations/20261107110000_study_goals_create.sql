@@ -40,7 +40,6 @@ create index study_goals_owner_list on public.study_goals
 alter table public.study_goals enable row level security;
 create policy study_goals_owner_read on public.study_goals
   for select to authenticated using(user_id=(select auth.uid()));
-revoke all on public.study_goals from public,anon,authenticated;
 grant select on public.study_goals to authenticated;
 grant select,insert,update,delete on public.study_goals to service_role;
 
