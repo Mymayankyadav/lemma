@@ -628,11 +628,15 @@ The new pure src/features/planner/model.ts exports planTaskPlacements and typed 
 
 Selected nonterminal tasks sort deterministically by priority, due (instant or owner civil date), then stable ID. A task reserves time atomically or remains unplaced; it splits only with explicit allowSplit and caps each part to max consecutive minutes. Results include UTC half-open placement instants, remaining daily capacity, and explicit no_capacity/after_due/too_long/no_estimate reasons and actionable next-step/day suggestions. Missing planning settings use deployed defaults; explicitly unknown day availability remains null rather than silently becoming zero. This preview never writes a block, task or plan; N68/N60.2 own the commit path. New N67 unit tests exercise ordering, due, gap/consecutive, overload, DST, unioned occupancy, failed split rollback, unknown availability and bad inputs. CI verification pending.
 
+## N74 v6 Calendar deadline and due-practice overlay (chat-73129#q7m2)
+
+With v6Shell on, the existing Calendar Agenda, Day, Week and Month fetch owner-scoped open standalone and projected deadlines plus active practice topics through the existing mode-aware N56.2/N57.2 APIs, traversing every exact-total 50-record cursor page and failing visibly on a stale or cyclic cursor. Civil deadline dates remain civil; timed deadlines are assigned to the viewer's time-zone day, and overdue items are shown once at the first visible date with an overdue marker. Agenda/Day/Week show tappable inline accessible record disclosures; Month displays due counts within the existing dates and a tappable full due-record list below the grid. All projections are explicitly labelled by origin (owner deadline, project target and checkpoint due), remaining minutes are shown only where the API provides an actual estimate, and due practice topics show cadence instead of inventing time estimates. All legacy Day/Week/Month saved, busy, planned and free minute totals continue using the unchanged study entries/blocks only; no due record is added to study effort. Flag-off Calendar remains the existing redirect with zero due API reads. New tests/unit/calendar/deadlines-practice.test.tsx validates zone-correct due dates, overdue/archived filtering, >50 cursor loading, invalid cursors, four view displays, detail openings, saved-time invariance, read errors and flag-off data isolation. CI validation is pending; no data adapters, production SQL, unrelated screens or protected paths changed.
+
+N74 CI correction: the first affected-unit run exposed a missing dues={dues} prop on MonthView (Week/Agenda/Day already had it), leaving Month counts and detail list at their default empty state. Passed the freshly fetched deadline/practice snapshot to MonthView, retaining the new failing Month integration assertion and every existing Calendar test. Reverification is required before merge.
 
 ## N50.2.2 complete owner-only study-event command lifecycle (chat-62804#p9h6)
 
 The additive `20261110000000_study_events_related_links.sql` migration adds owner-checked optional related task/block/entry links and a receipt-idempotent `study_events_command` with record, edit, void and restore. The existing study_events row audit and version triggers remain the only real writers; a no-op `lemma_log_change` marker satisfies the registry convention without duplicate journaling. All commands validate owner-linked study entries, kinds/durations and related pairs, reject stale versions and altered-retry payloads, preserve voided history, expose undo_action and service-role MCP dispatch, and forbid unaudited authenticated table DML. Existing envelope and N50.1 invariants stay in tests; new full-migration SQL assertions cover the lifecycle, owner isolation, retries, journal, undo and MCP. This is not a production deployment claim; reviewed merge only after checks and migration-history gate.
-
 
 ## N50.2.2 expired-lease takeover follow-up (chat-73129#q7m2)
 
@@ -641,7 +645,6 @@ Recovered PR #1064 in its existing branch rather than opening a second N50 claim
 N50.2.2 CI follow-up: the expanded MCP edit/void/restore test suite requires its service_role harness state after the prior readback resets roles. The test now re-enters service_role before invoking mcp_command and resets afterward; no SQL command behavior or prior test expectation was altered. Previous SQL run reached this point after passing record/edit/void/restore and undo regressions. Final SQL gate remains to be verified.
 
 N50.2.2 MCP test final privilege correction: audit actions are intentionally not SELECT-readable to the service_role test fixture. Expanded MCP lifecycle tests now collect action numbers while that role is active, reset to the privileged harness role, then assert exact owner and chatgpt provenance on every action. Production grants and preexisting SQL expectations are unchanged.
-
 
 ## N50.2.2 exact event undo snapshots (chat-73129#q7m2)
 
