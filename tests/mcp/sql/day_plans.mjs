@@ -44,14 +44,22 @@ try{
  assert.ok(!names.includes('20261107120030_day_plans_header.sql'), 'superseded unapplied migration version must not recur');
  assert.ok(!names.includes('20261107090000_day_plans_header.sql'),
    'superseded N46 migration version must not remain');
- for(const name of names)await db.exec(await readFile(new URL(name,directory),'utf8'));
+ for(const name of names){
+  if(name==='20261108130000_day_plan_items_schema.sql'){
+   assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='day_plans'"))[0].n,0,
+    'N46.1 is not registered before the atomic N46.2 command exists');
+   assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plans'"))[0].n,0,
+    'N46.1 must remain read-only before its journalled command');
+  }
+  await db.exec(await readFile(new URL(name,directory),'utf8'));
+ }
  const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/day_plans.json',import.meta.url),'utf8'));
  const columns=(await q("select attname from pg_attribute where attrelid='public.day_plans'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname).sort();
  assert.equal(doc.table,'day_plans');assert.deepEqual(Object.keys(doc.columns).sort(),columns);
  assert.equal((await q("select relrowsecurity from pg_class where oid='public.day_plans'::regclass"))[0].relrowsecurity,true);
  assert.deepEqual((await q("select cmd from pg_policies where tablename='day_plans'")).map(x=>x.cmd),['SELECT']);
- assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='day_plans'"))[0].n,0);
- assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plans'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='day_plans'"))[0].n,1);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plans'"))[0].n,1);
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  const task=(await q("insert into public.tasks(user_id,title) values($1,'Start this task') returning id",[owner]))[0];
  const otherTask=(await q("insert into public.tasks(user_id,title) values($1,'Private') returning id",[other]))[0];
@@ -94,6 +102,218 @@ try{
  await blocked("update public.day_plans set intention='Stolen' where id=$1 returning id",[day.id]);
  await admin();
  assert.equal((await q('select intention from public.day_plans where id=$1',[day.id]))[0].intention,'Review proofs');
- assert.equal((await q("select count(*)::int n from public.action_changes where table_name='day_plans'"))[0].n,0);
+ assert.ok((await q("select count(*)::int n from public.action_changes where table_name='day_plans'"))[0].n>0,'N46.2 audit trigger records privileged fixture writes');
  console.log('PASS N46.1 unique owner day, status/JSON/FK validation, RLS read-only and no unaudited DML');
+ // N46.2.1: the staged child schema remains owner-scoped and read-only.
+ assert.ok(names.includes('20261108130000_day_plan_items_schema.sql'));
+ const itemDoc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/day_plan_items.json',import.meta.url),'utf8'));
+ const itemColumns=(await q("select attname from pg_attribute where attrelid='public.day_plan_items'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname).sort();
+ assert.equal(itemDoc.table,'day_plan_items');
+ assert.deepEqual(Object.keys(itemDoc.columns).sort(),itemColumns);
+ assert.deepEqual((await q("select cmd from pg_policies where tablename='day_plan_items'")).map(x=>x.cmd),['SELECT']);
+ assert.equal((await q("select relrowsecurity from pg_class where oid='public.day_plan_items'::regclass"))[0].relrowsecurity,true);
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='day_plan_items'"))[0].n,1);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plan_items'"))[0].n,0);
+ const block=(await q("insert into public.calendar_blocks(user_id,kind,title,starts_at,ends_at,time_zone) values($1,'study','Owner block','2026-11-08T10:00:00Z','2026-11-08T11:00:00Z','UTC') returning id",[owner]))[0];
+ const foreignBlock=(await q("insert into public.calendar_blocks(user_id,kind,title,starts_at,ends_at,time_zone) values($1,'study','Foreign block','2026-11-08T10:00:00Z','2026-11-08T11:00:00Z','UTC') returning id",[other]))[0];
+ const unplaced=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,position,reason) values($1,$2,$3,0,'Keep for tomorrow') returning *",[owner,day.id,task.id]))[0];
+ const placed=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,disposition,position) values($1,$2,$3,$4,'placed',1) returning *",[owner,day.id,task.id,block.id]))[0];
+ const carried=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,reason,position) values($1,$2,$3,'carried_over','Move to tomorrow',2) returning *",[owner,day.id,task.id]))[0];
+ const privateItem=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Keep in view',0) returning *",[other,otherDay.id,otherTask.id]))[0];
+ assert.equal(unplaced.disposition,'unplaced');assert.equal(placed.calendar_block_id,block.id);
+ assert.equal(carried.disposition,'carried_over');assert.equal(privateItem.user_id,other);
+ assert.equal(unplaced.reason,'Keep for tomorrow');
+ assert.equal(carried.reason,'Move to tomorrow');
+ assert.equal(unplaced.calendar_block_id,null);
+ assert.equal(carried.calendar_block_id,null);
+ assert.deepEqual((await q("select disposition from public.day_plan_items where user_id=$1 and plan_id=$2 order by position",[owner,day.id])).map(x=>x.disposition),['unplaced','placed','carried_over'],'unplaced and carried-over remain listed');
+ assert.equal(placed.version,1);assert.equal(placed.source,'app');assert.ok(placed.created_at&&placed.updated_at);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',0)",[owner,day.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',3)",[owner,otherDay.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',3)",[owner,day.id,otherTask.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,reason,position) values($1,$2,$3,$4,'Queue',3)",[owner,day.id,task.id,foreignBlock.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,reason,position) values($1,$2,$3,'lost','Queue',3)",[owner,day.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',-1)",[owner,day.id,task.id]);
+ // N60.1 accepts every nonnegative int4, including values beyond 999,999.
+ // Create and remove two otherwise-valid items before the RLS row-count cases.
+ const highOne=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',1000000) returning position,id",[owner,day.id,task.id]))[0];
+ const highMax=(await q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483647) returning position,id",[owner,day.id,task.id]))[0];
+ assert.equal(highOne.position,1000000);
+ assert.equal(highMax.position,2147483647);
+ await q("delete from public.day_plan_items where id=$1 or id=$2",[highOne.id,highMax.id]);
+ await assert.rejects(
+  q("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',2147483648)",[owner,day.id,task.id]),
+  /integer out of range/i,
+  'positions above signed int4 are rejected by PostgreSQL itself');
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,$4,3)",[owner,day.id,task.id,'x'.repeat(1201)]);
+ // Each negative case has otherwise-valid owner/plan/task/position fields:
+ // the disposition invariants must cause the rejection, not a different FK.
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,position) values($1,$2,$3,'unplaced',3)",[owner,day.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,position) values($1,$2,$3,'carried_over',3)",[owner,day.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,reason,position) values($1,$2,$3,'unplaced','  ',3)",[owner,day.id,task.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,disposition,reason,position) values($1,$2,$3,'carried_over',$4,3)",[owner,day.id,task.id,'\t']);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,disposition,reason,position) values($1,$2,$3,$4,'unplaced','No capacity',3)",[owner,day.id,task.id,block.id]);
+ await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,calendar_block_id,disposition,reason,position) values($1,$2,$3,$4,'carried_over','Tomorrow',3)",[owner,day.id,task.id,block.id]);
+ await invalid("update public.day_plan_items set disposition='unplaced',reason='No capacity' where id=$1",[placed.id]);
+ await invalid("update public.day_plan_items set reason='   ' where id=$1",[carried.id]);
+ await invalid("update public.day_plan_items set reason=null where id=$1",[unplaced.id]);
+ await invalid("update public.day_plan_items set calendar_block_id=$1 where id=$2",[block.id,unplaced.id]);
+ await invalid("delete from public.calendar_blocks where id=$1",[block.id]);
+ await invalid("delete from public.day_plans where id=$1",[day.id]);
+ await invalid("update public.day_plan_items set user_id=$1 where id=$2",[other,placed.id]);
+ await invalid("update public.day_plan_items set calendar_block_id=$1 where id=$2",[foreignBlock.id,placed.id]);
+ await invalid("delete from public.tasks where id=$1",[task.id]);
+ await q('grant insert,update,delete on public.day_plan_items to authenticated');
+ await as(owner);
+ assert.equal((await q('select count(*)::int n from public.day_plan_items'))[0].n,3);
+ await blocked("insert into public.day_plan_items(plan_id,task_id,reason,position) values($1,$2,'Queue',3) returning id",[day.id,task.id]);
+ await blocked("update public.day_plan_items set disposition='placed' where id=$1 returning id",[unplaced.id]);
+ await blocked("delete from public.day_plan_items where id=$1 returning id",[carried.id]);
+ await as(other);
+ assert.deepEqual((await q('select id from public.day_plan_items')).map(x=>x.id),[privateItem.id]);
+ await blocked("insert into public.day_plan_items(user_id,plan_id,task_id,reason,position) values($1,$2,$3,'Queue',3) returning id",[owner,day.id,task.id]);
+ await admin();
+ assert.ok((await q("select count(*)::int n from public.action_changes where table_name='day_plan_items'"))[0].n>0,'command migration journals owner item rows');
+ console.log('PASS N46.2.1 day-plan child dispositions, owner-composite FKs, RLS and staged write denial');
+
+
+ // N46.2: one owner-scoped, receipt-backed command for the complete lifecycle.
+ let serial=0;
+ const commandInput=(operation,patch={},target={},expectedVersion,operationId)=>
+  ({resource:'day_plans',schemaVersion:1,operation,
+   operationId:operationId||('aaaaaaaa-aaaa-4aaa-8aaa-'+String(++serial).padStart(12,'0')),
+   patch,target,...(expectedVersion===undefined?{}:{expectedVersion})});
+ const command=async p=>(await q('select public.day_plans_command($1::jsonb) as receipt',
+  [JSON.stringify(p)]))[0].receipt;
+ const act=r=>{assert.equal(r.status,'ok');assert.ok(Number(r.actionNo)>0);return r.plan;};
+ const snapshot=async()=>({
+  sources:[
+   {resource:'tasks',id:task.id,version:(await q('select version from public.tasks where id=$1',[task.id]))[0].version},
+   {resource:'calendar_blocks',id:block.id,version:(await q('select version from public.calendar_blocks where id=$1',[block.id]))[0].version}
+  ]
+ });
+ const previewItems=[
+  {task_id:task.id,calendar_block_id:block.id,disposition:'placed',position:0},
+  {task_id:task.id,calendar_block_id:null,disposition:'carried_over',reason:'Tomorrow',position:1}
+ ];
+ await as(owner);
+ const createPayload=commandInput('create',
+  {plan_date:'2026-11-20',time_zone:'UTC',intention:'Review notes',capacity_minutes:90});
+ const created=await command(createPayload), newPlan=act(created);
+ assert.equal(newPlan.status,'draft');assert.equal(newPlan.version,1);
+ assert.deepEqual(await command(createPayload),created,'same operationId replays the exact receipt');
+ assert.equal((await command({...createPayload,patch:{...createPayload.patch,intention:'Changed'}})).status,
+  'conflict','changed-payload replay is a conflict');
+ const snap=await snapshot();
+ const preview=await command(commandInput('preview',{availability:snap,items:previewItems},
+  {id:newPlan.id},newPlan.version));
+ const shown=act(preview);
+ assert.equal(shown.status,'previewed');
+ assert.ok(preview.changed.some(x=>x.resource==='day_plan_items'));
+ // Preview must apply the same full int4 bounds as the merged N60.1 model.
+ const boundaryPlan=act(await command(commandInput('create',{
+  plan_date:'2026-11-28',time_zone:'UTC'})));
+ const boundaryItems=[
+  {...previewItems[0],position:1000000},
+  {...previewItems[1],position:2147483647}
+ ];
+ const boundaryPreview=act(await command(commandInput('preview',{
+  availability:await snapshot(),items:boundaryItems},{id:boundaryPlan.id},1)));
+ assert.equal(boundaryPreview.status,'previewed');
+ assert.deepEqual((await q("select position from public.day_plan_items where plan_id=$1 order by position",
+  [boundaryPlan.id])).map(x=>x.position),[1000000,2147483647],
+  'preview persists exact int4-range position values');
+ for (const position of [-1,2147483648]) {
+  await assert.rejects(command(commandInput('preview',{
+   availability:await snapshot(),items:[{...boundaryItems[0],position}]},
+   {id:boundaryPlan.id},boundaryPreview.version)),
+   /Invalid day-plan item/,'preview rejects values outside the complete int4 range');
+ }
+ assert.deepEqual((await q("select position from public.day_plan_items where plan_id=$1 order by position",
+  [boundaryPlan.id])).map(x=>x.position),[1000000,2147483647],
+  'invalid previews must never overwrite valid boundary placements');
+ assert.deepEqual((await q('select disposition from public.day_plan_items where plan_id=$1 order by position',
+  [newPlan.id])).map(x=>x.disposition),['placed','carried_over']);
+ assert.equal((await command(commandInput('commit',{}, {id:newPlan.id},shown.version+1))).status,
+  'conflict','optimistic stale version must not commit');
+ const committed=await command(commandInput('commit',{}, {id:newPlan.id},shown.version));
+ const committedPlan=act(committed);assert.equal(committedPlan.status,'committed');
+ const closedReceipt=await command(commandInput('close',{ritual:{reflection:'Done'}},
+  {id:newPlan.id},committedPlan.version));
+ const closedPlan=act(closedReceipt);
+ assert.equal(closedPlan.status,'closed');assert.ok(closedPlan.closed_at);
+ const reOpened=await command(commandInput('reopen',{}, {id:newPlan.id},closedPlan.version));
+ const reopened=act(reOpened);assert.equal(reopened.status,'committed');
+ assert.equal(reopened.closed_at,null,'reopen clears closure instant');
+ const second=act(await command(commandInput('create',{plan_date:'2026-11-21',time_zone:'UTC'})));
+ assert.equal(second.status,'draft');
+
+ // Generic undo must restore both simple creates and multi-row preview writes.
+ const createUndo=await command(commandInput('create',
+  {plan_date:'2026-11-26',time_zone:'UTC'}));
+ const createdUndoPlan=act(createUndo);
+ await q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,createUndo.actionNo]);
+ assert.equal((await q('select count(*)::int n from public.day_plans where id=$1',
+  [createdUndoPlan.id]))[0].n,0,'undo removes an auditable plan creation');
+ const previewUndoPlan=act(await command(commandInput('create',
+  {plan_date:'2026-11-27',time_zone:'UTC'})));
+ const previewUndo=await command(commandInput('preview',
+  {availability:await snapshot(),items:previewItems},{id:previewUndoPlan.id},1));
+ act(previewUndo);
+ await q('select public.undo_action($1::uuid,$2::bigint,false)',
+  [owner,previewUndo.actionNo]);
+ assert.equal((await q('select status from public.day_plans where id=$1',[previewUndoPlan.id]))[0].status,
+  'draft','undo restores original previewed header state');
+ assert.equal((await q('select count(*)::int n from public.day_plan_items where plan_id=$1',
+  [previewUndoPlan.id]))[0].n,0,'undo removes all preview-created placements');
+ assert.equal((await q('select status from public.day_plans where id=$1',[newPlan.id]))[0].status,
+  'committed','other dates cannot be altered by create/close');
+ const staleCreated=act(await command(commandInput('create',{plan_date:'2026-11-22',time_zone:'UTC'})));
+ const stalePreview=act(await command(commandInput('preview',
+  {availability:await snapshot(),items:previewItems},{id:staleCreated.id},1)));
+ await admin();
+ await q('update public.tasks set version=version+1 where id=$1',[task.id]);
+ await as(owner);
+ await assert.rejects(command(commandInput('commit',{}, {id:staleCreated.id},stalePreview.version)),
+  /Stale or foreign day-plan source/,'commit rechecks source versions under a lock');
+ assert.equal((await q('select status from public.day_plans where id=$1',[staleCreated.id]))[0].status,
+  'previewed','stale commit must not partially apply');
+ const blockCreated=act(await command(commandInput('create',{plan_date:'2026-11-23',time_zone:'UTC'})));
+ const blockPreview=act(await command(commandInput('preview',
+  {availability:await snapshot(),items:previewItems},{id:blockCreated.id},1)));
+ await admin();
+ await q('update public.calendar_blocks set version=version+1 where id=$1',[block.id]);
+ await as(owner);
+ await assert.rejects(command(commandInput('commit',{}, {id:blockCreated.id},blockPreview.version)),
+  /Stale or foreign day-plan source/,'commit rechecks block versions too');
+ const ownerClose=act(await command(commandInput('close',{}, {id:newPlan.id},reopened.version)));
+ await as(other);
+ await assert.rejects(command(commandInput('reopen',{}, {id:newPlan.id},ownerClose.version)),
+  /not found for owner/);
+ const theirPlan=act(await command(commandInput('create',
+  {plan_date:'2026-11-24',time_zone:'UTC'})));
+ assert.ok(theirPlan.id);
+ await as(owner);
+ assert.deepEqual(await q('select id from public.day_plans where id=$1',[theirPlan.id]),[],
+  'owner-RLS reads never see a foreign plan');
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ // Generic MCP dispatch deliberately fails without a real registered owner.
+ await q('insert into public.settings(user_id,connector_secret) values($1,$2) on conflict (user_id) do nothing',
+  [owner,'1'.repeat(48)]);
+ await db.exec('set role service_role');
+ const mcpInput=commandInput('create',{plan_date:'2026-11-25',time_zone:'UTC'});
+ const mcp=(await q("select public.mcp_command($1::uuid,'chatgpt',$2::jsonb) receipt",
+  [owner,JSON.stringify(mcpInput)]))[0].receipt;
+ assert.equal(mcp.status,'ok');
+ assert.equal(mcp.plan.source,'mcp');
+ await db.exec('reset role');
+ assert.equal((await q('select source,user_id from public.actions where no=$1',
+  [mcp.actionNo]))[0].user_id,owner);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plans'"))[0].n,
+  1);
+ assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='day_plan_items'"))[0].n,1);
+ console.log('PASS N46.2 command versions, owner isolation, snapshots, item lifecycle, MCP and journal');
+
 }finally{await db.close();}

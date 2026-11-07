@@ -19,13 +19,6 @@ Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle ru
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N46.2 Day-plan items, preview-to-commit invariants and closure commands
-Stage: Build · Status: open · Needs: N46.1 · Assigned: —
-Done = complete N46 on N46.1's owner-bound, one-per-day day_plans headers. Add public.day_plan_items with owner-composite references to its plan, task and optional calendar block, disposition placed/unplaced/carried_over, reason and stable position; keep unplaced/carried-over work listed. Add public.day_plans_command(p jsonb) with versioned owner-create/update, preview, commit, close and reopen; commit must atomically compare every listed task/block version to the availability.sources recorded at preview and refuse stale versions. Closing one date may never affect another; close sets closed_at and reopening clears it. Keep client writes disabled until command_receipts idempotence, action journal, registered undo in lemma_undo_tables and generic mcp_command registration in lemma_command_resources are installed. Ensure same owner IDs throughout, exact retry/conflict semantics and source attribution. Production SQL needs independent review (D8 b).
-Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner isolation, task/block version drift refusal, multiple dates and closure, item dispositions, idempotent retries, undo and MCP parity. Keep N46.1 field, JSON and FK constraints; revise read-only stage assertions only to enforce registered auditable writes.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
-
 ## N49 Proposal drafts: migration (proposal_drafts)
 Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
 Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
