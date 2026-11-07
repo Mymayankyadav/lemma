@@ -25,9 +25,10 @@ describe('N84 v6 card sibling schedules',()=>{
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
   try{
    await act(async()=>root.render(<CardVariants
-    variants={[{ordinal:2,due:null,stability:0,reps:2,lapses:1,state:'review'}]}
+    variants={[{ordinal:2,due:null,stability:0,reps:2,lapses:1,state:2}]}
     status="active" onEdit={edit} onToggleStatus={toggle}/>));
    expect(host.textContent).toContain('Reviews');
+   expect(host.textContent).toContain('Review');
    expect(host.textContent).toContain('Lapses');
    await act(async()=>[...host.querySelectorAll('button')].find(b=>
     b.textContent==='Edit note and preview math')!.click());
