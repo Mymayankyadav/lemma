@@ -22,6 +22,10 @@ try{
   'grant usage on schema auth to authenticated;',
   'grant execute on function auth.uid() to authenticated;'
  ].join('\n'));
+ // Reproduce Supabase browser default table grants *before* creating any
+ // domain tables. New read-only feed tables must revoke every write grant
+ // explicitly: RLS by itself is not an ACL substitute.
+ await db.exec('alter default privileges in schema public grant insert,update,delete,truncate on tables to anon,authenticated');
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
  assert.ok(migrations.includes('20261118010000_owner_changes.sql'));
@@ -75,10 +79,22 @@ try{
  await as(b);
  // This fixture also inserted the other owner's settings row; its own
  // journal event must remain visible. The owner's study mutations must not.
- assert.equal((await q("select has_table_privilege('authenticated','public.owner_changes','INSERT') n"))[0].n,false,
-  'new feed tables explicitly revoke authenticated write grants');
- assert.equal((await q("select has_table_privilege('authenticated','public.owner_change_retention','UPDATE') n"))[0].n,false,
-  'retention watermark cannot be directly edited by an owner');
+ // Every browser DML privilege must be denied on BOTH new tables even
+ // when the platform grants them by default at CREATE TABLE time.
+ for(const role of ['anon','authenticated']){
+  for(const table of ['owner_changes','owner_change_retention']){
+   for(const privilege of ['INSERT','UPDATE','DELETE','TRUNCATE']){
+    const allowed=(await q('select has_table_privilege($1,$2,$3) result',
+     [role,'public.'+table,privilege]))[0].result;
+    assert.equal(allowed,false,
+     role+' must not have '+privilege+' on new feed table '+table);
+   }
+  }
+ }
+ await assert.rejects(q(
+  "insert into public.owner_changes(user_id,resource,record_id,version,op,tombstone) values($1,'tasks','blocked',1,'insert',false)",
+  [b]),/permission denied|row-level security/i,
+  'direct authenticated DML cannot inject a fake change event');
  const otherFeed=(await q('select public.changes_since(0,100) result'))[0].result.changes;
  assert.equal(otherFeed.filter(x=>x.resource==='settings').length,1,
   'second owner still sees their own settings write');
