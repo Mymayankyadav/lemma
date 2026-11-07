@@ -56,6 +56,9 @@ try{
  const attribution={...input,patch:{...input.patch,disposition:'attribute_to',
   attributed_to:{kind:'entry',id:input.patch.participants[0].id}}};
  assert.deepEqual(await call(attribution),attribution);
+ // Internal registry tables are readable by the admin test fixture, not
+ // by authenticated callers. Only the envelope itself uses the client role.
+ await db.exec('reset role');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='overlap_acknowledgements'"))[0].n,0);
  assert.equal((await q("select count(*)::int n from public.lemma_undo_tables where table_name='overlap_acknowledgements'"))[0].n,0);
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='overlap_acknowledgements'"))[0].n,0);
