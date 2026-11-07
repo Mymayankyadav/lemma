@@ -54,7 +54,8 @@ create trigger study_events_related_owner before insert or update of
 create or replace function public.study_events_touch_version() returns trigger
 language plpgsql security invoker set search_path='' as $touch_undo$
 begin
- if pg_catalog.current_setting('lemma.tool',true)='undo' then
+ if pg_catalog.current_setting('lemma.tool',true)='undo'
+    and current_user not in ('authenticated','anon') then
   return new;
  end if;
  new.version:=old.version+1;

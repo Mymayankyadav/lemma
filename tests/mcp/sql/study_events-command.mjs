@@ -253,6 +253,26 @@ try{
   related_kind:'task',related_id:otherTask},
   {target:{id:editId},expectedVersion:(await currentRow(editId)).version})),
  /Related task not found for this owner/);
+ // A caller can set a custom GUC but cannot turn an ordinary authenticated
+ // UPDATE into the generic SECURITY DEFINER undo path. This temporary owner-
+ // scoped UPDATE policy tests the trigger as a second defense independently of
+ // the table's usual SELECT-only RLS. Restore the exact grants/policies first.
+ await db.exec('reset role');
+ await db.exec("grant update(note,version,updated_at) on public.study_events to authenticated");
+ await db.exec("create policy study_events_spoof_fixture on public.study_events for update to authenticated using (user_id=(select auth.uid())) with check (user_id=(select auth.uid()))");
+ await ownerRole(owner);
+ const beforeSpoof=await currentRow(editId);
+ await q("select set_config('lemma.tool','undo',false)");
+ const spoofed=(await q("update public.study_events set note='Custom GUC spoof',version=1,updated_at=$1 where id=$2 returning version,updated_at",
+  [beforeSpoof.updated_at,editId]))[0];
+ assert.equal(spoofed.version,beforeSpoof.version+1,
+  'authenticated GUC spoof cannot bypass an ordinary UPDATE version bump');
+ assert.notEqual(spoofed.updated_at,beforeSpoof.updated_at,
+  'authenticated GUC spoof cannot preserve a stale updated_at');
+ await db.exec('reset role');
+ await db.exec('drop policy study_events_spoof_fixture on public.study_events');
+ await db.exec('revoke update(note,version,updated_at) on public.study_events from authenticated');
+ await ownerRole(owner);
  await assert.rejects(q("insert into public.study_events(user_id,entry_id,kind) values($1,$2,'notice')",[owner,entry]),
   /permission denied|row.level security/i);
  await ownerRole(other);
