@@ -40,8 +40,10 @@ try {
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
   for(const f of migrations)await db.exec(await readFile(new URL(f,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
-  await q('insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)',
-    [owner,'1'.repeat(48),other,'2'.repeat(48)]);
+  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+    [owner,'1'.repeat(48)]);
+  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
+    [other,'2'.repeat(48)]);
   const otherSubject='33333333-3333-3333-3333-333333333333';
   await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Biology','B','lime')",
     [otherSubject,other]);
