@@ -1,4 +1,6 @@
 import './review.css';
+import {isFlagOn} from '../../flags';
+import ReviewRunV6 from './v6/ReviewRunV6';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
@@ -86,7 +88,7 @@ function isInteractiveShortcutTarget(target:EventTarget|null):boolean{
  );
 }
 
-export default function Page(){
+function LegacyReviewRunPage(){
  const navigate=useNavigate(),[search]=useSearchParams(),notify=useToast(),reduced=!!useReducedMotion(),calm=useCalm(),reduce=reduced||calm;
  const settings=useSettings(),sessions=useSessions(),mutate=useRecordReview(),undo=useUndoReview();
  const addComment=useAddComment(),suspend=useSetNoteStatus();
@@ -292,4 +294,13 @@ export default function Page(){
    </div>
   </Sheet>
  </Screen>;
+}
+
+export default function Page(){
+ const [search]=useSearchParams();
+ // Legacy local queues (including reminder-driven rounds) remain valid when
+ // there is no explicit N62 run ID. A new v6 route without either resumes
+ // the persisted run, and one with run= always uses the durable renderer.
+ const legacy=!search.has('run')&&!!useReviewSession.getState().queue;
+ return isFlagOn('v6Shell')&&!legacy?<ReviewRunV6/>:<LegacyReviewRunPage/>;
 }

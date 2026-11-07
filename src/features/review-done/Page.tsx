@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
-import {Link,useNavigate} from 'react-router';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {CalendarDays,Clock3,RotateCcw,Target} from 'lucide-react';
 import {getApi} from '../../data';
 import {useSettings} from '../../data/hooks';
@@ -15,6 +15,7 @@ import {Button} from '../../ui/Button';
 import {RoundSeal} from './RoundSeal';
 import {prepareSessionNewRound} from './newSession';
 import {isFlagOn} from '../../flags';
+import ReviewDoneV6 from './v6/ReviewDoneV6';
 import {nextReminderTime} from '../../data/notify';
 
 function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:string}){
@@ -24,7 +25,7 @@ function Metric({icon:Icon,label,value}:{icon:typeof Target;label:string;value:s
   <span className="text-label text-ink-3">{label}</span>
  </Tile>;
 }
-export default function Page(){
+function LegacyReviewDonePage(){
  const reduced=!!useReducedMotion(),calm=useCalm(),quiet=reduced||calm;
  const navigate=useNavigate(),answers=useReviewSession(s=>s.answers),filter=useReviewSession(s=>s.filter);
  const markCompleted=useReviewSession(s=>s.markCompleted);
@@ -149,4 +150,12 @@ export default function Page(){
    {newMessage&&<p role="status" className="text-center text-label text-ink-2">{newMessage}</p>}
   </div>}
  </Screen>;
+}
+
+export default function Page(){
+ const [search]=useSearchParams();
+ // Existing local reminder/legacy rounds have no durable run ID and retain
+ // their Done page, including reminder offers and the ordinary Done action.
+ return isFlagOn('v6Shell')&&search.has('run')?
+  <ReviewDoneV6/>:<LegacyReviewDonePage/>;
 }
