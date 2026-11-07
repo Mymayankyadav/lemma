@@ -43,13 +43,13 @@ Tests: `tests/mcp/sql/parked_thoughts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N45 Study goals: migration (study_goals)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.study_goals` with `period` (`week`/`month`/`custom`), `start_date`, `end_date`, `time_zone`, optional subject/project scope, `target_minutes`, `archived_at`. Operations create, update, archive, restore, delete. Scope is by ID, never by display name; overlapping goals for the same scope and period are rejected.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N45.2 Study goals: lifecycle, undo and MCP completion
+Stage: Build · Status: open · Needs: N45.2.1 · Assigned: —
+Done = complete N45 on the owner-scoped public.study_goals table and secure, receipt-backed create command from N45.1. Add version-checked update, archive, restore and delete to public.study_goals_command via one additive compatible replacement migration. Retain the server-enforced active same-owner/period/scope date-overlap invariant, inclusive civil dates, owner-bound references and historical records. Register study_goals in public.lemma_undo_tables and public.lemma_command_resources (with a field/operation JSON schema, mcp_ok=true); verify undo and service-role mcp_command dispatch under p_user, idempotent receipts, conflicts and versions. Do not enable unaudited authenticated DML.
+Owner-authorized (D1, D8): production SQL requires independent review; PR body line Replaces function: study_goals_command (reviewer verified signature and behaviour).
+Tests: tests/mcp/sql/study_goals-command.mjs, plus unchanged N45.1 and existing D7 SQL tests.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals-command.mjs, docs/v6/capability-registry/study_goals.json, CURRENT.md.
+Not: changing N45.1 or older migrations, app or MCP function code, existing test assertions, other tables/functions.
 
 ## N46 Dated day plans and closures: migration (day_plans)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -115,7 +115,7 @@ Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
 Not: other src/data/** modules, UI, supabase/**, new dependencies.
 
 ## N59.2 Study goals live adapter (remaining after N59 split)
-Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
+Stage: Build · Status: open · Needs: N59.1, N45.2 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
 Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
 Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
