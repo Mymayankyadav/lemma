@@ -93,7 +93,8 @@ describe('N77 Focus activity preset picker',()=>{
   window.history.replaceState({},'','/?flags=v6Shell');
   const startStudyEntry=vi.fn(async()=>{throw Error('Test stopped the start before persistence')});
   setStudyApiForTests({
-   mode:'demo',
+   // Match getMode() in the non-demo test URL; otherwise it discards the mock.
+   mode:'live',
    activeStudyEntry:vi.fn(async()=>null),
    listStudyEntries:vi.fn(async()=>[]),
    startStudyEntry,
