@@ -4,6 +4,8 @@ import type {StudyEntryRecord,StudyRange} from '../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
+import FocusNotes from './FocusNotes';
+import {isFlagOn} from '../../flags';
 
 const FOCUS_CAP=25;
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
@@ -157,6 +159,7 @@ export default function TodayFocus(){
    </p>
    {loading&&<p role="status" className="text-caption text-ink-2">Loading study time…</p>}
    {error&&<p role="alert" className="mt-2 text-label text-ink">{error}</p>}
+   {active&&isFlagOn('v6Shell')&&<FocusNotes entryId={active.id}/>}
   </section>
   {accessory&&<>
    <aside aria-label="Focus accessory" className="fixed inset-x-3 bottom-[calc(var(--tab)+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[504px] items-center gap-3 rounded-t-ctl border border-edge bg-[var(--paper)] px-4 py-2 shadow-lg">
