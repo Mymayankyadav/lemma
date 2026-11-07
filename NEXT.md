@@ -86,13 +86,6 @@ Tests: `tests/unit/planner/sheet.test.tsx` (preview, deselect, stale-preview ref
 Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and src/features/calendar/Page.tsx (opening the sheet only), tests/unit/planner/sheet.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60.2, N58.2.3 · Assigned: —
-Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
-Tests: `tests/unit/ritual/**`
-Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N70 v6 Today: intention, next block, add task and onboarding behind the shell flag
 Stage: Build · Status: open · Needs: N60.2 · Assigned: —
 Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry linked to it), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
