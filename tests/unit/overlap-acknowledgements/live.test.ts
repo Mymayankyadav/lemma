@@ -1,5 +1,7 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {createLiveOverlapApi} from '../../../src/data/overlap-acknowledgements/live';
+import {getOverlapApi,setOverlapApiForTests} from '../../../src/data/overlap-acknowledgements';
+import type {NewOverlapAcknowledgement} from '../../../src/data/overlap-acknowledgements/contract';
 import {liveClient} from '../../../src/data/live/client';
 vi.mock('../../../src/data/live/client',()=>({liveClient:vi.fn()}));
 
@@ -197,5 +199,139 @@ describe('N61.2.2.1 read-only owner-RLS overlap adapter',()=>{
   await expect(api.listAcknowledgements()).rejects.toMatchObject({code:'invalid'});
   fake.data.overlap_acknowledgements=[row(1,{starts_at:'2026-11-07T10:00:00'})];
   await expect(api.listAcknowledgements()).rejects.toThrow(/timezone-naive/);
+ });
+});
+
+
+const commandInput:NewOverlapAcknowledgement={
+ participants:[participant(uuid(100),'block'),participant(uuid(200),'entry')],
+ startsAt:'2026-11-07T10:00:00Z',endsAt:'2026-11-07T10:30:00Z',
+ disposition:'keep_both',reason:'Two commitments',
+};
+describe('N61.2.2.2 audited live acknowledgement commands',()=>{
+ it('creates, updates and deletes through owner-free receipt RPCs and owner-RLS readback',async()=>{
+  const api=createLiveOverlapApi({commandReady:true});
+  fake.client.rpc.mockImplementation(async(fn:string,args:{p:Record<string,unknown>})=>{
+    expect(fn).toBe('overlap_acknowledgements_command');
+    const p=args.p;
+    expect(p).toMatchObject({schemaVersion:1,resource:'overlap_acknowledgements'});
+    expect(p).not.toHaveProperty('userId');
+    expect(p).not.toHaveProperty('user_id');
+    expect(JSON.stringify(p)).not.toMatch(/"(?:user_id|userId|owner_id|source)"\s*:/);
+    if(p.operation==='create'){
+      fake.data.overlap_acknowledgements.push(row(9,{
+        starts_at:commandInput.startsAt,ends_at:commandInput.endsAt,reason:'Two commitments',
+      }));
+      return {data:{status:'ok',changed:[{id:uuid(9),version:1}],actionNo:11},error:null};
+    }
+    if(p.operation==='update'){
+      fake.data.overlap_acknowledgements=fake.data.overlap_acknowledgements.map(r=>
+        r.id===uuid(9)?{...r,reason:'Reconsidered',version:2}:r);
+      return {data:{status:'ok',changed:[{id:uuid(9),version:2}],actionNo:12},error:null};
+    }
+    fake.data.overlap_acknowledgements=fake.data.overlap_acknowledgements
+      .filter(r=>r.id!==uuid(9));
+    return {data:{status:'ok',changed:[{id:uuid(9),version:3}],actionNo:13},error:null};
+  });
+  const created=await api.createAcknowledgement(commandInput);
+  expect(created).toMatchObject({actionNo:11,record:{id:uuid(9),source:'app',
+    version:1,stale:false}});
+  const updated=await api.updateAcknowledgement(uuid(9),1,{reason:'Reconsidered'});
+  expect(updated).toMatchObject({actionNo:12,record:{version:2,reason:'Reconsidered'}});
+  const deleted=await api.deleteAcknowledgement(uuid(9),2);
+  expect(deleted).toEqual({record:{id:uuid(9)},actionNo:13});
+  const envelopes=fake.client.rpc.mock.calls.map((call:unknown[])=>
+    (call[1] as {p:Record<string,unknown>}).p);
+  expect(envelopes.map(p=>p.operation)).toEqual(['create','update','delete']);
+  expect(new Set(envelopes.map(p=>p.operationId)).size).toBe(3);
+  expect(envelopes[0]).toMatchObject({patch:{participants:commandInput.participants,
+    starts_at:'2026-11-07T10:00:00.000Z',
+    ends_at:'2026-11-07T10:30:00.000Z',reason:'Two commitments'}});
+  expect(envelopes[1]).toMatchObject({target:{id:uuid(9)},expectedVersion:1,
+    patch:{reason:'Reconsidered'}});
+  expect(envelopes[2]).toMatchObject({target:{id:uuid(9)},expectedVersion:2,patch:{}});
+  expect(fake.client.insert).not.toHaveBeenCalled();
+  expect(fake.client.update).not.toHaveBeenCalled();
+  expect(fake.client.delete).not.toHaveBeenCalled();
+  expect(fake.reads.every(r=>r.filters.every(f=>f[1]!=='user_id'))).toBe(true);
+ });
+ it('reuses the identical operationId and payload after an uncertain RPC outcome',async()=>{
+  const api=createLiveOverlapApi({commandReady:true});
+  let attempts=0;
+  fake.client.rpc.mockImplementation(async()=>{
+    attempts++;
+    if(attempts===1)return {data:null,error:{message:'Network interrupted'}};
+    if(!fake.data.overlap_acknowledgements.some(r=>r.id===uuid(9)))
+      fake.data.overlap_acknowledgements.push(row(9));
+    return {data:{status:'ok',changed:[{id:uuid(9),version:1}],actionNo:20},
+      error:null};
+  });
+  await expect(api.createAcknowledgement(commandInput)).rejects.toThrow(/Network interrupted/);
+  await expect(api.createAcknowledgement(commandInput)).resolves
+    .toMatchObject({actionNo:20,record:{id:uuid(9),stale:false}});
+  const envelopes=fake.client.rpc.mock.calls.map((call:unknown[])=>
+    (call[1] as {p:Record<string,unknown>}).p);
+  expect(JSON.stringify(envelopes[1])).toBe(JSON.stringify(envelopes[0]));
+  await api.createAcknowledgement(commandInput);
+  const third=(fake.client.rpc.mock.calls[2][1] as {p:Record<string,unknown>}).p;
+  expect(third.operationId).not.toBe(envelopes[0].operationId);
+ });
+ it('maps version and changed-payload conflicts, unavailable SQL and malformed receipts',async()=>{
+  const api=createLiveOverlapApi({commandReady:true});
+  fake.client.rpc.mockResolvedValueOnce({data:{status:'conflict',changed:[],
+    conflict:{currentVersion:7,reason:'stale_version'}},error:null});
+  await expect(api.deleteAcknowledgement(uuid(1),1)).rejects
+    .toMatchObject({code:'conflict',currentVersion:7,conflictReason:'stale_version'});
+  fake.client.rpc.mockResolvedValueOnce({data:null,error:{
+    code:'23505',message:'operationId changed payload conflict'}});
+  await expect(api.deleteAcknowledgement(uuid(1),1)).rejects
+    .toMatchObject({code:'conflict'});
+  fake.client.rpc.mockResolvedValueOnce({data:null,error:{
+    code:'PGRST202',message:'Could not find function overlap_acknowledgements_command'}});
+  await expect(api.deleteAcknowledgement(uuid(1),1)).rejects
+    .toThrow(/not deployed/);
+  fake.client.rpc.mockResolvedValueOnce({data:{status:'ok',changed:[
+    {id:uuid(1),version:2}],actionNo:null},error:null});
+  await expect(api.deleteAcknowledgement(uuid(1),1)).rejects
+    .toThrow(/unaudited/);
+  expect(fake.client.insert).not.toHaveBeenCalled();
+  expect(fake.client.update).not.toHaveBeenCalled();
+  expect(fake.client.delete).not.toHaveBeenCalled();
+ });
+ it('refuses invalid optimistic versions, owner/provenance patches and missing rows',async()=>{
+  const api=createLiveOverlapApi({commandReady:true});
+  await expect(api.createAcknowledgement({...commandInput,userId:owner} as never))
+    .rejects.toMatchObject({code:'invalid'});
+  await expect(api.updateAcknowledgement(uuid(1),1,{source:'mcp'} as never))
+    .rejects.toMatchObject({code:'invalid'});
+  await expect(api.updateAcknowledgement(uuid(1),0,{reason:'Bad'}))
+    .rejects.toMatchObject({code:'invalid'});
+  await expect(api.updateAcknowledgement(uuid(88),1,{reason:'Missing'}))
+    .rejects.toMatchObject({code:'not_found'});
+  await expect(api.deleteAcknowledgement(uuid(1),-1))
+    .rejects.toMatchObject({code:'invalid'});
+  expect(fake.client.rpc).not.toHaveBeenCalled();
+ });
+ it('switches the facade by mode and supports a test-only injected adapter',()=>{
+  const old=window.location.href;
+  try{
+    sessionStorage.clear();
+    window.history.replaceState({},'', '?demo=1');
+    setOverlapApiForTests(null);
+    const demo=getOverlapApi();
+    expect(demo.mode).toBe('demo');
+    expect(getOverlapApi()).toBe(demo);
+    window.history.replaceState({},'', '?demo=0');
+    const live=getOverlapApi();
+    expect(live.mode).toBe('live');
+    expect(live).not.toBe(demo);
+    setOverlapApiForTests(demo);
+    window.history.replaceState({},'', '?demo=1');
+    expect(getOverlapApi()).toBe(demo);
+  }finally{
+    setOverlapApiForTests(null);
+    sessionStorage.clear();
+    window.history.replaceState({},'',old);
+  }
  });
 });
