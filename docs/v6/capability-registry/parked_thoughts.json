@@ -1,89 +1,89 @@
 {
   "table": "parked_thoughts",
   "version": 1,
-  "description": "N44.1 read-only storage; N44.2 audited owner commands and conversion",
+  "description": "N44.2 audited, owner-scoped parked-thought commands, atomic task conversion and reversible receipts",
   "columns": {
     "id": {
       "classification": "derived",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "study_entry_id": {
       "classification": "owner-editable",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "text": {
       "classification": "owner-editable",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "status": {
       "classification": "command-managed",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "destination_kind": {
       "classification": "command-managed",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "destination_id": {
       "classification": "command-managed",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "resolved_at": {
       "classification": "command-managed",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "version": {
       "classification": "derived",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "src/data/parked-thoughts (N58.2 planned)",
-      "mcpPath": "N44.2 parked_thoughts_command (planned)",
+      "mcpPath": "N44.2 parked_thoughts_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N44.2 audited delete/undo; N103 owner purge (planned)"
     }
