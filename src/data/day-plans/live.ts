@@ -224,8 +224,9 @@ export function createLiveDayPlanApi():DayPlanApi{
    return fail('conflict','Day plan version conflict (current '+
     String(response.conflict?.currentVersion??'unknown')+')');
   }
-  if(response?.status!=='ok'||!Number.isSafeInteger(response.actionNo)||
-   (response.actionNo??0)<1||!Array.isArray(response.changed)||
+  const actionNo=response?.actionNo;
+  if(response?.status!=='ok'||typeof actionNo!=='number'||
+   !Number.isSafeInteger(actionNo)||actionNo<1||!Array.isArray(response.changed)||
    !response.changed.length||response.changed.some(x=>
     !x||!UUID.test(x.id)||!Number.isSafeInteger(x.version)||x.version<1))
    return unavailable('Malformed or unaudited day-plan receipt');
@@ -241,7 +242,7 @@ export function createLiveDayPlanApi():DayPlanApi{
   if(response.plan&&record(response.plan).version!==stored.version)
    return unavailable('RPC plan snapshot differs from readback');
   retries.delete(key);
-  return {record:stored,actionNo:response.actionNo};
+  return {record:stored,actionNo};
  }
  return {
   mode:'live',
