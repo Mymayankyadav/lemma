@@ -137,12 +137,12 @@ Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no imp
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
-## N64 Study notices, drift and urge events: app module (src/data/study-events)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/study-events/` for the records and operations of N50, including every lifecycle operation it names.
-Tests: `tests/unit/study-events/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/study-events/** (new), tests/unit/study-events/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N64.2 Study notices, drift and urge events: demo and live adapters
+Stage: Build · Status: open · Needs: N64.1 · Assigned: —
+Done = finish N64 using N64.1's typed study-event contract and strict pure validators. Add an isolated, reload-persistent demo adapter for notice/drift/urge events with record/edit/void/restore, version conflicts, kind/duration and related-record integrity, and deterministic 1–50 filter-bound cursor paging. Wire getStudyEventApi/setStudyEventApiForTests to demo or live by mode. Implement owner-RLS live reads and public.study_events_command envelopes for record/edit/void/restore using a fresh operationId per action and the exact same envelope for unknown-outcome retries, typed conflict and validation failures, owner-safe related entry/task/block links, and post-receipt readback. Do not send or accept caller owner/source/void metadata; keep direct authenticated table writes disabled and never falsely claim a command exists before the N50.2 lifecycle migration lands.
+Tests: tests/unit/study-events/**, extending N64.1's pure model cases with demo lifecycle, isolated reload, deep clones, >50-row cursor walking and filter binding; mocked live queries and each RPC envelope, same-operationId replay, stale-version mapping and no owner field. Preserve N64.1 regression assertions.
+Scope: src/data/study-events/**, tests/unit/study-events/**, CURRENT.md.
+Not: other src/data/** folders, UI, supabase/**, new dependencies or protected paths.
 
 ## N51 Study command v2: saved-entry correction and block task links
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -226,7 +226,7 @@ Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58.2.3, N64 · Assigned: —
+Stage: Build · Status: open · Needs: N58.2.3, N64.2 · Assigned: —
 Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
 Tests: `tests/unit/focus/park-notice.test.tsx`
 Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
