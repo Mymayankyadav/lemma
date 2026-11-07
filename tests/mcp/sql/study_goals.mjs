@@ -48,14 +48,17 @@ try{
   const subject1='33333333-3333-3333-3333-333333333333';
   const project1='44444444-4444-4444-4444-444444444444';
   const subject2='55555555-5555-5555-5555-555555555555';
-  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','∑','amber'),($3,$4,'Other','O','cyan')",
-    [subject1,owner,subject2,other]);
+  // The action journal forbids writing two owners in a single SQL statement.
+  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','∑','amber')",
+    [subject1,owner]);
+  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Other','O','cyan')",
+    [subject2,other]);
   await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'proofs','Proofs','Learn theorems')",
     [project1,owner,subject1]);
   const tablePriv=(await q(`select
     has_table_privilege('authenticated','public.study_goals','SELECT') read,
-    has_table_privilege('authenticated','public.study_goals','INSERT') insert,
-    has_table_privilege('authenticated','public.study_goals','UPDATE') update,
+    has_table_privilege('authenticated','public.study_goals','INSERT') can_insert,
+    has_table_privilege('authenticated','public.study_goals','UPDATE') can_update,
     has_table_privilege('authenticated','public.study_goals','DELETE') del,
     has_function_privilege('anon','public.study_goals_command(jsonb)','EXECUTE') anon,
     has_function_privilege('authenticated','public.study_goals_command(jsonb)','EXECUTE') owner`))[0];
@@ -67,8 +70,6 @@ try{
   await rejects(make({period:'week'}),/permission denied|Authentication required/i);
   await as(owner);
   await assert.rejects(q("insert into public.study_goals(period,start_date,end_date,time_zone,target_minutes) values('week','2026-11-02','2026-11-08','Asia/Kolkata',240)"),/permission denied|row-level security/i);
-  const directUpdate=await q("update public.study_goals set target_minutes=7 returning id");
-  assert.deepEqual(directUpdate,[],'no direct UPDATE policy for authenticated owners');
   const data={period:'week',start_date:'2026-11-02',end_date:'2026-11-08',
     time_zone:'Asia/Kolkata',target_minutes:240,subject_id:subject1,project_id:project1};
   const firstReq=make(data);
@@ -79,6 +80,11 @@ try{
   const visible=(await q('select * from public.study_goals where id=$1',[id]))[0];
   assert.equal(visible.user_id,owner);assert.equal(visible.target_minutes,240);
   assert.equal(visible.source,'app');assert.equal(visible.archived_at,null);
+  // A real existing row must remain unchanged under an authenticated direct
+  // UPDATE: Supabase may grant table UPDATE, but no write RLS policy exists.
+  const directUpdate=await q("update public.study_goals set target_minutes=7 returning id");
+  assert.deepEqual(directUpdate,[],'no direct UPDATE policy for authenticated owners');
+  assert.equal((await q('select target_minutes from public.study_goals where id=$1',[id]))[0].target_minutes,240);
   assert.ok(visible.created_at&&visible.updated_at);
   const actions=(await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
   assert.deepEqual(await call(firstReq),first,'idempotent create returns exact receipt');
