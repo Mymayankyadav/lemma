@@ -39,7 +39,9 @@ try {
   const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
   assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
-  assert.ok(migrations.includes('20261107120105_presets_lifecycle_preview.sql'));
+  assert.ok(migrations.includes('20261107120115_presets_lifecycle_preview.sql'));
+  assert.ok(!migrations.includes('20261107120105_presets_lifecycle_preview.sql'),
+    'superseded unapplied lifecycle preview migration must not deploy');
   assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
     'superseded unmerged version must not be redeployed out of order');
   for(const f of migrations)await db.exec(await readFile(new URL(f,dir),'utf8'));
