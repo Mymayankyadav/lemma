@@ -16,6 +16,9 @@ export interface TickDelivery {
  failed:number;
 }
 export interface TickAdapters {
+ /** Called once per scheduled tick, even without notification-enabled owners.
+  * The service-role adapter calls public.lemma_run_due_commands(). */
+ runDueCommands?:(signal:AbortSignal)=>Promise<{executed:number;failed:number;processed:number}>;
  /** Enumerate only settings.notify.enabled owners. Never return device keys. */
  listEnabledOwners:(signal:AbortSignal)=>Promise<readonly string[]>;
  /** Exactly one owner-scoped notify_candidates read; never a global scan. */
@@ -81,6 +84,21 @@ export async function runNotifyTick(
  const summary:TickSummary={owners:0,queued:0,sent:0,skipped:0,failed:0,ms:0,timedOut:false};
  try{
   if(controller.signal.aborted)return summary;
+  // N53: run pending commands before reminders, independent of notification
+  // preferences. A failed worker must not suppress ordinary reminder delivery.
+  if(deps.runDueCommands){
+   try{
+    const run=await within(deps.runDueCommands(controller.signal));
+    if(controller.signal.aborted)return summary;
+    if(!run||!safeCount(run.executed,20)||!safeCount(run.failed,20)||
+       !safeCount(run.processed,20)||run.executed+run.failed!==run.processed)
+     throw Error('Invalid pending command result');
+    summary.failed+=run.failed;
+   }catch{
+    if(controller.signal.aborted)return summary;
+    summary.failed++;
+   }
+  }
   let owners:readonly string[];
   try{owners=await within(deps.listEnabledOwners(controller.signal))}
   catch{summary.failed=controller.signal.aborted?0:1;return summary};
