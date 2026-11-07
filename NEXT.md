@@ -241,13 +241,6 @@ Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
 
-## N95 Export covers every v6 record
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
-Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
-Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
-Not: other adapter methods, UI.
-
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
 Done = a PGlite test loads a representative pre-v6 account fixture (paths, sources, cards with history, sessions, proposals), applies all migrations, and checks no lost rows, links or schedules, historical estimates still labelled, new records creatable, and export/undo across old and new records.

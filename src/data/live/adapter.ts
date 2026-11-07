@@ -731,16 +731,44 @@ export class LiveAdapter implements LemmaApi {
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
-  const tables=['settings','styles','subjects','projects','sources','source_pages','concepts','concept_links',
-    'checkpoints','checkpoint_prereqs','checkpoint_concepts','sessions','session_events','misconceptions',
-    'notes','cards','reviews','card_comments','proposals']
-  const result:Record<string,Row[]>={}
-  for(const table of tables){
-    result[table]=await rows(db,table,uid)
-    // Export must not leak the live connector credential if the backup file is shared.
-    if(table==='settings') result[table]=result[table].map(({connector_secret: _secret,...safe})=>safe)
+  // A static table list can silently lose newly registered v6 records. The
+  // registry read must be explicitly authorized server-side (issue #1156):
+  // failing closed here is safer than creating an incomplete backup.
+  const registered:string[]=[]
+  const seen=new Set<string>()
+  for(let offset=0;offset<10000;offset+=100){
+    const {data,error}=await db.from('lemma_undo_tables')
+      .select('table_name').order('table_name',{ascending:true}).range(offset,offset+99)
+    if(error)throw new LemmaError('server','Full export unavailable: authenticated registry read is not enabled')
+    if(!Array.isArray(data))throw new LemmaError('server','Export registry returned malformed data')
+    for(const row of data){
+      const name=row.table_name
+      if(typeof name!=='string'||!/^[a-z_][a-z0-9_]*$/.test(name)||seen.has(name))
+        throw new LemmaError('server','Export registry contains an invalid or duplicate table')
+      seen.add(name);registered.push(name)
+    }
+    if(data.length<100)break
+    if(offset===9900)throw new LemmaError('server','Export registry exceeds its safety bound')
   }
-  return new Blob([JSON.stringify({format:'lemma-backup-v1',exportedAt:new Date().toISOString(),tables:result},null,2)],
-    {type:'application/json'})
+  if(registered.length===0)throw new LemmaError('server','Export registry is empty; no backup created')
+  const tables:Record<string,Row[]>={}
+  const manifest:{table:string;count:number}[]=[]
+  for(const table of registered){
+    // rows() uses explicit owner ID and bounded 1000-row pages. true includes
+    // archived projects that must survive account export and future restore.
+    const records=await rows(db,table,uid,true)
+    if(!Array.isArray(records))throw new LemmaError('server','Export read returned malformed rows')
+    tables[table]=records.map(record=>{
+      const {connector_secret: _secret,...safe}=record
+      void _secret
+      if(safe.user_id!==uid)throw new LemmaError('server','Export contained a foreign owner record')
+      return safe
+    })
+    manifest.push({table,count:tables[table].length})
+  }
+  return new Blob([JSON.stringify({
+    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
+    manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+  },null,2)],{type:'application/json'})
  }
 }
