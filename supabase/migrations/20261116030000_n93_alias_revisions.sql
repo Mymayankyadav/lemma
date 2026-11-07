@@ -144,10 +144,11 @@ create policy source_page_revisions_owner_read on public.source_page_revisions
 grant select on public.source_revisions,public.source_page_revisions to authenticated,service_role;
 grant insert,update,delete on public.source_revisions,public.source_page_revisions to service_role;
 revoke insert,update,delete,truncate on public.source_revisions,public.source_page_revisions from anon,authenticated;
--- Revision snapshots are append-only history, intentionally not part of the
--- reversible source edit action. Journalling them would change existing
--- source action_change counts and erase the very snapshots a citation needs
--- when an owner undoes an edit.
+-- Append-only revisions are owner-exportable through the registry but not
+-- journalled as changes to the source edit action. Undo of a source edit
+-- must not erase its historical citation snapshots or alter legacy counts.
+insert into public.lemma_undo_tables(table_name)
+ values('source_revisions'),('source_page_revisions');
 
 create function public.capture_source_revision() returns trigger
  language plpgsql security definer set search_path='' as $rev$
