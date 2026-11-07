@@ -10,8 +10,9 @@ const other='22222222-2222-2222-2222-222222222222';
 const uid=()=>randomUUID();
 // Surface the exact failing assertion in CI's compact first-error-line feedback.
 const checkEqual=(actual,expected,why)=>{
-  const where=new Error().stack?.split('\n')[2]?.trim()||'unknown assertion';
-  return assert.equal(actual,expected,why??('N48.2 comparison failed at '+where));
+  const where=new Error().stack?.split('\n')[2]||'';
+  const line=where.match(/:(\d+):\d+\)?$/)?.[1]||'unknown';
+  return assert.equal(actual,expected,why??('REVIEW_RUN_ASSERT_LINE_'+line));
 };
 
 const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
