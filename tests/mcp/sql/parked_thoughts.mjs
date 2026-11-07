@@ -97,5 +97,39 @@ try{
  assert.equal((await q('select text from public.parked_thoughts where id=$1',[open.id]))[0].text,'Prove an estimate');
  assert.equal((await q('select count(*)::int n from public.parked_thoughts'))[0].n,4);
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
+
+
+ // N44.2.1: independently executable owner-bound command-envelope checks.
+ // The helper is read-only: no authenticated DML, registry or undo yet.
+ const validate=async p=>(await q(
+  'select public.parked_thoughts_validate_envelope($1::jsonb) value',
+  [JSON.stringify(p)]))[0].value;
+ const valid={operationId:'11111111-1111-4111-8111-111111111111',
+  schemaVersion:1,resource:'parked_thoughts',operation:'create',
+  patch:{text:'Return to this lemma'}};
+ await as(owner);
+ assert.deepEqual(await validate(valid),valid);
+ await assert.rejects(validate({...valid,user_id:other}),/Unknown command field/);
+ await assert.rejects(validate({...valid,operation:'archive'}),/Unsupported thought operation/);
+ await assert.rejects(validate({...valid,schemaVersion:2}),/schemaVersion must be 1/);
+ await assert.rejects(validate({...valid,patch:{text:' '}}),/Thought text/);
+ await assert.rejects(validate({...valid,patch:{text:'Valid',user_id:other}}),/Unknown patch field/);
+ await assert.rejects(validate({...valid,operationId:'not-a-uuid'}),/uuid/i);
+ const edit={...valid,operation:'edit',target:{id:open.id},expectedVersion:1,
+  patch:{text:'Updated text'}};
+ assert.deepEqual(await validate(edit),edit);
+ await assert.rejects(validate({...edit,expectedVersion:0}),/positive integer/);
+ await assert.rejects(validate({...edit,target:{}}),/target.id is required/);
+ await assert.rejects(validate({...edit,patch:{}}),/Edit patch/);
+ const conversion={...edit,operation:'convert_to_task',patch:{title:'Finish lemma'}};
+ assert.deepEqual(await validate(conversion),conversion);
+ await assert.rejects(validate({...conversion,patch:{title:' '}}),/Task title required/);
+ await assert.rejects(validate({...edit,operation:'dismiss',patch:{text:'Ignored'}}),
+  /Unknown patch field/);
+ await db.exec('set role anon');
+ await assert.rejects(validate(valid),/permission denied|Authentication required/);
+ await admin();
+ assert.equal((await q("select count(*)::int n from public.action_changes where table_name='parked_thoughts'"))[0].n,0);
+ assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='parked_thoughts'"))[0].n,0);
  console.log('PASS N44.1 owner-scoped read-only storage, status invariants, cross-owner FKs, and no unaudited DML');
 }finally{await db.close();}
