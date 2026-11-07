@@ -38,6 +38,9 @@ try {
   const dir=new URL('../../../supabase/migrations/',import.meta.url);
   const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
+  assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
+  assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
+    'superseded unmerged version must not be redeployed out of order');
   for(const f of migrations)await db.exec(await readFile(new URL(f,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
