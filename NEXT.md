@@ -159,13 +159,6 @@ Tests: `tests/unit/time-log/**`
 Scope: src/features/time-log/** (new), src/app/App.tsx (registering the route only), tests/unit/time-log/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N74 v6 Calendar: deadlines and practice topics behind the shell flag
-Stage: Build · Status: open · Needs: N56.2, N57.2 · Assigned: —
-Done = with `v6Shell` on, Agenda, Day, Week and Month show deadlines (standalone and projected project/checkpoint dates, labelled by origin) and due practice topics alongside blocks, with remaining-effort hints; tapping opens the deadline or practice record; totals of saved effort are unchanged. Flag off: nothing changes.
-Tests: `tests/unit/calendar/deadlines-practice.test.tsx`
-Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (new), src/features/calendar/Page.tsx (loading the extra records only), tests/unit/calendar/deadlines-practice.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
 Stage: Build · Status: open · Needs: N61.2.2.2, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
