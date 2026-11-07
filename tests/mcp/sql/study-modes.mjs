@@ -154,7 +154,7 @@ try{
  const ex2=await command(req('exclude_minutes',{
    minutes:10,reason:'Interrupted',
    device:'owner-device-b',lease_version:2},newDraft,ex1.entry.version));
- checkEqual(ex2.entry.excluded_intervals.length,2);
+ checkEqual(ex2.entry.excluded_intervals.length,2,'N52_EXCLUSION_SEGMENT_COUNT_'+String.fromCharCode(65+ex2.entry.excluded_intervals.length));
  const removedSeconds=spans=>spans.reduce((total,span)=>
    total+(new Date(span.to).getTime()-new Date(span.from).getTime())/1000,0);
  assert.ok(Math.abs(removedSeconds(ex1.entry.excluded_intervals)-600)<.1,
