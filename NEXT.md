@@ -172,14 +172,6 @@ Tests: `tests/mcp/sql/history-correction.mjs` (each correction re-derives state,
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/history-correction.mjs, docs/v6/capability-registry/session_events.json, docs/v6/capability-registry/reviews.json, docs/v6/capability-registry/review_parameter_sets.json, CURRENT.md.
 Not: app or MCP code, changing existing grade functions.
 
-## N92 Proposal versions, grouping, citations and withdrawal
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration: `proposals` gains `payload_version`, `base_target_versions jsonb`, `group_id`, structured `citations jsonb` (source, version, page) and `withdrawn_at`, `revised_from`; new functions `withdraw_proposal`, `revise_proposal`, `reopen_proposal`; approval through the existing path accepts optional expected versions (a compatible replacement of the approve function, PR body line `Replaces function: <name> (reviewer verified signature and behaviour)`).
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal-versions.mjs` (stale approval refused when versions are given, unchanged when not, withdraw/revise/reopen, grouping, existing proposal tests unchanged)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal-versions.mjs, docs/v6/capability-registry/proposals.json, CURRENT.md.
-Not: app or MCP code.
-
 ## N93 Slug and code aliases, source and page revisions
 Stage: Build · Status: open · Needs: N38 · Assigned: —
 Done = one additive migration adds `public.record_aliases` (owner, kind `project`/`concept`/`checkpoint`, old value, target ID; unique per owner and kind) maintained by triggers when a slug or code changes, `public.resolve_alias(kind, value)`, and `public.source_revisions` / `public.source_page_revisions` with content hashes captured by triggers on edit, so citations and edit conflicts survive later corrections.
