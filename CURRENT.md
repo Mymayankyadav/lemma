@@ -399,6 +399,10 @@ After a CI revert of the earlier merged N56.1 slice, this PR restores the exact 
 
 Takeover correction (Agent: chat-51673#r8k2): the demo validator rejects non-existent civil dates inside timezone-aware ISO instants (such as February 30), rather than relying on JavaScript Date.parse's rollover. A regression verifies invalid instant create calls do not persist rows. The N56.2 live adapter remains outstanding.
 
+## N57.1 practice topics/events typed contract and demo (N57 split)
+
+Adds `src/data/practice-topics/` with the typed `PracticeTopicApi` covering topic creation, edit, archive/restore/delete, two validated fixed-days/after-rating cadence shapes, and linked practice event recording/voiding. The isolated `lemma.v6.demo.practice-topics.v1` sessionStorage adapter has owner-style fixtures, reload and corrupt-snapshot recovery, clone-safe records, optimistic topic/event versions, referentially safe deletion, active/archived and event filters, exact 1–50 cursor pages and an inverse due-date snapshot for voiding only the latest live practice event. The injectable `getPracticeTopicApi()` facade resolves demo mode; live mode intentionally remains read-empty and rejects writes pending N57.2. Ten focused Vitest cases cover cadence bounds, lifecycle, rating-based due dates, rollback, stale versions, 50+ pages, filter-bound cursors, persistence, invalid caller fields and injection. No migrations, app/MCP code or existing test assertions are changed.
+
 ## N41.2.2.1 future-safe owner preset reference guard (N41.2.2 split)
 
 Adds an additive security-invoker SQL helper `lemma_preset_has_entry_ref(owner,preset)` that requires `auth.uid()` to match the owner and uses bound values. It returns false before N52 introduces `study_entries.preset_id`, and reads only that owner's references after the optional column is present. The full-migration preset command SQL regression now simulates the later column and verifies linked, unlinked and cross-owner cases. The actual archive/restore/delete, registration, undo and service-role MCP lifecycle remain N41.2.2.2; no existing migrations, command, registry, or tests are removed.
