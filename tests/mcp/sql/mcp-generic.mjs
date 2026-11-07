@@ -16,7 +16,7 @@ const role=async(name)=>{
 const call=async(id,command)=>(await q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) value',
  [id,'chatgpt',JSON.stringify(command)]))[0].value;
 try{
- await db.exec(\`create role anon;create role authenticated;create role service_role;
+ await db.exec(`create role anon;create role authenticated;create role service_role;
  create schema auth;create schema extensions;create table auth.users(id uuid primary key);
  create function auth.uid() returns uuid language sql as $auth$ select coalesce(
   nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,
@@ -24,14 +24,14 @@ try{
  create function extensions.gen_random_bytes(n int) returns bytea language sql
  as $bytes$ select decode(repeat('00',n),'hex') $bytes$;
  grant usage on schema auth to authenticated;
- grant execute on function auth.uid() to authenticated;\`);
+ grant execute on function auth.uid() to authenticated;`);
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const migrations=(await readdir(dir)).filter(f=>f.endsWith('.sql')&&!f.includes('_storage')).sort();
  for(const file of migrations)await db.exec(await readFile(new URL(file,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  for(const [id,s] of [[owner,'a'.repeat(48)],[other,'b'.repeat(48)]])
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[id,s]);
- await db.exec(\`create table public.future_mcp_fixture(
+ await db.exec(`create table public.future_mcp_fixture(
   id uuid primary key,user_id uuid not null references auth.users(id),
   title text not null,version int not null default 1);
  create trigger lemma_log_change after insert or update or delete on public.future_mcp_fixture
@@ -61,7 +61,7 @@ try{
  end $fixture$;
  insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
  values('future_mcp_fixture','future_mcp_fixture_command',true,
- '{"operations":["create"],"fields":["title"]}'::jsonb);\`);
+ '{"operations":["create"],"fields":["title"]}'::jsonb);`);
  const registered=(await q("select resource,\"schema\" from public.lemma_command_resources where resource='future_mcp_fixture'"))[0];
  assert.equal(registered.resource,'future_mcp_fixture');
  assert.deepEqual(registered.schema.operations,['create']);
