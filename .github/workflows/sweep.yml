@@ -39,6 +39,14 @@ jobs:
         run: node scripts/ci/sweep-throttle.mjs
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      # #1013: close PR-origin incidents (S1, or S1 escalated to S0) whose signature is no longer active, so an S0 freeze
+      # cannot outlive its failure. Runs before the sweep so a resolved incident is not escalated again. Never touches
+      # main incidents (those close only when main is green). Reads the registry issue; runs no PR code.
+      - name: reconcile resolved PR incidents
+        if: steps.throttle.outputs.skip != 'true'
+        run: node scripts/ci/incident.mjs reconcile
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: sweep
         if: steps.throttle.outputs.skip != 'true'
         run: node scripts/ci/sweep.mjs
