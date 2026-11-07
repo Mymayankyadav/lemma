@@ -265,6 +265,16 @@ try {
   assert.deepEqual(await probe(deletedRequest),{
     operationId:deletedRequest.operationId,status:'new',
   },'unknown lifecycle operationId must be new without side effects');
+  // The read-only preflight must not create receipts; a final command
+  // writes a receipt only after an actual versioned mutation.
+  const receiptsBeforeProbe=(await q('select count(*)::int n from public.command_receipts'))[0].n;
+  for(const operation of ['archive','restore']){
+    const candidate=request(operation,{}, {target:{id:absentId},expectedVersion:4});
+    assert.equal((await probe(candidate)).status,'new',
+      'preflight must not require a target row before receipt lookup');
+  }
+  assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,
+    receiptsBeforeProbe,'preflight may not create command receipts');
   const oldCommandReused=request('archive',{},{
     target:{id},expectedVersion:4,operationId:create.operationId,
   });
