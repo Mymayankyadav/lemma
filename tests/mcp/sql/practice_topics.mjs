@@ -91,6 +91,22 @@ try{
  const foreign=(await q("insert into public.subjects(name,glyph,hue) values('Geometry','△','violet') returning id"))[0];
  await as(owner);
  // No write policy: even own-row creation is forbidden before N43.2.
+ // An owner must also be denied UPDATE and DELETE on their own records.
+ // PostgreSQL can raise a privilege error or return zero policy-visible rows.
+ const denied = async (statement,args=[])=>{
+  try {assert.deepEqual(await q(statement,args),[],'unaudited owner DML must affect no rows');}
+  catch(e){assert.match(String(e),/permission denied|row.level security/i);}
+ };
+ for(const [table,id,field] of [
+  ['practice_topics',topic.id,'title'],
+  ['practice_events',event.id,'response']
+ ]){
+  await denied('update public.'+table+' set '+field+'=$1 where id=$2 returning id',
+   ['Unaudited mutation',id]);
+  await denied('delete from public.'+table+' where id=$1 returning id',[id]);
+ }
+ assert.equal((await q('select title from public.practice_topics where id=$1',[topic.id]))[0].title,'Daily proofs');
+ assert.equal((await q('select response from public.practice_events where id=$1',[event.id]))[0].response,'Completed proof');
  await assert.rejects(q("insert into public.practice_topics(title) values('Not yet writable')"),
   /row-level security|permission denied/i);
  await assert.rejects(q('insert into public.practice_events(topic_id,occurred_at,rating) values($1,now(),2)',[topic.id]),
