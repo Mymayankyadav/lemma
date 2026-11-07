@@ -44,7 +44,7 @@ export default function CardVariants({
     </div>
     <dl className="mt-2 grid grid-cols-2 gap-2 text-caption text-ink-3 sm:grid-cols-4">
      <div><dt>Schedule</dt><dd className="text-ink">{card.state?.replaceAll('_',' ')??'Unknown'}</dd></div>
-     <div><dt>Stability</dt><dd className="text-ink">{duration(card.stability)} stable</dd></div>
+     <div><dt>Stability</dt><dd className="text-ink">{card.stability>0?duration(card.stability)+" stable":"New"}</dd></div>
      <div><dt>Reviews</dt><dd className="text-ink tabular-nums">{count(card.reps)}</dd></div>
      <div><dt>Lapses</dt><dd className="text-ink tabular-nums">{count(card.lapses)}</dd></div>
     </dl>

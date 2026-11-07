@@ -336,7 +336,7 @@ export default function Page() {
            status={note.status} busy={status.isPending||update.isPending}
            onEdit={()=>setEditing(true)}
            onToggleStatus={()=>{void setStatus(note.status==='suspended'?'active':'suspended')}}
-          />}}
+          />}
           <Slab as="article" className="p-5" aria-label="Card front and answer">
             <MathText
               source={note.front}
