@@ -27,13 +27,6 @@ Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N50.2.2 Study events: related links, versioned lifecycle, undo and MCP
-Stage: Build · Status: open · Needs: N50.2.1 · Assigned: —
-Done = complete N50.2 after N50.2.1's authenticated, side-effect-free study_events_validate_envelope and N50.1's owner-scoped study_events table. Add optional related_kind/related_id with owner-bound references, transactional owner-only study_events_command supporting record, edit, void, restore, receipt replay, changed-payload and stale version conflicts. Recheck current kind, drift-only positive duration, related/entry ownership and versions under lock; preserve voided history. Register study_events in lemma_undo_tables and lemma_command_resources for action journal, undo and service-role MCP parity; block unaudited direct DML and prevent forged provenance. Production SQL requires independent review.
-Tests: extend tests/mcp/sql/study_events-command.mjs with actual lifecycle, related owner links, retries, conflicts, journal, undo, MCP and second-owner refusal; preserve the N50.2.1 full-migration assertions and N50.1 SQL test.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: earlier migrations, existing test loosening, app/MCP code, unrelated tables/functions or protected paths.
-
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
