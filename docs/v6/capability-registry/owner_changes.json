@@ -1,0 +1,63 @@
+{
+  "table": "owner_changes",
+  "version": 1,
+  "description": "N54 owner-scoped append-only journal projection from registered undo tables; N54.1 app catch-up and scheduled prune integration planned",
+  "columns": {
+    "cursor": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "resource": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "record_id": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "op": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "tombstone": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "committed_at": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    }
+  }
+}
