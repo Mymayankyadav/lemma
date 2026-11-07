@@ -146,7 +146,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
   return r.data?mapItem(r.data as Row):null;
  };
  async function command(operation:Operation,patch:Row,target?:string,expected?:number):
-  Promise<{receipt:Receipt;changed:Changed[]}>{
+  Promise<{receipt:Receipt;changed:Changed[];key:string}>{
   const base:Omit<Envelope,'operationId'>={
    schemaVersion:1,resource:'review_runs',operation,patch,
    ...(target?{target:{id:assertReviewUuid(target)},expectedVersion:assertReviewVersion(expected)}:{}),
@@ -172,8 +172,8 @@ export function createLiveReviewRunApi():ReviewRunApi{
    const changes=receipt.changed.map(x=>({...x,id:assertReviewUuid(x.id)}));
    if(operation==='advance'&&changes[1].resource!=='review_run_items')
     return server('Advance did not link a review item');
-   pending.delete(signature);
-   return {receipt,changed:changes};
+   // Caller clears the slot only after the owner-RLS readback succeeds.
+   return {receipt,changed:changes,key:signature};
   }catch(error){
    if(error instanceof ReviewRunError||
     (error instanceof Error&&error.message.includes('not deployed')))
@@ -187,6 +187,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
   const record=await readRun(key);
   if(!record||record.version!==result.changed[0].version)
    return server('Review run receipt not visible through owner RLS');
+  pending.delete(result.key);
   return {record:clone(record),actionNo:result.receipt.actionNo!};
  }
  return {
@@ -223,6 +224,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
    const record=await readRun(result.changed[0].id);
    if(!record||record.version!==result.changed[0].version)
     return server('Started run not visible through owner RLS');
+   pending.delete(result.key);
    return {record:clone(record),actionNo:result.receipt.actionNo!};
   },
   pauseRun:(key,expected)=>transition(key,expected,'pause'),
@@ -241,6 +243,7 @@ export function createLiveReviewRunApi():ReviewRunApi{
    if(!run||!item||run.version!==result.changed[0].version||
      item.version!==result.changed[1].version)
     return server('Advanced run or item not visible through owner RLS');
+   pending.delete(result.key);
    return {record:{run:clone(run),item:clone(item)},actionNo:result.receipt.actionNo!};
   },
  };
