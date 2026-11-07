@@ -58,13 +58,13 @@ Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rule
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N47.2 Overlap acknowledgement command lifecycle and MCP/undo parity
+## N47.2.2 Versioned overlap acknowledgement mutations, undo and MCP parity
 Stage: Build · Status: open · Needs: N47.2.1 · Assigned: —
-Done = complete N47 on N47.1's owner-scoped overlap_acknowledgements schema and version-aware staleness function. Add an owner-bound, receipt-idempotent overlap_acknowledgements_command with create, update and delete; reject changed operationId payloads, stale expected versions, a cross-owner participant, and a changed participant version. Register the table in lemma_undo_tables and the command in lemma_command_resources for service-role mcp_command parity. Reads flag an acknowledgement stale when any participant version has changed, without hiding other conflicts; attribute_to requires a participant in the exact acknowledged set. Keep authenticated table writes command-only.
-Owner-authorized (D1, D8): production SQL requires independent review.
-Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (lifecycle, receipts, concurrency, owner checks, stale reads, undo and MCP parity) and unchanged N47.1 SQL suite.
+Done = finish N47.2 after N47.2.1's read-only, bounded, owner-RLS acknowledgement list exposing authoritative per-acknowledgement staleness. Add a security-invoker overlap_acknowledgements_command using authenticated owner context with create, update and delete; reject changed operationId payload retries, stale expectedVersion, foreign-owner participants, changed captured participant versions and invalid attribution. Give every write an idempotent receipt and journal, register overlap_acknowledgements in lemma_undo_tables and its command in lemma_command_resources for owner-bound service-role mcp_command and undo parity. Authenticated direct table mutations must remain blocked; a stale acknowledgement cannot suppress any overlap and a valid acknowledgement covers only its exact participants and window.
+Owner-authorized (D1, D8): production SQL needs independent review.
+Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (all mutations, receipts, conflict, owner checks, stale reads, undo, MCP parity), preserving N47.1 SQL tests and N47.2.1 list assertions.
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements-command.mjs, docs/v6/capability-registry/overlap_acknowledgements.json, CURRENT.md.
-Not: changes to earlier migrations, app or MCP function code, other tables/functions, existing test assertions.
+Not: old migrations, app/MCP code, other functions or tables, existing tests' expectations.
 
 ## N48 Durable review runs: migration (review_runs)
 Stage: Build · Status: open · Needs: N36.2, N38 · Assigned: —
