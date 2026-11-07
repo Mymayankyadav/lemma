@@ -226,7 +226,10 @@ export function createLivePracticeTopicApi():PracticeTopicApi{
    return changed[0].id;
   };
   const tid=pick('practice_topics',topicId),eid=pick('practice_events',eventId);
-  const [topic,event]=await Promise.all([getTopic(tid),getEvent(eid)]);
+  // Sequential reads avoid racing two lazy live-client imports, and retain
+  // the exact owner-RLS context across both receipt projections.
+  const topic=await getTopic(tid);
+  const event=await getEvent(eid);
   if(!topic||!event||event.topicId!==topic.id)
    return fail('server','Practice command changed rows are not readable under owner RLS');
   return {topic,event};
@@ -243,19 +246,22 @@ export function createLivePracticeTopicApi():PracticeTopicApi{
    const f=JSON.stringify(['topics',archived,subject]);
    const cursor=readCursor(query.cursor,f,false),size=limit(query.limit);
    const api=await client();
-   const filter=<T extends {is:(c:string,v:null)=>T;not:(c:string,o:'is',v:null)=>T;
-    eq:(c:string,v:string)=>T}>(q:T):T=>{
-    if(archived==='active')q=q.is('archived_at',null);
-    if(archived==='archived')q=q.not('archived_at','is',null);
-    if(subject===null)q=q.is('subject_id',null);
-    else if(subject!=='*')q=q.eq('subject_id',subject);
-    return q;
-   };
-   const counted=await filter(api.from('practice_topics').select('id',{head:true,count:'exact'}));
+   // Keep the concrete PostgREST builder types instead of retyping generic
+   // filter methods: predicates must be identical for count and page.
+   let countQ=api.from('practice_topics').select('id',{head:true,count:'exact'});
+   if(archived==='active')countQ=countQ.is('archived_at',null);
+   if(archived==='archived')countQ=countQ.not('archived_at','is',null);
+   if(subject===null)countQ=countQ.is('subject_id',null);
+   else if(subject!=='*')countQ=countQ.eq('subject_id',subject);
+   const counted=await countQ;
    if(counted.error)throw mapError(counted.error);
    if(!Number.isSafeInteger(counted.count)||counted.count===null||counted.count<0)
     return fail('server','Practice topic total unavailable');
-   let q=filter(api.from('practice_topics').select('*'));
+   let q=api.from('practice_topics').select('*');
+   if(archived==='active')q=q.is('archived_at',null);
+   if(archived==='archived')q=q.not('archived_at','is',null);
+   if(subject===null)q=q.is('subject_id',null);
+   else if(subject!=='*')q=q.eq('subject_id',subject);
    if(cursor)q=q.or(afterTopic(cursor));
    const rows=unwrap<Row[]>(await q.order('next_due_date',{ascending:true,nullsFirst:false})
     .order('id',{ascending:true}).limit(size+1));
@@ -297,16 +303,16 @@ export function createLivePracticeTopicApi():PracticeTopicApi{
    const f=JSON.stringify(['events',topic,query.includeVoided===true]);
    const cursor=readCursor(query.cursor,f,true),size=limit(query.limit);
    const api=await client();
-   const filter=<T extends {is:(c:string,v:null)=>T;eq:(c:string,v:string)=>T}>(q:T):T=>{
-    if(query.includeVoided!==true)q=q.is('voided_at',null);
-    if(topic!=='*')q=q.eq('topic_id',topic);
-    return q;
-   };
-   const counted=await filter(api.from('practice_events').select('id',{head:true,count:'exact'}));
+   let countQ=api.from('practice_events').select('id',{head:true,count:'exact'});
+   if(query.includeVoided!==true)countQ=countQ.is('voided_at',null);
+   if(topic!=='*')countQ=countQ.eq('topic_id',topic);
+   const counted=await countQ;
    if(counted.error)throw mapError(counted.error);
    if(!Number.isSafeInteger(counted.count)||counted.count===null||counted.count<0)
     return fail('server','Practice event total unavailable');
-   let q=filter(api.from('practice_events').select('*'));
+   let q=api.from('practice_events').select('*');
+   if(query.includeVoided!==true)q=q.is('voided_at',null);
+   if(topic!=='*')q=q.eq('topic_id',topic);
    if(cursor)q=q.or(afterEvent(cursor));
    const rows=unwrap<Row[]>(await q.order('occurred_at',{ascending:true})
     .order('id',{ascending:true}).limit(size+1));
