@@ -97,13 +97,6 @@ Tests: tests/unit/deadlines/live.test.ts mocking the browser client and RPC, inc
 Scope: src/data/deadlines/**, tests/unit/deadlines/**, CURRENT.md.
 Not: other data folders, UI, supabase/**, new dependencies.
 
-## N57.2 Manual practice topics/events live RPC adapter
-Stage: Build · Status: open · Needs: N57.1 · Assigned: —
-Done = finish the N57 app module on the N57.1 typed PracticeTopicApi, validated demo lifecycle and getPracticeTopicApi/setPracticeTopicApiForTests facade. Implement src/data/practice-topics/live.ts and wire live mode in index.ts to authenticated owner-RLS reads of public.practice_topics and public.practice_events, with exact 1–50 keyset pages and filter-bound opaque cursors. Implement create/update/archive/restore/delete topic, record practice (cadence next_due_date advance), and void event (previous due date restore) using rpc('practice_topics_command', envelope); use an independent operationId per user action and reuse the identical envelope on uncertain retry, map changed-payload/version conflicts and never send or trust caller owner ID. Preserve demo semantics, record/event versions and owner isolation; N43.2 owns server command/undo/MCP registration and may ship independently.
-Tests: tests/unit/practice-topics/live.test.ts (mocked owner-scoped pages and facade, full operation envelopes, immutable operationId retry, conflict mapping, cursor integrity, denial of caller ownership, all topic/event lifecycle operations); retain N57.1 demo tests.
-Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
-Not: other src/data/**, app screens, supabase/**, MCP, new dependencies or existing test assertions.
-
 ## N58.2 Parked thoughts: demo and live lifecycle (remaining after N58 split)
 Stage: Build · Status: open · Needs: N58.2.1 · Assigned: —
 Done = complete D8(c) for N44 using the N58.1 typed ThoughtApi and validated transitions. Implement src/data/parked-thoughts/demo.ts, live.ts and index.ts, plus getThoughtApi()/setThoughtApiForTests(). Demo: reload-persistent owner fixtures, bounded opaque cursor pages with exact total, versioned create/edit/dismiss/reopen/delete and atomic convert-to-task; a repeated conversion never creates another task. Live: owner-scoped read pages and rpc('parked_thoughts_command', envelope) for all operations with a fresh operationId per action reused on uncertain retry, conflict and version mapping, no owner field. Convert-to-task returns one transaction receipt with both a TaskRecord and resolved thought. Failed conversion never leaves a thought marked converted or a duplicate task.
