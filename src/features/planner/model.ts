@@ -105,7 +105,13 @@ function instant(value:string):number{
 }
 function config(input:PlannerInput['planning']):PlanningSettings|null{
  if(input===null)return null;
- const p={...DEFAULT_PLANNING,...(input??{})};
+ if(input!==undefined&&(typeof input!=='object'||Array.isArray(input)))
+  return fail('Invalid planning settings object');
+ // Optional settings often come from partial forms; an explicitly undefined
+ // field is absent, not an instruction to erase the durable SQL default.
+ const extra=Object.fromEntries(Object.entries(input??{})
+  .filter(([,value])=>value!==undefined));
+ const p:PlanningSettings={...DEFAULT_PLANNING,...extra};
  if(!clockRe.test(p.window_start)||!clockRe.test(p.window_end))
   return fail('Planning window must use HH:mm');
  if(!whole(p.gap_minutes,0,120)||!whole(p.max_consecutive_minutes,15,600)||

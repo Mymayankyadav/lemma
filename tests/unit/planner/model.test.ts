@@ -30,6 +30,13 @@ describe('N67 deterministic planner placement engine',()=>{
   expect(result.days[0].placedMinutes).toBe(50);
   expect(result.unplaced).toEqual([]);
  });
+ it('uses deployed defaults for explicitly undefined partial planning fields',()=>{
+  const partial=planTaskPlacements(base([task('form',15)],{
+   planning:{window_start:undefined,gap_minutes:undefined},
+  }));
+  const normal=planTaskPlacements(base([task('form',15)]));
+  expect(partial).toEqual(normal);
+ });
  it('is stable under arbitrary task/block input order; priority outranks due, then due, then id',()=>{
   const values=[
    task('low',20,{priority:'low',due:{kind:'date',date:'2026-11-07'}}),
