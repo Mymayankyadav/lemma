@@ -622,7 +622,6 @@ The N44.2 branch now extends its initial typed envelope validator with a receipt
 
 The `v6Shell`-gated checkpoint route renders the existing owner-scoped checkpoint detail with criterion, steps, prerequisite states from the path snapshot, source/page citation, recent evidence and recheck prompts, and only sessions explicitly linked to the checkpoint. The legacy checkpoint sheet is unchanged when the flag is off. Tutor actions launch the existing external tutor flow for demonstration, reopening, deferral and recheck; they do not fabricate local server writes or imply a transition has completed. Dedicated v6 unit tests cover state, links, unavailable prerequisites, loading/error, and proposed/done controls. CI verification is pending.
 
-
 ## N67 deterministic owner-time-zone planner placement engine (chat-21963#n6w4)
 
 The new pure src/features/planner/model.ts exports planTaskPlacements and typed task, occupancy, day, placement and unplaced-result contracts. Defaults exactly match deployed settings.planning snake-case JSON: 08:00–22:00 window, 10-minute gap, 120-minute max consecutive block, 20-minute daily minimum. The engine accepts 1–31 owner civil dates, validates IANA zones and absolute instants, resolves DST spring gaps and repeated autumn wall minutes, unions planned/busy calendar blocks with saved focus effort as occupied, and reserves buffer gaps without double counting.
