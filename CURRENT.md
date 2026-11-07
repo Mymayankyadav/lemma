@@ -426,3 +426,7 @@ An additive migration creates an authenticated security-invoker validator for pa
 ## N44.2.1 dependency-safe split follow-up (2026-11-07)
 
 The read-only parked-thought validator remains unchanged and does not expose writes. N44.2's remaining command lifecycle is now split into N44.2.2 (authenticated owner lifecycle/receipts) and N44.2.3 (atomic task conversion, undo and MCP parity), and the N58.2.3 live-adapter dependency explicitly waits for the completion sub-item. Additional full-migration validator assertions reject explicit null text and nonempty delete patches while preserving the accepted delete envelope and all prior regressions. Production SQL migration review and safe ordering remain required before deployment.
+
+## N44.2.1 typed create targets and current-main dependency reconciliation (2026-11-07)
+
+The read-only parked-thought command-envelope validator now checks a supplied create target ID has JSON string type and parses as UUID, rejecting explicit null, numbers and malformed UUIDs; omitted create IDs remain valid for future server allocation. Added full-migration PGlite cases for supplied valid/invalid IDs, without weakening earlier status/RLS/no-write assertions. Also reconciles N44.2.2/N44.2.3 split bookkeeping against current main without carrying unrelated preset queue revisions into this PR. No existing migration or protected paths are modified; deploy ordering still requires review.

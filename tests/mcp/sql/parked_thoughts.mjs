@@ -111,6 +111,11 @@ try{
   patch:{text:'Return to this lemma'}};
  await as(owner);
  assert.deepEqual(await validate(valid),valid);
+ const suppliedCreateId={...valid,target:{id:open.id}};
+ assert.deepEqual(await validate(suppliedCreateId),suppliedCreateId);
+ await assert.rejects(validate({...valid,target:{id:'not-a-uuid'}}),/uuid/i);
+ await assert.rejects(validate({...valid,target:{id:null}}),/target.id must be a UUID/);
+ await assert.rejects(validate({...valid,target:{id:42}}),/target.id must be a UUID/);
  await assert.rejects(validate({...valid,user_id:other}),/Unknown command field/);
  await assert.rejects(validate({...valid,operation:'archive'}),/Unsupported thought operation/);
  await assert.rejects(validate({...valid,schemaVersion:2}),/schemaVersion must be 1/);
