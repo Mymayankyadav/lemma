@@ -107,17 +107,24 @@ try{
     ['mcp','2027-03-01','2027-03-07'],
   ]){
     await q("select set_config('lemma.source',$1,false)",[spoofSource]);
+    await q("select set_config('lemma.tool','forged-mcp-tool',false)");
+    await q("select set_config('lemma.summary','FORGED WORKER SUMMARY',false)");
     const request=make({...data,start_date:startDate,end_date:endDate});
     const result=await call(request);
     assert.equal(result.status,'ok','spoofed session GUC cannot abort valid create');
     const row=(await q('select source from public.study_goals where id=$1',
       [result.changed[0].id]))[0];
     assert.equal(row.source,'app','goal provenance cannot be forged by user GUC');
-    const action=(await q('select source from public.actions where no=$1',
+    const action=(await q('select source,tool,summary from public.actions where no=$1',
       [result.actionNo]))[0];
     assert.equal(action.source,'app','journal provenance cannot be forged by user GUC');
+    assert.equal(action.tool,null,'journal tool cannot be forged by user GUC');
+    assert.ok(!String(action.summary).includes('FORGED WORKER SUMMARY'),
+      'journal summary must describe the audited database mutation');
   }
   await q("select set_config('lemma.source','',false)");
+  await q("select set_config('lemma.tool','',false)");
+  await q("select set_config('lemma.summary','',false)");
   await rejects(make({...data,start_date:'2026-11-08',end_date:'2026-11-15'}),
     /Overlapping active goal/);
   const adjacent=await call(make({...data,start_date:'2026-11-09',end_date:'2026-11-15'}));

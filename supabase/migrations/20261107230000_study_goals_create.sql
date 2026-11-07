@@ -158,6 +158,10 @@ begin
   -- provenance; N45.2 will introduce registered MCP context separately.
   v_source:='app';
   perform pg_catalog.set_config('lemma.source','app',true);
+  -- The same untrusted session can spoof action.tool and action.summary.
+  -- Let the existing log_change trigger derive its factual app summary.
+  perform pg_catalog.set_config('lemma.tool','',true);
+  perform pg_catalog.set_config('lemma.summary','',true);
   insert into public.study_goals (
     id,user_id,period,start_date,end_date,time_zone,
     subject_id,project_id,target_minutes,source
