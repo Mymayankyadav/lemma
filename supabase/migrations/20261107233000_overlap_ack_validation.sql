@@ -42,6 +42,14 @@ begin
   select k into v_bad from pg_catalog.jsonb_object_keys(v_target) keys(k)
     where k<>'id' limit 1;
   if v_bad is not null then raise exception 'Unknown target field: %',v_bad; end if;
+  -- A supplied create target must obey the same UUID shape as update/delete.
+  -- Omitting target.id on create remains valid for server-generated IDs.
+  if v_target?'id' then
+    if pg_catalog.jsonb_typeof(v_target->'id') is distinct from 'string' then
+      raise exception 'target.id must be a UUID';
+    end if;
+    perform (v_target->>'id')::uuid;
+  end if;
   if v_op='create' then
     if p?'expectedVersion' and
       (pg_catalog.jsonb_typeof(p->'expectedVersion') is distinct from 'number'

@@ -418,3 +418,7 @@ A new additive owner-scoped `public.day_plans` table stores one plan per owner a
 ## N47.2.2 overlap acknowledgement command envelope validator (N47.2 split)
 
 The additive `overlap_ack_validate_envelope` function validates authenticated command envelopes, operation IDs, versioned update/delete targets, allowed create/update/delete fields, participant structure and exact disposition attribution without changing any table data. A full-migration PGlite test covers valid/invalid envelopes, versions, owner-field rejection, participants, read-only state and anon denial. N47.1's owner SELECT-only RLS, staleness trigger and original tests remain intact. N47.2.3 adds transactional commands, undo/registry registration and service-role MCP parity before write permissions are enabled.
+
+## N47.2.2 create target UUID validation follow-up (2026-11-07)
+
+The unmerged N47.2.2 read-only envelope validator now checks the UUID shape of a caller-supplied create `target.id`, not only update/delete targets; create may still omit the target for server-generated IDs. The full-migration SQL acceptance includes valid supplied IDs and rejects malformed string, numeric and JSON-null IDs. Existing RLS, registry and undo restrictions are unchanged. This remains the first validation slice; N47.2.3 owns the actual transactional lifecycle and production SQL review.

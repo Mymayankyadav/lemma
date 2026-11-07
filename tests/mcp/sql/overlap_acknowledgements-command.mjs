@@ -32,6 +32,12 @@ try{
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  assert.deepEqual(await call(input),input,'valid create envelope is unchanged');
+ const specifiedCreateId={...input,target:{id:'77777777-7777-4777-8777-777777777777'}};
+ assert.deepEqual(await call(specifiedCreateId),specifiedCreateId,
+  'caller-supplied create UUID stays valid');
+ await assert.rejects(call({...input,target:{id:'not-a-uuid'}}),/uuid/i);
+ await assert.rejects(call({...input,target:{id:17}}),/target.id must be a UUID/);
+ await assert.rejects(call({...input,target:{id:null}}),/target.id must be a UUID/);
  await assert.rejects(call({...input,user_id:owner}),/Unknown command field/);
  await assert.rejects(call({...input,operation:'restore'}),/Unsupported acknowledgement operation/);
  await assert.rejects(call({...input,schemaVersion:2}),/schemaVersion must be 1/);
