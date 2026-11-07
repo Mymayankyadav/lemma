@@ -1,7 +1,7 @@
 // N57.1 facade; N57.2 replaces the read-only live placeholder with RPC-backed actions.
 import {getMode} from '../mode';
 import type {PracticeTopicApi} from './contract';
-import {emptyPracticeTopicApi} from './contract';
+import {createLivePracticeTopicApi} from './live';
 import {createDemoPracticeTopicApi} from './demo';
 export type * from './contract';
 let cached:PracticeTopicApi|null=null;
@@ -9,7 +9,7 @@ let cached:PracticeTopicApi|null=null;
 export function getPracticeTopicApi():PracticeTopicApi{
  const mode=getMode();
  if(!cached||cached.mode!==mode)
-  cached=mode==='demo'?createDemoPracticeTopicApi():emptyPracticeTopicApi('live');
+  cached=mode==='demo'?createDemoPracticeTopicApi():createLivePracticeTopicApi();
  return cached;
 }
 export function setPracticeTopicApiForTests(api:PracticeTopicApi|null):void{cached=api}
