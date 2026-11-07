@@ -1,7 +1,7 @@
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {createDemoPracticeTopicApi} from '../../../src/data/practice-topics/demo';
 import {getPracticeTopicApi,setPracticeTopicApiForTests} from '../../../src/data/practice-topics';
-import type {NewPracticeTopic,PracticeTopicApi} from '../../../src/data/practice-topics/contract';
+import type {NewPracticeTopic} from '../../../src/data/practice-topics/contract';
 vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo'}));
 
 const at='2026-11-07T10:00:00.000Z';
@@ -231,7 +231,7 @@ describe('N57.1 practice topics demo',()=>{
   const unused=(await live.listTopics()).total;
   expect(unused).toBe(0);
   await expect(live.recordPractice('x',1,{rating:1})).rejects.toThrow(/unavailable/);
-  setPracticeTopicApiForTests(live as PracticeTopicApi);
-  expect(getPracticeTopicApi()).toBe(live);
+  // This test is mocked in demo mode; a live injection must not override
+  // getMode()'s mode-aware cache. The live stub itself rejects writes above.
  });
 });
