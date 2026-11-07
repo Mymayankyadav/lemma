@@ -170,7 +170,7 @@ begin
           with ordinality as chosen(value,rank)
         join public.cards c on c.id=(chosen.value->>'cardId')::uuid
           and c.user_id=v_owner
-        order by chosen.rank limit pg_catalog.least(v_card_budget,v_minute_budget)
+        order by chosen.rank limit least(v_card_budget,v_minute_budget)
       loop
         insert into public.review_run_items(user_id,run_id,position,card_id,
           expected_card_version,source)
