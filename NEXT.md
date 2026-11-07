@@ -100,13 +100,6 @@ Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no imp
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
-## N64.2 Study notices, drift and urge events: demo and live adapters
-Stage: Build · Status: open · Needs: N64.1 · Assigned: —
-Done = finish N64 using N64.1's typed study-event contract and strict pure validators. Add an isolated, reload-persistent demo adapter for notice/drift/urge events with record/edit/void/restore, version conflicts, kind/duration and related-record integrity, and deterministic 1–50 filter-bound cursor paging. Wire getStudyEventApi/setStudyEventApiForTests to demo or live by mode. Implement owner-RLS live reads and public.study_events_command envelopes for record/edit/void/restore using a fresh operationId per action and the exact same envelope for unknown-outcome retries, typed conflict and validation failures, owner-safe related entry/task/block links, and post-receipt readback. Do not send or accept caller owner/source/void metadata; keep direct authenticated table writes disabled and never falsely claim a command exists before the N50.2 lifecycle migration lands.
-Tests: tests/unit/study-events/**, extending N64.1's pure model cases with demo lifecycle, isolated reload, deep clones, >50-row cursor walking and filter binding; mocked live queries and each RPC envelope, same-operationId replay, stale-version mapping and no owner field. Preserve N64.1 regression assertions.
-Scope: src/data/study-events/**, tests/unit/study-events/**, CURRENT.md.
-Not: other src/data/** folders, UI, supabase/**, new dependencies or protected paths.
-
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
 Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
