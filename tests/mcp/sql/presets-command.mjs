@@ -38,6 +38,9 @@ try {
   const dir=new URL('../../../supabase/migrations/',import.meta.url);
   const migrations=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
+  assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
+  assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
+    'superseded unmerged version must not be redeployed out of order');
   for(const f of migrations)await db.exec(await readFile(new URL(f,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
@@ -126,5 +129,24 @@ try {
     [[owner,'Math revised',3,7],[other,'Other owner',1,0]]);
   const registered=(await q("select count(*)::int n from public.lemma_command_resources where resource='presets'"))[0].n;
   assert.equal(registered,0,'registry activation belongs to N41.2.2, preserving N41.1 historical assertions');
+ // N41.2.2.1: owner-bound reference detection, before and after N52's
+ // optional preset_id column. All schema simulation is in memory only.
+ await as(owner);
+ const refQuery='select public.lemma_preset_has_entry_ref($1::uuid,$2::uuid) referenced';
+ assert.equal((await q(refQuery,[owner,id]))[0].referenced,false);
+ await assert.rejects(q(refQuery,[other,id]),/Not authorized/);
+ await admin();
+ await q('alter table public.study_entries add column preset_id uuid');
+ await q("insert into public.study_entries(user_id,source,intent,preset_id) values($1,'manual','Preset reference fixture',$2)",
+   [owner,id]);
+ await as(owner);
+ assert.equal((await q(refQuery,[owner,id]))[0].referenced,true,
+   'linked study entry requires archive instead of physical deletion');
+ assert.equal((await q(refQuery,[owner,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']))[0].referenced,false);
+ await as(other);
+ await assert.rejects(q(refQuery,[owner,id]),/Not authorized/);
+ assert.equal((await q(refQuery,[other,id]))[0].referenced,false);
+ await admin();
+
   console.log('PASS N41.2.1 create/update/reorder, receipts, retry, versions, validation and owner isolation');
 } finally {await db.close();}
