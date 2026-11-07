@@ -38,7 +38,7 @@ try{
     grant execute on function auth.uid() to authenticated;`);
   const dir=new URL('../../../supabase/migrations/',import.meta.url);
   const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
-  assert.ok(names.includes('20261107110000_study_goals_create.sql'));
+  assert.ok(names.includes('20261107230000_study_goals_create.sql'));
   for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',
