@@ -85,6 +85,18 @@ create function public.proposal_drafts_command(p jsonb) returns jsonb
     where id=(patch->>'proposal_id')::uuid and user_id=owner for share;
    if not found or proposal.status<>'pending' or proposal.withdrawn_at is not null then
     raise exception 'Active owner proposal required';end if;
+   if patch ? 'target_id' and patch->>'target_id' is not null then
+    -- Polymorphic target IDs cannot use one FK: verify against the bounded
+    -- owner-only resource set, never accept an arbitrary foreign UUID.
+    if not (
+     exists(select 1 from public.projects where id=(patch->>'target_id')::uuid
+       and user_id=owner for share) or
+     exists(select 1 from public.notes where id=(patch->>'target_id')::uuid
+       and user_id=owner for share) or
+     exists(select 1 from public.checkpoints where id=(patch->>'target_id')::uuid
+       and user_id=owner for share)
+    ) then raise exception 'Draft target not found for owner'; end if;
+   end if;
    if patch?'base_versions' then
     perform public.lemma_proposal_assert_versions(owner,patch->'base_versions');
    end if;

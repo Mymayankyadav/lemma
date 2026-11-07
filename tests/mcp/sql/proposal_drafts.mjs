@@ -31,6 +31,9 @@ try {
  await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[owner]);
  await assert.rejects(q("insert into public.proposal_drafts(user_id,proposal_id,base_proposal_version,payload) values($1,$2,1,'{}')",[owner,proposal]),/permission denied|row.level security/i);
+ await assert.rejects(command(op('create',{proposal_id:proposal,
+  target_id:'99999999-9999-4999-8999-999999999999',payload:{front:'X',back:'Y'}})),
+  /Draft target not found for owner/);
  const request=op('create',{proposal_id:proposal,payload:{front:'Edited',back:'Answer'}});
  const created=await command(request);
  assert.equal(created.status,'ok');assert.equal(created.draft.draft_version,1);
