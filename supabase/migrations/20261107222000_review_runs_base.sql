@@ -10,13 +10,50 @@ returns boolean language sql immutable set search_path = '' as $deck$
       where k is null or pg_catalog.length(pg_catalog.btrim(k)) = 0
         or pg_catalog.length(k) > 180
     )
+    and (select pg_catalog.count(*) = pg_catalog.count(distinct k)
+         from pg_catalog.unnest(p) as deck(k))
 $deck$;
+
+-- Mirror N62.1's owner-neutral safeJson: block spoofed owner keys at every
+-- nesting level (including inside arrays), along with prototype-sensitive keys.
+-- Use a depth and entry bound to reject pathological privileged payloads.
+create function public.lemma_review_filters_safe_json(p jsonb, depth integer default 0)
+returns boolean language plpgsql immutable set search_path = '' as $filters$
+declare
+  item jsonb;
+  k text;
+  v jsonb;
+begin
+  if depth > 12 or depth < 0 or p is null then return false; end if;
+  case pg_catalog.jsonb_typeof(p)
+    when 'null', 'string', 'boolean', 'number' then return true;
+    when 'array' then
+      if pg_catalog.jsonb_array_length(p) > 2048 then return false; end if;
+      for item in select value from pg_catalog.jsonb_array_elements(p) as elems(value) loop
+        if not public.lemma_review_filters_safe_json(item,depth+1) then return false; end if;
+      end loop;
+      return true;
+    when 'object' then
+      if (select pg_catalog.count(*) from pg_catalog.jsonb_object_keys(p)) > 256
+        then return false; end if;
+      for k,v in select key,value from pg_catalog.jsonb_each(p) loop
+        if k in ('userId','user_id','owner','ownerId','owner_id','p_user',
+                 '__proto__','constructor','prototype')
+          or not public.lemma_review_filters_safe_json(v,depth+1)
+        then return false; end if;
+      end loop;
+      return true;
+  end case;
+  return false;
+end
+$filters$;
 
 create table public.review_runs (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   filters jsonb not null default '{}'::jsonb
-    check (jsonb_typeof(filters) = 'object' and octet_length(filters::text) <= 8192),
+    check (jsonb_typeof(filters) = 'object' and octet_length(filters::text) <= 8192
+      and public.lemma_review_filters_safe_json(filters)),
   selected_deck_ids text[] not null default '{}'::text[]
     check (public.lemma_review_deck_keys_valid(selected_deck_ids)),
   card_budget integer not null default 20 check (card_budget between 0 and 2000),

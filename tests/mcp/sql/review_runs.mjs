@@ -57,6 +57,26 @@ try{
  const item=(await q("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version) values($1,$2,0,$3,1) returning *",[owner,runA.id,cardA]))[0];
  assert.equal(item.state,'pending');assert.equal(item.review_id,null);
  await reject("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,'[]'::jsonb,'fsrs-5',1)",[owner]);
+ // N62.1 draft validation must agree with the database for all privileged writers.
+ await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY['project:proof','project:proof'],'fsrs-5',1)",[owner]);
+ await reject("update public.review_runs set selected_deck_ids=ARRAY['project:proof','project:proof'] where id=$1",[runA.id]);
+ const safeFilters={study:{statuses:['running',{category:'proof'}]},limit:20};
+ const safeRun=(await q("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,$2::jsonb,'fsrs-5',1) returning filters",[owner,JSON.stringify(safeFilters)]))[0];
+ assert.deepEqual(safeRun.filters,safeFilters,'nested, owner-neutral JSON remains valid');
+ const invalidFilters=[
+  {ownerId:'forged-owner'},
+  {safe:{ownerId:'forged-owner'}},
+  {nested:[{user_id:'forged-owner'}]},
+  {userId:'forged-owner'},{owner:'forged-owner'},{owner_id:'forged-owner'},
+  {p_user:'forged-owner'},JSON.parse('{"__proto__":true}'),
+  {safe:{constructor:'forged'}},{safe:[{prototype:'forged'}]},
+ ];
+ for(const filters of invalidFilters){
+  await reject("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,$2::jsonb,'fsrs-5',1)",[owner,JSON.stringify(filters)]);
+  await reject("update public.review_runs set filters=$2::jsonb where id=$1",[runA.id,JSON.stringify(filters)]);
+ }
+ let tooDeep={ok:true}; for(let i=0;i<13;i++)tooDeep={nested:tooDeep};
+ await reject("insert into public.review_runs(user_id,filters,scheduler_version,settings_version) values($1,$2::jsonb,'fsrs-5',1)",[owner,JSON.stringify(tooDeep)]);
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY[''], 'fsrs-5',1)",[owner]);
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY['  '], 'fsrs-5',1)",[owner]);
  await reject("insert into public.review_runs(user_id,selected_deck_ids,scheduler_version,settings_version) values($1,ARRAY[repeat('x',181)], 'fsrs-5',1)",[owner]);
