@@ -31,6 +31,29 @@
       }
     },
     {
+      "resource": "study_goals",
+      "command_fn": "study_goals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "time_zone",
+          "subject_id",
+          "project_id",
+          "target_minutes"
+        ]
+      }
+    },
+    {
       "resource": "study_intervals",
       "command_fn": "study_command",
       "mcp_ok": true,
@@ -180,76 +203,6 @@
           "subject_id",
           "project_id",
           "checkpoint_id"
-        ]
-      }
-    },
-    {
-      "resource": "day_plans",
-      "command_fn": "day_plans_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "preview",
-          "commit",
-          "close",
-          "reopen"
-        ],
-        "fields": [
-          "plan_date",
-          "time_zone",
-          "intention",
-          "capacity_minutes",
-          "availability",
-          "tomorrow_first_task_id",
-          "ritual",
-          "items"
-        ]
-      }
-    },
-    {
-      "resource": "study_events",
-      "command_fn": "study_events_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "record",
-          "edit",
-          "void",
-          "restore"
-        ],
-        "fields": [
-          "entry_id",
-          "kind",
-          "occurred_at",
-          "duration_minutes",
-          "note",
-          "related_kind",
-          "related_id"
-        ]
-      }
-    },
-    {
-      "resource": "study_goals",
-      "command_fn": "study_goals_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "archive",
-          "restore",
-          "delete"
-        ],
-        "fields": [
-          "period",
-          "start_date",
-          "end_date",
-          "time_zone",
-          "subject_id",
-          "project_id",
-          "target_minutes"
         ]
       }
     }

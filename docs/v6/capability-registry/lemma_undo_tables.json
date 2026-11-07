@@ -7,6 +7,9 @@
       "table_name": "settings"
     },
     {
+      "table_name": "study_goals"
+    },
+    {
       "table_name": "subjects"
     },
     {
@@ -80,18 +83,6 @@
     },
     {
       "table_name": "parked_thoughts"
-    },
-    {
-      "table_name": "day_plans"
-    },
-    {
-      "table_name": "day_plan_items"
-    },
-    {
-      "table_name": "study_events"
-    },
-    {
-      "table_name": "study_goals"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",
