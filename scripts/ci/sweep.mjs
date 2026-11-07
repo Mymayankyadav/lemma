@@ -1,7 +1,8 @@
 // Scheduled sweep (every 30 minutes, sweep.yml):
 //  1. `escalate` label: an open PR/issue with >=3 `No progress:` comments from >=2 distinct `Agent:` names
 //  2. S1 incident open > 2 h with no fix PR (`incident #<n>` PR) gets S0 added
-//  3. `lease-expired` label: open PR with no commit and no comment from its own Agent for 3 hours (removed on activity)
+//  3. `lease-expired` label: open PR with no commit and no comment from its own Agent for 1 hour (v2.4; removed on
+//     activity). A PR whose Agent said Ready after the last push and has no failed required check is waiting, not stalled.
 //  4. `needs-review` label: only when the PR's author commented `Ready · Agent: <author>` after the last push and
 //     fast-gate and scope pass (the same rule as approve.mjs); removed again after a push or when checks stop passing
 //  5. run plans: every agent posts `Plan · Agent: <name>: 1) … 2) …` on its closed `run-log: <base name>` issue and edits
@@ -9,7 +10,7 @@
 //     writes a per-agent table into the closed issue `agent-metrics` (labelled ci-registry; agents never edit it).
 import { api, paginate, repoPath, ensureLabels, addLabels, parseLine1, GhError } from './gh.mjs';
 import { readJson, commentAgent, stripFooter, agentKey, baseName, chatParts, validAgentName } from './lib.mjs';
-import { parseVerdict, needsReviewWanted } from './verdicts.mjs';
+import { parseVerdict, needsReviewWanted, validReady } from './verdicts.mjs';
 import { loadSessions, saveSessions, checkSession, touchSession } from './sessions.mjs';
 import { checkConflict } from './conflicts.mjs';
 import { effectiveHeadDate, verifiedBookkeepingShas } from './bookkeeping.mjs';
@@ -40,7 +41,10 @@ export function lastAgentActivity({ agent, commitDates = [], comments = [], crea
   for (const c of comments) if (commentAgent(c.body)?.toLowerCase() === String(agent).toLowerCase()) times.push(new Date(c.created_at).getTime());
   return Math.max(...times.filter((t) => !Number.isNaN(t)));
 }
-export const isLeaseExpired = ({ lastActivity, now }) => now - lastActivity >= 3 * HOUR;
+export const LEASE_HOURS = 1;
+export const isLeaseExpired = ({ lastActivity, now, waiting = false }) => !waiting && now - lastActivity >= LEASE_HOURS * HOUR;
+/** Pure (v2.4): Ready after the last push and no failed required check = waiting on CI or a review, so not up for takeover. */
+export const waitingOnCi = ({ ready, checks }) => Boolean(ready) && !Object.values(checks || {}).some((c) => ['failure', 'cancelled', 'timed_out', 'action_required'].includes(c));
 
 // ---- run plans ----
 const PLAN = /^Plan\s*·\s*Agent:\s*([^\s·:][^·:\n]*?)\s*:\s*([\s\S]*)$/;
@@ -266,14 +270,17 @@ async function main() {
     const comments = await paginate(repoPath(`/issues/${i.number}/comments`));
     const commits = await paginate(repoPath(`/pulls/${i.number}/commits`));
     const bookkeeping = await verifiedBookkeepingShas(commits, api, repoPath); // v1.9: CI merges are not author activity
+    const headAt = effectiveHeadDate(commits, bookkeeping);
+    const checks = await checksOf(pr.head.sha);
     if (line1 && !isCi) {
       const lastActivity = lastAgentActivity({ agent: line1.agent, createdAt: pr.created_at, commitDates: commits.filter((c) => !bookkeeping.has(c.sha)).map((c) => c.commit.committer.date), comments });
-      const expired = isLeaseExpired({ lastActivity, now });
+      const ready = validReady({ comments, headAt, authorKey: agentKey(line1.agent), now });
+      const expired = isLeaseExpired({ lastActivity, now, waiting: waitingOnCi({ ready, checks }) });
       if (expired && !labels.has('lease-expired')) { await addLabels(i.number, ['lease-expired']); console.log(`lease-expired #${i.number}`); }
       if (!expired && labels.has('lease-expired')) await dropLabel(i.number, 'lease-expired');
     }
     if (line1 && chatParts(line1.agent) && !sessions) sessions = await loadSessions();
-    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt: effectiveHeadDate(commits, bookkeeping), checks: await checksOf(pr.head.sha), labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now, reviewRequired: reviewRequired(await paginate(repoPath(`/pulls/${i.number}/files`))).required });
+    const want = needsReviewWanted({ authorKey: line1 ? agentKey(line1.agent) : null, comments, headAt, checks, labels, draft: pr.draft, isCi, sessions: sessions?.map || {}, now, reviewRequired: reviewRequired(await paginate(repoPath(`/pulls/${i.number}/files`))).required });
     if (want && !labels.has('needs-review')) { await addLabels(i.number, ['needs-review']); console.log(`needs-review #${i.number}`); }
     if (!want && labels.has('needs-review')) await dropLabel(i.number, 'needs-review');
     // merge conflicts appear when main moves (no PR event), so the sweep re-checks every open PR

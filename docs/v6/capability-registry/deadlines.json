@@ -5,137 +5,137 @@
     "id": {
       "classification": "derived",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "server generated stable deadline identifier"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "owner identity, always derived from authenticated user"
     },
     "title": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "trimmed title, 1–160 characters"
     },
     "kind": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "exam, seminar, assignment, milestone or other"
     },
     "due_kind": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "date or instant, never both"
     },
     "due_date": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "civil YYYY-MM-DD due date, exclusive with due_at"
     },
     "due_at": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "timezone-aware absolute due instant, exclusive with due_date"
     },
     "subject_id": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "optional subject link enforced by owner-composite foreign key"
     },
     "project_id": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "optional project link enforced by owner-composite foreign key"
     },
     "checkpoint_id": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "optional checkpoint link enforced by owner-composite foreign key"
     },
     "remaining_minutes": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "optional non-negative whole estimate, maximum 100000"
     },
     "estimate_source": {
       "classification": "owner-editable",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "owner or derived when an estimate is present; null otherwise"
     },
     "status": {
       "classification": "command-managed",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "open, done or cancelled via versioned command in N42.2"
     },
     "version": {
       "classification": "derived",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "optimistic version managed by N42.2 command"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "server creation timestamp"
     },
     "updated_at": {
       "classification": "derived",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "server update timestamp"
     },
     "source": {
       "classification": "command-managed",
       "appPath": "src/data/deadlines/live.ts (N56.2 planned)",
-      "mcpPath": "N42.2 registered deadlines_command via N37 (planned)",
+      "mcpPath": "N42.2.2 registered public.deadlines_command via service-role mcp_command",
       "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo in N42.2",
+      "deletionPolicy": "owner purge via FK cascade (N103 planned); domain undo registered in N42.2.2",
       "description": "app, mcp or worker provenance managed by N42.2 command"
     }
   }
