@@ -136,15 +136,21 @@ try{
  const foreignProject='77777777-7777-7777-7777-777777777777';
  const ownCheckpoint='88888888-8888-8888-8888-888888888888';
  const foreignCheckpoint='99999999-9999-9999-9999-999999999999';
+ // The action journal requires one owner per statement/transaction.
  await q(`insert into public.projects(id,user_id,slug,title,target_date)
-   values($1,$2,'math-plan','Mathematics path','2026-12-15'),
-         ($3,$4,'foreign-plan','Foreign path','2026-11-29')`,
-   [ownProject,owner,foreignProject,other]);
+   values($1,$2,'math-plan','Mathematics path','2026-12-15')`,
+   [ownProject,owner]);
+ await q(`insert into public.projects(id,user_id,slug,title,target_date)
+   values($1,$2,'foreign-plan','Foreign path','2026-11-29')`,
+   [foreignProject,other]);
  await q(`insert into public.checkpoints
    (id,user_id,project_id,code,position,title,objective,criterion,due_on)
-   values($1,$2,$3,'CP1',1,'Algebra checkpoint','Show mastery','Solve', '2026-12-02'),
-         ($4,$5,$6,'CP1',1,'Foreign checkpoint','Other work','Explain','2026-12-03')`,
-   [ownCheckpoint,owner,ownProject,foreignCheckpoint,other,foreignProject]);
+   values($1,$2,$3,'CP1',1,'Algebra checkpoint','Show mastery','Solve', '2026-12-02')`,
+   [ownCheckpoint,owner,ownProject]);
+ await q(`insert into public.checkpoints
+   (id,user_id,project_id,code,position,title,objective,criterion,due_on)
+   values($1,$2,$3,'CP1',1,'Foreign checkpoint','Other work','Explain','2026-12-03')`,
+   [foreignCheckpoint,other,foreignProject]);
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  const feed=await q('select * from public.deadline_feed()');
