@@ -7,13 +7,13 @@ const owner='11111111-1111-4111-8111-111111111111';
 const other='99999999-9999-4999-8999-999999999999';
 const metadata={resource:'future_widget',mcp_ok:true,
  schema:{operations:['create','archive'],fields:[
-  'title','status','description','api_key','connectorSecret','configuration']}};
+  'title','status','description','api_key','connector_secret','configuration']}};
 type Row=Record<string,unknown>;
 const rows:Array<Row>=Array.from({length:53},(_,i)=>({
  id:'aaaaaaaa-aaaa-4aaa-8aaa-'+String(i+1).padStart(12,'0'),
  user_id:i===0?other:owner,version:1,title:'Widget '+i,
  status:i%2?'active':'archived',description:'A useful widget '+i,
- api_key:'never-return-this-secret',connectorSecret:'also-hidden',
+ api_key:'never-return-this-secret',connector_secret:'also-hidden',
  configuration:{phase:'focus',access_token:'nested-secret',
   details:{safe:'visible',password:'hidden'}},
 }));
@@ -52,7 +52,7 @@ describe('N37 generic owner-scoped registry page',()=>{
   expect(first.total).toBe(52);
   expect(first.items).toHaveLength(50);
   expect(first.items.every((x:Row)=>!('user_id'in x)&&!('api_key'in x)&&
-    !('connectorSecret'in x))).toBe(true);
+    !('connector_secret'in x))).toBe(true);
   expect((first.items[0].configuration as Row)).toEqual({
    phase:'focus',details:{safe:'visible'},
   });
