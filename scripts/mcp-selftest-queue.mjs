@@ -2,7 +2,7 @@
 // MCP selftest fixture. Never print tokens, connector URLs or response bodies.
 // GitHub Actions 'concurrency' is NOT a FIFO queue: a third pending trigger
 // cancels the second one, even with cancel-in-progress: false.
-import {parseQueueTicket,queueDecision} from './mcp-selftest-queue-policy.mjs';
+import {parseQueueTicket,queueDecision,releaseQueueTicket} from './mcp-selftest-queue-policy.mjs';
 
 const action=process.argv[2];
 const repository=process.env.GITHUB_REPOSITORY??'';
@@ -84,11 +84,9 @@ async function acquire(){
  }
 }
 async function release(){
- const entries=await comments();
- const parsed=entries.map(parseQueueTicket).filter(Boolean);
- if(!parsed.some(ticket=>ticket.kind==='START'&&ticket.key===key))return;
- if(parsed.some(ticket=>ticket.kind==='DONE'&&ticket.key===key))return;
- await post('DONE');
- console.log(`MCP selftest queue released: run ${key}`);
+ const status=await releaseQueueTicket({
+  key,listComments:comments,markDone:()=>post('DONE'),sleep,
+ });
+ if(status==='posted')console.log(`MCP selftest queue released: run ${key}`);
 }
 await (action==='acquire'?acquire():release());

@@ -25,3 +25,30 @@ export function queueDecision(comments,ticketId,attemptStatuses){
  }
  return {canRun:waitingOn.length===0,waitingOn};
 }
+
+/**
+ * Close the deployment ticket even if GitHub transiently fails a read or a
+ * DONE POST. Every retry re-reads the queue: a committed-but-unacknowledged
+ * POST is detected and never posts a duplicate DONE. Exhaustion fails closed.
+ */
+export async function releaseQueueTicket({
+ key,listComments,markDone,sleep,attempts=8,
+}){
+ if(!/^[1-9]\d*\/[1-9]\d*$/.test(String(key)) ||
+   !Number.isSafeInteger(attempts) || attempts<1 || attempts>12)
+   throw new Error('Invalid MCP queue release context');
+ for(let attempt=0;attempt<attempts;attempt++){
+  try{
+   const entries=await listComments();
+   if(!Array.isArray(entries))throw new Error('MCP queue comments response invalid');
+   const tickets=entries.map(parseQueueTicket).filter(Boolean);
+   if(!tickets.some(t=>t.kind==='START'&&t.key===key))return 'no-start';
+   if(tickets.some(t=>t.kind==='DONE'&&t.key===key))return 'already-done';
+   await markDone();
+   return 'posted';
+  }catch(error){
+   if(attempt===attempts-1)throw error;
+   await sleep(Math.min(2000*(attempt+1),15000));
+  }
+ }
+}

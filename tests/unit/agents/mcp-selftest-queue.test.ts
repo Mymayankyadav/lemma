@@ -1,7 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {spawnSync} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-import {queueDecision,parseQueueTicket} from '../../../scripts/mcp-selftest-queue-policy.mjs';
+import {queueDecision,parseQueueTicket,releaseQueueTicket} from '../../../scripts/mcp-selftest-queue-policy.mjs';
 
 // FIX #636: GitHub Actions concurrency keeps one running and only one pending;
 // a third trigger replaces the older pending run. All three must instead get
@@ -57,6 +57,54 @@ describe('FIX #636 durable MCP selftest queue',()=>{
    .toEqual({canRun:true,waitingOn:[]});
   expect(queueDecision(tickets,31,{'300/1':'in_progress'}))
    .toEqual({canRun:false,waitingOn:['300/1']});
+ });
+ 
+ it('retries a transient DONE POST, re-reads its receipt and never duplicates release',async()=>{
+  const entries=[start(100,1000)];
+  let posts=0;
+  let sleeps=0;
+  const status=await releaseQueueTicket({
+   key:'1000/1',listComments:async()=>entries,
+   markDone:async()=>{
+    posts++;
+    entries.push(done(101,1000));
+    throw new Error('transient response failure after GitHub accepted DONE');
+   },
+   sleep:async()=>{sleeps++},attempts:3,
+  });
+  expect(status).toBe('already-done');
+  expect(posts).toBe(1);
+  expect(sleeps).toBe(1);
+ });
+ it('recovers a transient GitHub GET failure before safely releasing the ticket',async()=>{
+  let reads=0,posts=0;
+  const status=await releaseQueueTicket({
+   key:'1001/1',listComments:async()=>{if(++reads===1)throw new Error('HTTP 502');return [start(102,1001)]},
+   markDone:async()=>{posts++},sleep:async()=>{},attempts:3,
+  });
+  expect(status).toBe('posted');
+  expect(reads).toBe(2);
+  expect(posts).toBe(1);
+ });
+ it('fails closed after a bounded set of unavailable GitHub API responses',async()=>{
+  let calls=0,delays=0;
+  await expect(releaseQueueTicket({
+   key:'1002/1',listComments:async()=>{calls++;throw new Error('HTTP 503')},
+   markDone:async()=>{throw new Error('must not post')},
+   sleep:async()=>{delays++},attempts:3,
+  })).rejects.toThrow('HTTP 503');
+  expect(calls).toBe(3);
+  expect(delays).toBe(2);
+ });
+ it('does not post when START is absent or DONE already exists',async()=>{
+  let posts=0;
+  const make=(entries:unknown[])=>releaseQueueTicket({
+   key:'1003/1',listComments:async()=>entries,
+   markDone:async()=>{posts++},sleep:async()=>{},attempts:2,
+  });
+  expect(await make([])).toBe('no-start');
+  expect(await make([start(103,1003),done(104,1003)])).toBe('already-done');
+  expect(posts).toBe(0);
  });
  it('fails closed when the current ticket is missing or malformed',()=>{
   expect(()=>queueDecision([start(40,400)],41,{})).toThrow(/ticket/i);
