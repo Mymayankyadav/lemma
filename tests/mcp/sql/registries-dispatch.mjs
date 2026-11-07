@@ -175,6 +175,17 @@ try{
   patch:{source:'manual',intent:'Original study bridge'},
  }));
  realAction(old);
+ // N36.2 reconciliation: a standalone study entry created through the generic
+ // registry dispatcher must be undoable by its own action, not just its intervals.
+ const standalone=await call(owner,'chatgpt',envelope('study_entries','create',{
+  patch:{source:'manual',intent:'Undo standalone registered study entry'},
+ }));
+ realAction(standalone);
+ const standaloneId=standalone.changed[0].id;
+ assert.equal((await undo(owner,standalone.actionNo)).undone,standalone.actionNo,
+  'registered study-entry creation must have a reversible original action');
+ assert.equal((await inspect('select count(*)::int n from public.study_entries where id=$1',[standaloneId]))[0].n,
+  0,'undo removes the dispatcher-created study entry');
  console.log('PASS registered calendar, study entry and interval dispatch plus original bridges');
 
  // No user-supplied function name or unregistered/disabled resource is executable.
