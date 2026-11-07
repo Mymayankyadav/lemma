@@ -109,7 +109,15 @@ describe('N58.2.3 owner-RLS parked thought live adapter',()=>{
   expect(result.record.task).toMatchObject({id:TASK,estimateMinutes:15});
   const request=rpc.mock.calls[0][1] as {p:Record<string,unknown>};
   expect(request.p.patch).toMatchObject({title:'Make a real task',estimate_minutes:15,due_kind:'none'});
-  expect(JSON.stringify(request.p)).not.toMatch(/user_id|ownerId|status|source/);
+  // Inspect actual keys: the legitimate envelope field "resource" contains
+  // the substring "source", so scanning serialized JSON gives a false alarm.
+  const forbidden=new Set(['user_id','ownerId','status','source','version','actionNo']);
+  for(const part of [request.p,request.p.patch as Record<string,unknown>])
+   expect(Object.keys(part).filter(key=>forbidden.has(key))).toEqual([]);
+  expect(request.p).toMatchObject({
+   resource:'parked_thoughts',operation:'convert_to_task',
+   target:{id:ID},expectedVersion:1,
+  });
  });
  it('keeps the exact operationId after uncertain RPC failure and failed readback',async()=>{
   const api=createLiveThoughtApi();
