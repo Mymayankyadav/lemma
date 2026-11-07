@@ -152,12 +152,12 @@ begin
     where k<>'id' limit 1;
   if v_key is not null then raise exception 'Unknown target field: %',v_key; end if;
   v_id:=coalesce(nullif(v_target->>'id','')::uuid,pg_catalog.gen_random_uuid());
-  v_source:=case
-    when pg_catalog.current_setting('lemma.source',true) in ('worker','system')
-      then 'worker'
-    when pg_catalog.current_setting('lemma.source',true) in ('claude','chatgpt','other','mcp')
-      then 'mcp'
-    else 'app' end;
+  -- N45.1 is an authenticated app-only create RPC: custom GUCs such as
+  -- lemma.source are caller-settable, even inside a SECURITY DEFINER call.
+  -- Force both the row and the existing action-log trigger to trusted app
+  -- provenance; N45.2 will introduce registered MCP context separately.
+  v_source:='app';
+  perform pg_catalog.set_config('lemma.source','app',true);
   insert into public.study_goals (
     id,user_id,period,start_date,end_date,time_zone,
     subject_id,project_id,target_minutes,source

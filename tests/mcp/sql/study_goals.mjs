@@ -99,6 +99,25 @@ try{
   const conflict=await call({...firstReq,patch:{...data,target_minutes:250}});
   assert.equal(conflict.status,'conflict','same id with different payload fails');
   assert.equal(conflict.actionNo,null);
+  // Authenticated callers can set arbitrary custom GUCs before invoking
+  // SECURITY DEFINER RPCs. Neither persisted row nor action receipt may
+  // claim worker/MCP provenance as a result.
+  for(const [spoofSource,startDate,endDate] of [
+    ['worker','2027-02-01','2027-02-07'],
+    ['mcp','2027-03-01','2027-03-07'],
+  ]){
+    await q("select set_config('lemma.source',$1,false)",[spoofSource]);
+    const request=make({...data,start_date:startDate,end_date:endDate});
+    const result=await call(request);
+    assert.equal(result.status,'ok','spoofed session GUC cannot abort valid create');
+    const row=(await q('select source from public.study_goals where id=$1',
+      [result.changed[0].id]))[0];
+    assert.equal(row.source,'app','goal provenance cannot be forged by user GUC');
+    const action=(await q('select source from public.actions where no=$1',
+      [result.actionNo]))[0];
+    assert.equal(action.source,'app','journal provenance cannot be forged by user GUC');
+  }
+  await q("select set_config('lemma.source','',false)");
   await rejects(make({...data,start_date:'2026-11-08',end_date:'2026-11-15'}),
     /Overlapping active goal/);
   const adjacent=await call(make({...data,start_date:'2026-11-09',end_date:'2026-11-15'}));
@@ -127,7 +146,8 @@ try{
   assert.deepEqual(await q('select id from public.study_goals where id=$1',
     [otherRow.changed[0].id]),[]);
   await admin();
-  assert.equal((await q('select count(*)::int n from public.study_goals'))[0].n,4);
+  assert.equal((await q('select count(*)::int n from public.study_goals'))[0].n,6,
+    'includes two independent forged-GUC regression inserts');
   const docs=JSON.parse(await readFile(
     new URL('../../../docs/v6/capability-registry/study_goals.json',import.meta.url),'utf8'));
   const fields=(await q("select attname from pg_attribute where attrelid='public.study_goals'::regclass and attnum>0 and not attisdropped")).map(x=>x.attname);
