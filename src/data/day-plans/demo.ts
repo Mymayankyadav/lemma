@@ -124,7 +124,7 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
   save(state.plans.map(p=>p.id===record.id?record:p),items??state.items);
  };
  const bump=(row:DayPlanRecord,fields:Partial<DayPlanRecord>):DayPlanRecord=>
-  {...row,...fields,version:row.version+1,updatedAt:new Date().toISOString()};
+  ({...row,...fields,version:row.version+1,updatedAt:new Date().toISOString()});
  const checkSources=async(expected:PlanAvailability):Promise<void>=>{
   const actual=normalizeAvailability(await readSources(clone(expected)));
   if(!comparePlanSources(expected,actual).ok)
