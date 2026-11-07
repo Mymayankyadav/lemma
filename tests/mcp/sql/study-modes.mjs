@@ -91,6 +91,7 @@ try{
  let flow=await get(newDraft);
  // The browser has owner RLS UPDATE rights. Neither a missing lease nor a
  // forged lemma.tool provenance may bypass the captured snapshot or ledger.
+ // Even a no-op UPDATE of an explicitly protected ledger column must reject.
  const unleasedBefore=JSON.stringify(flow);
  const actionRowsBefore=(await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",[newDraft]))[0].n;
  for(const attack of [

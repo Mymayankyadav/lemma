@@ -398,6 +398,27 @@ revoke all on function public.lemma_study_timer_entry_guard() from public,anon;
 create trigger study_entries_timer_lease_guard before update on public.study_entries
  for each row execute function public.lemma_study_timer_entry_guard();
 
+-- UPDATE OF fires even when a malicious client assigns the existing value
+-- (for example excluded_intervals='[]' on a new timer). Deny the attempted
+-- direct write itself: a value-difference guard alone cannot catch no-ops.
+-- The authenticated study_command dispatcher performs authorized updates
+-- under its validated DEFINER context, as does journalled undo_action.
+create function public.lemma_study_timer_metadata_write_guard() returns trigger
+language plpgsql security invoker set search_path='' as $metadata_guard$
+begin
+ if current_user='authenticated' then
+   raise exception 'Active timer lease or protected timer fields require an audited study command';
+ end if;
+ return new;
+end
+$metadata_guard$;
+revoke all on function public.lemma_study_timer_metadata_write_guard() from public,anon;
+create trigger study_entries_timer_metadata_write_guard
+ before update of mode,config,phase,cycle,phase_ends_at,energy,
+  excluded_intervals,lease_device,lease_version,lease_expires_at
+ on public.study_entries
+ for each row execute function public.lemma_study_timer_metadata_write_guard();
+
 create function public.lemma_study_timer_interval_guard() returns trigger
 language plpgsql security invoker set search_path='' as $interval_guard$
 declare v_parent public.study_entries%rowtype;
