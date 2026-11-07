@@ -64,6 +64,46 @@
       "mcpPath": "N90 historical corrections (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "occurred_at": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Actual evidence occurrence time; legacy fallback is created_at"
+    },
+    "superseded_by": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Reference to superseding evidence; owner checked by correction command"
+    },
+    "voided_at": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Timestamp when evidence was voided; no hard deletion"
+    },
+    "correction_reason": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Reason for the change to evidence, up to 1000 characters"
+    },
+    "actor": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Identity/provenance of the correction actor"
     }
   }
 }

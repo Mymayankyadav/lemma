@@ -78,6 +78,30 @@
       "mcpPath": "N90 historical corrections (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "scheduler_version": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Version of scheduler used to grade or correct a review"
+    },
+    "params_id": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Owner-bound snapshot of weights and settings used for the review"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "N91 owner-only correction commands (future app integration)",
+      "mcpPath": "N90 generic history corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N91 journalled correction and undo; N103 account purge (planned)",
+      "description": "Optional idempotent command ID for review correction/void"
     }
   }
 }
