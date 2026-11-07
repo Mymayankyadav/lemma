@@ -30,7 +30,7 @@ describe('N53 scheduled decisions on notify tick',()=>{
   const order:string[]=[];
   vi.mocked(d.runDueCommands!).mockImplementation(async()=>{
    order.push('due');
-   return {executed:2,failed:0,processed:2};
+   return {executed:1,failed:0,processed:1};
   });
   vi.mocked(d.load).mockImplementation(async()=>{
    order.push('owner');
@@ -51,9 +51,9 @@ describe('N53 scheduled decisions on notify tick',()=>{
  });
  it('counts sanitized worker failures and rejects impossible counts',async()=>{
   const d=deps();
-  vi.mocked(d.runDueCommands!).mockResolvedValue({executed:1,failed:1,processed:2});
+  vi.mocked(d.runDueCommands!).mockResolvedValue({executed:0,failed:1,processed:1});
   expect((await runNotifyTick(d)).failed).toBe(1);
-  vi.mocked(d.runDueCommands!).mockResolvedValue({executed:21,failed:0,processed:21});
+  vi.mocked(d.runDueCommands!).mockResolvedValue({executed:2,failed:0,processed:2});
   expect((await runNotifyTick(d)).failed).toBe(1);
  });
  it('does not run the worker or read owners after a prior abort',async()=>{

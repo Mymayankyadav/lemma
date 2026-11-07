@@ -116,5 +116,28 @@ try{
  assert.equal(error.status,'failed');
  assert.ok(typeof error.error_class==='string'&&error.error_class.length<=16);
  assert.equal((await q('select status from public.pending_commands where id=$1',[pending.changed[0].id]))[0].status,'cancelled');
+ // Two due owners must receive two SEPARATE SQL transactions/journal actions.
+ // log_change refuses cross-owner mutations sharing one txid.
+ await as(A);
+ const one=await api(schedule(task('Owner A isolated')));
+ await as(B);
+ const two=await api(schedule(task('Owner B isolated')));
+ await as('',null);
+ await q("update public.pending_commands set not_before=now()-interval '1 second' where id=any($1::uuid[])",
+  [[one.changed[0].id,two.changed[0].id]]);
+ await as('','service_role');
+ assert.deepEqual(await tick(),{executed:1,failed:0,processed:1});
+ assert.deepEqual(await tick(),{executed:1,failed:0,processed:1});
+ assert.deepEqual(await tick(),{executed:0,failed:0,processed:0});
+ await as('',null);
+ const jobActions=(await q('select user_id,result from public.pending_commands where id=any($1::uuid[]) order by user_id',
+  [[one.changed[0].id,two.changed[0].id]]));
+ assert.deepEqual(jobActions.map(x=>x.user_id),[A,B]);
+ assert.equal(jobActions[0].result.status,'ok');
+ assert.equal(jobActions[1].result.status,'ok');
+ assert.notEqual(jobActions[0].result.actionNo,jobActions[1].result.actionNo,
+  'one audit action per owner transaction, not shared across pending jobs');
+ assert.deepEqual((await q('select user_id from public.actions where no=any($1::bigint[]) order by user_id',
+  [[jobActions[0].result.actionNo,jobActions[1].result.actionNo]])).map(x=>x.user_id),[A,B]);
  console.log('PASS N53 owner receipts, extend/cancel, cron once, failures and undo');
 }finally{await db.close()}

@@ -179,8 +179,10 @@ $pending$;
 revoke all on function public.pending_command(jsonb) from public,anon,service_role;
 grant execute on function public.pending_command(jsonb) to authenticated;
 
--- The service-role tick is the ONLY executor. SKIP LOCKED prevents a second
--- concurrent tick from running a claimed row. The execution receipt's stable
+-- The service-role tick is the ONLY executor. Each call processes ONE row:
+-- log_change enforces a single owner/action per transaction (txid), so
+-- batching different owners in one RPC would merge or reject their audits.
+-- SKIP LOCKED prevents a second tick from running the same claimed row. The execution receipt's stable
 -- operationId makes a recovered retry safe, even following an uncertain ack.
 create function public.lemma_run_due_commands()
 returns jsonb language plpgsql security definer set search_path='' as $worker$
@@ -198,7 +200,7 @@ begin
  for v_row in
   select * from public.pending_commands
    where status='scheduled' and not_before<=pg_catalog.clock_timestamp()
-   order by not_before,id for update skip locked limit 20
+   order by not_before,id for update skip locked limit 1
  loop
   begin
    update public.pending_commands set status='executing',

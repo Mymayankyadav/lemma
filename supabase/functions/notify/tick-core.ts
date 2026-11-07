@@ -17,7 +17,8 @@ export interface TickDelivery {
 }
 export interface TickAdapters {
  /** Called once per scheduled tick, even without notification-enabled owners.
-  * The service-role adapter calls public.lemma_run_due_commands(). */
+  * The service-role adapter calls public.lemma_run_due_commands(), which
+  * runs one auditable command per database transaction. */
  runDueCommands?:(signal:AbortSignal)=>Promise<{executed:number;failed:number;processed:number}>;
  /** Enumerate only settings.notify.enabled owners. Never return device keys. */
  listEnabledOwners:(signal:AbortSignal)=>Promise<readonly string[]>;
@@ -90,8 +91,8 @@ export async function runNotifyTick(
    try{
     const run=await within(deps.runDueCommands(controller.signal));
     if(controller.signal.aborted)return summary;
-    if(!run||!safeCount(run.executed,20)||!safeCount(run.failed,20)||
-       !safeCount(run.processed,20)||run.executed+run.failed!==run.processed)
+    if(!run||!safeCount(run.executed,1)||!safeCount(run.failed,1)||
+       !safeCount(run.processed,1)||run.executed+run.failed!==run.processed)
      throw Error('Invalid pending command result');
     summary.failed+=run.failed;
    }catch{
