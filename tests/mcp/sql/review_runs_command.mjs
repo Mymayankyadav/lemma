@@ -124,6 +124,14 @@ try {
   checkEqual(abandoned.run.status,'abandoned');
   checkEqual(abandoned.run.paused_at,null);
   assert.ok(abandoned.run.ended_at);
+  // A zero-card budget is a valid empty snapshot, not a phantom review.
+  const [zeroBudget]=await cmd('start',{...startPatch,card_budget:0});
+  checkEqual(zeroBudget.status,'ok');
+  checkEqual(zeroBudget.itemCount,0);
+  checkEqual(zeroBudget.run.status,'exhausted');
+  assert.ok(zeroBudget.run.ended_at);
+  await assert.rejects(cmd('start',{...startPatch,user_id:other}),
+    /Unknown patch field/);
   // Invalid filters are never silently ignored by the authoritative selector.
   await assert.rejects(cmd('start',{...startPatch,filters:{unexpected:true}}),
     /Unsupported filter/);
