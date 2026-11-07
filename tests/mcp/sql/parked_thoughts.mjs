@@ -123,9 +123,13 @@ try{
  await assert.rejects(validate({...edit,expectedVersion:0}),/positive integer/);
  await assert.rejects(validate({...edit,target:{}}),/target.id is required/);
  await assert.rejects(validate({...edit,patch:{}}),/Edit patch/);
+ await assert.rejects(validate({...edit,patch:{text:null}}),/Thought text/);
  await assert.rejects(validate({...edit,target:{id:open.id,user_id:other}}),/Unknown target field/);
  await assert.rejects(validate({...edit,patch:{text:'x'.repeat(4001)}}),/Thought text/);
  await assert.rejects(validate({...edit,patch:{study_entry_id:'not-a-uuid'}}),/uuid/i);
+ const removal={...edit,operation:'delete',patch:{}};
+ assert.deepEqual(await validate(removal),removal);
+ await assert.rejects(validate({...removal,patch:{text:'forged'}}),/Unknown patch field/);
  const conversion={...edit,operation:'convert_to_task',patch:{title:'Finish lemma'}};
  assert.deepEqual(await validate(conversion),conversion);
  await assert.rejects(validate({...conversion,patch:{title:' '}}),/Task title required/);

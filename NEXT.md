@@ -42,6 +42,13 @@ Tests: extend tests/mcp/sql/parked_thoughts.mjs for full command lifecycle, idem
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
 Not: earlier migrations, unrelated resources/functions, app/MCP code, protected files.
 
+## N44.2.3 Parked thought conversion, undo and MCP parity
+Stage: Build · Status: open · Needs: N44.2.2 · Assigned: —
+Done = complete N44.2 after N44.2.2's owner-authorized, receipt-idempotent create/edit/dismiss/reopen/delete command: add convert_to_task with task_command-equivalent validation, single-transaction task insert and converted thought destination, retry without duplicate task creation, and checks for stale versions and cross-owner references. Register parked_thoughts with lemma_undo_tables and lemma_command_resources for shared owner-authorized service-role MCP dispatch and audited undo; ensure every enabled write is journalled and undoable. Preserve earlier task_command, study_command, undo_action and MCP source. Production migration requires independent SQL review.
+Tests: extend tests/mcp/sql/parked_thoughts.mjs with conversion receipt/retry/conflict, real destination, failure atomicity, owner isolation, command journal/undo, and MCP parity, retaining the N44.1 and N44.2.1 regressions.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changing existing migrations, unrelated resources, app/MCP source code or protected files.
+
 ## N45 Study goals: migration (study_goals)
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = per D8(b), table `public.study_goals` with `period` (`week`/`month`/`custom`), `start_date`, `end_date`, `time_zone`, optional subject/project scope, `target_minutes`, `archived_at`. Operations create, update, archive, restore, delete. Scope is by ID, never by display name; overlapping goals for the same scope and period are rejected.
@@ -104,7 +111,7 @@ Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
 Not: other src/data/**, app screens, supabase/**, MCP, new dependencies or existing test assertions.
 
 ## N58.2.3 Parked thought atomic conversion and owner-RLS live adapter
-Stage: Build · Status: open · Needs: N44.2.2 · Assigned: —
+Stage: Build · Status: open · Needs: N44.2.3, N44.2.2 · Assigned: —
 Done = complete N58.2 using the N58.1 typed ThoughtApi, validation and transitions plus N58.2.2's reload-safe demo CRUD/paging. Implement atomic convertToTask in demo without a fake destination or orphan task, and src/data/parked-thoughts/live.ts plus index.ts/getThoughtApi()/setThoughtApiForTests(). The live adapter must issue every create/edit/dismiss/reopen/delete/convert operation through owner-RLS parked_thoughts_command envelopes after N44.2, with a fresh operationId per new action reused on uncertain retry, optimistic version conflict mapping, no caller owner fields and bounded owner reads. One convert action returns both a real TaskRecord and a resolved thought from a single transaction receipt; failed/retried conversion must not leave a partially converted thought or duplicate task. Preserve storage isolation and existing cards/reviews. N44.2 remains a prerequisite while split PR #1039 is unmerged; afterward N44.2.2 must be done before implementing live writes.
 Tests: extend tests/unit/parked-thoughts/** with atomic demo conversion and reload, live RPC envelopes for every operation, retry identity, stale/conflict mapping, owner isolation and bounded pages; retain N58.1 and N58.2.2 regressions.
 Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
