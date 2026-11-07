@@ -182,6 +182,7 @@ try{
  }));
  realAction(standalone);
  const standaloneId=standalone.changed[0].id;
+ assert.equal(standalone.changed[0].version,1,'new registry study entry starts with version 1');
  assert.equal((await undo(owner,standalone.actionNo)).undone,standalone.actionNo,
   'registered study-entry creation must have a reversible original action');
  assert.equal((await inspect('select count(*)::int n from public.study_entries where id=$1',[standaloneId]))[0].n,
