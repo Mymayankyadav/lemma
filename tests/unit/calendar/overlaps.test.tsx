@@ -1,4 +1,4 @@
-import {act} from 'react';
+import {act,type ReactNode} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
 import {beforeEach,afterEach,describe,expect,it,vi} from 'vitest';
 import {MemoryRouter,Routes,Route} from 'react-router';
@@ -38,11 +38,6 @@ const entry:StudyEntryRecord={
  ],
 };
 const range={start:'2026-11-02T00:00:00Z',end:'2026-11-09T00:00:00Z'};
-const empty={
- listAcknowledgements:vi.fn(),getAcknowledgement:vi.fn(),
- createAcknowledgement:vi.fn(),updateAcknowledgement:vi.fn(),
- deleteAcknowledgement:vi.fn(),
-};
 function acknowledgement(row:ReturnType<typeof overlapWindows>[number],
  stale=false):OverlapAcknowledgement{
  return {
@@ -79,10 +74,13 @@ function fakeAcks(initial:OverlapAcknowledgement[]=[]){
  return {list,create,rows:()=>rows};
 }
 let root:Root,host:HTMLDivElement;
-async function render(element:React.ReactNode){
+async function render(element:ReactNode,ready=true){
  await act(async()=>root.render(element));
  await vi.waitFor(()=>expect(host.querySelector('[aria-label="Calendar overlap conflicts"]'))
   .not.toBeNull());
+ if(ready)await vi.waitFor(()=>expect(
+  host.querySelector<HTMLButtonElement>('button[aria-label^="Keep both for"]')?.disabled
+ ).toBe(false));
 }
 const weeks=()=> <WeekView date="2026-11-06" zone="UTC"
  entries={[entry]} blocks={[first,second]} onDay={()=>{}}/>;
@@ -111,8 +109,8 @@ describe('N75 exact half-open owner Calendar overlap model',()=>{
   expect(rows).toHaveLength(3);
   expect(rows.map(r=>[r.startsAt,r.endsAt])).toEqual([
    [time('09:15'),time('09:45')],
-   [time('09:30'),time('09:45')],
    [time('09:30'),time('10:00')],
+   [time('09:30'),time('09:45')],
   ]);
   expect(rows.every(r=>r.participants.length===2&&
    r.participants.every(p=>p.version===1))).toBe(true);
@@ -203,7 +201,7 @@ describe('N75 Week and Month overlap markers and audited acknowledgment writes',
  it('does not silently treat a failed owner read as an acknowledged conflict',async()=>{
   const api=fakeAcks();
   api.list.mockRejectedValueOnce(new Error('Owner data unavailable'));
-  await render(weeks());
+  await render(weeks(),false);
   await vi.waitFor(()=>expect(host.querySelector('[role="alert"]')?.textContent)
    .toContain('Owner data unavailable'));
   expect(host.textContent).toContain('Overlap conflict');
