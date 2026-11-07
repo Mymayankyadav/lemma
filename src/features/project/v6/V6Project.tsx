@@ -57,7 +57,7 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
         className={action + ' w-full text-left'} onClick={() => setShowSources(value => !value)}>
         {showSources ? 'Hide sources' : 'Show sources'} ({detail.sources.length})
       </button>
-      {showSources && <div id="v6-project-source-list" className="mt-3">
+      {showSources && <div id="v6-project-source-list" className="mt-3 flex flex-col gap-2">
         <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>
