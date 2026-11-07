@@ -126,6 +126,9 @@ try{
  await invalid("insert into public.day_plan_items(user_id,plan_id,task_id,position,reason) values($1,$2,$3,3,$4)",[owner,day.id,task.id,'x'.repeat(1201)]);
  await invalid("delete from public.calendar_blocks where id=$1",[block.id]);
  await invalid("delete from public.day_plans where id=$1",[day.id]);
+ await invalid("update public.day_plan_items set user_id=$1 where id=$2",[other,placed.id]);
+ await invalid("update public.day_plan_items set calendar_block_id=$1 where id=$2",[foreignBlock.id,placed.id]);
+ await invalid("delete from public.tasks where id=$1",[task.id]);
  await q('grant insert,update,delete on public.day_plan_items to authenticated');
  await as(owner);
  assert.equal((await q('select count(*)::int n from public.day_plan_items'))[0].n,3);
