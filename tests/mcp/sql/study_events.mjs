@@ -28,7 +28,7 @@ try{
   grant execute on function auth.uid() to authenticated;`);
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
- assert.ok(names.includes('20261108120000_study_events.sql'));
+ assert.ok(names.includes('20261107120116_study_events.sql'));
  for(const name of names)await db.exec(await readFile(new URL(name,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
  // Each owner write uses a distinct statement/txid: an action must never mix owners.
