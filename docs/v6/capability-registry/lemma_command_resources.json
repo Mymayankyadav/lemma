@@ -97,6 +97,34 @@
           "status"
         ]
       }
+    },
+    {
+      "resource": "practice_topics",
+      "command_fn": "practice_topics_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete",
+          "record",
+          "void_event"
+        ],
+        "fields": [
+          "title",
+          "subject_id",
+          "concept_id",
+          "checkpoint_id",
+          "next_due_date",
+          "cadence",
+          "rating",
+          "occurred_at",
+          "response",
+          "minutes"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",
