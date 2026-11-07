@@ -157,7 +157,12 @@ export default function TimeLog(){
  if(!enabled)return <Navigate to="/" replace/>;
  const totalPages=Math.max(1,Math.ceil(rows.length/PAGE));
  const index=Math.min(page,totalPages-1),shown=rows.slice(index*PAGE,(index+1)*PAGE);
- const groups=Object.entries(Object.groupBy(shown,e=>logDate(e,zone)));
+ const grouped:Record<string,StudyEntryRecord[]>={};
+ for(const entry of shown){
+  const date=logDate(entry,zone);
+  (grouped[date]??=[]).push(entry);
+ }
+ const groups=Object.entries(grouped);
  async function changed(){
   setBusy(true);setError('');
   try{await refresh();setSelected(null);}catch(e){setError(e instanceof Error?e.message:'Refresh failed.');}
