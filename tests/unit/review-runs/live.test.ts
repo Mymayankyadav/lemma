@@ -39,8 +39,10 @@ class Query implements PromiseLike<Response>{
    this.fields.every(([k,v])=>k==='range'||row[k]===v));
   const r=this.fields.find(f=>f[0]==='range');
   const selected=r?rows.slice((r[1] as number[])[0],(r[1] as number[])[1]+1):rows;
-  return Promise.resolve({data:this.single?(selected[0]??null):selected,error:null}
-    as Response).then(ok,no);
+  const response:Response={
+   data:this.single?(selected[0]??null):selected,error:null,
+  };
+  return Promise.resolve(response).then(ok,no);
  }
 }
 function harness(){
