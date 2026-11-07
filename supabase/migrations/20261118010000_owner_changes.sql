@@ -81,7 +81,9 @@ begin
        where user_id=v_owner and cursor>p_cursor order by cursor limit p_limit) page;
  return pg_catalog.jsonb_build_object(
    'changes',v_rows,'nextCursor',coalesce(v_next,p_cursor),
-   'reset',p_cursor>0 and p_cursor<v_watermark);
+   -- Cursor zero also needs a full projection reset after pruning:
+   -- an initial subscriber cannot reconstruct already-expired history.
+   'reset',p_cursor<v_watermark);
 end
 $changes$;
 revoke all on function public.changes_since(bigint,integer) from public,anon;

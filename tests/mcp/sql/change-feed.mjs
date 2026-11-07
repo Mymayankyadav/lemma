@@ -88,6 +88,9 @@ try{
  await as(a);
  const reset=(await q('select public.changes_since(1,100) result'))[0].result;
  assert.equal(reset.reset,true,'pruning announces a replay/reset for stale cursors');
+ const initial=(await q('select public.changes_since(0,100) result'))[0].result;
+ assert.equal(initial.reset,true,
+  'even an initial cursor zero needs a full projection rebuild after retention');
  assert.ok(reset.changes.every(x=>x.cursor>oldest));
  // The existing service-role MCP dispatcher writes through the same
  // journal, so it must contribute exactly one owner-scoped change.
