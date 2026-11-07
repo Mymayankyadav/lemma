@@ -1,0 +1,98 @@
+{
+  "table": "review_run_items",
+  "version": 1,
+  "description": "N48.1 staged owner-only readable durable review queue; N48.2 adds receipt-backed lifecycle and MCP parity",
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "run_id": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "position": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "card_id": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "expected_card_version": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "state": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "review_id": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "stale_reason": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "source": {
+      "classification": "command-managed",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "N62 review runs data API and N83 review run screen (planned)",
+      "mcpPath": "N48.2 registered review_runs_command via N37 (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "N48.2 registered undo and N103 owner purge (planned)"
+    }
+  }
+}
