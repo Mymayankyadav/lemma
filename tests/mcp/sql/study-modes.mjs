@@ -11,7 +11,7 @@ try{
  await db.exec([
   'create role anon; create role authenticated; create role service_role;',
   'create schema auth;create schema extensions;create table auth.users(id uuid primary key);',
-  "create function auth.uid() returns uuid language sql as $uid$ select nullif(current_setting('test.uid',true),'')::uuid $uid$;",
+  "create function auth.uid() returns uuid language sql as $uid$ select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,nullif(current_setting('test.uid',true),'')::uuid) $uid$;",
   "create function extensions.gen_random_bytes(n int) returns bytea language sql as $bytes$select decode(repeat('00',n),'hex')$bytes$;",
   'grant usage on schema auth to authenticated;',
   'grant execute on function auth.uid() to authenticated;'
@@ -63,5 +63,167 @@ try{
   /constraint|violates/);
  await assert.rejects(q("update public.study_entries set energy='sleepy' where id=$1",[newDraft]),
   /constraint|violates/);
+
+ // N52 lifecycle operations use the same study_command and audit receipt path.
+ const as=async(id,role='authenticated')=>{
+   await db.exec('reset role');
+   await q("select set_config('request.jwt.claims','{}',false)");
+   await q("select set_config('test.uid',$1,false)",[id]);
+   await db.exec('set role '+role);
+ };
+ let opNumber=10;
+ const req=(operation,patch,id,version,extra={})=>({
+   schemaVersion:1,resource:'study_entries',operation,operationId:mkOp(opNumber++),
+   target:{id},expectedVersion:version,patch,...extra
+ });
+ const command=async value=>(await q(
+   'select public.study_command($1::jsonb) result',[JSON.stringify(value)]))[0].result;
+ const get=async id=>(await q(
+   'select * from public.study_entries where id=$1',[id]))[0];
+ await as(owner);
+ let flow=await get(newDraft);
+ const firstTake=req('take_lease',{device:'owner-device-a',lease_minutes:3},
+   newDraft,flow.version);
+ const taken=await command(firstTake);
+ assert.equal(taken.status,'ok');
+ assert.equal(taken.entry.lease_device,'owner-device-a');
+ assert.equal(taken.entry.lease_version,1);
+ assert.ok(taken.actionNo>0);
+ assert.deepEqual(await command(firstTake),taken,'device lease replay is exact');
+ const reused=await command({...firstTake,patch:{device:'owner-device-b'}});
+ assert.equal(reused.status,'conflict','changed-payload lease operationId cannot replay');
+ flow=await get(newDraft);
+ const badPhase=await command(req('next_phase',{
+   device:'owner-device-b',lease_version:flow.lease_version},newDraft,flow.version));
+ assert.equal(badPhase.status,'conflict','second device cannot change phase');
+ const noToken=await command(req('pause',{},newDraft,flow.version));
+ assert.equal(noToken.status,'conflict','legacy pause also respects active lease');
+ assert.equal((await get(newDraft)).version,flow.version);
+ const takeover=await command(req('take_lease',{device:'owner-device-b',lease_minutes:5},
+   newDraft,flow.version));
+ assert.equal(takeover.status,'ok');
+ assert.equal(takeover.entry.lease_version,2);
+ // Table-level owner RLS does not bypass the active-lease command check.
+ await assert.rejects(q("update public.study_entries set status='paused' where id=$1",[newDraft]),
+   /Active timer lease requires an audited study command/);
+ await assert.rejects(q("update public.study_intervals set kind='break' where entry_id=$1 and ended_at is null",[newDraft]),
+   /Active timer lease requires an audited interval command/);
+ const deniedOld=await command(req('next_phase',{
+   device:'owner-device-a',lease_version:1},newDraft,takeover.entry.version));
+ assert.equal(deniedOld.status,'conflict','previous generation cannot mutate after takeover');
+ // Flowtime break scales the *measured focus time* by the captured ratio.
+ await db.exec('reset role');
+ await q("update public.study_intervals set started_at=now()-interval '50 minutes' where entry_id=$1 and kind='focus' and ended_at is null",[newDraft]);
+ await as(owner);
+ const intoBreak=await command(req('next_phase',{
+   device:'owner-device-b',lease_version:2},newDraft,takeover.entry.version));
+ assert.equal(intoBreak.status,'ok');
+ assert.equal(intoBreak.entry.phase,'break');
+ assert.equal(intoBreak.entry.status,'paused');
+ const breakMinutes=(new Date(intoBreak.entry.phase_ends_at).getTime()-Date.now())/60000;
+ assert.ok(breakMinutes>=12&&breakMinutes<=14,
+   '50 focused minutes x .25 ratio yields approximately 13-minute Flowtime break');
+ let opened=(await q("select kind from public.study_intervals where entry_id=$1 and ended_at is null",[newDraft]));
+ assert.deepEqual(opened.map(x=>x.kind),['break'],'phase transition opens exactly one break');
+ const intoFocus=await command(req('next_phase',{
+   device:'owner-device-b',lease_version:2,energy:'steady'},
+   newDraft,intoBreak.entry.version));
+ assert.equal(intoFocus.entry.phase,'focus');
+ assert.equal(intoFocus.entry.cycle,2);
+ assert.equal(intoFocus.entry.energy,'steady');
+ assert.equal(intoFocus.entry.phase_ends_at,null,'Flowtime focus has no timer deadline');
+ // Exclusion deducts the rightmost free focus, without ever double counting.
+ // Simulate a long current focus period. The multirange union also
+ // handles a fixture whose overlapping historical focus intervals would
+ // otherwise double count the same time.
+ await db.exec('reset role');
+ await q("update public.study_intervals set started_at=now()-interval '25 minutes' where entry_id=$1 and kind='focus' and ended_at is null",[newDraft]);
+ await as(owner);
+ const ex1=await command(req('exclude_minutes',{
+   minutes:10,reason:'Distracted',
+   device:'owner-device-b',lease_version:2},newDraft,intoFocus.entry.version));
+ assert.equal(ex1.status,'ok');
+ assert.equal(ex1.entry.excluded_intervals.length,1);
+ const ex2=await command(req('exclude_minutes',{
+   minutes:10,reason:'Interrupted',
+   device:'owner-device-b',lease_version:2},newDraft,ex1.entry.version));
+ assert.equal(ex2.entry.excluded_intervals.length,2);
+ assert.ok(new Date(ex2.entry.excluded_intervals[0].from)>=
+   new Date(ex2.entry.excluded_intervals[1].to),
+   'second exclusion must be earlier than the last excluded tail');
+ await assert.rejects(command(req('exclude_minutes',{
+   minutes:40,reason:'Too much',
+   device:'owner-device-b',lease_version:2},newDraft,ex2.entry.version)),
+   /Not enough unexcluded focus minutes/);
+ assert.equal((await get(newDraft)).excluded_intervals.length,2);
+ // Undo of a reasoned deduction restores the exact ledger and row version.
+ const undo=(await q('select public.undo_action($1,$2,false) result',
+   [owner,ex2.actionNo]))[0].result;
+ assert.equal(Number(undo.undone),Number(ex2.actionNo));
+ assert.equal((await get(newDraft)).excluded_intervals.length,1);
+ await db.exec('reset role');
+ const journal=(await q("select table_name from public.action_changes where action_no=$1",
+   [intoBreak.actionNo])).map(x=>x.table_name);
+ assert.ok(journal.includes('study_entries')&&journal.includes('study_intervals'),
+   'phase transitions journal the entry and its interval changes atomically');
+ await as(other);
+ await assert.rejects(command(req('take_lease',{device:'foreign'},newDraft,1)),
+   /not found for owner/);
+ // Release the one-active-owner slot and exercise a two-cycle Pomodoro.
+ await db.exec('reset role');
+ await q("update public.study_entries set status='saved' where id=$1",[newDraft]);
+ const pomoPreset=(await q("insert into public.presets(user_id,label,mode,focus_minutes,break_minutes,long_break_minutes,cycles) values($1,'Two-cycle','pomodoro',2,1,3,2) returning id",[owner]))[0].id;
+ const pomo=(await q("insert into public.study_entries(user_id,source,status,preset_id) values($1,'timer','draft',$2) returning id",[owner,pomoPreset]))[0].id;
+ await as(owner);
+ const pStart=await command(req('start',{},pomo,1));
+ assert.equal(pStart.status,'ok');
+ let pRow=await get(pomo);
+ assert.equal(pRow.config.focus_minutes,2);
+ const pLease=await command(req('take_lease',{device:'pomo-device'},pomo,pRow.version));
+ const p1=await command(req('next_phase',{device:'pomo-device',lease_version:1},
+   pomo,pLease.entry.version));
+ assert.equal(p1.entry.phase,'break','first cycle has short break');
+ let remain=(new Date(p1.entry.phase_ends_at).getTime()-Date.now())/60000;
+ assert.ok(remain>0.8&&remain<=1.1,'short break uses captured one-minute preset');
+ const p2=await command(req('next_phase',{device:'pomo-device',lease_version:1},
+   pomo,p1.entry.version));
+ assert.equal(p2.entry.cycle,2);
+ assert.equal(p2.entry.phase,'focus');
+ const p3=await command(req('next_phase',{device:'pomo-device',lease_version:1},
+   pomo,p2.entry.version));
+ assert.equal(p3.entry.phase,'long_break','second cycle switches to long break');
+ remain=(new Date(p3.entry.phase_ends_at).getTime()-Date.now())/60000;
+ assert.ok(remain>2.8&&remain<=3.1,'long break uses captured three-minute preset');
+ // Open mode never invents a countdown in any phase.
+ await db.exec('reset role');
+ await q("update public.study_entries set status='saved' where id=$1",[pomo]);
+ await q("update public.settings set focus_defaults=jsonb_set(focus_defaults,'{mode}','\"open\"'::jsonb) where user_id=$1",[owner]);
+ const open=(await q("insert into public.study_entries(user_id,source,status) values($1,'timer','draft') returning id",[owner]))[0].id;
+ await as(owner);
+ const openStart=await command(req('start',{},open,1));
+ let openRow=await get(open);
+ assert.equal(openRow.mode,'open');
+ assert.equal(openRow.phase_ends_at,null);
+ const openLease=await command(req('take_lease',{device:'open-device'},open,openRow.version));
+ const openBreak=await command(req('next_phase',{
+   device:'open-device',lease_version:1},open,openLease.entry.version));
+ assert.equal(openBreak.entry.phase,'break');
+ assert.equal(openBreak.entry.phase_ends_at,null);
+ // Service-role MCP uses the registry to reach the very same command and owner.
+ await db.exec('reset role');
+ const otherDraft=(await q("insert into public.study_entries(user_id,source,status) values($1,'timer','draft') returning id",[other]))[0].id;
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpPayload=req('take_lease',{device:'connector-device'},otherDraft,1);
+ const mc=(await q("select public.mcp_command($1,'chatgpt',$2::jsonb) result",
+   [other,JSON.stringify(mcpPayload)]))[0].result;
+ assert.equal(mc.status,'ok');
+ assert.equal(mc.entry.lease_device,'connector-device');
+ assert.deepEqual((await q("select public.mcp_command($1,'chatgpt',$2::jsonb) result",
+   [other,JSON.stringify(mcpPayload)]))[0].result,mc);
+ await db.exec('reset role');
+ assert.equal((await q('select source from public.actions where no=$1',
+   [mc.actionNo]))[0].source,'chatgpt','MCP audit source must be trusted dispatcher');
+
  console.log('PASS N52 staged timer schema, owner preset FK, start-time immutable configuration and mode constraints');
 }finally{await db.close()}
