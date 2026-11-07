@@ -1,4 +1,7 @@
-import {describe,expect,it} from 'vitest';
+import React,{act} from 'react';
+import {createRoot} from 'react-dom/client';
+import {describe,expect,it,vi} from 'vitest';
+import ConceptPin from '../../../src/features/atlas/v6/ConceptPin';
 import {checkAtlasLink,describeAtlasMergeImpact,type AtlasEditNode}
  from '../../../src/features/atlas/v6/impact';
 const nodes:AtlasEditNode[]=[
@@ -24,5 +27,46 @@ describe('N86 Atlas editor safety and merge impact',()=>{
     outgoingPrerequisites:1,relatedConcepts:1});
   expect(()=>describeAtlasMergeImpact(nodes,'a','a')).toThrow();
   expect(nodes[1].parentId).toBe('a');
+ });
+});
+
+describe('N86 existing owner-authorized map pin write path',()=>{
+ it('submits finite coordinates once and only closes after success',async()=>{
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host),onSave=vi.fn(async()=>{}),onClose=vi.fn();
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<ConceptPin id="concept-1" name="Compactness"
+    x={null} y={null} onSave={onSave} onClose={onClose}/>));
+   const x=host.querySelector('[aria-label="Map X coordinate"]') as HTMLInputElement;
+   const y=host.querySelector('[aria-label="Map Y coordinate"]') as HTMLInputElement;
+   await act(async()=>{
+    const set=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!;
+    set.call(x,'1.5');x.dispatchEvent(new Event('input',{bubbles:true}));
+    set.call(y,'-2');y.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   await act(async()=>host.querySelector('form')!.dispatchEvent(
+    new Event('submit',{bubbles:true,cancelable:true})));
+   expect(onSave).toHaveBeenCalledWith('concept-1',1.5,-2);
+   expect(onSave).toHaveBeenCalledTimes(1);
+   expect(onClose).toHaveBeenCalledTimes(1);
+  }finally{await act(async()=>root.unmount());host.remove()}
+ });
+ it('unpins through the existing API rather than direct DML and surfaces errors',async()=>{
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host),onClose=vi.fn();
+  const onSave=vi.fn(async()=>{
+   throw Error('Owner mutation refused');
+  });
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<ConceptPin id="concept-1" name="Algebra"
+    x={1} y={2} onSave={onSave} onClose={onClose}/>));
+   await act(async()=>[...host.querySelectorAll('button')].find(x=>
+    x.textContent==='Unpin')!.click());
+   expect(onSave).toHaveBeenCalledWith('concept-1',null,null);
+   expect(onClose).not.toHaveBeenCalled();
+   expect(host.querySelector('[role="alert"]')?.textContent).toContain('Owner mutation refused');
+  }finally{await act(async()=>root.unmount());host.remove()}
  });
 });
