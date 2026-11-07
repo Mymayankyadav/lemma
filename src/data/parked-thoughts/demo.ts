@@ -115,7 +115,7 @@ export function createDemoThoughtApi():ThoughtApi{
  const find=(id:string):ParkedThought=>{
   const valid=validateId(id);
   const row=current().thoughts.find(t=>t.id===valid);
-  if(!row)fail('not_found','Parked thought not found');
+  if(!row)return fail('not_found','Parked thought not found');
   return row;
  };
  const version=(t:ParkedThought,expectedVersion:number):void=>{
