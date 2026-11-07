@@ -96,6 +96,7 @@ declare
  v_device text; v_minutes integer; v_lease_version integer;
  v_new_phase text; v_duration integer; v_ratio numeric;
  v_remaining numeric; v_piece numeric; v_start timestamptz;
+ v_focus_cutoff timestamptz; v_previous_exclusion_end timestamptz;
  v_focus tstzmultirange; v_removed tstzmultirange;
  v_slice record; v_reason text; v_segments jsonb:='[]'::jsonb;
  v_action bigint; v_receipt jsonb; v_stored jsonb;
@@ -287,13 +288,31 @@ begin
          then raise exception 'Exclusion reason required'; end if;
        v_remaining:=(v_patch->>'minutes')::numeric*60;
        v_reason:=pg_catalog.btrim(v_patch->>'reason');
+       -- Integer-minute deductions must not consume a tiny new tail that
+       -- accrued between two commands while the same focus interval runs.
+       -- Otherwise back-to-back exclusions fragment into millisecond spans.
+       -- Count new focus after a complete minute has accrued, while keeping
+       -- completed intervals at their exact timestamps.
+       v_focus_cutoff:=v_now;
+       if v_row.status='running' then
+         select max((e.value->>'to')::timestamptz)
+           into v_previous_exclusion_end
+           from pg_catalog.jsonb_array_elements(
+             v_row.excluded_intervals) as e(value);
+         if v_previous_exclusion_end is not null
+           and v_previous_exclusion_end<=v_now
+           and v_previous_exclusion_end>v_now-interval '1 minute' then
+           v_focus_cutoff:=v_previous_exclusion_end;
+         end if;
+       end if;
        select coalesce(pg_catalog.range_agg(
            pg_catalog.tstzrange(i.started_at,
-             least(coalesce(i.ended_at,v_now),v_now),'[)')),
+             least(coalesce(i.ended_at,v_focus_cutoff),v_focus_cutoff),'[)')),
           '{}'::tstzmultirange)
          into v_focus from public.study_intervals i
          where i.entry_id=v_id and i.user_id=p_owner and i.kind='focus'
-           and i.started_at<v_now and (i.ended_at is null or i.ended_at>i.started_at);
+           and i.started_at<v_focus_cutoff
+           and (i.ended_at is null or i.ended_at>i.started_at);
        select coalesce(pg_catalog.range_agg(
             pg_catalog.tstzrange((e.value->>'from')::timestamptz,
               (e.value->>'to')::timestamptz,'[)')),
