@@ -6,7 +6,7 @@ import Page from '../../../src/features/ritual/Page';
 
 const mocks=vi.hoisted(()=>({
  listPlans:vi.fn(),closePlan:vi.fn(),
- listTasks:vi.fn(),listThoughts:vi.fn(),listStudyEntries:vi.fn(),
+ listTasks:vi.fn(),listThoughts:vi.fn(),dismissThought:vi.fn(),listStudyEntries:vi.fn(),
  zone:'Pacific/Kiritimati',
 }));
 vi.mock('../../../src/data/hooks',()=>({
@@ -19,7 +19,7 @@ vi.mock('../../../src/data/tasks',()=>({
  getTaskApi:()=>({listTasks:mocks.listTasks}),
 }));
 vi.mock('../../../src/data/parked-thoughts',()=>({
- getThoughtApi:()=>({listThoughts:mocks.listThoughts}),
+ getThoughtApi:()=>({listThoughts:mocks.listThoughts,dismissThought:mocks.dismissThought}),
 }));
 vi.mock('../../../src/data/study',()=>({
  getStudyApi:()=>({listStudyEntries:mocks.listStudyEntries}),
@@ -42,6 +42,7 @@ beforeEach(()=>{
  mocks.closePlan.mockReset().mockResolvedValue({record:{...base,status:'closed'},actionNo:9});
  mocks.listTasks.mockReset().mockResolvedValue({items:[],total:0,nextCursor:null});
  mocks.listThoughts.mockReset().mockResolvedValue({items:[],total:0,nextCursor:null});
+ mocks.dismissThought.mockReset().mockResolvedValue({record:{},actionNo:4});
  mocks.listStudyEntries.mockReset().mockResolvedValue([]);
  host=document.createElement('div');document.body.append(host);
  root=createRoot(host);
@@ -81,4 +82,34 @@ describe('N69 owner-zone ritual view and command',()=>{
   expect(host.textContent).toContain('Choose a real YYYY-MM-DD date');
   expect(mocks.closePlan).not.toHaveBeenCalled();
  });
+ it('blocks closure until thoughts are resolved and persists explicit carry-over choices',async()=>{
+  const task={id:'task-1',title:'Read a lemma',version:2,status:'backlog'};
+  const thought={id:'thought-1',text:'Try a proof',version:3,status:'open'};
+  mocks.listTasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
+  mocks.listThoughts.mockResolvedValueOnce({items:[thought],total:1,nextCursor:null})
+   .mockResolvedValue({items:[],total:0,nextCursor:null});
+  await render('2026-11-08');
+  const findClose=()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
+   .find(b=>b.textContent?.trim()==='Close 2026-11-08');
+  expect(findClose()?.disabled).toBe(true);
+  const dismiss=[...host.querySelectorAll<HTMLButtonElement>('button')]
+   .find(b=>b.textContent?.trim()==='Dismiss');
+  await act(async()=>dismiss?.click());
+  expect(mocks.dismissThought).toHaveBeenCalledWith(thought.id,3);
+  await vi.waitFor(()=>expect(findClose()?.disabled).toBe(false));
+  const carry=host.querySelector<HTMLInputElement>('input[type=checkbox]');
+  await act(async()=>carry?.click());
+  const nextTask=host.querySelector<HTMLSelectElement>('select');
+  await act(async()=>{
+   if(nextTask){
+    nextTask.value=task.id;
+    nextTask.dispatchEvent(new Event('change',{bubbles:true}));
+   }
+  });
+  await act(async()=>findClose()?.click());
+  expect(mocks.closePlan).toHaveBeenCalledWith(base.id,3,{
+   carryOverTaskIds:[task.id],tomorrowFirstTaskId:task.id,
+  });
+ });
+
 });
