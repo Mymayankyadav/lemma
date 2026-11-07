@@ -1,4 +1,6 @@
 import {Tex} from '../../ui/Tex';
+import {isFlagOn} from '../../flags';
+import V6Session from './v6/V6Session';
 import {useCallback,useState} from 'react';
 import {Link,useParams,useSearchParams} from 'react-router';
 import {BookOpen,Calendar,CheckCircle,Clock,Copy,History,MessageCircle,MoreHorizontal,Target,TriangleAlert,XCircle,Lightbulb,BookMarked,Sparkles,Bot,Check,ArrowRight} from 'lucide-react';
@@ -33,7 +35,8 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
   </div></motion.li>;
 }
-export default function Page(){
+export default function Page(){return isFlagOn('v6Shell')?<V6Session/>:<LegacyPage/>;}
+function LegacyPage(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
  const [params]=useSearchParams(),viewCards=params.get('cards')==='1';
  const [cardPage,setCardPage]=useState(0);
