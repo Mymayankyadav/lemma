@@ -142,6 +142,17 @@ try{
  for(const bad of [null,'urgent',7])
   await assert.rejects(validate({...conversion,patch:{...conversion.patch,priority:bad}}),
    /Invalid task priority/);
+ assert.deepEqual(await validate({...conversion,patch:{
+  ...conversion.patch,subject_id:owner,project_id:null}}),
+  {...conversion,patch:{...conversion.patch,subject_id:owner,project_id:null}},
+  'valid typed task owner links or explicit null remain allowed');
+ for(const field of ['subject_id','project_id','checkpoint_id']){
+  for(const bad of [42,false,{'id':owner}])
+   await assert.rejects(validate({...conversion,patch:{...conversion.patch,[field]:bad}}),
+    new RegExp('Task '+field+' must be a UUID'));
+  await assert.rejects(validate({...conversion,patch:{...conversion.patch,[field]:'not-a-uuid'}}),
+   /uuid/i);
+ }
  await assert.rejects(validate({...conversion,patch:{title:' '}}),/Task title required/);
  await assert.rejects(validate({...edit,operation:'dismiss',patch:{text:'Ignored'}}),
   /Unknown patch field/);

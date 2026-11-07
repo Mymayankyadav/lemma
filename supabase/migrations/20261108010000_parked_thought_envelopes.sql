@@ -10,6 +10,7 @@ declare
   v_patch jsonb;
   v_allowed text[];
   v_bad text;
+  v_link_key text;
 begin
   if (select auth.uid()) is null then
     raise exception 'Authentication required';
@@ -108,6 +109,18 @@ begin
     (pg_catalog.jsonb_typeof(v_patch->'priority') is distinct from 'string'
      or v_patch->>'priority' not in ('low','normal','high')) then
     raise exception 'Invalid task priority';
+  end if;
+  -- Validate caller-supplied UUID links before task conversion reaches
+  -- the future transactional command; null clears an optional link.
+  if v_operation='convert_to_task' then
+    foreach v_link_key in array array['subject_id','project_id','checkpoint_id'] loop
+      if v_patch?v_link_key and v_patch->v_link_key <> 'null'::jsonb then
+        if pg_catalog.jsonb_typeof(v_patch->v_link_key) is distinct from 'string' then
+          raise exception 'Task % must be a UUID', v_link_key;
+        end if;
+        perform (v_patch->>v_link_key)::uuid;
+      end if;
+    end loop;
   end if;
   -- No table access or mutation. Owner existence/version checks and
   -- task_command-equivalent conversion validation remain in N44.2.3.
