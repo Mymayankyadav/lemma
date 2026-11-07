@@ -40,6 +40,7 @@ try {
   assert.ok(migrations.includes('20261107060000_presets_command_core.sql'));
   assert.ok(migrations.includes('20261107120100_presets_reference_guard.sql'));
   assert.ok(migrations.includes('20261107120115_presets_lifecycle_preview.sql'));
+  assert.ok(migrations.includes('20261107120120_presets_lifecycle_lock.sql'));
   assert.ok(!migrations.includes('20261107120105_presets_lifecycle_preview.sql'),
     'superseded unapplied lifecycle preview migration must not deploy');
   assert.ok(!migrations.includes('20261107210000_presets_reference_guard.sql'),
@@ -134,6 +135,8 @@ try {
   const auditBeforePreview=(await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n;
   const preview=async p=>(await q('select public.lemma_preset_lifecycle_preview($1::jsonb) result',
     [JSON.stringify(p)]))[0].result;
+  const locked=async p=>(await q('select public.lemma_preset_lifecycle_lock($1::jsonb) result',
+    [JSON.stringify(p)]))[0].result;
   await as(owner);
   const deleteEnvelope=request('delete',{}, {target:{id},expectedVersion:3});
   const preReference=await preview(deleteEnvelope);
@@ -142,6 +145,12 @@ try {
   assert.equal(preReference.effectiveOperation,'delete');
   assert.equal(preReference.referencesStudyEntries,false);
   assert.equal(preReference.archived,false);
+  assert.deepEqual(await locked(deleteEnvelope),preReference,
+    'row-locked preview must preserve the same owner and version decision');
+  assert.equal((await locked(request('delete',{}, {target:{id},expectedVersion:2}))).status,'conflict',
+    'stale version after a row lock may not advance');
+  await assert.rejects(locked({...deleteEnvelope,patch:{label:'Tampered'}}),/Lifecycle patch/);
+  await assert.rejects(locked({...deleteEnvelope,target:{id:otherId}}),/Preset not found/);
   assert.equal((await preview(request('archive',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'archive');
   assert.equal((await preview(request('restore',{}, {target:{id},expectedVersion:3}))).effectiveOperation,'restore');
   const versionConflict=await preview(request('delete',{}, {target:{id},expectedVersion:2}));
@@ -178,6 +187,8 @@ try {
  assert.equal(afterReference.effectiveOperation,'archive',
    'deleting a preset with historical entries must archive instead');
  assert.equal(afterReference.referencesStudyEntries,true);
+ assert.equal((await locked(deleteEnvelope)).effectiveOperation,'archive',
+   'locked decision must preserve a referenced preset instead of deleting history');
  assert.equal((await q(refQuery,[owner,id]))[0].referenced,true,
    'linked study entry requires archive instead of physical deletion');
  assert.equal((await q(refQuery,[owner,'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa']))[0].referenced,false);
@@ -186,6 +197,8 @@ try {
  assert.equal((await q(refQuery,[other,id]))[0].referenced,false);
  await assert.rejects(preview(deleteEnvelope),/Preset not found/,
    'lifecycle preview must not leak foreign owner preset details');
+ await assert.rejects(locked(deleteEnvelope),/Preset not found/,
+   'lifecycle row lock must not leak or lock foreign owner data');
  assert.equal((await preview(request('delete',{}, {target:{id:otherId},expectedVersion:1}))).effectiveOperation,'delete');
  await admin();
  assert.equal((await q("select count(*)::int n from public.action_changes where table_name='presets'"))[0].n,
