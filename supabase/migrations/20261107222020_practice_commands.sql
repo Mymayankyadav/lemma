@@ -118,7 +118,8 @@ begin
     raise exception 'Only archived practice topics can be restored'; end if;
    if v_op='record' then
     v_recorded:=coalesce((v_patch->>'occurred_at')::timestamptz,pg_catalog.clock_timestamp());
-    if v_row.last_practiced_at is not null and v_recorded<v_row.last_practiced_at then
+    -- Equal instants make inverse ordering ambiguous; UUID order is not chronology.
+    if v_row.last_practiced_at is not null and v_recorded<=v_row.last_practiced_at then
      raise exception 'Out-of-order practice event'; end if;
     v_delay:=public.lemma_practice_cadence_days(v_row.cadence,(v_patch->>'rating')::integer);
     v_due:=(v_recorded at time zone 'UTC')::date+v_delay;

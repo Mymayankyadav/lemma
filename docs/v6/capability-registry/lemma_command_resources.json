@@ -99,6 +99,33 @@
       }
     },
     {
+      "resource": "presets",
+      "command_fn": "presets_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "reorder",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "label",
+          "subject_id",
+          "project_id",
+          "checkpoint_id",
+          "mode",
+          "focus_minutes",
+          "break_minutes",
+          "long_break_minutes",
+          "cycles",
+          "position"
+        ]
+      }
+    },
+    {
       "resource": "practice_topics",
       "command_fn": "practice_topics_command",
       "mcp_ok": true,

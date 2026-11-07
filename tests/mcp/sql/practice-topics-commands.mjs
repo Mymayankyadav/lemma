@@ -241,6 +241,13 @@ try{
  assertAction(first);
  assert.equal(civil((await getTopic(id)).next_due_date),'2028-02-29');
  const firstEvent=first.changed.find(x=>x.table==='practice_events').id;
+ // A tie cannot be ordered for safe inverse replay: IDs are not chronological.
+ await assert.rejects(ver('record',id,5,{
+  rating:2,occurred_at:'2028-02-28T12:00:00Z'
+ }),/Out-of-order practice event/);
+ assert.equal((await getTopic(id)).version,5,'rejecting tied instant keeps topic version');
+ assert.equal((await q('select count(*)::int n from public.practice_events where topic_id=$1',
+  [id]))[0].n,1,'rejecting tied instant cannot create a practice event');
  const second=await ver('record',id,5,{rating:4,occurred_at:'2028-03-02T12:00:00Z'});
  assertAction(second);
  assert.equal(civil((await getTopic(id)).next_due_date),'2028-03-16');
