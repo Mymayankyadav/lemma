@@ -76,6 +76,9 @@ try{
  const reviewB=(await q("insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) values($1,$2,3,0,1200,'{}'::jsonb) returning id",[other,cardB]))[0].id;
  await reject("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,review_id) values($1,$2,1,$3,1,'graded',$4)",[owner,runA.id,cardA,reviewB]);
  const reviewA=(await q("insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) values($1,$2,4,0,500,'{}'::jsonb) returning id",[owner,cardA]))[0].id;
+ await reject("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,review_id) values($1,$2,4,$3,1,'pending',$4)",[owner,runA.id,cardA,reviewA]);
+ await reject("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,stale_reason,review_id) values($1,$2,5,$3,1,'stale','Stale card',$4)",[owner,runA.id,cardA,reviewA]);
+ await reject("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,stale_reason) values($1,$2,6,$3,1,'pending','Invalid stale marker')",[owner,runA.id,cardA]);
  const graded=(await q("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,review_id) values($1,$2,1,$3,1,'graded',$4) returning *",[owner,runA.id,cardA,reviewA]))[0];
  assert.equal(graded.review_id,reviewA);assert.equal(graded.state,'graded');
  const stale=(await q("insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version,state,stale_reason) values($1,$2,2,$3,1,'stale','Card version changed') returning *",[owner,runA.id,cardA]))[0];
