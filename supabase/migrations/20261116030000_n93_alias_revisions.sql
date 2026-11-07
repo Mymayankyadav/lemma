@@ -105,7 +105,7 @@ begin
     and kind='checkpoint' and old_value=p_value and (p_scope is null or scope_id=p_scope)
   )x;
  end if;
- if pg_catalog.coalesce(array_length(found_ids,1),0)>1 then
+ if coalesce(array_length(found_ids,1),0)>1 then
   raise exception 'Ambiguous alias: supply the subject or project scope';end if;
  return found_ids[1];
 end $resolve$;
@@ -144,11 +144,10 @@ create policy source_page_revisions_owner_read on public.source_page_revisions
 grant select on public.source_revisions,public.source_page_revisions to authenticated,service_role;
 grant insert,update,delete on public.source_revisions,public.source_page_revisions to service_role;
 revoke insert,update,delete,truncate on public.source_revisions,public.source_page_revisions from anon,authenticated;
-create trigger lemma_log_change after insert or update or delete on public.source_revisions
- for each row execute function public.log_change();
-create trigger lemma_log_change after insert or update or delete on public.source_page_revisions
- for each row execute function public.log_change();
-insert into public.lemma_undo_tables(table_name) values('source_revisions'),('source_page_revisions');
+-- Revision snapshots are append-only history, intentionally not part of the
+-- reversible source edit action. Journalling them would change existing
+-- source action_change counts and erase the very snapshots a citation needs
+-- when an owner undoes an edit.
 
 create function public.capture_source_revision() returns trigger
  language plpgsql security definer set search_path='' as $rev$
