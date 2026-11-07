@@ -159,7 +159,6 @@ export default function TodayFocus(){
    {loading&&<p role="status" className="text-caption text-ink-2">Loading study time…</p>}
    {error&&<p role="alert" className="mt-2 text-label text-ink">{error}</p>}
   </section>
-  {active&&<FocusNotices entryId={active.id}/>}
   {accessory&&<>
    <aside aria-label="Focus accessory" className="fixed inset-x-3 bottom-[calc(var(--tab)+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[504px] items-center gap-3 rounded-t-ctl border border-edge bg-[var(--paper)] px-4 py-2 shadow-lg">
     <div className="min-w-0 flex-1">
@@ -180,5 +179,6 @@ export default function TodayFocus(){
    onPause={()=>{void transition('pause');}} onResume={()=>{void transition('resume');}}
    onBreak={()=>{void transition('break');}} onFinish={finish}
    onSave={()=>{void save(false);}} onDiscard={()=>{void save(true);}}/>
+  {active&&<FocusNotices entryId={active.id}/>}
  </>;
 }

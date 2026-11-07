@@ -81,7 +81,7 @@ export default function FocusNotices({entryId}:{entryId:string}){
    aria-modal="true" onCancel={e=>{e.preventDefault();dismiss();}}
    onClose={()=>{setDialogKind(null);opener.current?.focus();}}
    className="fixed inset-0 z-50 m-auto w-[min(420px,calc(100vw-24px))] rounded-ctl border border-edge bg-[var(--paper)] p-5 text-ink shadow-xl backdrop:bg-black/65">
-   <form onSubmit={e=>{e.preventDefault();void save();}}>
+   <form noValidate onSubmit={e=>{e.preventDefault();void save();}}>
     <h2 className="text-title font-semibold">{dialogKind==='park'?'Park a thought':'I drifted'}</h2>
     {dialogKind==='park'?<label className="mt-3 block text-label">
      Thought
