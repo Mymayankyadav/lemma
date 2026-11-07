@@ -19,7 +19,7 @@ export function coverageOf(source:Source,stat:SourceTranscriptionStat|undefined)
  const transcribed=Math.max(0,Math.min(pages,stat.transcribed));
  const needsCheck=Math.max(0,Math.min(transcribed,stat.needsCheck));
  return {label:transcribed+' of '+pages+' pages transcribed',
-  verification:needsCheck>0?needsCheck+' pages need checking':
+  verification:needsCheck>0?needsCheck+' '+(needsCheck===1?'page':'pages')+' need checking':
    transcribed>0?'No flagged transcription pages':'No verified transcription pages'};
 }
 /** N82 is presentation-only: existing owner-scoped ingestion and transcript controls remain authoritative. */
