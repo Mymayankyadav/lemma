@@ -50,13 +50,12 @@ Tests: tests/mcp/sql/study_goals-command.mjs, plus unchanged N45.1 and existing 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals-command.mjs, docs/v6/capability-registry/study_goals.json, CURRENT.md.
 Not: changing N45.1 or older migrations, app or MCP function code, existing test assertions, other tables/functions.
 
-## N46 Dated day plans and closures: migration (day_plans)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.day_plans` with `plan_date`, `time_zone` (unique per owner and date), `intention`, `capacity_minutes`, `availability jsonb` with the source versions it was computed from, `status` (`draft`/`previewed`/`committed`/`closed`), `closed_at`, `tomorrow_first_task_id`, `ritual jsonb`; and child table `public.day_plan_items` (plan, task, optional calendar block, `disposition` `placed`/`unplaced`/`carried_over`, reason, position). Operations create, update, `commit` (refuses when any listed task or block version differs from the preview), `close`, `reopen`. Closing one date never marks another date closed; unplaced and carried-over work stays listed.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/day_plans.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
+## N46.2 Day-plan items, preview-to-commit invariants and closure commands
+Stage: Build · Status: open · Needs: N46.1 · Assigned: —
+Done = complete N46 on N46.1's owner-bound, one-per-day day_plans headers. Add public.day_plan_items with owner-composite references to its plan, task and optional calendar block, disposition placed/unplaced/carried_over, reason and stable position; keep unplaced/carried-over work listed. Add public.day_plans_command(p jsonb) with versioned owner-create/update, preview, commit, close and reopen; commit must atomically compare every listed task/block version to the availability.sources recorded at preview and refuse stale versions. Closing one date may never affect another; close sets closed_at and reopening clears it. Keep client writes disabled until command_receipts idempotence, action journal, registered undo in lemma_undo_tables and generic mcp_command registration in lemma_command_resources are installed. Ensure same owner IDs throughout, exact retry/conflict semantics and source attribution. Production SQL needs independent review (D8 b).
+Tests: extend tests/mcp/sql/day_plans.mjs with full-migration lifecycle, owner isolation, task/block version drift refusal, multiple dates and closure, item dispositions, idempotent retries, undo and MCP parity. Keep N46.1 field, JSON and FK constraints; revise read-only stage assertions only to enforce registered auditable writes.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/day_plans.mjs, docs/v6/capability-registry/day_plans.json, docs/v6/capability-registry/day_plan_items.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: changes to existing migrations, unrelated app/MCP functions, UI or other owner data.
 
 ## N47.2 Overlap acknowledgement command lifecycle and MCP/undo parity
 Stage: Build · Status: open · Needs: N47.2.1 · Assigned: —
@@ -104,12 +103,12 @@ Tests: tests/unit/practice-topics/live.test.ts (mocked owner-scoped pages and fa
 Scope: src/data/practice-topics/**, tests/unit/practice-topics/**, CURRENT.md.
 Not: other src/data/**, app screens, supabase/**, MCP, new dependencies or existing test assertions.
 
-## N58.2 Parked thoughts: demo and live lifecycle (remaining after N58 split)
-Stage: Build · Status: open · Needs: N58.2.1 · Assigned: —
-Done = complete D8(c) for N44 using the N58.1 typed ThoughtApi and validated transitions. Implement src/data/parked-thoughts/demo.ts, live.ts and index.ts, plus getThoughtApi()/setThoughtApiForTests(). Demo: reload-persistent owner fixtures, bounded opaque cursor pages with exact total, versioned create/edit/dismiss/reopen/delete and atomic convert-to-task; a repeated conversion never creates another task. Live: owner-scoped read pages and rpc('parked_thoughts_command', envelope) for all operations with a fresh operationId per action reused on uncertain retry, conflict and version mapping, no owner field. Convert-to-task returns one transaction receipt with both a TaskRecord and resolved thought. Failed conversion never leaves a thought marked converted or a duplicate task.
-Tests: tests/unit/parked-thoughts/** for demo roundtrip, transitions and idempotent conversion, live envelope per operation, repeated operationId, exact page/total, owner isolation, conflict recovery and no owner field; retain N58.1 pure-model regressions.
+## N58.2.3 Parked thought atomic conversion and owner-RLS live adapter
+Stage: Build · Status: open · Needs: N44.2, N44.2.2 · Assigned: —
+Done = complete N58.2 using the N58.1 typed ThoughtApi, validation and transitions plus N58.2.2's reload-safe demo CRUD/paging. Implement atomic convertToTask in demo without a fake destination or orphan task, and src/data/parked-thoughts/live.ts plus index.ts/getThoughtApi()/setThoughtApiForTests(). The live adapter must issue every create/edit/dismiss/reopen/delete/convert operation through owner-RLS parked_thoughts_command envelopes after N44.2, with a fresh operationId per new action reused on uncertain retry, optimistic version conflict mapping, no caller owner fields and bounded owner reads. One convert action returns both a real TaskRecord and a resolved thought from a single transaction receipt; failed/retried conversion must not leave a partially converted thought or duplicate task. Preserve storage isolation and existing cards/reviews. N44.2 remains a prerequisite while split PR #1039 is unmerged; afterward N44.2.2 must be done before implementing live writes.
+Tests: extend tests/unit/parked-thoughts/** with atomic demo conversion and reload, live RPC envelopes for every operation, retry identity, stale/conflict mapping, owner isolation and bounded pages; retain N58.1 and N58.2.2 regressions.
 Scope: src/data/parked-thoughts/**, tests/unit/parked-thoughts/**, CURRENT.md.
-Not: other src/data/** modules, UI, supabase/**, new dependencies.
+Not: edits to other src/data/** modules, supabase/**, UI, protected files or new dependencies.
 
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45.2 · Assigned: —
@@ -223,7 +222,7 @@ Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60, N58.2 · Assigned: —
+Stage: Build · Status: open · Needs: N60, N58.2.3 · Assigned: —
 Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
 Tests: `tests/unit/ritual/**`
 Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
@@ -237,7 +236,7 @@ Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58.2, N64 · Assigned: —
+Stage: Build · Status: open · Needs: N58.2.3, N64 · Assigned: —
 Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
 Tests: `tests/unit/focus/park-notice.test.tsx`
 Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
