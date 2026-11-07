@@ -24,7 +24,7 @@ const as=async who=>{
 };
 try{
  await db.exec("create role anon; create role authenticated; create role service_role; create schema auth; create schema extensions; create table auth.users(id uuid primary key)");
- await db.exec("create function auth.uid() returns uuid language sql as $auth$ select nullif(current_setting('test.uid',true),'')::uuid $auth$");
+ await db.exec("create function auth.uid() returns uuid language sql as $auth$ select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,nullif(current_setting('test.uid',true),'')::uuid) $auth$");
  await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $bytes$select decode(repeat('00',n),'hex')$bytes$");
  await db.exec("grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
@@ -56,7 +56,7 @@ try{
  await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[other,'b'.repeat(48)]);
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','cyan')",[subject,owner]);
  await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'proof','Proofs','Study')",[project,owner,subject]);
- await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion) values($1,$2,$3,'CP1',1,'Proof','Prove','Proof accepted')",[checkpoint,owner,project]);
+ await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,$3,'CP1',1,'Proof','Prove','Proof accepted',$4::jsonb)",[checkpoint,owner,project,JSON.stringify(['Explain proof'])]);
  await q("insert into public.sessions(id,user_id,project_id,number,goal,style,checkpoint_id) values($1,$2,$3,1,'Proof metric','socratic',$4)",[session,owner,project,checkpoint]);
  const originalEvent=(await q("insert into public.session_events(user_id,session_id,checkpoint_id,kind,body,outcome) values($1,$2,$3,'evidence','Original evidence','demonstrated') returning id",[owner,session,checkpoint]))[0].id;
  await as(owner);
@@ -121,5 +121,19 @@ try{
   /not found for owner/);
  await db.exec('reset role');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource in ('session_event_corrections','review_corrections')"))[0].n,2);
- console.log('PASS N91 owner correction receipts, checkpoint re-derivation, explicit reviewed schedule, undo and isolation');
+ // The shared MCP bridge must execute the same owner-isolated correction
+ // without trusting owner IDs or provenance fields in its user envelope.
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const mcpRequest=command('session_event_corrections','correct',eventReceipt.revisedEventId,
+  {reason:'MCP evidence clarification',body:'MCP corrected evidence'});
+ const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) result',
+  [owner,'chatgpt',JSON.stringify(mcpRequest)]))[0].result;
+ assert.equal(mcp.status,'ok');
+ assert.ok(mcp.revisedEventId);
+ const act=(await q('select user_id,source from public.actions where no=$1',[mcp.actionNo]))[0];
+ assert.equal(act.user_id,owner);
+ assert.equal(act.source,'chatgpt');
+ await db.exec('reset role');
+ console.log('PASS N91 owner correction receipts, checkpoint re-derivation, explicit reviewed schedule, undo, MCP and isolation');
 }finally{await db.close()}
