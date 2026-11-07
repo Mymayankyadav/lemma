@@ -284,13 +284,6 @@ Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs
 Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
 Not: other adapter methods, UI.
 
-## N96 Flag-off rollback keeps a working app and every record
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = an e2e journey creates v6 records (entries, blocks, tasks) with `v6Shell` on, turns the flag off and checks the prior UI works on every route with no errors and no records deleted, then on again and the records reappear.
-Tests: `tests/e2e/v6-rollback.spec.ts`
-Scope: tests/e2e/v6-rollback.spec.ts, CURRENT.md.
-Not: app code, supabase/**.
-
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
 Done = a PGlite test loads a representative pre-v6 account fixture (paths, sources, cards with history, sessions, proposals), applies all migrations, and checks no lost rows, links or schedules, historical estimates still labelled, new records creatable, and export/undo across old and new records.
