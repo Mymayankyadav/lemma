@@ -1,6 +1,6 @@
--- N45.1: study goal records and a single safe, receipt-backed create path.
--- N45.2 will add lifecycle updates and registry-backed MCP/undo registration.
--- The authenticated role cannot insert/update/delete the table directly.
+-- N45: complete study-goal owner lifecycle and registry-backed MCP/undo.
+-- All five owner-checked writes are receipt-backed, versioned and journalled.
+-- Authenticated clients cannot insert/update/delete the table directly.
 create function public.study_goal_valid_time_zone(p_zone text)
 returns boolean language sql stable set search_path = '' as $tz$
   select p_zone is not null and pg_catalog.length(p_zone) between 1 and 100
@@ -45,7 +45,7 @@ grant select,insert,update,delete on public.study_goals to service_role;
 
 -- The scope includes nullable IDs; NULL means unscoped, not a wildcard.
 -- Lock per owner, then check active inclusive date-range overlap. This also
--- protects the future N45.2 update/restore commands and service-role writes.
+-- protects every update/restore command and service-role write.
 create function public.study_goals_check_overlap() returns trigger
 language plpgsql security invoker set search_path = '' as $overlap$
 begin

@@ -143,7 +143,10 @@ try{
   await rejects(make({...invalidDates,time_zone:'Not/AZone'}),/constraint|violates/i);
   await rejects(make({...data,user_id:other}),/Unknown study goal patch field/);
   await rejects(make({...data}, {expectedVersion:2}),/expectedVersion/i);
-  await rejects(make({...data}, {operation:'update'}),/Unsupported study goal/i);
+  // Update is now supported by N45; without a target and version it must
+  // still fail safely before touching the create fixture.
+  await rejects(make({...data}, {operation:'update'}),
+   /target id and positive expectedVersion/i);
   await as(other);
   assert.deepEqual(await q('select id from public.study_goals where id=$1',[id]),[],
     'RLS must hide another owner');
