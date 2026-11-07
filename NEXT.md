@@ -19,13 +19,6 @@ Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N50.2.2 Study events: related links, versioned lifecycle, undo and MCP
-Stage: Build · Status: open · Needs: N50.2.1 · Assigned: —
-Done = complete N50.2 after N50.2.1's authenticated, side-effect-free study_events_validate_envelope and N50.1's owner-scoped study_events table. Add optional related_kind/related_id with owner-bound references, transactional owner-only study_events_command supporting record, edit, void, restore, receipt replay, changed-payload and stale version conflicts. Recheck current kind, drift-only positive duration, related/entry ownership and versions under lock; preserve voided history. Register study_events in lemma_undo_tables and lemma_command_resources for action journal, undo and service-role MCP parity; block unaudited direct DML and prevent forged provenance. Production SQL requires independent review.
-Tests: extend tests/mcp/sql/study_events-command.mjs with actual lifecycle, related owner links, retries, conflicts, journal, undo, MCP and second-owner refusal; preserve the N50.2.1 full-migration assertions and N50.1 SQL test.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_events-command.mjs, docs/v6/capability-registry/study_events.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: earlier migrations, existing test loosening, app/MCP code, unrelated tables/functions or protected paths.
-
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
@@ -104,13 +97,6 @@ Stage: Build · Status: open · Needs: N60.2 · Assigned: —
 Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry linked to it), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
 Tests: `tests/unit/home-v6/today-plan.test.tsx`
 Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N71 v6 Focus: park a thought, notices and drift behind the shell flag
-Stage: Build · Status: open · Needs: N58.2.3, N64.2 · Assigned: —
-Done = with `v6Shell` on, Focus offers Park a thought (a short dialog saving to parked thoughts linked to the entry, never interrupting the timer), I drifted (records a drift event with minutes; deduction is offered only after N66 lands) and a notice counter from study events; everything works from the keyboard and survives reload. Flag off: nothing changes.
-Tests: `tests/unit/focus/park-notice.test.tsx`
-Scope: src/features/focus/**, tests/unit/focus/park-notice.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
@@ -282,13 +268,6 @@ Done = the account export includes every table in `lemma_undo_tables` (so later 
 Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
 Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
 Not: other adapter methods, UI.
-
-## N96 Flag-off rollback keeps a working app and every record
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = an e2e journey creates v6 records (entries, blocks, tasks) with `v6Shell` on, turns the flag off and checks the prior UI works on every route with no errors and no records deleted, then on again and the records reappear.
-Tests: `tests/e2e/v6-rollback.spec.ts`
-Scope: tests/e2e/v6-rollback.spec.ts, CURRENT.md.
-Not: app code, supabase/**.
 
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
