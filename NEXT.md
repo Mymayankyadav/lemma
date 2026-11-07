@@ -86,14 +86,6 @@ Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no imp
 Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
 
-## N51 Study command v2: saved-entry correction and block task links
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(d), one migration replaces `study_command` compatibly and adds `calendar_blocks.task_id` (owner-composite FK to `tasks`, deferrable) so a block can carry a task; new operations on `study_entries`: `correct` (edit intent/links/rating/reflection and replace its intervals with a validated union, end after start, no 24-hour cap at DST), `split` (one saved entry into two at an instant, preserving the exact union), `void` and `restore`, and `create_manual` (a saved entry with `approximate=true` and its intervals). Calendar block create/update accept `task_id`. Every existing operation behaves exactly as before.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/study-correction.mjs` (each operation, union preserved, overlapping intervals rejected, a voided entry leaves Calendar/Progress reads, undo reverts each, retry/conflict, second owner, `mcp_command` path) and the existing study SQL tests unchanged
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-correction.mjs, docs/v6/capability-registry/study_entries.json, docs/v6/capability-registry/calendar_blocks.json, CURRENT.md.
-Not: app or MCP code, other functions.
-
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
 Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
