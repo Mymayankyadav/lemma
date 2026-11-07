@@ -105,13 +105,16 @@ try{
   assert.equal(adjacent.status,'ok','adjacent nonoverlapping civil dates work');
   const otherPeriod=await call(make({...data,period:'month'}));
   assert.equal(otherPeriod.status,'ok','different periods can overlap');
-  await rejects(make({...data,subject_id:subject2}),/constraint|violates/i);
-  await rejects(make({...data,target_minutes:0}),/constraint|violates/i);
-  await rejects(make({...data,target_minutes:100001}),/constraint|violates/i);
-  await rejects(make({...data,target_minutes:1.5}),/whole minutes/i);
-  await rejects(make({...data,start_date:'2026-2-2'}),/YYYY-MM-DD/i);
-  await rejects(make({...data,end_date:'2026-11-01'}),/constraint|violates/i);
-  await rejects(make({...data,time_zone:'Not/AZone'}),/constraint|violates/i);
+  // Keep invalid field probes outside existing goal windows: otherwise the
+  // overlap BEFORE trigger correctly fails before field CHECK constraints.
+  const invalidDates={...data,start_date:'2027-01-04',end_date:'2027-01-10'};
+  await rejects(make({...invalidDates,subject_id:subject2}),/constraint|violates/i);
+  await rejects(make({...invalidDates,target_minutes:0}),/constraint|violates/i);
+  await rejects(make({...invalidDates,target_minutes:100001}),/constraint|violates/i);
+  await rejects(make({...invalidDates,target_minutes:1.5}),/whole minutes/i);
+  await rejects(make({...invalidDates,start_date:'2026-2-2'}),/YYYY-MM-DD/i);
+  await rejects(make({...invalidDates,end_date:'2026-11-01'}),/constraint|violates/i);
+  await rejects(make({...invalidDates,time_zone:'Not/AZone'}),/constraint|violates/i);
   await rejects(make({...data,user_id:other}),/Unknown study goal patch field/);
   await rejects(make({...data}, {expectedVersion:2}),/expectedVersion/i);
   await rejects(make({...data}, {operation:'update'}),/Unsupported study goal/i);
