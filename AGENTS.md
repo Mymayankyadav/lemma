@@ -80,5 +80,6 @@ CI merges. Agents never merge, never update a branch from main for the sake of m
 - Never push to main or force-push. No secrets in code, PRs or comments.
 - Supabase: project yemqnhnztlbyxmjxidis only, with schema changes only through migrations.
 - Migrations are additive only: your PR merges straight to production. Never edit, rename or delete an existing migration. A new migration may only create things (tables, columns, indexes, policies, new functions, grants). Statements inside a new function's body are fine. `scope` fails (MIGRATION-ADDITIVE) any agent migration that drops, truncates, renames, changes a type, deletes or updates existing rows, revokes (except `revoke … on function` for a function created in the same migration, to lock it down), or alters a policy. To replace an existing function compatibly, add the PR body line `Replaces function: <name> (reviewer verified signature and behaviour)`; the reviewer checks that claim. Anything else needs an Owner `rules:` PR.
+- Migration timestamps need not be in merge order: the deploy applies every migration the database has not applied yet (`supabase db push --include-all`). Never rename a migration to change its order.
 - No new dependencies unless the item says so.
 - If you change what exists or what is broken, update CURRENT.md in the same PR.
