@@ -401,7 +401,7 @@ create trigger study_intervals_timer_lease_guard
 -- Compatible replacement: original N51 operations retain their bodies;
 -- new study modes use the owner-bound helper above.
 
-create or replace function public.study_command(p jsonb)
+create function public.lemma_study_command_v2_compat(p jsonb)
 returns jsonb
 language plpgsql security invoker set search_path = ''
 as $study$
@@ -785,3 +785,16 @@ $study$;
   return v_receipt;
 end
 $study$;
+
+-- Keep the established SQL public API as a tiny compatibility delegate.
+-- Its owner-bound N11/N51 body is in the NEW invoker function above, which
+-- now also performs N52 lease and timer dispatch, avoiding any inline
+-- data-rewriting statements in this replacement DDL.
+revoke all on function public.lemma_study_command_v2_compat(jsonb) from public,anon;
+grant execute on function public.lemma_study_command_v2_compat(jsonb)
+ to authenticated,service_role;
+create or replace function public.study_command(p jsonb) returns jsonb
+language sql volatile security invoker set search_path='' as $n52_delegate$
+ select public.lemma_study_command_v2_compat(p)
+$n52_delegate$;
+
