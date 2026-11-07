@@ -65,14 +65,6 @@ Tests: tests/mcp/sql/overlap_acknowledgements-command.mjs (lifecycle, receipts, 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/overlap_acknowledgements-command.mjs, docs/v6/capability-registry/overlap_acknowledgements.json, CURRENT.md.
 Not: changes to earlier migrations, app or MCP function code, other tables/functions, existing test assertions.
 
-
-Stage: Build · Status: open · Needs: N48.1 · Assigned: —
-Done = finish N48 after N48.1's read-only, owner-scoped review_runs and review_run_items schema. One forward-only additive migration installs owner-bound versioned review_runs_command with start/pause/resume/advance/abandon/complete, durable operationId receipts, identical SQL card selection and counts as the connector, deck filters and budgets, scheduler/settings version checks, and owner action journaling. Start snapshots ordered card IDs and expected versions; resume never grades a card; advance links only a previously committed owner review receipt and marks changed-version cards stale with a reason. Add both tables to lemma_undo_tables and register review_runs in lemma_command_resources for service-role MCP parity, preserving existing undo_action/mcp_command and card/review grading behaviour.
-Owner-authorized (D1, D8): production SQL needs independent review.
-Tests: tests/mcp/sql/review_runs_command.mjs full-migration PGlite, owner isolation, same SQL selection/counts, retry/receipt parity, stale card version, card grade never replayed, journal/undo and service-role MCP.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/review_runs_command.mjs, docs/v6/capability-registry/review_runs.json, docs/v6/capability-registry/review_run_items.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: existing migrations, app code, FSRS/card grading, unrelated functions/tables, protected CI or dependency changes.
-
 ## N49 Proposal drafts: migration (proposal_drafts)
 Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
 Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
