@@ -175,11 +175,14 @@ begin
    if v_patch->>v_key !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
     raise exception 'Goal dates require YYYY-MM-DD'; end if;
   end loop;
+  -- Keep the existing create contract: non-whole values are rejected by
+  -- the envelope, while 0 and 100001 reach the table CHECK constraint.
+  -- This preserves the existing stable SQL failure class for both create
+  -- and update, without weakening the persisted 1..100000 bound.
   if v_patch?'target_minutes' and
     (pg_catalog.jsonb_typeof(v_patch->'target_minutes') is distinct from 'number'
-      or v_patch->>'target_minutes' !~ '^[1-9][0-9]*$'
-      or (v_patch->>'target_minutes')::numeric>100000) then
-   raise exception 'Goal target_minutes must be 1..100000 whole minutes'; end if;
+      or v_patch->>'target_minutes' !~ '^[0-9]+$') then
+   raise exception 'target_minutes must be whole minutes'; end if;
   if v_patch?'subject_id' and
     pg_catalog.jsonb_typeof(v_patch->'subject_id') not in ('string','null') then
    raise exception 'Invalid goal subject_id'; end if;

@@ -200,6 +200,11 @@ try{
    ...data,start_date:'2028-01-01',end_date:'2028-01-07',
    target_minutes:15}));
   const undoId=undoCreate.changed[0].id;
+  await rejects(envelope('update',{target_minutes:0},undoId,1),/constraint|violates/i);
+  await rejects(envelope('update',{target_minutes:100001},undoId,1),/constraint|violates/i);
+  await rejects(envelope('update',{target_minutes:1.5},undoId,1),/whole minutes/i);
+  assert.equal((await q('select version from public.study_goals where id=$1',[undoId]))[0].version,1,
+   'failed target-minute updates do not consume the optimistic version');
   const undoUpdate=await call(envelope('update',{target_minutes:20},undoId,1));
   assert.equal(undoUpdate.changed[0].version,2);
   const inverse=(await q('select public.undo_action($1,$2,false) result',
