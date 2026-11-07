@@ -163,12 +163,6 @@ Tests: `tests/unit/practice-ui/**`
 Scope: src/features/practice/** (new), src/app/App.tsx (registering the route only), tests/unit/practice-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
-Stage: Build · Status: open · Needs: N39 · Assigned: —
-Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
-Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
-Not: other screens, other settings sections, supabase/**.
 
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
