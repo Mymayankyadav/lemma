@@ -1,7 +1,10 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
 import {createLiveOverlapApi} from '../../../src/data/overlap-acknowledgements/live';
 import {liveClient} from '../../../src/data/live/client';
+import {getMode} from '../../../src/data/mode';
+import {getOverlapApi,setOverlapApiForTests} from '../../../src/data/overlap-acknowledgements';
 vi.mock('../../../src/data/live/client',()=>({liveClient:vi.fn()}));
+vi.mock('../../../src/data/mode',()=>({getMode:vi.fn(()=> 'live')}));
 
 type Row=Record<string,unknown>;
 type R={data:Row[]|Row|null;error:{code?:string;message?:string}|null};
@@ -197,5 +200,136 @@ describe('N61.2.2.1 read-only owner-RLS overlap adapter',()=>{
   await expect(api.listAcknowledgements()).rejects.toMatchObject({code:'invalid'});
   fake.data.overlap_acknowledgements=[row(1,{starts_at:'2026-11-07T10:00:00'})];
   await expect(api.listAcknowledgements()).rejects.toThrow(/timezone-naive/);
+ });
+});
+
+
+describe('N61.2.2.2 owner-RLS command writes and durable retries',()=>{
+ const full={participants:[participant(uuid(100),'block'),
+   participant(uuid(200),'entry')],
+  startsAt:'2026-11-07T10:10:00.000Z',
+  endsAt:'2026-11-07T10:30:00.000Z',
+  reason:'Preserve both commitments',
+  disposition:'keep_both' as const,attributedTo:null};
+ type Cmd={operationId:string;resource:string;operation:string;
+   target?:{id:string};expectedVersion?:number;patch:Row};
+ const sent:Cmd[]=[];
+ beforeEach(()=>{
+  sent.length=0;
+  vi.mocked(getMode).mockReturnValue('live');
+  setOverlapApiForTests(null);
+ });
+ it('creates a record through one owner-scoped RPC, then reads authoritative source',async()=>{
+  fake.client.rpc.mockImplementation(async(name:string,options:unknown)=>{
+   expect(name).toBe('overlap_acknowledgements_command');
+   const p=(options as {p:Cmd}).p;sent.push(p);
+   fake.data.overlap_acknowledgements.push(row(4,{
+    participants:p.patch.participants,
+    starts_at:p.patch.starts_at,ends_at:p.patch.ends_at,
+    reason:p.patch.reason,disposition:p.patch.disposition,
+    attributed_to:p.patch.attributed_to,source:'mcp',
+   }));
+   return {data:{status:'ok',operationId:p.operationId,
+     actionNo:77,changed:[{id:uuid(4),version:1}]},error:null};
+  });
+  const api=createLiveOverlapApi(true);
+  const result=await api.createAcknowledgement(full);
+  expect(result.actionNo).toBe(77);
+  expect(result.record).toMatchObject({id:uuid(4),source:'mcp',stale:false});
+  expect(sent).toHaveLength(1);
+  expect(sent[0]).toMatchObject({schemaVersion:1,
+   resource:'overlap_acknowledgements',operation:'create',
+   patch:{starts_at:full.startsAt,ends_at:full.endsAt,
+    disposition:'keep_both',attributed_to:null}});
+  expect(sent[0].operationId).toMatch(/^[0-9a-f-]{36}$/i);
+  expect(JSON.stringify(sent[0])).not.toContain('user_id');
+  expect(JSON.stringify(sent[0])).not.toContain('userId');
+  expect(fake.client.insert).not.toHaveBeenCalled();
+  expect(fake.client.update).not.toHaveBeenCalled();
+  expect(fake.client.delete).not.toHaveBeenCalled();
+ });
+ it('updates a fully validated patch and deletes with optimistic versions',async()=>{
+  fake.client.rpc.mockImplementation(async(_name:string,options:unknown)=>{
+   const p=(options as {p:Cmd}).p;sent.push(p);
+   const target=p.target?.id??'';
+   if(p.operation==='update'){
+    fake.data.overlap_acknowledgements[0]=row(1,{
+      ...p.patch,reason:p.patch.reason,version:2});
+   }else if(p.operation==='delete'){
+    fake.data.overlap_acknowledgements=fake.data.overlap_acknowledgements
+      .filter(x=>x.id!==target);
+   }
+   return {data:{status:'ok',operationId:p.operationId,
+    actionNo:p.operation==='update'?91:92,
+    changed:[{id:target,version:p.operation==='update'?2:1}]},error:null};
+  });
+  const api=createLiveOverlapApi(true);
+  const update=await api.updateAcknowledgement(uuid(1),1,{reason:'Changed'});
+  expect(update).toMatchObject({actionNo:91,record:{version:2,reason:'Changed'}});
+  expect(sent[0]).toMatchObject({operation:'update',
+    expectedVersion:1,target:{id:uuid(1)},patch:{reason:'Changed'}});
+  await expect(api.updateAcknowledgement(uuid(1),1,{reason:'Stale'}))
+   .rejects.toMatchObject({code:'conflict'});
+  await expect(api.updateAcknowledgement(uuid(1),2,{
+    disposition:'attribute_to',attributedTo:{kind:'block',id:uuid(999)},
+  })).rejects.toMatchObject({code:'invalid'});
+  expect(sent).toHaveLength(1);
+  const deletion=await api.deleteAcknowledgement(uuid(2),1);
+  expect(deletion).toEqual({record:{id:uuid(2)},actionNo:92});
+  expect(sent[1]).toMatchObject({operation:'delete',expectedVersion:1,
+    target:{id:uuid(2)},patch:{}});
+  expect(sent[1].operationId).not.toBe(sent[0].operationId);
+  expect(fake.client.from).toHaveBeenCalledWith('overlap_acknowledgements');
+  expect(fake.client.insert).not.toHaveBeenCalled();
+ });
+ it('retries an unknown outcome byte-identically, including operationId',async()=>{
+  fake.client.rpc.mockResolvedValueOnce({data:null,
+   error:{message:'Network dropped after write'}}).mockImplementationOnce(
+   async(_name:string,options:unknown)=>{
+    const p=(options as {p:Cmd}).p;
+    fake.data.overlap_acknowledgements.push(row(4,{
+     participants:p.patch.participants,
+     starts_at:p.patch.starts_at,ends_at:p.patch.ends_at,
+     reason:p.patch.reason,disposition:p.patch.disposition,
+     attributed_to:p.patch.attributed_to,
+    }));
+    return {data:{status:'ok',operationId:p.operationId,actionNo:44,
+     changed:[{id:uuid(4),version:1}]},error:null};
+   });
+  const result=await createLiveOverlapApi(true).createAcknowledgement(full);
+  expect(result.actionNo).toBe(44);
+  const calls=fake.client.rpc.mock.calls;
+  expect(calls).toHaveLength(2);
+  expect(calls[0]).toEqual(calls[1]);
+  expect((calls[0][1] as {p:Cmd}).p.operationId).toBeTruthy();
+ });
+ it('maps changed-payload/version conflicts and refuses an undeployed RPC',async()=>{
+  const api=createLiveOverlapApi(true);
+  fake.client.rpc.mockResolvedValueOnce({data:{status:'conflict',
+    operationId:'placeholder',actionNo:null,
+    conflict:{currentVersion:9}},error:null});
+  // The command refuses to accept an unrelated receipt's operationId.
+  await expect(api.createAcknowledgement(full)).rejects.toThrow(/mismatched operationId/);
+  fake.client.rpc.mockImplementationOnce(async(_name:string,options:unknown)=>{
+    const p=(options as {p:Cmd}).p;
+    return {data:{status:'conflict',operationId:p.operationId,actionNo:null,
+      conflict:{currentVersion:9}},error:null};
+  });
+  await expect(api.createAcknowledgement(full)).rejects
+    .toMatchObject({code:'conflict'});
+  fake.client.rpc.mockResolvedValueOnce({data:null,error:{
+    code:'PGRST202',message:'Could not find the function'}});
+  await expect(api.createAcknowledgement(full)).rejects
+    .toThrow(/not deployed/);
+ });
+ it('switches injected facades by mode without altering the old read-only constructor',()=>{
+  const fakeDemo={...createLiveOverlapApi(),mode:'demo' as const};
+  setOverlapApiForTests(fakeDemo);
+  vi.mocked(getMode).mockReturnValue('demo');
+  expect(getOverlapApi()).toBe(fakeDemo);
+  vi.mocked(getMode).mockReturnValue('live');
+  expect(getOverlapApi()).not.toBe(fakeDemo);
+  expect(getOverlapApi().mode).toBe('live');
+  setOverlapApiForTests(null);
  });
 });
