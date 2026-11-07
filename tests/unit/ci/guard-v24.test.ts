@@ -54,5 +54,7 @@ describe('v2.4 one-hour lease',()=>{
   expect(md).toContain('A sub-item (an id with a dot) is never split again')
   expect(md).toContain('sub-item .1 must contain the hardest part of the item end to end')
   expect(md).not.toMatch(/for 3 hours, CI adds the label lease-expired/)
+  expect(md).toContain("only when `current_setting('role',true)='service_role'`")
+  expect(md).toContain('revokes `insert, update, delete, truncate` from `anon, authenticated` explicitly')
  })
 })
