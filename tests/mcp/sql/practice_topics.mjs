@@ -117,6 +117,15 @@ try{
  await db.exec('reset role');
  await assert.rejects(q('insert into public.practice_topics(user_id,title,subject_id) values($1,$2,$3)',[owner,'Wrong owner',foreign.id]),/foreign key/i);
  await admin();
+ // Even if an inherited default privilege permits SELECT, an anonymous
+ // caller must never observe either table's owner-scoped records.
+ await db.exec('set role anon');
+ for(const table of tables){
+  try {assert.deepEqual(await q('select id from public.'+table),[],
+   'anonymous caller cannot read private practice records');}
+  catch(e){assert.match(String(e),/permission denied|row.level security/i);}
+ }
+ await db.exec('reset role');
  const journal=await q("select distinct table_name from public.action_changes where table_name in ('practice_topics','practice_events')");
  assert.deepEqual(journal,[],'N43.1 must defer journal registration until its inverse exists');
  console.log('PASS N43.1 cadence, practice topic/event schemas and owner isolation');
