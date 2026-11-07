@@ -47,7 +47,8 @@ export interface ReviewRunApi {
  completeRun(runId:string,expectedVersion:number):Promise<StudyReceipt<ReviewRunRecord>>;
 }
 export class ReviewRunError extends Error {
- constructor(public readonly code:'invalid'|'conflict'|'not_found',message:string) {
+ constructor(public readonly code:'invalid'|'conflict'|'not_found',
+  message:string,public readonly currentVersion?:number) {
   super(message);this.name='ReviewRunError';
  }
 }
