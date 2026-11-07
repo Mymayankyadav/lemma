@@ -117,20 +117,20 @@ Tests: tests/unit/day-plans/** for demo reload, owner-day uniqueness, multiple d
 Scope: src/data/day-plans/**, tests/unit/day-plans/**, CURRENT.md.
 Not: other data modules, UI, supabase/**, new dependencies.
 
-## N61.2.2 Overlap acknowledgement live RPC adapter, facade and owner parity
-Stage: Build · Status: open · Needs: N61.2.1 · Assigned: —
-Done = complete N61.2 after N61.1's typed contract/validation and N61.2.1's isolated tab-persistent demo CRUD and dynamic staleness. Implement the mode-aware getOverlapApi()/setOverlapApiForTests() facade and src/data/overlap-acknowledgements/live.ts using authenticated owner-RLS reads of public.overlap_acknowledgements, plus current owner participant versions for the computed stale state without hiding other conflicts. Implement exact 1–50 keyset pages, filter-bound opaque cursors, and get by ID. Send every create/update/delete as an owner-free versioned rpc('overlap_acknowledgements_command', envelope) mutation, generating one fresh operationId per user action and reusing the exact envelope on ambiguous or post-write retries; never issue direct table DML. Map currentVersion and changed-payload conflict receipts, source/action numbers and read-after-write to the typed contract. Validate participant ownership and version on the server via N47.2.3 before writes; no fake success if N47.2.3 has not deployed. Preserve N61.2.1 demo and N61.1 validation semantics without changes.
-Tests: tests/unit/overlap-acknowledgements/live.test.ts (mocked owner RLS read pages, all envelopes, stable retry IDs, optimistic conflicts, partial owner visibility, current participant staleness, source receipts and no caller owner field), plus existing N61.1 and N61.2.1 tests unchanged.
+## N61.2.2.2 Overlap acknowledgement RPC writes, retries and mode-aware facade
+Stage: Build · Status: open · Needs: N61.2.2.1 · Assigned: —
+Done = complete N61.2.2 after N61.2.2.1's read-only owner-RLS live adapter, bounded exact-total pages and derived participant-version staleness, N61.2.1's tab-local demo lifecycle, and N61.1's typed contract. Add the mode-aware getOverlapApi()/setOverlapApiForTests() facade and implement the three live create/update/delete mutations with rpc('overlap_acknowledgements_command', envelope) only. Each user action generates a fresh UUID operationId and retrying an unknown or post-write outcome reuses the byte-identical envelope; a changed payload with that operationId is a conflict. Send no caller owner ID or direct table DML; use optimistic expectedVersion, validate full patched state against N61.1 rules, map currentVersion and changed-payload conflicts, source provenance and actionNo receipts, and read owner-RLS rows after writes. If N47.2.3 has not deployed, refuse mutation rather than fake success. Preserve all existing demo, pure validation and live-read semantics.
+Tests: extend tests/unit/overlap-acknowledgements/live.test.ts with every RPC envelope, unique operation IDs, immutable unknown-outcome retry, conflicts, source/action receipts, owner readback and no caller-owner/direct DML, plus facade injection/mode switching. Preserve N61.1, N61.2.1 and N61.2.2.1 tests unchanged.
 Scope: src/data/overlap-acknowledgements/**, tests/unit/overlap-acknowledgements/**, CURRENT.md.
-Not: other src/data/** folders, UI, supabase/**, existing test assertion changes, new dependencies.
+Not: other src/data/** folders, UI, supabase/**, prior tests, new dependencies.
 Reverted: 2026-11-06 — sql/tests/mcp/sql/registries-dispatch.mjs::registries-dispatch.mjs :: Undo AN first
 
-## N62 Durable review runs: app module (src/data/review-runs)
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8(c) and the lane rules, `src/data/review-runs/` for the records and operations of N48, including every lifecycle operation it names.
-Tests: `tests/unit/review-runs/**` (demo behaviour and reload, live envelope per operation, retry reuses `operationId`, conflict mapping, bounded pages, no owner field sent)
-Scope: src/data/review-runs/** (new), tests/unit/review-runs/**, CURRENT.md.
-Not: other `src/data/**` folders, UI, supabase/**.
+## N62.2 Durable review runs: persistent demo and owner-RLS live adapter
+Stage: Build · Status: open · Needs: N62.1 · Assigned: —
+Done = finish N62 after N62.1's typed ReviewRunApi and pure immutable state/validation helpers. Add a tab-local reload-persistent demo adapter with representative running, paused and stale/graded items; bounded 1–50 status-filtered run pages and run-specific item keyset pages with exact totals, independent snapshots and a stable getReviewRunApi()/setReviewRunApiForTests() facade. Add a live adapter reading owner-RLS public.review_runs and public.review_run_items, with public.review_runs_command operation envelopes for start, pause, resume, advance, abandon and complete. Every new action has an operationId reused verbatim after uncertain outcomes, stale expectedVersion conflicts map to typed errors, and no browser caller owner ID is ever sent. The server command alone selects cards using the connector's same SQL, checks card versions and links existing grade receipts, and skips stale items with a reason; never re-grades a card or fabricates review receipts. Respect the N48.2 deployment gate; no unaudited direct DML.
+Tests: tests/unit/review-runs/** (demo reload and separate sessions, status and item pagination beyond 50, every transition, grade receipt linking without replay, card-version drift skip, invalid fields, live RPC envelope/retry identity, owner-only reads, stale conflict mapping, no caller owner field). Keep N62.1 pure-model tests.
+Scope: src/data/review-runs/**, tests/unit/review-runs/**, CURRENT.md.
+Not: other src/data/** folders, UI, supabase/**, MCP functions, test weakening, new dependencies.
 
 ## N63 Proposal drafts: app module (src/data/proposal-drafts)
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -256,7 +256,7 @@ Scope: src/features/calendar/views/** and src/features/calendar/deadlines/** (ne
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N75 v6 Calendar: overlaps and acknowledgements behind the shell flag
-Stage: Build · Status: open · Needs: N61.2.2, N74 · Assigned: —
+Stage: Build · Status: open · Needs: N61.2.2.2, N74 · Assigned: —
 Done = with `v6Shell` on, overlapping blocks or saved entries show a conflict marker with the overlap window; Acknowledge records the disposition for exactly those participants (stale acknowledgements show the conflict again); no overbooking is hidden. Flag off: nothing changes.
 Tests: `tests/unit/calendar/overlaps.test.tsx`
 Scope: src/features/calendar/overlaps/** (new), src/features/calendar/views/** (markers only), tests/unit/calendar/overlaps.test.tsx, CURRENT.md.
@@ -312,7 +312,7 @@ Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPan
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N83 v6 review run and done with durable runs behind the shell flag
-Stage: Build · Status: open · Needs: N62 · Assigned: —
+Stage: Build · Status: open · Needs: N62.2 · Assigned: —
 Done = with `v6Shell` on, starting from Review creates a durable run (N62's `start`); the run screen shows position/total, reveals and grades through the existing grade path and then `advance`; leaving and returning resumes the same run at the same item without replaying a grade; stale items are skipped with a note; Done shows the run's counts and next arrivals. Flag off: nothing changes.
 Tests: `tests/unit/review-run-v6/**`
 Scope: src/features/review-run/v6/** and src/features/review-done/v6/** (new), src/features/review-run/Page.tsx and src/features/review-done/Page.tsx (the flag branches only), src/features/review/v6/** (starting a run only), tests/unit/review-run-v6/**, CURRENT.md.
