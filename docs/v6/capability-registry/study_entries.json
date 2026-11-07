@@ -120,6 +120,76 @@
       "mcpPath": "N51 study_command v2",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
+    },
+    "mode": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "preset_id": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "config": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "phase": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "cycle": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "phase_ends_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "energy": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "lease_device": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "lease_version": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
+    },
+    "lease_expires_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer adapter (planned)",
+      "mcpPath": "N52 versioned study_command timer modes (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "reversible study action journal; N103 owner purge (planned)"
     }
   }
 }
