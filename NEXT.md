@@ -35,12 +35,19 @@ Tests: `tests/mcp/sql/practice_topics.mjs` per the lane rules, plus the lifecycl
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/practice_topics.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N44.2.2 Parked thought command lifecycle and atomic task conversion
+## N44.2.2 Parked thought owner lifecycle and undo
 Stage: Build · Status: open · Needs: N44.2.1 · Assigned: —
-Done = finish N44.2 after N44.2.1's authenticated owner-bound, read-only parked_thoughts_validate_envelope: add parked_thoughts_command for create, edit, dismiss, reopen, delete and convert_to_task with task_command-equivalent validation, a single atomic converted thought and real owner-scoped task ID, version/receipt/changed-payload conflicts, and second-owner rejection. Enable command-mediated audited writes together with lemma_log_change, lemma_undo_tables and lemma_command_resources registration; verify service-role MCP as p_user and undo, without changing task_command, study_command, undo_action or MCP code. Leave pre-existing read-only N44.1 assertions intact until the command can replace them with stronger command-receipt and undo assertions. Requires production SQL review (D1/D8).
-Tests: extend tests/mcp/sql/parked_thoughts.mjs for full command lifecycle, idempotent atomic task conversion, optimistic conflicts, owner isolation, journal, undo and MCP parity, preserving the schema, FK and status assertions.
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: earlier migrations, unrelated resources/functions, app/MCP code, protected files.
+Done = Implement authenticated, owner-bound parked_thoughts_command for create/edit/dismiss/reopen/delete with expectedVersion conflicts, operationId receipt/replay, owner-linked study entries, journal and registered undo in one transaction. Do not expose unaudited authenticated DML or convert_to_task yet. Independent production SQL review required.
+Tests: extend tests/mcp/sql/parked_thoughts.mjs for receipt-backed owner lifecycle, denied writes, conflicts, journal, undo and isolation.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_undo_tables.json, CURRENT.md.
+Not: earlier migrations, atomic task conversion, app/MCP code, unrelated functions, protected paths.
+
+## N44.2.3 Atomic task conversion and MCP parity
+Stage: Build · Status: open · Needs: N44.2.2 · Assigned: —
+Done = Finish N44.2 by compatibly extending parked_thoughts_command with atomic convert_to_task: create one real owner-bound task, mark the thought converted with its actual task ID, and write one idempotent operationId receipt for both changes, rejecting stale versions and changed-payload retries. Register lemma_command_resources for service-role mcp_command parity, journal/undo both records, and preserve blocked direct table DML. Independent SQL review and PR body Replaces function: parked_thoughts_command (reviewer verified signature and behaviour) required.
+Tests: extend tests/mcp/sql/parked_thoughts.mjs for atomic conversion, owner isolation, undo, retry, conflicts and MCP dispatch without loosening existing assertions.
+Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/parked_thoughts.mjs, docs/v6/capability-registry/parked_thoughts.json, docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: existing migrations, task_command, study_command, undo_action, app code, protected paths.
 
 ## N44.2.3 Parked thought conversion, undo and MCP parity
 Stage: Build · Status: open · Needs: N44.2.2 · Assigned: —

@@ -132,6 +132,11 @@ try{
  await assert.rejects(validate({...removal,patch:{text:'forged'}}),/Unknown patch field/);
  const conversion={...edit,operation:'convert_to_task',patch:{title:'Finish lemma'}};
  assert.deepEqual(await validate(conversion),conversion);
+ const high={...conversion,patch:{...conversion.patch,priority:'high'}};
+ assert.deepEqual(await validate(high),high);
+ for(const bad of [null,'urgent',7])
+  await assert.rejects(validate({...conversion,patch:{...conversion.patch,priority:bad}}),
+   /Invalid task priority/);
  await assert.rejects(validate({...conversion,patch:{title:' '}}),/Task title required/);
  await assert.rejects(validate({...edit,operation:'dismiss',patch:{text:'Ignored'}}),
   /Unknown patch field/);

@@ -417,7 +417,7 @@ A new additive owner-scoped `public.day_plans` table stores one plan per owner a
 
 ## N44.2.1 read-only parked-thought command-envelope validator (N44.2 split)
 
-An additive migration creates an authenticated security-invoker validator for parked-thought command envelopes. It authenticates the caller and validates schema, operation IDs, lifecycle operations, expected versions, target UUIDs, caller-controlled fields, thought text and required conversion title without writing data. PGlite acceptance exercises valid envelopes, spoofed ownership fields, invalid lifecycle payloads, missing/stale version shapes and anonymous rejection. The N44.1 read-only RLS, absence of registry/undo entries and existing schema tests remain intact. N44.2.2 must implement the actual audited command and atomic task conversion before any client write policy is added.
+An additive migration creates an authenticated security-invoker validator for parked-thought command envelopes. It authenticates the caller and validates schema, operation IDs, lifecycle operations, expected versions, target UUIDs, caller-controlled fields, thought text and required conversion title without writing data. PGlite acceptance exercises valid envelopes, spoofed ownership fields, invalid lifecycle payloads, missing/stale version shapes and anonymous rejection. The N44.1 read-only RLS, absence of registry/undo entries and existing schema tests remain intact. Optional conversion priority must be a low/normal/high string, not null or an unrecognized value. N44.2.2 remains for audited owner lifecycle and undo; N44.2.3 remains for atomic task conversion and MCP parity before direct client writes.
 
 ## N44.2.1 dependency-safe split follow-up (2026-11-07)
 

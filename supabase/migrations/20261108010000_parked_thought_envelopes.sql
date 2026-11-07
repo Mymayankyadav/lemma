@@ -100,8 +100,13 @@ begin
      or pg_catalog.length(pg_catalog.btrim(v_patch->>'title'))=0) then
     raise exception 'Task title required';
   end if;
+  if v_operation='convert_to_task' and v_patch?'priority' and
+    (pg_catalog.jsonb_typeof(v_patch->'priority') is distinct from 'string'
+     or v_patch->>'priority' not in ('low','normal','high')) then
+    raise exception 'Invalid task priority';
+  end if;
   -- No table access or mutation. Owner existence/version checks and
-  -- task_command-equivalent conversion validation remain in N44.2.2.
+  -- task_command-equivalent conversion validation remain in N44.2.3.
   return p;
 end
 $validate$;
