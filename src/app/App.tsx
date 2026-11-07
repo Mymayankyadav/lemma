@@ -1,16 +1,21 @@
+import { lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import {lazy,Suspense} from 'react'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router'
 import { LemmaError } from '../data/api'
 import AppShell from './AppShell'
 import AuthGate from './AuthGate'
 import ErrorBoundary from './ErrorBoundary'
-import RouteError from './RouteError'
+import RouteError,{RouteFallback} from './RouteError'
 import ToastHost from './ToastHost'
 import OfflineBanner from './OfflineBanner'
 import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
 import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
+import {isFlagOn} from '../flags'
+const PracticePage=lazy(()=>import('../features/practice/Page'))
+const TimeLog = lazy(() => import('../features/time-log/Page'))
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
@@ -20,6 +25,10 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
  ...screenRoutes,
  calendarRoute,
  tasksRoute,
+ {path: '/log', element: <Suspense fallback={<p role="status">Loading time log…</p>}><TimeLog /></Suspense>},
+ ...(isFlagOn('v6Shell')?[{path:'/practice',
+  element:<Suspense fallback={<RouteFallback/>}><PracticePage/></Suspense>,
+  errorElement:<RouteError/>}]:[]),
  {path: '*', element: <Navigate to="/" replace />},
 ]}])
 export default function App() {
