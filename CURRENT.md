@@ -474,3 +474,7 @@ The read-only parked-thought command-envelope validator now checks a supplied cr
 ## N44.2.1 conversion link shape checks and queue reconciliation (2026-11-07)
 
 The read-only parked-thought envelope validator now validates optional conversion subject, project and checkpoint links as UUID strings (or explicit JSON null to clear an optional link), rejecting forged malformed link types before a later transactional task command. Its full-migration PGlite cases cover accepted UUID/null links and invalid number, object, boolean or malformed UUID values. Main's concurrent NEXT/CURRENT updates are preserved; the remaining N44.2.2 owner lifecycle and N44.2.3 atomic conversion remain unimplemented and must deploy in order after independent review.
+
+## N44.2.1 task-conversion envelope field parity (2026-11-07)
+
+The staged parked-thought conversion validator now shares the real task_command create field spellings: body, estimate_minutes, due_kind, due_date, due_at and position alongside title, priority and optional owner-link IDs. It rejects the unsupported description alias and externally supplied task status, leaving N44.2.3 responsible for fully validating and atomically creating the task with the thought's versioned conversion. Full-migration PGlite assertions accept a representative valid conversion field envelope and reject unsupported fields. No authenticated table writes, undo registration or MCP route is activated.

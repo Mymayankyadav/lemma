@@ -139,6 +139,17 @@ try{
  await assert.rejects(validate({...removal,patch:{text:'forged'}}),/Unknown patch field/);
  const conversion={...edit,operation:'convert_to_task',patch:{title:'Finish lemma'}};
  assert.deepEqual(await validate(conversion),conversion);
+ const completeTask={...conversion,patch:{title:'Finish lemma',
+  body:'Write up proof',estimate_minutes:45,priority:'normal',
+  due_kind:'date',due_date:'2026-11-09',due_at:null,position:0,subject_id:owner}};
+ assert.deepEqual(await validate(completeTask),completeTask,
+  'conversion envelope accepts the task_command create field names');
+ await assert.rejects(validate({...conversion,patch:{
+  ...conversion.patch,description:'not a task column'}}),/Unknown patch field/,
+  'legacy description cannot silently drop the task body');
+ await assert.rejects(validate({...conversion,patch:{
+  ...conversion.patch,status:'completed'}}),/Unknown patch field/,
+  'new task conversion must not pre-set terminal status');
  const high={...conversion,patch:{...conversion.patch,priority:'high'}};
  assert.deepEqual(await validate(high),high);
  for(const bad of [null,'urgent',7])

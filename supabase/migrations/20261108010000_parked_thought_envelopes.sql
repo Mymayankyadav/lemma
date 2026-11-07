@@ -82,8 +82,8 @@ begin
     when 'create' then array['text','study_entry_id']
     when 'edit' then array['text','study_entry_id']
     when 'convert_to_task' then array[
-      'title','description','priority','due_date','due_at',
-      'subject_id','project_id','checkpoint_id']
+      'title','body','estimate_minutes','priority','due_kind',
+      'due_date','due_at','position','subject_id','project_id','checkpoint_id']
     else array[]::text[] end;
   select k into v_bad from pg_catalog.jsonb_object_keys(v_patch) as keys(k)
     where k <> all(v_allowed) limit 1;
