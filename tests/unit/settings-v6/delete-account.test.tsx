@@ -88,6 +88,16 @@ describe('N103 deliberate account deletion control',()=>{
   expect(mocks.navigate).not.toHaveBeenCalled();
   expect(button('Delete account permanently').disabled).toBe(false);
  });
+ it('preserves the account and allows retry when the Edge request fails in transit',async()=>{
+  mocks.invoke.mockRejectedValueOnce(new Error('Network request failed'));
+  await render();await confirm();
+  await act(async()=>button('Delete account permanently').click());
+  await vi.waitFor(()=>expect(host.querySelector('[role=alert]')?.textContent)
+   .toContain('Network request failed'));
+  expect(mocks.signOut).not.toHaveBeenCalled();
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(button('Delete account permanently').disabled).toBe(false);
+ });
  it('does not redirect or claim success when deletion is unverified',async()=>{
   mocks.invoke.mockResolvedValue({data:{deleted:false},error:null});
   await render();await confirm();
