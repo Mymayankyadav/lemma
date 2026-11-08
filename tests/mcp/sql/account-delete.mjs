@@ -104,6 +104,8 @@ try{
    if p_kind='action' then
     insert into public.actions(user_id,txid,source,summary)
      values(p_user,90000009,'chatgpt','mcp write during deletion');
+   elsif p_kind='delete' then
+    delete from public.notes where user_id=p_user;
    elsif p_kind='seen' then
     update public.settings set connector_last_seen_at=pg_catalog.now()
      where user_id=p_user;
@@ -115,9 +117,11 @@ try{
   revoke all on function public.test_mcp_owner_write(uuid,text) from public;
   grant execute on function public.test_mcp_owner_write(uuid,text) to service_role`);
  await db.exec('set role service_role');
- for(const kind of ['action','seen','subject'])
+ for(const kind of ['action','seen','subject','delete'])
   await assert.rejects(q('select public.test_mcp_owner_write($1::uuid,$2)',[A,kind]),
    /Account deletion is in progress/,'MCP-style '+kind+' write for marked A');
+ // A root MCP DELETE on marked A must fail before the AFTER DELETE audit trigger.
+ assert.equal((await q('select count(*)::int n from public.notes where user_id=$1',[A]))[0].n,1);
  // A service-role write for an owner without a marker is unaffected.
  await q('select public.test_mcp_owner_write($1::uuid,$2)',[B,'seen']);
  await db.exec('reset role');
@@ -146,6 +150,8 @@ try{
   /Account deletion must be secured/);
  const purged=(await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result;
  assert.equal(purged.status,'purged');
+ assert.equal((await q('select cleanup_txid from public.account_deletion_requests where user_id=$1',[A]))[0].cleanup_txid,null,
+  'only the trusted purge may open the cleanup window');
  assert.equal((await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result.status,
   'purged','retry is idempotent before Auth deletion');
  await db.exec('reset role');

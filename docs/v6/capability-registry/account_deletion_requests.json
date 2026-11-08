@@ -15,6 +15,20 @@
       "mcpPath": "none: MCP cannot call account deletion (N103)",
       "exportPolicy": "excluded: operational deletion marker, not owner content",
       "deletionPolicy": "removed by Auth FK cascade when the account is deleted (N103)"
+    },
+    "cleanup_txid": {
+      "classification": "internal",
+      "appPath": "none: service-only trusted cleanup window",
+      "mcpPath": "none: MCP cannot set marker or cleanup window",
+      "exportPolicy": "excluded: private transient deletion coordination",
+      "deletionPolicy": "cleared by purge, removed by Auth FK cascade"
+    },
+    "cleanup_pid": {
+      "classification": "internal",
+      "appPath": "none: service-only trusted cleanup window",
+      "mcpPath": "none: MCP cannot set marker or cleanup window",
+      "exportPolicy": "excluded: private transient deletion coordination",
+      "deletionPolicy": "cleared by purge, removed by Auth FK cascade"
     }
   }
 }

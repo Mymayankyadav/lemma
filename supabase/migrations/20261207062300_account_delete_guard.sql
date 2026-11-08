@@ -2,15 +2,20 @@
 -- Storage objects after deletion begins or after their Auth user is removed.
 create table public.account_deletion_requests(
  user_id uuid primary key references auth.users(id) on delete cascade,
- requested_at timestamptz not null default pg_catalog.clock_timestamp()
+ requested_at timestamptz not null default pg_catalog.clock_timestamp(),
+ cleanup_txid bigint,
+ cleanup_pid integer,
+ constraint account_deletion_cleanup_pair_check
+  check ((cleanup_txid is null)=(cleanup_pid is null))
 );
 alter table public.account_deletion_requests enable row level security;
 create policy account_deletion_owner_read on public.account_deletion_requests
  for select to authenticated using(user_id=(select auth.uid()));
 grant select on public.account_deletion_requests to authenticated,service_role;
-grant insert,update,delete on public.account_deletion_requests to service_role;
+-- Private write access is exclusive to trusted SECURITY DEFINER routines.
+-- MCP service-role requests cannot forge a cleanup window through PostgREST.
 revoke insert,update,delete,truncate on public.account_deletion_requests
- from public,anon,authenticated;
+ from public,anon,authenticated,service_role;
 
 create function public.lemma_begin_account_delete(p_owner uuid)
 returns void language plpgsql security definer set search_path='' as $begin_delete$
@@ -82,6 +87,11 @@ begin
    where d.user_id=p_owner) then
   raise exception 'Account deletion must be secured before cleanup';
  end if;
+ -- The marker row lock serializes concurrent purges. The backend/XID pair
+ -- authorizes root DELETE only for this actual cleanup transaction, not MCP.
+ update public.account_deletion_requests
+  set cleanup_txid=pg_catalog.txid_current(),cleanup_pid=pg_catalog.pg_backend_pid()
+  where user_id=p_owner;
  -- Retry tables whose FK-referenced parents cannot be removed until a
  -- child has been removed. On no progress, fail rather than weaken any FK.
  loop
@@ -136,6 +146,8 @@ begin
    raise exception 'Account rows remain blocked by foreign-key dependencies (% rows)',remaining;
   end if;
  end loop;
+ update public.account_deletion_requests
+  set cleanup_txid=null,cleanup_pid=null where user_id=p_owner;
  return pg_catalog.jsonb_build_object('status','purged',
   'rowsRemoved',total_removed,'passes',pass);
 end
@@ -152,12 +164,10 @@ grant execute on function public.lemma_purge_account_rows(uuid)
 -- connector, which writes as service_role through mcp_commit, mcp_command and
 -- mcp_seen. A write after the owner purge would create fresh actions or
 -- action_changes rows and block Auth hard deletion.
--- Deletes stay open to service_role so the cleanup (and Auth's own cascade)
--- works; a delete cannot create a blocking reference. Deletes by authenticated
--- are still refused. Updates that run inside another trigger (depth > 1, i.e.
--- foreign-key actions such as ON DELETE SET NULL during cleanup) are cleanup
--- side effects of an already-checked root statement, so they pass. There is no
--- session setting or caller-supplied flag that can lift the guard.
+-- DELETE cannot stay open to MCP: the existing AFTER DELETE log_change trigger
+-- inserts new actions/action_changes and can block Auth hard deletion after
+-- the sweep. Permit only root DELETEs inside the marked owner's trusted purge
+-- window, plus nested FK cascades during Auth deletion. No caller GUC lifts it.
 create function public.lemma_block_account_deletion_writes()
 returns trigger language plpgsql security definer set search_path='' as $db_write_guard$
 declare
@@ -165,8 +175,11 @@ declare
  blocked boolean:=false;
 begin
  if TG_OP='DELETE' then
-  blocked:=caller='authenticated' and exists(select 1
-   from public.account_deletion_requests d where d.user_id=old.user_id);
+  blocked:=exists(select 1 from public.account_deletion_requests d
+   where d.user_id=old.user_id and not (
+    pg_catalog.pg_trigger_depth()>1 or
+    (caller='service_role' and d.cleanup_txid=pg_catalog.txid_current()
+     and d.cleanup_pid=pg_catalog.pg_backend_pid())));
  elsif pg_catalog.pg_trigger_depth()=1 then
   blocked:=exists(select 1 from public.account_deletion_requests d
    where d.user_id=new.user_id
