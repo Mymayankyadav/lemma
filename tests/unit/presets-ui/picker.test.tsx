@@ -23,6 +23,7 @@ beforeEach(()=>{
  rows=[example(1),example(2),example(3,'2026-11-07T10:00:00Z')];
  api={
   mode:'demo',
+  getPreset:vi.fn(async id=>rows.find(row=>row.id===id)??null),
   listPresets:vi.fn(async({archived='active',limit=50,cursor=null}={})=>{
    const matched=rows.filter(x=>archived==='all'||
     (archived==='archived'?x.archivedAt!==null:x.archivedAt===null));
@@ -88,6 +89,28 @@ describe('N77 Focus activity preset picker',()=>{
   await act(async()=>{retry.click();await Promise.resolve()});
   expect(host.querySelector('[role="alert"]')).toBeNull();
   expect(host.querySelectorAll('option')).toHaveLength(3);
+ });
+ it('refuses a selected activity archived on another device before Focus start',async()=>{
+  window.history.replaceState({},'','/?flags=v6Shell');
+  const startStudyEntry=vi.fn();
+  setStudyApiForTests({mode:'live',activeStudyEntry:vi.fn(async()=>null),
+   listStudyEntries:vi.fn(async()=>[]),startStudyEntry} as unknown as StudyApi);
+  vi.mocked(api.getPreset).mockResolvedValueOnce(example(1,'2026-11-08T10:00:00Z'));
+  await act(async()=>{root.render(<TodayFocus/>);await Promise.resolve()});
+  await vi.waitFor(()=>expect(host.querySelector('select[aria-label="Focus activity"]')).not.toBeNull());
+  const selector=host.querySelector<HTMLSelectElement>('[aria-label="Focus activity"]')!;
+  await act(async()=>{
+   Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!.call(selector,'preset-1');
+   selector.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  await act(async()=>{
+   [...host.querySelectorAll('button')].find(b=>b.textContent==='Start focus')!.click();
+   await Promise.resolve();
+  });
+  await vi.waitFor(()=>expect(host.querySelector('[role="alert"]')?.textContent)
+   .toContain('no longer active'));
+  expect(startStudyEntry).not.toHaveBeenCalled();
+  expect(api.getPreset).toHaveBeenCalledWith('preset-1');
  });
  it('mounts the preset choice at v6 Focus start and passes its intention and owner links',async()=>{
   window.history.replaceState({},'','/?flags=v6Shell');

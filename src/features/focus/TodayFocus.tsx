@@ -1,11 +1,12 @@
 import {useEffect,useRef,useState} from 'react';
 import {getStudyApi} from '../../data/study';
+import {getPresetApi} from '../../data/presets';
 import type {StudyEntryRecord,StudyRange} from '../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
 import FocusNotices from './FocusNotices';
-import PresetPicker,{type FocusPresetChoice} from './PresetPicker';
+import PresetPicker,{focusPresetChoice,type FocusPresetChoice} from './PresetPicker';
 import {isFlagOn} from '../../flags';
 
 const FOCUS_CAP=25;
@@ -86,9 +87,18 @@ export default function TodayFocus(){
   setBusy(true);setError('');
   const at=new Date().toISOString();
   try{
+   // The picker is a snapshot. Another device may archive or edit an activity
+   // between selecting it and Start; re-read owner data before copying links.
+   let verifiedPreset:FocusPresetChoice|null=null;
+   if(chosenPreset){
+    const latest=await getPresetApi().getPreset(chosenPreset.presetId);
+    if(!latest||latest.archivedAt!==null)
+     throw new Error('Selected activity is no longer active. Choose another activity.');
+    verifiedPreset=focusPresetChoice(latest);
+   }
    const result=await api.startStudyEntry({intent:intent.trim()||'Focused study',source:'timer',startedAt:at,
-    ...(chosenPreset?{subjectId:chosenPreset.subjectId,projectId:chosenPreset.projectId,
-      checkpointId:chosenPreset.checkpointId}:{}),
+    ...(verifiedPreset?{subjectId:verifiedPreset.subjectId,projectId:verifiedPreset.projectId,
+      checkpointId:verifiedPreset.checkpointId}:{}),
    });
    // Server-owned interval timestamps are authoritative in live mode.
    setActive(result.record);setFocus(focusFromEntry(result.record));setNote(result.record.reflection??'');
