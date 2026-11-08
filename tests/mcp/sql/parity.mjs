@@ -538,10 +538,14 @@ try{
   'day_plans: MCP GET cannot see commit');
  await role('service_role');
  const closedPlan=status(await mcp(command('day_plans','close',{
-  target:{id:planId},expectedVersion:4,patch:{ritual:{reviewed:true}}
+  target:{id:planId},expectedVersion:4,patch:{ritual:{reviewed:true},
+   tomorrow_first_task_id:planTaskId,carry_over:[{task_id:planTaskId,reason:'Tomorrow priority'}]}
  })),'day_plans','close');
  assert.equal(closedPlan.plan.status,'closed');
+ assert.equal(closedPlan.plan.tomorrow_first_task_id,planTaskId);
  assert.equal(closedPlan.plan.version,5);
+ const carried=await q('select disposition,reason,calendar_block_id from public.day_plan_items where plan_id=$1 and task_id=$2',[planId,planTaskId]);
+ assert.ok(carried.length>0&&carried.every(x=>x.disposition==='carried_over'&&x.reason==='Tomorrow priority'&&x.calendar_block_id===null));
  await as(owner);
  assert.deepEqual((await q('select ritual from public.day_plans where id=$1',
   [planId]))[0].ritual,{reviewed:true},

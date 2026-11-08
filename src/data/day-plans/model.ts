@@ -136,3 +136,37 @@ export function validatePlanClosure(status:DayPlanStatus,closedAt:string|null):v
   civilPlanDate(closedAt.slice(0,10));
  }else if(closedAt!==null)invalid('Non-closed plan cannot carry closedAt');
 }
+
+/** N108: normalize owner-selected carry-overs before an atomic close. */
+export function normalizeDayCloseTransition(value:import('./contract').DayCloseTransition):{
+ tomorrowFirstTaskId?:string|null;
+ carryOver?:{taskId:string;reason:string}[];
+} {
+ if(!isObject(value))return invalid('Invalid day-close transition');
+ only(value,['tomorrowFirstTaskId','carryOver']);
+ return normalizeDayCloseFields(value);
+}
+function normalizeDayCloseFields(value:Record<string,unknown>){
+ const result:{tomorrowFirstTaskId?:string|null;carryOver?:{taskId:string;reason:string}[]}={};
+ if(Object.hasOwn(value,'tomorrowFirstTaskId'))result.tomorrowFirstTaskId=
+  value.tomorrowFirstTaskId===null?null:id(value.tomorrowFirstTaskId);
+ if(Object.hasOwn(value,'carryOver')){
+  if(!Array.isArray(value.carryOver)||value.carryOver.length>500)
+   invalid('Invalid carry-over list');
+  const seen=new Set<string>();
+  result.carryOver=value.carryOver.map((choice:unknown)=>{
+   let taskId:string,reason:string;
+   if(typeof choice==='string'){taskId=id(choice);reason='Carried over to tomorrow';}
+   else if(isObject(choice)){
+    only(choice,['taskId','reason']);
+    taskId=id(choice.taskId);
+    if(typeof choice.reason!=='string'||!choice.reason.trim()||choice.reason.length>1200)
+     return invalid('Invalid carry-over reason');
+    reason=choice.reason;
+   }else return invalid('Invalid carry-over selection');
+   if(seen.has(taskId))invalid('Duplicate carry-over task');
+   seen.add(taskId);return {taskId,reason};
+  });
+ }
+ return result;
+}

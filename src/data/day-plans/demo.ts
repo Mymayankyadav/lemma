@@ -4,7 +4,7 @@ import {DayPlanError,type DayPlanApi,type DayPlanItem,type DayPlanPatch,
  type PlanAvailability,type DayPlanStatus} from './contract';
 import {normalizeCommitPlacements,type CommitPlacementsInput} from './placements';
 import {civilPlanDate,comparePlanSources,normalizeAvailability,
- normalizeDayPlan,normalizePlanItems,validatePlanClosure} from './model';
+ normalizeDayPlan,normalizePlanItems,normalizeDayCloseTransition,validatePlanClosure} from './model';
 import {createDemoTaskApi} from '../tasks/demo';
 import {createDemoStudyApi} from '../study/demo';
 
@@ -328,16 +328,34 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
    const next=bump(row,{status:'committed'});store(next);
    return receipt(next);
   },
-  async closePlan(id,expected,ritual){
+  async closePlan(id,expected,ritual,transition){
    const row=plan(id);expectedVersion(row,expected);
    if(row.status!=='committed')return fail('conflict','Only committed plans may close');
    if(row.planDate>zonedDate(row.timeZone))
     return fail('invalid','A future owner date cannot be marked closed');
    const normalized=ritual===undefined?row.ritual:
     normalizePatch(row,{ritual}).ritual;
-   const next=bump(row,{status:'closed',closedAt:new Date().toISOString(),ritual:normalized});
+   const choice=transition===undefined?{}:normalizeDayCloseTransition(transition);
+   const chosen=choice.tomorrowFirstTaskId===undefined?
+    row.tomorrowFirstTaskId:choice.tomorrowFirstTaskId;
+   const tasks=createDemoTaskApi();
+   if(chosen!==null&&!await tasks.getTask(chosen))
+    return fail('invalid','Tomorrow first task is not owned');
+   const currentItems=current().items;
+   for(const item of choice.carryOver??[]){
+    if(!await tasks.getTask(item.taskId)||
+     !currentItems.some(x=>x.planId===row.id&&x.taskId===item.taskId))
+     return fail('invalid','Carry-over task must belong to this owner plan');
+   }
+   const now=new Date().toISOString();
+   const next=bump(row,{status:'closed',closedAt:now,ritual:normalized,
+    tomorrowFirstTaskId:chosen});
    validatePlanClosure(next.status,next.closedAt);
-   store(next);return receipt(next);
+   const choices=new Map((choice.carryOver??[]).map(item=>[item.taskId,item.reason]));
+   const items=currentItems.map(item=>item.planId===row.id&&choices.has(item.taskId)?
+    {...item,disposition:'carried_over' as const,blockId:null,
+     reason:choices.get(item.taskId)!,version:item.version+1}:item);
+   store(next,items);return receipt(next);
   },
   async reopenPlan(id,expected){
    const row=plan(id);expectedVersion(row,expected);

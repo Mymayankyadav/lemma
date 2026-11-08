@@ -48,6 +48,12 @@ export interface DayPlanQuery {
 export interface AtomicPlacementResult {plans:DayPlanRecord[];blockIds:string[]}
 export interface DayPlanPage {items:DayPlanRecord[];total:number;nextCursor:string|null}
 export interface DayPlanItemPage {items:DayPlanItem[];total:number;nextCursor:string|null}
+export type DayCloseCarryOver=string|{taskId:string;reason:string};
+export interface DayCloseTransition {
+ tomorrowFirstTaskId?:string|null;
+ carryOver?:DayCloseCarryOver[];
+}
+
 export interface DayPlanApi {
  readonly mode:'demo'|'live';
  listPlans(query?:DayPlanQuery):Promise<DayPlanPage>;
@@ -66,8 +72,9 @@ export interface DayPlanApi {
  undoPlacements(actionNo:number):Promise<void>;
  /** Server atomically validates snapshot versions before creating placements. */
  commitPlan(id:string,expectedVersion:number):Promise<StudyReceipt<DayPlanRecord>>;
+ /** N108: atomically record chosen carry-overs and tomorrow's first task. */
  closePlan(id:string,expectedVersion:number,
-  ritual?:Record<string,unknown>):Promise<StudyReceipt<DayPlanRecord>>;
+  ritual?:Record<string,unknown>,transition?:DayCloseTransition):Promise<StudyReceipt<DayPlanRecord>>;
  reopenPlan(id:string,expectedVersion:number):Promise<StudyReceipt<DayPlanRecord>>;
 }
 export class DayPlanError extends Error {
