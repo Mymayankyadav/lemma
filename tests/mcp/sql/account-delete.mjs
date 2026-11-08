@@ -75,13 +75,31 @@ try{
  await q('select public.lemma_begin_account_delete($1::uuid)',[A]);
  await db.exec('reset role');
  assert.equal((await q('select count(*)::int n from public.account_deletion_requests'))[0].n,1);
+ // The marker must stop new public-table writes as well as Storage writes,
+ // including stale other-tab JWTs. A denied insert/update/delete must not
+ // create an action journal row or change any owner record.
+ const actionCountBefore=(await q('select count(*)::int n from public.actions where user_id=$1',[A]))[0].n;
  await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[A]);
  assert.equal((await q('select public.lemma_storage_owner_can_write() ok'))[0].ok,false);
  assert.equal((await q('select count(*)::int n from public.account_deletion_requests'))[0].n,1);
+ await assert.rejects(q("insert into public.subjects(id,user_id,name,glyph,hue) "+
+  "values('abababab-abab-4aba-8aba-abababababab',$1,'Rejected A','∑','amber')",[A]),
+  /Account deletion is in progress|permission denied/);
+ await assert.rejects(q('update public.settings set reviews_per_day=reviews_per_day+1 where user_id=$1',[A]),
+  /Account deletion is in progress|permission denied/);
+ await assert.rejects(q('delete from public.notes where user_id=$1',[A]),
+  /Account deletion is in progress|permission denied/);
+ await db.exec('reset role');
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[A]))[0].n,
+  actionCountBefore,'rejected owner writes must not create audit rows');
+ await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[B]);
  assert.equal((await q('select public.lemma_storage_owner_can_write() ok'))[0].ok,true);
  assert.equal((await q('select count(*)::int n from public.account_deletion_requests'))[0].n,0);
+ const bWrite=await q('update public.settings set reviews_per_day=reviews_per_day+1 '+
+  'where user_id=$1 returning user_id',[B]);
+ assert.equal(bWrite.length,1,'unmarked owner B must retain write access');
  await db.exec('reset role');
  // Service-only cleanup removes every owner-keyed public row *before* hard
  // Auth deletion. Auth's FKs otherwise block on non-cascading audit actions.
