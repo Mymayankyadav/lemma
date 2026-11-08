@@ -6,10 +6,10 @@ const db=new PGlite(),q=async(sql,params=[])=>(await db.query(sql,params)).rows;
 // Give the SQL gate a stable assertion ID: its summary otherwise reports only
 // "Expected values to be strictly equal" without the failing test location.
 function checkEqual(actual,expected,message){
- const caller=new Error().stack?.split('\n')[2]||'unknown location';
- return assert.equal(actual,expected,
-  message??('N103 SQL assertion at '+caller.trim()+
-   ' (expected '+JSON.stringify(expected)+', received '+JSON.stringify(actual)+')'));
+ const caller=new Error().stack?.split('\n')[2]||'';
+ let line=Number(caller.match(/:(\d+):\d+\)?$/)?.[1]||0),label='';
+ while(line>0){label=String.fromCharCode(65+(line-1)%26)+label;line=Math.floor((line-1)/26);}
+ return assert.equal(actual,expected,message??('ACCOUNT_DELETE_CHECK_'+(label||'UNKNOWN')));
 }
 const A='11111111-1111-1111-1111-111111111111';
 const B='22222222-2222-2222-2222-222222222222';
