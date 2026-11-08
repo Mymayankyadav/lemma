@@ -24,8 +24,19 @@ const cmd=(operation,id,expectedVersion,patch={},operationId=randomUUID())=>({
 const mcp=async (command,uid=owner)=>(await q(
  'select public.mcp_command($1::uuid,$2::text,$3::jsonb) result',
  [uid,'chatgpt',JSON.stringify(command)]))[0].result;
-const row=async id=>(await q(
- 'select id,version,status,withdrawn_at,revised_from from public.proposals where id=$1',[id]))[0];
+// The PGlite service_role fixture can invoke the command but has no direct
+// table SELECT grant. Inspect test assertions through its fixture admin role.
+const row=async id=>{
+ const prior=(await q("select current_setting('role',true) as name"))[0].name;
+ await db.exec('reset role');
+ try{
+  return (await q(
+   'select id,version,status,withdrawn_at,revised_from from public.proposals where id=$1',
+   [id]))[0];
+ }finally{
+  if(prior==='service_role'||prior==='authenticated')await db.exec('set role '+prior);
+ }
+};
 const ok=v=>{assert.equal(v.status,'ok',JSON.stringify(v));assert.ok(v.actionNo>0);return v;};
 const undo=async actionNo=>(await q(
  'select public.undo_action($1::uuid,$2::bigint,false) result',
