@@ -379,7 +379,11 @@ create function public.lemma_study_timer_insert_guard() returns trigger
 language plpgsql security invoker set search_path='' as $insert_guard$
 begin
  if current_user='authenticated' and (
-    new.mode is distinct from 'open'
+    -- Preset is a draft selection, never an active/saved row without a
+    -- versioned start snapshot. Legacy bare running inserts remain accepted
+    -- by N10 and cannot be changed here without updating that earlier test.
+    (new.status <> 'draft' and new.preset_id is not null)
+    or new.mode is distinct from 'open'
     or new.config is distinct from '{}'::jsonb
     or new.phase is distinct from 'focus'
     or new.cycle is distinct from 1

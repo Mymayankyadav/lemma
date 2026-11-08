@@ -52,6 +52,14 @@ try{
    "insert into public.study_entries(user_id,source,status,config) values($1,'timer','draft','{\"mode\":\"pomodoro\"}'::jsonb)",
    "insert into public.study_entries(user_id,source,status,lease_version) values($1,'manual','saved',99)",
  ])await assert.rejects(q(statement,[owner]),/Protected timer INSERT requires an audited study command/);
+ // A direct running insert referencing a preset must never appear to have
+ // captured that preset while still holding default open-mode config.
+ await assert.rejects(q(
+  "insert into public.study_entries(user_id,source,status,preset_id) values($1,'timer','running',$2)",
+  [owner,preset]),/Protected timer INSERT requires an audited study command/);
+ await assert.rejects(q(
+  "insert into public.study_entries(user_id,source,status,preset_id) values($1,'manual','saved',$2)",
+  [owner,preset]),/Protected timer INSERT requires an audited study command/);
  checkEqual((await q(
    "select count(*)::integer n from public.study_entries where user_id=$1",[owner]))[0].n,
    entriesBeforeAttack,'forged owner inserts leave no entries');
