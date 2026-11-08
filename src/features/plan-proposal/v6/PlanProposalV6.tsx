@@ -29,12 +29,18 @@ export default function PlanProposalV6(){
    const api=getProposalDraftApi(),seen=new Set<string>();
    let cursor:string|null=null,found:ProposalDraftRecord|null=null;
    for(let i=0;i<10;i++){
-    const page=await api.listDrafts({proposalId:id,status:['draft','saved'],limit:50,cursor});
+    const page=await api.listDrafts({proposalId:id,status:['draft','saved','submitted'],limit:50,cursor});
     if(page.items.length>50||!Number.isSafeInteger(page.total)||page.total<0)
      throw Error('Invalid owner draft page');
     for(const candidate of page.items){
      if(candidate.proposalId!==id)throw Error('Draft from unrelated proposal');
-     if(!found||candidate.editedAt>found.editedAt)found=candidate;
+     const candidateActive=candidate.status==='draft'||candidate.status==='saved';
+     const foundActive=found?.status==='draft'||found?.status==='saved';
+     // Keep a currently editable draft ahead of submitted history, but show
+     // the latest immutable submission when no active draft exists.
+     if(!found||(candidateActive&&!foundActive)||
+      (candidateActive===foundActive&&candidate.editedAt>found.editedAt))
+      found=candidate;
     }
     if(!page.nextCursor)break;
     if(seen.has(page.nextCursor)||i===9)throw Error('Repeated/unbounded owner draft cursor');

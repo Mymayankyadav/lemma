@@ -75,7 +75,7 @@ describe('N85 v6 proposal draft editor',()=>{
   expect(host.querySelector('[aria-label="Source citations"]')?.textContent).toContain('Book pp. 18');
   expect(host.textContent).toContain('Clarify the exercise');
   expect(adapter.listDrafts).toHaveBeenCalledWith({
-   proposalId:proposal.id,status:['draft','saved'],limit:50,cursor:null,
+   proposalId:proposal.id,status:['draft','saved','submitted'],limit:50,cursor:null,
   });
  });
  it('saves a complete owner draft with exact expectedVersion and submits separately from approval',async()=>{
@@ -150,5 +150,29 @@ describe('N85 v6 proposal draft editor',()=>{
    expect(button?.disabled).toBe(true);
   }
   expect(host.textContent).toContain('Save or cancel your draft edit');
+ });
+ it('keeps an immutable submitted draft visible after reload and prefers a newer editable draft',async()=>{
+  const submittedRow:ProposalDraftRecord={...existing,id:'44444444-4444-4444-8444-444444444444',
+   status:'submitted',editedAt:'2026-11-08T03:00:00Z'};
+  vi.mocked(adapter.listDrafts).mockResolvedValue({
+   items:[submittedRow,existing],total:2,nextCursor:null,
+  });
+  await render();
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  expect(host.textContent).toContain('Draft saved');
+  expect(host.textContent).not.toContain('Draft submitted.');
+  vi.mocked(adapter.listDrafts).mockResolvedValue({
+   items:[submittedRow],total:1,nextCursor:null,
+  });
+  const reload=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Retry drafts');
+  // The editor has no network error; test a new mount using a different id
+  // by invoking the hook's refetch route through re-render.
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6 key="reload"/>}/></Routes>
+  </MemoryRouter>));
+  await vi.waitFor(()=>expect(host.textContent).toContain('Draft submitted.'));
+  const edit=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Edit draft');
+  expect(edit?.disabled).toBe(true);
+  expect(adapter.createDraft).not.toHaveBeenCalled();
  });
 });
