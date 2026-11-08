@@ -47,6 +47,32 @@ try{
  assert.equal((await q('select public.lemma_storage_owner_can_write() ok'))[0].ok,true);
  assert.equal((await q('select count(*)::int n from public.account_deletion_requests'))[0].n,0);
  await db.exec('reset role');
+ // Service-only cleanup removes every owner-keyed public row *before* hard
+ // Auth deletion. Auth's FKs otherwise block on non-cascading audit actions.
+ await db.exec('set role authenticated');
+ await q("select set_config('test.uid',$1,false)",[A]);
+ await assert.rejects(q('select public.lemma_purge_account_rows($1::uuid)',[A]),
+  /permission denied|Service role required/);
+ await db.exec('reset role');
+ await q("select set_config('test.uid','',false)");
+ await db.exec('set role service_role');
+ const purged=(await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result;
+ assert.equal(purged.status,'purged');
+ assert.equal((await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result.status,
+  'purged','retry is idempotent before Auth deletion');
+ await db.exec('reset role');
+ const owners=await q("select c.relname table_name from pg_catalog.pg_class c "+
+  "join pg_catalog.pg_namespace n on n.oid=c.relnamespace "+
+  "join pg_catalog.pg_attribute a on a.attrelid=c.oid "+
+  "where n.nspname='public' and c.relkind in ('r','p') "+
+  "and a.attname='user_id' and a.attnum>0 and not a.attisdropped "+
+  "and c.relname<>'account_deletion_requests'");
+ for(const {table_name} of owners){
+  const count=(await q('select count(*)::int n from public."'+table_name.replaceAll('"','""')+'" where user_id=$1',[A]))[0].n;
+  assert.equal(count,0,'owner row remained in '+table_name);
+ }
+ assert.equal((await q('select count(*)::int n from public.account_deletion_requests where user_id=$1',[A]))[0].n,
+  1,'deletion guard remains until Auth user is removed');
  await q('delete from auth.users where id=$1',[A]);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[A]))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[B]))[0].n,1);
@@ -61,6 +87,9 @@ try{
  assert(source.includes("admin.storage.from(bucket.id)"));
  assert(source.includes("storage.remove(paths.slice(i,i+100))"));
  assert(source.includes("admin.auth.admin.deleteUser(userId,false)"));
+ assert(source.includes("admin.rpc('lemma_purge_account_rows',{p_owner:userId})"));
+ assert(source.indexOf("admin.rpc('lemma_purge_account_rows'")<
+  source.indexOf("admin.auth.admin.deleteUser(userId,false)"));
  assert(!source.includes("delete from storage.objects"));
  console.log('PASS N103 service-only begin, owner RLS isolation, auth cascade, stale-JWT Storage guard and Storage API');
 }finally{await db.close()}
