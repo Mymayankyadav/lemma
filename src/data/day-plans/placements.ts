@@ -51,7 +51,7 @@ const ordinal=(x:unknown):number=>{
 };
 const instant=(x:unknown):string=>{
  if(typeof x!=='string'||
-  !/^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d(?:\\.\\d+)?(?:Z|[+-]\\d\\d:\\d\\d)$/i.test(x)||
+  !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/i.test(x)||
   !Number.isFinite(Date.parse(x)))return fail('Placement requires an absolute ISO instant');
  return new Date(x).toISOString();
 };

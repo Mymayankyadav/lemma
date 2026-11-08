@@ -8,9 +8,9 @@ const placement={taskId:'task-1',title:'Read theorem',startsAt:'2028-01-01T08:00
  endsAt:'2028-01-01T08:30:00Z',position:0};
 const request=():CommitPlacementsInput=>({days:[{
  planDate:'2028-01-01',timeZone:'UTC',
- sources:[source,{resource:'calendar_blocks',id:'busy-1',version:3},
+ sources:[{...source},{resource:'calendar_blocks',id:'busy-1',version:3},
   {resource:'study_entries',id:'saved-1',version:2}],
- placements:[placement],unplaced:[],
+ placements:[{...placement}],unplaced:[],
 }]});
 const bad=(change:(input:CommitPlacementsInput)=>void,pattern:RegExp)=>{
  const input=request();change(input);
