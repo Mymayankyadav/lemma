@@ -57,6 +57,31 @@ export async function readTodayPlan(date:string,zone:string):Promise<{
  }
  return {plan,items,blocks:await getStudyApi().listCalendarBlocks(dayBounds(date,zone))};
 }
+
+/** Recheck the owner plan, placement and exact block version immediately
+ * before starting focus. A stale preview must not start a cancelled or
+ * replaced block. The StudyApi still cannot persist a calendarBlockId. */
+export async function startVerifiedPlannedBlock(
+ date:string,zone:string,shownPlan:DayPlanRecord,shown:CalendarBlockRecord,
+ now=new Date().toISOString()
+){
+ const study=getStudyApi();
+ if(await study.activeStudyEntry())
+  throw Error('Finish or resume your active focus session first');
+ const current=await readTodayPlan(date,zone);
+ if(!current.plan||current.plan.id!==shownPlan.id||
+  current.plan.version!==shownPlan.version)
+  throw Error('Day plan changed; refresh Today before starting focus');
+ const next=nextPlannedBlock(current.plan,current.items,current.blocks,now);
+ if(!next||next.id!==shown.id||next.version!==shown.version)
+  throw Error('Planned block changed; refresh Today before starting focus');
+ return study.startStudyEntry({
+  source:'timer',intent:next.title,startedAt:now,
+  subjectId:next.subjectId??null,projectId:next.projectId??null,
+  checkpointId:next.checkpointId??null,sessionId:next.sessionId??null,
+ });
+}
+
 export default function V6TodayPlan({zone,due,reviewLimit}:{
  zone:string;due:number;reviewLimit:number;
 }){
@@ -98,13 +123,8 @@ export default function V6TodayPlan({zone,due,reviewLimit}:{
   if(busy)return;
   setBusy(true);setError('');setNotice('');
   try{
-   const api=getStudyApi();
-   if(await api.activeStudyEntry())throw Error('Finish or resume your active focus session first');
-   const receipt=await api.startStudyEntry({
-    source:'timer',intent:block.title,startedAt:new Date().toISOString(),
-    subjectId:block.subjectId??null,projectId:block.projectId??null,
-    checkpointId:block.checkpointId??null,sessionId:block.sessionId??null,
-   });
+   if(!plan)throw Error('No committed day plan is available');
+   const receipt=await startVerifiedPlannedBlock(date,zone,plan,block);
    setNotice('Focus started: '+receipt.record.intent);
   }catch(e){setError(e instanceof Error?e.message:'Could not start planned focus')}
   finally{setBusy(false)}
@@ -135,6 +155,7 @@ export default function V6TodayPlan({zone,due,reviewLimit}:{
     }).format(new Date(next.startsAt))}</p>
     <button className={button} type="button" disabled={busy}
      onClick={()=>{void start(next)}}>Start planned focus</button>
+    <p className="mt-2 text-caption text-ink-2">Focus inherits the block's learning links; a direct calendar-block link is not yet supported.</p>
    </div>:<p className="text-label text-ink-2">No upcoming committed study block today.</p>}
    {error&&<p role="alert">{error}</p>}
    {notice&&<p role="status">{notice}</p>}

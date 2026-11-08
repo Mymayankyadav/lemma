@@ -37,3 +37,52 @@ describe('N70 owner-bound Today plan and honest empty data',()=>{
   }finally{setDayPlanApiForTests(null);setStudyApiForTests(null)}
  });
 });
+
+import {startVerifiedPlannedBlock} from '../../../src/features/home/V6TodayPlan';
+describe('N70 verified focus Start does not trust stale owner preview',()=>{
+ const planApi=(record:DayPlanRecord=plan,placed:DayPlanItem=item)=>({
+  mode:'live',listPlans:vi.fn(async()=>({items:[record],total:1,nextCursor:null})),
+  listItems:vi.fn(async()=>({items:[placed],total:1,nextCursor:null})),
+ }) as unknown as DayPlanApi;
+ const studyApi=(current:CalendarBlockRecord=block)=>({
+  mode:'live',listCalendarBlocks:vi.fn(async()=>[current]),
+  activeStudyEntry:vi.fn(async()=>null),
+  startStudyEntry:vi.fn(async(input:unknown)=>({record:{intent:'Study',input},actionNo:1})),
+ }) as unknown as StudyApi;
+ const at='2026-11-07T11:00:00Z';
+ it('starts once with real subject links when the plan and block still match',async()=>{
+  const day=planApi(),study=studyApi();
+  setDayPlanApiForTests(day);setStudyApiForTests(study);
+  try{
+   await startVerifiedPlannedBlock('2026-11-07','UTC',plan,block,at);
+   expect(study.startStudyEntry).toHaveBeenCalledTimes(1);
+   expect(study.startStudyEntry).toHaveBeenCalledWith(expect.objectContaining({
+    subjectId:'owner-subject',source:'timer',intent:'Study',startedAt:at,
+   }));
+   expect((study.startStudyEntry as ReturnType<typeof vi.fn>).mock.calls[0][0])
+    .not.toHaveProperty('calendarBlockId');
+  }finally{setDayPlanApiForTests(null);setStudyApiForTests(null)}
+ });
+ it('refuses replaced and cancelled blocks, changed plans and active sessions',async()=>{
+  const day=planApi(),study=studyApi({...block,version:2});
+  setDayPlanApiForTests(day);setStudyApiForTests(study);
+  try{
+   await expect(startVerifiedPlannedBlock('2026-11-07','UTC',plan,block,at))
+    .rejects.toThrow(/Planned block changed/);
+   expect(study.startStudyEntry).not.toHaveBeenCalled();
+   (study.listCalendarBlocks as ReturnType<typeof vi.fn>)
+    .mockResolvedValue([{...block,status:'cancelled'}]);
+   await expect(startVerifiedPlannedBlock('2026-11-07','UTC',plan,block,at))
+    .rejects.toThrow(/Planned block changed/);
+   (day.listPlans as ReturnType<typeof vi.fn>)
+    .mockResolvedValue({items:[{...plan,version:2}],total:1,nextCursor:null});
+   await expect(startVerifiedPlannedBlock('2026-11-07','UTC',plan,block,at))
+    .rejects.toThrow(/Day plan changed/);
+   (study.activeStudyEntry as ReturnType<typeof vi.fn>)
+    .mockResolvedValue({id:'running'});
+   await expect(startVerifiedPlannedBlock('2026-11-07','UTC',plan,block,at))
+    .rejects.toThrow(/active focus session/);
+   expect(study.startStudyEntry).not.toHaveBeenCalled();
+  }finally{setDayPlanApiForTests(null);setStudyApiForTests(null)}
+ });
+});
