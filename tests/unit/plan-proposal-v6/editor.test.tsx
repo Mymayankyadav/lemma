@@ -153,8 +153,10 @@ describe('N85 v6 proposal draft editor',()=>{
  });
  it('clears a previous proposal editor when the router switches to another proposal',async()=>{
   const secondId='55555555-5555-4555-8555-555555555555';
+  const secondProposal={...proposal,id:secondId};
   mocks.proposal.mockImplementation((id:string)=>({
-   data:{...proposal,id},isPending:false,isError:false,refetch:vi.fn(),
+   data:id===secondId?secondProposal:proposal,
+   isPending:false,isError:false,refetch:vi.fn(),
   }));
   vi.mocked(adapter.listDrafts).mockImplementation(async args=>({
    items:[{...existing,proposalId:args.proposalId}],
