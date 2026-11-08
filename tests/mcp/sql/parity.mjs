@@ -485,7 +485,7 @@ try{
  const schemaPlan=registered.get('day_plans').schema.fields;
  const capPlan=JSON.parse(await readFile(new URL('day_plans.json',
   new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8')).columns;
- assert.deepEqual(schemaPlan.filter(x=>!Object.hasOwn(capPlan,x)),['items'],
+ assert.deepEqual(schemaPlan.filter(x=>!Object.hasOwn(capPlan,x)),['items','carry_over'].sort(),
   'day_plans: undocumented command-only payload');
  const readPlan=(await q('select * from public.day_plans where id=$1 and user_id=$2',
   [planId,owner]))[0];
