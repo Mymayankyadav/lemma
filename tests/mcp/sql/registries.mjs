@@ -141,7 +141,21 @@ try {
     assert.ok(next,'original command resource missing: '+baseline.resource);
     assert.equal(next.command_fn,baseline.command_fn);
     assert.equal(next.mcp_ok,baseline.mcp_ok);
-    assert.deepEqual(next.schema,baseline.schema);
+    // D8 N109 explicitly authorizes append-only additions to exactly two
+    // frozen N36.1 rows. Preserve every seed field and operation in order.
+    const addedFields=baseline.resource==='study_entries'?
+      ['calendar_block_id','preset_id','energy']:
+      baseline.resource==='calendar_blocks'?['task_id']:[];
+    const addedOps=baseline.resource==='study_entries'?
+      ['take_lease','next_phase','exclude_minutes']:[];
+    assert.deepEqual(next.schema.fields.slice(0,baseline.schema.fields.length),
+      baseline.schema.fields,'N36.1 baseline fields were rewritten');
+    assert.deepEqual(next.schema.operations.slice(0,baseline.schema.operations.length),
+      baseline.schema.operations,'N36.1 baseline operations were rewritten');
+    assert.deepEqual(next.schema.fields.slice(baseline.schema.fields.length),addedFields,
+      'N109 registry fields not append-only');
+    assert.deepEqual(next.schema.operations.slice(baseline.schema.operations.length),addedOps,
+      'N109 registry operations not append-only');
   }
   for (const entry of finalResources) {
     const shape = typeof entry.schema === 'string' ? JSON.parse(entry.schema) : entry.schema;
