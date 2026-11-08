@@ -16,7 +16,10 @@
           "resume",
           "break",
           "save",
-          "discard"
+          "discard",
+          "take_lease",
+          "next_phase",
+          "exclude_minutes"
         ],
         "fields": [
           "intent",
@@ -26,7 +29,10 @@
           "subject_id",
           "project_id",
           "checkpoint_id",
-          "session_id"
+          "session_id",
+          "calendar_block_id",
+          "preset_id",
+          "energy"
         ]
       }
     },
@@ -68,7 +74,8 @@
           "subject_id",
           "project_id",
           "checkpoint_id",
-          "session_id"
+          "session_id",
+          "task_id"
         ]
       }
     },

@@ -670,6 +670,72 @@ try{
   mark('study_entries',operation);
   await role('service_role');
  }
+ // N109: the registered N52 controls are real audited MCP round trips,
+ // not metadata-only coverage. All three are owner-versioned, replayable
+ // and visible through the registered owner GET projection.
+ const phaseDraft=status(await mcp(command('study_entries','create',{
+  patch:{source:'timer',intent:'N109 MCP phase parity'}
+ })),'study_entries','create');
+ const phaseId=phaseDraft.changed[0].id;
+ const phaseStart=status(await mcp(command('study_entries','start',{
+  target:{id:phaseId},expectedVersion:1,patch:{}
+ })),'study_entries','start');
+ await role(null);
+ // Five minutes of actual focused interval makes one minute eligible for
+ // exclusion after the phase is advanced. No client duration is trusted.
+ await q("update public.study_intervals set started_at=now()-interval '5 minutes' where entry_id=$1 and kind='focus' and ended_at is null",[phaseId]);
+ await role('service_role');
+ const takeRequest=command('study_entries','take_lease',{
+  target:{id:phaseId},expectedVersion:phaseStart.changed[0].version,
+  patch:{device:'n94-mcp-device',lease_minutes:5},
+ });
+ const taken=status(await mcp(takeRequest),'study_entries','take_lease');
+ assert.deepEqual(await mcp(takeRequest),taken,'take_lease replay');
+ assert.equal((await mcp({...takeRequest,patch:{device:'other-device'}})).status,'conflict',
+  'take_lease changed payload reused operation ID');
+ assert.equal(taken.entry.lease_device,'n94-mcp-device');
+ await role(null);
+ assert.equal((await mcpPage('study_entries',phaseId)).items[0].version,taken.entry.version);
+ await role('service_role');
+ const phaseRequest=command('study_entries','next_phase',{
+  target:{id:phaseId},expectedVersion:taken.entry.version,
+  patch:{device:'n94-mcp-device',lease_version:taken.entry.lease_version,energy:'steady'},
+ });
+ const phased=status(await mcp(phaseRequest),'study_entries','next_phase');
+ assert.deepEqual(await mcp(phaseRequest),phased,'next_phase replay');
+ assert.equal(phased.entry.phase,'break','N94 MCP mode failed to enter break');
+ const stale=await mcp(command('study_entries','next_phase',{
+  target:{id:phaseId},expectedVersion:taken.entry.version,
+  patch:{device:'n94-mcp-device',lease_version:taken.entry.lease_version},
+ }));
+ assert.equal(stale.status,'conflict','next_phase accepted stale version');
+ const exclusionRequest=command('study_entries','exclude_minutes',{
+  target:{id:phaseId},expectedVersion:phased.entry.version,
+  patch:{device:'n94-mcp-device',lease_version:taken.entry.lease_version,
+   minutes:1,reason:'Observed distraction'},
+ });
+ const excluded=status(await mcp(exclusionRequest),'study_entries','exclude_minutes');
+ assert.deepEqual(await mcp(exclusionRequest),excluded,'exclude_minutes replay');
+ assert.equal(excluded.entry.excluded_intervals.length,1);
+ await role(null);
+ const resultPage=await mcpPage('study_entries',phaseId);
+ assert.equal(resultPage.items[0].version,excluded.entry.version);
+ assert.equal((await mcpPage('study_entries',phaseId,other)).total,0);
+ await role('service_role');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('study_entries','take_lease',{
+   target:{id:phaseId},expectedVersion:excluded.entry.version,
+   patch:{device:'foreign-device'}
+  }))]),/not found for owner/i);
+ await as(owner);
+ assert.equal((await undo(excluded.actionNo)).undone,excluded.actionNo,
+  'MCP exclusion was not undoable as one action');
+ await role(null);
+ assert.deepEqual((await q('select excluded_intervals from public.study_entries where id=$1',
+  [phaseId]))[0].excluded_intervals,[]);
+ mark('study_entries','take_lease','next_phase','exclude_minutes');
+ await role('service_role');
+
  const discardedCreated=status(await mcp(command('study_entries','create',{
   patch:{source:'manual',intent:'N94 discard candidate'}
  })),'study_entries','create');
