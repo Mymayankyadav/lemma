@@ -19,13 +19,6 @@ Tests: `tests/mcp/sql/notify-command.mjs` (rename, disable, restore, hold create
 Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/mcp/sql/notify-command.mjs, tests/unit/mcp/notify-coverage.test.ts, tests/mcp/sql/parity.mjs (the two new resources only), docs/v6/capability-registry/{lemma_command_resources,lemma_undo_tables,push_devices,notify_holds,notifications}.json, CURRENT.md.
 Not: the notify Edge function, app code, sending or scheduling notifications.
 
-## N90 MCP: historical corrections, proposal versions and drafts
-Stage: Build · Status: open · Needs: N91, N92 · Assigned: —
-Done = MCP exposes the N91 corrections (`session_event_corrections`, `review_corrections`) and N49 `proposal_drafts`, which are already registered, through `mcp_command`, with explicit-instruction rules from D3. Owner decision (plan audit 2026-11-08): the N92 functions `withdraw_proposal`, `revise_proposal` and `reopen_proposal` need the owner's identity, which MCP only has inside `mcp_command`, so one additive migration registers a `proposals` resource with a `proposals_command(p)` that dispatches `withdraw`, `revise` and `reopen` to those functions unchanged (versioned approval stays `approve_proposal`). It is covered by a round trip in `tests/mcp/sql/parity.mjs`.
-Owner-authorized (D1, D8): deploys the migration and the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/history-coverage.test.ts`, `tests/mcp/sql/proposals-command.mjs` (withdraw, revise, reopen, stale version, foreign owner, undo), the `proposals` round trip in `tests/mcp/sql/parity.mjs`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/unit/mcp/history-coverage.test.ts, tests/mcp/sql/proposals-command.mjs, tests/mcp/sql/parity.mjs (the proposals resource only), docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: app code, changes to the N92 functions themselves.
 
 ## N98 Harden: Today, Focus, time log and Progress
 Stage: Build · Status: open · Needs: N70, N72, N73, N76 · Assigned: —
