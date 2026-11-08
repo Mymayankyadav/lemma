@@ -54,6 +54,15 @@ try{
  const link=await command(req('link',{id:one},{other_id:two,kind:'prereq'},2));
  assert.equal(link.status,'ok');
  await assert.rejects(command(req('link',{id:two},{other_id:one,kind:'prereq'},2)),/cycle/);
+ const project='55555555-5555-4555-8555-555555555555';
+ await db.exec('reset role');
+ await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'project-one','Research','Learn')",
+  [project,a,subject]);
+ const note=(await q("insert into public.notes(user_id,project_id,concept_id,front,back) values($1,$2,$3,'Graph of ideas','Explanation') returning id",
+  [a,project,two]))[0].id;
+ const card=(await q("insert into public.cards(user_id,note_id,ord) values($1,$2,1) returning id",
+  [a,note]))[0].id;
+ await actor(a);
  const view=await command(req('preview_merge',{id:two},{keep_id:three}));
  assert.equal(view.status,'ok');assert.equal(view.impact.incomingPrerequisites,1);
  const current=await q('select id,version from public.concepts where id=$1',[three]);
@@ -62,6 +71,14 @@ try{
  assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[two]))[0].n,0);
  const moved=await q('select count(*)::int n from public.concept_links where from_id=$1 and to_id=$2',[one,three]);
  assert.equal(moved[0].n,1);
+ assert.equal((await q('select concept_id from public.notes where id=$1',[note]))[0].concept_id,three);
+ assert.equal((await q('select note_id from public.cards where id=$1',[card]))[0].note_id,note);
+ const undone=(await q('select public.undo_action($1,$2) result',[a,merged.actionNo]))[0].result;
+ assert(undone.changes>0,'merge must undo as a single journalled action');
+ assert.equal((await q('select count(*)::int n from public.concepts where id=$1',[two]))[0].n,1,
+  'undo restores the original concept');
+ assert.equal((await q('select concept_id from public.notes where id=$1',[note]))[0].concept_id,two,
+  'undo restores notes without removing their existing cards');
  await db.exec('reset role');
  await q("select set_config('test.uid',$1,false)",[b]);
  await db.exec('set role authenticated');

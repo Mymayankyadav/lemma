@@ -165,8 +165,8 @@ begin
    pg_catalog.left('Atlas '||v_op,200),true);
   if v_op='create' then
    v_slug:=coalesce(nullif(v_patch->>'slug',''),
-    pg_catalog.trim(both '-' from pg_catalog.regexp_replace(
-      pg_catalog.lower(v_patch->>'name'),'[^a-z0-9]+','-','g')));
+    pg_catalog.btrim(pg_catalog.regexp_replace(
+      pg_catalog.lower(v_patch->>'name'),'[^a-z0-9]+','-','g'),'-'));
    if v_slug is null or v_slug='' then raise exception 'Atlas slug requires ASCII letters or digits';end if;
    insert into public.concepts(user_id,subject_id,slug,name,blurb,parent_id)
     values(v_owner,(v_patch->>'subject_id')::uuid,v_slug,v_patch->>'name',
