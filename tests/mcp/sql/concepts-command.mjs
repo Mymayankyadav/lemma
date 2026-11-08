@@ -88,9 +88,9 @@ try{
  const registry=(await q("select command_fn from public.lemma_command_resources where resource='concepts'"))[0];
  assert.equal(registry.command_fn,'concepts_command');
  // Registered MCP dispatch must use the identical owner-bound command path.
- const current=(await q('select version from public.concepts where id=$1',[three]))[0].version;
+ const currentAfterUndo=(await q('select version from public.concepts where id=$1',[three]))[0].version;
  await db.exec('set role service_role');
- const mcpReq=req('update',{id:three},{blurb:'Edited through MCP'},current);
+ const mcpReq=req('update',{id:three},{blurb:'Edited through MCP'},currentAfterUndo);
  const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) result',
   [a,'chatgpt',JSON.stringify(mcpReq)]))[0].result;
  assert.equal(mcp.status,'ok');assert(mcp.actionNo>0);
