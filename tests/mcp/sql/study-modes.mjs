@@ -58,6 +58,10 @@ try{
   "insert into public.study_entries(user_id,source,status,preset_id) values($1,'timer','running',$2)",
   [owner,preset]),/Protected timer INSERT requires an audited study command/);
  await assert.rejects(q(
+  "insert into public.study_entries(user_id,source,status,preset_id) values($1,'timer','paused',$2)",
+  [owner,preset]),/Protected timer INSERT requires an audited study command/,
+  'paused preset entries cannot skip captured timer configuration');
+ await assert.rejects(q(
   "insert into public.study_entries(user_id,source,status,preset_id) values($1,'manual','saved',$2)",
   [owner,preset]),/Protected timer INSERT requires an audited study command/);
  checkEqual((await q(
