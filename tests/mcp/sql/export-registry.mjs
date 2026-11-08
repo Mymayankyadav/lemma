@@ -52,7 +52,9 @@ try{
  const a='11111111-1111-4111-8111-111111111111';
  const b='22222222-2222-4222-8222-222222222222';
  await q("insert into auth.users(id) values($1),($2)",[a,b]);
- await q("insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)",[a,'a'.repeat(48),b,'b'.repeat(48)]);
+ // Journal actions cannot mix owners: seed independent owner transactions.
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[a,'a'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",[b,'b'.repeat(48)]);
  for(let i=0;i<112;i++)await q("insert into public.subjects(user_id,name,glyph,hue) values($1,$2,'M','cyan')",[a,'N95 Subject '+i]);
  await q("insert into public.subjects(user_id,name,glyph,hue) values($1,'Other owner subject','M','cyan')",[b]);
  await db.exec('set role authenticated');
