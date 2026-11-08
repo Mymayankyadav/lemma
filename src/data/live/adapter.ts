@@ -570,6 +570,32 @@ export class LiveAdapter implements LemmaApi {
   await owner(db)
   return cardState(checked(await db.rpc('undo_review',{p_review:id})) as Row)
  }
+
+ /** N104 card schedule mutations use the exact audited owner-scoped command. */
+ private async cardSchedule(operation:'reschedule'|'reset',noteNo:number,ordinal:number,due?:string):Promise<void> {
+  if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1)
+   throw new LemmaError('invalid','Card note number and ordinal must be positive integers')
+  if(operation==='reschedule'&&(!due||
+   !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
+   !Number.isFinite(Date.parse(due))))
+   throw new LemmaError('invalid','Due date must include a valid time-zone offset')
+  const db=liveClient()
+  await owner(db)
+  const p={schemaVersion:1,resource:'card_schedule',operation,
+   operationId:crypto.randomUUID(),target:{noteNo,ord:ordinal},
+   patch:operation==='reschedule'?{due}:{}}
+  const reply=checked(await db.rpc('card_schedule_command',{p})) as {
+   status:string;reason?:string;actionNo?:number|null}
+  if(reply?.status==='conflict')throw new LemmaError('conflict',reply.reason||'Card schedule changed')
+  if(reply?.status!=='ok'||!Number.isSafeInteger(Number(reply.actionNo))||Number(reply.actionNo)<1)
+   throw new LemmaError('server','Card schedule command returned no audited action')
+ }
+ async rescheduleCard(...args:Parameters<LemmaApi['rescheduleCard']>):ReturnType<LemmaApi['rescheduleCard']>{
+  const [noteNo,ordinal,due]=args;return this.cardSchedule('reschedule',noteNo,ordinal,due)
+ }
+ async resetCard(...args:Parameters<LemmaApi['resetCard']>):ReturnType<LemmaApi['resetCard']>{
+  const [noteNo,ordinal]=args;return this.cardSchedule('reset',noteNo,ordinal)
+ }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
   const [query,slug]=args,db=liveClient()
   await owner(db)
