@@ -11,20 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N59.2 Study goals live adapter (remaining after N59 split)
-Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
-Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
-Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
-Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
-Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
-
-## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
-Stage: Build · Status: open · Needs: N49 · Assigned: —
-Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
-Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no implicit approval, duplicate/changed-payload operationId, conflict views and source version drift, bounded pages and cursor filter locks, live envelopes per operation with retry and no owner field, typed error mapping. Retain N63.1 pure-model tests.
-Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
-Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
-
 ## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
 Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
 Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
@@ -68,20 +54,6 @@ Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowti
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N76 v6 Progress: goals and range-correct statistics behind the shell flag
-Stage: Build · Status: open · Needs: N59.2 · Assigned: —
-Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
-Tests: `tests/unit/progress-v6/goals.test.tsx`
-Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
-Stage: Build · Status: open · Needs: N39 · Assigned: —
-Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
-Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
-Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
 
 ## N85 v6 plan review with proposal drafts behind the shell flag
 Stage: Build · Status: open · Needs: N63.2 · Assigned: —
@@ -149,30 +121,6 @@ Done = as N98 for Paths/project, checkpoint, session, sources, Review/run/done, 
 Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
-
-## N104 Card reschedule and reset (write path and v6 buttons)
-Stage: Build · Status: open · Needs: N84 · Assigned: —
-Done = one additive migration adds `public.card_schedule_command(p)` with operations `reschedule` (set the card's next due date) and `reset` (back to new), owner-checked, with an exactly-once operation receipt, one journalled action that `undo_action` reverses, and a `lemma_command_resources` entry so `mcp_command` can run it; `LemmaApi` gains `rescheduleCard` and `resetCard` (demo and live), and the v6 card detail (N84) shows both actions. Flag off: nothing changes.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/card-schedule-command.mjs` (owner separation, replay, undo, MCP parity) and `tests/unit/card-v6/**`
-Scope: supabase/migrations/<one new additive file>, src/data/api.ts (two methods), the demo and live card adapters in src/data/**, src/features/card/v6/**, tests/mcp/sql/card-schedule-command.mjs, tests/unit/card-v6/**, docs/current/N104.md.
-Not: review grading or FSRS changes, other screens.
-
-## N105 Concept graph edits (write path and v6 Atlas actions)
-Stage: Build · Status: open · Needs: N86 · Assigned: —
-Done = one additive migration adds `public.concepts_command(p)` with operations create, update (name, blurb), reparent, link and unlink (prerequisite or related) and merge (moving links and card references to the kept concept, impact returned first by a preview), refusing cycles with a reason, owner-checked, with exactly-once receipts, one journalled undoable action each and a `lemma_command_resources` entry for `mcp_command`; `LemmaApi` gains the matching methods (demo and live), and the v6 Atlas list (N86) offers them. Flag off: nothing changes.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/concepts-command.mjs` (cycles, merge impact, owner separation, replay, undo, MCP parity) and `tests/unit/atlas-v6/**`
-Scope: supabase/migrations/<one new additive file>, src/data/api.ts (concept methods), the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/mcp/sql/concepts-command.mjs, tests/unit/atlas-v6/**, docs/current/N105.md.
-Not: concept placement layout, other screens.
-
-## N106 Study entry linked to its calendar block
-Stage: Build · Status: open · Needs: N70 · Assigned: —
-Done = one additive migration adds a nullable owner-composite `calendar_block_id` on study entries (an entry may point only at one of the owner's own blocks); `StudyApi.startStudyEntry` accepts it (demo and live) and v6 Today's Start passes the block it starts. Existing entries and callers are unchanged. Flag off: nothing changes.
-Owner-authorized (D1): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study-entry-block-link.mjs` (owner separation, foreign block refused) and `tests/unit/home-v6/today-plan.test.tsx`
-Scope: supabase/migrations/<one new additive file>, the study entry types and start method in src/data/** (demo and live), the Start call in src/features/home/** (v6 branch), tests/mcp/sql/study-entry-block-link.mjs, tests/unit/home-v6/today-plan.test.tsx, docs/current/N106.md.
-Not: calendar editing, other screens.
 
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —

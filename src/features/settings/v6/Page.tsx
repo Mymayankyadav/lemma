@@ -14,6 +14,8 @@ import {SubjectsPanel} from '../SubjectsPanel';
 import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from './StudyDefaults';
 import Activities from './Activities';
+import Planning from './Planning';
+import Focus from './Focus';
 import Reminders from './Reminders';
 import ExportSettings from './Export';
 import DeleteAccount from './DeleteAccount';
@@ -30,12 +32,14 @@ export const SETTINGS_SECTIONS = [
 ] as const;
 const ACTIVITY_SECTION={id:'activities',label:'Activities'} as const;
 const V6_SETTINGS_SECTIONS=[
- ...SETTINGS_SECTIONS.slice(0,3),ACTIVITY_SECTION,...SETTINGS_SECTIONS.slice(3),
+ ...SETTINGS_SECTIONS.slice(0,3),ACTIVITY_SECTION,
+ {id:'focus',label:'Focus'},{id:'planning',label:'Planning'},
+ ...SETTINGS_SECTIONS.slice(3),
 ] as const;
-export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities';
+export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities'|'focus'|'planning';
 
 export function settingsTabDestination(current:SettingsSection,key:string,
-  sections:readonly {id:SettingsSection}[]=SETTINGS_SECTIONS):SettingsSection|null {
+ sections:readonly {id:SettingsSection}[]=SETTINGS_SECTIONS):SettingsSection|null {
   const index=sections.findIndex(section=>section.id===current);
   if(key==='Home')return sections[0].id;
   if(key==='End')return sections[sections.length-1].id;
@@ -124,6 +128,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     </Slab>;
     if(selected==='study')return <StudyDefaults settings={data!}/>;
     if(selected==='activities')return <Activities/>;
+    if(selected==='focus')return <Focus settings={data!}/>;
+    if(selected==='planning')return <Planning settings={data!}/>;
     if(selected==='subjects')return <SubjectsPanel/>;
     if(selected==='connector')return <Slab className="space-y-4 p-5">
       <h2 className="text-title-s font-semibold">Connector</h2>

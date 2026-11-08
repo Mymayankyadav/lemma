@@ -46,7 +46,8 @@ export interface ProposalDraftApi {
   Promise<StudyReceipt<ProposalDraftRecord>>;
 }
 export class ProposalDraftError extends Error {
- constructor(public readonly code:'invalid'|'conflict'|'not_found',message:string){
+ constructor(public readonly code:'invalid'|'conflict'|'not_found',message:string,
+  public readonly details?:ProposalDraftConflict){
   super(message);this.name='ProposalDraftError';
  }
 }

@@ -60,7 +60,7 @@ export async function readTodayPlan(date:string,zone:string):Promise<{
 
 /** Recheck the owner plan, placement and exact block version immediately
  * before starting focus. A stale preview must not start a cancelled or
- * replaced block. The StudyApi still cannot persist a calendarBlockId. */
+ * replaced block. The StudyApi preserves the owner's block reference. */
 export async function startVerifiedPlannedBlock(
  date:string,zone:string,shownPlan:DayPlanRecord,shown:CalendarBlockRecord,
  now=new Date().toISOString()
@@ -76,7 +76,7 @@ export async function startVerifiedPlannedBlock(
  if(!next||next.id!==shown.id||next.version!==shown.version)
   throw Error('Planned block changed; refresh Today before starting focus');
  return study.startStudyEntry({
-  source:'timer',intent:next.title,startedAt:now,
+  source:'timer',intent:next.title,startedAt:now,calendarBlockId:next.id,
   subjectId:next.subjectId??null,projectId:next.projectId??null,
   checkpointId:next.checkpointId??null,sessionId:next.sessionId??null,
  });
@@ -155,7 +155,7 @@ export default function V6TodayPlan({zone,due,reviewLimit}:{
     }).format(new Date(next.startsAt))}</p>
     <button className={button} type="button" disabled={busy}
      onClick={()=>{void start(next)}}>Start planned focus</button>
-    <p className="mt-2 text-caption text-ink-2">Focus inherits the block's learning links; a direct calendar-block link is not yet supported.</p>
+    <p className="mt-2 text-caption text-ink-2">Focus is linked to this calendar block and inherits its learning links.</p>
    </div>:<p className="text-label text-ink-2">No upcoming committed study block today.</p>}
    {error&&<p role="alert">{error}</p>}
    {notice&&<p role="status">{notice}</p>}
