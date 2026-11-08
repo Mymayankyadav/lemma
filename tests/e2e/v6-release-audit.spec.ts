@@ -104,9 +104,8 @@ const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
 // Viewport captures (what a 390×844 phone shows): full-page captures drew the
 // fixed bottom navigation over the middle of long screens.
 async function releaseScreenshot(page:Page,file:string){
- const png=await page.screenshot({path:captureDir+'/'+file,
+ await page.screenshot({path:captureDir+'/'+file,
   animations:'disabled',scale:'css'});
- console.log('N101PNG '+file+' '+png.toString('base64')); // TEMP: extraction only
 }
 
 test('N101 screenshot capture of the real app, both palettes at 390x844',async({page})=>{
