@@ -561,6 +561,45 @@ try{
  assert.equal(undoPlan.status,'closed','day_plans: undo did not re-close');
  assert.ok(undoPlan.closed_at,'day_plans: undo lost closure instant');
  mark('day_plans','create','update','preview','commit','close','reopen');
+ // N107 commit_placements: one atomic MCP batch, app owner read, exact replay,
+ // changed-payload conflict, foreign-owner isolation and whole-action undo.
+ await role(null);
+ const placeTask=(await q("insert into public.tasks(user_id,title) values($1,'N94 parity placement') returning id,version",
+  [owner]))[0];
+ const placeDay={plan_date:'2029-03-05',time_zone:'UTC',intention:'Parity placement',
+  capacity_minutes:60,sources:[{resource:'tasks',id:placeTask.id,version:placeTask.version}],
+  placements:[{task_id:placeTask.id,title:'Parity study',starts_at:'2029-03-05T08:00:00Z',
+   ends_at:'2029-03-05T09:00:00Z',position:0}],unplaced:[]};
+ await role('service_role');
+ const placeRequest=command('day_plans','commit_placements',{patch:{days:[placeDay]}});
+ const placed=await mcp(placeRequest);
+ assert.equal(placed.status,'ok','day_plans.commit_placements: MCP batch refused');
+ assert.ok(Number.isSafeInteger(placed.actionNo),'day_plans.commit_placements: receipt action missing');
+ assert.deepEqual(await mcp(placeRequest),placed,'day_plans.commit_placements: exact replay');
+ assert.equal((await mcp({...placeRequest,patch:{days:[{...placeDay,intention:'Changed'}]}})).status,
+  'conflict','day_plans.commit_placements: changed payload must conflict');
+ await as(owner);
+ const placedPlan=(await q("select id,status from public.day_plans where plan_date='2029-03-05'"))[0];
+ assert.equal(placedPlan?.status,'committed','day_plans.commit_placements: app cannot read committed plan');
+ assert.equal((await q('select count(*)::int n from public.calendar_blocks where task_id=$1',
+  [placeTask.id]))[0].n,1,'day_plans.commit_placements: app cannot read the created block');
+ await role(null);
+ assert.equal((await mcpPage('day_plans',placedPlan.id)).total,1,
+  'day_plans.commit_placements: registered MCP GET missing');
+ assert.equal((await mcpPage('day_plans',placedPlan.id,other)).total,0,
+  'day_plans.commit_placements: foreign owner MCP read');
+ await as(other);
+ assert.equal((await q("select count(*)::int n from public.day_plans where plan_date='2029-03-05'"))[0].n,0,
+  'day_plans.commit_placements: foreign owner app read');
+ await as(owner);
+ assert.equal((await undo(placed.actionNo)).undone,placed.actionNo,
+  'day_plans.commit_placements: whole-action undo rejected');
+ await role(null);
+ assert.equal((await q("select count(*)::int n from public.day_plans where plan_date='2029-03-05'"))[0].n,0,
+  'day_plans.commit_placements: undo left the plan');
+ assert.equal((await q('select count(*)::int n from public.calendar_blocks where task_id=$1',
+  [placeTask.id]))[0].n,0,'day_plans.commit_placements: undo left the block');
+ mark('day_plans','commit_placements');
 
  // An acknowledgement validates two existing *current-version* owner
  // participants before every update; a stale version is rejected by its
