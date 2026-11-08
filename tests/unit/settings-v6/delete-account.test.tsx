@@ -73,6 +73,21 @@ describe('N103 deliberate account deletion control',()=>{
   await vi.waitFor(()=>expect(mocks.navigate)
    .toHaveBeenCalledWith('/sign-in',{replace:true}));
  });
+ it.each([
+  {caseName:'missing deployed Edge function',
+   response:{data:null,error:{status:404,message:'Function not found'}}},
+  {caseName:'temporary backend outage',
+   response:{data:null,error:{status:503,message:'Function unavailable'}}},
+ ])('fails closed for $caseName; the account remains signed in and retryable',async({response})=>{
+  mocks.invoke.mockResolvedValue(response);
+  await render();await confirm();
+  await act(async()=>button('Delete account permanently').click());
+  await vi.waitFor(()=>expect(host.querySelector('[role=alert]')?.textContent)
+   .toContain('Could not verify complete account deletion'));
+  expect(mocks.signOut).not.toHaveBeenCalled();
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(button('Delete account permanently').disabled).toBe(false);
+ });
  it('does not redirect or claim success when deletion is unverified',async()=>{
   mocks.invoke.mockResolvedValue({data:{deleted:false},error:null});
   await render();await confirm();
