@@ -19,6 +19,6 @@ No code in `scripts/ci/**`, `AGENTS.md` or `.github/**` changed.
 ## Afternoon (owner PR after incident #1228)
 
 - #1222 re-landed: CI's auto-revert (#1229) removed it for a clock-dependent unit test it did not cause (fixed by #1227).
-- #1216 (N54): the scheduled caller is a database `pg_cron` job, following the pending-commands pattern; the tick hook becomes required.
+- #1216 (N54): the scheduled caller is a database `pg_cron` job, following the pending-commands pattern.
 - #1231 (N94): the static command manifest now mirrors the database (18 resources) and a SQL test enforces it. The two owner-editable columns MCP cannot write yet are recorded truthfully and tracked by new N109; the frozen N36.1 baseline rows are not changed here.
 - Owner waived independent review for the currently open PRs (instruction 2026-11-08 16:05 IST); owner-setup reviews each diff and merges directly, noting the waiver on the PR.
