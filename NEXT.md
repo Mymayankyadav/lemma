@@ -97,14 +97,6 @@ Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N91 Evidence and review history correction
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration: `session_events` gains `occurred_at` (read as `coalesce(occurred_at, created_at)`), `superseded_by`, `voided_at`, `correction_reason`, `actor`; `reviews` gains `scheduler_version`, `params_id` (FK to a new `review_parameter_sets` snapshot of the weights and settings used) and `operation_id`; new functions `correct_session_event`, `void_session_event` (re-derive checkpoint state from remaining evidence) and `correct_review`, `void_review` (rebuild the affected card's schedule from its remaining history with the recorded parameters, or a disclosed replacement state), all owner-checked, journaled and undoable, registered in `lemma_command_resources`.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/history-correction.mjs` (each correction re-derives state, history and schedule agree, undo, second owner, existing grade and session tests unchanged)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/history-correction.mjs, docs/v6/capability-registry/session_events.json, docs/v6/capability-registry/reviews.json, docs/v6/capability-registry/review_parameter_sets.json, CURRENT.md.
-Not: app or MCP code, changing existing grade functions.
-
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
 Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
