@@ -150,11 +150,11 @@ describe('N105.2 live owner-RLS command envelopes and retry',()=>{
    const api=new LiveAdapter();
    await expect(api.updateConcept(id,1,{name:'Exactly once'}))
     .rejects.toMatchObject({code:'offline'});
-   expect(requests).toHaveLength(2,'the first invocation tries twice');
-   expect(actions).toBe(1,'the server committed before both replies were lost');
+   expect(requests).toHaveLength(2);
+   expect(actions).toBe(1);
    await expect(api.updateConcept(id,1,{name:'Changed without acknowledgement'}))
     .rejects.toMatchObject({code:'conflict'});
-   expect(requests).toHaveLength(2,'a changed intent must not be sent');
+   expect(requests).toHaveLength(2);
    const result=await api.updateConcept(id,1,{name:'Exactly once'});
    expect(result.actionNo).toBe(1);
    expect(requests).toHaveLength(3);
