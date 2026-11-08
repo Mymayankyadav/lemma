@@ -10,7 +10,7 @@ import type {
 type ObjectRow = Record<string, unknown>;
 type Resource = 'study_entries' | 'study_intervals' | 'calendar_blocks';
 type Operation = 'create' | 'start' | 'pause' | 'resume' | 'break' | 'save' | 'discard' | 'update' | 'delete' |
-  'create_manual' | 'correct' | 'split' | 'void' | 'restore';
+  'create_manual' | 'correct' | 'split' | 'void' | 'restore' | 'take_lease' | 'next_phase' | 'exclude_minutes';
 interface Changed { id: string; version: number }
 interface CommandReceipt { status: 'ok' | 'conflict'; changed: Changed[]; actionNo?: number | null; conflict?: { currentVersion?: number } }
 const LIMIT = 500;
@@ -73,6 +73,17 @@ function mapStudy(data: ObjectRow): StudyEntryRecord {
     version: Number(data.version), createdAt: String(data.created_at),
     updatedAt: String(data.updated_at), savedAt: data.saved_at == null ? null : String(data.saved_at),
     intervals: mapIntervals(data.study_intervals),
+    ...(data.mode !== undefined ? {mode:data.mode as StudyEntryRecord['mode']} : {}),
+    ...(data.preset_id !== undefined ? {presetId:data.preset_id as string | null} : {}),
+    ...(data.config !== undefined ? {config:data.config as StudyEntryRecord['config']} : {}),
+    ...(data.phase !== undefined ? {phase:data.phase as StudyEntryRecord['phase']} : {}),
+    ...(data.cycle !== undefined ? {cycle:Number(data.cycle)} : {}),
+    ...(data.phase_ends_at !== undefined ? {phaseEndsAt:data.phase_ends_at as string|null} : {}),
+    ...(data.energy !== undefined ? {energy:data.energy as StudyEntryRecord['energy']} : {}),
+    ...(data.lease_device !== undefined ? {leaseDevice:data.lease_device as string|null} : {}),
+    ...(data.lease_version !== undefined ? {leaseVersion:Number(data.lease_version)} : {}),
+    ...(data.lease_expires_at !== undefined ? {leaseExpiresAt:data.lease_expires_at as string|null} : {}),
+    ...(data.excluded_intervals !== undefined ? {excludedIntervals:data.excluded_intervals as StudyEntryRecord['excludedIntervals']} : {}),
     ...(data.calendar_block_id!==undefined ? {calendarBlockId:(data.calendar_block_id??null) as string|null} : {}),
     ...(typeof data.approximate === 'boolean' ? {approximate:data.approximate} : {}),
     ...(data.voided_at !== undefined ? {voidedAt:data.voided_at as string | null} : {}),
@@ -171,12 +182,77 @@ async function command(resource: Resource, operation: Operation, extra: ObjectRo
 const receipt = <T>(record: T, response: CommandReceipt): StudyReceipt<T> => ({
   record, actionNo: Number.isSafeInteger(response.actionNo) ? response.actionNo! : null,
 });
-async function entryWrite(operation: Operation, key: string, expectedVersion: number, patch: ObjectRow = {}) {
-  const response = await command('study_entries', operation, {target: {id: key}, expectedVersion, patch});
+async function entryWrite(operation: Operation, key: string, expectedVersion: number, patch: ObjectRow = {}, lease: ObjectRow = {}) {
+  const response = await command('study_entries', operation, {target: {id: key}, expectedVersion, patch, ...lease});
   return receipt(await readStudy(key), response);
 }
 
+// Stable within this browser tab; no owner token or server credential is stored.
+let tabDevice: string | null = null;
+function deviceToken(): string { return tabDevice ??= id(); }
+
 export function createLiveStudyApi(): StudyApi {
+  const device = deviceToken();
+  let owned: {id:string;version:number;leaseVersion:number} | null = null;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  let listening = false;
+  const visible = () => typeof document !== 'undefined' && document.visibilityState === 'visible';
+  const cancel = () => {
+    if(timeout!==null){clearTimeout(timeout);timeout=null;}
+  };
+  const stop = () => {
+    cancel(); owned=null;
+    if(listening && typeof document!=='undefined'){
+      document.removeEventListener('visibilitychange',onVisibility);
+      listening=false;
+    }
+  };
+  const renewLater = () => {
+    cancel();
+    if(owned && visible())timeout=setTimeout(()=>{void renew();},60_000);
+  };
+  async function renew(){
+    const current=owned;
+    if(!current||!visible())return;
+    try{
+      const result=await command('study_entries','take_lease',{
+        target:{id:current.id},expectedVersion:current.version,
+        patch:{device,lease_minutes:2},
+      });
+      const after=await readStudy(current.id);
+      if(after.status!=='running'&&after.status!=='paused'&&after.status!=='draft'){
+        stop();return;
+      }
+      owned={id:current.id,version:result.changed[0].version,
+        leaseVersion:after.leaseVersion??current.leaseVersion+1};
+    }catch{
+      // Stale owner/version/device must not be silently reclaimed.
+      stop();return;
+    }
+    renewLater();
+  }
+  function onVisibility(){
+    if(!visible())cancel();
+    else if(owned)void renew();
+  }
+  const keep = (record:StudyEntryRecord,latestVersion:number) => {
+    owned={id:record.id,version:latestVersion,leaseVersion:record.leaseVersion??0};
+    if(!listening && typeof document!=='undefined'){
+      document.addEventListener('visibilitychange',onVisibility);
+      listening=true;
+    }
+    renewLater();
+  };
+  const leaseEnvelope = (key:string):ObjectRow =>
+    owned?.id===key ? {device,leaseVersion:owned.leaseVersion} : {};
+  const withLease = async (operation:Operation,key:string,expectedVersion:number,patch:ObjectRow={}) => {
+    const output=await entryWrite(operation,key,expectedVersion,patch,leaseEnvelope(key));
+    if(owned?.id===key){
+      if(['saved','discarded'].includes(output.record.status))stop();
+      else owned.version=output.record.version;
+    }
+    return output;
+  };
   return {
     mode: 'live',
     async listStudyEntries(range) {
@@ -210,15 +286,24 @@ export function createLiveStudyApi(): StudyApi {
       let started: CommandReceipt;
       let startVersion=row.version;
       try {
+        const draftPatch:ObjectRow={};
         if(input.calendarBlockId!==undefined&&input.calendarBlockId!==null){
           if(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(input.calendarBlockId))
             fail('invalid','Calendar block ID must be a UUID');
           // Only the owner can update the newly created draft. The database's
           // (user_id,calendar_block_id) FK refuses a different owner's block;
           // link before start so a failed FK never leaves a running timer.
+          draftPatch.calendar_block_id=input.calendarBlockId;
+        }
+        if(input.presetId!==undefined){
+          if(input.presetId!==null&&!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(input.presetId))
+            fail('invalid','Preset ID must be a UUID');
+          draftPatch.preset_id=input.presetId;
+        }
+        if(Object.keys(draftPatch).length){
           const db=await client();
           const linked=unwrap<{version:number}>(await db.from('study_entries')
-            .update({calendar_block_id:input.calendarBlockId}).eq('id',row.id)
+            .update(draftPatch).eq('id',row.id)
             .select('version').single());
           startVersion=Number(linked.version);
         }
@@ -240,12 +325,60 @@ export function createLiveStudyApi(): StudyApi {
       }
       return receipt(await readStudy(row.id), started);
     },
+    async takeLease(key, expectedVersion, leaseMinutes = 2) {
+      if(!Number.isSafeInteger(leaseMinutes)||leaseMinutes<1||leaseMinutes>30)
+        fail('invalid','Lease minutes must be 1–30');
+      const response=await command('study_entries','take_lease',{
+        target:{id:key},expectedVersion,patch:{device,lease_minutes:leaseMinutes},
+      });
+      const record=await readStudy(key);
+      keep(record,response.changed[0].version);
+      return receipt(record,response);
+    },
+    async nextPhase(key,expectedVersion,energy){
+      const current=await readStudy(key);
+      if(current.version!==expectedVersion)fail('conflict','Study version changed elsewhere');
+      if(!owned||owned.id!==key||current.leaseDevice!==device||
+          current.leaseVersion!==owned.leaseVersion||
+          !current.leaseExpiresAt||Date.parse(current.leaseExpiresAt)<=Date.now())
+        throw new LemmaError('conflict','Current tab must take the timer lease');
+      if(energy!==undefined&&energy!==null&&!['low','steady','high'].includes(energy))
+        fail('invalid','Invalid timer energy');
+      const response=await command('study_entries','next_phase',{
+        target:{id:key},expectedVersion,
+        patch:{device,lease_version:owned.leaseVersion,...(energy!==undefined?{energy}:{} )},
+      });
+      const record=await readStudy(key);
+      keep(record,response.changed[0].version);
+      return receipt(record,response);
+    },
+    async excludeMinutes(key,expectedVersion,minutes,reason){
+      if(!Number.isSafeInteger(minutes)||minutes<1||minutes>1440)
+        fail('invalid','Excluded minutes must be 1–1440');
+      if(typeof reason!=='string'||!reason.trim()||reason.trim().length>200)
+        fail('invalid','Exclusion reason required (1–200 characters)');
+      const current=await readStudy(key);
+      if(current.version!==expectedVersion)fail('conflict','Study version changed elsewhere');
+      const lease=(current.status==='running'||current.status==='paused')&&
+        current.leaseExpiresAt&&Date.parse(current.leaseExpiresAt)>Date.now()
+        ? (owned?.id===key&&current.leaseDevice===device&&
+            current.leaseVersion===owned.leaseVersion?{device,lease_version:owned.leaseVersion}:null)
+        : {};
+      if(lease===null)fail('conflict','Current tab must take the timer lease');
+      const response=await command('study_entries','exclude_minutes',{
+        target:{id:key},expectedVersion,
+        patch:{...lease,minutes,reason:reason.trim()},
+      });
+      const record=await readStudy(key);
+      if(owned?.id===key)keep(record,response.changed[0].version);
+      return receipt(record,response);
+    },
     pauseStudyEntry(key, expectedVersion, at) {
       void at; // All live interval boundaries use the trusted database clock.
-      return entryWrite('pause',key,expectedVersion);
+      return withLease('pause',key,expectedVersion);
     },
-    resumeStudyEntry(key, expectedVersion, at) { void at; return entryWrite('resume',key,expectedVersion); },
-    breakStudyEntry(key, expectedVersion, at) { void at; return entryWrite('break',key,expectedVersion); },
+    resumeStudyEntry(key, expectedVersion, at) { void at; return withLease('resume',key,expectedVersion); },
+    breakStudyEntry(key, expectedVersion, at) { void at; return withLease('break',key,expectedVersion); },
     async saveStudyEntry(key, expectedVersion, patch = {}) {
       // SQL's save is not idempotent for a new operationId, so guard its terminal state.
       const existing = await readStudy(key);
@@ -294,9 +427,9 @@ export function createLiveStudyApi(): StudyApi {
       const change: ObjectRow = {};
       if (patch.reflection !== undefined) change.reflection = patch.reflection;
       if (patch.rating !== undefined) change.rating = patch.rating;
-      return entryWrite('save', key, currentVersion, change);
+      return withLease('save', key, currentVersion, change);
     },
-    discardStudyEntry(key, expectedVersion) { return entryWrite('discard', key, expectedVersion); },
+    discardStudyEntry(key, expectedVersion) { return withLease('discard', key, expectedVersion); },
     async correctStudyEntry(key, expectedVersion, patch) {
       return entryWrite('correct',key,expectedVersion,correctionPatch(patch));
     },

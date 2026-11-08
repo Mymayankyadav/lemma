@@ -27,15 +27,6 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
-Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
-Owner decision (#1205): an authenticated browser can no longer INSERT a `running` or `paused` study entry at all (drafts and manual saved entries stay insertable with default timer fields); a timer starts only through `study_command`, as the app already does. No exception keyed to fixture values or session settings.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged, except that `tests/mcp/sql/study-schema.mjs` (N10) seeds its running entry from the trusted context and now asserts the browser refusal (the only authorized edit to it)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, tests/mcp/sql/study-schema.mjs (the seeding change above only), docs/v6/capability-registry/study_entries.json, CURRENT.md.
-Not: app or MCP code, other functions.
-
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
@@ -52,36 +43,12 @@ Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, b
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
 
-## N66 StudyApi: timer modes, phases, drift exclusion and lease
-Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
-Done = the study contract gains, additively, mode/preset/config/phase/cycle/energy/lease fields and `nextPhase`, `takeLease`, `excludeMinutes`, in both adapters with the N52 envelope; the live adapter keeps one device lease per tab and renews it while visible.
-Tests: `tests/unit/study/modes.test.ts`
-Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
-
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N85 v6 plan review with proposal drafts behind the shell flag
-Stage: Build · Status: open · Needs: N63.2 · Assigned: —
-Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
-Owner decision (#1200): `ProposalDraftApi.getSource(proposalId)` (new, read-only, live and demo) returns `{proposalId, targetId, baseVersions:{proposal,target}}` read from the owner's real proposal row and the target row that the N63.2 draft command validates (project, note or checkpoint), or `null` when the proposal has no editable target. The editor creates a first draft only from that value and never guesses a target or version; existing draft methods and write paths do not change.
-Tests: `tests/unit/plan-proposal-v6/**`
-Scope: src/features/plan-proposal/v6/** (new), src/data/proposal-drafts/** (the additive read-only `getSource` only), tests/unit/proposal-drafts/proposal-source.test.ts (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except `src/data/proposal-drafts/**` as above, new dependencies, existing tests' expectations.
-
-## N87 MCP: every settings field
-Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
-Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
-Owner decision (#1197): `connector_last_client` is command-managed (the registry now says so): `mcp_commit` writes it from the true connector source, so the settings edit path refuses it with a clear message instead of reporting a lost write. The coverage test asserts that refusal and covers every other owner-editable column.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/settings-coverage.test.ts` enumerating the registry's settings fields
-Scope: supabase/functions/mcp/**, tests/unit/mcp/settings-coverage.test.ts, CURRENT.md.
-Not: migrations, app code.
 
 ## N88 MCP: paths, subjects, styles, concepts and sources fields
 Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
