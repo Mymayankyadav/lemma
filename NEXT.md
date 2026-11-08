@@ -156,14 +156,6 @@ Tests: `tests/mcp/sql/history-correction.mjs` (each correction re-derives state,
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/history-correction.mjs, docs/v6/capability-registry/session_events.json, docs/v6/capability-registry/reviews.json, docs/v6/capability-registry/review_parameter_sets.json, CURRENT.md.
 Not: app or MCP code, changing existing grade functions.
 
-## N93 Slug and code aliases, source and page revisions
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration adds `public.record_aliases` (owner, kind `project`/`concept`/`checkpoint`, old value, target ID; unique per owner and kind) maintained by triggers when a slug or code changes, `public.resolve_alias(kind, value)`, and `public.source_revisions` / `public.source_page_revisions` with content hashes captured by triggers on edit, so citations and edit conflicts survive later corrections.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/aliases-revisions.mjs` (rename keeps old links resolvable, collisions refused, revisions captured once per change, second owner)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisions.mjs, docs/v6/capability-registry/record_aliases.json, docs/v6/capability-registry/source_revisions.json, docs/v6/capability-registry/source_page_revisions.json, CURRENT.md.
-Not: app or MCP code.
-
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
 Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
