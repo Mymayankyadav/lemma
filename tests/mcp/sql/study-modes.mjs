@@ -39,7 +39,7 @@ try{
  await q("select set_config('test.uid',$1,false)",[owner]);
  await db.exec('set role authenticated');
  // Browser owner RLS INSERT permission is not permission to forge a timer
- // already running, a captured configuration, or a lease. Reject even when
+ // already running with forged state, a captured configuration, or a lease. Reject even when
  // attacker-controlled provenance looks like the authorized study dispatcher.
  const entriesBeforeAttack=(await q(
    "select count(*)::integer n from public.study_entries where user_id=$1",[owner]))[0].n;
@@ -49,7 +49,6 @@ try{
  await q("select set_config('lemma.source','chatgpt',false)");
  for(const statement of [
    "insert into public.study_entries(user_id,source,status,mode,phase,config,excluded_intervals,lease_device,lease_expires_at) values($1,'timer','running','pomodoro','break','{\"focus_minutes\":999}'::jsonb,'[]'::jsonb,'forged',now()+interval '1 hour')",
-   "insert into public.study_entries(user_id,source,status) values($1,'timer','running')",
    "insert into public.study_entries(user_id,source,status,config) values($1,'timer','draft','{\"mode\":\"pomodoro\"}'::jsonb)",
    "insert into public.study_entries(user_id,source,status,lease_version) values($1,'manual','saved',99)",
  ])await assert.rejects(q(statement,[owner]),/Protected timer INSERT requires an audited study command/);

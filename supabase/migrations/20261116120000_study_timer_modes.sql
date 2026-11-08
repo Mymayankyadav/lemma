@@ -369,17 +369,17 @@ grant execute on function public.lemma_study_timer_command(jsonb,uuid,uuid)
 -- The owner-checked study_command compatibility dispatcher runs as SECURITY
 -- DEFINER; its nested writes and the existing SECURITY DEFINER undo_action
 -- execute with the function owner while untrusted direct DML does not.
--- N10 allows authenticated INSERT with owner RLS. A direct INSERT of a
--- running/paused entry bypasses the UPDATE-only start snapshot/lease guards.
--- Preserve draft selection (including owner-checked preset_id) and legacy
--- manual saved-entry creation, but never accept unaudited server timer state.
+-- N10's existing owner-RLS test requires legacy direct active timer INSERT
+-- with default fields, alongside draft and manual saved-entry INSERT. Preserve
+-- that pre-N52 compatibility exactly; forbid forged captured modes, phases,
+-- configuration, exclusions and leases without an audited command. Starting a
+-- configured/leased timer still requires study_command.
 -- Spoofable lemma.tool/lemma.source GUCs deliberately do not affect this rule.
 create function public.lemma_study_timer_insert_guard() returns trigger
 language plpgsql security invoker set search_path='' as $insert_guard$
 begin
  if current_user='authenticated' and (
-    new.status in ('running','paused')
-    or new.mode is distinct from 'open'
+    new.mode is distinct from 'open'
     or new.config is distinct from '{}'::jsonb
     or new.phase is distinct from 'focus'
     or new.cycle is distinct from 1
