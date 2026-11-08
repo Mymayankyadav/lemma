@@ -65,14 +65,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N85 v6 plan review with proposal drafts behind the shell flag
-Stage: Build · Status: open · Needs: N63.2 · Assigned: —
-Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
-Owner decision (#1200): `ProposalDraftApi.getSource(proposalId)` (new, read-only, live and demo) returns `{proposalId, targetId, baseVersions:{proposal,target}}` read from the owner's real proposal row and the target row that the N63.2 draft command validates (project, note or checkpoint), or `null` when the proposal has no editable target. The editor creates a first draft only from that value and never guesses a target or version; existing draft methods and write paths do not change.
-Tests: `tests/unit/plan-proposal-v6/**`
-Scope: src/features/plan-proposal/v6/** (new), src/data/proposal-drafts/** (the additive read-only `getSource` only), tests/unit/proposal-drafts/proposal-source.test.ts (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except `src/data/proposal-drafts/**` as above, new dependencies, existing tests' expectations.
-
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
 Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.

@@ -1,7 +1,7 @@
 // N63.2: owner-RLS reads; only N49's owner-checked RPC mutates drafts.
 import {ProposalDraftError,type ProposalDraftApi,type ProposalDraftRecord,
  type ProposalDraftPage,type ProposalDraftQuery,type NewProposalDraft,
- type ProposalEditPayload,type ProposalBaseVersions} from './contract';
+ type ProposalEditPayload,type ProposalBaseVersions,type ProposalDraftSource} from './contract';
 import {normalizeDraftQuery,normalizeNewDraft,normalizeDraftPayload,
  normalizeBaseVersions,compareDraftSourceVersions,draftConflictDetails} from './model';
 type Row=Record<string,unknown>;
@@ -175,6 +175,28 @@ export function createLiveProposalDraftApi():ProposalDraftApi{
  }
  return {
   mode:'live',
+  async getSource(raw:string):Promise<ProposalDraftSource|null>{
+   const proposalId=id(raw),c=await client();
+   const found=await c.from('proposals')
+    .select('id,kind,project_id,version,status,withdrawn_at')
+    .eq('id',proposalId).maybeSingle();
+   if(found.error)throw errorOf(found.error);
+   if(!found.data)return null;
+   const proposal=found.data as Row;
+   // Only real plan proposals have a known, owner-scoped project target.
+   // Do not infer note/checkpoint IDs from optional presentation payloads.
+   if(!['plan','plan_change'].includes(String(proposal.kind))||
+      proposal.status!=='pending'||proposal.withdrawn_at!=null||
+      typeof proposal.project_id!=='string'||!UUID.test(proposal.project_id))return null;
+   const targetId=id(proposal.project_id);
+   const target=await c.from('projects').select('id,version')
+    .eq('id',targetId).maybeSingle();
+   if(target.error)throw errorOf(target.error);
+   if(!target.data)return null;
+   return {proposalId,targetId,baseVersions:{
+    proposal:positive(proposal.version),target:positive((target.data as Row).version),
+   }};
+  },
   async listDrafts(query:ProposalDraftQuery={}):Promise<ProposalDraftPage>{
    const q=normalizeDraftQuery(query);
    const f=JSON.stringify([[...q.status].sort(),q.proposalId??null,q.targetId??null]);
