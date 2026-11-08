@@ -90,13 +90,6 @@ Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N77 v6 activity presets: manage and pick behind the shell flag
-Stage: Build · Status: open · Needs: N55 · Assigned: —
-Done = with `v6Shell` on, Settings gains an Activities section to create, edit, reorder, archive and restore presets; the Focus start control lists active presets (selection is passed through once N72 lands; until then it pre-fills the intent and links). Flag off: nothing changes.
-Tests: `tests/unit/presets-ui/**`
-Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
 Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
