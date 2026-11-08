@@ -195,7 +195,7 @@ function V6Calendar() {
 
   return <section aria-labelledby="calendar-title" className="flex flex-col gap-4 pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
-    {preferencesError&&<p role="alert" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
+    {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
     <div onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
       const choices = ['agenda', 'day', 'week', 'month'];
