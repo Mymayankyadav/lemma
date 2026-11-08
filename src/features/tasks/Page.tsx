@@ -20,6 +20,13 @@ export function appendTaskPage(previous:TaskRecord[],page:TaskPage):TaskRecord[]
  for(const item of page.items)records.set(item.id,item);
  return [...records.values()].sort(byOrder);
 }
+/** Refuse malformed/infinite pagination without hiding already-loaded owner tasks. */
+function checkTaskPage(page:TaskPage,limit:number):void {
+ if(!Array.isArray(page.items)||page.items.length>limit||
+  !Number.isSafeInteger(page.total)||page.total<page.items.length||
+  (page.nextCursor!==null&&(typeof page.nextCursor!=='string'||!page.nextCursor)))
+  throw new Error('Invalid task page; refresh the backlog');
+}
 /** A one-row, versioned move crosses the adjacent row even when positions are equal. */
 export function movedPosition(task:TaskRecord,adjacent:TaskRecord,up:boolean):number {
  if(task.status!==adjacent.status)throw new Error('Move within one status only');
@@ -37,31 +44,46 @@ function Backlog(){
  const [editing,setEditing]=useState<TaskRecord|null>(null);
  const editTrigger=useRef<HTMLButtonElement|null>(null);
  const [reloadKey,setReloadKey]=useState(0);
+ const viewEpoch=useRef(0);
+ const seenCursors=useRef<Set<string>>(new Set());
 
  useEffect(()=>{
   let active=true;
-  setPhase('loading');
+  const epoch=++viewEpoch.current;
+  seenCursors.current.clear();
+  setPhase('loading');setMessage('');
   void getTaskApi().listTasks({limit:20,status:statuses}).then(page=>{
-   if(!active)return;
+   if(!active||viewEpoch.current!==epoch)return;
+   checkTaskPage(page,20);
    setRows(appendTaskPage([],page));setTotal(page.total);setCursor(page.nextCursor);
+   if(page.nextCursor)seenCursors.current.add(page.nextCursor);
    setPhase('ready');
   }).catch(error=>{
-   if(!active)return;
+   if(!active||viewEpoch.current!==epoch)return;
    setMessage(error instanceof Error?error.message:'Could not load the backlog.');
    setPhase('error');
   });
   return ()=>{active=false;};
  },[reloadKey]);
- function refresh(){setReloadKey(n=>n+1);}
+ function refresh(){++viewEpoch.current;setReloadKey(n=>n+1);}
  async function more(){
   if(busy||!cursor)return;
+  const epoch=viewEpoch.current,requested=cursor;
   setBusy(true);setMessage('');
   try{
-   const page=await getTaskApi().listTasks({limit:20,status:statuses,cursor});
+   const page=await getTaskApi().listTasks({limit:20,status:statuses,cursor:requested});
+   if(epoch!==viewEpoch.current)return;
+   checkTaskPage(page,20);
+   if((page.nextCursor&&seenCursors.current.has(page.nextCursor))||
+      (page.nextCursor&&page.items.length===0))
+    throw new Error('Task cursor did not advance; refresh the backlog');
+   if(page.nextCursor)seenCursors.current.add(page.nextCursor);
    setRows(old=>appendTaskPage(old,page));
    setCursor(page.nextCursor);setTotal(page.total);
-  }catch(error){setMessage(error instanceof Error?error.message:'Could not load more tasks.');}
-  finally{setBusy(false);}
+  }catch(error){
+   if(epoch===viewEpoch.current)
+    setMessage(error instanceof Error?error.message:'Could not load more tasks.');
+  }finally{setBusy(false);}
  }
  async function mutate(row:TaskRecord,patch:TaskPatch){
   if(busy)return;

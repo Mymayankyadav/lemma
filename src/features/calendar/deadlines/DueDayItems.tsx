@@ -85,7 +85,7 @@ export function DueDayItems({date,firstVisible,zone,dues,compact=false}:{
     <button type="button" aria-expanded={show}
       aria-label={'Open '+(item.type==='deadline'?'deadline ':'practice topic ')+title}
       onClick={()=>setOpened(old=>old===item.key?null:item.key)}
-      className="min-h-9 w-full rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
+      className="min-h-11 w-full rounded-ctl text-left focus-visible:outline-2 focus-visible:outline-amber">
      <strong className="block break-words">{title}</strong>
      <span className="block break-words text-ink-2">
       {item.type==='deadline'?origin(item.value.origin):'Practice due'}

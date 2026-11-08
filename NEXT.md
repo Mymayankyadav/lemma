@@ -34,13 +34,6 @@ Tests: `tests/e2e/v6-harden-slice.spec.ts` covering the journeys and geometry fo
 Scope: src/features/home/** (v6 branch), src/features/focus/**, src/features/time-log/**, src/features/progress-v6/**, src/app/FocusAccessory.tsx, tests/e2e/v6-harden-slice.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, other screens.
 
-## N99 Harden: tasks, planner, Calendar and ritual
-Stage: Build · Status: open · Needs: N68, N69, N74, N75, N78 · Assigned: —
-Done = as N98 for `/tasks`, the planner sheet, all four Calendar views with deadlines/practice/overlaps, the ritual and practice screens, including overloaded and empty days, DST weeks and 50+ task accounts.
-Tests: `tests/e2e/v6-harden-planning.spec.ts`
-Scope: src/features/tasks/**, src/features/planner/**, src/features/calendar/**, src/features/ritual/**, src/features/practice/**, tests/e2e/v6-harden-planning.spec.ts, CURRENT.md.
-Not: data adapters, supabase/**, other screens.
-
 ## N100 Harden: learning screens
 Stage: Build · Status: open · Needs: N80, N81, N82, N83, N84, N85, N86 · Assigned: —
 Done = as N98 for Paths/project, checkpoint, session, sources, Review/run/done, Cards and card detail, Inbox and plan review, Atlas and Settings, with realistic account sizes (2,000+ cards, long sources) and the Inbox decision-bar invariant (contract §9).

@@ -84,13 +84,13 @@ export function OverlapMarkers({windows,controls,zone,compact=false}:{
      <button type="button" disabled={!canWrite}
       aria-label={'Keep both for '+label}
       onClick={()=>void controls.acknowledge(row,'keep_both')}
-      className="min-h-10 rounded-ctl border border-edge px-2 disabled:opacity-50">
+      className="min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50">
       Keep both</button>
      {row.participants.map((participant,i)=><button type="button"
        key={participant.kind+participant.id} disabled={!canWrite}
        aria-label={'Attribute overlap to '+row.names[i]}
        onClick={()=>void controls.acknowledge(row,'attribute_to',i)}
-       className="min-h-10 rounded-ctl border border-edge px-2 disabled:opacity-50">
+       className="min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50">
        Attribute to {row.names[i]}</button>)}
     </div>}
     </article>;
