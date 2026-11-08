@@ -140,6 +140,9 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  }
  async function commit(){
   if(busy||!selection.items||!preview)return;
+  // A Calendar date/time-zone change can outlive this owner write. Never
+  // let an old response close or overwrite the next date's planner.
+  const commitScope=scopeKey;
   setBusy(true);setError(null);
   try{
    const result=await commitPlannerSelection({
@@ -148,11 +151,13 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
    },{
     tasks:getTaskApi(),study:getStudyApi(),plans:getDayPlanApi(),
    });
+   if(lastScope.current!==commitScope)return;
    close();
    notify('Study placements committed for '+result.committedDays.length+
     (result.committedDays.length===1?' day.':' days.'),{tone:'success'});
   }catch(e){
-   setError(e instanceof Error?e.message:'Could not commit plan');
+   if(lastScope.current===commitScope)
+    setError(e instanceof Error?e.message:'Could not commit plan');
   }finally{setBusy(false);}
  }
  return <>
