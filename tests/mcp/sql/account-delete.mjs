@@ -93,6 +93,38 @@ try{
  await db.exec('reset role');
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[A]))[0].n,
   actionCountBefore,'rejected owner writes must not create audit rows');
+ // The MCP connector writes as service_role through SECURITY DEFINER commands
+ // (mcp_commit/mcp_command/mcp_seen), where current_setting('role') stays
+ // 'service_role'. The marker must stop that path too, or an in-flight connector
+ // write could recreate actions/action_changes after the purge and block Auth
+ // deletion. This helper mirrors that execution context.
+ await db.exec(`create function public.test_mcp_owner_write(p_user uuid,p_kind text)
+  returns void language plpgsql security definer set search_path='' as $mcp$
+  begin
+   if p_kind='action' then
+    insert into public.actions(user_id,txid,source,summary)
+     values(p_user,90000009,'chatgpt','mcp write during deletion');
+   elsif p_kind='seen' then
+    update public.settings set connector_last_seen_at=pg_catalog.now()
+     where user_id=p_user;
+   else
+    insert into public.subjects(id,user_id,name,glyph,hue)
+     values('acacacac-acac-4aca-8aca-acacacacacac',p_user,'Rejected MCP','∑','amber');
+   end if;
+  end $mcp$;
+  revoke all on function public.test_mcp_owner_write(uuid,text) from public;
+  grant execute on function public.test_mcp_owner_write(uuid,text) to service_role`);
+ await db.exec('set role service_role');
+ for(const kind of ['action','seen','subject'])
+  await assert.rejects(q('select public.test_mcp_owner_write($1::uuid,$2)',[A,kind]),
+   /Account deletion is in progress/,'MCP-style '+kind+' write for marked A');
+ // A service-role write for an owner without a marker is unaffected.
+ await q('select public.test_mcp_owner_write($1::uuid,$2)',[B,'seen']);
+ await db.exec('reset role');
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[A]))[0].n,
+  actionCountBefore,'rejected MCP writes must not create audit rows');
+ assert.equal((await q("select count(*)::int n from public.subjects where user_id=$1 and name='Rejected MCP'",[A]))[0].n,
+  0,'rejected MCP write must not create an owner row');
  await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[B]);
  assert.equal((await q('select public.lemma_storage_owner_can_write() ok'))[0].ok,true);

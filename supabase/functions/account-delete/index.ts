@@ -77,11 +77,18 @@ Deno.serve(async(request:Request)=>{
   await purgeOwnerStorage(admin,userId);
   // Auth FKs include non-cascading audit rows. Remove only this owner's
   // records while the deletion marker still prevents new Storage writes.
-  const cleanup=await admin.rpc('lemma_purge_account_rows',{p_owner:userId});
-  if(cleanup.error||cleanup.data?.status!=='purged')
-   throw Error('Owner database cleanup did not complete');
-  const deleted=await admin.auth.admin.deleteUser(userId,false);
-  if(deleted.error)throw Error('Auth deletion failed');
+  // A write that was already in flight when the marker committed can land
+  // after the purge and block the Auth FK. New writes are refused by the
+  // marker, so purge again and retry Auth deletion a bounded number of times.
+  let deletedAuth=false;
+  for(let attempt=0;attempt<3&&!deletedAuth;attempt++){
+   const cleanup=await admin.rpc('lemma_purge_account_rows',{p_owner:userId});
+   if(cleanup.error||cleanup.data?.status!=='purged')
+    throw Error('Owner database cleanup did not complete');
+   const deleted=await admin.auth.admin.deleteUser(userId,false);
+   deletedAuth=!deleted.error;
+  }
+  if(!deletedAuth)throw Error('Auth deletion failed');
   return Response.json({deleted:true},{headers});
  }catch{
   // Partial Storage cleanup is retryable. Never claim that an account was

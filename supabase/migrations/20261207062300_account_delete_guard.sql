@@ -146,23 +146,34 @@ grant execute on function public.lemma_purge_account_rows(uuid)
  to service_role;
 
 
--- Close the other-tab race: Storage RLS is not enough. A live authenticated
--- JWT must be unable to insert, update, or delete ANY owner-keyed public row
--- once a service role has registered the deletion marker. An in-flight app
--- write after the owner purge could otherwise create fresh action_changes and
--- block Auth hard deletion. Service-role cleanup is intentionally unaffected.
+-- Close the other-tab race: Storage RLS is not enough. Once a service role has
+-- registered the deletion marker, NO role may insert or update an owner-keyed
+-- public row for that owner: neither a live authenticated JWT nor the MCP
+-- connector, which writes as service_role through mcp_commit, mcp_command and
+-- mcp_seen. A write after the owner purge would create fresh actions or
+-- action_changes rows and block Auth hard deletion.
+-- Deletes stay open to service_role so the cleanup (and Auth's own cascade)
+-- works; a delete cannot create a blocking reference. Deletes by authenticated
+-- are still refused. Updates that run inside another trigger (depth > 1, i.e.
+-- foreign-key actions such as ON DELETE SET NULL during cleanup) are cleanup
+-- side effects of an already-checked root statement, so they pass. There is no
+-- session setting or caller-supplied flag that can lift the guard.
 create function public.lemma_block_account_deletion_writes()
 returns trigger language plpgsql security definer set search_path='' as $db_write_guard$
 declare
- target_owner uuid;
+ caller text:=pg_catalog.current_setting('role',true);
+ blocked boolean:=false;
 begin
- if pg_catalog.current_setting('role',true)='authenticated' then
-  target_owner:=case when TG_OP='DELETE' then old.user_id else new.user_id end;
-  if exists(select 1 from public.account_deletion_requests d
-    where d.user_id=target_owner) then
-   raise exception 'Account deletion is in progress'
-    using errcode='42501';
-  end if;
+ if TG_OP='DELETE' then
+  blocked:=caller='authenticated' and exists(select 1
+   from public.account_deletion_requests d where d.user_id=old.user_id);
+ elsif pg_catalog.pg_trigger_depth()=1 then
+  blocked:=exists(select 1 from public.account_deletion_requests d
+   where d.user_id=new.user_id
+    or (TG_OP='UPDATE' and d.user_id=old.user_id));
+ end if;
+ if blocked then
+  raise exception 'Account deletion is in progress' using errcode='42501';
  end if;
  if TG_OP='DELETE' then return old; end if;
  return new;
