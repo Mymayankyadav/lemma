@@ -1221,9 +1221,178 @@ try{
   'proposal_drafts: undo did not restore draft status');
  mark('proposal_drafts','create','save','submit','discard');
 
+
+ // N91 command-only corrections operate on real session events, reviews and
+ // cards. They have no independent CRUD table or registered GET. The MCP
+ // receipt and authenticated app view must describe the same owner rows.
+ await role(null);
+ const correctionCheckpoint=(await q(
+  "insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) "+
+  "values($1,$2,'N94-CP',1,'Review evidence','Demonstrate','Evidence',"+
+  "$3::jsonb) returning id",
+  [owner,cardProject,JSON.stringify(['Explain the proof'])]))[0].id;
+ const correctionSession=(await q(
+  "insert into public.sessions(user_id,project_id,number,goal,style,checkpoint_id) "+
+  "values($1,$2,94,'Proof check','socratic',$3) returning id",
+  [owner,cardProject,correctionCheckpoint]))[0].id;
+ const sourceEvent=(await q(
+  "insert into public.session_events(user_id,session_id,checkpoint_id,kind,body,outcome) "+
+  "values($1,$2,$3,'evidence','Original proof','demonstrated') returning id",
+  [owner,correctionSession,correctionCheckpoint]))[0].id;
+ await role('service_role');
+ const eventCorrection=command('session_event_corrections','correct',{
+  target:{id:String(sourceEvent)},patch:{reason:'Correct evidence text',
+   body:'Corrected proof evidence',occurredAt:'2026-11-06T12:00:00Z'}});
+ const correctedEvent=status(await mcp(eventCorrection),
+  'session_event_corrections','correct');
+ assert.ok(correctedEvent.revisedEventId,
+  'session_event_corrections.correct: successor missing');
+ assert.deepEqual(await mcp(eventCorrection),correctedEvent,
+  'session_event_corrections.correct: exact receipt replay');
+ assert.equal((await mcp({...eventCorrection,patch:{...eventCorrection.patch,
+  body:'Different valid correction'}})).status,'conflict',
+  'session_event_corrections.correct: reused operationId changed payload');
+ await as(owner);
+ const oldEvidence=(await q('select superseded_by from public.session_events where id=$1',
+  [sourceEvent]))[0];
+ const newEvidence=(await q('select body,correction_reason from public.session_events where id=$1',
+  [correctedEvent.revisedEventId]))[0];
+ assert.equal(Number(oldEvidence.superseded_by),Number(correctedEvent.revisedEventId),
+  'session_event_corrections.correct: original not superseded');
+ assert.equal(newEvidence.body,'Corrected proof evidence',
+  'session_event_corrections.correct: app read disagrees with MCP receipt');
+ assert.equal(newEvidence.correction_reason,'Correct evidence text');
+ assert.equal((await q('select status from public.checkpoints where id=$1',
+  [correctionCheckpoint]))[0].status,'demonstrated',
+  'session_event_corrections.correct: evidence not rederived');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.session_events where id=$1',
+  [correctedEvent.revisedEventId]))[0].n,0,
+  'session_event_corrections.correct: foreign app read');
+ await role('service_role');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(command('session_event_corrections','void',{
+   target:{id:String(correctedEvent.revisedEventId)},patch:{reason:'Not yours'}}))]),
+  /Session event not found for owner/,
+  'session_event_corrections: foreign MCP command changed owner event');
+ await as(owner);
+ assert.equal((await undo(correctedEvent.actionNo)).undone,correctedEvent.actionNo,
+  'session_event_corrections.correct: audited undo rejected');
+ await role(null);
+ assert.equal((await q('select superseded_by from public.session_events where id=$1',
+  [sourceEvent]))[0].superseded_by,null,
+  'session_event_corrections.correct: undo did not restore predecessor');
+ assert.equal((await q('select count(*)::int n from public.session_events where id=$1',
+  [correctedEvent.revisedEventId]))[0].n,0,
+  'session_event_corrections.correct: undo retained successor');
+ await role('service_role');
+ const eventVoid=command('session_event_corrections','void',{
+  target:{id:String(sourceEvent)},patch:{reason:'Evidence was invalid'}});
+ const voidedEvidence=status(await mcp(eventVoid),
+  'session_event_corrections','void');
+ assert.deepEqual(await mcp(eventVoid),voidedEvidence,
+  'session_event_corrections.void: exact receipt replay');
+ assert.equal((await mcp({...eventVoid,patch:{reason:'Different valid reason'}})).status,
+  'conflict','session_event_corrections.void: changed operationId payload accepted');
+ await as(owner);
+ assert.ok((await q('select voided_at from public.session_events where id=$1',
+  [sourceEvent]))[0].voided_at,
+  'session_event_corrections.void: not visible to app');
+ assert.equal((await q('select status from public.checkpoints where id=$1',
+  [correctionCheckpoint]))[0].status,'not_started',
+  'session_event_corrections.void: checkpoint evidence not rederived');
+ assert.equal((await undo(voidedEvidence.actionNo)).undone,voidedEvidence.actionNo,
+  'session_event_corrections.void: undo rejected');
+ await role(null);
+ assert.equal((await q('select voided_at from public.session_events where id=$1',
+  [sourceEvent]))[0].voided_at,null,
+  'session_event_corrections.void: undo did not restore evidence');
+ mark('session_event_corrections','correct','void');
+
+ // Review corrections replace one actual card schedule using a disclosed
+ // complete snapshot; no version column is invented for reviews or cards.
+ const correctionReview=(await q(
+  "insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) "+
+  "values($1,$2,3,0,6000,'{}'::jsonb) returning id",
+  [owner,card.id]))[0].id;
+ const beforeReviewCard=(await q(
+  'select state,due,stability,difficulty,last_review,step,reps,lapses '+
+  'from public.cards where id=$1',[card.id]))[0];
+ const replacement={state:2,due:'2026-12-01T00:00:00Z',stability:8,
+  difficulty:4,last_review:'2026-11-06T09:00:00Z',step:0,reps:2,lapses:0};
+ await role('service_role');
+ const reviewCorrection=command('review_corrections','correct',{
+  target:{id:String(correctionReview)},patch:{reason:'Misgraded answer',
+   rating:4,replacementState:replacement,schedulerParams:{method:'manual audit'}}});
+ const correctedReview=status(await mcp(reviewCorrection),
+  'review_corrections','correct');
+ assert.ok(correctedReview.parameterSnapshotId,
+  'review_corrections.correct: missing explicit scheduler snapshot');
+ assert.equal(correctedReview.method,'disclosed_replacement');
+ assert.deepEqual(await mcp(reviewCorrection),correctedReview,
+  'review_corrections.correct: exact receipt replay');
+ assert.equal((await mcp({...reviewCorrection,patch:{...reviewCorrection.patch,
+  rating:2}})).status,'conflict',
+  'review_corrections.correct: changed operationId accepted');
+ await as(owner);
+ const reviewedRow=(await q('select rating,params_id from public.reviews where id=$1',
+  [correctionReview]))[0];
+ assert.equal(reviewedRow.rating,4,'review_corrections.correct: owner grade mismatch');
+ assert.equal(reviewedRow.params_id,correctedReview.parameterSnapshotId);
+ assert.equal((await q('select stability from public.cards where id=$1',
+  [card.id]))[0].stability,8,
+  'review_corrections.correct: replacement not reflected by app');
+ const snapshotParams=(await q('select params from public.review_parameter_sets where id=$1',
+  [correctedReview.parameterSnapshotId]))[0].params;
+ assert.deepEqual(snapshotParams.replacementState,replacement,
+  'review_corrections.correct: historical replacement parameters lost');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.reviews where id=$1',
+  [correctionReview]))[0].n,0,'review_corrections: foreign app read');
+ await role('service_role');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(command('review_corrections','void',{
+   target:{id:String(correctionReview)},patch:{reason:'Not yours',
+    replacementState:replacement}}))]),/Review not found for owner/,
+  'review_corrections: foreign MCP command changed owner grade');
+ await as(owner);
+ assert.equal((await undo(correctedReview.actionNo)).undone,correctedReview.actionNo,
+  'review_corrections.correct: audited undo rejected');
+ await role(null);
+ assert.equal((await q('select rating from public.reviews where id=$1',
+  [correctionReview]))[0].rating,3,
+  'review_corrections.correct: undo did not restore grade');
+ assert.deepEqual((await q(
+  'select state,due,stability,difficulty,last_review,step,reps,lapses '+
+  'from public.cards where id=$1',[card.id]))[0],beforeReviewCard,
+  'review_corrections.correct: undo did not restore card schedule');
+ await role('service_role');
+ const reviewVoid=command('review_corrections','void',{
+  target:{id:String(correctionReview)},patch:{reason:'Review never occurred',
+   replacementState:{...replacement,reps:1,stability:2}}});
+ const voidedReview=status(await mcp(reviewVoid),'review_corrections','void');
+ assert.deepEqual(await mcp(reviewVoid),voidedReview,
+  'review_corrections.void: exact receipt replay');
+ assert.equal((await mcp({...reviewVoid,patch:{...reviewVoid.patch,
+  reason:'Different valid void reason'}})).status,'conflict',
+  'review_corrections.void: changed operationId payload accepted');
+ await as(owner);
+ assert.ok((await q('select undone_at from public.reviews where id=$1',
+  [correctionReview]))[0].undone_at,'review_corrections.void: app cannot see void');
+ assert.equal((await q('select stability from public.cards where id=$1',
+  [card.id]))[0].stability,2,
+  'review_corrections.void: replacement card schedule not applied');
+ assert.equal((await undo(voidedReview.actionNo)).undone,voidedReview.actionNo,
+  'review_corrections.void: audited undo rejected');
+ await role(null);
+ assert.equal((await q('select undone_at from public.reviews where id=$1',
+  [correctionReview]))[0].undone_at,null,
+  'review_corrections.void: undo did not unvoid owner review');
+ mark('review_corrections','correct','void');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['proposal_drafts','day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['session_event_corrections','review_corrections','proposal_drafts','day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
@@ -1233,7 +1402,7 @@ try{
   .map(operation=>row.resource+'.'+operation));
  console.log('N94 unfinished operation paths ('+missingOps.length+'): '+missingOps.join(', '));
 
- console.log('PASS N94 11 resource families with overlap acknowledgements and owner/MCP lifecycle, receipts and undo');
+ console.log('PASS N94 '+exercised.size+' resource families with real owner/MCP lifecycles, receipts and undo');
  const untestedResources=registry.filter(row=>!exercised.has(row.resource))
   .map(row=>row.resource);
  console.log('N94 resources without any complete owner/MCP round trip ('+
