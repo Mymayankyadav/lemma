@@ -1,4 +1,4 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams} from 'react-router';
 import {useApproveProposal,useProposal,useProject,useRejectProposal} from '../../../data/hooks';
 import {getProposalDraftApi} from '../../../data/proposal-drafts';
@@ -21,12 +21,18 @@ export default function PlanProposalV6(){
  const [status,setStatus]=useState<'loading'|'ready'|'error'>('loading');
  const [problem,setProblem]=useState(''),[pending,setPending]=useState(false);
  const [conflict,setConflict]=useState<ProposalDraftConflict|null>(null),[reload,setReload]=useState(0);
+ const loadedDraftKey=useRef('');
  // React Router reuses this route component between proposal IDs. An open
  // editor must not stay bound to the prior proposal or disable the next
  // proposal's independent approve/reject decision.
  useEffect(()=>{setEditor(false);setText('');setConflict(null)},[id]);
  useEffect(()=>{
   if(!id||!proposal.data)return;
+  // Query data may be revalidated while the owner types an unsaved draft.
+  // Only an explicit Reload or a different proposal must replace the editor.
+  const key=id+'|'+reload;
+  if(loadedDraftKey.current===key)return;
+  loadedDraftKey.current=key;
   let alive=true;
   setStatus('loading');setProblem('');setConflict(null);setDraft(null);
   void (async()=>{

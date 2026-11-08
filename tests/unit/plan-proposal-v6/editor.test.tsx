@@ -177,6 +177,27 @@ describe('N85 v6 proposal draft editor',()=>{
   const approve=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Approve plan');
   expect(approve?.disabled).toBe(false);
  });
+ it('does not discard unsaved draft edits on a background proposal query refresh',async()=>{
+  await render();
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Edit draft');
+  const textarea=host.querySelector<HTMLTextAreaElement>('[aria-label="Full draft payload"]')!;
+  const replacement='{"ops":[{"op":"update","code":"CP1","title":"Unsaved typing"}]}';
+  await act(async()=>{
+   const setter=Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value')!.set!;
+   setter.call(textarea,replacement);
+   textarea.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  const calls=vi.mocked(adapter.listDrafts).mock.calls.length;
+  mocks.proposal.mockReturnValue({data:{...proposal,reason:'Refreshed proposal'},
+   isPending:false,isError:false,refetch:vi.fn()});
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6/>}/></Routes>
+  </MemoryRouter>));
+  expect(host.querySelector<HTMLTextAreaElement>('[aria-label="Full draft payload"]')?.value)
+   .toBe(replacement);
+  expect(vi.mocked(adapter.listDrafts).mock.calls.length).toBe(calls);
+ });
  it('keeps an immutable submitted draft visible after reload and prefers a newer editable draft',async()=>{
   const submittedRow:ProposalDraftRecord={...existing,id:'44444444-4444-4444-8444-444444444444',
    status:'submitted',editedAt:'2026-11-08T03:00:00Z'};
