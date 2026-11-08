@@ -135,3 +135,25 @@ end
 $prune$;
 revoke all on function public.lemma_prune_owner_changes() from public,anon,authenticated;
 grant execute on function public.lemma_prune_owner_changes() to service_role;
+
+-- Owner decision (#1147, #1216): production has no notify Edge entrypoint, so
+-- the scheduled retention caller is the database itself. Same pattern as
+-- lemma-run-due-commands (20261116100000_pending_commands.sql): pg_cron runs
+-- the job as its creator (postgres), which switches to service_role for this
+-- one transaction and calls the bounded, owner-scoped prune. Disposable
+-- databases without pg_cron skip scheduling; tests run the exact job command.
+do $install_owner_changes_prune_cron$
+begin
+ if exists (
+  select 1 from pg_catalog.pg_available_extensions
+   where name='pg_cron'
+ ) then
+  create extension if not exists pg_cron;
+  perform cron.schedule('lemma-prune-owner-changes','41 2 * * *',
+   'DO $owner_changes_prune$ BEGIN
+     EXECUTE ''SET LOCAL ROLE service_role'';
+     PERFORM public.lemma_prune_owner_changes();
+    END $owner_changes_prune$;');
+ end if;
+end
+$install_owner_changes_prune_cron$;

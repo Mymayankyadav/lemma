@@ -166,6 +166,26 @@ try{
  assert.ok(pruned>=2);
  const repeated=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
  assert.equal(repeated,0,'retention prune is idempotent without newly expired rows');
+ // #1216: the scheduled production caller is the pg_cron job in the N54 migration.
+ // Extract the exact job command from the migration and run it as the job's
+ // creator (migration owner, not service_role), proving it prunes.
+ {
+  const migration=await readFile(new URL('../../../supabase/migrations/20261118010000_owner_changes.sql',import.meta.url),'utf8');
+  const job=/cron\.schedule\('lemma-prune-owner-changes','([^']+)',\s*'((?:[^']|'')*)'\);/.exec(migration);
+  assert.ok(job,'N54 migration schedules lemma-prune-owner-changes');
+  assert.match(job[1],/^\d+ \d+ \* \* \*$/,'retention runs on a daily schedule');
+  const command=job[2].replaceAll("''","'");
+  await db.exec('reset role');
+  const before=(await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n;
+  const newest=(await q("select max(cursor) c from public.owner_changes where user_id=$1",[a]))[0].c;
+  await q("update public.owner_changes set committed_at=now()-interval '31 days' where user_id=$1 and cursor<$2",[a,newest]);
+  const expired=(await q("select count(*)::int n from public.owner_changes where user_id=$1 and committed_at<now()-interval '30 days'",[a]))[0].n;
+  await db.exec('begin');await db.exec(command);await db.exec('commit');
+  const after=(await q("select count(*)::int n from public.owner_changes where user_id=$1",[a]))[0].n;
+  assert.ok(expired>0&&after<before,'the scheduled job command prunes expired history as the migration owner');
+  assert.equal((await q("select current_setting('role') r"))[0].r,'none','the job role switch is transaction-local');
+  await db.exec('set role service_role');
+ }
  await as(a);
  const reset=(await q('select public.changes_since(1,100) result'))[0].result;
  assert.equal(reset.reset,true,'pruning announces a replay/reset for stale cursors');
