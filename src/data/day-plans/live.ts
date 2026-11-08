@@ -403,6 +403,23 @@ export function createLiveDayPlanApi():DayPlanApi{
    atomicRetries.delete(key);
    return {record:authoritative,actionNo:receipt.actionNo};
   },
+  async undoPlacements(actionNo){
+   if(!Number.isSafeInteger(actionNo)||actionNo<1)
+    return fail('invalid','Undo needs a positive action number');
+   const db=await client();
+   const user=await db.auth.getUser();
+   const owner=user.data?.user?.id;
+   if(user.error||!owner)return unavailable('Sign in again to undo');
+   // undo_action refuses another owner's action, an already undone action
+   // and an action with a newer owner write after it (no force from the app).
+   const {error}=await db.rpc('undo_action',{p_user:owner,p_no:actionNo});
+   if(error){
+    const message=error.message??'Undo failed';
+    if(/^Undo .* first$|Undo would also remove|already undone|is not yours/i.test(message))
+     return fail('conflict',message);
+    return unavailable(message);
+   }
+  },
   async commitPlan(key,expected){
    version(expected);
    // Only the N46.2 SQL command can atomically recheck the persisted source

@@ -88,7 +88,8 @@ function fromOwner(){
  return chain;
 }
 vi.mock('../../../src/data/live/client',()=>({
- liveClient:()=>({from:()=>fromOwner(),rpc:(name:string,args:unknown)=>rpc(name,args)})
+ liveClient:()=>({from:()=>fromOwner(),rpc:(name:string,args:unknown)=>rpc(name,args),
+  auth:{getUser:async()=>({data:{user:{id:OWNER}},error:null})}})
 }));
 beforeEach(()=>{
  sessionStorage.clear();
@@ -173,5 +174,23 @@ describe('N107 one-action placement adapters',()=>{
   expect((await api.listPlans()).total).toBe(0);
   expect(await createDemoStudyApi().listCalendarBlocks({
    start:'2028-01-01T00:00:00Z',end:'2028-01-02T00:00:00Z'})).toEqual([]);
+ });
+});
+
+describe('N107 single Undo for an atomic placement action',()=>{
+ it('live undoes the whole action through undo_action for the signed-in owner, without force',async()=>{
+  await createLiveDayPlanApi().undoPlacements(41);
+  expect(rpc).toHaveBeenCalledTimes(1);
+  expect(rpc).toHaveBeenCalledWith('undo_action',{p_user:OWNER,p_no:41});
+ });
+ it('live reports a newer owner write as a typed conflict and never retries with force',async()=>{
+  rpc=vi.fn(async()=>({data:null,error:{message:'Undo A42 first'}}));
+  await expect(createLiveDayPlanApi().undoPlacements(41)).rejects.toMatchObject({code:'conflict'});
+  expect(rpc).toHaveBeenCalledTimes(1);
+ });
+ it('refuses an invalid action number before any request, and demo has no journal to undo',async()=>{
+  await expect(createLiveDayPlanApi().undoPlacements(0)).rejects.toBeInstanceOf(DayPlanError);
+  expect(rpc).not.toHaveBeenCalled();
+  await expect(createDemoDayPlanApi().undoPlacements(1)).rejects.toMatchObject({code:'conflict'});
  });
 });
