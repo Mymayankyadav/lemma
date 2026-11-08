@@ -19,6 +19,8 @@ export type InsightDays = 7 | 30 | 90
 export interface ReviewLogEntry { cardId: string; reviewedAt: string; rating: Rating }
 /** N105.2: only the audited owner command changes the concept graph. */
 export type ConceptLinkKind = 'prereq' | 'related'
+/** Alias used by the v6 Atlas editor and demo command helper. */
+export type AtlasLinkKind = ConceptLinkKind
 export interface NewAtlasConcept {
  subjectId:string;name:string;blurb?:string|null;parentId?:string|null;slug?:string
 }
