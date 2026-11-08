@@ -105,6 +105,9 @@ const specs={
   kind:'study',title:'MCP parity calendar',starts_at:'2026-11-06T08:00:00Z',
   ends_at:'2026-11-06T09:00:00Z',time_zone:'UTC'},
   update:{title:'App parity edited calendar'},column:'title',updated:'App parity edited calendar'},
+ presets:{fn:'presets_command',create:{label:'MCP parity preset',mode:'pomodoro',
+  focus_minutes:25,break_minutes:5,long_break_minutes:15,cycles:4},
+  update:{label:'App parity edited preset'},column:'label',updated:'App parity edited preset'},
  study_goals:{fn:'study_goals_command',create:{
   period:'custom',start_date:'2028-01-01',end_date:'2028-01-07',time_zone:'UTC',target_minutes:45},
   update:{target_minutes:70},column:'target_minutes',updated:70},
@@ -136,7 +139,7 @@ async function roundTrip(resource,details){
  // study_command compatibility bridge intentionally returns its first
  // stored receipt for any same-operationId retry (N12 contract). Both must
  // prevent a second mutation or receipt; don't conflate the two policies.
- if(['tasks','study_goals'].includes(resource))
+ if(['tasks','study_goals','presets'].includes(resource))
   assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
  else
   assert.deepEqual(altered,created,resource+': compatibility replay must return original receipt');
@@ -257,12 +260,13 @@ try{
  // A saved manual entry owns the interval used below, so its creation and
  // final deletion must be ordered around the interval round trip.
  await roundTrip('tasks',specs.tasks);
+ await roundTrip('presets',specs.presets);
  await roundTrip('study_goals',specs.study_goals);
  const entryId=await roundTrip('study_entries',specs.study_entries);
  await roundTrip('calendar_blocks',specs.calendar_blocks);
  await roundTrip('study_intervals',{...specs.study_intervals,
   create:{...specs.study_intervals.create,entry_id:entryId}});
- console.log('PASS N94 task/goals/study/calendar/interval MCP→app→MCP, CAS, delete and undo');
- console.log('N94 coverage pending expansion beyond four base registry resources: '+
+ console.log('PASS N94 tasks/presets/goals/study/calendar/interval MCP→app→MCP and undo');
+ console.log('N94 coverage pending expansion beyond six base registry resources: '+
   registry.filter(r=>!Object.hasOwn(specs,r.resource)).map(r=>r.resource).join(', '));
 }finally{await db.close();}
