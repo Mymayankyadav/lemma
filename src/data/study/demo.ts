@@ -332,7 +332,7 @@ export function createDemoStudyApi(): StudyApi {
       if(energy!==undefined&&energy!==null&&!['low','steady','high'].includes(energy))
         fail('invalid','Invalid energy');
       const open=latest(entry);
-      if(!open||open.end!==null)fail('conflict','Expected one open timer interval');
+      if(!open||open.end!==null) throw new LemmaError('conflict','Expected one open timer interval');
       const mode=entry.mode??'open',config=entry.config??defaults;
       const focus=(entry.phase??'focus')==='focus';
       if(open.kind!==(focus?'focus':'break'))

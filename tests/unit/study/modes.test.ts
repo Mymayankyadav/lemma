@@ -25,6 +25,8 @@ describe('N66 demo timer modes and exclusion ledger',()=>{
   expect(started.record).toMatchObject({presetId:'preset-1',mode:'pomodoro',
    phase:'focus',cycle:1,config:{focus_minutes:18,break_minutes:7,cycles:2}});
   expect(started.record.phaseEndsAt).toBe('2026-11-08T10:18:00.000Z');
+  await expect(api.nextPhase(started.record.id,started.record.version))
+    .rejects.toMatchObject({code:'conflict'});
   const leased=await api.takeLease(started.record.id,started.record.version);
   vi.advanceTimersByTime(60_000);
   const first=await api.nextPhase(started.record.id,leased.record.version,'steady');
@@ -112,5 +114,7 @@ describe('N66 live owner-bound timer envelope',()=>{
    lease_version:1,minutes:2,reason:'Distraction'}});
   expect(envelopes.every(x=>!JSON.stringify(x).includes('user_id'))).toBe(true);
   await expect(api.nextPhase('entry-1',2)).rejects.toMatchObject({code:'conflict'});
+  await expect(createLiveStudyApi().nextPhase('entry-1',5))
+    .rejects.toMatchObject({code:'conflict'});
  });
 });

@@ -341,7 +341,7 @@ export function createLiveStudyApi(): StudyApi {
       if(!owned||owned.id!==key||current.leaseDevice!==device||
           current.leaseVersion!==owned.leaseVersion||
           !current.leaseExpiresAt||Date.parse(current.leaseExpiresAt)<=Date.now())
-        fail('conflict','Current tab must take the timer lease');
+        throw new LemmaError('conflict','Current tab must take the timer lease');
       if(energy!==undefined&&energy!==null&&!['low','steady','high'].includes(energy))
         fail('invalid','Invalid timer energy');
       const response=await command('study_entries','next_phase',{
