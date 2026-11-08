@@ -25,6 +25,33 @@ try{
  for(const id of [A,B])
   await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
    [id,id===A?'a'.repeat(48):'b'.repeat(48)]);
+ // Exercise a representative multi-level owner data graph, not merely
+ // settings and actions: projects -> notes -> cards -> reviews. The second
+ // owner must retain every record after the first owner is deleted.
+ const records=[
+  {user:A,subject:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   project:'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+   note:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+   card:'11111111-aaaa-4aaa-8aaa-aaaaaaaaaaaa',slug:'owner-a'},
+  {user:B,subject:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+   project:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',
+   note:'ffffffff-ffff-4fff-8fff-ffffffffffff',
+   card:'22222222-bbbb-4bbb-8bbb-bbbbbbbbbbbb',slug:'owner-b'}
+ ];
+ for(const fixture of records){
+  const {user,subject,project,note,card,slug}=fixture;
+  await q('insert into public.subjects(id,user_id,name,glyph,hue) '+
+   'values($1,$2,$3,$4,$5)',[subject,user,'Owner '+slug,'∑','amber']);
+  await q('insert into public.projects(id,user_id,slug,subject_id,title,goal) '+
+   'values($1,$2,$3,$4,$5,$6)',[project,user,slug,subject,
+    'Private '+slug,'Delete only the target owner']);
+  await q('insert into public.notes(id,user_id,project_id,front,back) '+
+   'values($1,$2,$3,$4,$5)',[note,user,project,'Owner note '+slug,'Private answer']);
+  await q('insert into public.cards(id,user_id,note_id,ord) '+
+   'values($1,$2,$3,1)',[card,user,note]);
+  await q('insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) '+
+   "values($1,$2,3,0,100,'{}'::jsonb)",[user,card]);
+ }
  // Audit details do not carry user_id. Their FK to owner actions must be
  // removed before the parent action; another owner's audit remains intact.
  const actionA=(await q("insert into public.actions(user_id,txid,source,summary) "+
@@ -90,6 +117,12 @@ try{
   1,'owner B audit details must be retained');
  assert.equal((await q('select count(*)::int n from public.actions where no=$1 and user_id=$2',[actionB,B]))[0].n,
   1,'owner B audit action must be retained');
+ for(const table of ['subjects','projects','notes','cards','reviews']){
+  assert.equal((await q('select count(*)::int n from public.'+table+' where user_id=$1',[A]))[0].n,
+   0,'owner A still has '+table);
+  assert.equal((await q('select count(*)::int n from public.'+table+' where user_id=$1',[B]))[0].n,
+   1,'owner B lost '+table);
+ }
  await q('delete from auth.users where id=$1',[A]);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[A]))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[B]))[0].n,1);
