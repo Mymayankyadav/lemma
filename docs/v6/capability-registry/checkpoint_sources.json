@@ -19,21 +19,21 @@
     "checkpoint_id": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source citations (planned)",
+      "mcpPath": "MCP propose_plan / propose_plan_change; written on owner approval by lemma_apply_approved_v3_plan_metadata (mcp_commit does not write this table)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "source_id": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source citations (planned)",
+      "mcpPath": "MCP propose_plan / propose_plan_change; written on owner approval by lemma_apply_approved_v3_plan_metadata (mcp_commit does not write this table)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "pages": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source citations (planned)",
+      "mcpPath": "MCP propose_plan / propose_plan_change; written on owner approval by lemma_apply_approved_v3_plan_metadata (mcp_commit does not write this table)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     }

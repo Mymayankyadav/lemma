@@ -19,28 +19,28 @@
     "source_id": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "page": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "label": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "body": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
@@ -61,21 +61,21 @@
     "transcribed_by": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "transcribed_at": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "confidence": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 source pages coverage (planned)",
+      "mcpPath": "MCP save_pages through mcp_commit (tools/transcribe.ts); text edits keep source_page_revisions (N93)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
