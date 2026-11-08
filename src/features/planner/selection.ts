@@ -9,7 +9,7 @@ export function selectPlannerPlacements(
  preview:PlannerResult,selectedTaskIds:ReadonlySet<string>,
  overrides:ReadonlyMap<string,{start:string;end:string;date:string}>=new Map()
 ):SheetSelection{
- const selected:PlannerPlacement[]=[],unplaced=preview.unplaced.map(x=>({
+ const selected:PlannerPlacement[]=[],unplaced:SheetSelection['unplaced']=preview.unplaced.map(x=>({
   taskId:x.taskId,reason:x.reason,
  }));
  for(const p of preview.placements){
