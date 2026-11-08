@@ -69,13 +69,6 @@ Tests: `tests/unit/ritual/**`
 Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N70 v6 Today: intention, next block, add task and onboarding behind the shell flag
-Stage: Build · Status: open · Needs: N60.2 · Assigned: —
-Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry that carries the block's existing subject/project/checkpoint links through the existing `StudyApi.startStudyEntry`; an exact calendar-block link on the entry is N106, Owner, bug #1168), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
-Tests: `tests/unit/home-v6/today-plan.test.tsx`
-Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
@@ -88,13 +81,6 @@ Stage: Build · Status: open · Needs: N59.2 · Assigned: —
 Done = with `v6Shell` on, Progress shows weekly/monthly goals against saved minutes for their exact scope and range, 7/30/90-day ranges computed for that range (never a fixed 28-day series under another label), subject partitions that sum to the total, exact values on charts, and goal create/edit/archive. Flag off: nothing changes.
 Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N77 v6 activity presets: manage and pick behind the shell flag
-Stage: Build · Status: open · Needs: N55 · Assigned: —
-Done = with `v6Shell` on, Settings gains an Activities section to create, edit, reorder, archive and restore presets; the Focus start control lists active presets (selection is passed through once N72 lands; until then it pre-fills the intent and links). Flag off: nothing changes.
-Tests: `tests/unit/presets-ui/**`
-Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N85 v6 plan review with proposal drafts behind the shell flag

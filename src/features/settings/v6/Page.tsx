@@ -13,6 +13,7 @@ import {EuclidAppearance} from '../EuclidAppearance';
 import {SubjectsPanel} from '../SubjectsPanel';
 import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from './StudyDefaults';
+import Activities from './Activities';
 import Planning from './Planning';
 import Focus from './Focus';
 import Reminders from './Reminders';
@@ -28,12 +29,13 @@ export const SETTINGS_SECTIONS = [
   {id:'connector',label:'Connector'},
   {id:'export',label:'Export'},
 ] as const;
+const ACTIVITY_SECTION={id:'activities',label:'Activities'} as const;
 const V6_SETTINGS_SECTIONS=[
- ...SETTINGS_SECTIONS.slice(0,3),
+ ...SETTINGS_SECTIONS.slice(0,3),ACTIVITY_SECTION,
  {id:'focus',label:'Focus'},{id:'planning',label:'Planning'},
  ...SETTINGS_SECTIONS.slice(3),
 ] as const;
-export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'focus'|'planning';
+export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities'|'focus'|'planning';
 
 export function settingsTabDestination(current:SettingsSection,key:string,
  sections:readonly {id:SettingsSection}[]=SETTINGS_SECTIONS):SettingsSection|null {
@@ -123,6 +125,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>
     </Slab>;
     if(selected==='study')return <StudyDefaults settings={data!}/>;
+    if(selected==='activities')return <Activities/>;
     if(selected==='focus')return <Focus settings={data!}/>;
     if(selected==='planning')return <Planning settings={data!}/>;
     if(selected==='subjects')return <SubjectsPanel/>;
