@@ -699,9 +699,13 @@ try{
  assert.equal((await q('select count(*)::int n from public.cards where id=$1',
   [card.id]))[0].n,0,'card_schedule: foreign app access');
  await role('service_role');
- await assert.rejects(mcp(command('card_schedule','reset',{
+ const foreignReset=command('card_schedule','reset',{
   target:{noteNo:cardNote.no,ord:1},patch:{},
- })),/Card not found for owner/);
+ });
+ await assert.rejects(q(
+  'select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(foreignReset)]),/Card not found for owner/,
+  'card_schedule: foreign MCP principal must not mutate owner card');
  const resetRequest=command('card_schedule','reset',{
   target:{noteNo:cardNote.no,ord:1},patch:{},
  });
@@ -713,8 +717,8 @@ try{
   [card.id]))[0];
  assert.equal(afterReset.state,0,'card_schedule: reset not persisted');
  assert.equal(afterReset.stability,0,'card_schedule: reset did not clear scheduler state');
- await role(null);
  assert.equal((await undo(reset.actionNo)).undone,reset.actionNo);
+ await role(null);
  const undoneSchedule=await cardOwnerRow();
  assert.equal(undoneSchedule.state,2,'card_schedule: undo reset did not recover state');
  assert.equal(undoneSchedule.stability,3,'card_schedule: undo lost FSRS state');
