@@ -96,25 +96,52 @@ async function mcpPage(resource,id,userId=owner){
  if(context.calls.length!==1)throw Error(resource+': MCP registered read not executed');
  return page;
 }
-/** Surface missing owner-editable command paths using the capability registry.
- * These diagnostics are deliberately NOT green-completeness assertions until
- * the remaining resource fixtures are implemented and reviewed. */
+// N94 (#1231, #1237): command-only resources are verified on the rows their
+// operations change, so they have no table inventory of their own.
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections']);
+const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
+/** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
+async function legacyMcpFields(){
+ const src=await readFile(new URL('../../../supabase/functions/mcp/tools/control.ts',import.meta.url),'utf8');
+ const body=/const allowed:[^=]*=\{([\s\S]*?)\n\};/.exec(src);
+ assert.ok(body,'N94: legacy MCP allowlist not found in tools/control.ts');
+ const out=new Map();
+ for(const m of body[1].matchAll(/(\w+):'([^']*)'/g))out.set(m[1],new Set(m[2].split(/\s+/).filter(Boolean)));
+ return out;
+}
+async function openItems(){
+ const next=await readFile(new URL('../../../NEXT.md',import.meta.url),'utf8');
+ return new Set([...next.matchAll(/^## (N\d+(?:\.\d+)*)\b/gm)].map(m=>m[1]));
+}
+/** Every owner-editable column needs a registered command field or a legacy
+ * MCP allowlist field. A column may instead be a tracked gap only when its
+ * mcpPath starts with "none yet" and names an item still open in NEXT.md;
+ * a tracked column that gains a path, or whose item closed, fails. */
 async function capabilityPathGaps(registry){
- const base=new URL('../../../docs/v6/capability-registry/',import.meta.url);
- const manifest=JSON.parse(await readFile(new URL('lemma_command_resources.json',base),'utf8'));
+ const manifest=JSON.parse(await readFile(new URL('lemma_command_resources.json',docsBase),'utf8'));
  const documented=new Set((manifest.resources||[]).map(r=>r.resource));
- const gaps=[];
+ const legacy=await legacyMcpFields(),open=await openItems();
+ const gaps=[],tracked=[];
  for(const row of registry){
   if(!documented.has(row.resource))gaps.push(row.resource+': command metadata missing from capability manifest');
+  if(COMMAND_ONLY.has(row.resource))continue;
   let cap;
-  try{cap=JSON.parse(await readFile(new URL(row.resource+'.json',base),'utf8'))}
+  try{cap=JSON.parse(await readFile(new URL(row.resource+'.json',docsBase),'utf8'))}
   catch{gaps.push(row.resource+': capability columns document missing');continue}
-  const accepted=new Set(row.schema.fields);
-  for(const [field,meta] of Object.entries(cap.columns||{}))
-   if(meta.classification==='owner-editable'&&!accepted.has(field))
-    gaps.push(row.resource+'.'+field+': owner-editable field lacks registered command/read path');
+  const accepted=new Set([...row.schema.fields,...(legacy.get(row.resource)||[])]);
+  for(const [field,meta] of Object.entries(cap.columns||{})){
+   if(meta.classification!=='owner-editable')continue;
+   const marker=/^none yet\b/i.test(meta.mcpPath||'');
+   const item=(/\b(N\d+(?:\.\d+)*)\b(?![\s\S]*\bN\d)/.exec(meta.mcpPath||'')||[])[1];
+   const name=row.resource+'.'+field;
+   if(accepted.has(field)){
+    if(marker)gaps.push(name+': now has a registered path; remove its "none yet" marker');
+   }else if(marker&&item&&open.has(item))tracked.push(name+' ('+item+')');
+   else if(marker&&item)gaps.push(name+': tracked by '+item+', which is no longer open in NEXT.md');
+   else gaps.push(name+': owner-editable field lacks registered command/read path');
+  }
  }
- return gaps;
+ return {gaps,tracked};
 }
 const specs={
  tasks:{fn:'task_command',create:{title:'MCP parity task',priority:'high'},
@@ -307,8 +334,9 @@ try{
   new Set(['create','update'])),/missing_fixture.delete/);
  assert.throws(()=>requireFields('missing_fixture',['title','summary'],
   {title:{appPath:'app',mcpPath:'mcp'}}),/missing_fixture.summary/);
- const capabilityGaps=await capabilityPathGaps(registry);
- console.log('N94 capability path gaps ('+capabilityGaps.length+'): '+capabilityGaps.join('; '));
+ const {gaps:capabilityGaps,tracked:trackedGaps}=await capabilityPathGaps(registry);
+ assert.deepEqual(capabilityGaps,[],'N94 untracked capability path gaps: '+capabilityGaps.join('; '));
+ console.log('N94 tracked capability gaps ('+trackedGaps.length+'): '+trackedGaps.join(', '));
   console.log('PASS N94 registry metadata and missing-operation/path fixtures');
 
  const registered=new Map(registry.map(row=>[row.resource,row]));
@@ -1392,19 +1420,10 @@ try{
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['session_event_corrections','review_corrections','proposal_drafts','day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
-  'presets','study_goals','overlap_acknowledgements',
-  'parked_thoughts','practice_topics','study_events'];
- for(const resource of full)requireCoverage(resource,
-  registered.get(resource).schema.operations,exercised.get(resource)||new Set());
- const missingOps=registry.flatMap(row=>row.schema.operations
-  .filter(operation=>!exercised.get(row.resource)?.has(operation))
-  .map(operation=>row.resource+'.'+operation));
- console.log('N94 unfinished operation paths ('+missingOps.length+'): '+missingOps.join(', '));
+ // Every registered resource and every registered operation must have a real
+ // owner/MCP round trip; a newly registered resource fails here by name.
+ for(const row of registry)requireCoverage(row.resource,
+  row.schema.operations,exercised.get(row.resource)||new Set());
 
  console.log('PASS N94 '+exercised.size+' resource families with real owner/MCP lifecycles, receipts and undo');
- const untestedResources=registry.filter(row=>!exercised.has(row.resource))
-  .map(row=>row.resource);
- console.log('N94 resources without any complete owner/MCP round trip ('+
-  untestedResources.length+'): '+untestedResources.join(', '));
 }finally{await db.close();}
