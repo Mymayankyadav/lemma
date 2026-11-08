@@ -19,21 +19,21 @@
     "from_id": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 Atlas edge coverage (planned)",
+      "mcpPath": "MCP edit(idea) prereqs/related through mcp_commit, cycle-checked (tools/learning-graph.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "to_id": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 Atlas edge coverage (planned)",
+      "mcpPath": "MCP edit(idea) prereqs/related through mcp_commit, cycle-checked (tools/learning-graph.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "kind": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 Atlas edge coverage (planned)",
+      "mcpPath": "MCP edit(idea) prereqs/related through mcp_commit, cycle-checked (tools/learning-graph.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     }

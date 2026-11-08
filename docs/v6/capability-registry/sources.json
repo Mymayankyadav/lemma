@@ -24,51 +24,51 @@
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "project_id": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "set once when MCP add(kind=book) or the app creates the source; never moved by edit (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "title": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "MCP add(kind=book) and edit(book) through mcp_commit (tools/control.ts)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "short": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "MCP add(kind=book) and edit(book) through mcp_commit (tools/control.ts)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "filename": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "storage_path": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "bytes": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "page_count": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
@@ -80,23 +80,23 @@
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "has_text": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "outline": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "error": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
@@ -110,35 +110,35 @@
     "kind": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "MCP add(kind=book) and edit(book) through mcp_commit (tools/control.ts)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "sha256": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "position": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "MCP edit(book) position through mcp_commit, whole number >= 0 (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "added_at": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "origin": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 sources coverage (planned)",
+      "mcpPath": "read-only: set by PDF ingest or source creation; MCP never writes it (N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
