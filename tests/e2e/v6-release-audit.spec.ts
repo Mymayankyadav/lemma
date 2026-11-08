@@ -40,8 +40,9 @@ async function settled(page:Page,expected?:string){
  await page.waitForLoadState('networkidle');
  const main=page.locator('#main-content');
  await expect(main.getByText(/^Loading\b/),'screen still loading').toHaveCount(0,{timeout:20_000});
- await expect(page.locator('section[aria-label$=" loading"]')).toHaveCount(0);
- await expect(page.locator('section[aria-label$=" unavailable"]'),'deep link shows an unavailable screen').toHaveCount(0);
+ // Screen states are labelled "<Thing> loading" / "<Thing> unavailable" (e.g. "Project loading").
+ await expect(main.getByRole('region',{name:/^\w+ loading$/})).toHaveCount(0);
+ await expect(main.getByRole('region',{name:/^\w+ unavailable$/}),'deep link shows an unavailable screen').toHaveCount(0);
  await expect(page.getByText(/^(Couldn’t open this screen|Proposal unavailable\.|This card could not be loaded\.)/),
   'screen shows an error state').toHaveCount(0);
  if(expected)await expect(main).toContainText(expected);
