@@ -733,9 +733,14 @@ try{
   [owner,cardProject]))[0].id;
  const runCard=(await q("insert into public.cards(user_id,note_id,ord) values($1,$2,1) returning id,version",
   [owner,runNote]))[0];
+ // MCP writes touch settings connector telemetry. Capture the real owner
+ // settings version immediately before each review-run start, not a constant.
+ const firstSettingsVersion=(await q('select version from public.settings where user_id=$1',
+  [owner]))[0].version;
  await role('service_role');
  const runPatch={filters:{includeNew:true},selected_deck_ids:['project:n94-schedule'],
-  card_budget:5,minute_budget:5,scheduler_version:'fsrs-5',settings_version:1};
+  card_budget:5,minute_budget:5,scheduler_version:'fsrs-5',
+  settings_version:firstSettingsVersion};
  const startRun=command('review_runs','start',{patch:runPatch});
  const startedRun=status(await mcp(startRun),'review_runs','start');
  assert.equal(startedRun.run.status,'running','review_runs: real queue must start');
@@ -819,8 +824,12 @@ try{
   target:{id:runId},expectedVersion:restoredRun.version,patch:{}
  })),'review_runs','complete');
  assert.equal(completeRun.run.status,'completed','review_runs: complete missing');
+ await role(null);
+ const latestSettingsVersion=(await q('select version from public.settings where user_id=$1',
+  [owner]))[0].version;
+ await role('service_role');
  const secondStart=status(await mcp(command('review_runs','start',{
-  patch:runPatch
+  patch:{...runPatch,settings_version:latestSettingsVersion}
  })),'review_runs','start');
  assert.equal(secondStart.run.status,'running','review_runs: second run not started');
  const abandonRun=status(await mcp(command('review_runs','abandon',{
