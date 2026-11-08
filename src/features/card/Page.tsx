@@ -1,4 +1,6 @@
 import {MathPreview} from '../../ui/MathPreview';
+import {isFlagOn} from '../../flags';
+import CardVariants from './v6/CardVariants';
 import {getApi} from "../../data";
 import {useQuery} from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
@@ -325,6 +327,16 @@ export default function Page() {
             <span data-card-subject-glyph aria-hidden="true" className="mr-1 font-math text-card italic text-ink-2">{project?.subject.glyph ?? "∫"}</span> {project?.title ?? note.projectSlug}{" "}
             {note.checkpointCode && `· ${note.checkpointCode}`} · N{note.noteNo}
           </p>
+          {isFlagOn('v6Shell')&&<CardVariants
+           variants={detail.cards.map(c=>({
+            ordinal:c.ord,due:c.state.due,stability:c.state.stability,
+            difficulty:c.state.difficulty,state:c.state.state,
+            lastReview:c.state.lastReview,reps:c.state.reps,lapses:c.state.lapses,
+           }))}
+           status={note.status} busy={status.isPending||update.isPending}
+           onEdit={()=>setEditing(true)}
+           onToggleStatus={()=>{void setStatus(note.status==='suspended'?'active':'suspended')}}
+          />}
           <Slab as="article" className="p-5" aria-label="Card front and answer">
             <MathText
               source={note.front}

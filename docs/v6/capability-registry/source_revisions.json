@@ -1,0 +1,55 @@
+{
+  "table": "source_revisions",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "source_id": {
+      "classification": "derived",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "content_hash": {
+      "classification": "command-managed",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "snapshot": {
+      "classification": "command-managed",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "N93 read-only owner history",
+      "mcpPath": "N90 citations (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner purge and source cascade"
+    }
+  }
+}

@@ -88,6 +88,9 @@
       "table_name": "day_plan_items"
     },
     {
+      "table_name": "study_goals"
+    },
+    {
       "table_name": "study_events"
     }
   ],

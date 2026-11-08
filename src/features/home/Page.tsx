@@ -28,6 +28,7 @@ import type {HomeSummary} from '../../data/types';
 const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:module.GoalDistance})));
 const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 const TodayFocus=lazy(()=>import('../focus/TodayFocus'));
+const V6TodayPlan=lazy(()=>import('./V6TodayPlan'));
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
@@ -216,7 +217,11 @@ export default function Page(){
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
   {isFlagOn('v6Shell')&&<PlannerLaunch zone={settings.data?.timeZone}/>}
-  {isFlagOn('v6Shell')&&<Suspense fallback={null}><TodayFocus/></Suspense>}
+  {isFlagOn('v6Shell')&&<Suspense fallback={null}>
+   <TodayFocus/>
+   <V6TodayPlan zone={settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC'}
+    due={home.data.due} reviewLimit={settings.data?.reviewsPerDay??200}/>
+  </Suspense>}
   {offline&&<div role="status" className="rounded-ctl border border-edge-2 bg-fill-1 p-3 text-label text-ink-2">
    You're offline. Changes cannot be saved until you're connected.
   </div>}

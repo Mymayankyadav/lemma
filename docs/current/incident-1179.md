@@ -1,0 +1,3 @@
+## Incident #1179: deployed MCP selftest failed after N37
+
+N37 (#1153) widened the `get.what` and `search.resource` selectors to `enum.or(<registered resource pattern>)`. zod serializes that as `anyOf: [{enum}, {pattern}]`, so the N15 wire-contract check (`supabase/functions/mcp/tools/study-list-contract.ts`), which read only `properties[selector].enum`, reported "N15 study resources missing". The first deploy also exceeded the 15,000-character `tools/list` budget (incident #1173, fixed by #1175), which hid this second failure. The check now reads the enum from `enum`, `anyOf` or `oneOf` branches. The study resources must still be advertised in an enum branch, so a pattern-only selector is still rejected. Test: `tests/unit/mcp/study-list-contract.test.ts`.
