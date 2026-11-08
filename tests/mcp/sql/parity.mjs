@@ -125,6 +125,14 @@ const specs={
   kind:'study',title:'MCP parity calendar',starts_at:'2026-11-06T08:00:00Z',
   ends_at:'2026-11-06T09:00:00Z',time_zone:'UTC'},
   update:{title:'App parity edited calendar'},column:'title',updated:'App parity edited calendar'},
+ parked_thoughts:{fn:'parked_thoughts_command',create:{
+  text:'MCP parity parked thought'},update:{text:'App parity edited thought'},
+  updateOp:'edit',column:'text',updated:'App parity edited thought'},
+ practice_topics:{fn:'practice_topics_command',create:{
+  title:'MCP parity practice',next_due_date:'2028-06-19',
+  cadence:{kind:'after_rating',daysByRating:[1,3,7,14]}},
+  update:{title:'App parity edited practice'},column:'title',
+  updated:'App parity edited practice'},
  presets:{fn:'presets_command',create:{label:'MCP parity preset',mode:'pomodoro',
   focus_minutes:25,break_minutes:5,long_break_minutes:15,cycles:4},
   update:{label:'App parity edited preset'},column:'label',updated:'App parity edited preset'},
@@ -162,7 +170,7 @@ async function roundTrip(resource,details){
  // study_command compatibility bridge intentionally returns its first
  // stored receipt for any same-operationId retry (N12 contract). Both must
  // prevent a second mutation or receipt; don't conflate the two policies.
- if(['tasks','study_goals','presets','deadlines'].includes(resource))
+ if(['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics'].includes(resource))
   assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
  else
   assert.deepEqual(altered,created,resource+': compatibility replay must return original receipt');
@@ -177,7 +185,8 @@ async function roundTrip(resource,details){
  const rowVersion=intervalResource?(await q('select version from public.study_entries where id=$1',
   [row.entry_id]))[0]?.version:row.version;
  assert.equal(rowVersion,initialVersion,resource+': app version differs from MCP receipt');
- const updateRequest=command(resource,'update',{
+ const updateOp=details.updateOp||'update';
+ const updateRequest=command(resource,updateOp,{
   target:{id},expectedVersion:rowVersion,patch:details.update});
  const updated=status(await app(details.fn,updateRequest),resource,'app update');
  assert.equal(updated.changed.find(c=>c.id===id)?.version,initialVersion+1,
@@ -199,12 +208,27 @@ async function roundTrip(resource,details){
   resource+': MCP registered projection disagrees with app update');
  assert.ok(!('user_id' in mcpResult.items[0]),resource+': MCP owner ID leakage');
  const registeredFields=registeredRows.find(r=>r.resource===resource).schema.fields;
- requireFields(resource,registeredFields,Object.fromEntries(registeredFields.map(field=>[
+ // A command registry also lists patch fields belonging to related resources:
+ // parking conversion accepts task fields; practice record creates events.
+ // Those are command inputs, not columns in the current resource's GET row.
+ const cap=JSON.parse(await readFile(new URL(resource+'.json',
+  new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8'));
+ const persisted=new Set(Object.keys(cap.columns||{}));
+ const payloadOnly=registeredFields.filter(field=>!persisted.has(field)).sort();
+ const expectedRelated={
+  parked_thoughts:['title','body','estimate_minutes','priority','due_kind',
+   'due_date','due_at','position','subject_id','project_id','checkpoint_id'],
+  practice_topics:['rating','occurred_at','response','minutes'],
+ };
+ assert.deepEqual(payloadOnly,[...(expectedRelated[resource]||[])].sort(),
+  resource+': unexpected command-only input fields without a read path');
+ const visibleFields=registeredFields.filter(field=>persisted.has(field));
+ requireFields(resource,visibleFields,Object.fromEntries(visibleFields.map(field=>[
   field,{appPath:Object.hasOwn(after,field)?'owner app row':'missing',
    mcpPath:Object.hasOwn(mcpResult.items[0],field)?'MCP GET projection':'missing'}
  ])));
  await role('service_role');
- const stale=await mcp(command(resource,'update',{
+ const stale=await mcp(command(resource,updateOp,{
   target:{id},expectedVersion:initialVersion,patch:details.update}));
  assert.equal(stale.status,'conflict',resource+': stale MCP update was accepted');
  const deleted=status(await mcp(command(resource,'delete',{
@@ -318,7 +342,86 @@ try{
  await roundTrip('calendar_blocks',specs.calendar_blocks);
  await roundTrip('study_intervals',{...specs.study_intervals,
   create:{...specs.study_intervals.create,entry_id:entryId}});
- console.log('PASS N94 tasks/presets/deadlines/goals/study/calendar/interval MCP→app→MCP and undo');
- console.log('N94 coverage pending expansion beyond seven base registry resources: '+
+
+ // Parked thoughts: exercise non-CRUD lifecycle, multi-resource conversion,
+ // exactly-once task creation, and transaction-wide undo as one action.
+ const thoughtId=await roundTrip('parked_thoughts',specs.parked_thoughts);
+ await role('service_role');
+ const dismissal=status(await mcp(command('parked_thoughts','dismiss',{
+  target:{id:thoughtId},expectedVersion:2,patch:{}
+ })),'parked_thoughts','dismiss');
+ assert.equal(dismissal.changed[0].version,3);
+ await role(null);
+ assert.equal((await q('select status from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].status,'dismissed');
+ await role('service_role');
+ const reopened=status(await mcp(command('parked_thoughts','reopen',{
+  target:{id:thoughtId},expectedVersion:3,patch:{}
+ })),'parked_thoughts','reopen');
+ assert.equal(reopened.changed[0].version,4);
+ const convert=command('parked_thoughts','convert_to_task',{
+  target:{id:thoughtId},expectedVersion:4,patch:{title:'Parity converted task',
+   body:'Keep the two records atomic',priority:'normal'}
+ });
+ const conversion=status(await mcp(convert),'parked_thoughts','convert_to_task');
+ const destination=conversion.task?.id;
+ assert.ok(destination,'parked_thoughts: conversion did not return created task');
+ assert.equal(conversion.changed.length,2,'parked conversion loses multi-table receipt');
+ assert.deepEqual(await mcp(convert),conversion,'parked conversion exact replay');
+ await role(null);
+ const converted=(await q('select status,destination_id from public.parked_thoughts where id=$1',
+  [thoughtId]))[0];
+ assert.deepEqual(converted,{status:'converted',destination_id:destination});
+ assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
+  [destination]))[0].n,1);
+ assert.deepEqual((await q('select table_name from public.action_changes where action_no=$1',
+  [conversion.actionNo])).map(x=>x.table_name).sort(),['parked_thoughts','tasks'],
+  'parked conversion must journal both rows in one undo');
+ await as(owner);
+ assert.equal((await undo(conversion.actionNo)).undone,conversion.actionNo);
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
+  [destination]))[0].n,0,'parked conversion undo left task behind');
+ assert.equal((await q('select status,version from public.parked_thoughts where id=$1',
+  [thoughtId]))[0].status,'open');
+
+ // Practice: preserve history and due-date behavior through MCP record,
+ // archive/restore, void_event, and owner-visible registered read.
+ const practiceId=await roundTrip('practice_topics',specs.practice_topics);
+ await role('service_role');
+ const archived=status(await mcp(command('practice_topics','archive',{
+  target:{id:practiceId},expectedVersion:2,patch:{}
+ })),'practice_topics','archive');
+ assert.equal(archived.changed[0].version,3);
+ await role(null);
+ assert.ok((await q('select archived_at from public.practice_topics where id=$1',
+  [practiceId]))[0].archived_at);
+ await role('service_role');
+ const restored=status(await mcp(command('practice_topics','restore',{
+  target:{id:practiceId},expectedVersion:3,patch:{}
+ })),'practice_topics','restore');
+ assert.equal(restored.changed[0].version,4);
+ const record=command('practice_topics','record',{target:{id:practiceId},
+  expectedVersion:4,patch:{rating:3,occurred_at:'2028-06-18T12:00:00Z',
+   response:'Explained invariant',minutes:18}});
+ const rated=status(await mcp(record),'practice_topics','record');
+ const event=rated.changed.find(x=>x.table==='practice_events');
+ assert.ok(event?.id,'practice record did not create event');
+ assert.deepEqual(await mcp(record),rated,'practice record exact replay');
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.practice_events where id=$1',
+  [event.id]))[0].n,1);
+ assert.equal((await mcpPage('practice_topics',practiceId)).total,1);
+ await role('service_role');
+ const voided=status(await mcp(command('practice_topics','void_event',{
+  target:{id:event.id},expectedVersion:event.version,patch:{}
+ })),'practice_topics','void_event');
+ await role(null);
+ assert.ok((await q('select voided_at from public.practice_events where id=$1',
+  [event.id]))[0].voided_at);
+ assert.ok(voided.actionNo>rated.actionNo);
+
+ console.log('PASS N94 9 resource CRUD + parked/practice lifecycle, registered MCP GET, replay and undo');
+ console.log('N94 coverage pending expansion beyond nine base registry resources: '+
   registry.filter(r=>!Object.hasOwn(specs,r.resource)).map(r=>r.resource).join(', '));
 }finally{await db.close();}
