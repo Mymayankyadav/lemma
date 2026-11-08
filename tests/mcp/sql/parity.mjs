@@ -470,6 +470,9 @@ try{
  assert.equal((await mcp(command('day_plans','update',{
   target:{id:planId},expectedVersion:1,patch:{intention:'Stale'}
  }))).status,'conflict','day_plans: stale owner version accepted');
+ // service_role's PGlite fixture is not BYPASSRLS. Source snapshots must
+ // be read as the test harness, not as the privileged MCP dispatcher.
+ await role(null);
  const currentTaskVersion=(await q('select version from public.tasks where user_id=$1 and id=$2',
   [owner,planTaskId]))[0].version;
  const currentBlockVersion=(await q('select version from public.calendar_blocks where user_id=$1 and id=$2',
@@ -478,6 +481,7 @@ try{
   {resource:'tasks',id:planTaskId,version:currentTaskVersion},
   {resource:'calendar_blocks',id:calendarId,version:currentBlockVersion},
  ]};
+ await role('service_role');
  const planPreview=command('day_plans','preview',{target:{id:planId},
   expectedVersion:2,patch:{availability:sourceSnapshot,items:[{
    task_id:planTaskId,calendar_block_id:calendarId,
