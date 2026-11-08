@@ -147,7 +147,7 @@ export default function PlanProposalV6(){
  }
  const ready=!!p&&!proposal.isPending;
  const decisionUnavailable=pending||editor||project.isPending||project.isError||!project.data;
- return <main aria-label="Plan proposal review" className="flex flex-col gap-4 p-4 pb-28 text-ink">
+ return <main aria-label="Plan proposal review" className="flex min-w-0 flex-col gap-4 p-4 pb-28 text-ink [overflow-wrap:anywhere]">
   <h1 className="text-title-s font-semibold">Plan proposal review</h1>
   {proposal.isPending&&<p role="status">Loading proposal…</p>}
   {(proposal.isError||!p&&!proposal.isPending)&&<p role="alert">Proposal unavailable.
@@ -164,13 +164,13 @@ export default function PlanProposalV6(){
     <button type="button" className={control} onClick={()=>{void project.refetch()}}>Retry</button>
    </p>}
    {comparisons&&<div className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Before and after plan targets">
-    <section aria-label="Before targets" className="rounded-ctl border border-edge p-3">
+    <section aria-label="Before targets" className="min-w-0 rounded-ctl border border-edge p-3">
      <h2 className="text-body font-semibold">Before · {comparisons.before.length} checkpoints</h2>
      <ul>{comparisons.before.map(node=><li key={node.code} className="border-b border-edge py-2 text-label">
       <strong>{node.code}</strong> · {node.title}</li>)}</ul>
      {!comparisons.before.length&&<p className="text-caption">No approved checkpoints yet.</p>}
     </section>
-    <section aria-label="After targets" className="rounded-ctl border border-edge p-3">
+    <section aria-label="After targets" className="min-w-0 rounded-ctl border border-edge p-3">
      <h2 className="text-body font-semibold">After · {comparisons.after.length} checkpoints</h2>
      <ul>{comparisons.after.map(node=><li key={node.code} className="border-b border-edge py-2 text-label">
       <strong>{node.code}</strong> · {node.title}
@@ -212,7 +212,7 @@ export default function PlanProposalV6(){
      {draft.status==='submitted'&&<p role="status" className="text-label text-ink-2">
       Draft submitted. Its submission is not plan approval; the proposal decision remains separate.
      </p>}
-     {!editor?<pre className="max-h-40 overflow-auto rounded-ctl bg-well p-2 text-caption">{payloadText(draft.payload)}</pre>:
+     {!editor?<pre className="max-h-40 max-w-full overflow-auto rounded-ctl bg-well p-2 text-caption">{payloadText(draft.payload)}</pre>:
       <label className="text-label">Full draft payload (JSON)
        <textarea aria-label="Full draft payload" className="mt-1 min-h-44 w-full rounded-ctl border border-edge bg-well p-2 font-mono text-caption"
         value={text} onChange={e=>setText(e.target.value)}/>
@@ -241,7 +241,7 @@ export default function PlanProposalV6(){
        ['Your draft',conflict.attemptedPayload],
       ] as const).map(([label,value])=><section key={label}>
        <h4 className="text-label font-semibold">{label}</h4>
-       <pre className="max-h-52 overflow-auto text-caption">{JSON.stringify(value,null,2)}</pre>
+       <pre className="max-h-52 max-w-full overflow-auto text-caption">{JSON.stringify(value,null,2)}</pre>
       </section>)}
      </div>
      <button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Reload current draft</button>

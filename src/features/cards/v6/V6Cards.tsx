@@ -64,7 +64,14 @@ export default function V6Cards() {
       hasOpenComments: filters.hasOpenComments || undefined,
       offset: pageParam,
     }),
-    getNextPageParam: last => last.nextOffset ?? undefined,
+    getNextPageParam: (last, pages, lastPageParam, allPageParams) => {
+      const offset = last.nextOffset;
+      // Avoid repeated, regressing, malformed or empty owner result pages.
+      if (offset === null || !Number.isSafeInteger(offset) || offset <= lastPageParam ||
+          allPageParams.includes(offset) || last.rows.length === 0 || pages.length >= 1000)
+        return undefined;
+      return offset;
+    },
     staleTime: 30_000,
   });
   const rows = useMemo(() => cards.data?.pages.flatMap(page => page.rows) ?? [], [cards.data]);
@@ -77,7 +84,10 @@ export default function V6Cards() {
   function clear() { apply({ ...clearCardFilters }); setQuery(''); }
   async function showMore() {
     if (cards.isFetchingNextPage) return;
-    if (shown + 20 > rows.length && cards.hasNextPage) await cards.fetchNextPage();
+    if (shown + 20 > rows.length && cards.hasNextPage) {
+      const result = await cards.fetchNextPage();
+      if (result.isError) return; // Preserve the position for a retry.
+    }
     setShown(value => value + 20);
   }
   async function createCard(value: EditorValue) {
@@ -100,7 +110,7 @@ export default function V6Cards() {
       <button type="button" className={button} onClick={() => setCreating(true)}>New card</button>
     </header>
     <label className="flex flex-col gap-1 text-label text-ink-2">Search cards
-      <input type="search" aria-label="Search cards" className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink"
+      <input type="search" aria-label="Search cards" className="min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink"
         placeholder="Search fronts and backs" value={search} onChange={event => setQuery(event.target.value)} />
     </label>
     <div className="flex flex-wrap items-center gap-2">
@@ -130,8 +140,12 @@ export default function V6Cards() {
         </div> : <div role="list" aria-label="Card results" className="flex flex-col gap-2">
           {visible.map(row => <div role="listitem" key={row.noteNo}><CardItem row={row}/></div>)}
         </div>}
+        {cards.isFetchNextPageError && <p role="alert" className="text-label text-ink-2">
+          Could not load more cards. The shown cards are unchanged; try again.
+        </p>}
         {more && <button type="button" className={button + ' self-center'} disabled={cards.isFetchingNextPage}
-          onClick={() => { void showMore(); }}>{cards.isFetchingNextPage ? 'Loading more…' : 'Load 20 more'}</button>}
+          onClick={() => { void showMore(); }}>{cards.isFetchingNextPage ? 'Loading more…' :
+            cards.isFetchNextPageError ? 'Retry loading cards' : 'Load 20 more'}</button>}
       </>}
     <Sheet open={creating} onClose={() => setCreating(false)} title="New card">
       <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>

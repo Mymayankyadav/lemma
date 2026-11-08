@@ -53,7 +53,7 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
           onClick={() => setSessionLimit(value => value + 20)}>Show 20 more sessions</button>}
       </div>}
     </div>
-    <div className="rounded-ctl border border-edge bg-[var(--paper)] p-3">
+    <div className="min-w-0 rounded-ctl border border-edge bg-[var(--paper)] p-3">
       <button type="button" aria-expanded={showSources} aria-controls="v6-project-source-list"
         className={action + ' w-full text-left'} onClick={() => setShowSources(value => !value)}>
         {showSources ? 'Hide sources' : 'Show sources'} ({detail.sources.length})
@@ -67,7 +67,7 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
         {sourceLimit < detail.sources.length && <button type="button" className={action}
           onClick={() => setSourceLimit(value => value + 20)}>Show 20 more sources</button>}
       </div>}
-      {showSources && <div className="mt-4 border-t border-edge pt-4" aria-label="Detailed project sources">
+      {showSources && <div className="mt-4 min-w-0 max-w-full overflow-x-auto border-t border-edge pt-4" aria-label="Detailed project sources">
         <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>

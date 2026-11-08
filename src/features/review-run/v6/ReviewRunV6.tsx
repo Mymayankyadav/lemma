@@ -162,8 +162,8 @@ export default function ReviewRunV6(){
      <button className={button+' col-span-3'} onClick={()=>{setConfidence(null);setRevealed(true)}}>
       Show answer
      </button>
-    </section>:<section aria-label="Grade answer" className="grid grid-cols-4 gap-1.5">
-     {grades.map((label,i)=><button key={label} className={button+' min-w-0'}
+    </section>:<section aria-label="Grade answer" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+     {grades.map((label,i)=><button key={label} className={button+' min-w-0 [overflow-wrap:anywhere]'}
       disabled={busy||!choices} onClick={()=>{void grade((i+1) as Rating)}}>
       {label}<span className="block text-caption">{choices?.[(i+1) as Rating].label??'—'}</span>
      </button>)}

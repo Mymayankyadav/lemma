@@ -53,8 +53,8 @@ export default function AtlasV6(){
  </main>;
  return <main aria-label="Atlas" className="flex h-dvh flex-col overflow-hidden text-ink">
   <header className="shrink-0 border-b border-edge bg-[var(--paper)] p-4">
-   <div className="flex items-center justify-between gap-3">
-    <div><h1 className="text-title-s font-semibold">Atlas ideas</h1>
+   <div className="flex min-w-0 flex-wrap items-center gap-3">
+    <div className="min-w-0 flex-1 [overflow-wrap:anywhere]"><h1 className="text-title-s font-semibold">Atlas ideas</h1>
      <p className="text-label text-ink-2" aria-label="Real idea count">{ideaCount} ideas (generated groups excluded)</p></div>
     <button type="button" className={control} onClick={()=>setEditId(null)}>New idea</button>
     <Link to="/atlas?view=map" className={control}>Map</Link>
@@ -64,7 +64,8 @@ export default function AtlasV6(){
      value={search} onChange={e=>setSearch(e.target.value)}/>
    </label>
   </header>
-  <section className="min-h-0 flex-1 overflow-y-auto p-3 pb-24" aria-label="Idea hierarchy">
+  <section role="region" aria-label="Idea hierarchy" tabIndex={0}
+   className="min-h-0 flex-1 overflow-y-auto p-3 pb-24 focus-visible:outline-2 focus-visible:outline-amber">
    {ideaCount===0&&<p className="p-4 text-label text-ink-2">Your Atlas is empty. Ideas appear as your plans grow.</p>}
    {ideaCount>0&&rows.length===0&&<p className="p-4 text-label text-ink-2">No ideas match your search.</p>}
    <ul className="flex flex-col gap-2">
@@ -80,7 +81,7 @@ export default function AtlasV6(){
         aria-label={(isOpen?'Collapse ':'Expand ')+node.name} onClick={()=>toggle(node.id)}>{isOpen?'−':'+'}</button>:
         <span aria-hidden="true" className="w-2 shrink-0"/>}
        <div className="min-w-0 flex-1">
-        <p className="break-words text-body font-semibold"><FastTex source={node.name}/></p>
+        <p className="break-words [overflow-wrap:anywhere] text-body font-semibold"><FastTex source={node.name}/></p>
         {node.synthetic?<p className="text-caption text-ink-2">Generated grouping row — not an idea</p>:
          <p className="text-caption text-ink-2">{node.status.replaceAll('_',' ')} · {node.due} due</p>}
         {node.synthetic&&<p className="text-caption text-ink-2">{node.due} due in this group</p>}
