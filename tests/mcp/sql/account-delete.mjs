@@ -19,7 +19,7 @@ try{
  const directory=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(directory)).filter(n=>n.endsWith('.sql')&&
   !n.includes('_storage')).sort();
- assert(names.includes('20261120010000_account_delete_guard.sql'));
+ assert(names.includes('20261207062300_account_delete_guard.sql'));
  for(const name of names)await db.exec(await readFile(new URL(name,directory),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[A,B]);
  for(const id of [A,B])
