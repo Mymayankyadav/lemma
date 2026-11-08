@@ -79,7 +79,10 @@ async function roundTrip(resource,details){
  assert.match(String(id),/^[0-9a-f]{8}-[0-9a-f-]{27,}$/i,
   resource+': invalid created ID');
  const initialVersion=created.changed.find(c=>c.id===id)?.version;
- assert.equal(initialVersion,1,resource+': unexpected initial version');
+ const intervalResource=resource==='study_intervals';
+ assert.ok(Number.isSafeInteger(initialVersion)&&initialVersion>=1,
+  resource+': receipt missing owner version');
+ if(!intervalResource)assert.equal(initialVersion,1,resource+': unexpected initial version');
  const journalCount=(await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
  assert.deepEqual(await mcp(create),created,resource+': exact MCP retry differs');
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
@@ -99,11 +102,15 @@ async function roundTrip(resource,details){
  const row=(await q('select * from public.'+resource+' where id=$1',[id]))[0];
  assert.ok(row,resource+': MCP-created row missing from app owner read');
  assert.equal(row.user_id,owner,resource+': cross-owner create');
- assert.equal(row.version,1,resource+': app version differs from MCP receipt');
+ // study_intervals has no row version: its command deliberately CASes the
+ // containing study_entries.version. Compare the same owner-visible parent.
+ const rowVersion=intervalResource?(await q('select version from public.study_entries where id=$1',
+  [row.entry_id]))[0]?.version:row.version;
+ assert.equal(rowVersion,initialVersion,resource+': app version differs from MCP receipt');
  const updateRequest=command(resource,'update',{
-  target:{id},expectedVersion:row.version,patch:details.update});
+  target:{id},expectedVersion:rowVersion,patch:details.update});
  const updated=status(await app(details.fn,updateRequest),resource,'app update');
- assert.equal(updated.changed.find(c=>c.id===id)?.version,2,
+ assert.equal(updated.changed.find(c=>c.id===id)?.version,initialVersion+1,
   resource+': app/command version mismatch');
  // The PGlite service_role fixture is only granted the dispatcher RPC,
  // not direct table SELECT. Inspect through the fixture administrator; keep
@@ -113,13 +120,15 @@ async function roundTrip(resource,details){
   [id,owner]))[0];
  assert.equal(after[details.column],details.updated,
   resource+': app edit absent from MCP owner view');
- assert.equal(after.version,2,resource+': persisted row has stale version');
+ const afterVersion=intervalResource?(await q('select version from public.study_entries where id=$1',
+  [after.entry_id]))[0]?.version:after.version;
+ assert.equal(afterVersion,initialVersion+1,resource+': persisted row has stale version');
  await role('service_role');
  const stale=await mcp(command(resource,'update',{
-  target:{id},expectedVersion:1,patch:details.update}));
+  target:{id},expectedVersion:initialVersion,patch:details.update}));
  assert.equal(stale.status,'conflict',resource+': stale MCP update was accepted');
  const deleted=status(await mcp(command(resource,'delete',{
-  target:{id},expectedVersion:2,patch:{}})),resource,'delete');
+  target:{id},expectedVersion:initialVersion+1,patch:{}})),resource,'delete');
  await as(owner);
  assert.equal((await q('select count(*)::int n from public.'+resource+
   ' where id=$1',[id]))[0].n,0,resource+': deleted row remains app-visible');
@@ -129,7 +138,9 @@ async function roundTrip(resource,details){
  const returned=(await q('select * from public.'+resource+' where id=$1',[id]))[0];
  assert.equal(returned[details.column],details.updated,
   resource+': restored data mismatch');
- assert.equal(returned.version,2,resource+': restored version mismatch');
+ const restoredVersion=intervalResource?(await q('select version from public.study_entries where id=$1',
+  [returned.entry_id]))[0]?.version:returned.version;
+ assert.equal(restoredVersion,initialVersion+1,resource+': restored version mismatch');
  await as(other);
  assert.equal((await q('select count(*)::int n from public.'+resource+
   ' where id=$1',[id]))[0].n,0,resource+': foreign owner could read restored row');
