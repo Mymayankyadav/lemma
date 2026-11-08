@@ -3,6 +3,7 @@ import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
+import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
 import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, Settings } from '../types'
@@ -43,6 +44,19 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** Uncertain Atlas results must retain the exact command receipt identity. */
+ private readonly pendingAtlasEdits=new Map<string,{
+  fingerprint:string;envelope:ReturnType<typeof buildAtlasEnvelope>
+ }>()
+ /** A lost RPC acknowledgement leaves the exact envelope pending for retry.
+  * Keyed by owner + sibling, so a second intent cannot race an uncertain one.
+  * Cleared only by a definitive command receipt/conflict or server rejection. */
+ private readonly pendingCardSchedule=new Map<string,{
+  fingerprint:string;p:{
+   schemaVersion:1;resource:'card_schedule';operation:'reschedule'|'reset';
+   operationId:string;target:{noteNo:number;ord:number};patch:{due?:string}
+  }
+ }>()
  /** Reminders stay unavailable in live mode until NOTIF-6. */
  async listPushDevices(..._args:Parameters<LemmaApi['listPushDevices']>):ReturnType<LemmaApi['listPushDevices']> {throw notImplemented('listPushDevices')}
  async addPushDevice(..._args:Parameters<LemmaApi['addPushDevice']>):ReturnType<LemmaApi['addPushDevice']> {throw notImplemented('addPushDevice')}
@@ -569,6 +583,55 @@ export class LiveAdapter implements LemmaApi {
   await owner(db)
   return cardState(checked(await db.rpc('undo_review',{p_review:id})) as Row)
  }
+
+ /** N104 card schedule mutations use the exact audited owner-scoped command. */
+ private async cardSchedule(operation:'reschedule'|'reset',noteNo:number,ordinal:number,due?:string):Promise<void> {
+  if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1)
+   throw new LemmaError('invalid','Card note number and ordinal must be positive integers')
+  if(operation==='reschedule'&&(!due||
+   !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
+   !Number.isFinite(Date.parse(due))))
+   throw new LemmaError('invalid','Due date must include a valid time-zone offset')
+  const db=liveClient(),uid=await owner(db)
+  const cardKey=uid+':'+noteNo+':'+ordinal
+  const fingerprint=JSON.stringify([operation,noteNo,ordinal,due??null])
+  const previous=this.pendingCardSchedule.get(cardKey)
+  if(previous&&previous.fingerprint!==fingerprint)
+   throw new LemmaError('conflict',
+    'Previous card schedule outcome is uncertain. Retry that exact action before changing it.')
+  const p=previous?.p??{
+   schemaVersion:1 as const,resource:'card_schedule' as const,operation,
+   operationId:crypto.randomUUID(),target:{noteNo,ord:ordinal},
+   patch:operation==='reschedule'?{due}:{}
+  }
+  // Store before the first await: another click on this card reuses this ID.
+  if(!previous)this.pendingCardSchedule.set(cardKey,{fingerprint,p})
+  // An uncertain transport failure deliberately keeps p for the next explicit
+  // retry; sending a fresh operationId would create another journal action.
+  const response=await db.rpc('card_schedule_command',{p})
+  if(response.error){
+   // PostgREST server errors are definitive; network errors are ambiguous.
+   const message=response.error.message??''
+   if(!/failed to fetch|networkerror|network request failed|timeout|connection closed|gateway|502|503|504/i.test(message))
+    this.pendingCardSchedule.delete(cardKey)
+   checked(response)
+  }
+  const reply=checked(response) as {
+   status:string;reason?:string;actionNo?:number|null}
+  if(reply?.status==='conflict'){
+   this.pendingCardSchedule.delete(cardKey)
+   throw new LemmaError('conflict',reply.reason||'Card schedule changed')
+  }
+  if(reply?.status!=='ok'||!Number.isSafeInteger(Number(reply.actionNo))||Number(reply.actionNo)<1)
+   throw new LemmaError('server','Card schedule command returned no audited action')
+  this.pendingCardSchedule.delete(cardKey)
+ }
+ async rescheduleCard(...args:Parameters<LemmaApi['rescheduleCard']>):ReturnType<LemmaApi['rescheduleCard']>{
+  const [noteNo,ordinal,due]=args;return this.cardSchedule('reschedule',noteNo,ordinal,due)
+ }
+ async resetCard(...args:Parameters<LemmaApi['resetCard']>):ReturnType<LemmaApi['resetCard']>{
+  const [noteNo,ordinal]=args;return this.cardSchedule('reset',noteNo,ordinal)
+ }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
   const [query,slug]=args,db=liveClient()
   await owner(db)
@@ -715,7 +778,7 @@ export class LiveAdapter implements LemmaApi {
     const cardIds=new Set(cards.filter(card=>relevantNotes.some(n=>n.id===card.note_id)).map(card=>card.id))
     const again=reviews.filter(r=>cardIds.has(r.card_id)&&!r.undone_at&&r.rating===1)
       .map(r=>({reviewedAt:r.reviewed_at,rating:r.rating}))
-    return {id:c.id,slug:c.slug,name:c.name,blurb:c.blurb,subjectId:c.subject_id,
+    return {id:c.id,slug:c.slug,name:c.name,version:c.version,blurb:c.blurb,subjectId:c.subject_id,
       topic:c.topic??null,level:c.level??'planet',parentId:c.parent_id??null,isStar:!!c.is_star,
       status:conceptStatus(linkedCps.map(getView).map(v=>v.ui),
         misconceptions.some(m=>m.concept_id===c.id&&!m.resolved_at),again),
@@ -725,6 +788,80 @@ export class LiveAdapter implements LemmaApi {
   })
   return {subjects:subjects.map(subjectRow),concepts:conceptNodes,
     links:links.map(l=>({fromId:l.from_id,toId:l.to_id,kind:l.kind}))} as AtlasGraph
+ }
+ /** Fetch the current server version rather than writing against an assumed one. */
+ async getConceptVersion(id:string):Promise<number>{
+  const db=liveClient(),uid=await owner(db);
+  if(!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id))
+   throw new LemmaError('invalid','Concept ID must be a UUID');
+  const row=checked(await db.from('concepts').select('version')
+   .eq('user_id',uid).eq('id',id).single()) as {version:number};
+  if(!Number.isSafeInteger(row.version)||row.version<1)
+   throw new LemmaError('server','Concept version missing');
+  return row.version;
+ }
+ /** User-level retries of an uncertain Atlas mutation replay the exact request.
+  * Keep pending state per authenticated owner and concept; changed intents on
+  * the same concept cannot race an outcome that may already have committed. */
+ private async auditedAtlasEdit(
+  operation:Exclude<import('./atlas-command').AtlasOperation,'preview_merge'>,
+  id:string|null,patch:Record<string,unknown>,expectedVersion?:number
+ ):Promise<import('../api').AtlasMutationResult>{
+  const db=liveClient(),uid=await owner(db);
+  const candidate=buildAtlasEnvelope(operation,id,patch,expectedVersion);
+  // A new concept has no target ID yet. Reserve one create slot per owner,
+  // independent of its form payload, or changed create intents bypass the guard.
+  const key=uid+':'+(candidate.target.id??'new');
+  const fingerprint=JSON.stringify([candidate.operation,candidate.target,
+   candidate.patch,candidate.expectedVersion??null]);
+  const previous=this.pendingAtlasEdits.get(key);
+  if(previous&&previous.fingerprint!==fingerprint)
+   throw new LemmaError('conflict',
+    'Previous Atlas edit outcome is uncertain. Retry that exact edit first.');
+  const envelope=previous?.envelope??candidate;
+  // Store before dispatch; even simultaneous clicks must use one operationId.
+  if(!previous)this.pendingAtlasEdits.set(key,{fingerprint,envelope});
+  try{
+   const result=await runAtlasMutation(db,envelope);
+   this.pendingAtlasEdits.delete(key);
+   return result;
+  }catch(error){
+   // Offline, gateway and unknown server failures could follow a committed
+   // write. Only authoritative validation, ownership or version errors clear it.
+   if(error instanceof LemmaError&&
+    ['invalid','not_found','conflict','auth'].includes(error.code))
+    this.pendingAtlasEdits.delete(key);
+   throw error;
+  }
+ }
+ async createConcept(...args:Parameters<LemmaApi['createConcept']>):ReturnType<LemmaApi['createConcept']>{
+  const input=args[0];
+  if(!input||!input.name?.trim()||!input.subjectId)
+   throw new LemmaError('invalid','Name and subject required');
+  const patch:Record<string,unknown>={subject_id:input.subjectId,name:input.name};
+  if(input.blurb!==undefined)patch.blurb=input.blurb;
+  if(input.parentId!==undefined)patch.parent_id=input.parentId;
+  if(input.slug!==undefined)patch.slug=input.slug;
+  return this.auditedAtlasEdit('create',null,patch,0);
+ }
+ async updateConcept(...args:Parameters<LemmaApi['updateConcept']>):ReturnType<LemmaApi['updateConcept']>{
+  return this.auditedAtlasEdit('update',args[0],{...args[2]},args[1]);
+ }
+ async reparentConcept(...args:Parameters<LemmaApi['reparentConcept']>):ReturnType<LemmaApi['reparentConcept']>{
+  return this.auditedAtlasEdit('reparent',args[0],{parent_id:args[2]},args[1]);
+ }
+ async linkConcept(...args:Parameters<LemmaApi['linkConcept']>):ReturnType<LemmaApi['linkConcept']>{
+  return this.auditedAtlasEdit('link',args[0],{other_id:args[2],kind:args[3]},args[1]);
+ }
+ async unlinkConcept(...args:Parameters<LemmaApi['unlinkConcept']>):ReturnType<LemmaApi['unlinkConcept']>{
+  return this.auditedAtlasEdit('unlink',args[0],{other_id:args[2],kind:args[3]},args[1]);
+ }
+ async previewConceptMerge(...args:Parameters<LemmaApi['previewConceptMerge']>):ReturnType<LemmaApi['previewConceptMerge']>{
+  return runAtlasPreview(liveClient(),buildAtlasEnvelope('preview_merge',args[0],
+   {keep_id:args[1]}));
+ }
+ async mergeConcept(...args:Parameters<LemmaApi['mergeConcept']>):ReturnType<LemmaApi['mergeConcept']>{
+  return this.auditedAtlasEdit('merge',args[0],{keep_id:args[2],keep_version:args[3]},args[1]);
  }
  async pinConcept(...args: Parameters<LemmaApi['pinConcept']>): ReturnType<LemmaApi['pinConcept']> {
   const [id,x,y]=args,db=liveClient(),uid=await owner(db)
