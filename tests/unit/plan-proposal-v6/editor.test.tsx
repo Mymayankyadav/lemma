@@ -67,6 +67,22 @@ afterEach(async()=>{
  host.remove();vi.clearAllMocks();
 });
 describe('N85 v6 proposal draft editor',()=>{
+ it('never labels an unloaded or failed project as an empty approved plan',async()=>{
+  mocks.project.mockReturnValue({data:undefined,isPending:true,isError:false,refetch:vi.fn()});
+  await render();
+  expect(host.textContent).toContain('Loading current plan');
+  expect(host.querySelector('[aria-label="Before targets"]')).toBeNull();
+  expect(host.textContent).not.toContain('No approved checkpoints yet');
+  mocks.project.mockReturnValue({data:undefined,isPending:false,isError:true,refetch:vi.fn()});
+  await render();
+  expect(host.textContent).toContain('Current plan unavailable');
+  expect(host.querySelector('[aria-label="Before targets"]')).toBeNull();
+  mocks.project.mockReturnValue({data:{checkpoints:[]},
+   isPending:false,isError:false,refetch:vi.fn()});
+  await render();
+  expect(host.querySelector('[aria-label="Before targets"]')).not.toBeNull();
+  expect(host.textContent).toContain('No approved checkpoints yet');
+ });
  it('shows real before/after, citations and an existing versioned draft',async()=>{
   await render();
   await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));

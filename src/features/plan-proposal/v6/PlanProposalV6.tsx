@@ -74,8 +74,11 @@ export default function PlanProposalV6(){
   return ()=>{alive=false};
  },[id,proposal.data,reload]);
  const p=proposal.data;
- const comparisons=useMemo(()=>p?proposalComparison(p,project.data?.checkpoints??[]):null,
-  [p,project.data]);
+ // Empty approved checkpoints are meaningful only after the owner's project
+ // read succeeds; do not present missing or failed data as a blank base plan.
+ const comparisons=useMemo(()=>p&&project.data&&!project.isPending&&!project.isError?
+  proposalComparison(p,project.data.checkpoints??[]):null,
+  [p,project.data,project.isPending,project.isError]);
  async function save(){
   if(!draft||pending||!['draft','saved'].includes(draft.status))return;
   const saveFor=id;
