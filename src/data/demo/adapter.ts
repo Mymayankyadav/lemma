@@ -15,6 +15,8 @@ import type {
 import { LemmaError } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
 import { mergeNotifyPrefs } from "../notify";
+import {createDemoConcept,updateDemoConcept,reparentDemoConcept,editDemoLink,
+ previewDemoConceptMerge,mergeDemoConcept,demoConceptVersion} from './atlas-command';
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
@@ -2487,6 +2489,7 @@ export class DemoAdapter implements LemmaApi {
           // DemoConcept contains only primitive fields; a shallow copy is
           // independent and avoids thousands of structuredClone calls at 4x CPU.
           ...c,
+          version:demoConceptVersion(c),
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -2502,6 +2505,32 @@ export class DemoAdapter implements LemmaApi {
       // callers cannot mutate the underlying demo store.
       links: this.store.links.map(link => ({...link})),
     };
+  }
+  async getConceptVersion(id:string):Promise<number>{
+    const concept=this.store.concepts.find(c=>c.id===id);
+    if(!concept)throw new LemmaError('not_found','Owner concept not found');
+    return demoConceptVersion(concept);
+  }
+  async createConcept(...args:Parameters<LemmaApi['createConcept']>):ReturnType<LemmaApi['createConcept']>{
+    return this.transaction(()=>createDemoConcept(this.store,args[0]));
+  }
+  async updateConcept(...args:Parameters<LemmaApi['updateConcept']>):ReturnType<LemmaApi['updateConcept']>{
+    return this.transaction(()=>updateDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async reparentConcept(...args:Parameters<LemmaApi['reparentConcept']>):ReturnType<LemmaApi['reparentConcept']>{
+    return this.transaction(()=>reparentDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async linkConcept(...args:Parameters<LemmaApi['linkConcept']>):ReturnType<LemmaApi['linkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'link',args[0],args[1],args[2],args[3]));
+  }
+  async unlinkConcept(...args:Parameters<LemmaApi['unlinkConcept']>):ReturnType<LemmaApi['unlinkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'unlink',args[0],args[1],args[2],args[3]));
+  }
+  async previewConceptMerge(...args:Parameters<LemmaApi['previewConceptMerge']>):ReturnType<LemmaApi['previewConceptMerge']>{
+    return previewDemoConceptMerge(this.store,args[0],args[1]);
+  }
+  async mergeConcept(...args:Parameters<LemmaApi['mergeConcept']>):ReturnType<LemmaApi['mergeConcept']>{
+    return this.transaction(()=>mergeDemoConcept(this.store,args[0],args[1],args[2],args[3]));
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
     if ((x===null)!==(y===null) || (x!==null&&!Number.isFinite(x)) || (y!==null&&!Number.isFinite(y)))

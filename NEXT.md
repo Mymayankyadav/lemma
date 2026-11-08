@@ -122,13 +122,6 @@ Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
 
-## N105.2 Atlas concept mutations in demo/live adapters and v6 controls
-Stage: Build · Status: open · Needs: N105.1, N86 · Assigned: —
-Done = Finish N105 with matching LemmaApi create/update/reparent/link/unlink/merge and preview methods (demo/live), error mapping, and v6 Atlas list controls. The live adapter sends the N105.1 owner-authenticated command and preserves exactly-once operation IDs; the demo adapter respects version, cycle and merge impact parity. Flag-off remains unchanged.
-Tests: tests/unit/atlas-v6/**
-Scope: src/data/api.ts, the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/unit/atlas-v6/**, docs/current/N105.2.md.
-Not: schema, other screens, unreviewed direct DML.
-
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
 Done = a PGlite test loads a representative pre-v6 account fixture (paths, sources, cards with history, sessions, proposals), applies all migrations, and checks no lost rows, links or schedules, historical estimates still labelled, new records creatable, and export/undo across old and new records.
