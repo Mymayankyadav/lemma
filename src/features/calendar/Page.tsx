@@ -2,7 +2,7 @@ import BlockSheetActions from './block-sheet/BlockSheetActions';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { isFlagOn } from '../../flags';
-import { useSettings } from '../../data/hooks';
+import { getApi } from '../../data';
 import { getStudyApi } from '../../data/study';
 import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '../../data/study/contract';
 import { Segmented } from '../../ui/Segmented';
@@ -50,7 +50,23 @@ function BlockSummary({ block, zone, clock24h }: { block: CalendarBlockRecord; z
 }
 
 function V6Calendar() {
-  const {data:ownerSettings}=useSettings();
+  const [ownerSettings,setOwnerSettings]=useState<{weekStart?:number;clock24h?:boolean}|null>(null);
+  const [preferencesError,setPreferencesError]=useState(false);
+  // Calendar is also mounted by standalone N27/N74 tests without React Query.
+  // Load owner settings through the same mode-aware API used by Settings.
+  useEffect(()=>{
+    let active=true;
+    const load=()=>{
+      void getApi().getSettings().then(settings=>{
+        if(!active)return;
+        setOwnerSettings({weekStart:settings.weekStart,clock24h:settings.clock24h});
+        setPreferencesError(false);
+      }).catch(()=>{if(active)setPreferencesError(true)});
+    };
+    load();
+    window.addEventListener('focus',load);
+    return()=>{active=false;window.removeEventListener('focus',load)};
+  },[]);
   const firstDay=ownerSettings?.weekStart??1;
   const clock24h=ownerSettings?.clock24h??true;
   const [params, setParams] = useSearchParams();
