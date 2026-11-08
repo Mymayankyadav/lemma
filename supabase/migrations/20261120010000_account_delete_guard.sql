@@ -144,3 +144,51 @@ revoke all on function public.lemma_purge_account_rows(uuid)
  from public,anon,authenticated;
 grant execute on function public.lemma_purge_account_rows(uuid)
  to service_role;
+
+
+-- Close the other-tab race: Storage RLS is not enough. A live authenticated
+-- JWT must be unable to insert, update, or delete ANY owner-keyed public row
+-- once a service role has registered the deletion marker. An in-flight app
+-- write after the owner purge could otherwise create fresh action_changes and
+-- block Auth hard deletion. Service-role cleanup is intentionally unaffected.
+create function public.lemma_block_account_deletion_writes()
+returns trigger language plpgsql security definer set search_path='' as $db_write_guard$
+declare
+ target_owner uuid;
+begin
+ if pg_catalog.current_setting('role',true)='authenticated' then
+  target_owner:=case when TG_OP='DELETE' then old.user_id else new.user_id end;
+  if exists(select 1 from public.account_deletion_requests d
+    where d.user_id=target_owner) then
+   raise exception 'Account deletion is in progress'
+    using errcode='42501';
+  end if;
+ end if;
+ if TG_OP='DELETE' then return old; end if;
+ return new;
+end
+$db_write_guard$;
+revoke all on function public.lemma_block_account_deletion_writes()
+ from public,anon,authenticated,service_role;
+
+-- Every current owner-keyed base table gets a guard, including the private
+-- action journal. Future owner-keyed tables must include this guard if added
+-- before N103 is deployed; no RLS or existing trigger is weakened.
+do $owner_write_guards$
+declare table_info record;
+begin
+ for table_info in
+  select n.nspname as schema_name,c.relname as table_name
+  from pg_catalog.pg_class c
+  join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+  join pg_catalog.pg_attribute a on a.attrelid=c.oid
+  where n.nspname='public' and c.relkind='r'
+   and a.attname='user_id' and a.attnum>0 and not a.attisdropped
+   and c.relname<>'account_deletion_requests'
+ loop
+  execute pg_catalog.format(
+   'create trigger lemma_account_delete_write_guard before insert or update or delete on %I.%I for each row execute function public.lemma_block_account_deletion_writes()',
+   table_info.schema_name,table_info.table_name);
+ end loop;
+end
+$owner_write_guards$;
