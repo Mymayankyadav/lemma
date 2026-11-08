@@ -5,93 +5,100 @@
     "id": {
       "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "endpoint": {
       "classification": "credential",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "Excluded from MCP projections and command receipts (transport credentials)",
       "exportPolicy": "redact transport credential and endpoint (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "p256dh": {
       "classification": "credential",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "Excluded from MCP projections and command receipts (transport credentials)",
       "exportPolicy": "redact transport credential and endpoint (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "auth": {
       "classification": "credential",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "Excluded from MCP projections and command receipts (transport credentials)",
       "exportPolicy": "redact transport credential and endpoint (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "label": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP get(push_devices) and registered notify_command rename/disable/restore",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "platform": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "last_seen_at": {
       "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "last_ok_at": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "failures": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP owner-filtered get(push_devices): safe metadata only",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "disabled_at": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP get(push_devices) and registered notify_command rename/disable/restore",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     },
     "disabled_reason": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N89 push devices (planned)",
+      "mcpPath": "MCP get(push_devices) and registered notify_command rename/disable/restore",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "public.push_devices.version (N89 command/browser/worker update)",
+      "mcpPath": "MCP get(push_devices), notify_command expectedVersion",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge on owner cascade"
     }
   }
 }
