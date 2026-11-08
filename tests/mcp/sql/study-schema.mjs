@@ -20,9 +20,17 @@ try {
  await q('insert into auth.users(id) values ($1),($2)',[a,b]);
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values ($1,$2,'Math','M','amber')",[subject,a]);
  await as(a);
- const entry=(await q("insert into public.study_entries(subject_id,source,status,intent) values ($1,'timer','running','Proof') returning id",[subject]))[0].id;
+ // N52 owner decision (#1205): the browser cannot insert an active timer at all,
+ // because it would skip the versioned study_command snapshot and receipt.
+ await assert.rejects(q("insert into public.study_entries(subject_id,source,status,intent) values ($1,'timer','running','Proof')",[subject]),/audited study command/);
+ await assert.rejects(q("insert into public.study_entries(source,status) values ('timer','paused')"),/audited study command/);
+ // Seed the active row from the trusted context (what study_command does as
+ // SECURITY DEFINER) so the rest of this owner-RLS and uniqueness check stays.
+ await db.exec('reset role');
+ const entry=(await q("insert into public.study_entries(user_id,subject_id,source,status,intent) values ($1,$2,'timer','running','Proof') returning id",[a,subject]))[0].id;
+ await assert.rejects(q("insert into public.study_entries(user_id,source,status) values ($1,'timer','paused')",[a]),/unique constraint/);
+ await as(a);
  assert.equal((await q('select count(*)::int n from public.study_entries'))[0].n,1);
- await assert.rejects(q("insert into public.study_entries(source,status) values ('timer','paused')"),/unique constraint/);
  const interval=(await q("insert into public.study_intervals(entry_id,kind,started_at,ended_at) values ($1,'focus',now()-interval '10 minutes',now()) returning id",[entry]))[0].id;
  await assert.rejects(q("insert into public.study_intervals(entry_id,kind,started_at,ended_at) values ($1,'focus',now(),now()-interval '1 minute')",[entry]),/check constraint/);
  await q("update public.study_intervals set kind='break' where id=$1",[interval]);

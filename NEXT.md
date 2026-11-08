@@ -27,15 +27,6 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
-Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
-Owner decision (#1205): an authenticated browser can no longer INSERT a `running` or `paused` study entry at all (drafts and manual saved entries stay insertable with default timer fields); a timer starts only through `study_command`, as the app already does. No exception keyed to fixture values or session settings.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged, except that `tests/mcp/sql/study-schema.mjs` (N10) seeds its running entry from the trusted context and now asserts the browser refusal (the only authorized edit to it)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, tests/mcp/sql/study-schema.mjs (the seeding change above only), docs/v6/capability-registry/study_entries.json, CURRENT.md.
-Not: app or MCP code, other functions.
-
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
