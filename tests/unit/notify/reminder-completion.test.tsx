@@ -38,6 +38,9 @@ async function render(){
  </MemoryRouter>));
 }
 beforeEach(()=>{
+ // S0 #1224: the server reminder preview fixture is pinned to Nov 2026.
+ // Mock only Date.now; fake timers would stall React/vi.waitFor polling.
+ vi.spyOn(Date,'now').mockReturnValue(now);
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
  fake.enabled=true;fake.prefs={enabled:true,mode:'daily'};fake.settings.notify=fake.prefs;
  fake.preview.mockReset().mockResolvedValue([later,valid]);
@@ -46,13 +49,22 @@ beforeEach(()=>{
   filter:{decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false}});
  host=document.createElement('div');document.body.append(host);root=createRoot(host);
 });
-afterEach(async()=>{await act(async()=>root.unmount());host.remove()});
+afterEach(async()=>{
+ await act(async()=>root.unmount());
+ host.remove();
+ vi.restoreAllMocks();
+});
 describe('N6.3 next reminder offer',()=>{
  it('uses the owner-projected next future time, never a fabricated local study clock',()=>{
   expect(nextReminderTime(fake.prefs,[later,valid],now)).toBe(valid.at);
   expect(nextReminderTime(fake.prefs,[{...valid,held:true},later],now)).toBe(later.at);
   expect(nextReminderTime(fake.prefs,[{...valid,at:'bad'}],now)).toBeNull();
   expect(nextReminderTime(fake.prefs,[{...valid,at:'2026-11-06T08:00:00Z'}],now)).toBeNull();
+ });
+ it('uses a fixed test time for the default owner reminder projection',()=>{
+  // A default clock read must not depend on CI's wall date (Nov 8 or later).
+  expect(Date.now()).toBe(now);
+  expect(nextReminderTime(fake.prefs,[later,valid])).toBe(valid.at);
  });
  it('suppresses the offer for disabled, missing or unavailable scheduling data',()=>{
   expect(nextReminderTime({enabled:false,mode:'daily'},[valid],now)).toBeNull();
