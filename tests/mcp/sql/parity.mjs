@@ -505,8 +505,10 @@ try{
  })),'day_plans','commit');
  assert.equal(committedPlan.plan.status,'committed');
  assert.equal(committedPlan.plan.version,4);
+ await role(null);
  assert.equal((await mcpPage('day_plans',planId)).items[0].version,4,
   'day_plans: MCP GET cannot see commit');
+ await role('service_role');
  const closedPlan=status(await mcp(command('day_plans','close',{
   target:{id:planId},expectedVersion:4,patch:{ritual:{reviewed:true}}
  })),'day_plans','close');
