@@ -377,7 +377,10 @@ end
 $day_plans$;
 
 
-update public.lemma_command_resources
- set "schema"=pg_catalog.jsonb_set("schema",'{fields}',
-   ("schema"->'fields')||'["carry_over"]'::jsonb)
- where resource='day_plans' and not ("schema"->'fields' ? 'carry_over');
+-- Mirror the N107 registry upsert (one metadata row, no owner data write).
+insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
+values('day_plans','day_plans_command',true,
+ '{"operations":["create","update","preview","commit","close","reopen","commit_placements"],
+   "fields":["plan_date","time_zone","intention","capacity_minutes","availability",
+     "tomorrow_first_task_id","ritual","items","carry_over"]}'::jsonb)
+on conflict(resource) do update set "schema"=excluded."schema";
