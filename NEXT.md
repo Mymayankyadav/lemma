@@ -173,14 +173,6 @@ Tests: `tests/mcp/sql/aliases-revisions.mjs` (rename keeps old links resolvable,
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisions.mjs, docs/v6/capability-registry/record_aliases.json, docs/v6/capability-registry/source_revisions.json, docs/v6/capability-registry/source_page_revisions.json, CURRENT.md.
 Not: app or MCP code.
 
-## N37 MCP: generic commands and resource discovery
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the `study` tool sends any registered resource's envelope to `mcp_command` (study entries, calendar blocks and tasks keep their current behaviour), `get` and `search` read registered resources in bounded pages, and a `resources` capability (inside an existing tool, so `tools/list` stays under 15,000 characters) lists registered resources with their field/operation schemas from `lemma_command_resources`, so new resources need no MCP code change.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/**` and `tests/mcp/sql/mcp-generic.mjs` (a resource registered only in the test is discoverable, readable and writable; existing study/task MCP tests unchanged)
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/mcp-generic.mjs, CURRENT.md.
-Not: migrations, existing tools' inputs or outputs.
-
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
 Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
