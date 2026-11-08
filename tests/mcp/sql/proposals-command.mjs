@@ -52,7 +52,7 @@ try{
   [other,'b'.repeat(48)]);
  const subj='33333333-3333-4333-8333-333333333333';
  const project='44444444-4444-4444-8444-444444444444';
- await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','sky')",
+ await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','amber')",
   [subj,owner]);
  await q("insert into public.projects(id,user_id,slug,subject_id,title,goal) "+
   "values($1,$2,'math',$3,'Math','Practice')",[project,owner,subj]);
