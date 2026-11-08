@@ -163,15 +163,31 @@ export async function commitPlannerSelection(
   // A lost commit acknowledgement could mean that the server DID commit.
   // Re-read before attempting to invalidate a preview or delete its blocks.
   if(staged){
-   const now=await apis.plans.getPlan(staged.id).catch(()=>null);
+   // A failed readback is NOT proof that a network-uncertain commit failed.
+   // Conversely a still-previewed row must first be invalidated to release
+   // its child block FKs; deleting those blocks first would be dangerous.
+   let now:DayPlanRecord|null=null;
+   try{now=await apis.plans.getPlan(staged.id);}
+   catch{/* Unknown server state: never delete potentially committed blocks. */}
    if(now?.status==='committed'){
     if(stagingDay&&!committedDays.includes(stagingDay))
      committedDays.push(stagingDay);
-    // Never remove potentially committed blocks after uncertainty.
     pendingBlocks=[];
-   }else{
-    try{await apis.plans.updatePlan(staged.id,staged.version,{});}
-    catch{cleanupFailed.push('Plan '+staged.id+' preview not safely reset');}
+   }else if(!now){
+    cleanupFailed.push(...pendingBlocks.map(b=>b.id));
+    pendingBlocks=[];
+   }else if(now.status==='previewed'){
+    try{
+     await apis.plans.updatePlan(now.id,now.version,{});
+    }catch{
+     cleanupFailed.push(...pendingBlocks.map(b=>b.id));
+     pendingBlocks=[];
+    }
+   }else if(now.status==='closed'){
+    // A different owner tab may have closed a successfully committed plan.
+    if(stagingDay&&!committedDays.includes(stagingDay))
+     committedDays.push(stagingDay);
+    pendingBlocks=[];
    }
   }
   // Only touch blocks written after the last *confirmed* day-plan commit.

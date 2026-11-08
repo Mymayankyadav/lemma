@@ -263,3 +263,46 @@ describe('N68 owner commit preflight and partial-failure containment',()=>{
    .toThrow('Invalid moved planner interval');
  });
 });
+
+
+describe('N68 unknown commit receipt safety',()=>{
+ it('preserves possibly committed blocks when both commit acknowledgement and readback fail',async()=>{
+  const f=commitFixture();
+  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
+  f.snapshot.selection.unplaced=[];
+  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(
+   new Error('Network response lost after server commit'));
+  vi.mocked(f.apis.plans.getPlan).mockRejectedValueOnce(
+   new Error('Cannot verify committed plan'));
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
+   name:'PlannerCommitError',orphanBlockIds:['block-1'],committedDays:[],
+  } satisfies Partial<PlannerCommitError>);
+  expect(f.deleted).toEqual([]);
+  expect(f.cleared).toEqual([]);
+ });
+ it('recognizes a committed server plan after lost acknowledgement without deleting its blocks',async()=>{
+  const f=commitFixture();
+  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
+  f.snapshot.selection.unplaced=[];
+  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(Error('Lost acknowledgement'));
+  vi.mocked(f.apis.plans.getPlan).mockResolvedValueOnce({
+   id:'plan-2026-11-09',status:'committed',version:3,
+  } as never);
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
+   committedDays:['2026-11-09'],orphanBlockIds:[],
+  } satisfies Partial<PlannerCommitError>);
+  expect(f.deleted).toEqual([]);
+  expect(f.cleared).toEqual([]);
+ });
+ it('does not delete child blocks if the server refuses to invalidate its preview',async()=>{
+  const f=commitFixture();
+  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
+  f.snapshot.selection.unplaced=[];
+  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(Error('Stale source'));
+  vi.mocked(f.apis.plans.updatePlan).mockRejectedValueOnce(Error('Preview changed'));
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
+   orphanBlockIds:['block-1'],
+  } satisfies Partial<PlannerCommitError>);
+  expect(f.deleted).toEqual([]);
+ });
+});
