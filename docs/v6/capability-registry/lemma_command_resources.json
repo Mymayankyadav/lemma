@@ -253,6 +253,180 @@
           "related_id"
         ]
       }
+    },
+    {
+      "resource": "card_schedule",
+      "command_fn": "card_schedule_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "reschedule",
+          "reset"
+        ],
+        "fields": [
+          "due"
+        ]
+      }
+    },
+    {
+      "resource": "concepts",
+      "command_fn": "concepts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "reparent",
+          "link",
+          "unlink",
+          "preview_merge",
+          "merge"
+        ],
+        "fields": [
+          "subject_id",
+          "name",
+          "blurb",
+          "parent_id",
+          "slug",
+          "other_id",
+          "kind",
+          "keep_id",
+          "keep_version"
+        ]
+      }
+    },
+    {
+      "resource": "deadlines",
+      "command_fn": "deadlines_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "complete",
+          "reopen",
+          "cancel",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "title",
+          "kind",
+          "due_kind",
+          "due_date",
+          "due_at",
+          "subject_id",
+          "project_id",
+          "checkpoint_id",
+          "remaining_minutes",
+          "estimate_source"
+        ]
+      }
+    },
+    {
+      "resource": "overlap_acknowledgements",
+      "command_fn": "overlap_acknowledgements_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "delete"
+        ],
+        "fields": [
+          "participants",
+          "starts_at",
+          "ends_at",
+          "reason",
+          "disposition",
+          "attributed_to"
+        ]
+      }
+    },
+    {
+      "resource": "proposal_drafts",
+      "command_fn": "proposal_drafts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "save",
+          "submit",
+          "discard"
+        ],
+        "fields": [
+          "proposal_id",
+          "target_id",
+          "base_versions",
+          "payload"
+        ]
+      }
+    },
+    {
+      "resource": "review_corrections",
+      "command_fn": "correct_review",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "correct",
+          "void"
+        ],
+        "fields": [
+          "reason",
+          "rating",
+          "reviewedAt",
+          "confidence",
+          "durationMs",
+          "replacementState",
+          "schedulerParams"
+        ]
+      }
+    },
+    {
+      "resource": "review_runs",
+      "command_fn": "review_runs_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "start",
+          "pause",
+          "resume",
+          "advance",
+          "abandon",
+          "complete"
+        ],
+        "fields": [
+          "filters",
+          "selected_deck_ids",
+          "card_budget",
+          "minute_budget",
+          "scheduler_version",
+          "settings_version",
+          "kind",
+          "item_id",
+          "review_id",
+          "reason"
+        ]
+      }
+    },
+    {
+      "resource": "session_event_corrections",
+      "command_fn": "correct_session_event",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "correct",
+          "void"
+        ],
+        "fields": [
+          "kind",
+          "body",
+          "outcome",
+          "hintLevel",
+          "occurredAt",
+          "reason"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

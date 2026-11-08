@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../flags';
+import PlanProposalV6 from './v6/PlanProposalV6';
 import {MathPreview} from '../../ui/MathPreview';
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
@@ -279,7 +281,7 @@ export function CheckpointDrawer({
 const StablePlanMap=memo(PlanMap);
 const StableIdeaGraph=memo(IdeaGraph);
 
-export default function Page() {
+function LegacyPlanProposal() {
   const { id = "" } = useParams(),
     navigate = useNavigate(),
     query = useProposal(id),
@@ -548,3 +550,6 @@ export default function Page() {
     </Screen>
   );
 }
+
+/** Flag-off route remains the unchanged legacy approval workflow. */
+export default function Page(){return isFlagOn('v6Shell')?<PlanProposalV6/>:<LegacyPlanProposal/>;}

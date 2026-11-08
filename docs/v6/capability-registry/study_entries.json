@@ -47,7 +47,7 @@
     "calendar_block_id": {
       "classification": "owner-editable",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "supabase/functions/mcp/tools/study.ts",
+      "mcpPath": "none yet: MCP study start does not accept calendar_block_id; the app links a draft through owner RLS before start (N106). MCP write path is N109.",
       "exportPolicy": "owner-scoped export (N95)",
       "deletionPolicy": "owner account purge (N103); domain change/undo via N36.2",
       "description": "N106: optional owner-composite link to a calendar block on start, NULL for earlier entries; the database rejects foreign-owner references"
@@ -128,6 +128,94 @@
       "mcpPath": "N51 study_command v2",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
+    },
+    "mode": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Server-captured pomodoro, flowtime or open mode at first start, from owner preset or settings."
+    },
+    "preset_id": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 study_command v3 (pending)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Optional owner-composite FK to preset; snapshot immutably at start"
+    },
+    "config": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Immutable server-captured timer settings; mode and timing do not follow subsequent preset/settings edits."
+    },
+    "phase": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Audited next_phase operation alternates focus with break or long_break."
+    },
+    "cycle": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Monotonic Pomodoro/Flowtime phase counter, incremented on the return to focus."
+    },
+    "phase_ends_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Server-managed deadline for a timed focus or break phase, null for unbounded flowtime/open focus."
+    },
+    "energy": {
+      "classification": "owner-editable",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Optional low/steady/high capture on an audited next_phase transition."
+    },
+    "lease_device": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Opaque device token held under the versioned owner-bound timer lease."
+    },
+    "lease_version": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Monotonic lease generation; stale devices cannot write through study_command."
+    },
+    "lease_expires_at": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Server-clock lease expiry, advanced by explicit take_lease/renewal."
+    },
+    "excluded_intervals": {
+      "classification": "command-managed",
+      "appPath": "N66 study timer modes (planned)",
+      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "journalled owner undo and N103 purge (planned)",
+      "description": "Reasoned disjoint focus spans excluded from billable focus; stored as from/to/reason JSON and reversible through undo_action."
     }
   }
 }
