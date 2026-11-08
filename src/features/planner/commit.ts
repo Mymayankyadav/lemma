@@ -107,6 +107,7 @@ export async function commitPlannerSelection(
  let pendingBlocks:CalendarBlockRecord[]=[];
  let staged:DayPlanRecord|null=null;
  let stagingDay:string|null=null;
+ let uncertainBlockCreation=false;
  try{
   for(const date of chosenDays){
    const placements=placementsByDay.get(date)??[];
@@ -116,11 +117,14 @@ export async function commitPlannerSelection(
    for(const place of placements){
     const title=taskMap.get(place.taskId)?.title;
     if(!title)throw new Error('Missing task title for '+place.taskId);
+    // Transport failure before a receipt does not prove the server failed.
+    uncertainBlockCreation=true;
     const receipt=await apis.study.createCalendarBlock({
      kind:'study',title,startsAt:place.start,endsAt:place.end,
      timeZone:zone,taskId:place.taskId,
     });
     pendingBlocks.push(receipt.record);
+    uncertainBlockCreation=false;
    }
    let plan=plansByDate.get(date);
    if(!plan)plan=(await apis.plans.createPlan({
@@ -197,6 +201,8 @@ export async function commitPlannerSelection(
   }
   const message=error instanceof Error?error.message:'Planner commit failed';
   throw new PlannerCommitError(message+
+   (uncertainBlockCreation?
+    '. Block creation may have succeeded without a receipt; inspect Calendar before retrying.':'')+
    (committedDays.length?
     '. Earlier committed days: '+committedDays.join(', ')+
      '; inspect Calendar before retrying.':'')+

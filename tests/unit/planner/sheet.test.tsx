@@ -312,6 +312,17 @@ describe('N68 unknown commit receipt safety',()=>{
   expect(f.deleted).toEqual([]);
   expect(f.cleared).toEqual([]);
  });
+ it('warns about a possibly created block when its acknowledgement is lost',async()=>{
+  const f=commitFixture();
+  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
+  f.snapshot.selection.unplaced=[];
+  vi.mocked(f.apis.study.createCalendarBlock).mockRejectedValueOnce(
+   Error('Network response lost during block creation'));
+  await expect(commitPlannerSelection(f.snapshot,f.apis))
+   .rejects.toThrow(/may have succeeded without a receipt; inspect Calendar before retrying/);
+  expect(f.deleted).toEqual([]);
+  expect(f.apis.plans.commitPlan).not.toHaveBeenCalled();
+ });
  it('does not delete child blocks if the server refuses to invalidate its preview',async()=>{
   const f=commitFixture();
   f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
