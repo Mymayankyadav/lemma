@@ -51,7 +51,7 @@ export default function V6Header({pathname}:{pathname:string}){
     </summary>
     <nav aria-label="Add to notebook">
      <button type="button" onClick={()=>{if(addMenu.current)addMenu.current.open=false;setTaskOpen(true);}}>Task</button>
-     <Link to="/projects/new">Learning path</Link>
+     <Link to="/projects/new">New path</Link>
      <Link to="/cards?new=1">Card</Link>
     </nav>
    </details>

@@ -1,4 +1,6 @@
 import {test,expect,type Page} from '@playwright/test';
+import {copyFileSync,mkdirSync} from 'node:fs';
+import {dirname,join} from 'node:path';
 
 // N101 audits the Vite build in the same checkout, not the standalone mockup.
 const url=(path:string,stress=false)=>
@@ -102,7 +104,7 @@ test('N110 mockup shell: branded header, icon actions, persistent labelled tabs 
  const header=page.locator('[data-v6-header]');
  await expect(header.getByRole('heading',{name:'Lemma'})).toBeVisible();
  await expect(header.getByRole('link',{name:/^Inbox/})).toBeVisible();
- await header.getByLabel('Add to notebook').click();
+ await header.locator('summary[aria-label="Add to notebook"]').click();
  await expect(page.getByRole('navigation',{name:'Add to notebook'}).getByRole('button',{name:'Task'})).toBeVisible();
  await header.getByLabel('Notebook menu').click();
  await expect(page.getByRole('navigation',{name:'Notebook destinations'}).getByRole('link',{name:'Settings'})).toBeVisible();
@@ -153,8 +155,16 @@ const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
 // Viewport captures (what a 390×844 phone shows): full-page captures drew the
 // fixed bottom navigation over the middle of long screens.
 async function releaseScreenshot(page:Page,file:string){
- await page.screenshot({path:captureDir+'/'+file,
-  animations:'disabled',scale:'css'});
+ const capture=captureDir+'/'+file;
+ await page.screenshot({path:capture,animations:'disabled',scale:'css'});
+ // Make the real-app captures available from CI without modifying protected
+ // workflows. CI already uploads junit/ as an artifact for affected E2E tests.
+ // The checked-in PNGs are updated only after independent visual review.
+ if(process.env.CI_JUNIT_DIR){
+  const artifact=join(process.env.CI_JUNIT_DIR,'n110-release-captures',file);
+  mkdirSync(dirname(artifact),{recursive:true});
+  copyFileSync(capture,artifact);
+ }
 }
 
 test('N101 screenshot capture of the real app, both palettes at 390x844',async({page})=>{

@@ -38,6 +38,10 @@ describe('N110 reviewed mockup shell port',()=>{
   expect(header).toContain('aria-label="Page actions"');
   expect(header).toContain('aria-label="Add to notebook"');
   expect(header).toContain('aria-label="Notebook menu"');
+  // The existing task-sheet contract navigates to the New path entry.
+  expect(header).toContain('<Link to="/projects/new">New path</Link>');
+  expect(mockup).toContain('label:has(input[type="date"])');
+  expect(mockup).toContain('.grid > svg[role="img"]');
   expect(header).toContain('onClick={()=>{if(addMenu.current)addMenu.current.open=false;setTaskOpen(true);}');
   expect(mockup).toContain(':root[data-v6] [data-v6-focus-accessory]');
   expect(focus).toContain('aria-label="Focus accessory"');

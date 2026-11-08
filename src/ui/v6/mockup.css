@@ -168,3 +168,18 @@
 :root[data-v6] [data-v6-focus-accessory] button {
   min-height:44px; flex-shrink:0; border-radius:8px;
 }
+
+/* N110 responsive shared controls: browser-native dates need a shrinkable
+   flex label at 200% text; otherwise their intrinsic date-picker width
+   expands the Time Log document beyond a narrow viewport. */
+:root[data-v6] #main-content label:has(input[type="date"]) {
+  min-width:0; max-width:100%;
+}
+:root[data-v6] #main-content label:has(input[type="date"]) > input[type="date"] {
+  display:block; min-width:0; max-width:100%; width:100%;
+}
+/* Shared illustration SVGs with numeric width/height attributes must be
+   allowed to shrink inside three-column grids (including the component kit). */
+:root[data-v6] #main-content .grid > svg[role="img"] {
+  display:block; width:100%; height:auto; min-width:0; max-width:100%;
+}

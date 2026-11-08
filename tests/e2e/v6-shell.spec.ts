@@ -20,7 +20,7 @@ async function expectNavigation(page:Page){
  const actions=page.getByRole('navigation',{name:'Page actions'});
  const headerActions=[
   {label:'Inbox',target:actions.getByRole('link',{name:/^Inbox/})},
-  {label:'Add',target:actions.getByLabel('Add to notebook')},
+  {label:'Add',target:actions.locator('summary[aria-label="Add to notebook"]')},
   {label:'Menu',target:actions.getByLabel('Notebook menu')},
  ];
  for(const {label,target} of headerActions){
