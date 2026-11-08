@@ -79,6 +79,25 @@ export default function PlanProposalV6(){
  const comparisons=useMemo(()=>p&&project.data&&!project.isPending&&!project.isError?
   proposalComparison(p,project.data.checkpoints??[]):null,
   [p,project.data,project.isPending,project.isError]);
+ async function create(){
+  if(draft||!editor||pending||status!=='ready'||!p)return;
+  const createFor=id;
+  setPending(true);setProblem('');setConflict(null);
+  try{
+   const payload=readPayload(text),api=getProposalDraftApi();
+   const source=await api.getSource(id);
+   if(routeRef.current!==createFor)return;
+   if(!source||source.proposalId!==id)
+    throw new ProposalDraftError('not_found','No editable owner proposal target is available');
+   const created=await api.createDraft({...source,payload});
+   if(routeRef.current!==createFor)return;
+   setDraft(created.record);setText(payloadText(created.record.payload));setEditor(false);
+  }catch(e){
+   if(routeRef.current!==createFor)return;
+   if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
+   setProblem(e instanceof Error?e.message:'Could not create draft');
+  }finally{if(routeRef.current===createFor)setPending(false)}
+ }
  async function save(){
   if(!draft||pending||!['draft','saved'].includes(draft.status))return;
   const saveFor=id;
@@ -169,10 +188,20 @@ export default function PlanProposalV6(){
     <h2 className="text-body font-semibold">Editable proposal draft</h2>
     {status==='loading'&&<p role="status">Loading drafts…</p>}
     {status==='error'&&<button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Retry drafts</button>}
-    {status==='ready'&&!draft&&<p className="text-label text-ink-2">
-     No saved draft exists. Creating one needs authenticated proposal and target versions,
-     which this proposal read view does not expose. No version or ownership is guessed.
-    </p>}
+    {status==='ready'&&!draft&&<>
+     <p className="text-label text-ink-2">No saved draft exists. The owner proposal and target versions
+      will be checked before creating one. No version or ownership is guessed.</p>
+     {editor?<>
+      <label className="text-label">Full draft payload (JSON)
+       <textarea aria-label="Full draft payload" className="mt-1 min-h-44 w-full rounded-ctl border border-edge bg-well p-2 font-mono text-caption"
+        value={text} onChange={e=>setText(e.target.value)}/>
+      </label>
+      <div className="flex flex-wrap gap-2">
+       <button type="button" className={control} disabled={pending} onClick={()=>{void create()}}>Create draft</button>
+       <button type="button" className={control} disabled={pending} onClick={()=>setEditor(false)}>Cancel edit</button>
+      </div>
+     </>:<button type="button" className={control} disabled={pending} onClick={()=>setEditor(true)}>Start draft</button>}
+    </>}
     {draft&&<>
      <p className="text-caption text-ink-2">Draft {draft.status} · version {draft.draftVersion}
       · base proposal {draft.baseVersions.proposal} / target {draft.baseVersions.target}</p>

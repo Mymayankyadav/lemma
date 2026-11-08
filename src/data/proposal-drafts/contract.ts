@@ -14,6 +14,8 @@ export interface NewProposalDraft {
  proposalId:string;targetId:string;baseVersions:ProposalBaseVersions;
  payload:ProposalEditPayload;
 }
+/** Owner-RLS read of the real proposal and its editable target, never a UI guess. */
+export type ProposalDraftSource=Omit<NewProposalDraft,'payload'>;
 export interface ProposalDraftQuery {
  status?:ProposalDraftStatus[];
  proposalId?:string;targetId?:string;
@@ -33,6 +35,7 @@ export interface ProposalDraftConflict {
 }
 export interface ProposalDraftApi {
  readonly mode:'demo'|'live';
+ getSource(proposalId:string):Promise<ProposalDraftSource|null>;
  listDrafts(query?:ProposalDraftQuery):Promise<ProposalDraftPage>;
  getDraft(id:string):Promise<ProposalDraftRecord|null>;
  createDraft(input:NewProposalDraft):Promise<StudyReceipt<ProposalDraftRecord>>;

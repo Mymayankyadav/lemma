@@ -58,7 +58,9 @@ beforeEach(()=>{
   record:{...existing,status:'submitted',draftVersion:version+1},actionNo:32,
  }));
  adapter={mode:'demo',listDrafts:vi.fn(async()=>({items:[existing],total:1,nextCursor:null})),
-  getDraft:vi.fn(async()=>existing),createDraft:vi.fn(),saveDraft:saved,submitDraft:submitted,
+  getDraft:vi.fn(async()=>existing),getSource:vi.fn(async()=>({
+   proposalId:proposal.id,targetId:existing.targetId,
+   baseVersions:{proposal:7,target:12}})),createDraft:vi.fn(),saveDraft:saved,submitDraft:submitted,
   discardDraft:vi.fn()};
  mocks.draftApi.mockReturnValue(adapter);
 });
@@ -152,6 +154,26 @@ describe('N85 v6 proposal draft editor',()=>{
   expect(host.textContent).toContain('No version or ownership is guessed');
   expect(adapter.createDraft).not.toHaveBeenCalled();
   expect(host.querySelector('[aria-label="Before targets"]')).not.toBeNull();
+ });
+ it('creates a first draft only from the authoritative owner source and keeps approval separate',async()=>{
+  vi.mocked(adapter.listDrafts).mockResolvedValueOnce({items:[],total:0,nextCursor:null});
+  vi.mocked(adapter.createDraft).mockResolvedValueOnce({record:{...existing,status:'draft',draftVersion:1},actionNo:44});
+  await render();await vi.waitFor(()=>expect(host.textContent).toContain('No saved draft exists'));
+  await click('Start draft');await click('Create draft');
+  await vi.waitFor(()=>expect(adapter.createDraft).toHaveBeenCalledTimes(1));
+  expect(adapter.getSource).toHaveBeenCalledWith(proposal.id);
+  expect(adapter.createDraft).toHaveBeenCalledWith({proposalId:proposal.id,
+   targetId:existing.targetId,baseVersions:{proposal:7,target:12},
+   payload:proposal.planChange});
+  expect(mocks.approve.mock.results[0].value.mutateAsync).not.toHaveBeenCalled();
+ });
+ it('refuses first-draft creation when the owner target is absent',async()=>{
+  vi.mocked(adapter.listDrafts).mockResolvedValueOnce({items:[],total:0,nextCursor:null});
+  vi.mocked(adapter.getSource).mockResolvedValueOnce(null);
+  await render();await vi.waitFor(()=>expect(host.textContent).toContain('No saved draft exists'));
+  await click('Start draft');await click('Create draft');
+  await vi.waitFor(()=>expect(host.textContent).toContain('No editable owner proposal target'));
+  expect(adapter.createDraft).not.toHaveBeenCalled();
  });
  it('makes a submitted draft read-only without automatically approving the proposal',async()=>{
   await render();await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
