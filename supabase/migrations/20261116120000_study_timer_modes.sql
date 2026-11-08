@@ -369,20 +369,20 @@ grant execute on function public.lemma_study_timer_command(jsonb,uuid,uuid)
 -- The owner-checked study_command compatibility dispatcher runs as SECURITY
 -- DEFINER; its nested writes and the existing SECURITY DEFINER undo_action
 -- execute with the function owner while untrusted direct DML does not.
--- N10's existing owner-RLS test requires legacy direct active timer INSERT
--- with default fields, alongside draft and manual saved-entry INSERT. Preserve
--- that pre-N52 compatibility exactly; forbid forged captured modes, phases,
--- configuration, exclusions and leases without an audited command. Starting a
--- configured/leased timer still requires study_command.
+-- Owner decision (#1205): an authenticated browser may no longer INSERT a
+-- running or paused timer at all. Such a row has no versioned start snapshot,
+-- captured configuration or receipt, so it bypasses study_command. Timers are
+-- created as drafts and started through the audited study command (the app
+-- already does this). The earlier N10 fixture that seeded a running row through
+-- owner RLS now seeds it from the trusted context and asserts the refusal.
+-- Draft and manual saved entries stay insertable with default timer fields.
 -- Spoofable lemma.tool/lemma.source GUCs deliberately do not affect this rule.
 create function public.lemma_study_timer_insert_guard() returns trigger
 language plpgsql security invoker set search_path='' as $insert_guard$
 begin
  if current_user='authenticated' and (
-    -- Preset is a draft selection, never an active/saved row without a
-    -- versioned start snapshot. Legacy bare running inserts remain accepted
-    -- by N10 and cannot be changed here without updating that earlier test.
-    (new.status <> 'draft' and new.preset_id is not null)
+    new.status in ('running','paused')
+    or (new.status <> 'draft' and new.preset_id is not null)
     or new.mode is distinct from 'open'
     or new.config is distinct from '{}'::jsonb
     or new.phase is distinct from 'focus'

@@ -52,6 +52,13 @@ try{
    "insert into public.study_entries(user_id,source,status,config) values($1,'timer','draft','{\"mode\":\"pomodoro\"}'::jsonb)",
    "insert into public.study_entries(user_id,source,status,lease_version) values($1,'manual','saved',99)",
  ])await assert.rejects(q(statement,[owner]),/Protected timer INSERT requires an audited study command/);
+ // Owner decision #1205: a bare active insert (default fields, no preset) has no
+ // start snapshot or receipt either, so the browser cannot create one.
+ for(const status of ['running','paused'])
+  await assert.rejects(q(
+   "insert into public.study_entries(user_id,source,status) values($1,'timer',$2)",
+   [owner,status]),/Protected timer INSERT requires an audited study command/,
+   'bare '+status+' timer insert must be refused');
  // A direct running insert referencing a preset must never appear to have
  // captured that preset while still holding default open-mode config.
  await assert.rejects(q(
