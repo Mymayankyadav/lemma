@@ -15,6 +15,8 @@ import type {
 import { LemmaError } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
 import { mergeNotifyPrefs } from "../notify";
+import {createDemoConcept,updateDemoConcept,reparentDemoConcept,editDemoLink,
+ previewDemoConceptMerge,mergeDemoConcept,demoConceptVersion} from './atlas-command';
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
@@ -953,8 +955,68 @@ export class DemoAdapter implements LemmaApi {
         "preferredChat",
         "timeZone",
         "notify",
+        "focusDefaults", "planning", "reviewBudget", "attention", "weekStart", "clock24h",
       ]);
       const value = { ...this.store.settings, ...clone(patch) };
+      // Emulate the N39 recursive JSON patch trigger without losing unknown keys.
+      if(patch.focusDefaults!==undefined)
+        value.focusDefaults={...this.store.settings.focusDefaults,...clone(patch.focusDefaults)};
+      if(patch.planning!==undefined)
+        value.planning={...this.store.settings.planning,...clone(patch.planning)};
+      if(patch.reviewBudget!==undefined)
+        value.reviewBudget={...this.store.settings.reviewBudget,...clone(patch.reviewBudget)};
+      if(patch.attention!==undefined)
+        value.attention={...this.store.settings.attention,...clone(patch.attention)};
+      if(value.weekStart!==undefined&&
+         (!Number.isInteger(value.weekStart)||value.weekStart<0||value.weekStart>6))
+        invalid("Week start must be Sunday through Saturday");
+      if(value.clock24h!==undefined&&typeof value.clock24h!=="boolean")
+        invalid("Clock format must be a boolean");
+      const numbers=(section:Record<string,unknown>|undefined,
+        limits:readonly (readonly [string,number,number])[])=>{
+        if(!section)return;
+        for(const [key,min,max] of limits){
+          const num=section[key];
+          if(num!==undefined&&(!Number.isInteger(num)||Number(num)<min||Number(num)>max))
+            invalid("Invalid v6 setting "+key);
+        }
+      };
+      numbers(value.focusDefaults,[
+        ["focus_minutes",1,480],["break_minutes",1,180],
+        ["long_break_minutes",1,240],["cycles",1,24],
+        ["long_session_guard_minutes",30,720],
+      ]);
+      if(value.focusDefaults){
+        if(value.focusDefaults.mode!==undefined&&
+          !["pomodoro","flowtime","open"].includes(value.focusDefaults.mode))
+          invalid("Invalid focus mode");
+        const ratio=value.focusDefaults.flowtime_break_ratio;
+        if(ratio!==undefined&&(!Number.isFinite(ratio)||ratio<=0||ratio>1))
+          invalid("Invalid Flowtime ratio");
+      }
+      numbers(value.planning,[
+        ["gap_minutes",0,120],["max_consecutive_minutes",15,600],
+        ["daily_minimum_minutes",0,600],
+      ]);
+      if(value.planning){
+        for(const key of ["window_start","window_end"] as const){
+          const time=value.planning[key];
+          if(time!==undefined&&(typeof time!=="string"||
+            !/^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/.test(time)))
+            invalid("Invalid planning time");
+        }
+        if(value.planning.daily_intention!==undefined&&typeof value.planning.daily_intention!=="boolean")
+          invalid("Invalid planning intention");
+      }
+      numbers(value.reviewBudget,[["cards",0,2000],["minutes",0,720]]);
+      if(value.reviewBudget?.reserve_in_plans!==undefined&&
+        typeof value.reviewBudget.reserve_in_plans!=="boolean")
+        invalid("Invalid review reservation");
+      if(value.attention){
+        for(const key of ["drift_prompt","urge_prompt"] as const)
+          if(value.attention[key]!==undefined&&typeof value.attention[key]!=="boolean")
+            invalid("Invalid attention prompt");
+      }
       if (patch.notify && typeof patch.notify === "object")
         value.notify = mergeNotifyPrefs(this.store.settings.notify,patch.notify);
       if (
@@ -2148,6 +2210,29 @@ export class DemoAdapter implements LemmaApi {
       return clone(card.state);
     });
   }
+
+  /** N104: demo schedule changes use the same per-variant identity as live. */
+  async rescheduleCard(noteNo:number,ordinal:number,due:string):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1||
+    typeof due!=='string'||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
+    !Number.isFinite(Date.parse(due)))invalid('Invalid card due instant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state.due=new Date(due).toISOString();
+   });
+  }
+  async resetCard(noteNo:number,ordinal:number):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1)
+    invalid('Invalid card variant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state={state:0,due:this.iso(),stability:0,difficulty:0,
+     lastReview:null,step:0,reps:0,lapses:0};
+   });
+  }
   async searchCards(query: string, slug?: string): Promise<CardRow[]> {
     if (slug) this.project(slug);
     const needle = query.toLowerCase();
@@ -2404,6 +2489,7 @@ export class DemoAdapter implements LemmaApi {
           // DemoConcept contains only primitive fields; a shallow copy is
           // independent and avoids thousands of structuredClone calls at 4x CPU.
           ...c,
+          version:demoConceptVersion(c),
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -2419,6 +2505,32 @@ export class DemoAdapter implements LemmaApi {
       // callers cannot mutate the underlying demo store.
       links: this.store.links.map(link => ({...link})),
     };
+  }
+  async getConceptVersion(id:string):Promise<number>{
+    const concept=this.store.concepts.find(c=>c.id===id);
+    if(!concept)throw new LemmaError('not_found','Owner concept not found');
+    return demoConceptVersion(concept);
+  }
+  async createConcept(...args:Parameters<LemmaApi['createConcept']>):ReturnType<LemmaApi['createConcept']>{
+    return this.transaction(()=>createDemoConcept(this.store,args[0]));
+  }
+  async updateConcept(...args:Parameters<LemmaApi['updateConcept']>):ReturnType<LemmaApi['updateConcept']>{
+    return this.transaction(()=>updateDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async reparentConcept(...args:Parameters<LemmaApi['reparentConcept']>):ReturnType<LemmaApi['reparentConcept']>{
+    return this.transaction(()=>reparentDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async linkConcept(...args:Parameters<LemmaApi['linkConcept']>):ReturnType<LemmaApi['linkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'link',args[0],args[1],args[2],args[3]));
+  }
+  async unlinkConcept(...args:Parameters<LemmaApi['unlinkConcept']>):ReturnType<LemmaApi['unlinkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'unlink',args[0],args[1],args[2],args[3]));
+  }
+  async previewConceptMerge(...args:Parameters<LemmaApi['previewConceptMerge']>):ReturnType<LemmaApi['previewConceptMerge']>{
+    return previewDemoConceptMerge(this.store,args[0],args[1]);
+  }
+  async mergeConcept(...args:Parameters<LemmaApi['mergeConcept']>):ReturnType<LemmaApi['mergeConcept']>{
+    return this.transaction(()=>mergeDemoConcept(this.store,args[0],args[1],args[2],args[3]));
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
     if ((x===null)!==(y===null) || (x!==null&&!Number.isFinite(x)) || (y!==null&&!Number.isFinite(y)))

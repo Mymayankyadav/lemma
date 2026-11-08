@@ -78,6 +78,27 @@
       "mcpPath": "N90 historical corrections (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "scheduler_version": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "immutable correction provenance through owner purge"
+    },
+    "params_id": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "immutable correction provenance through owner purge"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "N90 corrections (planned)",
+      "mcpPath": "N90 corrections (planned)",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "immutable correction provenance through owner purge"
     }
   }
 }
