@@ -42,7 +42,7 @@ export default function PlanProposalV6(){
    }
    if(!alive)return;
    setDraft(found);setText(found?payloadText(found.payload):
-    payloadText((proposal.data!.planChange??proposal.data!.plan??{ops:[]}) as ProposalEditPayload));
+    payloadText({...((proposal.data!.planChange??proposal.data!.plan??{ops:[]}))}));
    setStatus('ready');
   })().catch(error=>{if(alive){setStatus('error');setProblem(error instanceof Error?error.message:'Could not read drafts');}});
   return ()=>{alive=false};
