@@ -157,13 +157,13 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  }
  return <>
   <button type="button" className={button} onClick={show}>Plan study tasks</button>
-  {opened&&<dialog ref={dialog} onClose={()=>{
+  {opened&&<dialog ref={dialog} onCancel={event=>{if(busy)event.preventDefault();else close()}} onClose={()=>{
     ++loadEpoch.current;setOpened(false);setLoading(false);setPreview(null);
    }}
    aria-label="Plan study tasks" className="max-h-[85dvh] w-[min(95vw,580px)] overflow-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink">
    <div className="flex items-center justify-between gap-3">
     <h2 className="text-title-s font-semibold">Plan study tasks</h2>
-    <button type="button" className={button} onClick={close}>Close</button>
+    <button type="button" className={button} disabled={busy} onClick={close}>Close</button>
    </div>
    <p className="mt-2 text-label text-ink-2">Owner time zone: {ownerZone}. Times below are ISO instants.</p>
    <label className="mt-3 flex flex-col gap-1 text-label">Days to preview
@@ -189,7 +189,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
      const title=tasks.find(t=>t.id===place.taskId)?.title??place.taskId;
      return <div key={key} className="rounded-ctl border border-edge p-3">
       <label className="flex min-h-11 items-center gap-2">
-       <input type="checkbox" checked={chosen} onChange={e=>setSelected(old=>{
+       <input type="checkbox" checked={chosen} disabled={busy} onChange={e=>setSelected(old=>{
         const next=new Set(old);if(e.target.checked)next.add(key);
         else next.delete(key);return next;
        })}/>
@@ -197,10 +197,10 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
       </label>
       {chosen&&<div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
        <label className="text-caption">Move start (ISO)
-        <input className={field} value={moved.start} aria-label={'Move '+title+' start'}
+        <input className={field} value={moved.start} disabled={busy} aria-label={'Move '+title+' start'}
          onChange={e=>changeMove(key,'start',e.target.value,place)}/></label>
        <label className="text-caption">Move end (ISO)
-        <input className={field} value={moved.end} aria-label={'Move '+title+' end'}
+        <input className={field} value={moved.end} disabled={busy} aria-label={'Move '+title+' end'}
          onChange={e=>changeMove(key,'end',e.target.value,place)}/></label>
       </div>}
      </div>;

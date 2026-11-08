@@ -69,10 +69,10 @@ import {vi} from 'vitest';
 import PlannerLaunch from '../../../src/features/planner/Sheet';
 
 const services=vi.hoisted(()=>({
- tasks:vi.fn(),blocks:vi.fn(),entries:vi.fn(),plans:vi.fn(),
+ tasks:vi.fn(),getTask:vi.fn(),blocks:vi.fn(),entries:vi.fn(),plans:vi.fn(),
 }));
 vi.mock('../../../src/data/tasks',()=>({
- getTaskApi:()=>({listTasks:services.tasks}),
+ getTaskApi:()=>({listTasks:services.tasks,getTask:services.getTask}),
 }));
 vi.mock('../../../src/data/study',()=>({
  getStudyApi:()=>({listCalendarBlocks:services.blocks,
@@ -104,6 +104,41 @@ describe('N68 v6 native Planner launch lifecycle',()=>{
   }finally{
    await act(async()=>root.unmount());host.remove();
   }
+ });
+});
+
+describe('N68 planner commit pending dialog safety',()=>{
+ it('prevents Escape/Close and editing placements while an owner write is in flight',async()=>{
+  const task={id:'task-a',title:'Proof practice',version:1,priority:'normal',
+   due:{kind:'none'},estimateMinutes:30,status:'backlog'};
+  services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
+  services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  let finishRead:(task:unknown)=>void=()=>{};
+  services.getTask.mockImplementationOnce(()=>new Promise(resolve=>{
+   finishRead=resolve as (task:unknown)=>void;
+  }));
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   const commit=[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(b=>b.textContent==='Commit selected placements')!;
+   await act(async()=>commit.click());
+   const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(b=>b.textContent==='Close')!;
+   expect(close.disabled).toBe(true);
+   expect(host.querySelector<HTMLInputElement>('input[type="checkbox"]')?.disabled).toBe(true);
+   expect(host.querySelector<HTMLInputElement>('input[aria-label^="Move "]')?.disabled).toBe(true);
+   const cancel=new Event('cancel',{bubbles:false,cancelable:true});
+   await act(async()=>host.querySelector('dialog')!.dispatchEvent(cancel));
+   expect(cancel.defaultPrevented).toBe(true);
+   expect(host.querySelector('dialog')).not.toBeNull();
+   await act(async()=>finishRead(task));
+  }finally{await act(async()=>root.unmount());host.remove();}
  });
 });
 
