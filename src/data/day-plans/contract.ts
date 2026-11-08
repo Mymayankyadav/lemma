@@ -1,8 +1,9 @@
 // N60.1: common typed day-plan contract. N60.2 supplies persistent adapters.
 import type {StudyReceipt} from '../study/contract';
+import type {CommitPlacementsInput} from './placements';
 
 export type DayPlanStatus='draft'|'previewed'|'committed'|'closed';
-export type PlanSourceResource='tasks'|'calendar_blocks';
+export type PlanSourceResource='tasks'|'calendar_blocks'|'study_entries';
 export interface PlanSourceVersion {
  resource:PlanSourceResource;
  id:string;
@@ -43,6 +44,8 @@ export interface DayPlanQuery {
  /** Owner-scoped 1–50 row keyset page, with filter-bound opaque cursor. */
  limit?:number;cursor?:string|null;
 }
+/** One atomic receipt covers all of the owner's selected civil days. */
+export interface AtomicPlacementResult {plans:DayPlanRecord[];blockIds:string[]}
 export interface DayPlanPage {items:DayPlanRecord[];total:number;nextCursor:string|null}
 export interface DayPlanItemPage {items:DayPlanItem[];total:number;nextCursor:string|null}
 export interface DayPlanApi {
@@ -55,6 +58,8 @@ export interface DayPlanApi {
  /** Preview captures task/block versions and unplaced items; it does not commit. */
  previewPlan(id:string,expectedVersion:number,items:NewDayPlanItem[],
   availability:PlanAvailability):Promise<StudyReceipt<DayPlanRecord>>;
+ /** N107: one journalled owner action covers every placement, plan and item. */
+ commitPlacements(input:CommitPlacementsInput):Promise<StudyReceipt<AtomicPlacementResult>>;
  /** Server atomically validates snapshot versions before creating placements. */
  commitPlan(id:string,expectedVersion:number):Promise<StudyReceipt<DayPlanRecord>>;
  closePlan(id:string,expectedVersion:number,

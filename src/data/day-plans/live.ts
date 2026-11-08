@@ -1,7 +1,8 @@
 // N60.2: owner-RLS day-plan adapter. Writes only through one journalled RPC.
 import {DayPlanError,type DayPlanApi,type DayPlanItem,type DayPlanPatch,
- type DayPlanQuery,type DayPlanRecord,type DayPlanStatus,type NewDayPlan,
+ type DayPlanQuery,type DayPlanRecord,type DayPlanStatus,type AtomicPlacementResult,type NewDayPlan,
  type NewDayPlanItem,type PlanAvailability} from './contract';
+import {normalizeCommitPlacements,type CommitPlacementsInput} from './placements';
 import {civilPlanDate,normalizeAvailability,normalizeDayPlan,
  normalizePlanItems,planTimeZone,validatePlanClosure} from './model';
 
@@ -185,6 +186,7 @@ function zonedToday(zone:string):string{
 }
 export function createLiveDayPlanApi():DayPlanApi{
  const retries=new Map<string,Envelope>();
+ const atomicRetries=new Map<string,Record<string,unknown>>();
  const getPlan=async(key:string):Promise<DayPlanRecord|null>=>{
   const c=await client(),result=await c.from('day_plans')
    .select('*').eq('id',id(key)).maybeSingle();
@@ -326,6 +328,79 @@ export function createLiveDayPlanApi():DayPlanApi{
      disposition:x.disposition,reason:x.reason??null,position:x.position,
     })),
    }},{items:validated.length});
+  },
+  async commitPlacements(input:CommitPlacementsInput){
+   const validated=normalizeCommitPlacements(input);
+   // No caller-supplied owner: the command checks owner/version under row locks.
+   const days=validated.days.map(day=>({
+    plan_date:day.planDate,time_zone:day.timeZone,
+    ...(day.planId?{plan_id:id(day.planId),expected_version:day.expectedVersion}:{}),
+    intention:day.intention??'',capacity_minutes:day.capacityMinutes??0,
+    sources:day.sources.map(s=>({resource:s.resource,id:id(s.id),version:s.version})),
+    placements:day.placements.map(p=>({task_id:id(p.taskId),title:p.title,
+     starts_at:p.startsAt,ends_at:p.endsAt,position:p.position})),
+    unplaced:(day.unplaced??[]).map(u=>({task_id:id(u.taskId),
+     reason:u.reason,position:u.position})),
+   }));
+   const base={schemaVersion:1 as const,resource:'day_plans' as const,
+    operation:'commit_placements' as const,patch:{days}};
+   const key=JSON.stringify({...base,operationId:validated.operationId??null});
+   const envelope=atomicRetries.get(key)??{...base,
+    operationId:validated.operationId??secureId()};
+   atomicRetries.set(key,envelope);
+   let receipt:(Receipt&{plans?:Row[];blockIds?:unknown;
+    conflict?:{reason?:string;currentVersion?:number}})|null=null;
+   for(let attempt=0;attempt<2;attempt++){
+    const c=await client();
+    const response=await c.rpc('day_plans_command',{p:envelope});
+    if(response.error){
+     const error=errorOf(response.error);
+     if(error instanceof DayPlanError||error.message.includes('not deployed')){
+      atomicRetries.delete(key);throw error;
+     }
+     if(attempt===0)continue;
+     throw error;
+    }
+    if(response.data==null){
+     if(attempt===0)continue;
+     return unavailable('Missing atomic planner receipt');
+    }
+    receipt=response.data as typeof receipt;break;
+   }
+   if(receipt?.status==='conflict'){
+    atomicRetries.delete(key);
+    return fail('conflict',receipt.conflict?.reason??'Atomic planner source/version conflict');
+   }
+   const changed=receipt?.changed;
+   const count=(resource:string)=>changed?.filter(c=>c.resource===resource).length??0;
+   const blocks=days.reduce((n,d)=>n+d.placements.length,0);
+   const items=days.reduce((n,d)=>n+d.placements.length+d.unplaced.length,0);
+   if(receipt?.status!=='ok'||typeof receipt.actionNo!=='number'||
+    !Number.isSafeInteger(receipt.actionNo)||receipt.actionNo<1||
+    !Array.isArray(changed)||
+    changed.some(x=>!x||!UUID.test(x.id)||
+     !Number.isSafeInteger(x.version)||x.version<1)||
+    count('day_plans')!==days.length||
+    count('calendar_blocks')!==blocks||count('day_plan_items')!==items||
+    !Array.isArray(receipt.plans)||receipt.plans.length!==days.length||
+    !Array.isArray(receipt.blockIds)||receipt.blockIds.length!==blocks||
+    receipt.blockIds.some(x=>typeof x!=='string'||!UUID.test(x)))
+    return unavailable('Malformed or unaudited atomic planner receipt');
+   const authoritative:AtomicPlacementResult={plans:[],
+    blockIds:[...receipt.blockIds] as string[]};
+   for(let i=0;i<days.length;i++){
+    const fromReceipt=record(receipt.plans[i]);
+    const saved=await getPlan(fromReceipt.id);
+    if(!saved||saved.version!==fromReceipt.version||
+     saved.status!=='committed'||saved.planDate!==days[i].plan_date||
+     fromReceipt.planDate!==days[i].plan_date||
+     !changed.some(c=>c.resource==='day_plans'&&c.id===saved.id&&
+      c.version===saved.version))
+     return unavailable('Atomic planner owner readback disagrees with receipt');
+    authoritative.plans.push(saved);
+   }
+   atomicRetries.delete(key);
+   return {record:authoritative,actionNo:receipt.actionNo};
   },
   async commitPlan(key,expected){
    version(expected);
