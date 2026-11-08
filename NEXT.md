@@ -11,30 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N89 MCP: devices, quiet holds and notification history
-Stage: Build · Status: open · Needs: N88 · Assigned: —
-Owner decision (plan audit 2026-11-08): the earlier wording asked MCP to match app validation that does not exist (the app has no device or hold management) through tables `mcp_commit` cannot write, with migrations forbidden. Rewritten: per D8, one additive migration adds `version` to `push_devices` and `notify_holds` and a registered `notify_command(p)` with resources `push_devices` (operations `rename` (label 1–40), `disable` (reason `removed`), `restore`; never create or delete: a subscription only comes from a real browser through `upsert_push_device`) and `notify_holds` (`create`, `update` `until`, `delete`). Hold changes are journalled and undoable. Device changes are versioned and receipted but are NOT added to the undo journal, because the row holds transport credentials (`endpoint`, `p256dh`, `auth`) that must never be copied into `action_changes`; MCP never returns those columns. Notification history is read-only for MCP (status, reason, due and sent times); snooze and dismiss use the existing `notify_act` actions. MCP never creates or schedules notifications (the server tick does).
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/notify-command.mjs` (rename, disable, restore, hold create/update/delete with undo, stale version refused, foreign owner refused, credentials never returned or journalled), `tests/unit/mcp/notify-coverage.test.ts`, round trips for both resources in `tests/mcp/sql/parity.mjs`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/mcp/sql/notify-command.mjs, tests/unit/mcp/notify-coverage.test.ts, tests/mcp/sql/parity.mjs (the two new resources only), docs/v6/capability-registry/{lemma_command_resources,lemma_undo_tables,push_devices,notify_holds,notifications}.json, CURRENT.md.
-Not: the notify Edge function, app code, sending or scheduling notifications.
-
-
-## N98 Harden: Today, Focus, time log and Progress
-Stage: Build · Status: open · Needs: N70, N72, N73, N76 · Assigned: —
-Done = review the fast-built first slice and its additions against `docs/v6/DESIGN_HANDOFF.md` and contract §6: exact geometry at 320/360/390 widths, 200% text, Day/Night, keyboard and Back, reload and two-tab behaviour, long mathematics; fix every defect found within these folders and record intentional limitations in CURRENT.md.
-Tests: `tests/e2e/v6-harden-slice.spec.ts` covering the journeys and geometry found
-Scope: src/features/home/** (v6 branch), src/features/focus/**, src/features/time-log/**, src/features/progress-v6/**, src/app/FocusAccessory.tsx, tests/e2e/v6-harden-slice.spec.ts, CURRENT.md.
-Not: data adapters, supabase/**, other screens.
-
-
-## N97 Upgrade rehearsal on representative existing data (G5)
-Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
-Done = a PGlite test loads a representative pre-v6 account fixture (paths, sources, cards with history, sessions, proposals), applies all migrations, and checks no lost rows, links or schedules, historical estimates still labelled, new records creatable, and export/undo across old and new records.
-Tests: `tests/mcp/sql/upgrade-rehearsal.mjs` and its fixture
-Scope: tests/mcp/sql/upgrade-rehearsal.mjs, tests/mcp/sql/fixtures/pre-v6-account.sql (new), CURRENT.md.
-Not: migrations, app code.
-
 ## N101 Release audit, screenshots and docs
 Stage: Build · Status: open · Needs: N98, N99, N100, N94, N96, N97 · Assigned: —
 Done = run the exact-output browser audit of every v6 route (320/360/390, 200% text, Day/Night) and the acceptance journeys, refresh `docs/v6/screens/` captures from the real app, write `docs/v6/RELEASE.md` (what shipped, known limitations, gates G1–G7 evidence, the Owner's physical-device checklist), and open one bug issue per defect found (app code is outside this item's scope; the Harden items or a bug PR fix them).

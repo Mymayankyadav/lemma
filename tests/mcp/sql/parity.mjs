@@ -1591,6 +1591,102 @@ try{
   'review_corrections.void: undo did not unvoid owner review');
  mark('review_corrections','correct','void');
 
+ // N89: a subscription is registered only by the browser, while MCP may
+ // rename, disable and restore its noncredential metadata. These operations
+ // are deliberately NOT journal actions: an undo snapshot would leak secrets.
+ await role(null);
+ const n89Device=(await q("insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform) values($1,$2,'testkey','testauth','Parity device','desktop') returning id",
+  [owner,'https://push.example.test/n89-parity']))[0].id;
+ const n89Foreign=(await q("insert into public.push_devices(user_id,endpoint,p256dh,auth,label,platform) values($1,$2,'otherkey','otherauth','Foreign device','desktop') returning id",
+  [other,'https://push.example.test/n89-parity-other']))[0].id;
+ await role('service_role');
+ const n89RenameRequest=command('push_devices','rename',{
+  target:{id:n89Device},expectedVersion:1,patch:{label:'MCP parity renamed'}});
+ const n89Renamed=await mcp(n89RenameRequest);
+ assert.equal(n89Renamed.status,'ok');
+ assert.equal(n89Renamed.actionNo,null,'N89 devices are intentionally not journalled');
+ assert.equal(n89Renamed.changed[0].version,2);
+ assert.deepEqual(await mcp(n89RenameRequest),n89Renamed,'N89 rename receipt replay');
+ assert.equal((await mcp({...n89RenameRequest,patch:{label:'Changed'}})).status,'conflict');
+ assert.equal((await mcp(command('push_devices','rename',{
+  target:{id:n89Device},expectedVersion:1,patch:{label:'Stale'}
+ }))).status,'conflict');
+ const n89Disabled=await mcp(command('push_devices','disable',{
+  target:{id:n89Device},expectedVersion:2,patch:{}}));
+ assert.equal(n89Disabled.status,'ok');
+ assert.equal(n89Disabled.current.disabled_reason,'removed');
+ const n89Restored=await mcp(command('push_devices','restore',{
+  target:{id:n89Device},expectedVersion:3,patch:{}}));
+ assert.equal(n89Restored.status,'ok');
+ assert.equal(n89Restored.current.disabled_reason,null);
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [owner,'chatgpt',JSON.stringify(command('push_devices','rename',{
+    target:{id:n89Foreign},expectedVersion:1,patch:{label:'Forgery'}}))]),
+  /not found for owner/i);
+ await as(owner);
+ const n89AppDevice=(await q('select label,version from public.push_devices where id=$1',
+  [n89Device]))[0];
+ assert.deepEqual(n89AppDevice,{label:'MCP parity renamed',version:4});
+ await role(null);
+ assert.equal((await q("select count(*)::int n from public.action_changes where table_name='push_devices'"))[0].n,0);
+ assert(!JSON.stringify([n89Renamed,n89Disabled,n89Restored]).includes('testauth'),
+  'MCP returned subscription transport credentials');
+ mark('push_devices','rename','disable','restore');
+
+ // N89 holds: versioned MCP create, authenticated app edit, MCP delete and
+ // action-log undo. A foreign owner cannot read or mutate the same scope.
+ await role('service_role');
+ const n89CreateRequest=command('notify_holds','create',{
+  patch:{scope:'n94-notify',until:'2028-01-01T00:00:00Z'}});
+ const n89Created=status(await mcp(n89CreateRequest),'notify_holds','create');
+ assert.equal(n89Created.changed[0].version,1);
+ assert.deepEqual(await mcp(n89CreateRequest),n89Created,'N89 hold replay');
+ assert.equal((await mcp({...n89CreateRequest,patch:{
+  scope:'n94-notify',until:'2028-01-02T00:00:00Z'}})).status,'conflict');
+ await as(owner);
+ const n89Edited=status(await app('notify_command',command('notify_holds','update',{
+  target:{id:'n94-notify'},expectedVersion:1,
+  patch:{until:'2028-02-01T00:00:00Z'}
+ })),'notify_holds','update');
+ assert.equal(n89Edited.changed[0].version,2);
+ assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,2);
+ await as(other);
+ assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-notify'"))[0].n,0);
+ await role('service_role');
+ assert.equal((await mcp(command('notify_holds','update',{
+  target:{id:'n94-notify'},expectedVersion:1,
+  patch:{until:'2028-03-01T00:00:00Z'}
+ }))).status,'conflict','N89 stale hold version accepted');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('notify_holds','delete',{
+   target:{id:'n94-notify'},expectedVersion:2,patch:{}
+  }))]),/not found for owner/i);
+ // First undo the edit. Its inverse is a live later action, so a subsequent
+ // delete is tested separately rather than rewinding earlier history through it.
+ await as(owner);
+ assert.equal((await undo(n89Edited.actionNo)).undone,n89Edited.actionNo);
+ assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,1);
+ await role('service_role');
+ const n89DeleteRequest=command('notify_holds','delete',{
+  target:{id:'n94-notify'},expectedVersion:1,patch:{}});
+ const n89Deleted=status(await mcp(n89DeleteRequest),'notify_holds','delete');
+ assert.deepEqual(await mcp(n89DeleteRequest),n89Deleted,'N89 delete replay');
+ await as(owner);
+ assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-notify'"))[0].n,0);
+ assert.equal((await undo(n89Deleted.actionNo)).undone,n89Deleted.actionNo);
+ assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,1);
+ // Verify create-undo independently: undo_action will not rewind a different
+ // earlier mutation through the later inverse record.
+ await role('service_role');
+ const n89CreateOnly=status(await mcp(command('notify_holds','create',{
+  patch:{scope:'n94-undo-create',until:'2028-01-01T00:00:00Z'}
+ })),'notify_holds','create');
+ await as(owner);
+ assert.equal((await undo(n89CreateOnly.actionNo)).undone,n89CreateOnly.actionNo);
+ assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-undo-create'"))[0].n,0);
+ mark('notify_holds','create','update','delete');
+ await role('service_role');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
  // Every registered resource and every registered operation must have a real

@@ -6,7 +6,7 @@ import {dayBounds} from '../../lib/effort';
 import {isFlagOn} from '../../flags';
 
 const PAGE=50;
-const field='min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink';
+const field='min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink';
 const action='min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold';
 function localDay(instant:string,zone:string):string{
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(instant));
@@ -112,10 +112,10 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
    <select aria-label="Edit rating" className={field} value={score} onChange={e=>setScore(e.target.value)}>
     <option value="">Unknown</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}
    </select></label>
-  <div className="mt-2 grid grid-cols-2 gap-2">
+  <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
    {([['Subject ID',subject,setSubject],['Project ID',project,setProject],
     ['Checkpoint ID',checkpoint,setCheckpoint],['Session ID',session,setSession]] as const)
-    .map(([label,value,change])=><label key={label} className="text-caption">{label}
+    .map(([label,value,change])=><label key={label} className="min-w-0 text-caption">{label}
      <input aria-label={label} className={field} value={value} onChange={e=>change(e.target.value)}
       placeholder="UUID or blank"/></label>)}
   </div>
@@ -228,16 +228,16 @@ export default function TimeLog(){
   {groups.map(([date,items])=><section key={date} aria-label={'Saved entries on '+date}>
    <h2 className="mb-2 text-label font-semibold">{date}</h2>
    <div className="space-y-2">{items?.map(entry=><article key={entry.id}
-    className="rounded-ctl border border-edge p-3 text-label">
+    className="min-w-0 rounded-ctl border border-edge p-3 text-label">
     <div className="flex flex-wrap items-center justify-between gap-2">
-     <div><strong className="block">{entry.intent}</strong>
+     <div className="min-w-0"><strong className="block break-words [overflow-wrap:anywhere]">{entry.intent}</strong>
       <span className="text-ink-2">{entry.approximate?'Approximate · ':''}
        {entry.voidedAt?'Voided · ':''}Rating: {entry.rating===null?'Unknown':entry.rating}</span></div>
      <button type="button" className={action} onClick={()=>setSelected(v=>v===entry.id?null:entry.id)}>
       {selected===entry.id?'Hide editor':'Edit entry'}</button>
     </div>
     <ol className="mt-2 space-y-1">
-     {entry.intervals.map(i=><li key={i.id} className="text-caption text-ink-2">
+     {entry.intervals.map(i=><li key={i.id} className="break-words text-caption text-ink-2 [overflow-wrap:anywhere]">
       {i.kind}: {i.start} – {i.end??'in progress'}</li>)}
     </ol>
     {selected===entry.id&&<EntryDetails key={entry.id+'-'+entry.version} entry={entry}
@@ -245,7 +245,7 @@ export default function TimeLog(){
    </article>)}</div>
   </section>)}
   {!loading&&!error&&rows.length===0&&<p>No saved study time in this seven-day range.</p>}
-  <nav aria-label="Time log pages" className="flex items-center gap-2">
+  <nav aria-label="Time log pages" className="flex flex-wrap items-center gap-2">
    <button className={action} disabled={index===0} onClick={()=>setPage(index-1)}>Previous page</button>
    <output aria-label="Page position">{index+1} / {totalPages}</output>
    <button className={action} disabled={index+1>=totalPages} onClick={()=>setPage(index+1)}>Next page</button>

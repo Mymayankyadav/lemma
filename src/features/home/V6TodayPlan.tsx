@@ -126,6 +126,10 @@ export default function V6TodayPlan({zone,due,reviewLimit}:{
    if(!plan)throw Error('No committed day plan is available');
    const receipt=await startVerifiedPlannedBlock(date,zone,plan,block);
    setNotice('Focus started: '+receipt.record.intent);
+   // The planner and Focus are sibling Today surfaces. Refresh their one
+   // canonical session immediately rather than displaying a stale Start card.
+   window.dispatchEvent(new Event('lemma:focus-changed'));
+   window.dispatchEvent(new Event('lemma:planned-focus-started'));
   }catch(e){setError(e instanceof Error?e.message:'Could not start planned focus')}
   finally{setBusy(false)}
  }
@@ -149,7 +153,7 @@ export default function V6TodayPlan({zone,due,reviewLimit}:{
      onClick={()=>{void saveIntention()}}>Save intention</button>:
     <p className="text-label text-ink-2">Committed or closed plans can be edited from the planner.</p>}
    {next?<div aria-label="Next planned block" className="rounded-ctl bg-fill-1 p-3">
-    <p className="text-label font-semibold">{next.title}</p>
+    <p className="break-words text-label font-semibold [overflow-wrap:anywhere]">{next.title}</p>
     <p className="text-caption">{new Intl.DateTimeFormat('en',{
      timeZone:zone,hour:'numeric',minute:'2-digit',
     }).format(new Date(next.startsAt))}</p>
