@@ -1,3 +1,4 @@
+import type {StudyEntryRecord} from '../../data/study';
 // N69 owner-date ritual eligibility, independent of the browser's timezone.
 // A future civil date must never be marked closed even if device clock changes.
 export function ownerCivilDate(at:Date,zone:string):string{
@@ -27,4 +28,20 @@ export function normalizeCarryOverChoices(available:readonly string[],
  if([...carry].some(id=>!known.has(id)))throw new Error('Stale carry-over task');
  if(first&&!known.has(first))throw new Error('Tomorrow first task is no longer unfinished');
  return {carryOverTaskIds:[...carry],tomorrowFirstTaskId:first||null};
+}
+
+/** A focus interval contributes to every owner civil day it intersects.
+ * Its end is exclusive, so midnight at end does not count as another day.
+ * Completed work spanning midnight must not disappear from the earlier day. */
+export function savedFocusTouchesOwnerDay(
+ entry:Pick<StudyEntryRecord,'status'|'intervals'>,date:string,zone:string
+):boolean{
+ if(entry.status!=='saved')return false;
+ return entry.intervals.some(interval=>{
+  if(interval.kind!=='focus'||!interval.end)return false;
+  const start=Date.parse(interval.start),end=Date.parse(interval.end);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)return false;
+  return ownerCivilDate(new Date(start),zone)<=date&&
+   ownerCivilDate(new Date(end-1),zone)>=date;
+ });
 }

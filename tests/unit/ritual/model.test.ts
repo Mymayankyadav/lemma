@@ -37,3 +37,36 @@ describe('N69 persisted carry-over choices',()=>{
   expect(()=>normalizeCarryOverChoices(['a'],new Set(),'deleted')).toThrow('no longer unfinished');
  });
 });
+
+import {savedFocusTouchesOwnerDay} from '../../../src/features/ritual/model';
+import type {StudyEntryRecord} from '../../../src/data/study';
+describe('N69 saved focus attribution across owner-midnight',()=>{
+ const focus=(start:string,end:string|null,kind:'focus'|'break'='focus')=>({
+  id:'interval',kind,start,end,
+ });
+ const entry=(intervals:StudyEntryRecord['intervals'],status:StudyEntryRecord['status']='saved')=>
+  ({status,intervals});
+ it('shows a saved focus interval on both owner dates when it spans midnight',()=>{
+  const e=entry([focus('2026-11-07T09:30:00Z','2026-11-07T10:30:00Z')]);
+  expect(savedFocusTouchesOwnerDay(e,'2026-11-07','Pacific/Kiritimati')).toBe(true);
+  expect(savedFocusTouchesOwnerDay(e,'2026-11-08','Pacific/Kiritimati')).toBe(true);
+  expect(savedFocusTouchesOwnerDay(e,'2026-11-09','Pacific/Kiritimati')).toBe(false);
+ });
+ it('treats an exact local midnight end as exclusive and excludes break-only work',()=>{
+  const e=entry([focus('2026-11-07T09:30:00Z','2026-11-07T10:00:00Z')]);
+  expect(savedFocusTouchesOwnerDay(e,'2026-11-08','Pacific/Kiritimati')).toBe(false);
+  expect(savedFocusTouchesOwnerDay(e,'2026-11-07','Pacific/Kiritimati')).toBe(true);
+  expect(savedFocusTouchesOwnerDay(entry([
+   focus('2026-11-07T09:30:00Z','2026-11-07T11:00:00Z','break')
+  ]),'2026-11-08','Pacific/Kiritimati')).toBe(false);
+ });
+ it('ignores unsaved, open, reversed and invalid focus intervals',()=>{
+  const from='2026-11-07T09:30:00Z',to='2026-11-07T10:30:00Z';
+  expect(savedFocusTouchesOwnerDay(entry([focus(from,to)],'draft'),
+   '2026-11-08','Pacific/Kiritimati')).toBe(false);
+  for(const bad of [focus(from,null),focus(to,from),focus('invalid',to)]){
+   expect(savedFocusTouchesOwnerDay(entry([bad]),'2026-11-08',
+    'Pacific/Kiritimati')).toBe(false);
+  }
+ });
+});

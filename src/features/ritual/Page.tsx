@@ -7,7 +7,7 @@ import {getTaskApi,type TaskRecord} from '../../data/tasks';
 import {getStudyApi,type StudyEntryRecord} from '../../data/study';
 import {useSettings} from '../../data/hooks';
 import {civilPlanDate} from '../../data/day-plans/model';
-import {canCloseOwnerDay,normalizeCarryOverChoices,ownerCivilDate} from './model';
+import {canCloseOwnerDay,normalizeCarryOverChoices,ownerCivilDate,savedFocusTouchesOwnerDay} from './model';
 const control='min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label font-semibold disabled:opacity-50';
 export default function Page(){
  const navigate=useNavigate(),[params]=useSearchParams();
@@ -59,9 +59,8 @@ export default function Page(){
     start:new Date(baseline-86400000).toISOString(),
     end:new Date(baseline+2*86400000).toISOString(),
    });
-   const todayEntries=entries.filter(entry=>entry.status==='saved'&&
-    entry.intervals.some(interval=>interval.kind==='focus'&&
-     interval.end&&ownerCivilDate(new Date(interval.end),p?.timeZone??zone)===date));
+   const todayEntries=entries.filter(entry=>
+    savedFocusTouchesOwnerDay(entry,date,p?.timeZone??zone));
    if(!active)return;
    setPlan(p);setTasks(tasksOut);setThoughts(thoughtOut);setSaved(todayEntries);
    const ritual=p?.ritual??{};
