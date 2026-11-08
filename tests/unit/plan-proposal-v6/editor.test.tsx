@@ -198,6 +198,24 @@ describe('N85 v6 proposal draft editor',()=>{
    .toBe(replacement);
   expect(vi.mocked(adapter.listDrafts).mock.calls.length).toBe(calls);
  });
+ it('restarts a cancelled draft fetch when proposal data refreshes mid-request',async()=>{
+  let finishOld:(page:unknown)=>void=()=>{};
+  vi.mocked(adapter.listDrafts).mockImplementationOnce(()=>new Promise(resolve=>{
+   finishOld=resolve as (page:unknown)=>void;
+  }));
+  await render();
+  expect(host.textContent).toContain('Loading drafts');
+  mocks.proposal.mockReturnValue({data:{...proposal,reason:'Background fetch'},
+   isPending:false,isError:false,refetch:vi.fn()});
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6/>}/></Routes>
+  </MemoryRouter>));
+  await vi.waitFor(()=>expect(vi.mocked(adapter.listDrafts)).toHaveBeenCalledTimes(2));
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await act(async()=>finishOld({items:[],total:0,nextCursor:null}));
+  expect(host.textContent).toContain('Older draft');
+  expect(host.textContent).not.toContain('No saved draft exists');
+ });
  it('ignores an old proposal save acknowledgement after navigating to another proposal',async()=>{
   const secondId='66666666-6666-4666-8666-666666666666';
   const secondProposal={...proposal,id:secondId};

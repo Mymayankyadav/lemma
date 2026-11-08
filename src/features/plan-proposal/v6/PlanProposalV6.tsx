@@ -36,7 +36,6 @@ export default function PlanProposalV6(){
   // Only an explicit Reload or a different proposal must replace the editor.
   const key=id+'|'+reload;
   if(loadedDraftKey.current===key)return;
-  loadedDraftKey.current=key;
   let alive=true;
   setStatus('loading');setProblem('');setConflict(null);setDraft(null);
   void (async()=>{
@@ -61,6 +60,10 @@ export default function PlanProposalV6(){
     seen.add(page.nextCursor);cursor=page.nextCursor;
    }
    if(!alive)return;
+   // Mark as loaded only after a successful fetch. A proposal query refetch
+   // while the draft request is pending cancels that request; it must be
+   // allowed to start the replacement rather than strand Loading forever.
+   loadedDraftKey.current=key;
    setDraft(found);setText(found?payloadText(found.payload):
     payloadText({...((proposal.data!.planChange??proposal.data!.plan??{ops:[]}))}));
    setStatus('ready');
