@@ -122,7 +122,7 @@ export default function ReviewRunV6(){
   <header className="flex items-center justify-between gap-2">
    <button className={button} disabled={busy} onClick={()=>{void leave()}}>Leave</button>
    <div className="text-center">
-    <h1 className="font-semibold">Review run</h1>
+    <h1 className="sr-only">Review run</h1>
     <p className="text-label tabular-nums" role="progressbar"
      aria-valuemin={0} aria-valuemax={Math.max(1,run.progress.total)}
      aria-valuenow={run.progress.position}>
@@ -149,20 +149,24 @@ export default function ReviewRunV6(){
     <button className={button} onClick={()=>{void cards.refetch()}}>Retry card lookup</button>
    </section>:card?<section className="flex flex-col gap-4">
     <p className="text-caption text-ink-2">Note {card.noteNo} · {card.kind}</p>
-    <div className="min-w-0 break-words rounded-ctl border border-edge p-4 font-math">
+    {/* N112 (mockup `15__Page`): the card sits on review paper; grades use the mockup grid. */}
+    <div data-ui="review-paper" className="min-w-0 break-words p-4 font-math">
      <MathText source={faces.front} variant="card" interactiveMath/>
      {revealed&&<div className="mt-4 border-t border-edge pt-4">
       <MathText source={faces.back} variant="answer" interactiveMath/>
      </div>}
     </div>
-    {!revealed?<section aria-label="Reveal answer" className="grid grid-cols-3 gap-2">
+    {!revealed?<section aria-label="Reveal answer" className="notebook-calibration-prompt">
+     <p>How sure are you?</p>
+     <div className="lemma-confidence-choices">
      {(['sure','unsure','guess'] as const).map(value=><button key={value}
-      className={button} onClick={()=>{setConfidence(value);setRevealed(true)}}>
+      onClick={()=>{setConfidence(value);setRevealed(true)}}>
       {value}</button>)}
-     <button className={button+' col-span-3'} onClick={()=>{setConfidence(null);setRevealed(true)}}>
+     </div>
+     <button className="notebook-primary" onClick={()=>{setConfidence(null);setRevealed(true)}}>
       Show answer
      </button>
-    </section>:<section aria-label="Grade answer" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    </section>:<section aria-label="Grade answer" data-ui="review-grades" className="grid">
      {grades.map((label,i)=><button key={label} className={button+' min-w-0 [overflow-wrap:anywhere]'}
       disabled={busy||!choices} onClick={()=>{void grade((i+1) as Rating)}}>
       {label}<span className="block text-caption">{choices?.[(i+1) as Rating].label??'—'}</span>

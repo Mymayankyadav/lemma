@@ -19,7 +19,6 @@ const routes:readonly (readonly [string,string,string?])[]=[
 // Known release defects: only the sideways-overflow measurement is an expected
 // failure; every other check on these routes still runs and must pass.
 const knownOverflow:Record<string,string>={
- '320 /':'Known release defect #1298: Today wider than a 320px viewport at 200% text',
  '320 /kit':'Known release defect #1300: Kit wider than a 320px viewport at 200% text',
 };
 const displays=[{width:320,height:640},{width:360,height:780},{width:390,height:844}] as const;
@@ -112,22 +111,28 @@ test('N101 screenshot capture of the real app, both palettes at 390x844',async({
  test.setTimeout(180_000);
  await page.setViewportSize({width:390,height:844});
  await setup(page);
+ // N110: the mockup captures show a running Pomodoro focus (its dock sits above the
+ // navigation on every screen), so the app captures start one first.
+ await page.goto(url('/'));
+ await settled(page);
+ await page.getByRole('textbox',{name:'Focus intention'}).fill('Topology');
+ await page.getByRole('combobox',{name:'Timer mode'}).selectOption('pomodoro');
+ await page.getByRole('button',{name:'Start focus'}).click();
+ const focus=page.getByRole('dialog',{name:'Focus'});
+ await expect(focus).toBeVisible();
+ await presentation(page,'graph',false);
+ await releaseScreenshot(page,'focus-day.png');
+ await focus.getByRole('button',{name:'Close'}).click();
+ await expect(focus).toBeHidden();
  for(const theme of themes)for(const [name,path] of shots){
   await page.goto(url(path));
   await expect(page.locator('[data-v6-header]')).toBeVisible();
   await presentation(page,theme.value,false);
   await settled(page);
+  await expect(page.getByRole('complementary',{name:'Focus accessory'})).toBeVisible();
   await contained(page,'screenshot '+name+'-'+theme.name);
   await releaseScreenshot(page,name+'-'+theme.name.toLowerCase()+'.png');
  }
- await page.goto(url('/'));
- await settled(page);
- await expect(page.getByRole('textbox',{name:'Focus intention'})).toBeVisible();
- await page.getByRole('textbox',{name:'Focus intention'}).fill('Release capture: focus');
- await page.getByRole('button',{name:'Start focus'}).click();
- await expect(page.getByRole('dialog',{name:'Focus'})).toBeVisible();
- await presentation(page,'graph',false);
- await releaseScreenshot(page,'focus-day.png');
 });
 test('N101 acceptance: Focus save survives reload and reaches log, Calendar and Progress',async({page})=>{
  test.setTimeout(120_000);
@@ -186,7 +191,7 @@ test('N101 acceptance: Inbox, grading, Atlas and Planner remain reachable',async
  await grades.getByRole('button',{name:/^Good/}).click();
  await expect(page.getByRole('main',{name:'Durable review run'})).toBeVisible();
  await page.goto(url('/atlas'));
- await expect(page.locator('[data-v6-header]')).toContainText('Atlas');
+ await expect(page.locator('[data-v6-header]')).toContainText('Concept map');
  await page.goto(url('/calendar'));
  await page.getByRole('button',{name:'Plan study tasks'}).click();
  await expect(page.getByRole('dialog',{name:'Plan study tasks'})).toBeVisible();

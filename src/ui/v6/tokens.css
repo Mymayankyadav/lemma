@@ -1,19 +1,20 @@
 /*
  * N19 — v6 visual contract. Nothing in this sheet applies without data-v6.
+ * N110: colours follow the mockup palette (docs/v6/prototype/source/mockup-overrides.css).
  * The three named font families are preferred only when available locally;
  * no external stylesheet or font loading, or third-party font request is introduced.
  */
 :root[data-v6] {
  color-scheme: light;
- --v6-color-background: #F8FAF8;
- --v6-color-surface: #FFFFFF;
- --v6-color-surface-soft: #EFF3F6;
- --v6-color-text: #202F45;
- --v6-color-muted: #46596F;
- --v6-color-primary: #203D61;
+ --v6-color-background: #F6F4ED;
+ --v6-color-surface: #FFFDF8;
+ --v6-color-surface-soft: #EEEEE6;
+ --v6-color-text: #203448;
+ --v6-color-muted: #465C70;
+ --v6-color-primary: #294C66;
  --v6-color-on-primary: #FFFFFF;
- --v6-color-border: #CBD6DF;
- --v6-color-danger: #AA2434;
+ --v6-color-border: #B8C1C4;
+ --v6-color-danger: #A5363B;
  --v6-color-on-danger: #FFFFFF;
  --v6-font-display: 'Newsreader', Georgia, 'Times New Roman', serif;
  --v6-font-ui: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -23,8 +24,8 @@
  --v6-space-3: 0.75rem;
  --v6-space-4: 1rem;
  --v6-space-6: 1.5rem;
- --v6-radius-control: 0.875rem;
- --v6-radius-card: 1.5rem;
+ --v6-radius-control: 0.5rem;
+ --v6-radius-card: 0.75rem;
  --v6-touch-size: 2.75rem;
  --v6-elevation-card: 0 8px 30px -20px #38485D50;
  --v6-elevation-float: 0 -8px 32px -22px #1C2C4755;
@@ -32,42 +33,42 @@
 /* Explicit theme preference wins over operating-system preference. */
 :root[data-v6][data-theme="graph"] {
  color-scheme: light;
- --v6-color-background: #F8FAF8;
- --v6-color-surface: #FFFFFF;
- --v6-color-surface-soft: #EFF3F6;
- --v6-color-text: #202F45;
- --v6-color-muted: #46596F;
- --v6-color-primary: #203D61;
+ --v6-color-background: #F6F4ED;
+ --v6-color-surface: #FFFDF8;
+ --v6-color-surface-soft: #EEEEE6;
+ --v6-color-text: #203448;
+ --v6-color-muted: #465C70;
+ --v6-color-primary: #294C66;
  --v6-color-on-primary: #FFFFFF;
- --v6-color-border: #CBD6DF;
- --v6-color-danger: #AA2434;
+ --v6-color-border: #B8C1C4;
+ --v6-color-danger: #A5363B;
  --v6-color-on-danger: #FFFFFF;
 }
 :root[data-v6][data-theme="graph-night"] {
  color-scheme: dark;
- --v6-color-background: #101A28;
- --v6-color-surface: #1A2838;
- --v6-color-surface-soft: #26394D;
- --v6-color-text: #EDF5FC;
- --v6-color-muted: #C0D0E2;
- --v6-color-primary: #B7DDFF;
- --v6-color-on-primary: #13273B;
- --v6-color-border: #50657A;
- --v6-color-danger: #FF8C93;
+ --v6-color-background: #141C25;
+ --v6-color-surface: #1C2733;
+ --v6-color-surface-soft: #263441;
+ --v6-color-text: #EDF2F6;
+ --v6-color-muted: #BECBD6;
+ --v6-color-primary: #AACCE5;
+ --v6-color-on-primary: #142B3C;
+ --v6-color-border: #647C8E;
+ --v6-color-danger: #FF9B9F;
  --v6-color-on-danger: #3B111A;
 }
 @media (prefers-color-scheme: dark) {
  :root[data-v6]:not([data-theme]) {
   color-scheme: dark;
-  --v6-color-background: #101A28;
-  --v6-color-surface: #1A2838;
-  --v6-color-surface-soft: #26394D;
-  --v6-color-text: #EDF5FC;
-  --v6-color-muted: #C0D0E2;
-  --v6-color-primary: #B7DDFF;
-  --v6-color-on-primary: #13273B;
-  --v6-color-border: #50657A;
-  --v6-color-danger: #FF8C93;
+  --v6-color-background: #141C25;
+  --v6-color-surface: #1C2733;
+  --v6-color-surface-soft: #263441;
+  --v6-color-text: #EDF2F6;
+  --v6-color-muted: #BECBD6;
+  --v6-color-primary: #AACCE5;
+  --v6-color-on-primary: #142B3C;
+  --v6-color-border: #647C8E;
+  --v6-color-danger: #FF9B9F;
   --v6-color-on-danger: #3B111A;
  }
 }

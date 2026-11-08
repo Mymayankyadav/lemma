@@ -103,7 +103,8 @@ describe('N32.2.1 v6 Inbox selected decisions',()=>{
  });
  it('keeps all selection UI behind v6Shell and extends the original six-second Undo stage',()=>{
   const source=readFileSync('src/features/proposals/Page.tsx','utf8');
-  expect(source).toContain('{v6&&!query.isLoading&&!query.isError&&<SelectionPanel');
+  // N113: the selection panel sits behind the mockup's Browse queue control, still v6-only.
+  expect(source).toContain('{v6&&!query.isLoading&&!query.isError&&<div hidden={!browsing||undefined} className="flex flex-col gap-3"><SelectionPanel');
   expect(source).toContain('setStaged({ids,action,label:');
   expect(source).toContain('applySelectedDecisions(ids,action,');
   expect(source).toContain('id=>approve.mutateAsync({id}),id=>reject.mutateAsync(id)');

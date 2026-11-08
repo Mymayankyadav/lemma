@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
+import { ChevronDown, ChevronRight, Ellipsis, Search, Waypoints } from 'lucide-react';
 import { useProjects, useSubjects, useUpdateProject } from '../../../data/hooks';
 import type { ProjectStatus, ProjectSummary } from '../../../data/types';
 import { useToast } from '../../../ui/Toast';
 
 type Status = 'active' | 'paused' | 'done' | 'archived';
 const statuses: Status[] = ['active', 'paused', 'done', 'archived'];
-const btn = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
+const btn = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 py-2 text-label font-semibold text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 const matches = (project: ProjectSummary, status: Status) =>
   status === 'active' ? project.status === 'active' || project.status === 'planning' : project.status === status;
 
@@ -18,6 +19,7 @@ export default function V6Paths() {
   const [limit, setLimit] = useState(20);
   const [menu, setMenu] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const all = useMemo(() => (projects.data ?? []).filter(row => !row.system), [projects.data]);
   const visible = useMemo(() => all.filter(project =>
     matches(project, status) && (!search.trim() ||
@@ -59,18 +61,19 @@ export default function V6Paths() {
     } finally { setBusyId(null); }
   }
 
+  // N114 (mockup `/projects` in `53__index`): search, Concept map link, status tabs and
+  // subject groups whose rows carry a progress rail.
   return <section aria-labelledby="v6-paths-title" className="flex flex-col gap-4 pb-8">
-    <header className="flex flex-wrap items-center justify-between gap-2">
-      <h1 id="v6-paths-title" className="text-title-l font-semibold text-ink">Paths</h1>
-      <Link to="/projects/new" className={btn}>New path</Link>
-    </header>
-    <label className="flex flex-col gap-1 text-label text-ink-2">Find a path
-      <input aria-label="Search paths" type="search" className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink"
-        value={search} onChange={event => setSearchValue(event.target.value)} placeholder="Subject or path" />
+    <h2 id="v6-paths-title" className="sr-only">Paths</h2>
+    <label className="relative flex flex-col text-label text-ink-2"><span className="sr-only">Find a path</span>
+      <Search size={20} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-2" />
+      <input aria-label="Search paths" type="search" className="min-h-12 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] py-2 pl-12 pr-3 text-body text-ink"
+        value={search} onChange={event => setSearchValue(event.target.value)} placeholder="Find a project or subject" />
     </label>
-    <div role="group" aria-label="Path status filters" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-      {statuses.map(next => <button type="button" key={next} aria-pressed={status === next}
-        className={btn + ' capitalize'} onClick={() => selectStatus(next)}>{next}</button>)}
+    <Link to="/atlas" className="notebook-concept-entry"><Waypoints size={20} aria-hidden="true" /><span>Concept map</span><ChevronRight size={19} aria-hidden="true" /></Link>
+    <div role="group" aria-label="Path status filters" className="ui-segmented flex">
+      {statuses.filter(next => next !== 'archived').map(next => <button type="button" key={next} aria-pressed={status === next}
+        className="min-h-11 flex-1 capitalize text-ink" onClick={() => selectStatus(next)}>{next}</button>)}
     </div>
     {subjects.isPending && <p role="status" className="text-label text-ink-2">Loading subjects…</p>}
     {subjects.isError && <p role="alert" className="text-label text-ink-2">Subjects unavailable; saved path labels remain visible.</p>}
@@ -78,34 +81,45 @@ export default function V6Paths() {
      projects.isError ? <div role="alert" className="text-label text-ink-2">Could not load Paths.
        <button type="button" className={btn} onClick={() => void projects.refetch()}>Try again</button>
      </div> : <>
-       <p aria-live="polite" className="text-label text-ink-2">{shown.length} paths shown{shown.length < visible.length ? ' · more available' : ''}</p>
-       {visible.length === 0 ? <div className="rounded-ctl border border-edge bg-fill-1 p-5 text-label">
+       <p aria-live="polite" className="sr-only">{shown.length} paths shown{shown.length < visible.length ? ' · more available' : ''}</p>
+       {status === 'archived' && <p className="text-label text-ink-2">Archived paths</p>}
+       {visible.length === 0 ? <div className="lemma-project-study">
          <p>{all.length === 0 ? 'No paths yet. Create your first path.' :
            search ? 'No paths match your search.' : 'No paths in this status.'}</p>
-         {all.length > 0 && search && <button type="button" className={btn} onClick={() => setSearchValue('')}>Clear search</button>}
-       </div> : <div aria-label="Paths by subject" className="flex flex-col gap-4">
-         {groups.map(group => <section key={group.key} aria-label={group.title + ' paths'}
-           className="rounded-ctl border border-edge bg-fill-1 p-3">
-           <h2 className="mb-2 text-body font-semibold text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2>
-           <div className="flex flex-col gap-2">
-             {group.items.map(project => <article key={project.id} data-v6-project={project.slug}
-               className="rounded-ctl border border-edge bg-[var(--paper)] p-3">
-               <div className="flex flex-wrap items-start justify-between gap-2">
+         {all.length > 0 && search && <button type="button" className={btn + ' self-start'} onClick={() => setSearchValue('')}>Clear search</button>}
+       </div> : <div aria-label="Paths by subject" className="flex flex-col gap-6">
+         {groups.map(group => {
+           const open = !collapsed.has(group.key);
+           return <section key={group.key} aria-label={group.title + ' paths'} data-style="role-projects">
+           <button type="button" aria-expanded={open} className="flex w-full items-center gap-3 text-left"
+             onClick={() => setCollapsed(previous => { const next = new Set(previous); if (next.has(group.key)) next.delete(group.key); else next.add(group.key); return next; })}>
+             <h3 className="min-w-0 flex-1 font-[var(--font-display)] text-[1.375rem] text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h3>
+             <span className="shrink-0 text-label text-ink-2">{group.items.length} {group.items.length === 1 ? 'project' : 'projects'}</span>
+             <ChevronDown size={20} aria-hidden="true" className={'shrink-0 text-ink-2 ' + (open ? '' : '-rotate-90')} />
+           </button>
+           {open && <div className="flex flex-col">
+             {group.items.map(project => <article key={project.id} data-v6-project={project.slug} data-project-row=""
+               className="border-t border-[var(--hair)]">
+               <div>
                  <Link to={'/p/' + project.slug}
-                   className="min-h-11 min-w-0 flex-1 break-words text-body font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber">{project.title}</Link>
-                 <button type="button" className={btn} disabled={busyId === project.id}
+                   className="min-w-0 break-words text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
+                   <div><span className="font-semibold">{project.title}</span></div>
+                   <div>{project.pinned ? 'Pinned · ' : ''}{project.current ? 'Now ' + project.current.code + ' ' + project.current.title : 'No current checkpoint'}
+                     {' · '}{project.scheduleHeadline || 'Forecast unavailable'}</div>
+                 </Link>
+                 <button type="button" className="path-action-control" disabled={busyId === project.id}
                    aria-label={'Manage ' + project.title} aria-expanded={menu === project.id}
-                   onClick={() => setMenu(value => value === project.id ? null : project.id)}>Manage</button>
+                   onClick={() => setMenu(value => value === project.id ? null : project.id)}>
+                   <span className="path-action-mark"><Ellipsis size={18} aria-hidden="true" /></span></button>
                </div>
-               <p className="mt-1 break-words [overflow-wrap:anywhere] text-caption text-ink-2">
-                 {project.pinned ? 'Pinned · ' : ''}{project.status} · {project.done} of {project.total} checkpoints
-               </p>
-               <p className="break-words [overflow-wrap:anywhere] text-caption text-ink-2">
-                 {project.current ? 'Current: ' + project.current.code + ' · ' + project.current.title : 'No current checkpoint'}
-                 {' · '}{project.scheduleHeadline || 'Forecast unavailable'}
-               </p>
+               <div className="flex items-center">
+                 <div><span className="notebook-progress-rail" role="progressbar" aria-label={project.title + ' checkpoints done'}
+                   aria-valuemin={0} aria-valuemax={project.total} aria-valuenow={project.done}>
+                   <span style={{ width: (project.total ? 100 * project.done / project.total : 0) + '%' }} /></span></div>
+                 <span className="tabular-nums text-ink-2">{project.done} of {project.total} checkpoints</span>
+               </div>
                {menu === project.id && <div role="group" aria-label={'Manage ' + project.title + ' actions'}
-                 className="mt-2 grid grid-cols-2 gap-2 border-t border-edge pt-2">
+                 className="grid grid-cols-2 gap-2 border-t border-[var(--hair)] pt-2">
                  {project.status !== 'archived' && <button type="button" className={btn} disabled={busyId !== null}
                    onClick={() => void change(project, { pinned: !project.pinned })}>{project.pinned ? 'Unpin' : 'Pin'}</button>}
                  <button type="button" className={btn} disabled={busyId !== null}
@@ -115,11 +129,16 @@ export default function V6Paths() {
                  <button type="button" className={btn} onClick={() => setMenu(null)}>Close</button>
                </div>}
              </article>)}
-           </div>
-         </section>)}
+           </div>}
+         </section>;})}
          {shown.length < visible.length && <button type="button" className={btn + ' self-center'}
            onClick={() => setLimit(value => value + 20)}>Show 20 more</button>}
        </div>}
      </>}
+    <div aria-label="Archived projects navigation" className="border-t border-[var(--hair)]">
+      <button type="button" aria-pressed={status === 'archived'} className="min-h-11 capitalize text-[var(--link)]"
+        onClick={() => selectStatus(status === 'archived' ? 'active' : 'archived')}>{status === 'archived' ? 'active' : 'archived'}</button>
+      <Link to="/projects/new" className="notebook-concept-entry"><span>New path</span><ChevronRight size={19} aria-hidden="true" /></Link>
+    </div>
   </section>;
 }

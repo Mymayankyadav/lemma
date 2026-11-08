@@ -6,7 +6,7 @@ const destinations=[
 ] as const;
 const paths=['/','/review','/proposals','/cards/7'] as const;
 
-async function expectNavigation(page:Page){
+async function expectNavigation(page:Page,path:string){
  const nav=page.getByRole('navigation',{name:'Main navigation'});
  await expect(nav.getByRole('link')).toHaveCount(5);
  for(const [name,path] of destinations){
@@ -18,7 +18,10 @@ async function expectNavigation(page:Page){
   expect(size!.height).toBeGreaterThanOrEqual(44);
  }
  const actions=page.getByRole('navigation',{name:'Page actions'});
- for(const label of ['Inbox','Add','Menu']){
+ // N110 (mockup header): destinations, Inbox and Cards show Inbox, Add and Menu icon actions;
+ // other detail screens keep only Menu, which then lists Inbox and Add.
+ const compact=path.startsWith('/cards/');
+ for(const label of compact?['Menu']:['Inbox','Add','Menu']){
   const target=actions.getByText(label,{exact:true});
   await expect(target).toBeVisible();
   const size=await target.locator('xpath=..').boundingBox();
@@ -42,7 +45,14 @@ for(const viewport of [
   for(const path of paths){
    await page.goto('./?demo=stress&flags=v6Shell#'+path);
    await expect(page.locator('[data-v6-header]')).toBeVisible();
-   await expectNavigation(page);
+   await expectNavigation(page,path);
+   if(path==='/cards/7'){
+    await page.getByRole('navigation',{name:'Page actions'}).locator('summary').filter({hasText:'Menu'}).click();
+    const menu=page.getByRole('navigation',{name:'Notebook destinations'});
+    await expect(menu.getByRole('link',{name:/^Inbox/})).toBeVisible();
+    await expect(menu.getByRole('button',{name:'Task',exact:true})).toBeVisible();
+    await page.keyboard.press('Escape');
+   }
    if(path==='/'){
     expect(await page.locator('*').count()).toBeLessThan(1500);
     // Each destination actually navigates and presents its v6 title.

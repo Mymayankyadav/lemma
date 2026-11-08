@@ -79,6 +79,8 @@ async function render(){
  await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
   <V6Settings legacy={<p data-legacy>Original Settings fallback</p>}/>
  </MemoryRouter>));
+ // N117: Settings opens on four grouped rows; Data & account opens on Account.
+ await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Data & account')!.click();await Promise.resolve()});
 }
 function button(label:string):HTMLButtonElement {
  const found=[...host.querySelectorAll('button')].find(x=>

@@ -9,8 +9,11 @@ import V6FocusDialog from './V6FocusDialog';
 import FocusNotices from './FocusNotices';
 import PresetPicker,{focusPresetChoice,type FocusPresetChoice} from './PresetPicker';
 import {isFlagOn} from '../../flags';
+import {CalendarDays,ChevronRight} from 'lucide-react';
 
 const FOCUS_CAP=25;
+/** The logged-time rail's scale (minutes); the mockup's default daily study intention. */
+const DAILY_INTENTION=240;
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
 function civilDate(zone:string){
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
@@ -118,7 +121,7 @@ export default function TodayFocus(){
   return()=>window.removeEventListener('lemma:open-focus',open);
  },[active]);
  useEffect(()=>{
-  const timer=window.setInterval(()=>setNow(new Date().toISOString()),10_000);
+  const timer=window.setInterval(()=>setNow(new Date().toISOString()),1_000);
   return ()=>window.clearInterval(timer);
  },[]);
  function show(trigger:HTMLButtonElement|null){lastTrigger.current=trigger;setOpened(true);}
@@ -243,46 +246,68 @@ export default function TodayFocus(){
  const phase=focus.phase;
  const remaining=remainingFocusMinutes(focus,now);
  const accessory=active!==null&&(phase==='running'||phase==='paused'||phase==='break');
+ const paused=phase==='paused';
+ const sessionClock=clockText(active,focus,now);
  const dialogProps={open:opened,state:focus,now,note,editedMinutes,busy,error,
   onDismiss:dismiss,onNote:setNote,onMinutes:setEditedMinutes,
   onPause:()=>{void transition('pause');},onResume:()=>{void transition('resume');},
   onBreak:()=>{void transition('break');},onFinish:finish,
   onSave:()=>{void save(false);},onDiscard:()=>{void save(true);}};
  return <>
-  <section aria-label="Current study action" className="rounded-[24px] border border-edge bg-[var(--paper)] p-4 shadow-sm">
-   <p className="text-label font-semibold text-ink-2">Your next step</p>
-   <h2 className="mt-1 text-title font-semibold text-ink">{active?'Stay with your focus':'Make time for focused study'}</h2>
-   <p className="mt-2 text-label text-ink-2">{active?active.intent:'Choose an intention, then start a focused session.'}</p>
-   {!active&&<label className="mt-3 block text-label text-ink-2">
-    Focus intention
-    <input aria-label="Focus intention" value={intent} onChange={e=>setIntent(e.target.value)}
-     placeholder="What will you work on?" maxLength={200}
-     className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 text-body text-ink"/>
-   </label>}
-   {!active&&isFlagOn('v6Shell')&&<>
-    <PresetPicker selectedPresetId={chosenPreset?.presetId??null}
-     disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice){setIntent(choice.intent);setMode(choice.mode);}else setMode('open');}}/>
-    <label className="mt-3 block text-label font-semibold text-ink-2">Timer mode
-     <select aria-label="Timer mode" value={chosenPreset?.mode??mode} disabled={busy||loading}
-      onChange={e=>{setChosenPreset(null);setMode(e.target.value as StudyTimerMode);}}
-      className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 text-body text-ink">
-      <option value="open">Open — no phase limit</option>
-      <option value="pomodoro">Pomodoro — 25/5 minute cycles</option>
-      <option value="flowtime">Flowtime — flexible focus</option>
-     </select>
+  {/* The focus dialog is modal (top layer), so it leads the DOM; the card's notice dialog follows. */}
+  {active&&isFlagOn('v6Shell')?<V6FocusDialog {...dialogProps} entry={active}
+   leaseOwned={leaseOwned} onTakeLease={()=>{void takeControl();}} onNextPhase={()=>{void nextPhase();}}/>:
+   <FocusDialog {...dialogProps}/>}
+  {/* N111 (mockup `notebook-study-card`): one primary study action, then the logged-time row. */}
+  <section aria-label="Current study action" className="notebook-study-card" data-primary-state={active?'focus':'start'}>
+   <span className="notebook-study-symbol" aria-hidden="true">{active?'τ':'∂'}</span>
+   {!active&&<p className="notebook-study-meta notebook-eyebrow">YOUR NEXT STEP</p>}
+   <h2>{active?active.intent:'Make time for focused study'}</h2>
+   <p className="notebook-study-description">{active?(paused?'Paused. Pick up where you left off.':'One thing at a time. Your session is running.'):'Choose an intention, then start a focused session.'}</p>
+   {active&&<div className="notebook-focus-status">
+    <span>{phase==='break'?'On a break':paused?'Paused':'In focus'}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
+    <time aria-label="Session timer">{sessionClock}</time>
+   </div>}
+   {!active&&<div className="lemma-quick-task mb-4">
+    <label>Focus intention
+     <input aria-label="Focus intention" value={intent} onChange={e=>setIntent(e.target.value)}
+      placeholder="What will you work on?" maxLength={200}/>
     </label>
-    {!chosenPreset&&mode!=='open'&&<p className="mt-1 text-caption text-ink-2">Quick mode creates a reusable activity with this configuration.</p>}
-   </>}
+    {isFlagOn('v6Shell')&&<>
+     <PresetPicker selectedPresetId={chosenPreset?.presetId??null}
+      disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice){setIntent(choice.intent);setMode(choice.mode);}else setMode('open');}}/>
+     <label>Timer mode
+      <select aria-label="Timer mode" value={chosenPreset?.mode??mode} disabled={busy||loading}
+       onChange={e=>{setChosenPreset(null);setMode(e.target.value as StudyTimerMode);}}>
+       <option value="open">Open — no phase limit</option>
+       <option value="pomodoro">Pomodoro — 25/5 minute cycles</option>
+       <option value="flowtime">Flowtime — flexible focus</option>
+      </select>
+     </label>
+     {!chosenPreset&&mode!=='open'&&<p className="text-caption text-ink-2">Quick mode creates a reusable activity with this configuration.</p>}
+    </>}
+   </div>}
    <button type="button" ref={heroTrigger} onClick={()=>{void start();}}
-    disabled={busy||loading} className="mt-3 min-h-11 rounded-ctl bg-amber px-5 text-label font-semibold text-amber-ink disabled:opacity-60">
+    disabled={busy||loading} className="notebook-primary disabled:opacity-60">
     {active?'Return to focus':'Start focus'}
    </button>
-   <p className="mt-3 text-label text-ink-2">
-    Logged today: <output aria-label="Logged today" className="font-semibold text-ink tabular-nums">{Math.round(logged*10)/10} min</output>
-   </p>
-   {loading&&<p role="status" className="text-caption text-ink-2">Loading study time…</p>}
-   {error&&<p role="alert" className="mt-2 text-label text-ink">{error}</p>}
+   {active&&<FocusNotices entryId={active.id}
+    onExclude={isFlagOn('v6Shell')?excludeMinutes:undefined}/>}
+   {loading&&<p role="status" className="notebook-paste-note">Loading study time…</p>}
+   {error&&<p role="alert" className="notebook-paste-note text-ink">{error}</p>}
   </section>
+  <a href="#/insights?range=7" className="notebook-daily-progress">
+   <CalendarDays size={20} aria-hidden="true"/>
+   <span>
+    <strong><output aria-label="Logged today" className="tabular-nums">{Math.round(logged*10)/10} min</output> logged today</strong>
+    <span className="notebook-progress-rail" role="progressbar" aria-label="Daily study intention"
+     aria-valuemin={0} aria-valuemax={DAILY_INTENTION} aria-valuenow={Math.min(logged,DAILY_INTENTION)}>
+     <span style={{width:Math.min(100,logged/DAILY_INTENTION*100)+'%'}}/>
+    </span>
+    <small>See your study progress</small>
+   </span>
+   <ChevronRight size={19} aria-hidden="true"/>
+  </a>
   {accessory&&!isFlagOn('v6Shell')&&<>
    <aside aria-label="Focus accessory" className="fixed inset-x-3 bottom-[calc(var(--tab)+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[504px] items-center gap-3 rounded-t-ctl border border-edge bg-[var(--paper)] px-4 py-2 shadow-lg">
     <div className="min-w-0 flex-1">
@@ -298,10 +323,14 @@ export default function TodayFocus(){
    </aside>
    <div aria-hidden="true" className="h-16"/>
   </>}
-  {active&&isFlagOn('v6Shell')?<V6FocusDialog {...dialogProps} entry={active}
-   leaseOwned={leaseOwned} onTakeLease={()=>{void takeControl();}} onNextPhase={()=>{void nextPhase();}}/>:
-   <FocusDialog {...dialogProps}/>}
-  {active&&<FocusNotices entryId={active.id}
-   onExclude={isFlagOn('v6Shell')?excludeMinutes:undefined}/>}
  </>;
+}
+
+/** mm:ss shown on the study card: time left in a timed phase, otherwise time focused so far. */
+function clockText(active:StudyEntryRecord|null,focus:FocusState,now:string){
+ if(!active)return '';
+ const seconds=active.phaseEndsAt?Math.max(0,Math.ceil((Date.parse(active.phaseEndsAt)-Date.parse(now))/1000)):
+  Math.max(0,Math.floor(inProgressFocusMinutes(focus,now)*60));
+ const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;
+ return (h?h+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
 }

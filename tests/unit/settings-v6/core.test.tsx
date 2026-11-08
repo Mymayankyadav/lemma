@@ -3,7 +3,7 @@ import {createRoot,type Root} from 'react-dom/client';
 import {MemoryRouter} from 'react-router';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {readFileSync} from 'node:fs';
-import V6Settings,{SETTINGS_SECTIONS,settingsTabDestination} from '../../../src/features/settings/v6/Page';
+import V6Settings,{SETTINGS_GROUPS,SETTINGS_SECTIONS,settingsTabDestination} from '../../../src/features/settings/v6/Page';
 import {useSettings,useUpdateSettings,useRotateConnectorSecret,useSignOut} from '../../../src/data/hooks';
 import {useToast} from '../../../src/ui/Toast';
 
@@ -63,6 +63,8 @@ async function render(){
   await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
     <V6Settings legacy={<p>Existing settings: memory, reminders and export controls</p>}/>
   </MemoryRouter>));
+  // N117: Settings opens on four grouped rows; Data & account opens on Account.
+  await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Data & account')!.click();await Promise.resolve();});
 }
 function button(label:string){
   const found=[...host.querySelectorAll('button')].find(x=>x.textContent?.trim()===label||x.getAttribute('aria-label')===label);
@@ -93,6 +95,20 @@ describe('N28.1 v6 Settings core panels',()=>{
     expect(selected()).toBe('Reminders');
     expect(host.textContent).toContain('Existing settings: memory, reminders and export');
     expect(host.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('v6-settings-tab-reminders');
+  });
+  it('N117 opens on the four mockup groups, each opening its section page',async()=>{
+    await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
+      <V6Settings legacy={<p>Existing settings</p>}/>
+    </MemoryRouter>));
+    const rows=[...host.querySelectorAll<HTMLButtonElement>('.lemma-settings-link')];
+    expect(rows.map(x=>x.getAttribute('aria-label'))).toEqual(['Appearance','Tutor','Study & review','Data & account']);
+    expect(SETTINGS_GROUPS.map(x=>x.description)).toContain('Day, Night and reading comfort');
+    expect(host.querySelector('[role="tablist"]')).toBeNull();
+    await act(async()=>{rows[1].click();await Promise.resolve();});
+    expect(selected()).toBe('Connector');
+    expect(host.querySelector('.lemma-settings-page h2')?.textContent).toBe('Tutor');
+    await click('‹ All settings');
+    expect(host.querySelectorAll('.lemma-settings-link')).toHaveLength(4);
   });
   it('saves appearance using the existing update-settings hook and reports errors',async()=>{
     await render();

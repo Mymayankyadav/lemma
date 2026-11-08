@@ -36,6 +36,13 @@ const V6_SETTINGS_SECTIONS=[
  {id:'focus',label:'Focus'},{id:'planning',label:'Planning'},
  ...SETTINGS_SECTIONS.slice(3),
 ] as const;
+/** N117 (mockup `10__Page`): Settings opens on four grouped rows; each opens a section page. */
+export const SETTINGS_GROUPS=[
+  {id:'appearance',title:'Appearance',description:'Day, Night and reading comfort',first:'appearance'},
+  {id:'tutor',title:'Tutor',description:'Connection, prompts and teaching style',first:'connector'},
+  {id:'study',title:'Study & review',description:'Planning, sessions and memory preferences',first:'study'},
+  {id:'data',title:'Data & account',description:'Subjects, shortcuts, backup and sign out',first:'account'},
+] as const;
 export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities'|'focus'|'planning';
 
 export function settingsTabDestination(current:SettingsSection,key:string,
@@ -67,7 +74,7 @@ export function SettingsNavigation({selected,onSelect}:{
         onClick={()=>onSelect(section.id)}
         onKeyDown={event=>keyDown(event,section.id)}
         className={'min-h-11 rounded-ctl border px-3 py-2 text-label font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber '+
-          (selected===section.id?'border-amber bg-amber-tint text-ink':'border-edge bg-[var(--paper)] text-ink-2 hover:bg-fill-1')}>
+          (selected===section.id?'border-[var(--ink)] bg-[var(--ink)] text-[var(--paper)]':'border-[var(--control-edge)] bg-[var(--paper)] text-ink-2 hover:bg-[var(--paper-2)]')}>
         {section.label}
       </button>)}
     </div>
@@ -75,6 +82,7 @@ export function SettingsNavigation({selected,onSelect}:{
 }
 export default function V6Settings({legacy}: {legacy:ReactNode}) {
   const [selected,setSelected]=useState<SettingsSection>('account');
+  const [group,setGroup]=useState<typeof SETTINGS_GROUPS[number]|null>(null);
   const [revealed,setRevealed]=useState(false);
   const [rotating,setRotating]=useState(false);
   const [setup,setSetup]=useState(false);
@@ -191,8 +199,23 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     if(selected==='export')return <ExportSettings/>;
     return null;
   };
+  if(!group)return <Screen title="Settings" back="/" className="pb-8 !gap-0">
+    <nav aria-label="Settings groups" className="flex flex-col">
+      {SETTINGS_GROUPS.map(item=><button key={item.id} type="button" className="lemma-settings-link"
+        aria-label={item.title} aria-describedby={'v6-settings-group-'+item.id}
+        onClick={()=>{setGroup(item);setSelected(item.first);}}>
+        <strong>{item.title}</strong>
+        <span id={'v6-settings-group-'+item.id}>{item.description}</span>
+        <span aria-hidden="true">›</span>
+      </button>)}
+    </nav>
+    <p className="notebook-example-note">Lemma · {getMode()==='demo'?'Example workspace':'Your study record'}</p>
+  </Screen>;
   return <Screen title="Settings" back="/" className="pb-8">
-    <SettingsNavigation selected={selected} onSelect={setSelected}/>
+    <div className="lemma-settings-page">
+      <button type="button" className="lemma-settings-back" onClick={()=>setGroup(null)}>‹ All settings</button>
+      <h2>{group.title}</h2>
+      <SettingsNavigation selected={selected} onSelect={setSelected}/>
     {settings.isLoading?<div role="status" className="rounded-slab border border-edge p-5 text-ink-2">
       Loading settings…
     </div>:
@@ -204,5 +227,6 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
       aria-labelledby={'v6-settings-tab-'+selected} className="min-w-0">
       {content()}
     </section>}
+    </div>
   </Screen>;
 }
