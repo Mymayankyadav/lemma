@@ -4,7 +4,7 @@ import {DayPlanError,type DayPlanApi,type DayPlanItem,type DayPlanPatch,
  type NewDayPlanItem,type PlanAvailability} from './contract';
 import {normalizeCommitPlacements,type CommitPlacementsInput} from './placements';
 import {civilPlanDate,normalizeAvailability,normalizeDayPlan,
- normalizePlanItems,planTimeZone,validatePlanClosure} from './model';
+ normalizePlanItems,normalizeDayCloseTransition,planTimeZone,validatePlanClosure} from './model';
 
 type Row=Record<string,unknown>;
 type SqlError={code?:string;message?:string};
@@ -426,7 +426,7 @@ export function createLiveDayPlanApi():DayPlanApi{
    // version snapshot and apply the commit. Browser comparisons are advisory.
    return write('commit',{target:{id:id(key)},expectedVersion:expected,patch:{}});
   },
-  async closePlan(key,expected,ritual){
+  async closePlan(key,expected,ritual,transition){
    version(expected);
    const plan=await getPlan(key);
    if(!plan)return fail('not_found','Owner plan not found');
@@ -444,6 +444,12 @@ export function createLiveDayPlanApi():DayPlanApi{
      tomorrowFirstTaskId:plan.tomorrowFirstTaskId,ritual,
     });
     patch.ritual=value.ritual;
+   }
+   if(transition!==undefined){
+    const checked=normalizeDayCloseTransition(transition);
+    if(checked.tomorrowFirstTaskId!==undefined)
+     patch.tomorrow_first_task_id=checked.tomorrowFirstTaskId;
+    if(checked.carryOver!==undefined)patch.carry_over=checked.carryOver.map(item=>({task_id:item.taskId,reason:item.reason}));
    }
    return write('close',{target:{id:plan.id},expectedVersion:expected,patch});
   },

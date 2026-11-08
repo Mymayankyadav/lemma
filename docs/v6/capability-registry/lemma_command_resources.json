@@ -212,7 +212,8 @@
           "availability",
           "tomorrow_first_task_id",
           "ritual",
-          "items"
+          "items",
+          "carry_over"
         ]
       }
     },
