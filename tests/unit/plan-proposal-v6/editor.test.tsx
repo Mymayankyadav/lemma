@@ -121,4 +121,34 @@ describe('N85 v6 proposal draft editor',()=>{
   expect(adapter.createDraft).not.toHaveBeenCalled();
   expect(host.querySelector('[aria-label="Before targets"]')).not.toBeNull();
  });
+ it('makes a submitted draft read-only without automatically approving the proposal',async()=>{
+  await render();await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Submit draft');
+  await vi.waitFor(()=>expect(host.textContent).toContain('Draft submitted'));
+  const edit=[...host.querySelectorAll('button')].find(x=>x.textContent?.trim()==='Edit draft');
+  expect(edit?.disabled).toBe(true);
+  expect(host.textContent).toContain('submission is not plan approval');
+  expect(mocks.approve.mock.results[0].value.mutateAsync).not.toHaveBeenCalled();
+ });
+ it('shows authoritative current source versions on an optimistic conflict',async()=>{
+  const details={kind:'source_version' as const,current:existing,
+   baseVersions:existing.baseVersions,attemptedPayload:existing.payload,
+   currentSourceVersions:{proposal:9,target:13}};
+  saved.mockRejectedValueOnce(new ProposalDraftError('conflict','Source changed',details));
+  await render();await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Edit draft');await click('Save draft');
+  await vi.waitFor(()=>expect(host.querySelector('[data-current-source-versions]')).not.toBeNull());
+  expect(host.querySelector('[data-current-source-versions]')?.textContent).toContain('proposal 9');
+  expect(host.querySelector('[data-current-source-versions]')?.textContent).toContain('target 13');
+  expect(host.textContent).toContain('Older draft');
+ });
+ it('blocks an approve/reject decision during an unsaved edit',async()=>{
+  await render();await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Edit draft');
+  for(const name of ['Approve plan','Reject proposal']){
+   const button=[...host.querySelectorAll('button')].find(x=>x.textContent?.trim()===name);
+   expect(button?.disabled).toBe(true);
+  }
+  expect(host.textContent).toContain('Save or cancel your draft edit');
+ });
 });

@@ -46,4 +46,13 @@ describe('N85 plan proposal read-only comparison',()=>{
   expect(out.before.map(c=>c.code)).toEqual(['CP2']);
   expect(out.after.map(c=>c.code)).toEqual(['CP2']);
  });
+ it('includes sparse update page references without inventing a source title',()=>{
+  const got=proposalComparison({plan:null,planChange:{ops:[
+   {op:'update',code:'CP1',pages:'21–23'},
+   {op:'update',code:'CP2',title:'Retitle only'},
+   {op:'update',code:'CP1',pages:'21–23'},
+  ]}},before);
+  expect(got.citations).toEqual(['CP1 pages 21–23']);
+  expect(got.changed).toContain('CP1');
+ });
 });

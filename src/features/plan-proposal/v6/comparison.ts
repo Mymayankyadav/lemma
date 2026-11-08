@@ -30,5 +30,9 @@ export function proposalComparison(proposal:Pick<Proposal,'plan'|'planChange'>,
   if(cp.pages&&!cp.source)citations.add('Pages '+cp.pages);
   for(const s of cp.sources??[])citations.add(s.source+(s.pages?' pp. '+s.pages:''));
  }
+ // Sparse UPDATEs can change only page references. Preserve the real
+ // checkpoint code and pages, never fabricate an absent source title.
+ for(const op of proposal.planChange?.ops??[])
+  if(op.op==='update'&&op.pages)citations.add(op.code+' pages '+op.pages);
  return {before,after,adds,removes,changed,citations:[...citations]};
 }

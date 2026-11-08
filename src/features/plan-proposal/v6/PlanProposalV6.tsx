@@ -51,7 +51,7 @@ export default function PlanProposalV6(){
  const comparisons=useMemo(()=>p?proposalComparison(p,project.data?.checkpoints??[]):null,
   [p,project.data]);
  async function save(){
-  if(!draft||pending)return;
+  if(!draft||pending||!['draft','saved'].includes(draft.status))return;
   setPending(true);setProblem('');setConflict(null);
   try{
    const candidate=readPayload(text);
@@ -63,7 +63,7 @@ export default function PlanProposalV6(){
   }finally{setPending(false)}
  }
  async function submit(){
-  if(!draft||pending)return;
+  if(!draft||pending||draft.status!=='saved'||editor)return;
   setPending(true);setProblem('');setConflict(null);
   try{
    const result=await getProposalDraftApi().submitDraft(
@@ -75,7 +75,7 @@ export default function PlanProposalV6(){
   }finally{setPending(false)}
  }
  async function decide(accept:boolean){
-  if(!p||pending)return;
+  if(!p||pending||editor)return;
   setPending(true);setProblem('');
   try{
    if(accept)await approve.mutateAsync({id:p.id});
@@ -136,6 +136,9 @@ export default function PlanProposalV6(){
     {draft&&<>
      <p className="text-caption text-ink-2">Draft {draft.status} · version {draft.draftVersion}
       · base proposal {draft.baseVersions.proposal} / target {draft.baseVersions.target}</p>
+     {draft.status==='submitted'&&<p role="status" className="text-label text-ink-2">
+      Draft submitted. Its submission is not plan approval; the proposal decision remains separate.
+     </p>}
      {!editor?<pre className="max-h-40 overflow-auto rounded-ctl bg-well p-2 text-caption">{payloadText(draft.payload)}</pre>:
       <label className="text-label">Full draft payload (JSON)
        <textarea aria-label="Full draft payload" className="mt-1 min-h-44 w-full rounded-ctl border border-edge bg-well p-2 font-mono text-caption"
@@ -143,7 +146,8 @@ export default function PlanProposalV6(){
       </label>}
      <div className="flex flex-wrap gap-2">
       {editor?<button className={control} disabled={pending} onClick={()=>{void save()}} type="button">Save draft</button>:
-       <button className={control} disabled={pending} onClick={()=>setEditor(true)} type="button">Edit draft</button>}
+       <button className={control} disabled={pending||!['draft','saved'].includes(draft.status)}
+        onClick={()=>setEditor(true)} type="button">Edit draft</button>}
       {editor&&<button className={control} type="button" onClick={()=>{setEditor(false);setText(payloadText(draft.payload))}}>Cancel edit</button>}
       <button type="button" className={control} disabled={pending||draft.status!=='saved'||editor}
        onClick={()=>{void submit()}}>Submit draft</button>
@@ -153,6 +157,10 @@ export default function PlanProposalV6(){
     {conflict&&<section aria-label="Draft conflict" className="rounded-ctl border border-edge p-3">
      <h3 className="text-label font-semibold">Draft changed elsewhere · {conflict.kind.replace('_',' ')}</h3>
      <p className="text-caption">Base versions: proposal {conflict.baseVersions.proposal}, target {conflict.baseVersions.target}</p>
+     {conflict.currentSourceVersions&&<p className="text-caption" data-current-source-versions="">
+      Current source versions: proposal {conflict.currentSourceVersions.proposal},
+      target {conflict.currentSourceVersions.target}. Reload before retrying.
+     </p>}
      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
       {([
        ['Base',conflict.baseVersions],
@@ -166,9 +174,10 @@ export default function PlanProposalV6(){
      <button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Reload current draft</button>
     </section>}
    </section>
+   {editor&&<p className="text-caption text-ink-2">Save or cancel your draft edit before deciding on this plan.</p>}
    <div className="flex flex-wrap gap-2">
-    <button type="button" disabled={pending} className={control} onClick={()=>{void decide(true)}}>Approve plan</button>
-    <button type="button" disabled={pending} className={control} onClick={()=>{void decide(false)}}>Reject proposal</button>
+    <button type="button" disabled={pending||editor} className={control} onClick={()=>{void decide(true)}}>Approve plan</button>
+    <button type="button" disabled={pending||editor} className={control} onClick={()=>{void decide(false)}}>Reject proposal</button>
    </div>
   </>}
  </main>;
