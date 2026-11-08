@@ -165,14 +165,6 @@ Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
 
-## N95 Export covers every v6 record
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
-Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
-Scope: one additive migration adding a read-only `security definer` owner export function (Owner, bug #1156): it lists the names in `lemma_undo_tables` and returns only the caller's own rows (`user_id = auth.uid()`) of one registered table per call in bounded keyset pages, rejects names not in the registry, is executable by `authenticated` only, and grants nothing on the registry itself; the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, docs/current/N95.md.
-Owner-authorized (D1): deploys on merge, so this PR needs a review.
-Not: other adapter methods, UI.
-
 ## N104 Card reschedule and reset (write path and v6 buttons)
 Stage: Build · Status: open · Needs: N84 · Assigned: —
 Done = one additive migration adds `public.card_schedule_command(p)` with operations `reschedule` (set the card's next due date) and `reset` (back to new), owner-checked, with an exactly-once operation receipt, one journalled action that `undo_action` reverses, and a `lemma_command_resources` entry so `mcp_command` can run it; `LemmaApi` gains `rescheduleCard` and `resetCard` (demo and live), and the v6 card detail (N84) shows both actions. Flag off: nothing changes.

@@ -731,16 +731,55 @@ export class LiveAdapter implements LemmaApi {
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
-  const tables=['settings','styles','subjects','projects','sources','source_pages','concepts','concept_links',
-    'checkpoints','checkpoint_prereqs','checkpoint_concepts','sessions','session_events','misconceptions',
-    'notes','cards','reviews','card_comments','proposals']
-  const result:Record<string,Row[]>={}
-  for(const table of tables){
-    result[table]=await rows(db,table,uid)
-    // Export must not leak the live connector credential if the backup file is shared.
-    if(table==='settings') result[table]=result[table].map(({connector_secret: _secret,...safe})=>safe)
+  // Only the owner-scoped SECURITY DEFINER function reads the private registry.
+  // The browser never selects undo metadata or other users' domain tables.
+  const load=async(table:string|null)=>{
+   const accumulated:unknown[]=[]
+   const seen=new Set<string>()
+   let cursor:string|null=null
+   for(let pageNo=0;pageNo<10000;pageNo++){
+    const payload=checked(await db.rpc('lemma_export_page',{
+     p_table:table,p_cursor:cursor,p_limit:100
+    })) as unknown
+    if(!payload||typeof payload!=='object'||Array.isArray(payload))
+     throw new LemmaError('server','Malformed owner export response')
+    const page=payload as Record<string,unknown>
+    if(!Array.isArray(page.rows)||page.rows.length>100||
+       (page.nextCursor!==null&&typeof page.nextCursor!=='string'))
+     throw new LemmaError('server','Malformed owner export page')
+    accumulated.push(...page.rows)
+    if(page.rows.length<100)return accumulated
+    if(!page.nextCursor||seen.has(page.nextCursor))
+     throw new LemmaError('server','Export cursor did not advance')
+    seen.add(page.nextCursor);cursor=page.nextCursor
+   }
+   throw new LemmaError('server','Export exceeds the safe paging bound')
   }
-  return new Blob([JSON.stringify({format:'lemma-backup-v1',exportedAt:new Date().toISOString(),tables:result},null,2)],
-    {type:'application/json'})
+  const registry=await load(null)
+  if(!registry.length)throw new LemmaError('server','Export registry is empty; no backup created')
+  const tables:Record<string,Row[]>={},seen=new Set<string>()
+  const manifest:{table:string;count:number}[]=[]
+  for(const item of registry){
+   if(!item||typeof item!=='object'||Array.isArray(item))
+    throw new LemmaError('server','Export registry returned malformed data')
+   const table=(item as Record<string,unknown>).table_name
+   if(typeof table!=='string'||!/^[a-z_][a-z0-9_]*$/.test(table)||seen.has(table))
+    throw new LemmaError('server','Export registry contains an invalid or duplicate table')
+   seen.add(table)
+   tables[table]=(await load(table)).map(raw=>{
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))
+     throw new LemmaError('server','Export returned malformed rows')
+    const {connector_secret:_secret,...safe}=raw as Row
+    void _secret
+    if(safe.user_id!==uid)
+     throw new LemmaError('server','Export contained a foreign owner record')
+    return safe
+   })
+   manifest.push({table,count:tables[table].length})
+  }
+  return new Blob([JSON.stringify({
+   format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
+   manifest:{registry:'lemma_undo_tables',tables:manifest},tables
+  },null,2)],{type:'application/json'})
  }
 }
