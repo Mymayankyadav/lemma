@@ -14,7 +14,7 @@ const queryClient = () => new QueryClient({ defaultOptions: { queries: { retry: 
 beforeEach(() => {
  clearOwnerChangesCursor()
  sessionStorage.removeItem('lemma.demo')
- window.history.replaceState(null, '', '/')
+ window.history.replaceState(null, '', '/?flags=v6Shell')
  vi.useFakeTimers()
 })
 afterEach(() => {
@@ -24,6 +24,15 @@ afterEach(() => {
 })
 
 describe('N54.1 owner changes and targeted invalidation', () => {
+ it('does not add polling traffic to legacy live screens with the v6 shell off', async () => {
+  window.history.replaceState(null, '', '/?demo=0')
+  const read = vi.fn(async () => page([], 0))
+  const stop = subscribeOwnerChanges('live-account', queryClient(), read)
+  await vi.advanceTimersByTimeAsync(60_000)
+  expect(read).not.toHaveBeenCalled()
+  stop()
+ });
+
  it('invalidates only the registered prefixes for a known resource', async () => {
   const client = queryClient()
   for (const key of ['tasks', 'calendar', 'atlas']) client.setQueryData([key], 1)

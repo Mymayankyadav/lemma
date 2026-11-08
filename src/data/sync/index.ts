@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { getMode } from '../mode'
+import { isFlagOn } from '../../flags'
 import { applyOwnerChangePage, PAGE_SIZE, parseOwnerChangePage, readOwnerChanges } from './feed'
 
 export type ReadOwnerChanges = (cursor: number) => Promise<unknown>
@@ -90,7 +91,10 @@ function beginPolling(owner: string, client: QueryClient, read: ReadOwnerChanges
 export function subscribeOwnerChanges(
  owner: string, client: QueryClient, read: ReadOwnerChanges = readOwnerChanges,
 ): () => void {
- if (!owner || getMode() !== 'live' || typeof window === 'undefined') return () => {}
+ // The change feed owns v6 query invalidation. The legacy shell makes a
+ // bounded set of HTTP calls and must remain unchanged with its flag off.
+ if (!owner || getMode() !== 'live' || !isFlagOn('v6Shell') ||
+  typeof window === 'undefined') return () => {}
  if (shared && (shared.owner !== owner || shared.client !== client)) {
   shared.stop()
   shared = null
