@@ -107,7 +107,8 @@ describe('N79 owner Calendar display preferences',()=>{
  it('uses saved Sunday or Monday first-day settings for week and month ranges',()=>{
   expect(weekStartDay('2026-11-11',0)).toBe('2026-11-08');
   expect(weekStartDay('2026-11-11',1)).toBe('2026-11-09');
-  expect(monthBounds('2026-11-11','UTC',0).days[0]?.day??'2026-11-01').toBe('2026-11-01');
+  expect(monthBounds('2026-11-11','UTC',0).first).toBe('2026-11-01');
+  expect(monthBounds('2026-11-11','UTC',1).first).toBe('2026-10-26');
  });
  it('formats the same owner instant with the selected 12/24-hour clock',()=>{
   expect(formatCalendarTime('2026-11-08T14:05:00Z','UTC',true)).toMatch(/14:05/);
