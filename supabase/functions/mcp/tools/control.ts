@@ -4,7 +4,7 @@ import {planningFields} from '../planning.ts';
 import {Context,scoped,all,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
-import {ownerEditableSettingsFields,prepareSettingsEdit} from './settings-edit.ts';
+import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.ts';
 import {slug,cut} from '../text.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
@@ -89,9 +89,7 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
 export async function undo(c:Context,a:any){await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
 export async function edit(c:Context,a:any){const {table,row,p:given}=await target(c,a);if(!row)throw Error('Target not found');
  if(table==='settings'){
-  const values=prepareSettingsEdit(row,a.set,a.expectedVersion);
-  c.batch!.push({op:'update',table:'settings',where:{user_id:c.userId},
-   ...(a.expectedVersion===undefined?{}:{expected:{version:a.expectedVersion}}),values});
+  c.batch!.push(settingsEditCommand(row,a.set,c.userId,a.expectedVersion));
   return 'edited settings: '+Object.keys(a.set).join(', ');
  }
  if(a.expectedVersion!==undefined)throw Error('expectedVersion currently supported only for settings');

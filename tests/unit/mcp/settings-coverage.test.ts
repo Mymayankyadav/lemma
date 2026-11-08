@@ -1,9 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {readFileSync} from 'node:fs';
-import {edit} from '../../../supabase/functions/mcp/tools/control';
-import type {Context} from '../../../supabase/functions/mcp/db';
 import FSRS from '../../../supabase/functions/_shared/fsrs.js';
-import {ownerEditableSettingsFields,prepareSettingsEdit} from
+import {ownerEditableSettingsFields,prepareSettingsEdit,settingsEditCommand} from
  '../../../supabase/functions/mcp/tools/settings-edit';
 
 const registry=JSON.parse(readFileSync('docs/v6/capability-registry/settings.json','utf8'));
@@ -70,23 +68,20 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
    {user_id:'foreign'}, {connector_secret:'forged'},{updated_source:'forged'}
   ])expect(()=>prepareSettingsEdit(row,payload)).toThrow();
  });
- it('checks versions before batching and repeats the compare-and-swap in mcp_commit',async()=>{
-  const commands:any[]=[];
-  const scopedRow={...row};
-  const c={userId:row.user_id,batch:commands,db:{
-   from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:scopedRow,error:null})})})}),
-  }} as unknown as Context;
-  await expect(edit(c,{target:'settings',set:{focus_defaults:{focus_minutes:45}},
-   expectedVersion:2})).rejects.toThrow(/version conflict/i);
-  expect(commands).toHaveLength(0);
-  await edit(c,{target:'settings',set:{focus_defaults:{focus_minutes:45}},
-   expectedVersion:3});
-  expect(commands).toHaveLength(1);
-  expect(commands[0]).toMatchObject({op:'update',table:'settings',
+ it('builds a safe owner-bound CAS command and refuses stale versions',()=>{
+  expect(()=>settingsEditCommand(row,{focus_defaults:{focus_minutes:45}},
+   row.user_id,2)).toThrow(/version conflict/i);
+  const command=settingsEditCommand(row,{focus_defaults:{focus_minutes:45}},
+   row.user_id,3);
+  expect(command).toMatchObject({op:'update',table:'settings',
    where:{user_id:row.user_id},expected:{version:3}});
-  expect(commands[0].values.focus_defaults).toMatchObject({
+  expect(command.values.focus_defaults).toMatchObject({
    focus_minutes:45,future:{nested:{keep:true}}});
-  expect(commands[0].values).not.toHaveProperty('user_id');
-  await expect(edit(c,{target:'settings',set:{version:900}})).rejects.toThrow();
+  expect(command.values).not.toHaveProperty('user_id');
+  expect(()=>settingsEditCommand(row,{version:900},row.user_id)).toThrow();
+  const handler=readFileSync('supabase/functions/mcp/tools/control.ts','utf8');
+  expect(handler).toContain('settingsEditCommand(row,a.set,c.userId,a.expectedVersion)');
+  const schema=readFileSync('supabase/functions/mcp/server.ts','utf8');
+  expect(schema).toContain('expectedVersion:z.number().int().positive().optional()');
  });
 });

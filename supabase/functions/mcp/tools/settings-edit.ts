@@ -145,3 +145,13 @@ export function prepareSettingsEdit(current:Record<string,unknown>,patch:Record<
  }
  return out;
 }
+
+/** The same queued compare-and-swap command used by the MCP edit handler.
+ * Keeping it pure makes the owner metadata and expected.version boundary
+ * directly testable without importing Deno's npm: modules into Vitest. */
+export function settingsEditCommand(current:Record<string,unknown>,
+ patch:Record<string,unknown>,ownerId:string,expectedVersion?:number){
+ const values=prepareSettingsEdit(current,patch,expectedVersion);
+ return {op:'update',table:'settings',where:{user_id:ownerId},
+  ...(expectedVersion===undefined?{}:{expected:{version:expectedVersion}}),values};
+}
