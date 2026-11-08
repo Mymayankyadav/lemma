@@ -84,9 +84,9 @@ export default function Page(){
   canCloseOwnerDay(date,new Date(),planZone)&&
   plan?.status==='committed'&&thoughts.length===0;
  return <main aria-label="Close day ritual" className="flex min-w-0 flex-col gap-4 pb-24">
-  <header className="flex items-center justify-between gap-2">
+  <header className="flex flex-wrap items-center justify-between gap-2">
    <button type="button" className={control} onClick={()=>navigate('/')}>Back to Today</button>
-   <h1 className="text-title-s font-semibold">Close the day</h1>
+   <h1 className="min-w-0 break-words text-title-s font-semibold">Close the day</h1>
   </header>
   <p className="text-label text-ink-2"><time dateTime={date}>{date}</time> · {planZone}</p>
   {error&&<p role="alert">{error}</p>}
@@ -104,7 +104,7 @@ export default function Page(){
    <section aria-label="Saved study today" className="rounded-ctl border border-edge p-3">
     <h2 className="font-semibold">What you saved today</h2>
     {saved.length?<ul className="mt-2 list-disc pl-5">{saved.map(entry=>
-     <li key={entry.id}>{entry.intent||'Study session'} · {entry.rating??'Unrated'}</li>)}
+     <li key={entry.id} className="break-words">{entry.intent||'Study session'} · {entry.rating??'Unrated'}</li>)}
     </ul>:<p className="text-label text-ink-2">No saved focus for this date.</p>}
    </section>
    <section aria-label="Resolve parked thoughts" className="rounded-ctl border border-edge p-3">

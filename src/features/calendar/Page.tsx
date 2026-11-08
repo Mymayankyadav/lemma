@@ -273,6 +273,9 @@ function V6Calendar() {
           dueForDay(date,date,zone,dues).length===0 &&
           <p className="mb-3 text-label text-ink-2">Nothing planned.</p>}
         <DueDayItems date={date} firstVisible={date} zone={zone} dues={dues}/>
+        <div role="region" aria-label="Day hourly timetable" tabIndex={0}
+          className="max-w-full overflow-x-auto rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
+          <div className="min-w-[320px]">
         <div className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge pb-2 text-caption font-semibold text-ink-2">
           <span>Hour</span><span>Logged study</span><span>Planned blocks</span>
         </div>
@@ -297,6 +300,8 @@ function V6Calendar() {
             </div>}
           </article>)}</div>
         </div>)}
+          </div>
+        </div>
       </Slab>
     </>}
     <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
