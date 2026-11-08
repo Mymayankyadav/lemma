@@ -359,3 +359,30 @@ describe('N68 stale planner preview isolation',()=>{
   }
  });
 });
+
+
+describe('N68 Calendar owner date navigation',()=>{
+ it('closes an old date preview when the selected calendar day changes without unmounting',async()=>{
+  services.tasks.mockReset();
+  services.tasks.mockResolvedValue({items:[],total:0,nextCursor:null});
+  services.blocks.mockResolvedValue([]);
+  services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-07" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-08" zone="UTC"/>));
+   expect(host.querySelector('dialog')).toBeNull();
+   expect(host.querySelector('[aria-label="Planner preview"]')).toBeNull();
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   expect(host.textContent).toContain('Owner time zone: UTC');
+  }finally{
+   await act(async()=>root.unmount());host.remove();
+  }
+ });
+});

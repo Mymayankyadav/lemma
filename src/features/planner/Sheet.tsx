@@ -50,6 +50,18 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  },[opened]);
  const ownerZone=zone||Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
  const anchor=date??ownerDay(ownerZone);
+ // Calendar navigation can change the owner's selected date without
+ // unmounting this launcher. An old preview may never be committed using a
+ // different calendar date or time zone.
+ const scopeKey=anchor+'|'+ownerZone;
+ const lastScope=useRef(scopeKey);
+ useEffect(()=>{
+  if(lastScope.current===scopeKey)return;
+  lastScope.current=scopeKey;
+  ++loadEpoch.current;
+  if(typeof dialog.current?.close==='function')dialog.current.close();
+  setOpened(false);setLoading(false);setPreview(null);
+ },[scopeKey]);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
  const [preview,setPreview]=useState<PlannerResult|null>(null);
