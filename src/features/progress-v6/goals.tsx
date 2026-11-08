@@ -70,8 +70,8 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
  const nameProject=(id:string|null|undefined)=>id?projects.find(p=>p.id===id)?.title??id:'All projects';
  const now=new Date().toISOString();
  return <Slab as="section" aria-label="Study goals" className="flex flex-col gap-3 p-4">
-  <div className="flex items-center justify-between gap-2">
-   <div><h2 className="text-title-s font-semibold">Study goals</h2>
+  <div className="flex flex-wrap items-center justify-between gap-2">
+   <div className="min-w-0"><h2 className="text-title-s font-semibold">Study goals</h2>
     <p className="text-caption text-ink-2">Saved focus time within each goal's exact dates and scope</p></div>
    <button type="button" className={button} onClick={openCreate} aria-expanded={formOpen}>New goal</button>
   </div>
@@ -87,7 +87,7 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
       <strong className="text-label">{goal.period==='week'?'Weekly':goal.period==='month'?'Monthly':'Custom'} goal</strong>
       <span className="text-caption text-ink-2">{goal.startDate} – {goal.endDate}</span>
      </div>
-     <p className="mt-1 break-words text-caption text-ink-2">{nameSubject(goal.subjectId)} · {nameProject(goal.projectId)} · {goal.timeZone}</p>
+     <p className="mt-1 break-words text-caption text-ink-2 [overflow-wrap:anywhere]">{nameSubject(goal.subjectId)} · {nameProject(goal.projectId)} · {goal.timeZone}</p>
      <label className="mt-2 block text-label" htmlFor={'goal-progress-'+goal.id}>
       <span className="font-semibold tabular-nums">{formatExactMinutes(saved)} of {target} min saved</span>
       <progress id={'goal-progress-'+goal.id} value={Math.min(saved,target)} max={target} className="mt-1 block h-3 w-full"
@@ -100,9 +100,9 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
      </div>
     </li>;
    })}</ul>}
-   <div className="flex items-center justify-between gap-2 text-label">
+   <div className="flex flex-wrap items-center justify-between gap-2 text-label">
     <span>{page.items.length} shown · {page.total} active goal{page.total===1?'':'s'}</span>
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2">
      <button type="button" className={button} disabled={!canPrevious} onClick={onPrevious}>Previous goals</button>
      <button type="button" className={button} disabled={!page.nextCursor} onClick={onNext}>Next goals</button>
     </div>
@@ -116,10 +116,10 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
       subjectId:old.subjectId,projectId:old.projectId}));
     }}><option value="week">Week</option><option value="month">Month</option><option value="custom">Custom</option></select>
    </label>
-   <div className="grid grid-cols-2 gap-2">
-    <label className="block text-label">Start date
+   <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+    <label className="min-w-0 block text-label">Start date
      <input className={input} type="date" required value={draft.startDate} onChange={e=>change('startDate',e.target.value)}/></label>
-    <label className="block text-label">End date (inclusive)
+    <label className="min-w-0 block text-label">End date (inclusive)
      <input className={input} type="date" required value={draft.endDate} onChange={e=>change('endDate',e.target.value)}/></label>
    </div>
    <label className="block text-label">Time zone

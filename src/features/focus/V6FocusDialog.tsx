@@ -64,7 +64,7 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
    <button type="button" ref={firstControl} onClick={close}
     className="min-h-11 rounded-ctl border border-edge px-4 text-label font-semibold">Close</button>
   </div>
-  <p className="mt-2 text-body font-semibold">{session.intent}</p>
+  <p className="mt-2 break-words text-body font-semibold [overflow-wrap:anywhere]">{session.intent}</p>
   <p aria-live="polite" className="mt-2 text-label text-ink-2">
    {state.phase==='finishing'?'Ready to save':
     Math.ceil(remainingFocusMinutes(state,now))+' min remaining'}

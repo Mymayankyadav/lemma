@@ -105,8 +105,8 @@ export default function ProgressV6() {
       </Slab>
       {range !== 'day' && <Slab as="section" aria-label="Daily logged minutes" className="flex flex-col gap-2 p-3">
         <h3 className="text-body font-semibold">Logged by day</h3>
-        {summary.daily.map(day => <div key={day.day} className="grid grid-cols-[64px_minmax(0,1fr)_48px] items-center gap-2 text-caption">
-          <time dateTime={day.day} className="text-ink-2">{shortDay(day.day)}</time>
+        {summary.daily.map(day => <div key={day.day} className="grid min-w-0 grid-cols-[minmax(0,64px)_minmax(0,1fr)_auto] items-center gap-2 text-caption">
+          <time dateTime={day.day} className="break-words text-ink-2">{shortDay(day.day)}</time>
           <div className="h-3 overflow-hidden rounded-ctl bg-well" role="img" aria-label={shortDay(day.day) + ': ' + formatExactMinutes(day.minutes) + ' minutes'} title={String(day.minutes)+' actual minutes'}>
             <div className="h-full rounded-ctl bg-amber" style={{ width: (100 * day.minutes / maxDaily) + '%' }} />
           </div>
@@ -118,7 +118,7 @@ export default function ProgressV6() {
         {summary.parts.length === 0 && <p className="text-label text-ink-2">No saved study time in this range.</p>}
         <ul className="space-y-2">{summary.exactParts.map(part =>
           <li key={part.id} className="flex items-center justify-between gap-3 text-label">
-            <span className="min-w-0 break-words">{part.label}</span>
+            <span className="min-w-0 break-words [overflow-wrap:anywhere]">{part.label}</span>
             <strong className="shrink-0 tabular-nums">{formatExactMinutes(part.minutes)} min</strong>
           </li>
         )}</ul>

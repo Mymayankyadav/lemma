@@ -19,27 +19,6 @@ Tests: `tests/mcp/sql/notify-command.mjs` (rename, disable, restore, hold create
 Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/mcp/sql/notify-command.mjs, tests/unit/mcp/notify-coverage.test.ts, tests/mcp/sql/parity.mjs (the two new resources only), docs/v6/capability-registry/{lemma_command_resources,lemma_undo_tables,push_devices,notify_holds,notifications}.json, CURRENT.md.
 Not: the notify Edge function, app code, sending or scheduling notifications.
 
-## N90 MCP: historical corrections, proposal versions and drafts
-Stage: Build · Status: open · Needs: N91, N92 · Assigned: —
-Done = MCP exposes the N91 corrections (`session_event_corrections`, `review_corrections`) and N49 `proposal_drafts`, which are already registered, through `mcp_command`, with explicit-instruction rules from D3. Owner decision (plan audit 2026-11-08): the N92 functions `withdraw_proposal`, `revise_proposal` and `reopen_proposal` need the owner's identity, which MCP only has inside `mcp_command`, so one additive migration registers a `proposals` resource with a `proposals_command(p)` that dispatches `withdraw`, `revise` and `reopen` to those functions unchanged (versioned approval stays `approve_proposal`). It is covered by a round trip in `tests/mcp/sql/parity.mjs`.
-Owner-authorized (D1, D8): deploys the migration and the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/history-coverage.test.ts`, `tests/mcp/sql/proposals-command.mjs` (withdraw, revise, reopen, stale version, foreign owner, undo), the `proposals` round trip in `tests/mcp/sql/parity.mjs`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/unit/mcp/history-coverage.test.ts, tests/mcp/sql/proposals-command.mjs, tests/mcp/sql/parity.mjs (the proposals resource only), docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
-Not: app code, changes to the N92 functions themselves.
-
-## N98 Harden: Today, Focus, time log and Progress
-Stage: Build · Status: open · Needs: N70, N72, N73, N76 · Assigned: —
-Done = review the fast-built first slice and its additions against `docs/v6/DESIGN_HANDOFF.md` and contract §6: exact geometry at 320/360/390 widths, 200% text, Day/Night, keyboard and Back, reload and two-tab behaviour, long mathematics; fix every defect found within these folders and record intentional limitations in CURRENT.md.
-Tests: `tests/e2e/v6-harden-slice.spec.ts` covering the journeys and geometry found
-Scope: src/features/home/** (v6 branch), src/features/focus/**, src/features/time-log/**, src/features/progress-v6/**, src/app/FocusAccessory.tsx, tests/e2e/v6-harden-slice.spec.ts, CURRENT.md.
-Not: data adapters, supabase/**, other screens.
-
-## N99 Harden: tasks, planner, Calendar and ritual
-Stage: Build · Status: open · Needs: N68, N69, N74, N75, N78 · Assigned: —
-Done = as N98 for `/tasks`, the planner sheet, all four Calendar views with deadlines/practice/overlaps, the ritual and practice screens, including overloaded and empty days, DST weeks and 50+ task accounts.
-Tests: `tests/e2e/v6-harden-planning.spec.ts`
-Scope: src/features/tasks/**, src/features/planner/**, src/features/calendar/**, src/features/ritual/**, src/features/practice/**, tests/e2e/v6-harden-planning.spec.ts, CURRENT.md.
-Not: data adapters, supabase/**, other screens.
 
 ## N100 Harden: learning screens
 Stage: Build · Status: open · Needs: N80, N81, N82, N83, N84, N85, N86 · Assigned: —

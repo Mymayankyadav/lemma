@@ -11,9 +11,12 @@ export default function FocusAccessory(){
  const [now,setNow]=useState(()=>Date.now());
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  useEffect(()=>{
-  let alive=true;
-  const refresh=()=>{void api.activeStudyEntry().then(row=>{if(alive)setEntry(row);})
-   .catch(()=>{if(alive)setError('Focus status unavailable. Reopen Today to retry.');});};
+  let alive=true,request=0;
+  // The last owner read wins. A slow visibility refresh must not overwrite a
+  // newer pause/lease change received after another route or tab became active.
+  const refresh=()=>{const current=++request;
+   void api.activeStudyEntry().then(row=>{if(alive&&request===current){setEntry(row);setError('');}})
+    .catch(()=>{if(alive&&request===current)setError('Focus status unavailable. Reopen Today to retry.');});};
   const visibleRefresh=()=>{if(document.visibilityState!=='hidden')refresh();};
   refresh();
   window.addEventListener('lemma:focus-changed',refresh);
@@ -25,7 +28,7 @@ export default function FocusAccessory(){
    if(document.visibilityState!=='hidden')refresh();
   },30_000);
   return()=>{
-   alive=false;window.clearInterval(clock);
+   alive=false;request++;window.clearInterval(clock);
    window.removeEventListener('lemma:focus-changed',refresh);
    window.removeEventListener('focus',visibleRefresh);
    window.removeEventListener('online',visibleRefresh);
@@ -53,13 +56,13 @@ export default function FocusAccessory(){
   navigate('/?focus=open');
  }
  return <aside aria-label="Focus accessory" data-v6-focus-accessory=""
-  className="fixed inset-x-3 z-30 mx-auto flex max-w-[504px] flex-col rounded-ctl border border-edge bg-[var(--paper)] px-3 py-2 shadow-lg"
+  className="fixed inset-x-3 z-30 mx-auto flex max-h-[56dvh] max-w-[504px] flex-col overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] px-3 py-2 shadow-lg"
   style={{bottom:pathname==='/proposals'?
    'calc(var(--tab) + env(safe-area-inset-bottom) + 128px)':
    'calc(var(--tab) + env(safe-area-inset-bottom) + 8px)'}}>
-  <div className="flex min-w-0 items-center gap-2">
-   <div className="min-w-0 flex-1">
-    <p className="truncate text-label font-semibold text-ink">{entry.intent}</p>
+  <div className="flex min-w-0 flex-wrap items-center gap-2">
+   <div className="min-w-32 flex-1">
+    <p className="line-clamp-2 break-words text-label font-semibold text-ink [overflow-wrap:anywhere]" title={entry.intent}>{entry.intent}</p>
     <p className="text-caption text-ink-2">{entry.phase==='long_break'?'Long break':
       entry.phase==='break'?'Break':paused?'Paused':'Focus'} · {minutes===null?'No deadline':minutes+' min to phase deadline'}</p>
    </div>
