@@ -147,6 +147,13 @@ const specs={
   ended_at:'2026-11-06T08:20:00Z'},
   update:{kind:'break'},column:'kind',updated:'break'},
 };
+// Count only operations whose owner/MCP round trip has actually passed.
+const exercised=new Map();
+function mark(resource,...operations){
+ let tested=exercised.get(resource);
+ if(!tested){tested=new Set();exercised.set(resource,tested)}
+ for(const op of operations)tested.add(op);
+}
 async function roundTrip(resource,details){
  // Requires a service-role command, a real authenticated app owner read/write,
  // then an MCP/owner re-read, logical deletion, and undo restoration.
@@ -259,6 +266,7 @@ async function roundTrip(resource,details){
   [created.actionNo]))[0];
  assert.equal(action.user_id,owner,resource+': incorrect journal owner');
  assert.equal(action.source,'chatgpt',resource+': MCP source not preserved');
+ mark(resource,'create',updateOp,'delete');
  return id;
 }
 try{
@@ -337,6 +345,7 @@ try{
   assert.equal((await mcpPage('deadlines',deadlineId)).total,1,
    'deadlines.'+operation+': MCP owner read missing');
   if(operation==='restore')deadlineRestoreAction=receipt.actionNo;
+  mark('deadlines',operation);
   await role('service_role');
  }
  await as(owner);
@@ -397,6 +406,7 @@ try{
   [destination]))[0].n,0,'parked conversion undo left task behind');
  assert.equal((await q('select status,version from public.parked_thoughts where id=$1',
   [thoughtId]))[0].status,'open');
+ mark('parked_thoughts','dismiss','reopen','convert_to_task');
 
  // Practice: preserve history and due-date behavior through MCP record,
  // archive/restore, void_event, and owner-visible registered read.
@@ -433,8 +443,88 @@ try{
  assert.ok((await q('select voided_at from public.practice_events where id=$1',
   [event.id]))[0].voided_at);
  assert.ok(voided.actionNo>rated.actionNo);
+ mark('practice_topics','archive','restore','record','void_event');
 
- console.log('PASS N94 9 resource CRUD + parked/practice lifecycle, registered MCP GET, replay and undo');
- console.log('N94 coverage pending expansion beyond nine base registry resources: '+
+ // Study events have no generic CRUD verb: record, edit, void and restore
+ // are the complete schema. Exercise MCP creation, authenticated app edit,
+ // MCP registered GET, version conflicts, lifecycle and single-action undo.
+ await role('service_role');
+ const notice=command('study_events','record',{patch:{
+  entry_id:entryId,kind:'notice',note:'Owner noticed drift',
+  occurred_at:'2026-11-06T08:10:00Z'}});
+ const recorded=status(await mcp(notice),'study_events','record');
+ const eventId=recorded.changed[0].id;
+ assert.equal(recorded.changed[0].version,1);
+ const beforeEventReplay=(await q('select count(*)::int n from public.actions where user_id=$1',
+  [owner]))[0].n;
+ assert.deepEqual(await mcp(notice),recorded,'study_events: replay differs');
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',
+  [owner]))[0].n,beforeEventReplay,'study_events: replay journalled a mutation');
+ const changedNotice=await mcp({...notice,patch:{...notice.patch,note:'Different valid note'}});
+ assert.equal(changedNotice.status,'conflict','study_events: changed operationId accepted');
+ await as(owner);
+ const ownerEvent=(await q('select * from public.study_events where id=$1',[eventId]))[0];
+ assert.equal(ownerEvent.user_id,owner,'study_events: MCP create hidden from app');
+ assert.equal(ownerEvent.note,'Owner noticed drift');
+ const edit=status(await app('study_events_command',command('study_events','edit',{
+  target:{id:eventId},expectedVersion:1,patch:{note:'Owner edited study event'}
+ })),'study_events','edit');
+ assert.equal(edit.changed[0].version,2);
+ await role(null);
+ const seenEvent=await mcpPage('study_events',eventId);
+ assert.equal(seenEvent.total,1,'study_events: MCP cannot read app edit');
+ assert.equal(seenEvent.items[0].note,'Owner edited study event');
+ assert.ok(!('user_id' in seenEvent.items[0]));
+ const eventColumns=JSON.parse(await readFile(new URL('study_events.json',
+  new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8')).columns;
+ requireFields('study_events',registered.get('study_events').schema.fields,
+  Object.fromEntries(registered.get('study_events').schema.fields.map(field=>[
+   field,{appPath:Object.hasOwn(eventColumns,field)&&Object.hasOwn(ownerEvent,field)?
+    'authenticated app row':'missing',
+    mcpPath:Object.hasOwn(seenEvent.items[0],field)?'MCP GET projection':'missing'}
+  ])));
+ assert.equal((await mcpPage('study_events',eventId,other)).total,0,
+  'study_events: foreign owner read');
+ await role('service_role');
+ const staleEdit=await mcp(command('study_events','edit',{
+  target:{id:eventId},expectedVersion:1,patch:{note:'Stale note'}
+ }));
+ assert.equal(staleEdit.status,'conflict','study_events: accepted stale edit');
+ const voidReceipt=status(await mcp(command('study_events','void',{
+  target:{id:eventId},expectedVersion:2,patch:{}
+ })),'study_events','void');
+ assert.equal(voidReceipt.changed[0].version,3);
+ await role(null);
+ assert.ok((await q('select voided_at from public.study_events where id=$1',
+  [eventId]))[0].voided_at,'study_events: void failed to persist');
+ await role('service_role');
+ const restoreReceipt=status(await mcp(command('study_events','restore',{
+  target:{id:eventId},expectedVersion:3,patch:{}
+ })),'study_events','restore');
+ assert.equal(restoreReceipt.changed[0].version,4);
+ await role(null);
+ assert.equal((await q('select voided_at from public.study_events where id=$1',
+  [eventId]))[0].voided_at,null,'study_events: restore did not persist');
+ await as(owner);
+ const undoRestore=await undo(restoreReceipt.actionNo);
+ assert.equal(undoRestore.undone,restoreReceipt.actionNo);
+ await role(null);
+ assert.ok((await q('select voided_at from public.study_events where id=$1',
+  [eventId]))[0].voided_at,'study_events: undo restore did not re-void');
+ mark('study_events','record','edit','void','restore');
+
+ // For the *actually completed* resource operation families, never allow a
+ // missing schema operation to be covered by a metadata-only smoke test.
+ const full=['tasks','calendar_blocks','study_intervals','deadlines',
+  'parked_thoughts','practice_topics','study_events'];
+ for(const resource of full)requireCoverage(resource,
+  registered.get(resource).schema.operations,exercised.get(resource)||new Set());
+ const missingOps=registry.flatMap(row=>row.schema.operations
+  .filter(operation=>!exercised.get(row.resource)?.has(operation))
+  .map(operation=>row.resource+'.'+operation));
+ console.log('N94 unfinished operation paths ('+missingOps.length+'): '+missingOps.join(', '));
+
+ console.log('PASS N94 10 resource families with study_events, owner GET, lifecycle, receipts and undo');
+ console.log('N94 coverage pending expansion beyond ten covered registry resources: '+
   registry.filter(r=>!Object.hasOwn(specs,r.resource)).map(r=>r.resource).join(', '));
 }finally{await db.close();}
