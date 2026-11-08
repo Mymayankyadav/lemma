@@ -11,22 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N45 Study goals: migration (study_goals)
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = per D8(b), table `public.study_goals` with `period` (`week`/`month`/`custom`), `start_date`, `end_date`, `time_zone`, optional subject/project scope, `target_minutes`, `archived_at`. Operations create, update, archive, restore, delete. Scope is by ID, never by display name; overlapping goals for the same scope and period are rejected.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
-
-## N49 Proposal drafts: migration (proposal_drafts)
-Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
-Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
-
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
@@ -48,14 +32,6 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body 
 Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, docs/v6/capability-registry/study_entries.json, CURRENT.md.
 Not: app or MCP code, other functions.
-
-## N53 Pending decisions with a server executor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.pending_commands` (operation ID, resource, payload, `not_before`, `undo_until`, `status` `scheduled`/`executing`/`succeeded`/`failed`/`cancelled`, result, error class) and `public.pending_command(p)` to schedule, extend or cancel a registered-resource command, plus `public.lemma_run_due_commands()` that executes due rows once each through the registry (row lock, idempotent on retry). It runs from the existing scheduled `notify` tick (one call added in `supabase/functions/notify/tick-core.ts`), never from a browser timer. The app's delayed-approval toasts may later use it; nothing changes for current flows.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/pending-commands.mjs` (due execution exactly once, cancel before due, extension, failure recorded, second owner, undo of the executed command) and a unit test for the tick call
-Scope: supabase/migrations/<one new additive file>, supabase/functions/notify/tick-core.ts (one call), tests/mcp/sql/pending-commands.mjs, tests/unit/notify/pending-tick.test.ts, docs/v6/capability-registry/pending_commands.json (new), CURRENT.md.
-Not: other notify behaviour, MCP code, app code.
 
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
@@ -95,7 +71,7 @@ Not: other screens' folders, `src/data/**` except reading through existing APIs,
 
 ## N70 v6 Today: intention, next block, add task and onboarding behind the shell flag
 Stage: Build · Status: open · Needs: N60.2 · Assigned: —
-Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry linked to it), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
+Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry that carries the block's existing subject/project/checkpoint links through the existing `StudyApi.startStudyEntry`; an exact calendar-block link on the entry is N106, Owner, bug #1168), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
 Tests: `tests/unit/home-v6/today-plan.test.tsx`
 Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
@@ -118,33 +94,26 @@ Not: other screens' folders, `src/data/**` except reading through existing APIs,
 Stage: Build · Status: open · Needs: N55 · Assigned: —
 Done = with `v6Shell` on, Settings gains an Activities section to create, edit, reorder, archive and restore presets; the Focus start control lists active presets (selection is passed through once N72 lands; until then it pre-fills the intent and links). Flag off: nothing changes.
 Tests: `tests/unit/presets-ui/**`
-Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), tests/unit/presets-ui/**, CURRENT.md.
+Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
 Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
 Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
-Not: other screens, other settings sections, supabase/**.
+Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
+Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
 
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
 Tests: `tests/unit/sources-v6/**`
-Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), tests/unit/sources-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N83 v6 review run and done with durable runs behind the shell flag
-Stage: Build · Status: open · Needs: N62.2 · Assigned: —
-Done = with `v6Shell` on, starting from Review creates a durable run (N62's `start`); the run screen shows position/total, reveals and grades through the existing grade path and then `advance`; leaving and returning resumes the same run at the same item without replaying a grade; stale items are skipped with a note; Done shows the run's counts and next arrivals. Flag off: nothing changes.
-Tests: `tests/unit/review-run-v6/**`
-Scope: src/features/review-run/v6/** and src/features/review-done/v6/** (new), src/features/review-run/Page.tsx and src/features/review-done/Page.tsx (the flag branches only), src/features/review/v6/** (starting a run only), tests/unit/review-run-v6/**, CURRENT.md.
+Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), src/features/project/v6/V6Project.tsx (mount the v6 sources panel in place of its source list only; Owner, bug #1119), tests/unit/sources-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N84 v6 card detail and editor behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/cards/:no` shows the note's variants, scheduling state, review history and comments with the existing edit, suspend/restore, reschedule, reset and comment actions; the editor previews mathematics and keeps the existing save path. Flag off: nothing changes.
+Done = with `v6Shell` on, `/cards/:no` shows the note's variants, scheduling state, review history and comments with the existing edit, suspend/restore and comment actions (reschedule and reset have no write path yet; they arrive in N104, Owner, bug #1140); the editor previews mathematics and keeps the existing save path. Flag off: nothing changes.
 Tests: `tests/unit/card-v6/**`
 Scope: src/features/card/v6/** (new), src/features/card/Page.tsx (the flag branch only), tests/unit/card-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
@@ -158,26 +127,10 @@ Not: other screens' folders, `src/data/**` except reading through existing APIs,
 
 ## N86 v6 Atlas editing in the list behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the v6 Atlas list adds create concept, edit name/blurb, reparent, link/unlink prerequisite or related, pin/unpin and merge, each through the existing write paths with an impact note for merges; cycles are refused with a reason. Flag off: nothing changes.
+Done = with `v6Shell` on, the v6 Atlas list adds pin/unpin through the existing write path and a read-only merge impact and cycle check (create, edit, reparent, link/unlink and merge have no write path yet; they arrive in N105, Owner, bug #1140). Flag off: nothing changes.
 Tests: `tests/unit/atlas-v6/edit.test.tsx`
 Scope: src/features/atlas/v6/**, tests/unit/atlas-v6/edit.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N93 Slug and code aliases, source and page revisions
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration adds `public.record_aliases` (owner, kind `project`/`concept`/`checkpoint`, old value, target ID; unique per owner and kind) maintained by triggers when a slug or code changes, `public.resolve_alias(kind, value)`, and `public.source_revisions` / `public.source_page_revisions` with content hashes captured by triggers on edit, so citations and edit conflicts survive later corrections.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/aliases-revisions.mjs` (rename keeps old links resolvable, collisions refused, revisions captured once per change, second owner)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisions.mjs, docs/v6/capability-registry/record_aliases.json, docs/v6/capability-registry/source_revisions.json, docs/v6/capability-registry/source_page_revisions.json, CURRENT.md.
-Not: app or MCP code.
-
-## N37 MCP: generic commands and resource discovery
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the `study` tool sends any registered resource's envelope to `mcp_command` (study entries, calendar blocks and tasks keep their current behaviour), `get` and `search` read registered resources in bounded pages, and a `resources` capability (inside an existing tool, so `tools/list` stays under 15,000 characters) lists registered resources with their field/operation schemas from `lemma_command_resources`, so new resources need no MCP code change.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/**` and `tests/mcp/sql/mcp-generic.mjs` (a resource registered only in the test is discoverable, readable and writable; existing study/task MCP tests unchanged)
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/mcp-generic.mjs, CURRENT.md.
-Not: migrations, existing tools' inputs or outputs.
 
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
@@ -243,8 +196,33 @@ Not: data adapters, supabase/**, flag-off pages.
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
 Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
-Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
+Scope: one additive migration adding a read-only `security definer` owner export function (Owner, bug #1156): it lists the names in `lemma_undo_tables` and returns only the caller's own rows (`user_id = auth.uid()`) of one registered table per call in bounded keyset pages, rejects names not in the registry, is executable by `authenticated` only, and grants nothing on the registry itself; the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, docs/current/N95.md.
+Owner-authorized (D1): deploys on merge, so this PR needs a review.
 Not: other adapter methods, UI.
+
+## N104 Card reschedule and reset (write path and v6 buttons)
+Stage: Build · Status: open · Needs: N84 · Assigned: —
+Done = one additive migration adds `public.card_schedule_command(p)` with operations `reschedule` (set the card's next due date) and `reset` (back to new), owner-checked, with an exactly-once operation receipt, one journalled action that `undo_action` reverses, and a `lemma_command_resources` entry so `mcp_command` can run it; `LemmaApi` gains `rescheduleCard` and `resetCard` (demo and live), and the v6 card detail (N84) shows both actions. Flag off: nothing changes.
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/card-schedule-command.mjs` (owner separation, replay, undo, MCP parity) and `tests/unit/card-v6/**`
+Scope: supabase/migrations/<one new additive file>, src/data/api.ts (two methods), the demo and live card adapters in src/data/**, src/features/card/v6/**, tests/mcp/sql/card-schedule-command.mjs, tests/unit/card-v6/**, docs/current/N104.md.
+Not: review grading or FSRS changes, other screens.
+
+## N105 Concept graph edits (write path and v6 Atlas actions)
+Stage: Build · Status: open · Needs: N86 · Assigned: —
+Done = one additive migration adds `public.concepts_command(p)` with operations create, update (name, blurb), reparent, link and unlink (prerequisite or related) and merge (moving links and card references to the kept concept, impact returned first by a preview), refusing cycles with a reason, owner-checked, with exactly-once receipts, one journalled undoable action each and a `lemma_command_resources` entry for `mcp_command`; `LemmaApi` gains the matching methods (demo and live), and the v6 Atlas list (N86) offers them. Flag off: nothing changes.
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/concepts-command.mjs` (cycles, merge impact, owner separation, replay, undo, MCP parity) and `tests/unit/atlas-v6/**`
+Scope: supabase/migrations/<one new additive file>, src/data/api.ts (concept methods), the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/mcp/sql/concepts-command.mjs, tests/unit/atlas-v6/**, docs/current/N105.md.
+Not: concept placement layout, other screens.
+
+## N106 Study entry linked to its calendar block
+Stage: Build · Status: open · Needs: N70 · Assigned: —
+Done = one additive migration adds a nullable owner-composite `calendar_block_id` on study entries (an entry may point only at one of the owner's own blocks); `StudyApi.startStudyEntry` accepts it (demo and live) and v6 Today's Start passes the block it starts. Existing entries and callers are unchanged. Flag off: nothing changes.
+Owner-authorized (D1): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/study-entry-block-link.mjs` (owner separation, foreign block refused) and `tests/unit/home-v6/today-plan.test.tsx`
+Scope: supabase/migrations/<one new additive file>, the study entry types and start method in src/data/** (demo and live), the Start call in src/features/home/** (v6 branch), tests/mcp/sql/study-entry-block-link.mjs, tests/unit/home-v6/today-plan.test.tsx, docs/current/N106.md.
+Not: calendar editing, other screens.
 
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
