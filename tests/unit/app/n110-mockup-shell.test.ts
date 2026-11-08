@@ -19,6 +19,10 @@ describe('N110 reviewed mockup shell port',()=>{
   expect(mockup).toContain(':root[data-v6] nav[data-ui=main-navigation]');
   expect(mockup).toContain(':root[data-v6] .ui-button');
   expect(mockup).not.toMatch(/(^|\n)\s*html\[data-theme=/);
+  // N110 may alter chrome and shared controls, not preempt the screen-body ports.
+  expect(mockup).not.toContain(':root[data-v6] .notebook-today');
+  expect(mockup).not.toContain(':root[data-v6] .lemma-review-stage');
+  expect(mockup).toContain('white-space:normal; overflow-wrap:anywhere;');
   expect(shell).toContain("import '../ui/v6/mockup.css'");
   expect(shell).toContain('setV6Root(v6)');
  });

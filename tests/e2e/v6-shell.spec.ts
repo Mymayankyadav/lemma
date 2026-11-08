@@ -18,11 +18,16 @@ async function expectNavigation(page:Page){
   expect(size!.height).toBeGreaterThanOrEqual(44);
  }
  const actions=page.getByRole('navigation',{name:'Page actions'});
- for(const label of ['Inbox','Add','Menu']){
-  const target=actions.getByText(label,{exact:true});
+ const headerActions=[
+  {label:'Inbox',target:actions.getByRole('link',{name:/^Inbox/})},
+  {label:'Add',target:actions.getByLabel('Add to notebook')},
+  {label:'Menu',target:actions.getByLabel('Notebook menu')},
+ ];
+ for(const {label,target} of headerActions){
   await expect(target).toBeVisible();
-  const size=await target.locator('xpath=..').boundingBox();
-  expect(size,'44px header target for '+label).not.toBeNull();
+  const size=await target.boundingBox();
+  expect(size,'44px icon action target for '+label).not.toBeNull();
+  expect(size!.width).toBeGreaterThanOrEqual(44);
   expect(size!.height).toBeGreaterThanOrEqual(44);
  }
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1))
@@ -50,7 +55,7 @@ for(const viewport of [
      await page.getByRole('navigation',{name:'Main navigation'})
       .getByRole('link',{name,exact:true}).click();
      await expect(page).toHaveURL(new RegExp('#'+route.replaceAll('/','\\/')+'$'));
-     await expect(page.locator('[data-v6-header]')).toContainText(name);
+     await expect(page.locator('[data-v6-header]')).toContainText(name==='Today'?'Lemma':name);
     }
    }
    if(path==='/proposals'){
