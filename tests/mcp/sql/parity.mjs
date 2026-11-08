@@ -181,7 +181,8 @@ async function roundTrip(resource,details){
  // study_command compatibility bridge intentionally returns its first
  // stored receipt for any same-operationId retry (N12 contract). Both must
  // prevent a second mutation or receipt; don't conflate the two policies.
- if(['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics'].includes(resource))
+ if(['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics',
+  'overlap_acknowledgements'].includes(resource))
   assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
  else
   assert.deepEqual(altered,created,resource+': compatibility replay must return original receipt');
@@ -324,7 +325,45 @@ try{
  // A saved manual entry owns the interval used below, so its creation and
  // final deletion must be ordered around the interval round trip.
  await roundTrip('tasks',specs.tasks);
- await roundTrip('presets',specs.presets);
+ const presetId=await roundTrip('presets',specs.presets);
+ // Non-CRUD owner preset lifecycle must preserve the exact version and
+ // archived state across the MCP path, and generic undo must invert restore.
+ await role('service_role');
+ const reorderedPreset=status(await mcp(command('presets','reorder',{
+  target:{id:presetId},expectedVersion:2,patch:{position:7}
+ })),'presets','reorder');
+ assert.equal(reorderedPreset.changed[0].version,3);
+ await role(null);
+ assert.equal((await q('select position from public.presets where id=$1',[presetId]))[0].position,7);
+ assert.equal((await mcpPage('presets',presetId)).items[0].position,7);
+ mark('presets','reorder');
+ await role('service_role');
+ let presetRestoreAction;
+ for(const [operation,expectedVersion,isArchived] of [
+  ['archive',3,true],['restore',4,false]
+ ]){
+  const receipt=status(await mcp(command('presets',operation,{
+   target:{id:presetId},expectedVersion,patch:{}
+  })),'presets',operation);
+  assert.equal(receipt.changed[0].version,expectedVersion+1);
+  await role(null);
+  const row=(await q('select archived_at,version from public.presets where id=$1 and user_id=$2',
+   [presetId,owner]))[0];
+  assert.equal(Boolean(row.archived_at),isArchived,'presets.'+operation+': app archive mismatch');
+  assert.equal(row.version,expectedVersion+1);
+  const page=await mcpPage('presets',presetId);
+  assert.equal(page.total,1,'presets.'+operation+': owner MCP read');
+  assert.equal(Boolean(page.items[0].archived_at),isArchived);
+  mark('presets',operation);
+  if(operation==='restore')presetRestoreAction=receipt.actionNo;
+  await role('service_role');
+ }
+ await as(owner);
+ assert.equal((await undo(presetRestoreAction)).undone,presetRestoreAction,
+  'presets: undo restore not journalled');
+ await role(null);
+ assert.ok((await q('select archived_at from public.presets where id=$1',
+  [presetId]))[0].archived_at,'presets: undo restore should re-archive');
  const deadlineId=await roundTrip('deadlines',specs.deadlines);
  await role('service_role');
  let deadlineRestoreAction;
@@ -353,11 +392,58 @@ try{
   'deadline restore undo must remain journalled');
  assert.equal((await q('select status,version from public.deadlines where id=$1',
   [deadlineId]))[0].status,'cancelled');
- await roundTrip('study_goals',specs.study_goals);
+ const goalId=await roundTrip('study_goals',specs.study_goals);
+ await role('service_role');
+ let goalRestoreAction;
+ for(const [operation,expectedVersion,isArchived] of [
+  ['archive',2,true],['restore',3,false]
+ ]){
+  const receipt=status(await mcp(command('study_goals',operation,{
+   target:{id:goalId},expectedVersion,patch:{}
+  })),'study_goals',operation);
+  assert.equal(receipt.changed[0].version,expectedVersion+1);
+  await role(null);
+  const row=(await q('select archived_at,version from public.study_goals where id=$1 and user_id=$2',
+   [goalId,owner]))[0];
+  assert.equal(Boolean(row.archived_at),isArchived,'study_goals.'+operation+': app archive mismatch');
+  assert.equal(row.version,expectedVersion+1);
+  const page=await mcpPage('study_goals',goalId);
+  assert.equal(page.total,1,'study_goals.'+operation+': owner MCP read');
+  assert.equal(Boolean(page.items[0].archived_at),isArchived);
+  mark('study_goals',operation);
+  if(operation==='restore')goalRestoreAction=receipt.actionNo;
+  await role('service_role');
+ }
+ await as(owner);
+ assert.equal((await undo(goalRestoreAction)).undone,goalRestoreAction,
+  'study_goals: undo restore not journalled');
+ await role(null);
+ assert.ok((await q('select archived_at from public.study_goals where id=$1',
+  [goalId]))[0].archived_at,'study_goals: undo restore should re-archive');
  const entryId=await roundTrip('study_entries',specs.study_entries);
- await roundTrip('calendar_blocks',specs.calendar_blocks);
+ const calendarId=await roundTrip('calendar_blocks',specs.calendar_blocks);
  await roundTrip('study_intervals',{...specs.study_intervals,
   create:{...specs.study_intervals.create,entry_id:entryId}});
+ // An acknowledgement validates two existing *current-version* owner
+ // participants before every update; a stale version is rejected by its
+ // trigger. Use the records already round-tripped above, not mock IDs.
+ await role(null);
+ const entryVersion=(await q('select version from public.study_entries where id=$1 and user_id=$2',
+  [entryId,owner]))[0].version;
+ const calendarVersion=(await q('select version from public.calendar_blocks where id=$1 and user_id=$2',
+  [calendarId,owner]))[0].version;
+ const ackParticipants=[
+  {kind:'entry',id:entryId,version:entryVersion},
+  {kind:'block',id:calendarId,version:calendarVersion},
+ ];
+ await roundTrip('overlap_acknowledgements',{
+  fn:'overlap_acknowledgements_command',
+  create:{participants:ackParticipants,
+   starts_at:'2026-11-06T08:05:00Z',ends_at:'2026-11-06T08:25:00Z',
+   disposition:'keep_both',reason:'Acknowledged shared time'},
+  update:{reason:'App reviewed overlap'},
+  column:'reason',updated:'App reviewed overlap',
+ });
 
  // Parked thoughts: exercise non-CRUD lifecycle, multi-resource conversion,
  // exactly-once task creation, and transaction-wide undo as one action.
@@ -516,6 +602,7 @@ try{
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
  const full=['tasks','calendar_blocks','study_intervals','deadlines',
+  'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
   registered.get(resource).schema.operations,exercised.get(resource)||new Set());
@@ -524,7 +611,7 @@ try{
   .map(operation=>row.resource+'.'+operation));
  console.log('N94 unfinished operation paths ('+missingOps.length+'): '+missingOps.join(', '));
 
- console.log('PASS N94 10 resource families with study_events, owner GET, lifecycle, receipts and undo');
+ console.log('PASS N94 11 resource families with overlap acknowledgements and owner/MCP lifecycle, receipts and undo');
  const untestedResources=registry.filter(row=>!exercised.has(row.resource))
   .map(row=>row.resource);
  console.log('N94 resources without any complete owner/MCP round trip ('+
