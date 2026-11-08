@@ -4,6 +4,7 @@ import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import ConceptPin from './ConceptPin';
 import AtlasImpactPreview from './ImpactPreview';
+import AtlasCommands from './AtlasCommands';
 import {FastTex} from '../../../ui/FastTex';
 import {buildAtlasTree,initialExpanded,matches,visibleRows,type AtlasTree} from '../tree';
 
@@ -23,6 +24,7 @@ export default function AtlasV6(){
  const [folded,setFolded]=useState<Set<string>|null>(null);
  const [pinId,setPinId]=useState<string|null>(null);
  const [inspectId,setInspectId]=useState<string|null>(null);
+ const [editId,setEditId]=useState<string|null|undefined>(undefined);
  const open=folded??(tree?initialExpanded(tree):new Set<string>());
  const filter=search.trim()?(node:Parameters<typeof matches>[0])=>matches(node,search):undefined;
  const rows=tree?visibleRows(tree,open,filter):[];
@@ -54,6 +56,7 @@ export default function AtlasV6(){
    <div className="flex items-center justify-between gap-3">
     <div><h1 className="text-title-s font-semibold">Atlas ideas</h1>
      <p className="text-label text-ink-2" aria-label="Real idea count">{ideaCount} ideas (generated groups excluded)</p></div>
+    <button type="button" className={control} onClick={()=>setEditId(null)}>New idea</button>
     <Link to="/atlas?view=map" className={control}>Map</Link>
    </div>
    <label className="mt-3 block text-label font-semibold text-ink-2">Find an idea
@@ -90,6 +93,8 @@ export default function AtlasV6(){
         aria-label={'Edit map pin for '+node.name}>
         {node.pinX===null?'Pin on map':'Edit map pin'}
        </button>
+       <button type="button" className={control} onClick={()=>setEditId(node.id)}
+        aria-label={"Edit idea "+node.name}>Edit idea</button>
        <button type="button" className={control} onClick={()=>setInspectId(node.id)}
         aria-label={'Preview changes for '+node.name}>Preview edits</button>
        {node.checkpointRefs.map(checkpoint=>
@@ -105,6 +110,9 @@ export default function AtlasV6(){
    key={selectedPin.id} id={selectedPin.id} name={selectedPin.name}
    x={selectedPin.pinX} y={selectedPin.pinY}
    onSave={savePin} onClose={()=>setPinId(null)}/>}
+  {editId!==undefined&&query.data&&
+   <AtlasCommands key={editId??'new'} graph={query.data} sourceId={editId}
+    onClose={()=>setEditId(undefined)} onSaved={async()=>{await query.refetch()}}/>}
   {inspecting&&!inspecting.synthetic&&query.data&&
    <AtlasImpactPreview key={inspecting.id} graph={query.data}
     sourceId={inspecting.id} onClose={()=>setInspectId(null)}/>}
