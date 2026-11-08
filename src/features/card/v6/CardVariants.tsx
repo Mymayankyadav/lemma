@@ -29,7 +29,7 @@ export default function CardVariants({
  onEdit?:()=>void;onToggleStatus?:()=>void;busy?:boolean;
 }){
  const [expanded,setExpanded]=useState(true);
- const [override,setOverride]=useState<Record<number,CardVariant>>({});
+ const [override,setOverride]=useState<Record<string,CardVariant>>({});
  const [scheduleDates,setScheduleDates]=useState<Record<number,string>>({});
  const [pending,setPending]=useState(false);
  const [confirmReset,setConfirmReset]=useState<number|null>(null);
