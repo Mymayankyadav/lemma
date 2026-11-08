@@ -65,13 +65,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N88 MCP: paths, subjects, styles, concepts and sources fields
-Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
-Done = MCP covers project pinning and status lifecycle, slug rename with aliases, subject/style create/reorder/merge/delete-unused, concept hierarchy, Atlas pin coordinates and edges with cycle checks, and source metadata/order/coverage/verification and page text revisions, each through the existing transaction path with versions when given.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/learning-coverage.test.ts` enumerating the registry fields of those tables, plus SQL round trips in `tests/mcp/sql/learning-coverage.mjs`
-Scope: supabase/functions/mcp/**, tests/unit/mcp/learning-coverage.test.ts, tests/mcp/sql/learning-coverage.mjs, CURRENT.md.
-Not: migrations, app code.
 
 ## N89 MCP: devices, holds and notifications
 Stage: Build · Status: open · Needs: N88 · Assigned: —
