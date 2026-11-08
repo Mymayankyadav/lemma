@@ -1098,9 +1098,132 @@ try{
  mark('concepts','create','update','reparent','link','unlink',
   'preview_merge','merge');
 
+
+ // N49 owner proposal drafts: real pending proposals and a real project
+ // target. The command changes draft_version rather than a generic version
+ // column, and submit creates a still-pending successor, never approval.
+ await role(null);
+ const proposalSeed=async(suffix)=>(
+  await q("insert into public.proposals(user_id,project_id,kind,payload,reason,origin) "+
+   "values($1,$2,'card',$3::jsonb,$4,'chatgpt') returning id,version",
+   [owner,cardProject,JSON.stringify({front:'N94 '+suffix,back:'Original answer'}),
+    'Owner proposal draft parity'])
+ )[0];
+ const draftOriginal=await proposalSeed('submit');
+ const draftSeparate=await proposalSeed('discard');
+ await role('service_role');
+ const draftCreate=command('proposal_drafts','create',{patch:{
+  proposal_id:draftOriginal.id,target_id:cardProject,
+  payload:{front:'Owner draft',back:'Owner answer'}}});
+ const draftCreated=status(await mcp(draftCreate),'proposal_drafts','create');
+ const draftId=draftCreated.draft.id;
+ assert.equal(draftCreated.draft.draft_version,1,'proposal_drafts: draft version');
+ assert.deepEqual(await mcp(draftCreate),draftCreated,
+  'proposal_drafts: exact creation replay');
+ assert.equal((await mcp({...draftCreate,patch:{...draftCreate.patch,
+  payload:{front:'Changed retry',back:'Owner answer'}}})).status,'conflict',
+  'proposal_drafts: changed operationId payload accepted');
+ await as(owner);
+ const ownerDraft=(await q('select * from public.proposal_drafts where id=$1',
+  [draftId]))[0];
+ assert.equal(ownerDraft.draft_version,1,'proposal_drafts: owner app version');
+ assert.equal(ownerDraft.target_id,cardProject,
+  'proposal_drafts: source project target not persisted');
+ const saveDraft=command('proposal_drafts','save',{target:{id:draftId},
+  expectedVersion:1,patch:{payload:{front:'Owner edited front',back:'Complete answer'}}});
+ const draftSaved=status(await app('proposal_drafts_command',saveDraft),
+  'proposal_drafts','save');
+ assert.equal(draftSaved.draft.status,'saved');
+ assert.equal(draftSaved.draft.draft_version,2);
+ await role(null);
+ const savedPage=await mcpPage('proposal_drafts',draftId);
+ assert.equal(savedPage.total,1,'proposal_drafts: registered MCP GET missing');
+ assert.deepEqual(savedPage.items[0].payload,
+  {front:'Owner edited front',back:'Complete answer'},
+  'proposal_drafts: MCP GET disagrees with owner app edit');
+ assert.equal(savedPage.items[0].proposal_id,draftOriginal.id);
+ assert.equal(savedPage.items[0].target_id,cardProject);
+ assert.equal((await mcpPage('proposal_drafts',draftId,other)).total,0,
+  'proposal_drafts: foreign MCP read leaked owner draft');
+ const draftSchema=registered.get('proposal_drafts').schema.fields;
+ const draftCapabilities=JSON.parse(await readFile(
+  new URL('proposal_drafts.json',new URL('../../../docs/v6/capability-registry/',
+   import.meta.url)),'utf8')).columns;
+ const draftColumns=draftSchema.filter(x=>Object.hasOwn(draftCapabilities,x));
+ assert.equal(draftColumns.length,draftSchema.length,
+  'proposal_drafts: unexpected undocumented command payload field');
+ const storedDraft=(await q('select * from public.proposal_drafts where id=$1 and user_id=$2',
+  [draftId,owner]))[0];
+ requireFields('proposal_drafts',draftColumns,Object.fromEntries(draftColumns.map(key=>[
+  key,{appPath:Object.hasOwn(storedDraft,key)?'owner app draft row':'missing',
+   mcpPath:Object.hasOwn(savedPage.items[0],key)?'registered MCP GET':'missing'}
+ ])));
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.proposal_drafts where id=$1',
+  [draftId]))[0].n,0,'proposal_drafts: foreign owner app read');
+ await role('service_role');
+ const staleDraft=await mcp(command('proposal_drafts','save',{target:{id:draftId},
+  expectedVersion:1,patch:{payload:{front:'stale'}}}));
+ assert.equal(staleDraft.status,'conflict','proposal_drafts: stale draft save accepted');
+ const foreignDraft=command('proposal_drafts','discard',{target:{id:draftId},
+  expectedVersion:2,patch:{}});
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(foreignDraft)]),/Draft not found for owner/i,
+  'proposal_drafts: foreign owner MCP mutation');
+ const submitDraft=command('proposal_drafts','submit',{target:{id:draftId},
+  expectedVersion:2,patch:{}});
+ const draftSubmitted=status(await mcp(submitDraft),'proposal_drafts','submit');
+ assert.equal(draftSubmitted.draft.status,'submitted');
+ assert.equal(draftSubmitted.draft.draft_version,3);
+ assert.ok(draftSubmitted.revisedProposalId,
+  'proposal_drafts: submit lacks real successor proposal');
+ assert.ok(draftSubmitted.changed.some(c=>c.resource==='proposals'),
+  'proposal_drafts: submit receipt omitted successor');
+ assert.deepEqual(await mcp(submitDraft),draftSubmitted,
+  'proposal_drafts: submit retry created another revision');
+ await role(null);
+ assert.equal((await q('select status from public.proposals where id=$1',
+  [draftSubmitted.revisedProposalId]))[0].status,'pending',
+  'proposal_drafts: submit incorrectly approved a proposal');
+ assert.ok((await q('select withdrawn_at from public.proposals where id=$1',
+  [draftOriginal.id]))[0].withdrawn_at,'proposal_drafts: original not withdrawn');
+ await as(owner);
+ assert.equal((await undo(draftSubmitted.actionNo)).undone,draftSubmitted.actionNo,
+  'proposal_drafts: whole submission undo failed');
+ await role(null);
+ assert.equal((await q('select status from public.proposal_drafts where id=$1',
+  [draftId]))[0].status,'saved','proposal_drafts: submit undo lost saved draft');
+ assert.equal((await q('select withdrawn_at from public.proposals where id=$1',
+  [draftOriginal.id]))[0].withdrawn_at,null,
+  'proposal_drafts: undo did not restore original proposal');
+ assert.equal((await q('select count(*)::int n from public.proposals where id=$1',
+  [draftSubmitted.revisedProposalId]))[0].n,0,
+  'proposal_drafts: undone successor was not removed');
+ await role('service_role');
+ const otherDraft=status(await mcp(command('proposal_drafts','create',{patch:{
+  proposal_id:draftSeparate.id,payload:{front:'Discard me',back:'Unsent owner draft'}
+ }})),'proposal_drafts','create');
+ const discardDraft=command('proposal_drafts','discard',{
+  target:{id:otherDraft.draft.id},expectedVersion:1,patch:{}});
+ const discardedDraft=status(await mcp(discardDraft),'proposal_drafts','discard');
+ assert.equal(discardedDraft.draft.status,'discarded');
+ assert.deepEqual(await mcp(discardDraft),discardedDraft,
+  'proposal_drafts: discard replay mutated twice');
+ await as(owner);
+ assert.equal((await q('select status from public.proposal_drafts where id=$1',
+  [otherDraft.draft.id]))[0].status,'discarded',
+  'proposal_drafts: authenticated owner cannot see discard');
+ assert.equal((await undo(discardedDraft.actionNo)).undone,
+  discardedDraft.actionNo,'proposal_drafts: discard undo failed');
+ await role(null);
+ assert.equal((await q('select status from public.proposal_drafts where id=$1',
+  [otherDraft.draft.id]))[0].status,'draft',
+  'proposal_drafts: undo did not restore draft status');
+ mark('proposal_drafts','create','save','submit','discard');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['proposal_drafts','day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
