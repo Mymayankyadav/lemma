@@ -1,6 +1,6 @@
 // N60.2: owner-RLS day-plan adapter. Writes only through one journalled RPC.
 import {DayPlanError,type DayPlanApi,type DayPlanItem,type DayPlanPatch,
- type DayPlanQuery,type DayPlanRecord,type DayPlanStatus,type AtomicPlacementResult,type DayCloseTransition,type NewDayPlan,
+ type DayPlanQuery,type DayPlanRecord,type DayPlanStatus,type AtomicPlacementResult,type NewDayPlan,
  type NewDayPlanItem,type PlanAvailability} from './contract';
 import {normalizeCommitPlacements,type CommitPlacementsInput} from './placements';
 import {civilPlanDate,normalizeAvailability,normalizeDayPlan,
@@ -449,7 +449,7 @@ export function createLiveDayPlanApi():DayPlanApi{
     const checked=normalizeDayCloseTransition(transition);
     if(checked.tomorrowFirstTaskId!==undefined)
      patch.tomorrow_first_task_id=checked.tomorrowFirstTaskId;
-    if(checked.carryOver!==undefined)patch.carry_over=checked.carryOver;
+    if(checked.carryOver!==undefined)patch.carry_over=checked.carryOver.map(item=>({task_id:item.taskId,reason:item.reason}));
    }
    return write('close',{target:{id:plan.id},expectedVersion:expected,patch});
   },

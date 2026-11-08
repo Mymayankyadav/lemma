@@ -335,7 +335,7 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
     return fail('invalid','A future owner date cannot be marked closed');
    const normalized=ritual===undefined?row.ritual:
     normalizePatch(row,{ritual}).ritual;
-   const choice=transition===undefined?{}:normalizeDayCloseTransition(transition);
+   const choice=normalizeDayCloseTransition(transition??{});
    const chosen=choice.tomorrowFirstTaskId===undefined?
     row.tomorrowFirstTaskId:choice.tomorrowFirstTaskId;
    const tasks=createDemoTaskApi();
