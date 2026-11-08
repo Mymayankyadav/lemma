@@ -43,6 +43,15 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** A lost RPC acknowledgement leaves the exact envelope pending for retry.
+  * Keyed by owner + sibling, so a second intent cannot race an uncertain one.
+  * Cleared only by a definitive command receipt/conflict or server rejection. */
+ private readonly pendingCardSchedule=new Map<string,{
+  fingerprint:string;p:{
+   schemaVersion:1;resource:'card_schedule';operation:'reschedule'|'reset';
+   operationId:string;target:{noteNo:number;ord:number};patch:{due?:string}
+  }
+ }>()
  /** Reminders stay unavailable in live mode until NOTIF-6. */
  async listPushDevices(..._args:Parameters<LemmaApi['listPushDevices']>):ReturnType<LemmaApi['listPushDevices']> {throw notImplemented('listPushDevices')}
  async addPushDevice(..._args:Parameters<LemmaApi['addPushDevice']>):ReturnType<LemmaApi['addPushDevice']> {throw notImplemented('addPushDevice')}
@@ -578,16 +587,39 @@ export class LiveAdapter implements LemmaApi {
    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
    !Number.isFinite(Date.parse(due))))
    throw new LemmaError('invalid','Due date must include a valid time-zone offset')
-  const db=liveClient()
-  await owner(db)
-  const p={schemaVersion:1,resource:'card_schedule',operation,
+  const db=liveClient(),uid=await owner(db)
+  const cardKey=uid+':'+noteNo+':'+ordinal
+  const fingerprint=JSON.stringify([operation,noteNo,ordinal,due??null])
+  const previous=this.pendingCardSchedule.get(cardKey)
+  if(previous&&previous.fingerprint!==fingerprint)
+   throw new LemmaError('conflict',
+    'Previous card schedule outcome is uncertain. Retry that exact action before changing it.')
+  const p=previous?.p??{
+   schemaVersion:1 as const,resource:'card_schedule' as const,operation,
    operationId:crypto.randomUUID(),target:{noteNo,ord:ordinal},
-   patch:operation==='reschedule'?{due}:{}}
-  const reply=checked(await db.rpc('card_schedule_command',{p})) as {
+   patch:operation==='reschedule'?{due}:{}
+  }
+  // Store before the first await: another click on this card reuses this ID.
+  if(!previous)this.pendingCardSchedule.set(cardKey,{fingerprint,p})
+  // An uncertain transport failure deliberately keeps p for the next explicit
+  // retry; sending a fresh operationId would create another journal action.
+  const response=await db.rpc('card_schedule_command',{p})
+  if(response.error){
+   // PostgREST server errors are definitive; network errors are ambiguous.
+   const message=response.error.message??''
+   if(!/failed to fetch|networkerror|network request failed|timeout|connection closed|gateway|502|503|504/i.test(message))
+    this.pendingCardSchedule.delete(cardKey)
+   checked(response)
+  }
+  const reply=checked(response) as {
    status:string;reason?:string;actionNo?:number|null}
-  if(reply?.status==='conflict')throw new LemmaError('conflict',reply.reason||'Card schedule changed')
+  if(reply?.status==='conflict'){
+   this.pendingCardSchedule.delete(cardKey)
+   throw new LemmaError('conflict',reply.reason||'Card schedule changed')
+  }
   if(reply?.status!=='ok'||!Number.isSafeInteger(Number(reply.actionNo))||Number(reply.actionNo)<1)
    throw new LemmaError('server','Card schedule command returned no audited action')
+  this.pendingCardSchedule.delete(cardKey)
  }
  async rescheduleCard(...args:Parameters<LemmaApi['rescheduleCard']>):ReturnType<LemmaApi['rescheduleCard']>{
   const [noteNo,ordinal,due]=args;return this.cardSchedule('reschedule',noteNo,ordinal,due)
