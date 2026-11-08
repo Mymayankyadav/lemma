@@ -1,6 +1,10 @@
 # Lemma v6 release audit (N101)
 
-**Release decision: HOLD (G7 defects: [#1298](https://github.com/Mymayankyadav/lemma/issues/1298), [#1299](https://github.com/Mymayankyadav/lemma/issues/1299), [#1300](https://github.com/Mymayankyadav/lemma/issues/1300), [#1302](https://github.com/Mymayankyadav/lemma/issues/1302)).** This is evidence tracking, not approval to make `v6Shell` default-on. N102 still requires the Owner's explicit approval and physical-device sign-off. Browser demo and isolated SQL results do not prove remote migration, MCP or account-delete deployment.
+**Release decision: HOLD (G7 defects: [#1298](https://github.com/Mymayankyadav/lemma/issues/1298), [#1299](https://github.com/Mymayankyadav/lemma/issues/1299), [#1300](https://github.com/Mymayankyadav/lemma/issues/1300), [#1302](https://github.com/Mymayankyadav/lemma/issues/1302); design mismatch [#1303](https://github.com/Mymayankyadav/lemma/issues/1303)).**
+
+**The app does not match the design mockup on any screen ([#1303](https://github.com/Mymayankyadav/lemma/issues/1303)).** Compare the mockup captures in `docs/v6/screens/` (the target) with the app captures in `docs/v6/release-captures/`. The header, bottom navigation, visual language and the composition of every screen differ. This audit's checks (loading, overflow, navigation, journeys) say nothing about design fidelity, so passing them is not G7 evidence.
+
+This is evidence tracking, not approval to make `v6Shell` default-on. N102 still requires the Owner's explicit approval and physical-device sign-off. Browser demo and isolated SQL results do not prove remote migration, MCP or account-delete deployment.
 
 ## Shipped behind the flag
 
@@ -24,7 +28,7 @@ Correction (owner, #1301): the first version of this audit (#1297) measured some
 
 ## Screenshot provenance and capture
 
-The 19 checked-in PNGs under `docs/v6/screens/` are **real application** Chromium renders of the 390×844 viewport, i.e. what a phone screen shows (Day/Night on nine destinations plus Focus Day). Each capture waits for the screen to finish loading. The capture test built and served the Vite/React application with the deterministic **demo** account, on CI run [42497431997](https://github.com/Mymayankyadav/lemma/actions/runs/42497431997) at source commit `ccad38e`; no application source changed between capture and commit. The first set (#1297, run 42495300188) is superseded: several of its Day images showed the "Loading screen…" placeholder, and its full-page captures drew the bottom navigation across the middle of long screens. These images are browser evidence, not physical-device validation.
+The 19 PNGs under `docs/v6/release-captures/` are **real application** Chromium renders of the 390×844 viewport, i.e. what a phone screen shows (Day/Night on nine destinations plus Focus Day). Each capture waits for the screen to finish loading. The capture test built and served the Vite/React application with the deterministic **demo** account, on CI run [42497431997](https://github.com/Mymayankyadav/lemma/actions/runs/42497431997) at source commit `ccad38e`; no application source changed between capture and commit. The first set (#1297, run 42495300188) is superseded: several of its Day images showed the "Loading screen…" placeholder, and its full-page captures drew the bottom navigation across the middle of long screens. These images are browser evidence, not physical-device validation. `docs/v6/screens/` holds the design mockup captures; #1297 had overwritten them, and they are now restored and protected by `tests/unit/docs/mockup-screens.test.ts`.
 
 To reproduce the checked-in app captures:
 
@@ -44,7 +48,7 @@ Normal CI writes fresh renders to `test-results/v6-release/screens/` and does no
 | G4 consistency | N94 parity, N98 effort reconciliation, N99 DST and N101 cross-route saved minutes | Second-device and real-owner refresh still required |
 | G5 preserved history | N97 SQL upgrade rehearsal, N96 rollback and N95 export tests | Production backup/restore not asserted |
 | G6 ownership/deletion | N94 two-owner isolation and N103 account deletion SQL | `account-delete` Edge Function deployed and active since 2026-11-08; live deletion is on the Owner checklist |
-| G7 visible behavior | N98/N99/N100/N101 browser specs and capture script | Real-app PNGs checked in; physical checks and #1298/#1299/#1300/#1302 pending |
+| G7 visible behavior | N98/N99/N100/N101 browser specs and capture script | **Fails**: the app does not match the mockup (#1303); also #1298/#1299/#1300/#1302 and physical checks |
 
 N101 found 320px Today overflow (#1298), missing durable Review undo (#1299), and 320px Kit overflow (#1300); the corrected captures also show the Atlas header losing its side padding, so the title overlaps the Demo badge (#1302). Each remains an open issue. Their expected-failure tests execute and preserve the failing assertions; CI acceptance does not certify that those experiences pass. The release is blocked until the separate bug fixes land.
 

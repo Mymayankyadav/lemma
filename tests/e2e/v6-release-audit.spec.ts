@@ -90,15 +90,15 @@ for(const display of displays)for(const theme of themes)for(const [name,path,exp
   await contained(page,display.width+'px '+theme.name+' '+name);
  });
 }
-// The existing docs/v6/screens PNGs are historical mockup captures.
-// Set LEMMA_RELEASE_CAPTURE=1 to overwrite them with actual Vite app output.
+// docs/v6/screens holds the design mockup captures (the target) and must never be
+// overwritten. Set LEMMA_RELEASE_CAPTURE=1 to refresh the app captures in docs/v6/release-captures.
 const shots=[
  ['today','/'],['paths','/projects'],['review','/review'],
  ['calendar','/calendar'],['progress','/insights'],['inbox','/proposals'],
  ['cards','/cards'],['atlas','/atlas'],['settings','/settings'],
 ] as const;
 const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
- ? 'docs/v6/screens' : 'test-results/v6-release/screens';
+ ? 'docs/v6/release-captures' : 'test-results/v6-release/screens';
 
 // Capture PNGs from the actual Vite application, not the historical prototype.
 // Viewport captures (what a 390×844 phone shows): full-page captures drew the
