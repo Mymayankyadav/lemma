@@ -82,3 +82,56 @@ describe('N88 Atlas hierarchy and edges',()=>{
   expect(()=>assertNoPrerequisiteCycle('a','a',edges)).toThrow(/itself/);
  });
 });
+
+// N88 Done: every owner-editable registry column of the learning tables has a
+// real MCP path. Read from the registry so a newly classified column fails.
+const repo=(path:string)=>readFileSync(resolve(process.cwd(),path),'utf8');
+const editableColumns=(table:string)=>Object.entries(
+ JSON.parse(repo('docs/v6/capability-registry/'+table+'.json')).columns as
+  Record<string,{classification:string;mcpPath:string}>)
+ .filter(([,meta])=>meta.classification==='owner-editable');
+const control=repo('supabase/functions/mcp/tools/control.ts');
+const allowedFields=(table:string)=>{
+ const body=/const allowed:[^=]*=\{([\s\S]*?)\n\};/.exec(control)?.[1]??'';
+ const entry=new RegExp('\\b'+table+":'([^']*)'").exec(body);
+ return new Set((entry?.[1]??'').split(/\s+/).filter(Boolean));
+};
+describe('N88 learning-resource registry coverage',()=>{
+ it('maps every owner-editable subject, style, concept and source column to an MCP add/edit field',()=>{
+  const alias:Record<string,string[]>={subject_id:['subject','subject_id'],parent_id:['parent','parent_id']};
+  const missing:string[]=[];
+  for(const table of ['subjects','styles','concepts','sources']){
+   const fields=allowedFields(table);
+   expect(fields.size,table+' allowlist').toBeGreaterThan(0);
+   for(const [column] of editableColumns(table)){
+    const names=alias[column]??[column];
+    // A style key is chosen when MCP adds the style (add accepts `key`).
+    const onAdd=table==='styles'&&column==='key'&&/f\.key/.test(control);
+    if(!names.some(name=>fields.has(name))&&!onAdd)missing.push(table+'.'+column);
+   }
+  }
+  expect(missing).toEqual([]);
+ });
+ it('keeps PDF ingest columns read-only for MCP and validates source order',()=>{
+  const sourceFields=allowedFields('sources');
+  for(const column of ['storage_path','sha256','bytes','filename','outline','project_id'])
+   expect(sourceFields.has(column),'sources.'+column).toBe(false);
+  expect(sourceFields.has('position')).toBe(true);
+  expect(control).toContain('Source position must be a non-negative whole number');
+ });
+ it('writes every owner-editable source page column through save_pages',()=>{
+  const transcribe=repo('supabase/functions/mcp/tools/transcribe.ts');
+  for(const [column] of editableColumns('source_pages'))
+   expect(transcribe,'source_pages.'+column).toMatch(new RegExp('\\b'+column+'\\b'));
+ });
+ it('writes every owner-editable Atlas edge column through the graph edit',()=>{
+  const insert=/table:'concept_links',values:\{([^}]*)\}/.exec(control)?.[1]??'';
+  for(const [column] of editableColumns('concept_links'))
+   expect(insert,'concept_links.'+column).toMatch(new RegExp('\\b'+column+'\\b'));
+ });
+ it('reaches checkpoint citations only through owner-approved plan proposals',()=>{
+  for(const [column,meta] of editableColumns('checkpoint_sources'))
+   expect(meta.mcpPath,'checkpoint_sources.'+column).toMatch(/propose_plan/);
+  expect(control).not.toMatch(/table:'checkpoint_sources'/);
+ });
+});
