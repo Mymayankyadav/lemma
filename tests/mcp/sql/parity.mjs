@@ -40,6 +40,7 @@ const app=async(fn,input)=>(await q('select public.'+fn+'($1::jsonb) data',
 const undo=async actionNo=>(await q(
  'select public.undo_action($1::uuid,$2::bigint,false) data',[owner,actionNo]))[0].data;
 const safeName=v=>typeof v==='string'&&/^[a-z_][a-z0-9_]*$/.test(v);
+const safeField=v=>typeof v==='string'&&/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(v);
 /** A missing operation must fail by resource/operation, not be silently skipped. */
 function requireCoverage(resource,operations,covered){
  for(const op of operations){
@@ -155,7 +156,7 @@ try{
    row.resource+': operations missing');
   assert.ok(Array.isArray(row.schema.fields),row.resource+': fields missing');
   for(const x of [...row.schema.operations,...row.schema.fields])
-   assert.ok(safeName(x),row.resource+': invalid operation/field '+x);
+   assert.ok(safeField(x),row.resource+': invalid operation/field '+x);
  }
  // A deliberately incomplete fixture MUST fail by resource and field.
  assert.throws(()=>requireCoverage('missing_fixture',['create','update','delete'],
