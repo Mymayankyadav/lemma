@@ -87,6 +87,15 @@ begin
  loop
   pass:=pass+1;
   changed:=0;
+  -- action_changes has no user_id, and its FK to actions is RESTRICT.
+  -- Delete ONLY details whose action belongs to this owner before attempting
+  -- the parent audit rows. Keep another owner's action details untouched.
+  delete from public.action_changes c
+   using public.actions a
+   where c.action_no=a.no and a.user_id=p_owner;
+  get diagnostics removed=row_count;
+  changed:=changed+removed;
+  total_removed:=total_removed+removed;
   for t in
    select pg_catalog.format('%I.%I',n.nspname,c.relname) as qualified
    from pg_catalog.pg_class c
