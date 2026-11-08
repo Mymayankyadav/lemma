@@ -65,7 +65,7 @@ export default function SelectionPanel({visible,all,ids,busy,kind,onToggle,onSel
      <input type="checkbox" data-inbox-proposal-id={p.id} className="size-5 shrink-0 accent-amber"
       disabled={busy} checked={ids.has(p.id)} onChange={()=>onToggle(p.id)}
       aria-label={'Select '+summary(p)}/>
-     <span className="min-w-0 flex-1 break-words">{summary(p)}</span>
+     <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{summary(p)}</span>
     </label>)}
    </div>
   </fieldset>)}

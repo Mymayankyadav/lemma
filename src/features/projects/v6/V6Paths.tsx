@@ -97,10 +97,10 @@ export default function V6Paths() {
                    aria-label={'Manage ' + project.title} aria-expanded={menu === project.id}
                    onClick={() => setMenu(value => value === project.id ? null : project.id)}>Manage</button>
                </div>
-               <p className="mt-1 text-caption text-ink-2">
+               <p className="mt-1 break-words [overflow-wrap:anywhere] text-caption text-ink-2">
                  {project.pinned ? 'Pinned · ' : ''}{project.status} · {project.done} of {project.total} checkpoints
                </p>
-               <p className="text-caption text-ink-2">
+               <p className="break-words [overflow-wrap:anywhere] text-caption text-ink-2">
                  {project.current ? 'Current: ' + project.current.code + ' · ' + project.current.title : 'No current checkpoint'}
                  {' · '}{project.scheduleHeadline || 'Forecast unavailable'}
                </p>
