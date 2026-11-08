@@ -1,7 +1,7 @@
-# Screenshot provenance (N101)
+# Real application screenshots — N101
 
-The 19 original `<screen>-<day|night>.png` captures in this folder depict the **standalone v6 mockup**, not the React app. They are design references, not G7 evidence.
+These 19 PNGs were captured from the **actual built Vite/React application**, replacing the historic standalone v6 mockup images. The screenshot test `tests/e2e/v6-release-audit.spec.ts` renders the real app at 390×844 CSS pixels with `?demo=1&flags=v6Shell`: both Day/Night on nine screens and Focus in Day. Provenance: source commit `073e9e9`, [CI run 42495300188](https://github.com/Mymayankyadav/lemma/actions/runs/42495300188). App source files were not modified between this run and the image commit.
 
-From a checkout with npm/Playwright installed, run `LEMMA_RELEASE_CAPTURE=1 npm run e2e -- tests/e2e/v6-release-audit.spec.ts -g 'N101 screenshot capture'`. This runs the actual Vite preview and overwrites the nine Day/Night pairs and Focus Day capture at 390×844. Inspect at 320/360/390 widths and 200% text and **commit the new images**. Normal CI runs write the renders to `test-results/v6-release/screens/` instead; passing CI does not update checked-in assets.
+Reproduce/overwrite the screenshots with `LEMMA_RELEASE_CAPTURE=1 npm run e2e -- tests/e2e/v6-release-audit.spec.ts -g 'N101 screenshot capture'`. A normal CI test writes renders to `test-results/v6-release/screens/` instead.
 
-Until replaced by those real renders, the existing images must not be labelled as release screenshots.
+These files do **not** certify the 320/360/390px audit at 200% text or physical-device behavior. Known G7 defects [#1298](https://github.com/Mymayankyadav/lemma/issues/1298) (Today overflow), [#1299](https://github.com/Mymayankyadav/lemma/issues/1299) (Review Undo), and [#1300](https://github.com/Mymayankyadav/lemma/issues/1300) (Kit overflow) remain open.

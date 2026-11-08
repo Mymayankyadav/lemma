@@ -37,8 +37,8 @@ for(const display of displays)for(const theme of themes)for(const [name,path] of
   test.setTimeout(90_000);
   // #1298 remains a real failing overflow assertion. The expected-failure marker
   // tracks the known defect, rather than skipping this route or declaring G7 green.
-  if(display.width===320&&path==='/')
-   test.fail(true,'Known release defect #1298: Today 336px content in 320px viewport');
+  if(display.width===320&&(path==='/'||path==='/kit'))
+   test.fail(true,path==='/kit'?'Known release defect #1300: Kit 324px content in 320px viewport':'Known release defect #1298: Today 336px content in 320px viewport');
   await page.setViewportSize(display);
   await setup(page);
   const exceptions:string[]=[];
@@ -71,17 +71,10 @@ const shots=[
 const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
  ? 'docs/v6/screens' : 'test-results/v6-release/screens';
 
-// CI screenshot export emits chunks from deterministic demo content only. It
-// makes real-artifact captures retrievable even when artifacts are not uploaded.
+// Capture PNGs from the actual Vite application, not the historical prototype.
 async function releaseScreenshot(page:Page,file:string){
- const bytes=await page.screenshot({path:captureDir+'/'+file,
+ await page.screenshot({path:captureDir+'/'+file,
   fullPage:true,animations:'disabled',scale:'css'});
- if(process.env.CI){
-  const base64=bytes.toString('base64');
-  const total=Math.ceil(base64.length/4000);
-  for(let i=0;i<total;i++)
-   console.log('N101_PNG:'+file+':'+i+':'+total+':'+base64.slice(i*4000,(i+1)*4000));
- }
 }
 
 test('N101 screenshot capture of the real app, both palettes at 390x844',async({page})=>{

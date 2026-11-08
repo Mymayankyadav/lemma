@@ -1,6 +1,6 @@
 # Lemma v6 release audit (N101)
 
-**Release decision: HOLD (known G7 defects: [#1298](https://github.com/Mymayankyadav/lemma/issues/1298), [#1299](https://github.com/Mymayankyadav/lemma/issues/1299)).** This is evidence tracking, not approval to make `v6Shell` default-on. N102 still requires the Owner's explicit approval and physical-device sign-off. Browser demo and isolated SQL results do not prove remote migration, MCP or account-delete deployment.
+**Release decision: HOLD (G7 defects: [#1298](https://github.com/Mymayankyadav/lemma/issues/1298), [#1299](https://github.com/Mymayankyadav/lemma/issues/1299), [#1300](https://github.com/Mymayankyadav/lemma/issues/1300)).** This is evidence tracking, not approval to make `v6Shell` default-on. N102 still requires the Owner's explicit approval and physical-device sign-off. Browser demo and isolated SQL results do not prove remote migration, MCP or account-delete deployment.
 
 ## Shipped behind the flag
 
@@ -20,13 +20,15 @@ The N101 suite visits all 18 canonical routes and five additional v6 routes (inc
 
 ## Screenshot provenance and capture
 
-The 19 existing `docs/v6/screens/*.png` images were generated from the **standalone mockup**. They must **not** be passed off as actual-app screenshots. The N101 screenshot test renders the real Vite build at 390×844 and both palettes, writing nine Day/Night pairs and Focus Day under `test-results/v6-release/screens/`. To overwrite the canonical screenshots in a local checkout with the real app's output, run:
+The 19 checked-in PNGs under `docs/v6/screens/` are **real application** Chromium renders at 390×844 CSS pixels (Day/Night on nine destinations plus Focus Day). The capture test built and served the Vite/React application, using only a deterministic **demo** account, on CI run [42495300188](https://github.com/Mymayankyadav/lemma/actions/runs/42495300188) at source commit `073e9e9`. This PR commits those real-app images in place of the historical prototype PNGs. No application source changed between capture and commit. These images are browser evidence, not physical-device validation.
+
+To reproduce the checked-in app captures:
 
 ```sh
 LEMMA_RELEASE_CAPTURE=1 npm run e2e -- tests/e2e/v6-release-audit.spec.ts -g 'N101 screenshot capture'
 ```
 
-Review each PNG and commit the generated actual-app images. The screenshot files **have not been refreshed in this commit**, so G7 is not yet release-complete. CI-generated uncommitted images are not repository evidence.
+Normal CI writes fresh renders to `test-results/v6-release/screens/` and does not overwrite tracked assets. The 320/360/390px, 200% text Day/Night geometry audit runs separately from the default-size 390px PNG captures.
 
 ## Gates G1–G7, per data/MCP contract §10
 
@@ -38,15 +40,15 @@ Review each PNG and commit the generated actual-app images. The screenshot files
 | G4 consistency | N94 parity, N98 effort reconciliation, N99 DST and N101 cross-route saved minutes | Second-device and real-owner refresh still required |
 | G5 preserved history | N97 SQL upgrade rehearsal, N96 rollback and N95 export tests | Production backup/restore not asserted |
 | G6 ownership/deletion | N94 two-owner isolation and N103 account deletion SQL | Actual account-delete Edge deployment must be checked |
-| G7 visible behavior | N98/N99/N100/N101 browser specs and capture script | Actual-app PNG commit and physical checks pending |
+| G7 visible behavior | N98/N99/N100/N101 browser specs and capture script | Real-app PNGs checked in; physical checks and #1298/#1299/#1300 pending |
 
-N101's 320px Today overflow and missing durable Review undo are active bug issues #1298 and #1299. Their expected-failure tests execute and preserve the failing assertions; CI acceptance does not certify that those experiences pass. The release is blocked until the separate bug fixes land.
+N101 found 320px Today overflow (#1298), missing durable Review undo (#1299), and 320px Kit overflow (#1300). Each remains an open issue. Their expected-failure tests execute and preserve the failing assertions; CI acceptance does not certify that those experiences pass. The release is blocked until the separate bug fixes land.
 
 **None of G1–G7 is labelled production-passed merely because the test exists.** Attach CI run IDs and test results for the exact commit and the Owner's accepted device evidence before N102.
 
 ## Known limitations
 
-The flag is default-off. Isolated demo state does not certify cross-device sync, remote RLS, SQL deployment, MCP parity or live deletion. The N103 completion note identifies an account-delete deployment-step regression after an automated revert; verify the endpoint rather than assuming it is deployed. iOS Safari, Android Chrome, installed-PWA keyboard/IME, safe areas, screen-reader behavior and OS Back are outside CI Chromium. The screenshot directory still contains prototype PNGs until the capture is run and those real images are committed. Real calendar providers, recurring blocks and native Focus surfaces are intentionally excluded.
+The flag is default-off. Isolated demo state does not certify cross-device sync, remote RLS, SQL deployment, MCP parity or live deletion. The N103 completion note identifies an account-delete deployment-step regression after an automated revert; verify the endpoint rather than assuming it is deployed. iOS Safari, Android Chrome, installed-PWA keyboard/IME, safe areas, screen-reader behavior and OS Back are outside CI Chromium. The screenshot directory now contains real-app Chromium captures from CI run 42495300188, but not physical-device screenshots. Real calendar providers, recurring blocks and native Focus surfaces are intentionally excluded.
 
 ## Owner physical-device checklist (complete before N102)
 
