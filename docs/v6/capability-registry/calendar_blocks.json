@@ -96,7 +96,7 @@
     "task_id": {
       "classification": "owner-editable",
       "appPath": "N65 study block/task links (planned)",
-      "mcpPath": "none yet: study_command v2 writes it, but it is not in the calendar_blocks registry field list MCP reads; registering it is N109",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts → public.study_command (registered MCP owner command)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
     }
