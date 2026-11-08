@@ -302,7 +302,10 @@ try{
  for(const resource of Object.keys(specs)){
   const row=registered.get(resource);
   assert.ok(row,resource+': missing dispatcher registration');
-  for(const operation of ['create','update','delete'])
+  // A resource can expose a real owner edit as `edit` rather than `update`.
+  // Validate precisely the command invoked by this fixture, not a generic
+  // operation name the registry never promised.
+  for(const operation of ['create',specs[resource].updateOp||'update','delete'])
    assert.ok(row.schema.operations.includes(operation),resource+'.'+operation+
     ': missing declared operation');
  }
