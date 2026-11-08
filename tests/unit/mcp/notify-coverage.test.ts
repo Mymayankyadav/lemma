@@ -95,7 +95,7 @@ describe('N89 notification MCP owner read boundary',()=>{
   expect(rpc).toHaveBeenCalledTimes(2);
  });
  it('registers no extra MCP tool and journals holds but never device credentials',()=>{
-  const migration=readFileSync('supabase/migrations/20261208110000_n89_notify_command.sql','utf8');
+  const migration=readFileSync('supabase/migrations/20261208110100_n89_notify_command.sql','utf8');
   expect(migration).toMatch(/on public\.notify_holds for each row execute function public\.log_change/);
   expect(migration).not.toMatch(/lemma_log_change[^;]*on public\.push_devices/);
   expect(migration).toContain("('push_devices','notify_command',true");
