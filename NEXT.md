@@ -13,23 +13,23 @@ Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/
 
 ## N109 Register planner links and N52 timer controls for MCP
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8, one additive migration appends `task_id` to the `calendar_blocks` row, and `calendar_block_id`, `preset_id`, `energy` plus the N52 operations `take_lease`, `next_phase` and `exclude_minutes` to the `study_entries` row of `lemma_command_resources` (append only, when missing), and `study_command` accepts `calendar_block_id` on study entry create and start with the same owner-composite check the app relies on (a foreign-owner or non-study block is refused, nothing written). MCP study tools expose both fields. Owner decision (bug #1231): this is the one authorized change to the frozen N36.1 baseline rows; `tests/mcp/sql/registries.mjs` changes only to expect these two appended fields. The static manifest and the four capability-registry `mcpPath` entries (`calendar_blocks.task_id`, `study_entries.calendar_block_id`, `preset_id`, `energy`) are updated so N94 reports no tracked gaps.
+Done = per D8, one additive migration appends `task_id` to the `calendar_blocks` row, and `calendar_block_id`, `preset_id`, `energy` plus the N52 operations `take_lease`, `next_phase` and `exclude_minutes` to the `study_entries` row of `lemma_command_resources` (append only, when missing), and `study_command` accepts `calendar_block_id` and `preset_id` on study entry `create` (a draft) with the same owner-composite checks the app relies on (a foreign-owner or non-study block, or a foreign or archived preset, is refused and nothing is written); `start` then captures the preset exactly as N52 does. MCP study tools expose all four fields and the three operations. Owner decision (bug #1231): this is the one authorized change to the frozen N36.1 baseline rows; `tests/mcp/sql/registries.mjs` changes only to expect these appended fields and operations. Because N94's harness requires a round trip for every registered operation, `tests/mcp/sql/parity.mjs` gains round trips for `take_lease`, `next_phase` and `exclude_minutes` (receipt, version, replay, conflict, foreign owner, undo) and drops the four tracked gaps. The static manifest and the four capability-registry `mcpPath` entries (`calendar_blocks.task_id`, `study_entries.calendar_block_id`, `preset_id`, `energy`) are updated so N94 reports no tracked gaps.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/study-block-link-mcp.mjs` (registry rows, MCP start with a block, foreign-owner and non-study block refused, replay, undo), the existing `registries.mjs` and `command-manifest-mirror.mjs`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/tools/study.ts, tests/mcp/sql/study-block-link-mcp.mjs, tests/mcp/sql/registries.mjs (the appended fields and operations only), docs/v6/capability-registry/{lemma_command_resources,calendar_blocks,study_entries}.json, CURRENT.md.
-Not: app code, other commands, other registry rows.
+Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/tools/study.ts, tests/mcp/sql/study-block-link-mcp.mjs, tests/mcp/sql/registries.mjs (the appended fields and operations only), tests/mcp/sql/parity.mjs (the new round trips and removing the tracked gaps only), docs/v6/capability-registry/{lemma_command_resources,calendar_blocks,study_entries}.json, CURRENT.md.
+Not: app code, other commands, other registry rows, other parity fixtures.
 
 ## N108 Day close: canonical carry-over and tomorrow's-first-task transitions
 Stage: Build · Status: open · Needs: N107 · Assigned: —
-Done = per D8, one additive migration replaces `day_plans_command` compatibly so `close` also accepts `tomorrow_first_task_id` and a list of `carry_over` task IDs. It verifies owner ownership, that the plan is committed and that the day is the owner's local today or earlier, then updates the plan's dedicated column and sets the matching `day_plan_items` to `carried_over` with their reason in the same journalled action. `DayPlanApi.closePlan` forwards them. N69's `ritual` JSON stays the record of the owner's choices. Existing close behaviour and future-day refusal are unchanged. Owner decision (#1178): N69 is complete with ritual JSON only; canonical transitions belong to this item.
+Done = per D8, one additive migration replaces `day_plans_command` compatibly so `close` also accepts `tomorrow_first_task_id` and a list of `carry_over` task IDs. It verifies owner ownership, that the plan is committed and that the day is the owner's local today or earlier, then updates the plan's dedicated column and sets the matching `day_plan_items` to `carried_over` with their reason in the same journalled action. `DayPlanApi.closePlan` forwards them. The `day_plans` registry row appends the field `carry_over` (append only), the static manifest mirrors it, and the existing `close` round trip in `tests/mcp/sql/parity.mjs` passes `carry_over` and `tomorrow_first_task_id`. N69's `ritual` JSON stays the record of the owner's choices. Existing close behaviour and future-day refusal are unchanged. Owner decision (#1178): N69 is complete with ritual JSON only; canonical transitions belong to this item.
 Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: day_plans_command (reviewer verified signature and behaviour)`.
 Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale version refusal, future day refused, foreign task refused, undo, owner isolation), `tests/unit/day-plans/close-transitions.test.ts`
-Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
+Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, docs/v6/capability-registry/lemma_command_resources.json (the day_plans fields only), tests/mcp/sql/parity.mjs (the day_plans close round trip only), CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
 ## N54.1 App sync from the change feed
 Stage: Build · Status: open · Needs: N54 · Assigned: —
-Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the affected query keys; on `reset` it refetches bounded projections; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
+Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the query keys mapped to each changed `resource` in one table in `src/data/sync/keys.ts` (a resource missing from that table invalidates every owner query, so nothing is silently stale); on `reset` (cursor older than retained history) it invalidates every owner query once and continues from the cursor the server returns; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
 Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, backoff when hidden)
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
@@ -39,23 +39,23 @@ Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
+Not: other screens' folders, changes to `src/data/**` (calling the existing N66 `StudyApi` methods `takeLease`, `nextPhase` and `excludeMinutes` is the intended write path), new dependencies, existing tests' expectations.
 
-## N89 MCP: devices, holds and notifications
+## N89 MCP: devices, quiet holds and notification history
 Stage: Build · Status: open · Needs: N88 · Assigned: —
-Done = MCP lists push devices and renames, disables, restores or removes them (never synthesizing a subscription), creates/changes/clears notification holds, previews, schedules, updates, cancels, snoozes and dismisses notifications, and reads delivery history, with the same validation as the app.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/notify-coverage.test.ts`
-Scope: supabase/functions/mcp/**, tests/unit/mcp/notify-coverage.test.ts, CURRENT.md.
-Not: migrations, the notify function, app code.
+Owner decision (plan audit 2026-11-08): the earlier wording asked MCP to match app validation that does not exist (the app has no device or hold management) through tables `mcp_commit` cannot write, with migrations forbidden. Rewritten: per D8, one additive migration adds `version` to `push_devices` and `notify_holds` and a registered `notify_command(p)` with resources `push_devices` (operations `rename` (label 1–40), `disable` (reason `removed`), `restore`; never create or delete: a subscription only comes from a real browser through `upsert_push_device`) and `notify_holds` (`create`, `update` `until`, `delete`). Hold changes are journalled and undoable. Device changes are versioned and receipted but are NOT added to the undo journal, because the row holds transport credentials (`endpoint`, `p256dh`, `auth`) that must never be copied into `action_changes`; MCP never returns those columns. Notification history is read-only for MCP (status, reason, due and sent times); snooze and dismiss use the existing `notify_act` actions. MCP never creates or schedules notifications (the server tick does).
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/notify-command.mjs` (rename, disable, restore, hold create/update/delete with undo, stale version refused, foreign owner refused, credentials never returned or journalled), `tests/unit/mcp/notify-coverage.test.ts`, round trips for both resources in `tests/mcp/sql/parity.mjs`
+Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/mcp/sql/notify-command.mjs, tests/unit/mcp/notify-coverage.test.ts, tests/mcp/sql/parity.mjs (the two new resources only), docs/v6/capability-registry/{lemma_command_resources,lemma_undo_tables,push_devices,notify_holds,notifications}.json, CURRENT.md.
+Not: the notify Edge function, app code, sending or scheduling notifications.
 
 ## N90 MCP: historical corrections, proposal versions and drafts
-Stage: Build · Status: open · Needs: N89, N91, N92 · Assigned: —
-Done = MCP exposes the N91 corrections (session events and reviews), N92 withdraw/revise/reopen and versioned approval, and N49 drafts through `mcp_command`, with explicit-instruction rules from D3.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/history-coverage.test.ts`
-Scope: supabase/functions/mcp/**, tests/unit/mcp/history-coverage.test.ts, CURRENT.md.
-Not: migrations, app code.
+Stage: Build · Status: open · Needs: N91, N92 · Assigned: —
+Done = MCP exposes the N91 corrections (`session_event_corrections`, `review_corrections`) and N49 `proposal_drafts`, which are already registered, through `mcp_command`, with explicit-instruction rules from D3. Owner decision (plan audit 2026-11-08): the N92 functions `withdraw_proposal`, `revise_proposal` and `reopen_proposal` need the owner's identity, which MCP only has inside `mcp_command`, so one additive migration registers a `proposals` resource with a `proposals_command(p)` that dispatches `withdraw`, `revise` and `reopen` to those functions unchanged (versioned approval stays `approve_proposal`). It is covered by a round trip in `tests/mcp/sql/parity.mjs`.
+Owner-authorized (D1, D8): deploys the migration and the MCP function on merge, so this PR needs a review.
+Tests: `tests/unit/mcp/history-coverage.test.ts`, `tests/mcp/sql/proposals-command.mjs` (withdraw, revise, reopen, stale version, foreign owner, undo), the `proposals` round trip in `tests/mcp/sql/parity.mjs`
+Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/unit/mcp/history-coverage.test.ts, tests/mcp/sql/proposals-command.mjs, tests/mcp/sql/parity.mjs (the proposals resource only), docs/v6/capability-registry/lemma_command_resources.json, CURRENT.md.
+Not: app code, changes to the N92 functions themselves.
 
 ## N98 Harden: Today, Focus, time log and Progress
 Stage: Build · Status: open · Needs: N70, N72, N73, N76 · Assigned: —
@@ -87,10 +87,10 @@ Not: migrations, app code.
 
 ## N101 Release audit, screenshots and docs
 Stage: Build · Status: open · Needs: N98, N99, N100, N94, N96, N97 · Assigned: —
-Done = run the exact-output browser audit of every v6 route (320/360/390, 200% text, Day/Night) and the acceptance journeys, refresh `docs/v6/screens/` captures from the real app, write `docs/v6/RELEASE.md` (what shipped, known limitations, gates G1–G7 evidence, the Owner's physical-device checklist), and fix small defects found.
+Done = run the exact-output browser audit of every v6 route (320/360/390, 200% text, Day/Night) and the acceptance journeys, refresh `docs/v6/screens/` captures from the real app, write `docs/v6/RELEASE.md` (what shipped, known limitations, gates G1–G7 evidence, the Owner's physical-device checklist), and open one bug issue per defect found (app code is outside this item's scope; the Harden items or a bug PR fix them).
 Tests: `tests/e2e/v6-release-audit.spec.ts`
 Scope: docs/v6/screens/**, docs/v6/RELEASE.md (new), tests/e2e/v6-release-audit.spec.ts, CURRENT.md.
-Not: app behaviour changes beyond small fixes, supabase/**.
+Not: app code, supabase/**.
 
 ## N102 Turn v6 on by default (Owner approval required)
 Stage: Build · Status: open · Needs: N101, N90, N95, N103, N54.1 · Assigned: —
@@ -99,4 +99,4 @@ Tests: the flag test and the full e2e suite with the flag on by default; the rol
 Scope: src/flags.ts, tests affected by the default (expectations updated deliberately), CURRENT.md.
 Not: anything else.
 
-(Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N104.)
+(Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N110.)
