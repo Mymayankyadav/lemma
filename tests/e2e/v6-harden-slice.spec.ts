@@ -92,8 +92,9 @@ for(const {width,theme} of scenarios){
   const saved=page.getByRole('region',{name:'Total logged time'});
   await expect(saved).toContainText('10 min');
   await withinScreen(page,saved);
-  await touchTarget(page.getByRole('button',{name:'7 days'}));
-  await page.getByRole('button',{name:'90 days'}).click();
+  const recent=page.getByRole('group',{name:'Recent study ranges'});
+  await touchTarget(recent.getByRole('button',{name:'7 days'}));
+  await recent.getByRole('button',{name:'90 days'}).click();
   await withinScreen(page,page.getByRole('region',{name:'Daily logged minutes'}));
   const accessory=page.getByRole('complementary',{name:'Focus accessory'});
   await withinScreen(page,accessory);
