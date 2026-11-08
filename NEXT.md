@@ -62,13 +62,6 @@ Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N85 v6 plan review with proposal drafts behind the shell flag
-Stage: Build · Status: open · Needs: N63.2 · Assigned: —
-Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
-Tests: `tests/unit/plan-proposal-v6/**`
-Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
 Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
