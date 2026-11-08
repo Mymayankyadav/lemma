@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { LemmaApi } from './api'
 import { getApi } from './index'
+import { useOwnerSync } from './sync'
 const queryDefaults = { staleTime: 30_000, refetchOnWindowFocus: true }
 export function useHome(...args: Parameters<LemmaApi['getHome']>) {
  return useQuery({ ...queryDefaults, queryKey: ['home'], queryFn: () => getApi().getHome() })
@@ -66,7 +67,9 @@ export function useSubjects(...args: Parameters<LemmaApi['listSubjects']>) {
  return useQuery({ ...queryDefaults, queryKey: ['subjects'], queryFn: () => getApi().listSubjects() })
 }
 export function useAuth(...args: Parameters<LemmaApi['getAuth']>) {
- return useQuery({ ...queryDefaults, queryKey: ['auth'], queryFn: () => getApi().getAuth() })
+ const result = useQuery({ ...queryDefaults, queryKey: ['auth'], queryFn: () => getApi().getAuth() })
+ useOwnerSync(result.data?.email ?? null)
+ return result
 }
 export function useReviewLog(...args: Parameters<LemmaApi['getReviewLog']>) {
  return useQuery({ ...queryDefaults, queryKey: ['review-log'], queryFn: () => getApi().getReviewLog() })
