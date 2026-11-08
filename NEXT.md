@@ -27,15 +27,6 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N54 Owner change feed and catch-up cursor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
-Owner decision (#1147, amended by #1216): production has no notify Edge entrypoint, so the scheduled caller is the database. The N54 migration installs a daily `pg_cron` job `lemma-prune-owner-changes`, guarded on `pg_cron` being available, that runs one `DO` block which sets `LOCAL ROLE service_role` and calls `lemma_prune_owner_changes()` (the exact pattern used by `lemma-run-due-commands` in `20261116100000_pending_commands.sql`). The optional `TickAdapters.pruneOwnerChanges` hook stays as is; the database job is the guaranteed production caller. `change-feed.mjs` runs that exact job command as the migration owner and asserts it prunes within its bounds.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/change-feed.mjs` (app and `mcp_command` writes both appear once in commit order, deletes as tombstones, paging, reset, second owner invisible)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/change-feed.mjs, supabase/functions/notify/tick-core.ts (one call), tests/unit/notify/change-prune-tick.test.ts, docs/v6/capability-registry/owner_changes.json, CURRENT.md.
-Not: app code (N54.1), MCP code, other notify behaviour.
-
 ## N54.1 App sync from the change feed
 Stage: Build · Status: open · Needs: N54 · Assigned: —
 Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the affected query keys; on `reset` it refetches bounded projections; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
@@ -116,14 +107,6 @@ Done = a PGlite test loads a representative pre-v6 account fixture (paths, sourc
 Tests: `tests/mcp/sql/upgrade-rehearsal.mjs` and its fixture
 Scope: tests/mcp/sql/upgrade-rehearsal.mjs, tests/mcp/sql/fixtures/pre-v6-account.sql (new), CURRENT.md.
 Not: migrations, app code.
-
-## N103 Account deletion
-Stage: Build · Status: open · Needs: N95 · Assigned: —
-Done = Settings offers Delete account after an export prompt and a typed confirmation; a service-role edge function (or SQL function) deletes every owner row in dependency order, storage objects and the auth user, and is refused for any other user; MCP cannot call it.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/account-delete.mjs` (all owner rows gone, another owner untouched), `tests/unit/settings-v6/delete-account.test.tsx`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/account-delete/** (new), src/features/settings/v6/DeleteAccount.tsx (new), src/features/settings/v6/Page.tsx (section link only), tests/mcp/sql/account-delete.mjs, tests/unit/settings-v6/delete-account.test.tsx, CURRENT.md.
-Not: other functions, MCP code.
 
 ## N101 Release audit, screenshots and docs
 Stage: Build · Status: open · Needs: N98, N99, N100, N94, N96, N97 · Assigned: —
