@@ -175,6 +175,14 @@ async function handle(number) {
       commit_message: texts.commitMessage,
     }, botOpts());
     console.log(`#${number}: squash-merged`);
+    const fixed = issueClosedByMerge(ctx.pr.title);
+    if (fixed) {
+      try {
+        await api('POST', repoPath(`/issues/${fixed}/comments`), { body: `Fixed by #${number}, merged by CI. Closing automatically (v2.8), which also lifts an S0 merge freeze this issue held. Reopen with evidence if the problem is still there.` });
+        await api('PATCH', repoPath(`/issues/${fixed}`), { state: 'closed', state_reason: 'completed' });
+        console.log(`#${number}: closed issue #${fixed}`);
+      } catch (e) { console.log(`::warning::#${number}: could not close issue #${fixed}: ${e.message.slice(0, 200)}`); }
+    }
     await upsertFeedback({ pr: number, gate: 'merge', text: renderFeedback({ gate: 'merge', sha: ctx.pr.headSha, ok: true, note: texts.note }), createIfMissing: false });
     return res;
   } catch (e) {
@@ -184,6 +192,13 @@ async function handle(number) {
     console.log(`::warning::#${number}: ${why}`);
     return { ...res, merge: false };
   }
+}
+
+/** Pure (v2.8): the issue a merged `bug #<n> …` or `incident #<n> …` PR resolves, else null. #1149's fix (#1158) merged
+ *  at 23:14 IST but the issue stayed open, so its S0 label froze every other merge for 8 hours overnight. */
+export function issueClosedByMerge(title) {
+  const c = classifyTitle(title);
+  return c.kind === 'bug' || c.kind === 'incident' ? c.number : null;
 }
 
 /** Pure: PR numbers, oldest first, from an issues listing that was filtered by label (issues without pull_request are skipped). */

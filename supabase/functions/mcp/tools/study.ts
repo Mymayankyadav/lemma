@@ -5,8 +5,10 @@ export type StudyInput = {
   command: {
     operationId: string;
     schemaVersion: 1;
-    resource: 'study_entries' | 'study_intervals' | 'calendar_blocks' | 'tasks';
-    operation: 'create' | 'update' | 'delete' | 'start' | 'pause' | 'resume' | 'break' | 'save' | 'discard';
+    // Existing resources keep their exact legacy bridge; later registered
+    // resources use the generic service-role mcp_command dispatcher.
+    resource: string;
+    operation: string;
     target?: { id: string };
     expectedVersion?: number;
     patch?: Record<string, unknown>;
@@ -17,7 +19,13 @@ export type StudyInput = {
 /** Forward the exact v6 command to the security-definer, owner-bound RPC.
  * The receipt (including actionNo / conflict) is not transformed or truncated. */
 export async function study(c: Context, input: StudyInput): Promise<unknown> {
-  const { data, error } = await c.db.rpc(input.command.resource === 'tasks' ? 'mcp_task_command' : 'mcp_study_command', {
+  if(!/^[a-z][a-z0-9_]{0,60}$/.test(input.command.resource)||
+     !/^[a-z][a-z0-9_]{0,60}$/.test(input.command.operation))
+    throw new Error('Invalid registered resource or operation');
+  const legacyStudy=new Set(['study_entries','study_intervals','calendar_blocks']);
+  const route=input.command.resource==='tasks'?'mcp_task_command':
+    legacyStudy.has(input.command.resource)?'mcp_study_command':'mcp_command';
+  const { data, error } = await c.db.rpc(route, {
     p_user: c.userId,
     p_source: input.client ?? 'other',
     p: input.command,

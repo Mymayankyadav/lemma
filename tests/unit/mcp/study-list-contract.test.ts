@@ -22,6 +22,20 @@ describe('N15 serialized MCP read-tool contract',()=>{
     expect(()=>assertStudyReadListContract(wrong.tools)).toThrow(/study resources/);
     expect(()=>assertStudyReadListContract([])).toThrow(/study resources/);
   });
+  it('incident #1179: accepts the N37 enum-or-registered-pattern selector (zod anyOf) and still needs the study enum',()=>{
+    const widened=wire();
+    for(const [i,sel] of [[0,'what'],[1,'resource']] as const){
+      const props=widened.tools[i].inputSchema.properties as Record<string,unknown>;
+      props[sel]={anyOf:[{type:'string',enum:['plan','study_entries','calendar_blocks']},{type:'string',pattern:'^[a-z][a-z0-9_]{0,60}$'}]};
+    }
+    expect(()=>assertStudyReadListContract(JSON.parse(JSON.stringify(widened)).tools)).not.toThrow();
+    const patternOnly=wire();
+    (patternOnly.tools[0].inputSchema.properties as Record<string,unknown>).what={anyOf:[{type:'string',pattern:'^[a-z]+$'}]};
+    expect(()=>assertStudyReadListContract(patternOnly.tools)).toThrow(/study resources/);
+    const missingOne=wire();
+    (missingOne.tools[1].inputSchema.properties as Record<string,unknown>).resource={anyOf:[{type:'string',enum:['study_entries']},{type:'string'}]};
+    expect(()=>assertStudyReadListContract(missingOne.tools)).toThrow(/study resources/);
+  });
   it('connects this check to the real serialized selftest handler, retaining the hard 15000 gate',()=>{
     const source=readFileSync('supabase/functions/mcp/selftest.ts','utf8');
     expect(source).toContain('assertStudyReadListContract(list)');

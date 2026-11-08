@@ -1,0 +1,97 @@
+{
+  "table": "pending_commands",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "resource": {
+      "classification": "owner-editable",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "payload": {
+      "classification": "owner-editable",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "not_before": {
+      "classification": "owner-editable",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "undo_until": {
+      "classification": "owner-editable",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "result": {
+      "classification": "command-managed",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "error_class": {
+      "classification": "command-managed",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "N53 pending decisions server command (no app adapter yet)",
+      "mcpPath": "public.lemma_run_due_commands service-role registered-resource dispatch",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner-account purge (N103 planned); dispatched actions undo through undo_action"
+    }
+  }
+}
