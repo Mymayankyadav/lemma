@@ -14,6 +14,7 @@ import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
 import {isFlagOn} from '../flags'
 const PracticePage=lazy(()=>import('../features/practice/Page'))
+const DayRitual=lazy(()=>import('../features/ritual/Page'))
 const TimeLog=lazy(()=>import('../features/time-log/Page'))
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
@@ -24,7 +25,9 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
  ...screenRoutes,
  calendarRoute,
  tasksRoute,
- ...(isFlagOn('v6Shell')?[{path:'/log',
+ ...(isFlagOn('v6Shell')?[{path:'/today/close',
+  element:<Suspense fallback={<RouteFallback/>}><DayRitual/></Suspense>,
+  errorElement:<RouteError/>}, {path:'/log',
   element:<Suspense fallback={<RouteFallback/>}><TimeLog/></Suspense>,
   errorElement:<RouteError/>}, {path:'/practice',
   element:<Suspense fallback={<RouteFallback/>}><PracticePage/></Suspense>,

@@ -153,6 +153,7 @@ export interface LemmaApi {
  getReviewLog(): Promise<ReviewLogEntry[]>
  /** Read raw insight rows for the selected period. */
  getInsightData(days: InsightDays): Promise<InsightData>
- /** Export all owner tables as JSON. */
+ /** Export every owner record from registered undo tables, with a count and schema manifest.
+  * Fails closed when the owner-authorized registry read endpoint is unavailable. */
  exportAll(): Promise<Blob>
 }

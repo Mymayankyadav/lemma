@@ -11,20 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N59.2 Study goals live adapter (remaining after N59 split)
-Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
-Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
-Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
-Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
-Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
-
-## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
-Stage: Build · Status: open · Needs: N49 · Assigned: —
-Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
-Tests: tests/unit/proposal-drafts/** for demo lifecycle/reload/isolation, no implicit approval, duplicate/changed-payload operationId, conflict views and source version drift, bounded pages and cursor filter locks, live envelopes per operation with retry and no owner field, typed error mapping. Retain N63.1 pure-model tests.
-Scope: src/data/proposal-drafts/**, tests/unit/proposal-drafts/**, CURRENT.md.
-Not: other data modules, UI, supabase/**, unrelated MCP functions, protected paths, or new dependencies.
-
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
@@ -54,20 +40,6 @@ Tests: `tests/unit/planner/sheet.test.tsx` (preview, deselect, stale-preview ref
 Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and src/features/calendar/Page.tsx (opening the sheet only), tests/unit/planner/sheet.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60.2, N58.2.3 · Assigned: —
-Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
-Tests: `tests/unit/ritual/**`
-Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N70 v6 Today: intention, next block, add task and onboarding behind the shell flag
-Stage: Build · Status: open · Needs: N60.2 · Assigned: —
-Done = with `v6Shell` on, Today shows the dated intention (set/edit through the day plan), the next planned block with Start (starting a study entry that carries the block's existing subject/project/checkpoint links through the existing `StudyApi.startStudyEntry`; an exact calendar-block link on the entry is N106, Owner, bug #1168), an Add task action opening the N25 task sheet, the selected review batch count from the existing review summary, and honest onboarding for an empty account (no invented numbers). Flag off: nothing changes.
-Tests: `tests/unit/home-v6/today-plan.test.tsx`
-Scope: src/features/home/** (v6 branch only), tests/unit/home-v6/today-plan.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.
@@ -82,55 +54,12 @@ Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N77 v6 activity presets: manage and pick behind the shell flag
-Stage: Build · Status: open · Needs: N55 · Assigned: —
-Done = with `v6Shell` on, Settings gains an Activities section to create, edit, reorder, archive and restore presets; the Focus start control lists active presets (selection is passed through once N72 lands; until then it pre-fills the intent and links). Flag off: nothing changes.
-Tests: `tests/unit/presets-ui/**`
-Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
-Stage: Build · Status: open · Needs: N39 · Assigned: —
-Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
-Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
-Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
-
-## N82 v6 sources panel and page text behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
-Tests: `tests/unit/sources-v6/**`
-Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), src/features/project/v6/V6Project.tsx (mount the v6 sources panel in place of its source list only; Owner, bug #1119), tests/unit/sources-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N84 v6 card detail and editor behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/cards/:no` shows the note's variants, scheduling state, review history and comments with the existing edit, suspend/restore and comment actions (reschedule and reset have no write path yet; they arrive in N104, Owner, bug #1140); the editor previews mathematics and keeps the existing save path. Flag off: nothing changes.
-Tests: `tests/unit/card-v6/**`
-Scope: src/features/card/v6/** (new), src/features/card/Page.tsx (the flag branch only), tests/unit/card-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N85 v6 plan review with proposal drafts behind the shell flag
 Stage: Build · Status: open · Needs: N63.2 · Assigned: —
 Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
 Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N86 v6 Atlas editing in the list behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the v6 Atlas list adds pin/unpin through the existing write path and a read-only merge impact and cycle check (create, edit, reparent, link/unlink and merge have no write path yet; they arrive in N105, Owner, bug #1140). Flag off: nothing changes.
-Tests: `tests/unit/atlas-v6/edit.test.tsx`
-Scope: src/features/atlas/v6/**, tests/unit/atlas-v6/edit.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N91 Evidence and review history correction
-Stage: Build · Status: open · Needs: N38 · Assigned: —
-Done = one additive migration: `session_events` gains `occurred_at` (read as `coalesce(occurred_at, created_at)`), `superseded_by`, `voided_at`, `correction_reason`, `actor`; `reviews` gains `scheduler_version`, `params_id` (FK to a new `review_parameter_sets` snapshot of the weights and settings used) and `operation_id`; new functions `correct_session_event`, `void_session_event` (re-derive checkpoint state from remaining evidence) and `correct_review`, `void_review` (rebuild the affected card's schedule from its remaining history with the recorded parameters, or a disclosed replacement state), all owner-checked, journaled and undoable, registered in `lemma_command_resources`.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/history-correction.mjs` (each correction re-derives state, history and schedule agree, undo, second owner, existing grade and session tests unchanged)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/history-correction.mjs, docs/v6/capability-registry/session_events.json, docs/v6/capability-registry/reviews.json, docs/v6/capability-registry/review_parameter_sets.json, CURRENT.md.
-Not: app or MCP code, changing existing grade functions.
 
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
@@ -192,14 +121,6 @@ Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
 
-## N95 Export covers every v6 record
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
-Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
-Scope: one additive migration adding a read-only `security definer` owner export function (Owner, bug #1156): it lists the names in `lemma_undo_tables` and returns only the caller's own rows (`user_id = auth.uid()`) of one registered table per call in bounded keyset pages, rejects names not in the registry, is executable by `authenticated` only, and grants nothing on the registry itself; the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, docs/current/N95.md.
-Owner-authorized (D1): deploys on merge, so this PR needs a review.
-Not: other adapter methods, UI.
-
 ## N104 Card reschedule and reset (write path and v6 buttons)
 Stage: Build · Status: open · Needs: N84 · Assigned: —
 Done = one additive migration adds `public.card_schedule_command(p)` with operations `reschedule` (set the card's next due date) and `reset` (back to new), owner-checked, with an exactly-once operation receipt, one journalled action that `undo_action` reverses, and a `lemma_command_resources` entry so `mcp_command` can run it; `LemmaApi` gains `rescheduleCard` and `resetCard` (demo and live), and the v6 card detail (N84) shows both actions. Flag off: nothing changes.
@@ -208,13 +129,12 @@ Tests: `tests/mcp/sql/card-schedule-command.mjs` (owner separation, replay, undo
 Scope: supabase/migrations/<one new additive file>, src/data/api.ts (two methods), the demo and live card adapters in src/data/**, src/features/card/v6/**, tests/mcp/sql/card-schedule-command.mjs, tests/unit/card-v6/**, docs/current/N104.md.
 Not: review grading or FSRS changes, other screens.
 
-## N105 Concept graph edits (write path and v6 Atlas actions)
-Stage: Build · Status: open · Needs: N86 · Assigned: —
-Done = one additive migration adds `public.concepts_command(p)` with operations create, update (name, blurb), reparent, link and unlink (prerequisite or related) and merge (moving links and card references to the kept concept, impact returned first by a preview), refusing cycles with a reason, owner-checked, with exactly-once receipts, one journalled undoable action each and a `lemma_command_resources` entry for `mcp_command`; `LemmaApi` gains the matching methods (demo and live), and the v6 Atlas list (N86) offers them. Flag off: nothing changes.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/concepts-command.mjs` (cycles, merge impact, owner separation, replay, undo, MCP parity) and `tests/unit/atlas-v6/**`
-Scope: supabase/migrations/<one new additive file>, src/data/api.ts (concept methods), the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/mcp/sql/concepts-command.mjs, tests/unit/atlas-v6/**, docs/current/N105.md.
-Not: concept placement layout, other screens.
+## N105.2 Atlas concept mutations in demo/live adapters and v6 controls
+Stage: Build · Status: open · Needs: N105.1, N86 · Assigned: —
+Done = Finish N105 with matching LemmaApi create/update/reparent/link/unlink/merge and preview methods (demo/live), error mapping, and v6 Atlas list controls. The live adapter sends the N105.1 owner-authenticated command and preserves exactly-once operation IDs; the demo adapter respects version, cycle and merge impact parity. Flag-off remains unchanged.
+Tests: tests/unit/atlas-v6/**
+Scope: src/data/api.ts, the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/unit/atlas-v6/**, docs/current/N105.2.md.
+Not: schema, other screens, unreviewed direct DML.
 
 ## N106 Study entry linked to its calendar block
 Stage: Build · Status: open · Needs: N70 · Assigned: —
