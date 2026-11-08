@@ -75,6 +75,11 @@ Deno.serve(async(request:Request)=>{
   const started=await admin.rpc('lemma_begin_account_delete',{p_owner:userId});
   if(started.error)throw Error('Deletion request could not be secured');
   await purgeOwnerStorage(admin,userId);
+  // Auth FKs include non-cascading audit rows. Remove only this owner's
+  // records while the deletion marker still prevents new Storage writes.
+  const cleanup=await admin.rpc('lemma_purge_account_rows',{p_owner:userId});
+  if(cleanup.error||cleanup.data?.status!=='purged')
+   throw Error('Owner database cleanup did not complete');
   const deleted=await admin.auth.admin.deleteUser(userId,false);
   if(deleted.error)throw Error('Auth deletion failed');
   return Response.json({deleted:true},{headers});
