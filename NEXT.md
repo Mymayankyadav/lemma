@@ -129,13 +129,6 @@ Tests: `tests/unit/mcp/history-coverage.test.ts`
 Scope: supabase/functions/mcp/**, tests/unit/mcp/history-coverage.test.ts, CURRENT.md.
 Not: migrations, app code.
 
-## N94 Parity harness for every registered resource (G2, G4)
-Stage: Build · Status: open · Needs: N37, N40 · Assigned: —
-Done = `tests/mcp/sql/parity.mjs` iterates `lemma_command_resources` and, for each resource, creates through `mcp_command`, reads through the app's owner path, updates through the app path, reads through MCP, deletes/voids and restores, and checks the receipts and versions match; it fails, naming the resource, when an operation in the schema has no passing round trip, and when a registry entry or capability-registry column lacks a read or write path.
-Tests: the harness itself, on main's resources, plus a fixture resource missing a path
-Scope: tests/mcp/sql/parity.mjs, CURRENT.md.
-Not: migrations, app or MCP code.
-
 ## N98 Harden: Today, Focus, time log and Progress
 Stage: Build · Status: open · Needs: N70, N72, N73, N76 · Assigned: —
 Done = review the fast-built first slice and its additions against `docs/v6/DESIGN_HANDOFF.md` and contract §6: exact geometry at 320/360/390 widths, 200% text, Day/Night, keyboard and Back, reload and two-tab behaviour, long mathematics; fix every defect found within these folders and record intentional limitations in CURRENT.md.
