@@ -161,6 +161,17 @@ function inventoryDocs():Map<string,Inventory>{
   return docs;
 }
 describe('N40 complete capability registry',()=>{
+  it('keeps private deletion cleanup coordinates command-managed and inaccessible',()=>{
+    const inventory=inventoryDocs().get('account_deletion_requests');
+    expect(inventory).toBeDefined();
+    for(const field of ['cleanup_txid','cleanup_pid']){
+      const entry=inventory?.columns[field];
+      expect(entry?.classification).toBe('command-managed');
+      expect(entry?.appPath).toMatch(/^none:/);
+      expect(entry?.mcpPath).toMatch(/^none:/);
+      expect(entry?.exportPolicy).toMatch(/^excluded:/);
+    }
+  });
   it('classifies every existing public column from every CREATE TABLE/ADD COLUMN migration',()=>{
     const schema=columnsFromMigrations(migrationSources());
     const docs=inventoryDocs();
