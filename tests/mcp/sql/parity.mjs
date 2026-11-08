@@ -324,7 +324,7 @@ try{
  }
  // A saved manual entry owns the interval used below, so its creation and
  // final deletion must be ordered around the interval round trip.
- await roundTrip('tasks',specs.tasks);
+ const planTaskId=await roundTrip('tasks',specs.tasks);
  const presetId=await roundTrip('presets',specs.presets);
  // Non-CRUD owner preset lifecycle must preserve the exact version and
  // archived state across the MCP path, and generic undo must invert restore.
@@ -426,6 +426,108 @@ try{
  const calendarId=await roundTrip('calendar_blocks',specs.calendar_blocks);
  await roundTrip('study_intervals',{...specs.study_intervals,
   create:{...specs.study_intervals.create,entry_id:entryId}});
+
+ // N46.2: owner and MCP day plan lifecycle with *real* task/block versions.
+ await role('service_role');
+ const newPlan=command('day_plans','create',{patch:{
+  plan_date:'2026-11-06',time_zone:'UTC',
+  intention:'N94 planner draft',capacity_minutes:75,
+  availability:{sources:[]},ritual:{}}});
+ const madePlan=status(await mcp(newPlan),'day_plans','create');
+ const planId=madePlan.plan.id;
+ assert.equal(madePlan.plan.version,1);
+ assert.deepEqual(await mcp(newPlan),madePlan,'day_plans: exact create replay');
+ assert.equal((await mcp({...newPlan,patch:{...newPlan.patch,
+  intention:'Changed command payload'}})).status,'conflict',
+  'day_plans: changed operationId payload must conflict');
+ await as(owner);
+ assert.equal((await q('select intention from public.day_plans where id=$1',
+  [planId]))[0].intention,'N94 planner draft');
+ const editedPlan=status(await app('day_plans_command',command('day_plans','update',{
+  target:{id:planId},expectedVersion:1,patch:{intention:'N94 app-edited plan'}
+ })),'day_plans','update');
+ assert.equal(editedPlan.plan.version,2);
+ await role(null);
+ const pagePlan=await mcpPage('day_plans',planId);
+ assert.equal(pagePlan.total,1,'day_plans: MCP registered GET missing');
+ assert.equal(pagePlan.items[0].intention,'N94 app-edited plan');
+ assert.equal(pagePlan.items[0].version,2);
+ assert.equal((await mcpPage('day_plans',planId,other)).total,0,
+  'day_plans: foreign owner MCP read');
+ const schemaPlan=registered.get('day_plans').schema.fields;
+ const capPlan=JSON.parse(await readFile(new URL('day_plans.json',
+  new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8')).columns;
+ assert.deepEqual(schemaPlan.filter(x=>!Object.hasOwn(capPlan,x)),['items'],
+  'day_plans: undocumented command-only payload');
+ const readPlan=(await q('select * from public.day_plans where id=$1 and user_id=$2',
+  [planId,owner]))[0];
+ const fieldsPlan=schemaPlan.filter(x=>Object.hasOwn(capPlan,x));
+ requireFields('day_plans',fieldsPlan,Object.fromEntries(fieldsPlan.map(key=>[
+  key,{appPath:Object.hasOwn(readPlan,key)?'app owner row':'missing',
+   mcpPath:Object.hasOwn(pagePlan.items[0],key)?'registered GET':'missing'}
+ ])));
+ await role('service_role');
+ assert.equal((await mcp(command('day_plans','update',{
+  target:{id:planId},expectedVersion:1,patch:{intention:'Stale'}
+ }))).status,'conflict','day_plans: stale owner version accepted');
+ const currentTaskVersion=(await q('select version from public.tasks where user_id=$1 and id=$2',
+  [owner,planTaskId]))[0].version;
+ const currentBlockVersion=(await q('select version from public.calendar_blocks where user_id=$1 and id=$2',
+  [owner,calendarId]))[0].version;
+ const sourceSnapshot={sources:[
+  {resource:'tasks',id:planTaskId,version:currentTaskVersion},
+  {resource:'calendar_blocks',id:calendarId,version:currentBlockVersion},
+ ]};
+ const planPreview=command('day_plans','preview',{target:{id:planId},
+  expectedVersion:2,patch:{availability:sourceSnapshot,items:[{
+   task_id:planTaskId,calendar_block_id:calendarId,
+   disposition:'placed',reason:null,position:0,
+  }]}});
+ const previewedPlan=status(await mcp(planPreview),'day_plans','preview');
+ assert.equal(previewedPlan.plan.status,'previewed');
+ assert.equal(previewedPlan.plan.version,3);
+ assert.deepEqual(await mcp(planPreview),previewedPlan,
+  'day_plans: exact preview replay duplicated item');
+ assert.ok(previewedPlan.changed.some(c=>c.resource==='day_plan_items'),
+  'day_plans: preview receipt omitted item journal');
+ await as(owner);
+ const planItems=await q('select task_id,calendar_block_id,disposition from public.day_plan_items where plan_id=$1',[planId]);
+ assert.deepEqual(planItems,[{task_id:planTaskId,
+  calendar_block_id:calendarId,disposition:'placed'}],
+  'day_plans: owner app preview items disagree');
+ await role('service_role');
+ const committedPlan=status(await mcp(command('day_plans','commit',{
+  target:{id:planId},expectedVersion:3,patch:{}
+ })),'day_plans','commit');
+ assert.equal(committedPlan.plan.status,'committed');
+ assert.equal(committedPlan.plan.version,4);
+ assert.equal((await mcpPage('day_plans',planId)).items[0].version,4,
+  'day_plans: MCP GET cannot see commit');
+ const closedPlan=status(await mcp(command('day_plans','close',{
+  target:{id:planId},expectedVersion:4,patch:{ritual:{reviewed:true}}
+ })),'day_plans','close');
+ assert.equal(closedPlan.plan.status,'closed');
+ assert.equal(closedPlan.plan.version,5);
+ await as(owner);
+ assert.deepEqual((await q('select ritual from public.day_plans where id=$1',
+  [planId]))[0].ritual,{reviewed:true},
+  'day_plans: app close ritual mismatch');
+ await role('service_role');
+ const reopenedPlan=status(await mcp(command('day_plans','reopen',{
+  target:{id:planId},expectedVersion:5,patch:{}
+ })),'day_plans','reopen');
+ assert.equal(reopenedPlan.plan.status,'committed');
+ assert.equal(reopenedPlan.plan.version,6);
+ await as(owner);
+ assert.equal((await undo(reopenedPlan.actionNo)).undone,reopenedPlan.actionNo,
+  'day_plans: reopen undo missing');
+ await role(null);
+ const undoPlan=(await q('select status,closed_at from public.day_plans where id=$1',
+  [planId]))[0];
+ assert.equal(undoPlan.status,'closed','day_plans: undo did not re-close');
+ assert.ok(undoPlan.closed_at,'day_plans: undo lost closure instant');
+ mark('day_plans','create','update','preview','commit','close','reopen');
+
  // An acknowledgement validates two existing *current-version* owner
  // participants before every update; a stale version is rejected by its
  // trigger. Use the records already round-tripped above, not mock IDs.
@@ -992,7 +1094,7 @@ try{
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['day_plans','concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
