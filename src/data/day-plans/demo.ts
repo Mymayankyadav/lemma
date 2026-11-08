@@ -1,7 +1,8 @@
 // N60.2: tab-local, reload-safe day plans. No browser owner identifier is accepted.
 import {DayPlanError,type DayPlanApi,type DayPlanItem,type DayPlanPatch,
- type DayPlanQuery,type DayPlanRecord,type NewDayPlan,type NewDayPlanItem,
+ type DayPlanQuery,type DayPlanRecord,type AtomicPlacementResult,type NewDayPlan,type NewDayPlanItem,
  type PlanAvailability,type DayPlanStatus} from './contract';
+import {normalizeCommitPlacements,type CommitPlacementsInput} from './placements';
 import {civilPlanDate,comparePlanSources,normalizeAvailability,
  normalizeDayPlan,normalizePlanItems,validatePlanClosure} from './model';
 import {createDemoTaskApi} from '../tasks/demo';
@@ -9,7 +10,9 @@ import {createDemoStudyApi} from '../study/demo';
 
 const KEY='lemma.v6.demo.day-plans.v1';
 const statuses:DayPlanStatus[]=['draft','previewed','committed','closed'];
-type Snapshot={schema:1;plans:DayPlanRecord[];items:DayPlanItem[]};
+type AtomicReplay={fingerprint:string;receipt:{record:AtomicPlacementResult;actionNo:null}};
+type Snapshot={schema:1;plans:DayPlanRecord[];items:DayPlanItem[];
+ atomics?:Record<string,AtomicReplay>};
 type PlanCursor={v:1;filter:string;date:string;id:string};
 type ItemCursor={v:1;planId:string;position:number;id:string};
 type SourceReader=(expected:PlanAvailability)=>Promise<PlanAvailability>;
@@ -83,8 +86,12 @@ async function defaultSourceReader(expected:PlanAvailability):Promise<PlanAvaila
  });
  const actual:PlanAvailability={sources:[]};
  for(const source of expected.sources){
+  const entries=source.resource==='study_entries'?
+   await study.listStudyEntries({start:'1970-01-01T00:00:00.000Z',
+    end:'2100-01-01T00:00:00.000Z'}):[];
   const row=source.resource==='tasks'?await taskApi.getTask(source.id):
-   blocks.find(b=>b.id===source.id);
+   source.resource==='calendar_blocks'?blocks.find(b=>b.id===source.id):
+   entries.find(e=>e.id===source.id&&e.status==='saved');
   if(row)actual.sources.push({...source,version:row.version});
  }
  return actual;
@@ -110,8 +117,9 @@ function normalizePatch(row:DayPlanRecord,patch:DayPlanPatch):DayPlanRecord{
 export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReader):DayPlanApi{
  let memory=load()??{schema:1 as const,plans:[],items:[]};
  const current=():Snapshot=>{memory=load()??memory;return memory};
- const save=(plans:DayPlanRecord[],items:DayPlanItem[]):void=>{
-  memory={schema:1,plans,items};persist(memory);
+ const save=(plans:DayPlanRecord[],items:DayPlanItem[],
+  atomics:Record<string,AtomicReplay>=current().atomics??{}):void=>{
+  memory={schema:1,plans,items,atomics};persist(memory);
  };
  const plan=(id:string):DayPlanRecord=>{
   const found=current().plans.find(x=>x.id===requiredId(id));
@@ -225,6 +233,93 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
    }));
    save(state.plans.map(p=>p.id===id?next:p),[...replaced,...entries]);
    return receipt(next);
+  },
+  async undoPlacements(){
+   // Demo receipts carry actionNo:null (no journal), so no Undo is offered.
+   return fail('conflict','Demo mode has no undo journal for planner commits');
+  },
+  async commitPlacements(input:CommitPlacementsInput){
+   const value=normalizeCommitPlacements(input),operationId=value.operationId??newId();
+   const fingerprint=JSON.stringify(value),state=current();
+   const replay=state.atomics?.[operationId];
+   if(replay){
+    if(replay.fingerprint!==fingerprint)
+     return fail('conflict','Atomic placement operationId reused with different payload');
+    return clone(replay.receipt);
+   }
+   const study=createDemoStudyApi();
+   const range={start:'1970-01-01T00:00:00.000Z',end:'2100-01-01T00:00:00.000Z'};
+   const blocks=await study.listCalendarBlocks(range);
+   const entries=await study.listStudyEntries(range),windows:{start:number;end:number}[]=[];
+   for(const day of value.days){
+    const existing=state.plans.find(p=>p.planDate===day.planDate);
+    if(day.planId){
+     if(!existing||existing.id!==day.planId||
+      existing.version!==day.expectedVersion||
+      !['draft','previewed'].includes(existing.status))
+      return fail('conflict','Owner plan changed since preview');
+    }else if(existing)return fail('conflict','Owner plan date already exists');
+    await checkSources({sources:day.sources});
+    for(const p of day.placements){
+     const start=Date.parse(p.startsAt),end=Date.parse(p.endsAt);
+     if(windows.some(w=>start<w.end&&end>w.start)||
+      blocks.some(b=>b.status!=='cancelled'&&
+       start<Date.parse(b.endsAt)&&end>Date.parse(b.startsAt))||
+      entries.some(e=>e.status==='saved'&&e.intervals.some(i=>
+       i.kind==='focus'&&i.end!==null&&
+       start<Date.parse(i.end)&&end>Date.parse(i.start))))
+      return fail('conflict','Atomic placement overlaps calendar or saved focus');
+     windows.push({start,end});
+    }
+   }
+   // Do not publish a plan or its child items until every block succeeds.
+   // A demo adapter failure compensates previously created calendar blocks.
+   const added:{id:string;version:number}[]=[],plans:DayPlanRecord[]=[],items:DayPlanItem[]=[];
+   const at=new Date().toISOString();
+   try{
+    for(const day of value.days){
+     const previous=state.plans.find(p=>p.planDate===day.planDate);
+     const row:DayPlanRecord=previous?{
+      ...previous,status:'committed',closedAt:null,version:previous.version+1,
+      timeZone:day.timeZone,intention:day.intention??'',
+      capacityMinutes:day.capacityMinutes??0,
+      availability:normalizeAvailability({sources:day.sources}),updatedAt:at
+     }:{
+      id:newId(),planDate:day.planDate,timeZone:day.timeZone,
+      intention:day.intention??'',capacityMinutes:day.capacityMinutes??0,
+      availability:normalizeAvailability({sources:day.sources}),
+      status:'committed',closedAt:null,tomorrowFirstTaskId:null,
+      ritual:{},version:1,createdAt:at,updatedAt:at
+     };
+     plans.push(row);
+     for(const placement of day.placements){
+      const receipt=await study.createCalendarBlock({kind:'study',
+       title:placement.title,startsAt:placement.startsAt,endsAt:placement.endsAt,
+       timeZone:day.timeZone,taskId:placement.taskId});
+      added.push({id:receipt.record.id,version:receipt.record.version});
+      items.push({id:newId(),planId:row.id,taskId:placement.taskId,
+       blockId:receipt.record.id,disposition:'placed',reason:null,
+       position:placement.position,version:1});
+     }
+     for(const u of day.unplaced??[])items.push({
+      id:newId(),planId:row.id,taskId:u.taskId,blockId:null,
+      disposition:'unplaced',reason:u.reason,position:u.position,version:1
+     });
+    }
+    const receipt:{record:AtomicPlacementResult;actionNo:null}={
+     record:{plans:clone(plans),blockIds:added.map(x=>x.id)},actionNo:null};
+    const ids=new Set(plans.map(p=>p.id));
+    save([...state.plans.filter(p=>!ids.has(p.id)),...plans],
+     [...state.items.filter(x=>!ids.has(x.planId)),...items],
+     {...state.atomics,[operationId]:{fingerprint,receipt}});
+    return clone(receipt);
+   }catch(error){
+    for(const block of added.reverse()){
+     try{await study.deleteCalendarBlock(block.id,block.version)}
+     catch{/* Retain the original demo failure. */}
+    }
+    throw error;
+   }
   },
   async commitPlan(id,expected){
    const row=plan(id);expectedVersion(row,expected);
