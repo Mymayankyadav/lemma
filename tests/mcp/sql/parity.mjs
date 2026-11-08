@@ -1593,17 +1593,29 @@ try{
   [other,'chatgpt',JSON.stringify(command('notify_holds','delete',{
    target:{id:'n94-notify'},expectedVersion:2,patch:{}
   }))]),/not found for owner/i);
+ // First undo the edit. Its inverse is a live later action, so a subsequent
+ // delete is tested separately rather than rewinding earlier history through it.
+ await as(owner);
+ assert.equal((await undo(n89Edited.actionNo)).undone,n89Edited.actionNo);
+ assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,1);
+ await role('service_role');
  const n89DeleteRequest=command('notify_holds','delete',{
-  target:{id:'n94-notify'},expectedVersion:2,patch:{}});
+  target:{id:'n94-notify'},expectedVersion:1,patch:{}});
  const n89Deleted=status(await mcp(n89DeleteRequest),'notify_holds','delete');
  assert.deepEqual(await mcp(n89DeleteRequest),n89Deleted,'N89 delete replay');
  await as(owner);
  assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-notify'"))[0].n,0);
  assert.equal((await undo(n89Deleted.actionNo)).undone,n89Deleted.actionNo);
- assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,2);
- assert.equal((await undo(n89Edited.actionNo)).undone,n89Edited.actionNo);
  assert.equal((await q("select version from public.notify_holds where scope='n94-notify'"))[0].version,1);
- assert.equal((await undo(n89Created.actionNo)).undone,n89Created.actionNo);
+ // Verify create-undo independently: undo_action will not rewind a different
+ // earlier mutation through the later inverse record.
+ await role('service_role');
+ const n89CreateOnly=status(await mcp(command('notify_holds','create',{
+  patch:{scope:'n94-undo-create',until:'2028-01-01T00:00:00Z'}
+ })),'notify_holds','create');
+ await as(owner);
+ assert.equal((await undo(n89CreateOnly.actionNo)).undone,n89CreateOnly.actionNo);
+ assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-undo-create'"))[0].n,0);
  mark('notify_holds','create','update','delete');
  await role('service_role');
 

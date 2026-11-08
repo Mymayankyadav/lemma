@@ -143,11 +143,17 @@ try{
  await as(other);
  assert.equal((await q("select count(*)::int n from public.notify_holds where scope='tutor'"))[0].n,0);
  await role('service_role');
+ // Undo an edit before the later delete. An inverse itself is a live journal
+ // action, so undoing several historical actions backwards is not allowed.
+ await as(owner);
+ assert.equal((await undo(owner,edited.actionNo)).undone,edited.actionNo);
+ assert.equal((await hold('tutor')).version,1);
+ await role('service_role');
  await assert.rejects(mcp(command('notify_holds','delete',{
-  target:{id:'tutor'},expectedVersion:2,patch:{}
+  target:{id:'tutor'},expectedVersion:1,patch:{}
  }),other),/not found for owner/i);
  const deletion=command('notify_holds','delete',{
-  target:{id:'tutor'},expectedVersion:2,patch:{}
+  target:{id:'tutor'},expectedVersion:1,patch:{}
  });
  const deleted=ok(await mcp(deletion));
  assert.ok(deleted.actionNo>0);
@@ -156,11 +162,16 @@ try{
  assert.equal(await hold('tutor'),undefined);
  await as(owner);
  assert.equal((await undo(owner,deleted.actionNo)).undone,deleted.actionNo);
- assert.equal((await hold('tutor')).version,2);
- assert.equal((await undo(owner,edited.actionNo)).undone,edited.actionNo);
  assert.equal((await hold('tutor')).version,1);
- assert.equal((await undo(owner,created.actionNo)).undone,created.actionNo);
- assert.equal(await hold('tutor'),undefined,'create undo should remove hold');
+ // Prove create undo on a different scope; the prior delete inverse must not
+ // block its independent journal action.
+ await role('service_role');
+ const createOnly=ok(await mcp(command('notify_holds','create',{
+  patch:{scope:'n89-create-undo',until:'2028-01-01T00:00:00Z'}
+ })));
+ await as(owner);
+ assert.equal((await undo(owner,createOnly.actionNo)).undone,createOnly.actionNo);
+ assert.equal((await hold('n89-create-undo')),undefined,'standalone hold create not undoable');
 
  // The existing notify_act still creates quiet holds and changes advance
  // versions when it overwrites the same scope; it is not replaced by MCP.
@@ -168,11 +179,11 @@ try{
  await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at) values($1,'tutor','n89-test','Study','Body','#/review',now())",[owner]);
  const notification=(await q("select id from public.notifications where user_id=$1 and key='n89-test'",[owner]))[0].id;
  await q('select public.notify_act($1::uuid,$2::bigint,$3::text,$4::jsonb)',
-  [owner,notification,'later',JSON.stringify({scope:'tutor'})]);
- assert.equal((await hold('tutor')).version,1);
+  [owner,notification,'later',JSON.stringify({scope:'tutor-notify'})]);
+ assert.equal((await hold('tutor-notify')).version,1);
  await q('update public.notify_holds set "until"=now()+interval \'4 hours\' where user_id=$1 and scope=$2',
-  [owner,'tutor']);
- assert.equal((await hold('tutor')).version,2,'out-of-band hold update did not advance version');
+  [owner,'tutor-notify']);
+ assert.equal((await hold('tutor-notify')).version,2,'out-of-band hold update did not advance version');
  const rows=await q("select table_name,old::text as old,new::text as new from public.action_changes where table_name='notify_holds'");
  assert(rows.length>=6,'hold lifecycle did not produce journal entries');
  assert(!JSON.stringify(rows).includes(secret),'push credential appeared in hold journal');
