@@ -5,11 +5,12 @@ import {Context,scoped,all,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
 import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.ts';
+import {projectEditFields,isLearningEditTable,learningEditCommand,validateProjectEditPatch} from './learning-edit.ts';
 import {slug,cut} from '../text.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
- projects:'target_date target_label title slug goal style status subject prompt',checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
+ projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
  sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
  concepts:'topic name blurb subject prereqs related level parent star',subjects:'name glyph hue',styles:'name instructions',sources:'title short kind',settings:ownerEditableSettingsFields.join(' ')
 };
@@ -92,11 +93,19 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
   c.batch!.push(settingsEditCommand(row,a.set,c.userId,a.expectedVersion));
   return 'edited settings: '+Object.keys(a.set).join(', ');
  }
- if(a.expectedVersion!==undefined)throw Error('expectedVersion currently supported only for settings');
+ if(a.expectedVersion!==undefined&&!isLearningEditTable(table))
+  throw Error('expectedVersion currently supported only for settings and learning records');
  const valid=String(allowed[table]||'').split(' '),patch={...a.set};
  for(const k of Object.keys(patch))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));
  if(!Object.keys(patch).length)throw Error('Provide fields to change');
  planningFields(patch);
+ if(table==='projects'){
+  validateProjectEditPatch(patch);
+  if(patch.subject_id!==undefined){
+   if(typeof patch.subject_id!=='string')throw Error('Subject ID must be text');
+   await find(c,'subjects','id',patch.subject_id);
+  }
+ }
  const p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
  if(table==='notes'&&patch.status!==undefined&&!['active','suspended'].includes(patch.status))throw Error('Card status must be active or suspended');
  if(patch.subject!==undefined){
@@ -128,7 +137,11 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
   if(patch.star!==undefined){if(typeof patch.star!=='boolean')throw Error('star must be boolean');patch.is_star=patch.star;delete patch.star;}
   await ideaLinks(c,row,patch,true);delete patch.prereqs;delete patch.related;
  }
- if(Object.keys(patch).length)enqueue(c,table,pk(table,row),patch);
+ if(Object.keys(patch).length){
+  if(isLearningEditTable(table))
+   c.batch!.push(learningEditCommand(table,row,patch,c.userId,a.expectedVersion));
+  else enqueue(c,table,pk(table,row),patch);
+ }
  return 'edited '+a.target+': '+Object.keys(a.set).join(', ');
 }
 export async function add(c:Context,a:any){const f={...a.fields};planningFields(f);const valid=String(allowed[({checkpoint:'checkpoints',card:'notes',subject:'subjects',idea:'concepts',style:'styles',comment:'card_comments',book:'sources'} as Record<string,string>)[a.kind]]||'').split(' ').concat(['card','key']);for(const k of Object.keys(f))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));const p=['checkpoint','card','book'].includes(a.kind)?await project(c,a.project):null;
