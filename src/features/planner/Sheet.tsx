@@ -42,6 +42,7 @@ async function readTasks():Promise<TaskRecord[]>{
 export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const notify=useToast(),dialog=useRef<HTMLDialogElement>(null);
  const loadEpoch=useRef(0);
+ const commitEpoch=useRef(0);
  const [opened,setOpened]=useState(false);
  useEffect(()=>{
   if(!opened||!dialog.current)return;
@@ -59,8 +60,9 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   if(lastScope.current===scopeKey)return;
   lastScope.current=scopeKey;
   ++loadEpoch.current;
+  ++commitEpoch.current;
   if(typeof dialog.current?.close==='function')dialog.current.close();
-  setOpened(false);setLoading(false);setPreview(null);
+  setOpened(false);setLoading(false);setBusy(false);setPreview(null);
  },[scopeKey]);
  const [loading,setLoading]=useState(false),[busy,setBusy]=useState(false);
  const [error,setError]=useState<string|null>(null);
@@ -143,6 +145,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   // A Calendar date/time-zone change can outlive this owner write. Never
   // let an old response close or overwrite the next date's planner.
   const commitScope=scopeKey;
+  const ownCommit=++commitEpoch.current;
   setBusy(true);setError(null);
   try{
    const result=await commitPlannerSelection({
@@ -151,14 +154,14 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
    },{
     tasks:getTaskApi(),study:getStudyApi(),plans:getDayPlanApi(),
    });
-   if(lastScope.current!==commitScope)return;
+   if(lastScope.current!==commitScope||commitEpoch.current!==ownCommit)return;
    close();
    notify('Study placements committed for '+result.committedDays.length+
     (result.committedDays.length===1?' day.':' days.'),{tone:'success'});
   }catch(e){
-   if(lastScope.current===commitScope)
+   if(lastScope.current===commitScope&&commitEpoch.current===ownCommit)
     setError(e instanceof Error?e.message:'Could not commit plan');
-  }finally{setBusy(false);}
+  }finally{if(commitEpoch.current===ownCommit)setBusy(false);}
  }
  return <>
   <button type="button" className={button} onClick={show}>Plan study tasks</button>

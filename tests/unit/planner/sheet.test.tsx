@@ -447,6 +447,82 @@ describe('N68 stale planner preview isolation',()=>{
 
 
 describe('N68 Calendar owner date navigation',()=>{
+
+ it('preserves the new day commit lock when the old day fails late',async()=>{
+  services.tasks.mockReset();services.getTask.mockReset();
+  const task={id:'task-a',title:'Proof practice',version:1,priority:'normal',
+   due:{kind:'none'},estimateMinutes:30,status:'backlog'};
+  services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
+  services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  let rejectOld:(e:Error)=>void=()=>{},finishNew:(x:unknown)=>void=()=>{};
+  services.getTask.mockImplementationOnce(()=>new Promise((_res,rej)=>{rejectOld=rej;}))
+   .mockImplementationOnce(()=>new Promise(resolve=>{finishNew=resolve;}));
+  services.createBlock.mockResolvedValue({record:{id:'block-new',version:1},actionNo:11});
+  services.createPlan.mockResolvedValue({record:{id:'plan-new',version:1,status:'draft'},actionNo:12});
+  services.previewPlan.mockResolvedValue({record:{id:'plan-new',version:2,status:'previewed'},actionNo:13});
+  services.commitPlan.mockResolvedValue({record:{id:'plan-new',version:3,status:'committed'},actionNo:14});
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  const commit=()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
+   .find(b=>b.textContent==='Commit selected placements'||b.textContent==='Committing…');
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>commit()!.click());
+   await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledTimes(1));
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-10" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>commit()!.click());
+   await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledTimes(2));
+   await act(async()=>rejectOld(Error('Earlier date rejected')));
+   const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(b=>b.textContent==='Close')!;
+   expect(close.disabled).toBe(true);
+   expect(commit()?.textContent).toBe('Committing…');
+   expect(host.textContent).not.toContain('Earlier date rejected');
+   await act(async()=>finishNew(task));
+   await vi.waitFor(()=>expect(services.commitPlan).toHaveBeenCalledTimes(1));
+   expect(host.querySelector('dialog')).toBeNull();
+  }finally{await act(async()=>root.unmount());host.remove();}
+ });
+ it('does not dismiss a fresh A dialog on an older A commit after A-B-A navigation',async()=>{
+  services.tasks.mockReset();services.getTask.mockReset();
+  const task={id:'task-a',title:'Proof practice',version:1,priority:'normal',
+   due:{kind:'none'},estimateMinutes:30,status:'backlog'};
+  services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
+  services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  services.createBlock.mockResolvedValue({record:{id:'block-aba',version:1},actionNo:21});
+  services.createPlan.mockResolvedValue({record:{id:'plan-aba',version:1,status:'draft'},actionNo:22});
+  services.previewPlan.mockResolvedValue({record:{id:'plan-aba',version:2,status:'previewed'},actionNo:23});
+  services.commitPlan.mockResolvedValue({record:{id:'plan-aba',version:3,status:'committed'},actionNo:24});
+  let finishOld:(x:unknown)=>void=()=>{};
+  services.getTask.mockImplementationOnce(()=>new Promise(resolve=>{finishOld=resolve;}));
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(b=>b.textContent==='Commit selected placements')!.click());
+   await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledTimes(1));
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-10" zone="UTC"/>));
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>finishOld(task));
+   await vi.waitFor(()=>expect(services.commitPlan).toHaveBeenCalledTimes(1));
+   expect(host.querySelector('dialog')).not.toBeNull();
+   expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull();
+  }finally{await act(async()=>root.unmount());host.remove();}
+ });
+
  it('closes an old date preview when the selected calendar day changes without unmounting',async()=>{
   services.tasks.mockReset();
   services.tasks.mockResolvedValue({items:[],total:0,nextCursor:null});
