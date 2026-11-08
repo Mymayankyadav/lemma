@@ -67,8 +67,11 @@ export default function PlanProposalV6(){
    // while the draft request is pending cancels that request; it must be
    // allowed to start the replacement rather than strand Loading forever.
    loadedDraftKey.current=key;
-   setDraft(found);setText(found?payloadText(found.payload):
-    payloadText({...((proposal.data!.planChange??proposal.data!.plan??{ops:[]}))}));
+   // A proposal preview may contain provenance/citation keys (notably
+   // 'source') that the audited edit payload intentionally forbids. Never
+   // silently strip those fields or claim the preview is a writable edit.
+   // Start a new explicit edit; the unchanged preview stays visible above.
+   setDraft(found);setText(found?payloadText(found.payload):payloadText({ops:[]}));
    setStatus('ready');
   })().catch(error=>{if(alive){setStatus('error');setProblem(error instanceof Error?error.message:'Could not read drafts');}});
   return ()=>{alive=false};
@@ -190,7 +193,8 @@ export default function PlanProposalV6(){
     {status==='error'&&<button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Retry drafts</button>}
     {status==='ready'&&!draft&&<>
      <p className="text-label text-ink-2">No saved draft exists. The owner proposal and target versions
-      will be checked before creating one. No version or ownership is guessed.</p>
+      will be checked before creating one. No version or ownership is guessed.
+      New drafts start with an empty edit list; enter the change you intend to submit.</p>
      {editor?<>
       <label className="text-label">Full draft payload (JSON)
        <textarea aria-label="Full draft payload" className="mt-1 min-h-44 w-full rounded-ctl border border-edge bg-well p-2 font-mono text-caption"

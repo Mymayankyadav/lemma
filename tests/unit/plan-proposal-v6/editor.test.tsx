@@ -159,12 +159,16 @@ describe('N85 v6 proposal draft editor',()=>{
   vi.mocked(adapter.listDrafts).mockResolvedValueOnce({items:[],total:0,nextCursor:null});
   vi.mocked(adapter.createDraft).mockResolvedValueOnce({record:{...existing,status:'draft',draftVersion:1},actionNo:44});
   await render();await vi.waitFor(()=>expect(host.textContent).toContain('No saved draft exists'));
-  await click('Start draft');await click('Create draft');
+  await click('Start draft');
+  expect(host.querySelector<HTMLTextAreaElement>('[aria-label="Full draft payload"]')?.value)
+   .toBe(JSON.stringify({ops:[]},null,2));
+  expect(host.textContent).toContain('New drafts start with an empty edit list');
+  await click('Create draft');
   await vi.waitFor(()=>expect(adapter.createDraft).toHaveBeenCalledTimes(1));
   expect(adapter.getSource).toHaveBeenCalledWith(proposal.id);
   expect(adapter.createDraft).toHaveBeenCalledWith({proposalId:proposal.id,
    targetId:existing.targetId,baseVersions:{proposal:7,target:12},
-   payload:proposal.planChange});
+   payload:{ops:[]}});
   expect(mocks.approve.mock.results[0].value.mutateAsync).not.toHaveBeenCalled();
  });
  it('refuses first-draft creation when the owner target is absent',async()=>{
