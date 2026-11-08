@@ -57,7 +57,19 @@ try {
     assert.equal(resource.mcp_ok, true);
     const documented = resourceDoc.resources.find(row => row.resource === resource.resource);
     const shape = typeof resource.schema === 'string' ? JSON.parse(resource.schema) : resource.schema;
-    assert.deepEqual(shape, documented.schema);
+    // N109 intentionally extends the original N36.1 registry after its seed
+    // migration. This fixture examines the immutable SEED; remove only the
+    // four N109 additions when comparing it to today's full manifest.
+    const seedSchema = structuredClone(documented.schema);
+    if(resource.resource==='study_entries'){
+      seedSchema.fields=seedSchema.fields.filter(x=>
+        !['calendar_block_id','preset_id','energy'].includes(x));
+      seedSchema.operations=seedSchema.operations.filter(x=>
+        !['take_lease','next_phase','exclude_minutes'].includes(x));
+    }
+    if(resource.resource==='calendar_blocks')
+      seedSchema.fields=seedSchema.fields.filter(x=>x!=='task_id');
+    assert.deepEqual(shape, seedSchema);
     assert.ok(Array.isArray(shape.operations) && shape.operations.length > 0);
     assert.ok(Array.isArray(shape.fields) && shape.fields.length > 0);
     assert.ok(['study_command','task_command'].includes(resource.command_fn));
