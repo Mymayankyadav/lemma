@@ -7,6 +7,7 @@ import FocusAccessorySlot from './FocusAccessorySlot';
 import {isFlagOn} from '../flags';
 import {setV6Root} from './v6Root';
 import '../ui/v6/tokens.css';
+import '../ui/v6/mockup.css';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';

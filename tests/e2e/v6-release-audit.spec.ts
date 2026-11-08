@@ -92,6 +92,55 @@ for(const display of displays)for(const theme of themes)for(const [name,path,exp
 }
 // docs/v6/screens holds the design mockup captures (the target) and must never be
 // overwritten. Set LEMMA_RELEASE_CAPTURE=1 to refresh the app captures in docs/v6/release-captures.
+
+test('N110 mockup shell: branded header, icon actions, persistent labelled tabs and palette',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await setup(page);
+ await page.goto(url('/'));
+ await settled(page);
+ await presentation(page,'graph',false);
+ const header=page.locator('[data-v6-header]');
+ await expect(header.getByRole('heading',{name:'Lemma'})).toBeVisible();
+ await expect(header.getByRole('link',{name:/^Inbox/})).toBeVisible();
+ await header.getByLabel('Add to notebook').click();
+ await expect(page.getByRole('navigation',{name:'Add to notebook'}).getByRole('button',{name:'Task'})).toBeVisible();
+ await header.getByLabel('Notebook menu').click();
+ await expect(page.getByRole('navigation',{name:'Notebook destinations'}).getByRole('link',{name:'Settings'})).toBeVisible();
+ const nav=page.getByRole('navigation',{name:'Main navigation'});
+ await expect(nav).toHaveAttribute('data-ui','main-navigation');
+ for(const label of ['Today','Paths','Review','Calendar','Progress']){
+  await expect(nav.getByRole('link',{name:label}).locator('.lemma-nav-active-label')).toBeVisible();
+ }
+ expect(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--bg').trim())).toBe('#f6f4ed');
+ await presentation(page,'graph-night',false);
+ expect(await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim())).toBe('#aacce5');
+ await nav.getByRole('link',{name:'Paths'}).click();
+ await expect(page.locator('[data-v6-header]')).toContainText('Paths');
+ await expect(page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Paths'})).toHaveAttribute('aria-current','page');
+ await contained(page,'N110 Paths shell');
+});
+
+test('N110 focus accessory follows the active session above the labelled dock',async({page})=>{
+ await page.setViewportSize({width:390,height:844});
+ await setup(page);
+ await page.goto(url('/'));
+ await settled(page);
+ await page.getByRole('textbox',{name:'Focus intention'}).fill('Shell focus dock test');
+ await page.getByRole('button',{name:'Start focus'}).click();
+ await expect(page.getByRole('dialog',{name:'Focus'})).toBeVisible();
+ await page.keyboard.press('Escape');
+ await page.goto(url('/projects'));
+ await settled(page);
+ const accessory=page.getByRole('complementary',{name:'Focus accessory'});
+ await expect(accessory).toBeVisible();
+ await expect(accessory.getByRole('button',{name:'Pause'})).toBeVisible();
+ await expect(accessory.getByRole('button',{name:'Open focus'})).toBeVisible();
+ const nav=page.getByRole('navigation',{name:'Main navigation'});
+ const [a,n]=await Promise.all([accessory.boundingBox(),nav.boundingBox()]);
+ expect(a&&n).toBeTruthy();
+ expect(a!.y+a!.height,'active focus sits immediately above navigation').toBeLessThanOrEqual(n!.y+1);
+});
+
 const shots=[
  ['today','/'],['paths','/projects'],['review','/review'],
  ['calendar','/calendar'],['progress','/insights'],['inbox','/proposals'],

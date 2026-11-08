@@ -14,13 +14,6 @@ Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/
 
 Mockup port lane (Owner, 2026-11-08, #1303). The v6 app must look like the mockup captures in `docs/v6/screens/`. **Copy, don't redesign**: `docs/v6/prototype/source/MAP.md` names, for each screen, the mockup module that holds its exact markup and class strings and the repo folder to port it into; the CSS is `docs/v6/prototype/source/mockup-overrides.css`. Keep the repo's hooks, commands and behaviour, and wire mockup values to them; a value the hooks lack shows as unavailable. Everything stays behind `v6Shell`, and flag-off screens are unchanged. Every port PR refreshes its screen's Day and Night PNGs in `docs/v6/release-captures/` (capture command in MAP.md, or from CI), which requires an independent review: the reviewer compares each PNG with the same-named mockup and requests changes for any visible difference in layout, components, colour or type (demo data may differ). Do N110 first; N111–N117 then run in parallel.
 
-## N110 Mockup shell: look, header, bottom nav, focus bar
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, every screen has the mockup's background, colours (navy primary), type, card and button styles, header (large title with Inbox / + / ⋯ icon actions) and labelled five-tab bottom nav, and the active-focus bar sits above the nav while a focus runs. Port `mockup-overrides.css` under `:root[data-v6]` into `src/ui/v6/mockup.css` and the shell markup from `53__index` (see MAP.md). All 19 release captures refreshed; this PR's review judges background, header, nav and shared controls only.
-Tests: existing v6 shell unit and e2e tests updated deliberately; `tests/e2e/v6-release-audit.spec.ts` passes.
-Scope: src/ui/v6/**, src/ui/** (v6 variants only), src/app/AppShell.tsx, src/app/V6Header.tsx, src/app/TabBar.tsx, src/styles/** (rules under `[data-v6]` only), docs/v6/release-captures/**, shell tests under tests/unit/** and tests/e2e/**, docs/current/N110.md.
-Not: screen bodies (N111–N117), src/data/**, supabase/**.
-
 ## N111 Mockup port: Today and Focus
 Stage: Build · Status: open · Needs: N110 · Assigned: —
 Done = Today and the Focus screen match `today-*.png` and `focus-day.png`, ported from `53__index` per MAP.md (Today: current study action hero with Return to focus, logged-time row, "Also in your notebook"; Focus: full screen with large clock, cycle progress, Pause / Take a break, Finish & log). Existing Today and Focus behaviour and tests keep passing.
