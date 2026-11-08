@@ -447,6 +447,66 @@ try{
   column:'reason',updated:'App reviewed overlap',
  });
 
+ // A second study entry must exercise all six versioned timer lifecycle
+ // verbs through the real dispatcher (not a fabricated SQL state change).
+ // The saved-entry read path exposes version through registered MCP GET even
+ // though status is command-managed and intentionally omitted from projection.
+ await role('service_role');
+ const timerCreate=command('study_entries','create',{
+  patch:{source:'timer',intent:'N94 lifecycle timer'},
+ });
+ const timerReceipt=status(await mcp(timerCreate),'study_entries','create');
+ const timerId=timerReceipt.changed.find(x=>x.id)?.id;
+ assert.ok(timerId,'study_entries: timer lifecycle create lacked ID');
+ assert.deepEqual(await mcp(timerCreate),timerReceipt,'study_entries: timer create retry');
+ let timerVersion=timerReceipt.changed.find(x=>x.id===timerId)?.version;
+ assert.equal(timerVersion,1,'study_entries: new timer version');
+ for(const [operation,expectedStatus,patch] of [
+  ['start','running',{}],['pause','paused',{}],['resume','running',{}],
+  ['break','paused',{}],['resume','running',{}],
+  ['save','saved',{reflection:'N94 lifecycle finished'}],
+ ]){
+  const request=command('study_entries',operation,{
+   target:{id:timerId},expectedVersion:timerVersion,patch,
+  });
+  const result=status(await mcp(request),'study_entries',operation);
+  assert.equal(result.changed.find(x=>x.id===timerId)?.version,timerVersion+1,
+   'study_entries.'+operation+': changed version mismatch');
+  assert.deepEqual(await mcp(request),result,
+   'study_entries.'+operation+': exact replay changed receipt');
+  timerVersion++;
+  await as(owner);
+  const row=(await q('select status,version from public.study_entries where id=$1',
+   [timerId]))[0];
+  assert.deepEqual(row,{status:expectedStatus,version:timerVersion},
+   'study_entries.'+operation+': authenticated app status/version mismatch');
+  await role(null);
+  const page=await mcpPage('study_entries',timerId);
+  assert.equal(page.total,1,'study_entries.'+operation+': registered read missing');
+  assert.equal(page.items[0].version,timerVersion,
+   'study_entries.'+operation+': MCP version differs from app');
+  assert.equal((await mcpPage('study_entries',timerId,other)).total,0,
+   'study_entries.'+operation+': foreign owner MCP read');
+  mark('study_entries',operation);
+  await role('service_role');
+ }
+ const discardedCreated=status(await mcp(command('study_entries','create',{
+  patch:{source:'manual',intent:'N94 discard candidate'}
+ })),'study_entries','create');
+ const discardId=discardedCreated.changed[0].id;
+ const discardRequest=command('study_entries','discard',{
+  target:{id:discardId},expectedVersion:1,patch:{}
+ });
+ const discardedReceipt=status(await mcp(discardRequest),'study_entries','discard');
+ assert.deepEqual(await mcp(discardRequest),discardedReceipt,
+  'study_entries: discard exact replay');
+ await as(owner);
+ assert.equal((await q('select status from public.study_entries where id=$1',
+  [discardId]))[0].status,'discarded');
+ await role(null);
+ assert.equal((await mcpPage('study_entries',discardId)).items[0].version,2);
+ mark('study_entries','discard');
+
  // Parked thoughts: exercise non-CRUD lifecycle, multi-resource conversion,
  // exactly-once task creation, and transaction-wide undo as one action.
  const thoughtId=await roundTrip('parked_thoughts',specs.parked_thoughts);
@@ -603,7 +663,7 @@ try{
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['tasks','calendar_blocks','study_intervals','deadlines',
+ const full=['tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
