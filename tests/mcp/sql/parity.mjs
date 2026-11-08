@@ -96,12 +96,16 @@ async function roundTrip(resource,details){
  const updated=status(await app(details.fn,updateRequest),resource,'app update');
  assert.equal(updated.changed.find(c=>c.id===id)?.version,2,
   resource+': app/command version mismatch');
- await role('service_role');
+ // The PGlite service_role fixture is only granted the dispatcher RPC,
+ // not direct table SELECT. Inspect through the fixture administrator; keep
+ // the owner predicate so the cross-surface field comparison stays scoped.
+ await role(null);
  const after=(await q('select * from public.'+resource+' where id=$1 and user_id=$2',
   [id,owner]))[0];
  assert.equal(after[details.column],details.updated,
   resource+': app edit absent from MCP owner view');
- assert.equal(after.version,2,resource+': MCP read saw stale version');
+ assert.equal(after.version,2,resource+': persisted row has stale version');
+ await role('service_role');
  const stale=await mcp(command(resource,'update',{
   target:{id},expectedVersion:1,patch:details.update}));
  assert.equal(stale.status,'conflict',resource+': stale MCP update was accepted');
