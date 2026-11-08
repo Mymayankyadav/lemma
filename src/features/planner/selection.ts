@@ -63,11 +63,11 @@ export function validatePlannerWindow(
   const start=Date.parse(place.start),end=Date.parse(place.end);
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)
    throw Error('Invalid selected planner interval');
-  if(end-start!==place.minutes*60000)
-   throw Error('Selected planner interval changed its allocated minutes');
   const day=civil(new Date(start));
   if(place.date!==day||day<from||day>through||civil(new Date(end-1))!==day)
    throw Error('Selected placement leaves the chosen owner-local planning day');
+  if(end-start!==place.minutes*60000)
+   throw Error('Selected planner interval changed its allocated minutes');
   // Commit preflight also validates caller-provided selection snapshots.
   if(accepted.some(p=>p.start<end&&start<p.end))
    throw Error('Selected planner placements overlap each other');
