@@ -1,14 +1,14 @@
-// Stable study goals facade. N59.2 wires owner-RLS live RPC without changing screens.
+// Stable study goals facade: owner-scoped live RPC and isolated demo records.
 import {getMode} from '../mode';
 import type {GoalApi} from './contract';
-import {emptyGoalApi} from './contract';
 import {createDemoGoalApi} from './demo';
+import {createLiveGoalApi} from './live';
 export type * from './contract';
 let cached:GoalApi|null=null;
 export function getGoalApi():GoalApi {
  const mode=getMode();
  if(!cached||cached.mode!==mode)
-  cached=mode==='demo'?createDemoGoalApi():emptyGoalApi('live');
+  cached=mode==='demo'?createDemoGoalApi():createLiveGoalApi();
  return cached;
 }
 /** Tests only: inject an adapter, null clears the cache. */
