@@ -1,0 +1,21 @@
+{
+  "table": "owner_change_retention",
+  "version": 1,
+  "description": "N54 per-owner retention watermark written only by the scheduled service-role prune (daily pg_cron job lemma-prune-owner-changes). changes_since uses it to require a reset when a client cursor is older than pruned history.",
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned); read through changes_since",
+      "mcpPath": "changes_since owner-scoped RPC (reset watermark)",
+      "exportPolicy": "excluded: operational retention watermark, not owner content",
+      "deletionPolicy": "removed by Auth FK cascade and N103 owner purge"
+    },
+    "pruned_through_cursor": {
+      "classification": "command-managed",
+      "appPath": "N54.1 change-feed sync (planned); read through changes_since",
+      "mcpPath": "changes_since owner-scoped RPC (reset watermark)",
+      "exportPolicy": "excluded: operational retention watermark, not owner content",
+      "deletionPolicy": "removed by Auth FK cascade and N103 owner purge"
+    }
+  }
+}

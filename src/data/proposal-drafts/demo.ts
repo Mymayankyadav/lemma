@@ -1,7 +1,7 @@
 // N63.2 demo drafts: owner-safe fixtures and isolated, reloadable edit lifecycle.
 import {ProposalDraftError,type ProposalDraftApi,type ProposalDraftRecord,
  type ProposalDraftQuery,type NewProposalDraft,type ProposalEditPayload,
- type ProposalBaseVersions} from './contract';
+ type ProposalBaseVersions,type ProposalDraftSource} from './contract';
 import {normalizeNewDraft,normalizeDraftQuery,normalizeDraftPayload,
  normalizeBaseVersions,nextDraftState,draftConflictDetails,
  compareDraftSourceVersions} from './model';
@@ -86,6 +86,12 @@ export function createDemoProposalDraftApi():ProposalDraftApi{
  };
  return {
   mode:'demo',
+  async getSource(proposalId:string):Promise<ProposalDraftSource|null>{
+   if(proposalId!==DEMO_DRAFT_SOURCE.proposalId)return null;
+   const current=source(DEMO_DRAFT_SOURCE);
+   return current?{proposalId,targetId:DEMO_DRAFT_SOURCE.targetId,
+    baseVersions:clone(current)}:null;
+  },
   async listDrafts(raw:ProposalDraftQuery={}){
    const q=normalizeDraftQuery(raw),f=JSON.stringify([[...q.status].sort(),
     q.proposalId??null,q.targetId??null]),cursor=q.cursor?decode(q.cursor,f):null;

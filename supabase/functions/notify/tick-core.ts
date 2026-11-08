@@ -20,6 +20,10 @@ export interface TickAdapters {
   * The service-role adapter calls public.lemma_run_due_commands(), which
   * runs one auditable command per database transaction. */
  runDueCommands?:(signal:AbortSignal)=>Promise<{executed:number;failed:number;processed:number}>;
+ /** N54: one bounded, service-role-only 30-day change-feed prune per tick.
+  * The scheduler must bind this to lemma_prune_owner_changes(), never to an
+  * owner-scoped client. This runs even when no owner has reminders enabled. */
+ pruneOwnerChanges?:(signal:AbortSignal)=>Promise<number>;
  /** Enumerate only settings.notify.enabled owners. Never return device keys. */
  listEnabledOwners:(signal:AbortSignal)=>Promise<readonly string[]>;
  /** Exactly one owner-scoped notify_candidates read; never a global scan. */
@@ -28,6 +32,20 @@ export interface TickAdapters {
  queue:(userId:string,decisions:readonly RuleResult[],signal:AbortSignal)=>Promise<number>;
  /** Claim due queued rows by user_id, deliver and record results atomically. */
  deliver:(userId:string,maxSends:number,signal:AbortSignal)=>Promise<TickDelivery>;
+}
+/** Connect the scheduled service-role RPC to the bounded N54 retention hook.
+ * Owner credentials and IDs must never be supplied to this call. */
+export function createOwnerChangesPruner(service:{rpc:(name:'lemma_prune_owner_changes')=>
+ PromiseLike<{data:unknown;error:{message?:string}|null}>}){
+ return async(signal:AbortSignal):Promise<number>=>{
+  if(signal.aborted)throw Error('Retention tick cancelled');
+  const result=await service.rpc('lemma_prune_owner_changes');
+  if(signal.aborted)throw Error('Retention tick cancelled');
+  if(result.error)throw Error('Owner change retention failed');
+  if(typeof result.data!=='number'||!Number.isSafeInteger(result.data)||
+     result.data<0||result.data>4_000)throw Error('Invalid bounded retention result');
+  return result.data;
+ };
 }
 export interface TickSummary {
  owners:number;
@@ -95,6 +113,18 @@ export async function runNotifyTick(
        !safeCount(run.processed,1)||run.executed+run.failed!==run.processed)
      throw Error('Invalid pending command result');
     summary.failed+=run.failed;
+   }catch{
+    if(controller.signal.aborted)return summary;
+    summary.failed++;
+   }
+  }
+  // N54: retention is independent of notification preferences and cannot
+  // suppress a healthy reminder batch if its bounded service RPC fails.
+  if(deps.pruneOwnerChanges){
+   try{
+    const pruned=await within(deps.pruneOwnerChanges(controller.signal));
+    if(controller.signal.aborted)return summary;
+    if(!safeCount(pruned,4_000))throw Error('Invalid bounded retention count');
    }catch{
     if(controller.signal.aborted)return summary;
     summary.failed++;

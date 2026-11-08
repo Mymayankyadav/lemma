@@ -11,13 +11,13 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N107 Atomic planner commit: blocks, day plan and items as one journalled action
+## N109 Register calendar_blocks.task_id and study_entries.calendar_block_id for MCP
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8, one additive migration replaces `day_plans_command` compatibly and adds the operation `commit_placements`. In one transaction and one journalled action, for one or more civil days of the owner, it verifies every task, calendar-block and saved-focus source version captured at preview, creates the study calendar blocks (with `task_id`), creates or reuses each draft or previewed day plan, writes its items and commits it. A stale source or any conflict rolls everything back with a typed conflict and nothing written. `DayPlanApi.commitPlacements(input)` (live and demo) returns one `StudyReceipt` whose action undoes every block, plan and item together through the existing undo path (refused when a newer owner write exists), and is idempotent on its operation ID. Existing operations behave exactly as before; the operation is registered in `lemma_command_resources`. Owner decision (#1177): this is the prerequisite N68 needs for its single Undo.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: day_plans_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/planner-commit.mjs` (two-day commit, stale task, block and focus refusal with nothing written, replay and changed-payload conflict, undo of every row, second owner isolation, MCP parity), `tests/unit/day-plans/commit-placements.test.ts`
-Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/planner-commit.mjs, tests/unit/day-plans/commit-placements.test.ts, docs/v6/capability-registry/lemma_command_resources.json (the day_plans operation list only), CURRENT.md.
-Not: screens, other functions, MCP code, new dependencies.
+Done = per D8, one additive migration appends `task_id` to the `calendar_blocks` row and `calendar_block_id` to the `study_entries` row of `lemma_command_resources` (append only, when missing), and `study_command` accepts `calendar_block_id` on study entry create and start with the same owner-composite check the app relies on (a foreign-owner or non-study block is refused, nothing written). MCP study tools expose both fields. Owner decision (bug #1231): this is the one authorized change to the frozen N36.1 baseline rows; `tests/mcp/sql/registries.mjs` changes only to expect these two appended fields. The static manifest and the two capability-registry `mcpPath` entries are updated so N94 reports no tracked gaps.
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
+Tests: `tests/mcp/sql/study-block-link-mcp.mjs` (registry rows, MCP start with a block, foreign-owner and non-study block refused, replay, undo), the existing `registries.mjs` and `command-manifest-mirror.mjs`
+Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/tools/study.ts, tests/mcp/sql/study-block-link-mcp.mjs, tests/mcp/sql/registries.mjs (the two appended fields only), docs/v6/capability-registry/{lemma_command_resources,calendar_blocks,study_entries}.json, CURRENT.md.
+Not: app code, other commands, other registry rows.
 
 ## N108 Day close: canonical carry-over and tomorrow's-first-task transitions
 Stage: Build · Status: open · Needs: N107 · Assigned: —
@@ -27,37 +27,12 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N52 Study command v3: timer modes, captured configuration, drift deduction and lease
-Stage: Build · Status: open · Needs: N51, N41.2.2.2.2.2 · Assigned: —
-Done = per D8(d), one migration replaces `study_command` compatibly and adds to `study_entries`: `mode` (`pomodoro`/`flowtime`/`open`, default `open`), `preset_id` (FK to presets), captured `config jsonb` (copied from the preset or `settings.focus_defaults` at start; later default changes never alter it), `phase` (`focus`/`break`/`long_break`), `cycle`, `phase_ends_at`, `energy` (`low`/`steady`/`high`, optional), and a timer lease (`lease_device`, `lease_version`, `lease_expires_at`); operations `next_phase`, `take_lease`, and `exclude_minutes` (deduct the last N minutes of focus as an `excluded` interval with a reason, refused when there is not enough focus time; never double-subtracts). A second device without the lease can read but its writes conflict until the lease expires or is taken.
-Owner decision (#1205): an authenticated browser can no longer INSERT a `running` or `paused` study entry at all (drafts and manual saved entries stay insertable with default timer fields); a timer starts only through `study_command`, as the app already does. No exception keyed to fixture values or session settings.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime break from ratio, captured config immune to settings change, lease conflict and takeover, exclusion bounds, undo) and earlier study SQL tests unchanged, except that `tests/mcp/sql/study-schema.mjs` (N10) seeds its running entry from the trusted context and now asserts the browser refusal (the only authorized edit to it)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, tests/mcp/sql/study-schema.mjs (the seeding change above only), docs/v6/capability-registry/study_entries.json, CURRENT.md.
-Not: app or MCP code, other functions.
-
-## N54 Owner change feed and catch-up cursor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
-Owner decision (#1147): the notify tick makes one bounded service-role call to the pruning function on each run, with a focused unit test; nothing else about the tick changes. The pruning migration deploys only together with that call.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/change-feed.mjs` (app and `mcp_command` writes both appear once in commit order, deletes as tombstones, paging, reset, second owner invisible)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/change-feed.mjs, supabase/functions/notify/tick-core.ts (one call), tests/unit/notify/change-prune-tick.test.ts, docs/v6/capability-registry/owner_changes.json, CURRENT.md.
-Not: app code (N54.1), MCP code, other notify behaviour.
-
 ## N54.1 App sync from the change feed
 Stage: Build · Status: open · Needs: N54 · Assigned: —
 Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the affected query keys; on `reset` it refetches bounded projections; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
 Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, backoff when hidden)
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
-
-## N66 StudyApi: timer modes, phases, drift exclusion and lease
-Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
-Done = the study contract gains, additively, mode/preset/config/phase/cycle/energy/lease fields and `nextPhase`, `takeLease`, `excludeMinutes`, in both adapters with the N52 envelope; the live adapter keeps one device lease per tab and renews it while visible.
-Tests: `tests/unit/study/modes.test.ts`
-Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
 
 ## N68 v6 planner sheet: preview and commit placements behind the shell flag
 Stage: Build · Status: open · Needs: N67, N65, N60.2, N107 · Assigned: —
@@ -73,23 +48,6 @@ Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowti
 Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (accessory clears the dock and Inbox decision bar at 320×640)
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N85 v6 plan review with proposal drafts behind the shell flag
-Stage: Build · Status: open · Needs: N63.2 · Assigned: —
-Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
-Owner decision (#1200): `ProposalDraftApi.getSource(proposalId)` (new, read-only, live and demo) returns `{proposalId, targetId, baseVersions:{proposal,target}}` read from the owner's real proposal row and the target row that the N63.2 draft command validates (project, note or checkpoint), or `null` when the proposal has no editable target. The editor creates a first draft only from that value and never guesses a target or version; existing draft methods and write paths do not change.
-Tests: `tests/unit/plan-proposal-v6/**`
-Scope: src/features/plan-proposal/v6/** (new), src/data/proposal-drafts/** (the additive read-only `getSource` only), tests/unit/proposal-drafts/proposal-source.test.ts (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except `src/data/proposal-drafts/**` as above, new dependencies, existing tests' expectations.
-
-## N87 MCP: every settings field
-Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
-Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
-Owner decision (#1197): `connector_last_client` is command-managed (the registry now says so): `mcp_commit` writes it from the true connector source, so the settings edit path refuses it with a clear message instead of reporting a lost write. The coverage test asserts that refusal and covers every other owner-editable column.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/settings-coverage.test.ts` enumerating the registry's settings fields
-Scope: supabase/functions/mcp/**, tests/unit/mcp/settings-coverage.test.ts, CURRENT.md.
-Not: migrations, app code.
 
 ## N88 MCP: paths, subjects, styles, concepts and sources fields
 Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
@@ -142,14 +100,6 @@ Done = a PGlite test loads a representative pre-v6 account fixture (paths, sourc
 Tests: `tests/mcp/sql/upgrade-rehearsal.mjs` and its fixture
 Scope: tests/mcp/sql/upgrade-rehearsal.mjs, tests/mcp/sql/fixtures/pre-v6-account.sql (new), CURRENT.md.
 Not: migrations, app code.
-
-## N103 Account deletion
-Stage: Build · Status: open · Needs: N95 · Assigned: —
-Done = Settings offers Delete account after an export prompt and a typed confirmation; a service-role edge function (or SQL function) deletes every owner row in dependency order, storage objects and the auth user, and is refused for any other user; MCP cannot call it.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/account-delete.mjs` (all owner rows gone, another owner untouched), `tests/unit/settings-v6/delete-account.test.tsx`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/account-delete/** (new), src/features/settings/v6/DeleteAccount.tsx (new), src/features/settings/v6/Page.tsx (section link only), tests/mcp/sql/account-delete.mjs, tests/unit/settings-v6/delete-account.test.tsx, CURRENT.md.
-Not: other functions, MCP code.
 
 ## N101 Release audit, screenshots and docs
 Stage: Build · Status: open · Needs: N98, N99, N100, N94, N96, N97 · Assigned: —
