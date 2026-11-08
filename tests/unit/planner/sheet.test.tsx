@@ -140,3 +140,126 @@ describe('N68 moved placement owner-day and busy-block guard',()=>{
    '2026-11-09','2026-11-09','UTC')).not.toThrow();
  });
 });
+
+
+import {commitPlannerSelection,savedFocusSignature,PlannerCommitError,
+ type PlannerCommitApis,type PlannerCommitSnapshot} from '../../../src/features/planner/commit';
+import type {TaskRecord} from '../../../src/data/tasks/contract';
+import type {StudyEntryRecord} from '../../../src/data/study/contract';
+const makeTask=(id:string,version=1)=>({id,version,title:'Learn '+id}) as TaskRecord;
+function commitFixture(){
+ const written:string[]=[],deleted:string[]=[],cleared:string[]=[];
+ let latestVersion=1;
+ const apis={
+  tasks:{getTask:vi.fn(async(id:string)=>makeTask(id))},
+  study:{
+   listCalendarBlocks:vi.fn(async()=>[]),
+   listStudyEntries:vi.fn(async()=>[]),
+   createCalendarBlock:vi.fn(async(input:{taskId?:string|null})=>{
+    const id='block-'+(written.length+1);
+    written.push(id);
+    return {actionNo:11,record:{id,version:1,...input}};
+   }),
+   deleteCalendarBlock:vi.fn(async(id:string)=>{deleted.push(id);return {actionNo:12,record:{id}}}),
+  },
+  plans:{
+   listPlans:vi.fn(async()=>({items:[],total:0,nextCursor:null})),
+   createPlan:vi.fn(async(input:{planDate:string})=>({
+    actionNo:21,record:{id:'plan-'+input.planDate,status:'draft',
+     version:1,planDate:input.planDate,timeZone:'UTC'},
+   })),
+   previewPlan:vi.fn(async(id:string,_version:number,items:unknown[])=>({
+    actionNo:22,record:{id,status:'previewed',version:2,planDate:id.slice(5),items},
+   })),
+   commitPlan:vi.fn(async(id:string)=>({
+    actionNo:23,record:{id,status:'committed',version:3},
+   })),
+   getPlan:vi.fn(async(id:string)=>({id,version:latestVersion,status:'previewed'})),
+   updatePlan:vi.fn(async(id:string)=>{cleared.push(id);
+    latestVersion++;return {actionNo:24,record:{id,status:'draft',version:latestVersion}};}),
+  },
+ } as unknown as PlannerCommitApis;
+ const selection={selected:[
+  {taskId:'task-a',part:1,date:'2026-11-09',start:'2026-11-09T09:00:00Z',
+   end:'2026-11-09T09:30:00Z',minutes:30},
+  {taskId:'task-b',part:1,date:'2026-11-10',start:'2026-11-10T09:00:00Z',
+   end:'2026-11-10T09:30:00Z',minutes:30},
+ ],unplaced:[{taskId:'task-c',reason:'no_capacity'}]};
+ const snapshot:PlannerCommitSnapshot={
+  from:'2026-11-09',through:'2026-11-10',zone:'UTC',
+  tasks:[makeTask('task-a'),makeTask('task-b'),makeTask('task-c')],
+  entries:[],blocks:[],selection,
+ };
+ return {apis,snapshot,written,deleted,cleared};
+}
+describe('N68 owner commit preflight and partial-failure containment',()=>{
+ it('checks every day-plan state before creating even the first block',async()=>{
+  const f=commitFixture();
+  vi.mocked(f.apis.plans.listPlans).mockResolvedValueOnce({
+   items:[{id:'another',planDate:'2026-11-10',status:'committed',
+    version:3}],total:1,nextCursor:null,
+  } as never);
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
+   'already committed day plan');
+  expect(f.written).toEqual([]);
+  expect(f.apis.plans.commitPlan).not.toHaveBeenCalled();
+ });
+ it('clears only the failed second-day preview and its block, retaining a committed first day',async()=>{
+  const f=commitFixture();
+  vi.mocked(f.apis.plans.commitPlan).mockImplementation(async(id:string)=>{
+   if(id==='plan-2026-11-10')throw Error('Stale source version');
+   return {actionNo:23,record:{id,status:'committed',version:3}} as never;
+  });
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
+   name:'PlannerCommitError',committedDays:['2026-11-09'],orphanBlockIds:[],
+  } satisfies Partial<PlannerCommitError>);
+  expect(f.written).toEqual(['block-1','block-2']);
+  expect(f.cleared).toEqual(['plan-2026-11-10']);
+  expect(f.deleted).toEqual(['block-2']);
+ });
+ it('rejects new saved focus intervals without writing any block',async()=>{
+  const f=commitFixture();
+  const saved:StudyEntryRecord={id:'e1',source:'timer',intent:'Study',status:'saved',
+   version:1,reflection:null,rating:null,savedAt:'2026-11-09T10:00:00Z',
+   createdAt:'2026-11-09T09:00:00Z',updatedAt:'2026-11-09T10:00:00Z',
+   intervals:[{id:'i1',kind:'focus',start:'2026-11-09T09:00:00Z',
+    end:'2026-11-09T09:30:00Z'}]};
+  vi.mocked(f.apis.study.listStudyEntries).mockResolvedValueOnce([saved]);
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
+   'Saved focus time changed since preview');
+  expect(f.written).toEqual([]);
+  expect(savedFocusSignature([saved])).not.toBe(savedFocusSignature([]));
+ });
+ it('persists unplaced reasons on the anchor even if all selected blocks start later',async()=>{
+  const f=commitFixture();f.snapshot.selection.selected=[f.snapshot.selection.selected[1]];
+  const result=await commitPlannerSelection(f.snapshot,f.apis);
+  expect(result.committedDays).toEqual(['2026-11-09','2026-11-10']);
+  const previews=vi.mocked(f.apis.plans.previewPlan).mock.calls;
+  expect(previews[0][0]).toBe('plan-2026-11-09');
+  expect(previews[0][2]).toEqual([{
+   taskId:'task-c',blockId:null,disposition:'unplaced',reason:'no_capacity',position:0,
+  }]);
+  expect(f.written).toEqual(['block-1']);
+ });
+ it('rejects an unrelated new calendar block as a stale preview before any write',async()=>{
+  const f=commitFixture();
+  vi.mocked(f.apis.study.listCalendarBlocks).mockResolvedValueOnce([{
+   id:'new',startsAt:'2026-11-09T09:00:00Z',
+   endsAt:'2026-11-09T10:00:00Z',version:1,status:'planned',
+  }] as never);
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
+   'Calendar changed since preview');
+  expect(f.written).toEqual([]);
+ });
+ it('refuses a source task version change and a local-timezone move',async()=>{
+  const f=commitFixture();
+  vi.mocked(f.apis.tasks.getTask).mockResolvedValueOnce(makeTask('task-a',2));
+  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
+   'Task changed since preview');
+  expect(f.written).toEqual([]);
+  expect(()=>selectPlannerPlacements(preview,new Set(['task-a']),
+   new Map([['task-a:1',{date:'2026-11-09',
+    start:'2026-11-09T09:00:00',end:'2026-11-09T09:30:00'}]])))
+   .toThrow('Invalid moved planner interval');
+ });
+});

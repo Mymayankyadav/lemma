@@ -21,7 +21,11 @@ export function selectPlannerPlacements(
   }
   const update=overrides.get(p.taskId+':'+p.part);
   const moved=update?{...p,...update}:p;
-  if(!Number.isFinite(Date.parse(moved.start))||
+  // Owner time inputs must be absolute instants. Local/offset-free strings
+  // otherwise silently use the browser's timezone, not the selected zone.
+  const absolute=/^\d{4}-\d\d-\d\dT(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d+)?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)$/;
+  if(!absolute.test(moved.start)||!absolute.test(moved.end)||
+   !Number.isFinite(Date.parse(moved.start))||
    !Number.isFinite(Date.parse(moved.end))||
    Date.parse(moved.end)<=Date.parse(moved.start))
    throw new Error('Invalid moved planner interval');

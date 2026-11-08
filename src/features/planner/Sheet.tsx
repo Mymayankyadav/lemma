@@ -3,10 +3,11 @@
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {getDayPlanApi} from '../../data/day-plans';
 import {getTaskApi,type TaskRecord} from '../../data/tasks';
-import {getStudyApi,type CalendarBlockRecord} from '../../data/study';
+import {getStudyApi,type CalendarBlockRecord,type StudyEntryRecord} from '../../data/study';
 import {useToast} from '../../ui/Toast';
-import {planTaskPlacements,type PlannerPlacement,type PlannerResult} from './model';
-import {selectPlannerPlacements,validatePlannerWindow} from './selection';
+import {planTaskPlacements,type PlannerResult} from './model';
+import {selectPlannerPlacements} from './selection';
+import {commitPlannerSelection} from './commit';
 
 type Move={date:string;start:string;end:string};
 const button='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold disabled:opacity-50';
@@ -47,6 +48,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const [preview,setPreview]=useState<PlannerResult|null>(null);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [blocks,setBlocks]=useState<CalendarBlockRecord[]>([]);
+ const [entries,setEntries]=useState<StudyEntryRecord[]>([]);
  const [selected,setSelected]=useState<Set<string>>(new Set());
  const [overrides,setOverrides]=useState<Map<string,Move>>(new Map());
  const [rangeDays,setRangeDays]=useState(1);
@@ -80,7 +82,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
     savedEntries:entries.map(entry=>({id:entry.id,status:entry.status,
      intervals:entry.intervals})),
    });
-   setTasks(taskRows);setBlocks(blockRows);setPreview(result);
+   setTasks(taskRows);setBlocks(blockRows);setEntries(entries);setPreview(result);
    setSelected(new Set(result.placements.map(p=>p.taskId+':'+p.part)));
    setOverrides(new Map());
   }catch(e){setError(e instanceof Error?e.message:'Could not preview a plan');setPreview(null);}
@@ -98,98 +100,33 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   original:Move){
   setOverrides(previous=>{
    const next=new Map(previous),updated={...(next.get(key)??original),[part]:value};
-   updated.date=updated.start.slice(0,10);
+   // The selected day belongs to the owner's IANA zone, not the UTC
+   // calendar portion of an absolute ISO timestamp.
+   const at=Date.parse(updated.start);
+   if(Number.isFinite(at)){
+    const parts=new Intl.DateTimeFormat('en-US',{timeZone:ownerZone,
+     year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(at));
+    const get=(name:string)=>parts.find(p=>p.type===name)?.value??'';
+    updated.date=get('year')+'-'+get('month')+'-'+get('day');
+   }
    next.set(key,updated);return next;
   });
  }
  async function commit(){
   if(busy||!selection.items||!preview)return;
-  if(selection.items.selected.length===0){
-   setError('Choose at least one placement before committing');return;
-  }
   setBusy(true);setError(null);
-  const created:CalendarBlockRecord[]=[];
-  let anyCommitted=false;
   try{
-   // Advisory replay detection before writing. The authoritative N46.2
-   // day_plans_command rechecks ALL declared versions inside its transaction.
-   for(const task of tasks){
-    const now=await getTaskApi().getTask(task.id);
-    if(!now||now.version!==task.version)
-     throw new Error('Task changed since preview; refresh the plan');
-   }
-   const scan=await getStudyApi().listCalendarBlocks({
-    start:shiftDay(anchor,-2)+'T00:00:00Z',
-    end:shiftDay(end,2)+'T00:00:00Z',
+   const result=await commitPlannerSelection({
+    from:anchor,through:end,zone:ownerZone,selection:selection.items,
+    tasks,blocks,entries,
+   },{
+    tasks:getTaskApi(),study:getStudyApi(),plans:getDayPlanApi(),
    });
-   if(blocks.some(b=>scan.find(x=>x.id===b.id)?.version!==b.version)||
-    scan.some(b=>!blocks.some(x=>x.id===b.id)))
-    throw new Error('Calendar changed since preview; refresh the plan');
-   validatePlannerWindow(selection.items.selected,scan,anchor,end,ownerZone);
-   const byDate=new Map<string,PlannerPlacement[]>();
-   for(const entry of selection.items.selected){
-    byDate.set(entry.date,[...(byDate.get(entry.date)??[]),entry]);
-   }
-   for(const day of [...byDate.keys()].sort()){
-    const placements=byDate.get(day)??[];
-    const createdHere:CalendarBlockRecord[]=[];
-    for(const place of placements){
-     const title=tasks.find(x=>x.id===place.taskId)?.title??'Study task';
-     const result=await getStudyApi().createCalendarBlock({
-      kind:'study',title,startsAt:place.start,endsAt:place.end,
-      timeZone:ownerZone,taskId:place.taskId,
-     });
-     created.push(result.record);createdHere.push(result.record);
-    }
-    const plans=await getDayPlanApi().listPlans({from:day,through:day,limit:1});
-    let plan=plans.items[0];
-    if(!plan)plan=(await getDayPlanApi().createPlan({
-     planDate:day,timeZone:ownerZone,
-    })).record;
-    if(plan.status!=='draft'&&plan.status!=='previewed')
-     throw new Error('A committed plan already exists on '+day);
-    const chosenIds=new Set(placements.map(x=>x.taskId));
-    const unplaced=day===anchor?selection.items.unplaced:[];
-    const taskIDs=[...new Set([...chosenIds,...unplaced.map(x=>x.taskId)])];
-    const sources=[
-     ...taskIDs.map(id=>{
-      const task=tasks.find(x=>x.id===id);
-      if(!task)throw new Error('Task disappeared from planner snapshot');
-      return {resource:'tasks' as const,id,version:task.version};
-     }),
-     ...createdHere.map(b=>({resource:'calendar_blocks' as const,
-      id:b.id,version:b.version})),
-     ...blocks.map(b=>({resource:'calendar_blocks' as const,
-      id:b.id,version:b.version})),
-    ];
-    const items=[
-     ...placements.map((x,i)=>({
-      taskId:x.taskId,blockId:createdHere[i].id,
-      disposition:'placed' as const,position:i,reason:null,
-     })),
-     ...unplaced.map((x,i)=>({
-      taskId:x.taskId,blockId:null,disposition:'unplaced' as const,
-      reason:x.reason,position:placements.length+i,
-     })),
-    ];
-    const previewed=await getDayPlanApi().previewPlan(plan.id,plan.version,
-     items,{sources});
-    await getDayPlanApi().commitPlan(plan.id,previewed.record.version);
-    anyCommitted=true;
-   }
    close();
-   notify('Study placements committed. Review them in Calendar.',{tone:'success'});
+   notify('Study placements committed for '+result.committedDays.length+
+    (result.committedDays.length===1?' day.':' days.'),{tone:'success'});
   }catch(e){
-   // Compensation is only valid before a durable plan commits. Do not
-   // silently delete linked blocks after a partial multi-day commit.
-   if(!anyCommitted){
-    for(const record of created.reverse()){
-     try{await getStudyApi().deleteCalendarBlock(record.id,record.version);}
-     catch{/* Keep the failure visible so owners can inspect Calendar. */}
-    }
-   }
-   setError((e instanceof Error?e.message:'Could not commit plan')+
-    (anyCommitted?' Earlier dates were committed; inspect Calendar before retrying.':''));
+   setError(e instanceof Error?e.message:'Could not commit plan');
   }finally{setBusy(false);}
  }
  return <>
