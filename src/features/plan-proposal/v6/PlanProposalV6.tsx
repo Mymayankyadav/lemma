@@ -22,10 +22,14 @@ export default function PlanProposalV6(){
  const [problem,setProblem]=useState(''),[pending,setPending]=useState(false);
  const [conflict,setConflict]=useState<ProposalDraftConflict|null>(null),[reload,setReload]=useState(0);
  const loadedDraftKey=useRef('');
+ const routeRef=useRef(id);
  // React Router reuses this route component between proposal IDs. An open
  // editor must not stay bound to the prior proposal or disable the next
  // proposal's independent approve/reject decision.
- useEffect(()=>{setEditor(false);setText('');setConflict(null)},[id]);
+ useEffect(()=>{
+  routeRef.current=id;
+  setEditor(false);setText('');setConflict(null);setPending(false);
+ },[id]);
  useEffect(()=>{
   if(!id||!proposal.data)return;
   // Query data may be revalidated while the owner types an unsaved draft.
@@ -68,37 +72,47 @@ export default function PlanProposalV6(){
   [p,project.data]);
  async function save(){
   if(!draft||pending||!['draft','saved'].includes(draft.status))return;
+  const saveFor=id;
   setPending(true);setProblem('');setConflict(null);
   try{
    const candidate=readPayload(text);
    const result=await getProposalDraftApi().saveDraft(draft.id,draft.draftVersion,candidate);
+   if(routeRef.current!==saveFor)return;
    setDraft(result.record);setText(payloadText(result.record.payload));setEditor(false);
   }catch(e){
+   if(routeRef.current!==saveFor)return;
    if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
    setProblem(e instanceof Error?e.message:'Could not save draft');
-  }finally{setPending(false)}
+  }finally{if(routeRef.current===saveFor)setPending(false)}
  }
  async function submit(){
   if(!draft||pending||draft.status!=='saved'||editor)return;
+  const submitFor=id;
   setPending(true);setProblem('');setConflict(null);
   try{
    const result=await getProposalDraftApi().submitDraft(
     draft.id,draft.draftVersion,draft.baseVersions);
+   if(routeRef.current!==submitFor)return;
    setDraft(result.record);setEditor(false);
   }catch(e){
+   if(routeRef.current!==submitFor)return;
    if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
    setProblem(e instanceof Error?e.message:'Could not submit draft');
-  }finally{setPending(false)}
+  }finally{if(routeRef.current===submitFor)setPending(false)}
  }
  async function decide(accept:boolean){
   if(!p||pending||editor)return;
+  const decisionFor=id;
   setPending(true);setProblem('');
   try{
    if(accept)await approve.mutateAsync({id:p.id});
    else await reject.mutateAsync(p.id);
+   if(routeRef.current!==decisionFor)return;
    void navigate(accept?'/p/'+p.projectSlug:'/proposals?tab=plan');
-  }catch(e){setProblem(e instanceof Error?e.message:'Could not complete proposal decision')}
-  finally{setPending(false)}
+  }catch(e){
+   if(routeRef.current===decisionFor)
+    setProblem(e instanceof Error?e.message:'Could not complete proposal decision');
+  }finally{if(routeRef.current===decisionFor)setPending(false)}
  }
  const ready=!!p&&!proposal.isPending;
  return <main aria-label="Plan proposal review" className="flex flex-col gap-4 p-4 pb-28 text-ink">

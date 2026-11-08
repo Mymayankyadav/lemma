@@ -198,6 +198,37 @@ describe('N85 v6 proposal draft editor',()=>{
    .toBe(replacement);
   expect(vi.mocked(adapter.listDrafts).mock.calls.length).toBe(calls);
  });
+ it('ignores an old proposal save acknowledgement after navigating to another proposal',async()=>{
+  const secondId='66666666-6666-4666-8666-666666666666';
+  const secondProposal={...proposal,id:secondId};
+  mocks.proposal.mockImplementation((id:string)=>({
+   data:id===secondId?secondProposal:proposal,isPending:false,isError:false,refetch:vi.fn(),
+  }));
+  vi.mocked(adapter.listDrafts).mockImplementation(async args=>({
+   items:[{...existing,proposalId:args.proposalId}],
+   total:1,nextCursor:null,
+  }));
+  let finishSave:(result:unknown)=>void=()=>{};
+  vi.mocked(adapter.saveDraft).mockImplementation(()=>new Promise(resolve=>{
+   finishSave=resolve as (result:unknown)=>void;
+  }));
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Link to={'/proposals/'+secondId}>Other proposal</Link>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6/>}/></Routes>
+  </MemoryRouter>));
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Edit draft');
+  await click('Save draft');
+  await act(async()=>host.querySelector<HTMLAnchorElement>('a')!.click());
+  await vi.waitFor(()=>expect(adapter.listDrafts).toHaveBeenCalledWith(
+   expect.objectContaining({proposalId:secondId})));
+  await act(async()=>finishSave({record:{
+   ...existing,payload:{ops:[{op:'update',code:'CP1',title:'Stale save response'}]},
+  },actionNo:40}));
+  expect(host.textContent).not.toContain('Stale save response');
+  const approve=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Approve plan');
+  expect(approve?.disabled).toBe(false);
+ });
  it('keeps an immutable submitted draft visible after reload and prefers a newer editable draft',async()=>{
   const submittedRow:ProposalDraftRecord={...existing,id:'44444444-4444-4444-8444-444444444444',
    status:'submitted',editedAt:'2026-11-08T03:00:00Z'};
