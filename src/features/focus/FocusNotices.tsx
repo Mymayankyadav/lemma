@@ -3,13 +3,14 @@ import {getThoughtApi} from '../../data/parked-thoughts';
 import {getStudyEventApi} from '../../data/study-events';
 
 /** Every action is a separate owner-scoped write; neither action changes the timer. */
-export default function FocusNotices({entryId}:{entryId:string}){
+export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclude?:(minutes:number,reason:string)=>Promise<void>}){
  const thoughts=getThoughtApi(),events=getStudyEventApi();
  const [count,setCount]=useState<number|null>(null);
  const [loadError,setLoadError]=useState('');
  const [dialogKind,setDialogKind]=useState<'park'|'drift'|null>(null);
  const [thought,setThought]=useState('');
  const [minutes,setMinutes]=useState('1');
+ const [deduct,setDeduct]=useState(false),[deducted,setDeducted]=useState(false);
  const [error,setError]=useState(''),[busy,setBusy]=useState(false);
  const dialog=useRef<HTMLDialogElement>(null);
  const opener=useRef<HTMLButtonElement|null>(null);
@@ -41,7 +42,7 @@ export default function FocusNotices({entryId}:{entryId:string}){
  }
  function open(kind:'park'|'drift',trigger:HTMLButtonElement){
   if(busy)return;
-  opener.current=trigger;setError('');setDialogKind(kind);
+  opener.current=trigger;setError('');setDeduct(false);setDeducted(false);setDialogKind(kind);
  }
  async function save(){
   if(busy||!dialogKind)return;
@@ -59,8 +60,12 @@ export default function FocusNotices({entryId}:{entryId:string}){
     await thoughts.createThought({text:thought.trim(),studyEntryId:entryId});
     setThought('');
    }else{
+    // The server's exclusion receipt must never be applied twice on retry.
+    if(deduct&&onExclude&&!deducted){
+     await onExclude(duration,'Self-reported drift');setDeducted(true);
+    }
     await events.recordEvent({entryId,kind:'drift',durationMinutes:duration});
-    setMinutes('1');
+    setMinutes('1');setDeduct(false);setDeducted(false);
    }
    setDialogKind(null);
    opener.current?.focus();
@@ -76,7 +81,7 @@ export default function FocusNotices({entryId}:{entryId:string}){
    <button type="button" onClick={e=>open('drift',e.currentTarget)}
     className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink">I drifted</button>
   </div>
-  <p className="mt-1 text-caption text-ink-2">Drift is recorded, not deducted from saved time.</p>
+  <p className="mt-1 text-caption text-ink-2">{onExclude?'Drift is recorded. Exclusion is optional and explicit.':'Drift is recorded, not deducted from saved time.'}</p>
   <dialog ref={dialog} aria-label={dialogKind==='drift'?'Record a drift':'Park a thought'}
    aria-modal="true" onCancel={e=>{e.preventDefault();dismiss();}}
    onClose={()=>{setDialogKind(null);opener.current?.focus();}}
@@ -91,9 +96,15 @@ export default function FocusNotices({entryId}:{entryId:string}){
     </label>:<label className="mt-3 block text-label">
      Minutes of drift
      <input aria-label="Minutes of drift" type="number" min="1" max="100000" step="1" required
-      value={minutes} onChange={e=>setMinutes(e.target.value)}
+      value={minutes} disabled={busy||deducted} onChange={e=>setMinutes(e.target.value)}
       className="mt-1 block min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 text-body"/>
     </label>}
+    {dialogKind==='drift'&&onExclude&&<label className="mt-3 flex min-h-11 items-center gap-2 text-label">
+     <input type="checkbox" aria-label="Exclude drift minutes" checked={deduct}
+      disabled={busy||deducted} onChange={e=>setDeduct(e.target.checked)}/>
+     Exclude these minutes from logged focus (requires timer control)
+    </label>}
+    {deducted&&<p role="status" className="mt-2 text-label">Exclusion saved. Retry records the notice only.</p>}
     {error&&<p role="alert" className="mt-2 text-label">{error}</p>}
     <div className="mt-4 flex flex-wrap gap-2">
      <button type="submit" disabled={busy}
