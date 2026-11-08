@@ -59,9 +59,9 @@
       "deletionPolicy": "owner purge and proposal FK"
     },
     "status": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "N63.2 draft adapter (planned)",
-      "mcpPath": "N49 proposal_drafts_command",
+      "mcpPath": "set only by proposal_drafts_command operations (create, save, submit, discard); never a patch field",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner purge and proposal FK"
     },

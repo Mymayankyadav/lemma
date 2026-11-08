@@ -140,7 +140,7 @@
     "preset_id": {
       "classification": "owner-editable",
       "appPath": "N66 study timer modes (planned)",
-      "mcpPath": "N52 study_command v3 (pending)",
+      "mcpPath": "none yet: the app selects it on a draft before start (N52/N66); study_command start does not accept it from the registry field list MCP reads; registering it is N109",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "journalled owner undo and N103 purge (planned)",
       "description": "Optional owner-composite FK to preset; snapshot immutably at start"
@@ -180,7 +180,7 @@
     "energy": {
       "classification": "owner-editable",
       "appPath": "N66 study timer modes (planned)",
-      "mcpPath": "N52 registered study_command v3 (service-role MCP via existing study_entries registry)",
+      "mcpPath": "none yet: study_command next_phase accepts it, but next_phase is not in the study_entries registry operations MCP reads; registering it is N109",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "journalled owner undo and N103 purge (planned)",
       "description": "Optional low/steady/high capture on an audited next_phase transition."
