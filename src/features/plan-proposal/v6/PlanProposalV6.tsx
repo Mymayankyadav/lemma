@@ -110,7 +110,7 @@ export default function PlanProposalV6(){
   }finally{if(routeRef.current===submitFor)setPending(false)}
  }
  async function decide(accept:boolean){
-  if(!p||pending||editor)return;
+  if(!p||pending||editor||project.isPending||project.isError||!project.data)return;
   const decisionFor=id;
   setPending(true);setProblem('');
   try{
@@ -124,6 +124,7 @@ export default function PlanProposalV6(){
   }finally{if(routeRef.current===decisionFor)setPending(false)}
  }
  const ready=!!p&&!proposal.isPending;
+ const decisionUnavailable=pending||editor||project.isPending||project.isError||!project.data;
  return <main aria-label="Plan proposal review" className="flex flex-col gap-4 p-4 pb-28 text-ink">
   <h1 className="text-title-s font-semibold">Plan proposal review</h1>
   {proposal.isPending&&<p role="status">Loading proposal…</p>}
@@ -215,8 +216,8 @@ export default function PlanProposalV6(){
    </section>
    {editor&&<p className="text-caption text-ink-2">Save or cancel your draft edit before deciding on this plan.</p>}
    <div className="flex flex-wrap gap-2">
-    <button type="button" disabled={pending||editor} className={control} onClick={()=>{void decide(true)}}>Approve plan</button>
-    <button type="button" disabled={pending||editor} className={control} onClick={()=>{void decide(false)}}>Reject proposal</button>
+    <button type="button" disabled={decisionUnavailable} className={control} onClick={()=>{void decide(true)}}>Approve plan</button>
+    <button type="button" disabled={decisionUnavailable} className={control} onClick={()=>{void decide(false)}}>Reject proposal</button>
    </div>
   </>}
  </main>;

@@ -67,6 +67,22 @@ afterEach(async()=>{
  host.remove();vi.clearAllMocks();
 });
 describe('N85 v6 proposal draft editor',()=>{
+ it('does not approve or reject without a reliable current owner plan preview',async()=>{
+  mocks.project.mockReturnValue({data:undefined,isPending:false,isError:true,refetch:vi.fn()});
+  await render();
+  for(const label of ['Approve plan','Reject proposal']){
+   const button=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()===label);
+   expect(button?.disabled).toBe(true);
+   await act(async()=>button?.click());
+  }
+  expect(mocks.approve.mock.results[0].value.mutateAsync).not.toHaveBeenCalled();
+  expect(mocks.reject.mock.results[0].value.mutateAsync).not.toHaveBeenCalled();
+  mocks.project.mockReturnValue({data:{checkpoints:[]},
+   isPending:false,isError:false,refetch:vi.fn()});
+  await render();
+  for(const label of ['Approve plan','Reject proposal'])
+   expect([...host.querySelectorAll('button')].find(b=>b.textContent?.trim()===label)?.disabled).toBe(false);
+ });
  it('never labels an unloaded or failed project as an empty approved plan',async()=>{
   mocks.project.mockReturnValue({data:undefined,isPending:true,isError:false,refetch:vi.fn()});
   await render();
