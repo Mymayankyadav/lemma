@@ -7,7 +7,7 @@ import {getStudyApi,type CalendarBlockRecord,type StudyEntryRecord} from '../../
 import {useToast} from '../../ui/Toast';
 import {planTaskPlacements,type PlannerResult} from './model';
 import {selectPlannerPlacements} from './selection';
-import {commitPlannerSelection} from './commit';
+import {commitPlannerSelection,PlannerCommitError} from './commit';
 
 type Move={date:string;start:string;end:string};
 const button='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold disabled:opacity-50';
@@ -43,6 +43,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const notify=useToast(),dialog=useRef<HTMLDialogElement>(null);
  const loadEpoch=useRef(0);
  const commitEpoch=useRef(0);
+ const pendingOperation=useRef<string|null>(null);
  const [opened,setOpened]=useState(false);
  useEffect(()=>{
   if(!opened||!dialog.current)return;
@@ -80,6 +81,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   catch(e){return {items:null,error:e instanceof Error?e.message:'Invalid planning move'};}
  },[preview,selected,overrides]);
  async function load(){
+  pendingOperation.current=null;
   const epoch=++loadEpoch.current;
   setLoading(true);setError(null);setPreview(null);
   try{
@@ -148,17 +150,30 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   const ownCommit=++commitEpoch.current;
   setBusy(true);setError(null);
   try{
+   const plans=getDayPlanApi();
+   // Reuse the operation ID after an uncertain failure so a retry is a replay.
+   const operationId=pendingOperation.current??crypto.randomUUID();
+   pendingOperation.current=operationId;
    const result=await commitPlannerSelection({
     from:anchor,through:end,zone:ownerZone,selection:selection.items,
     tasks,blocks,entries,
    },{
-    tasks:getTaskApi(),study:getStudyApi(),plans:getDayPlanApi(),
-   });
+    tasks:getTaskApi(),study:getStudyApi(),plans,
+   },operationId);
+   pendingOperation.current=null;
    if(lastScope.current!==commitScope||commitEpoch.current!==ownCommit)return;
    close();
+   const actionNo=result.actionNo;
    notify('Study placements committed for '+result.committedDays.length+
-    (result.committedDays.length===1?' day.':' days.'),{tone:'success'});
+    (result.committedDays.length===1?' day.':' days.'),{tone:'success',
+    ...(actionNo!==null?{action:{label:'Undo',onClick:()=>{
+     void plans.undoPlacements(actionNo).then(
+      ()=>notify('Planner commit undone',{tone:'success'}),
+      (e:unknown)=>notify(e instanceof Error?e.message:'Could not undo the planner commit',
+       {tone:'danger'}));
+    }}}:{})});
   }catch(e){
+   if(!(e instanceof PlannerCommitError&&e.uncertain))pendingOperation.current=null;
    if(lastScope.current===commitScope&&commitEpoch.current===ownCommit)
     setError(e instanceof Error?e.message:'Could not commit plan');
   }finally{if(commitEpoch.current===ownCommit)setBusy(false);}

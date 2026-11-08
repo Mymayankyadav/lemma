@@ -1,9 +1,12 @@
-// N68: best-effort multi-day orchestration over existing owner command APIs.
-// No rollback can be advertised as atomic: blocks and day plans are separate
-// audited transactions until the Owner resolves #1177.
+// N68: commits the selected placements through ONE atomic planner command
+// (N107 `DayPlanApi.commitPlacements`): every block, day plan and item is one
+// journalled action with one receipt and one Undo. A stale source refuses the
+// whole commit on the server and nothing is written. The browser preflight
+// below is advisory and only avoids an obviously stale request.
 import type {TaskRecord,TaskApi} from '../../data/tasks/contract';
 import type {StudyApi,CalendarBlockRecord,StudyEntryRecord} from '../../data/study/contract';
-import type {DayPlanApi,DayPlanRecord} from '../../data/day-plans/contract';
+import {DayPlanError,type DayPlanApi,type DayPlanRecord} from '../../data/day-plans/contract';
+import type {AtomicPlacementDay,PlacementSourceVersion} from '../../data/day-plans/placements';
 import type {PlannerPlacement} from './model';
 import {validatePlannerWindow,type SheetSelection} from './selection';
 
@@ -13,14 +16,17 @@ export interface PlannerCommitSnapshot {
 }
 export interface PlannerCommitApis {
  tasks:Pick<TaskApi,'getTask'>;
- study:Pick<StudyApi,'listCalendarBlocks'|'listStudyEntries'|
-  'createCalendarBlock'|'deleteCalendarBlock'>;
- plans:Pick<DayPlanApi,'listPlans'|'createPlan'|'previewPlan'|
-  'commitPlan'|'getPlan'|'updatePlan'>;
+ study:Pick<StudyApi,'listCalendarBlocks'|'listStudyEntries'>;
+ plans:Pick<DayPlanApi,'listPlans'|'commitPlacements'>;
+}
+export interface PlannerCommitResult {
+ committedDays:string[];
+ /** Journal action for the whole commit; null in demo mode (no Undo offered). */
+ actionNo:number|null;
 }
 export class PlannerCommitError extends Error {
- constructor(message:string,public readonly committedDays:readonly string[],
-  public readonly orphanBlockIds:readonly string[]){
+ /** True when the server may have committed (retry must reuse the operation ID). */
+ constructor(message:string,public readonly uncertain=false){
   super(message);this.name='PlannerCommitError';
  }
 }
@@ -47,25 +53,24 @@ function focusAsBlocks(entries:readonly StudyEntryRecord[]){
   e.intervals.filter(i=>i.kind==='focus'&&i.end!==null)
    .map(i=>({startsAt:i.start,endsAt:i.end!,status:'done'})));
 }
-/** Protects the selected output against obvious races *before* any write.
- * An authoritative day-plan commit still locks/verifies its source versions;
- * this client preflight does not purport to be the server transaction. */
+/** Advisory preflight, then one atomic, idempotent server commit. */
 export async function commitPlannerSelection(
- snapshot:PlannerCommitSnapshot,apis:PlannerCommitApis
-):Promise<{committedDays:string[]}>{
+ snapshot:PlannerCommitSnapshot,apis:PlannerCommitApis,
+ operationId:string=crypto.randomUUID()
+):Promise<PlannerCommitResult>{
  const {from,through,zone,selection,tasks,blocks,entries}=snapshot;
  if(selection.selected.length===0)throw new PlannerCommitError(
-  'Choose at least one placement before committing',[],[]);
- if(from>through||!zone)throw new Error('Invalid planner day selection');
+  'Choose at least one placement before committing');
+ if(from>through||!zone)throw new PlannerCommitError('Invalid planner day selection');
  const taskMap=new Map(tasks.map(t=>[t.id,t]));
  const referenced=new Set([...selection.selected.map(p=>p.taskId),
   ...selection.unplaced.map(p=>p.taskId)]);
  for(const id of referenced){
   const captured=taskMap.get(id);
-  if(!captured)throw new Error('Task missing from planner preview; refresh');
+  if(!captured)throw new PlannerCommitError('Task missing from planner preview; refresh');
   const current=await apis.tasks.getTask(id);
   if(!current||current.version!==captured.version)
-   throw new Error('Task changed since preview; refresh the plan');
+   throw new PlannerCommitError('Task changed since preview; refresh the plan');
  }
  const scanRange=range(from,through);
  const [currentBlocks,currentEntries,plansPage]=await Promise.all([
@@ -77,137 +82,70 @@ export async function commitPlannerSelection(
  const byId=new Map(currentBlocks.map(b=>[b.id,b.version]));
  if(currentBlocks.length!==blocks.length||
   blocks.some(b=>byId.get(b.id)!==b.version))
-  throw new Error('Calendar changed since preview; refresh the plan');
+  throw new PlannerCommitError('Calendar changed since preview; refresh the plan');
  if(savedFocusSignature(currentEntries)!==savedFocusSignature(entries))
-  throw new Error('Saved focus time changed since preview; refresh the plan');
+  throw new PlannerCommitError('Saved focus time changed since preview; refresh the plan');
  validatePlannerWindow(selection.selected,
   [...currentBlocks,...focusAsBlocks(currentEntries)],from,through,zone);
  if(plansPage.nextCursor||plansPage.total!==plansPage.items.length||
   plansPage.items.length>50)
-  throw new Error('Unbounded owner day-plan preflight');
+  throw new PlannerCommitError('Unbounded owner day-plan preflight');
  const plansByDate=new Map<string,DayPlanRecord>();
  for(const plan of plansPage.items){
-  if(plansByDate.has(plan.planDate))throw Error('Duplicate owner day plan');
+  if(plansByDate.has(plan.planDate))throw new PlannerCommitError('Duplicate owner day plan');
   plansByDate.set(plan.planDate,plan);
  }
  const placementsByDay=new Map<string,PlannerPlacement[]>();
  for(const place of selection.selected)
   placementsByDay.set(place.date,[...(placementsByDay.get(place.date)??[]),place]);
- // Unplaced reasons must survive even when all selected placements belong
- // to dates *after* the first day in the requested window.
+ // Unplaced reasons are recorded on the first requested day, even when every
+ // selected placement belongs to a later day.
  if(selection.unplaced.length&&!placementsByDay.has(from))
   placementsByDay.set(from,[]);
  const chosenDays=[...placementsByDay.keys()].sort();
  for(const date of chosenDays){
   const old=plansByDate.get(date);
   if(old&&!['draft','previewed'].includes(old.status))
-   throw new Error('An already committed day plan exists on '+date);
+   throw new PlannerCommitError('An already committed day plan exists on '+date);
  }
- const committedDays:string[]=[];
- let pendingBlocks:CalendarBlockRecord[]=[];
- let staged:DayPlanRecord|null=null;
- let stagingDay:string|null=null;
- let uncertainBlockCreation=false;
- try{
-  for(const date of chosenDays){
-   const placements=placementsByDay.get(date)??[];
-   stagingDay=date;
-   pendingBlocks=[];
-   staged=null;
-   for(const place of placements){
+ // Every source version captured at preview, for the server to lock and recheck.
+ const capturedSources:PlacementSourceVersion[]=[
+  ...blocks.map(b=>({resource:'calendar_blocks' as const,id:b.id,version:b.version})),
+  ...entries.filter(e=>e.status==='saved'&&
+   e.intervals.some(i=>i.kind==='focus'&&i.end!==null))
+   .map(e=>({resource:'study_entries' as const,id:e.id,version:e.version})),
+ ];
+ const days:AtomicPlacementDay[]=chosenDays.map(date=>{
+  const placements=placementsByDay.get(date)??[];
+  const unplaced=date===from?selection.unplaced:[];
+  const ids=[...new Set([...placements.map(x=>x.taskId),...unplaced.map(x=>x.taskId)])];
+  const plan=plansByDate.get(date);
+  return {
+   planDate:date,timeZone:zone,
+   ...(plan?{planId:plan.id,expectedVersion:plan.version}:{}),
+   sources:[...ids.map(id=>({resource:'tasks' as const,id,
+    version:taskMap.get(id)!.version})),...capturedSources],
+   placements:placements.map((place,i)=>{
     const title=taskMap.get(place.taskId)?.title;
-    if(!title)throw new Error('Missing task title for '+place.taskId);
-    // Transport failure before a receipt does not prove the server failed.
-    uncertainBlockCreation=true;
-    const receipt=await apis.study.createCalendarBlock({
-     kind:'study',title,startsAt:place.start,endsAt:place.end,
-     timeZone:zone,taskId:place.taskId,
-    });
-    pendingBlocks.push(receipt.record);
-    uncertainBlockCreation=false;
-   }
-   let plan=plansByDate.get(date);
-   if(!plan)plan=(await apis.plans.createPlan({
-    planDate:date,timeZone:zone,
-   })).record;
-   const unplaced=date===from?selection.unplaced:[];
-   const ids=new Set([...placements.map(x=>x.taskId),...unplaced.map(x=>x.taskId)]);
-   const sources=[
-    ...[...ids].map(id=>({
-     resource:'tasks' as const,id,version:taskMap.get(id)!.version,
-    })),
-    ...pendingBlocks.map(b=>({
-     resource:'calendar_blocks' as const,id:b.id,version:b.version,
-    })),
-    ...blocks.map(b=>({
-     resource:'calendar_blocks' as const,id:b.id,version:b.version,
-    })),
-   ];
-   const items=[
-    ...placements.map((place,i)=>({
-     taskId:place.taskId,blockId:pendingBlocks[i].id,
-     disposition:'placed' as const,position:i,reason:null,
-    })),
-    ...unplaced.map((entry,i)=>({
-     taskId:entry.taskId,blockId:null,disposition:'unplaced' as const,
-     position:placements.length+i,reason:entry.reason,
-    })),
-   ];
-   const previewed=await apis.plans.previewPlan(
-    plan.id,plan.version,items,{sources});
-   staged=previewed.record;
-   await apis.plans.commitPlan(plan.id,staged.version);
-   committedDays.push(date);
-   pendingBlocks=[];
-   staged=null;stagingDay=null;
-  }
-  return {committedDays};
+    if(!title)throw new PlannerCommitError('Missing task title for '+place.taskId);
+    return {taskId:place.taskId,title,startsAt:place.start,endsAt:place.end,position:i};
+   }),
+   unplaced:unplaced.map((entry,i)=>({taskId:entry.taskId,reason:entry.reason,
+    position:placements.length+i})),
+  };
+ });
+ try{
+  // The adapter retries a lost acknowledgement with this same operationId,
+  // so a retry can never create a second set of blocks.
+  const receipt=await apis.plans.commitPlacements({days,operationId});
+  return {committedDays:chosenDays,actionNo:receipt.actionNo};
  }catch(error){
-  const cleanupFailed:string[]=[];
-  // A lost commit acknowledgement could mean that the server DID commit.
-  // Re-read before attempting to invalidate a preview or delete its blocks.
-  if(staged){
-   // A failed readback is NOT proof that a network-uncertain commit failed.
-   // Conversely a still-previewed row must first be invalidated to release
-   // its child block FKs; deleting those blocks first would be dangerous.
-   let now:DayPlanRecord|null=null;
-   try{now=await apis.plans.getPlan(staged.id);}
-   catch{/* Unknown server state: never delete potentially committed blocks. */}
-   if(now?.status==='committed'){
-    if(stagingDay&&!committedDays.includes(stagingDay))
-     committedDays.push(stagingDay);
-    pendingBlocks=[];
-   }else if(!now){
-    cleanupFailed.push(...pendingBlocks.map(b=>b.id));
-    pendingBlocks=[];
-   }else if(now.status==='previewed'){
-    try{
-     await apis.plans.updatePlan(now.id,now.version,{});
-    }catch{
-     cleanupFailed.push(...pendingBlocks.map(b=>b.id));
-     pendingBlocks=[];
-    }
-   }else if(now.status==='closed'){
-    // A different owner tab may have closed a successfully committed plan.
-    if(stagingDay&&!committedDays.includes(stagingDay))
-     committedDays.push(stagingDay);
-    pendingBlocks=[];
-   }
-  }
-  // Only touch blocks written after the last *confirmed* day-plan commit.
-  for(const block of [...pendingBlocks].reverse()){
-   try{await apis.study.deleteCalendarBlock(block.id,block.version);}
-   catch{cleanupFailed.push(block.id);}
-  }
   const message=error instanceof Error?error.message:'Planner commit failed';
+  // A typed server refusal rolled the whole transaction back. Anything else
+  // (lost connection after the adapter's own retry) is uncertain.
+  if(error instanceof DayPlanError)
+   throw new PlannerCommitError(message+'. Nothing was written; refresh the plan and try again.',false);
   throw new PlannerCommitError(message+
-   (uncertainBlockCreation?
-    '. Block creation may have succeeded without a receipt; inspect Calendar before retrying.':'')+
-   (committedDays.length?
-    '. Earlier committed days: '+committedDays.join(', ')+
-     '; inspect Calendar before retrying.':'')+
-   (cleanupFailed.length?
-    '. Some uncommitted writes require manual review in Calendar.':''),
-   committedDays,cleanupFailed);
+   '. The commit may or may not have been saved; refresh the plan to check before retrying.',true);
  }
 }

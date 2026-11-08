@@ -70,23 +70,21 @@ import PlannerLaunch from '../../../src/features/planner/Sheet';
 
 const services=vi.hoisted(()=>({
  tasks:vi.fn(),getTask:vi.fn(),blocks:vi.fn(),entries:vi.fn(),plans:vi.fn(),
-  createBlock:vi.fn(),deleteBlock:vi.fn(),createPlan:vi.fn(),
-  previewPlan:vi.fn(),commitPlan:vi.fn(),getPlan:vi.fn(),updatePlan:vi.fn(),
+  commitPlacements:vi.fn(async()=>({actionNo:41,record:{plans:[],blockIds:[]}})),
+  undoPlacements:vi.fn(async()=>undefined),notify:vi.fn(),
 }));
 vi.mock('../../../src/data/tasks',()=>({
  getTaskApi:()=>({listTasks:services.tasks,getTask:services.getTask}),
 }));
 vi.mock('../../../src/data/study',()=>({
  getStudyApi:()=>({listCalendarBlocks:services.blocks,
-  listStudyEntries:services.entries,createCalendarBlock:services.createBlock,
-   deleteCalendarBlock:services.deleteBlock}),
+  listStudyEntries:services.entries}),
 }));
 vi.mock('../../../src/data/day-plans',()=>({
- getDayPlanApi:()=>({listPlans:services.plans,createPlan:services.createPlan,
-   previewPlan:services.previewPlan,commitPlan:services.commitPlan,
-   getPlan:services.getPlan,updatePlan:services.updatePlan}),
+ getDayPlanApi:()=>({listPlans:services.plans,
+   commitPlacements:services.commitPlacements,undoPlacements:services.undoPlacements}),
 }));
-vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
+vi.mock('../../../src/ui/Toast',()=>({useToast:()=>services.notify}));
 
 describe('N68 v6 native Planner launch lifecycle',()=>{
  it('does not create a dialog before opening, and removes it after close',async()=>{
@@ -207,39 +205,21 @@ describe('N68 moved placement owner-day and busy-block guard',()=>{
 
 import {commitPlannerSelection,savedFocusSignature,PlannerCommitError,
  type PlannerCommitApis,type PlannerCommitSnapshot} from '../../../src/features/planner/commit';
+import {DayPlanError} from '../../../src/data/day-plans/contract';
 import type {TaskRecord} from '../../../src/data/tasks/contract';
 import type {StudyEntryRecord} from '../../../src/data/study/contract';
 const makeTask=(id:string,version=1)=>({id,version,title:'Learn '+id}) as TaskRecord;
+const OP='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 function commitFixture(){
- const written:string[]=[],deleted:string[]=[],cleared:string[]=[];
- let latestVersion=1;
  const apis={
   tasks:{getTask:vi.fn(async(id:string)=>makeTask(id))},
   study:{
    listCalendarBlocks:vi.fn(async()=>[]),
    listStudyEntries:vi.fn(async()=>[]),
-   createCalendarBlock:vi.fn(async(input:{taskId?:string|null})=>{
-    const id='block-'+(written.length+1);
-    written.push(id);
-    return {actionNo:11,record:{id,version:1,...input}};
-   }),
-   deleteCalendarBlock:vi.fn(async(id:string)=>{deleted.push(id);return {actionNo:12,record:{id}}}),
   },
   plans:{
    listPlans:vi.fn(async()=>({items:[],total:0,nextCursor:null})),
-   createPlan:vi.fn(async(input:{planDate:string})=>({
-    actionNo:21,record:{id:'plan-'+input.planDate,status:'draft',
-     version:1,planDate:input.planDate,timeZone:'UTC'},
-   })),
-   previewPlan:vi.fn(async(id:string,_version:number,items:unknown[])=>({
-    actionNo:22,record:{id,status:'previewed',version:2,planDate:id.slice(5),items},
-   })),
-   commitPlan:vi.fn(async(id:string)=>({
-    actionNo:23,record:{id,status:'committed',version:3},
-   })),
-   getPlan:vi.fn(async(id:string)=>({id,version:latestVersion,status:'previewed'})),
-   updatePlan:vi.fn(async(id:string)=>{cleared.push(id);
-    latestVersion++;return {actionNo:24,record:{id,status:'draft',version:latestVersion}};}),
+   commitPlacements:vi.fn(async()=>({actionNo:41,record:{plans:[],blockIds:['b1','b2']}})),
   },
  } as unknown as PlannerCommitApis;
  const selection={selected:[
@@ -253,145 +233,86 @@ function commitFixture(){
   tasks:[makeTask('task-a'),makeTask('task-b'),makeTask('task-c')],
   entries:[],blocks:[],selection,
  };
- return {apis,snapshot,written,deleted,cleared};
+ const sent=()=>vi.mocked(apis.plans.commitPlacements).mock.calls[0]?.[0];
+ return {apis,snapshot,sent};
 }
-describe('N68 owner commit preflight and partial-failure containment',()=>{
- it('does not create blocks for a stale overlapping selected snapshot',async()=>{
+describe('N68 single atomic commit (N107)',()=>{
+ it('sends every selected day in ONE commitPlacements call with captured versions and returns its action',async()=>{
   const f=commitFixture();
-  f.snapshot.selection.selected=[
-   f.snapshot.selection.selected[0],
-   {...f.snapshot.selection.selected[0],taskId:'task-b',
-    start:'2026-11-09T09:15:00Z',end:'2026-11-09T09:45:00Z'},
-  ];
-  await expect(commitPlannerSelection(f.snapshot,f.apis))
-   .rejects.toThrow('Selected planner placements overlap each other');
-  expect(f.written).toEqual([]);
+  const result=await commitPlannerSelection(f.snapshot,f.apis,OP);
+  expect(f.apis.plans.commitPlacements).toHaveBeenCalledTimes(1);
+  expect(result).toEqual({committedDays:['2026-11-09','2026-11-10'],actionNo:41});
+  const input=f.sent()!;
+  expect(input.operationId).toBe(OP);
+  expect(input.days.map(d=>d.planDate)).toEqual(['2026-11-09','2026-11-10']);
+  expect(input.days[0].placements).toEqual([{taskId:'task-a',title:'Learn task-a',
+   startsAt:'2026-11-09T09:00:00Z',endsAt:'2026-11-09T09:30:00Z',position:0}]);
+  expect(input.days[0].unplaced).toEqual([{taskId:'task-c',reason:'no_capacity',position:1}]);
+  expect(input.days[1].unplaced).toEqual([]);
+  expect(input.days[0].sources).toEqual(expect.arrayContaining([
+   {resource:'tasks',id:'task-a',version:1},{resource:'tasks',id:'task-c',version:1}]));
  });
- it('checks every day-plan state before creating even the first block',async()=>{
+ it('reuses a draft or previewed plan with its exact version and refuses a committed day before writing',async()=>{
   const f=commitFixture();
-  vi.mocked(f.apis.plans.listPlans).mockResolvedValueOnce({
-   items:[{id:'another',planDate:'2026-11-10',status:'committed',
-    version:3}],total:1,nextCursor:null,
-  } as never);
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
-   'already committed day plan');
-  expect(f.written).toEqual([]);
-  expect(f.apis.plans.commitPlan).not.toHaveBeenCalled();
+  vi.mocked(f.apis.plans.listPlans).mockResolvedValue({items:[
+   {id:'plan-9',planDate:'2026-11-09',status:'previewed',version:4}],total:1,nextCursor:null} as never);
+  await commitPlannerSelection(f.snapshot,f.apis,OP);
+  expect(f.sent()!.days[0]).toMatchObject({planId:'plan-9',expectedVersion:4});
+  const g=commitFixture();
+  vi.mocked(g.apis.plans.listPlans).mockResolvedValue({items:[
+   {id:'plan-10',planDate:'2026-11-10',status:'committed',version:2}],total:1,nextCursor:null} as never);
+  await expect(commitPlannerSelection(g.snapshot,g.apis,OP)).rejects.toThrow(
+   'An already committed day plan exists on 2026-11-10');
+  expect(g.apis.plans.commitPlacements).not.toHaveBeenCalled();
  });
- it('clears only the failed second-day preview and its block, retaining a committed first day',async()=>{
+ it('captures existing calendar blocks and saved focus entries as sources for the server to recheck',async()=>{
   const f=commitFixture();
-  vi.mocked(f.apis.plans.commitPlan).mockImplementation(async(id:string)=>{
-   if(id==='plan-2026-11-10')throw Error('Stale source version');
-   return {actionNo:23,record:{id,status:'committed',version:3}} as never;
-  });
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
-   name:'PlannerCommitError',committedDays:['2026-11-09'],orphanBlockIds:[],
-  } satisfies Partial<PlannerCommitError>);
-  expect(f.written).toEqual(['block-1','block-2']);
-  expect(f.cleared).toEqual(['plan-2026-11-10']);
-  expect(f.deleted).toEqual(['block-2']);
+  const busy={id:'busy-1',version:3,kind:'busy',status:'planned',
+   startsAt:'2026-11-09T12:00:00Z',endsAt:'2026-11-09T13:00:00Z'};
+  const saved={id:'entry-1',version:2,status:'saved',intervals:[{id:'i1',kind:'focus',
+   start:'2026-11-09T14:00:00Z',end:'2026-11-09T14:30:00Z'}]} as unknown as StudyEntryRecord;
+  f.snapshot.blocks=[busy as never];f.snapshot.entries=[saved];
+  vi.mocked(f.apis.study.listCalendarBlocks).mockResolvedValue([busy as never]);
+  vi.mocked(f.apis.study.listStudyEntries).mockResolvedValue([saved]);
+  await commitPlannerSelection(f.snapshot,f.apis,OP);
+  for(const day of f.sent()!.days)expect(day.sources).toEqual(expect.arrayContaining([
+   {resource:'calendar_blocks',id:'busy-1',version:3},
+   {resource:'study_entries',id:'entry-1',version:2}]));
  });
- it('rejects new saved focus intervals without writing any block',async()=>{
+ it('refuses stale tasks, changed calendars and new saved focus before calling the server',async()=>{
+  const stale=commitFixture();
+  vi.mocked(stale.apis.tasks.getTask).mockResolvedValueOnce(makeTask('task-a',2));
+  await expect(commitPlannerSelection(stale.snapshot,stale.apis,OP)).rejects.toThrow('Task changed since preview');
+  const cal=commitFixture();
+  vi.mocked(cal.apis.study.listCalendarBlocks).mockResolvedValue([{id:'new',version:1} as never]);
+  await expect(commitPlannerSelection(cal.snapshot,cal.apis,OP)).rejects.toThrow('Calendar changed since preview');
+  const focus=commitFixture();
+  vi.mocked(focus.apis.study.listStudyEntries).mockResolvedValue([{id:'e',version:1,status:'saved',
+   intervals:[{id:'i',kind:'focus',start:'2026-11-09T07:00:00Z',end:'2026-11-09T07:30:00Z'}]} as never]);
+  await expect(commitPlannerSelection(focus.snapshot,focus.apis,OP)).rejects.toThrow('Saved focus time changed');
+  for(const f of [stale,cal,focus])expect(f.apis.plans.commitPlacements).not.toHaveBeenCalled();
+ });
+ it('reports a typed server refusal as nothing written, and a transport failure as uncertain',async()=>{
   const f=commitFixture();
-  const saved:StudyEntryRecord={id:'e1',source:'timer',intent:'Study',status:'saved',
-   version:1,reflection:null,rating:null,savedAt:'2026-11-09T10:00:00Z',
-   createdAt:'2026-11-09T09:00:00Z',updatedAt:'2026-11-09T10:00:00Z',
-   intervals:[{id:'i1',kind:'focus',start:'2026-11-09T09:00:00Z',
-    end:'2026-11-09T09:30:00Z'}]};
-  vi.mocked(f.apis.study.listStudyEntries).mockResolvedValueOnce([saved]);
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
-   'Saved focus time changed since preview');
-  expect(f.written).toEqual([]);
-  expect(savedFocusSignature([saved])).not.toBe(savedFocusSignature([]));
+  vi.mocked(f.apis.plans.commitPlacements).mockRejectedValueOnce(
+   new DayPlanError('conflict','Atomic planner source/version conflict'));
+  await expect(commitPlannerSelection(f.snapshot,f.apis,OP)).rejects.toMatchObject({
+   uncertain:false,message:expect.stringContaining('Nothing was written')});
+  const g=commitFixture();
+  vi.mocked(g.apis.plans.commitPlacements).mockRejectedValueOnce(Error('Failed to fetch'));
+  const error=await commitPlannerSelection(g.snapshot,g.apis,OP).catch(e=>e);
+  expect(error).toBeInstanceOf(PlannerCommitError);
+  expect(error.uncertain).toBe(true);
+  expect(error.message).toContain('may or may not have been saved');
  });
- it('persists unplaced reasons on the anchor even if all selected blocks start later',async()=>{
-  const f=commitFixture();f.snapshot.selection.selected=[f.snapshot.selection.selected[1]];
-  const result=await commitPlannerSelection(f.snapshot,f.apis);
-  expect(result.committedDays).toEqual(['2026-11-09','2026-11-10']);
-  const previews=vi.mocked(f.apis.plans.previewPlan).mock.calls;
-  expect(previews[0][0]).toBe('plan-2026-11-09');
-  expect(previews[0][2]).toEqual([{
-   taskId:'task-c',blockId:null,disposition:'unplaced',reason:'no_capacity',position:0,
-  }]);
-  expect(f.written).toEqual(['block-1']);
- });
- it('rejects an unrelated new calendar block as a stale preview before any write',async()=>{
-  const f=commitFixture();
-  vi.mocked(f.apis.study.listCalendarBlocks).mockResolvedValueOnce([{
-   id:'new',startsAt:'2026-11-09T09:00:00Z',
-   endsAt:'2026-11-09T10:00:00Z',version:1,status:'planned',
-  }] as never);
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
-   'Calendar changed since preview');
-  expect(f.written).toEqual([]);
- });
- it('refuses a source task version change and a local-timezone move',async()=>{
-  const f=commitFixture();
-  vi.mocked(f.apis.tasks.getTask).mockResolvedValueOnce(makeTask('task-a',2));
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toThrow(
-   'Task changed since preview');
-  expect(f.written).toEqual([]);
-  expect(()=>selectPlannerPlacements(preview,new Set(['task-a']),
-   new Map([['task-a:1',{date:'2026-11-09',
-    start:'2026-11-09T09:00:00',end:'2026-11-09T09:30:00'}]])))
-   .toThrow('Invalid moved planner interval');
+ it('requires at least one selected placement and keeps the saved-focus signature order-stable',async()=>{
+  const f=commitFixture();f.snapshot.selection.selected=[];
+  await expect(commitPlannerSelection(f.snapshot,f.apis,OP)).rejects.toThrow('Choose at least one placement');
+  const a={id:'a',version:1,status:'saved',intervals:[{id:'1',kind:'focus',start:'x',end:'y'}]};
+  const b={id:'b',version:1,status:'saved',intervals:[{id:'1',kind:'focus',start:'x',end:'y'}]};
+  expect(savedFocusSignature([a,b] as never)).toBe(savedFocusSignature([b,a] as never));
  });
 });
-
-
-describe('N68 unknown commit receipt safety',()=>{
- it('preserves possibly committed blocks when both commit acknowledgement and readback fail',async()=>{
-  const f=commitFixture();
-  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
-  f.snapshot.selection.unplaced=[];
-  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(
-   new Error('Network response lost after server commit'));
-  vi.mocked(f.apis.plans.getPlan).mockRejectedValueOnce(
-   new Error('Cannot verify committed plan'));
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
-   name:'PlannerCommitError',orphanBlockIds:['block-1'],committedDays:[],
-  } satisfies Partial<PlannerCommitError>);
-  expect(f.deleted).toEqual([]);
-  expect(f.cleared).toEqual([]);
- });
- it('recognizes a committed server plan after lost acknowledgement without deleting its blocks',async()=>{
-  const f=commitFixture();
-  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
-  f.snapshot.selection.unplaced=[];
-  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(Error('Lost acknowledgement'));
-  vi.mocked(f.apis.plans.getPlan).mockResolvedValueOnce({
-   id:'plan-2026-11-09',status:'committed',version:3,
-  } as never);
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
-   committedDays:['2026-11-09'],orphanBlockIds:[],
-  } satisfies Partial<PlannerCommitError>);
-  expect(f.deleted).toEqual([]);
-  expect(f.cleared).toEqual([]);
- });
- it('warns about a possibly created block when its acknowledgement is lost',async()=>{
-  const f=commitFixture();
-  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
-  f.snapshot.selection.unplaced=[];
-  vi.mocked(f.apis.study.createCalendarBlock).mockRejectedValueOnce(
-   Error('Network response lost during block creation'));
-  await expect(commitPlannerSelection(f.snapshot,f.apis))
-   .rejects.toThrow(/may have succeeded without a receipt; inspect Calendar before retrying/);
-  expect(f.deleted).toEqual([]);
-  expect(f.apis.plans.commitPlan).not.toHaveBeenCalled();
- });
- it('does not delete child blocks if the server refuses to invalidate its preview',async()=>{
-  const f=commitFixture();
-  f.snapshot.selection.selected=[f.snapshot.selection.selected[0]];
-  f.snapshot.selection.unplaced=[];
-  vi.mocked(f.apis.plans.commitPlan).mockRejectedValueOnce(Error('Stale source'));
-  vi.mocked(f.apis.plans.updatePlan).mockRejectedValueOnce(Error('Preview changed'));
-  await expect(commitPlannerSelection(f.snapshot,f.apis)).rejects.toMatchObject({
-   orphanBlockIds:['block-1'],
-  } satisfies Partial<PlannerCommitError>);
-  expect(f.deleted).toEqual([]);
- });
-});
-
 
 describe('N68 stale planner preview isolation',()=>{
  it('discards an old failed request after the owner closes and reopens the dialog',async()=>{
@@ -458,10 +379,7 @@ describe('N68 Calendar owner date navigation',()=>{
   let rejectOld:(e:Error)=>void=()=>{},finishNew:(x:unknown)=>void=()=>{};
   services.getTask.mockImplementationOnce(()=>new Promise((_res,rej)=>{rejectOld=rej;}))
    .mockImplementationOnce(()=>new Promise(resolve=>{finishNew=resolve;}));
-  services.createBlock.mockResolvedValue({record:{id:'block-new',version:1},actionNo:11});
-  services.createPlan.mockResolvedValue({record:{id:'plan-new',version:1,status:'draft'},actionNo:12});
-  services.previewPlan.mockResolvedValue({record:{id:'plan-new',version:2,status:'previewed'},actionNo:13});
-  services.commitPlan.mockResolvedValue({record:{id:'plan-new',version:3,status:'committed'},actionNo:14});
+  services.commitPlacements.mockResolvedValue({record:{plans:[{id:'plan-new',version:3,status:'committed'}],blockIds:['block-new']},actionNo:14});
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
   const host=document.createElement('div');document.body.append(host);
   const root=createRoot(host);
@@ -485,7 +403,7 @@ describe('N68 Calendar owner date navigation',()=>{
    expect(commit()?.textContent).toBe('Committing…');
    expect(host.textContent).not.toContain('Earlier date rejected');
    await act(async()=>finishNew(task));
-   await vi.waitFor(()=>expect(services.commitPlan).toHaveBeenCalledTimes(1));
+   await vi.waitFor(()=>expect(services.commitPlacements).toHaveBeenCalledTimes(1));
    expect(host.querySelector('dialog')).toBeNull();
   }finally{await act(async()=>root.unmount());host.remove();}
  });
@@ -496,10 +414,7 @@ describe('N68 Calendar owner date navigation',()=>{
   services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
   services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
   services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
-  services.createBlock.mockResolvedValue({record:{id:'block-aba',version:1},actionNo:21});
-  services.createPlan.mockResolvedValue({record:{id:'plan-aba',version:1,status:'draft'},actionNo:22});
-  services.previewPlan.mockResolvedValue({record:{id:'plan-aba',version:2,status:'previewed'},actionNo:23});
-  services.commitPlan.mockResolvedValue({record:{id:'plan-aba',version:3,status:'committed'},actionNo:24});
+  services.commitPlacements.mockResolvedValue({record:{plans:[{id:'plan-aba',version:3,status:'committed'}],blockIds:['block-aba']},actionNo:24});
   let finishOld:(x:unknown)=>void=()=>{};
   services.getTask.mockImplementationOnce(()=>new Promise(resolve=>{finishOld=resolve;}));
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
@@ -517,7 +432,7 @@ describe('N68 Calendar owner date navigation',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    await act(async()=>finishOld(task));
-   await vi.waitFor(()=>expect(services.commitPlan).toHaveBeenCalledTimes(1));
+   await vi.waitFor(()=>expect(services.commitPlacements).toHaveBeenCalledTimes(1));
    expect(host.querySelector('dialog')).not.toBeNull();
    expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull();
   }finally{await act(async()=>root.unmount());host.remove();}
@@ -583,10 +498,7 @@ describe('N68 Calendar owner date navigation',()=>{
   services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
   services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
   services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
-  services.createBlock.mockResolvedValue({record:{id:'block-new',version:1},actionNo:11});
-  services.createPlan.mockResolvedValue({record:{id:'plan-new',version:1,status:'draft'},actionNo:12});
-  services.previewPlan.mockResolvedValue({record:{id:'plan-new',version:2,status:'previewed'},actionNo:13});
-  services.commitPlan.mockResolvedValue({record:{id:'plan-new',version:3,status:'committed'},actionNo:14});
+  services.commitPlacements.mockResolvedValue({record:{plans:[{id:'plan-new',version:3,status:'committed'}],blockIds:['block-new']},actionNo:14});
   let finishOld:(value:unknown)=>void=()=>{};
   services.getTask.mockImplementationOnce(()=>new Promise(resolve=>{finishOld=resolve;}));
   Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
@@ -603,10 +515,51 @@ describe('N68 Calendar owner date navigation',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    await act(async()=>finishOld(task));
-   await vi.waitFor(()=>expect(services.commitPlan).toHaveBeenCalledTimes(1));
+   await vi.waitFor(()=>expect(services.commitPlacements).toHaveBeenCalledTimes(1));
    expect(host.querySelector('dialog')).not.toBeNull();
    expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull();
   }finally{await act(async()=>root.unmount());host.remove();}
  });
 
 });
+
+describe('N68 one toast with a truthful Undo',()=>{
+ async function commitOnce(actionNo:number|null){
+  services.tasks.mockReset();services.getTask.mockReset();services.notify.mockReset();
+  services.undoPlacements.mockReset();services.undoPlacements.mockResolvedValue(undefined);
+  const task={id:'task-a',title:'Proof practice',version:1,priority:'normal',
+   due:{kind:'none'},estimateMinutes:30,status:'backlog'};
+  services.tasks.mockResolvedValue({items:[task],total:1,nextCursor:null});
+  services.getTask.mockResolvedValue(task);
+  services.blocks.mockResolvedValue([]);services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  services.commitPlacements.mockReset();
+  services.commitPlacements.mockResolvedValue({actionNo,record:{plans:[],blockIds:['b']}});
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   const commit=[...host.querySelectorAll<HTMLButtonElement>('button')]
+    .find(b=>b.textContent==='Commit selected placements')!;
+   await act(async()=>commit.click());
+   await vi.waitFor(()=>expect(services.notify).toHaveBeenCalledTimes(1));
+   expect(services.commitPlacements).toHaveBeenCalledTimes(1);
+   return services.notify.mock.calls[0];
+  }finally{await act(async()=>root.unmount());host.remove();}
+ }
+ it('offers Undo for the whole live commit and undoes exactly that action',async()=>{
+  const [message,options]=await commitOnce(57);
+  expect(message).toMatch(/Study placements committed for 1 day/);
+  expect(options.action.label).toBe('Undo');
+  await act(async()=>options.action.onClick());
+  expect(services.undoPlacements).toHaveBeenCalledWith(57);
+ });
+ it('offers no Undo when the receipt has no journal action (demo)',async()=>{
+  const [,options]=await commitOnce(null);
+  expect(options.action).toBeUndefined();
+ });
+});
+
