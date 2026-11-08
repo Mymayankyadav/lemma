@@ -35,9 +35,11 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
  useEffect(()=>{
   let alive=true;
   // Metadata is optional presentation, never a source of owner IDs from the browser.
-  void Promise.all([getApi().listSubjects(),getApi().listProjects()]).then(([s,p])=>{
+  void (async()=>{
+   const api=getApi();
+   const [s,p]=await Promise.all([api.listSubjects(),api.listProjects()]);
    if(alive){setSubjects(s);setProjects(p.filter(x=>!x.system));}
-  }).catch(()=>{ /* Goal IDs remain selectable if names could not load. */ });
+  })().catch(()=>{ /* Metadata failures (including unavailable demo fixtures) never block goal progress. */ });
   return ()=>{alive=false};
  },[]);
  function change<K extends keyof Draft>(key:K,value:Draft[K]){setDraft(old=>({...old,[key]:value}));}
