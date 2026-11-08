@@ -774,7 +774,7 @@ try{
  const foreignRun=command('review_runs','resume',{
   target:{id:runId},expectedVersion:pausedRun.run.version,patch:{}});
  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
-  [other,'chatgpt',JSON.stringify(foreignRun)]),/not found for owner/i,
+  [other,'chatgpt',JSON.stringify(foreignRun)]),/Review run not found|not found for owner/i,
   'review_runs: foreign MCP principal can resume another owner');
  const staleRun=await mcp(command('review_runs','resume',{
   target:{id:runId},expectedVersion:beforeRun.version,patch:{}
