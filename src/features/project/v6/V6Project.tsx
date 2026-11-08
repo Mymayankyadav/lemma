@@ -4,6 +4,7 @@ import { useProject } from '../../../data/hooks';
 import type { CheckpointUi, ProjectDetail, SessionSummary } from '../../../data/types';
 import { currentCheckpointIndex, groupCheckpointStages } from '../../../ui/timeline/progress';
 import { FastTex as Tex } from '../../../ui/FastTex';
+import { SourcesPanel } from '../SourcesPanel';
 
 const action = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber hover:bg-fill-1';
 const statuses: Record<CheckpointUi, string> = {
@@ -65,6 +66,9 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
             </p>)}
         {sourceLimit < detail.sources.length && <button type="button" className={action}
           onClick={() => setSourceLimit(value => value + 20)}>Show 20 more sources</button>}
+      </div>}
+      {showSources && <div className="mt-4 border-t border-edge pt-4" aria-label="Detailed project sources">
+        <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>
   </section>;
