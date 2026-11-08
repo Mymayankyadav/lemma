@@ -53,7 +53,33 @@ export interface SentNotification {
 }
 export interface NotifyHold {scope:string;label:string;until:IsoDate}
 export interface NotifyPreviewRow {at:IsoDate;kind:string;title:string;reason:string;held:boolean}
+// N79 planned typed settings additions, stored in N39 JSON sections.
+export interface FocusDefaultsPrefs {
+ mode:'pomodoro'|'flowtime'|'open';
+ focus_minutes:number;break_minutes:number;long_break_minutes:number;cycles:number;
+ flowtime_break_ratio:number;long_session_guard_minutes:number;
+ [key:string]:unknown;
+}
+export interface ReviewBudgetPrefs {
+ cards:number;minutes:number;reserve_in_plans:boolean;
+ [key:string]:unknown;
+}
+export interface AttentionPrefs {
+ drift_prompt:boolean;urge_prompt:boolean;
+ [key:string]:unknown;
+}
+export interface PlanningPrefs {
+ window_start:string;window_end:string;gap_minutes:number;
+ max_consecutive_minutes:number;daily_minimum_minutes:number;daily_intention:boolean;
+ [key:string]:unknown;
+}
 export interface Settings {
+ focusDefaults?:FocusDefaultsPrefs;
+ planning?:PlanningPrefs;
+ reviewBudget?:ReviewBudgetPrefs;
+ attention?:AttentionPrefs;
+ weekStart?:number;
+ clock24h?:boolean;
  notify?: NotifyPrefs | null
  ui?: UiPreferences | null
  desiredRetention: number; newPerDay: number; reviewsPerDay: number

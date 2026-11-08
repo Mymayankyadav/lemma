@@ -73,6 +73,7 @@ function mapStudy(data: ObjectRow): StudyEntryRecord {
     version: Number(data.version), createdAt: String(data.created_at),
     updatedAt: String(data.updated_at), savedAt: data.saved_at == null ? null : String(data.saved_at),
     intervals: mapIntervals(data.study_intervals),
+    ...(data.calendar_block_id!==undefined ? {calendarBlockId:(data.calendar_block_id??null) as string|null} : {}),
     ...(typeof data.approximate === 'boolean' ? {approximate:data.approximate} : {}),
     ...(data.voided_at !== undefined ? {voidedAt:data.voided_at as string | null} : {}),
   };
@@ -207,9 +208,22 @@ export function createLiveStudyApi(): StudyApi {
       }});
       const row = created.changed[0];
       let started: CommandReceipt;
+      let startVersion=row.version;
       try {
+        if(input.calendarBlockId!==undefined&&input.calendarBlockId!==null){
+          if(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(input.calendarBlockId))
+            fail('invalid','Calendar block ID must be a UUID');
+          // Only the owner can update the newly created draft. The database's
+          // (user_id,calendar_block_id) FK refuses a different owner's block;
+          // link before start so a failed FK never leaves a running timer.
+          const db=await client();
+          const linked=unwrap<{version:number}>(await db.from('study_entries')
+            .update({calendar_block_id:input.calendarBlockId}).eq('id',row.id)
+            .select('version').single());
+          startVersion=Number(linked.version);
+        }
         started = await command('study_entries','start', {
-          target:{id:row.id}, expectedVersion:row.version, patch:{},
+          target:{id:row.id}, expectedVersion:startVersion, patch:{},
         });
       } catch (error) {
         // The two RPCs are separate transactions. If the start conflicts with
@@ -219,7 +233,7 @@ export function createLiveStudyApi(): StudyApi {
         // deleting a running timer. Preserve the original start error.
         try {
           await command('study_entries','delete', {
-            target:{id:row.id}, expectedVersion:row.version, patch:{},
+            target:{id:row.id}, expectedVersion:startVersion, patch:{},
           });
         } catch { /* best effort; a changed draft is not ours to overwrite */ }
         throw error;

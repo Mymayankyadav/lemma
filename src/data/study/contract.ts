@@ -40,6 +40,8 @@ export interface StudyEntryRecord extends StudyLinks {
  savedAt: string | null;
  /** N51 manually recorded time is approximate, never inferred from a timer. */
  approximate?: boolean;
+ /** N106 optional owner-composite link to the planned calendar block. */
+ calendarBlockId?: string | null;
  /** N51 void retains historical intervals until restore. */
  voidedAt?: string | null;
  intervals: StudyInterval[];
@@ -65,7 +67,7 @@ export interface StudyRange { start: string; end: string }
 /** Every write returns the record's new version, and an actionNo when the write can be undone. */
 export interface StudyReceipt<T> { record: T; actionNo: number | null }
 
-export interface NewStudyEntry extends StudyLinks { intent: string; source: StudyEntrySource; startedAt?: string }
+export interface NewStudyEntry extends StudyLinks { intent: string; source: StudyEntrySource; startedAt?: string; calendarBlockId?: string | null }
 export interface NewCalendarBlock extends StudyLinks { kind: CalendarBlockKind; title: string; startsAt: string; endsAt: string; timeZone: string; taskId?: string | null }
 export type CalendarBlockPatch = Partial<Pick<CalendarBlockRecord, 'title' | 'startsAt' | 'endsAt' | 'timeZone' | 'status' | 'kind' | 'taskId'>> & StudyLinks;
 /** N51 corrections replace a saved entry's complete interval set. */

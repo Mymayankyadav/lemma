@@ -16,6 +16,7 @@ interface MonthViewProps {
 /** Real civil dates, including the adjacent dates needed to fill the grid. */
 export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topics:[]},
   onDay, firstDay = 1}: MonthViewProps) {
+  // The first weekday is supplied from the owner calendar preference.
   const grid = monthDays(date, zone, entries, blocks, firstDay);
   const viewRange=monthBounds(date,zone,firstDay).range;
   const controls=useCalendarOverlaps(viewRange);

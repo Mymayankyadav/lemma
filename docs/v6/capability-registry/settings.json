@@ -150,9 +150,9 @@
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "connector_last_client": {
-      "classification": "owner-editable",
+      "classification": "command-managed",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N87 settings coverage (planned)",
+      "mcpPath": "server-managed: written only by mcp_commit connector telemetry from the true source; the settings edit path refuses it (N87)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
