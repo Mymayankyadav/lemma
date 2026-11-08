@@ -1,3 +1,4 @@
+import {Sparkles} from 'lucide-react';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams} from 'react-router';
 import {useApproveProposal,useProposal,useProject,useRejectProposal} from '../../../data/hooks';
@@ -147,14 +148,17 @@ export default function PlanProposalV6(){
  }
  const ready=!!p&&!proposal.isPending;
  const decisionUnavailable=pending||editor||project.isPending||project.isError||!project.data;
- return <main aria-label="Plan proposal review" className="flex min-w-0 flex-col gap-4 p-4 pb-28 text-ink [overflow-wrap:anywhere]">
-  <h1 className="text-title-s font-semibold">Plan proposal review</h1>
+ return <main aria-label="Plan proposal review" className="flex min-w-0 flex-col gap-4 pb-28 text-ink [overflow-wrap:anywhere]">
+  <h1 className="sr-only">Plan proposal review</h1>
   {proposal.isPending&&<p role="status">Loading proposal…</p>}
   {(proposal.isError||!p&&!proposal.isPending)&&<p role="alert">Proposal unavailable.
    <button type="button" className={control} onClick={()=>{void proposal.refetch()}}>Retry</button>
   </p>}
   {ready&&p&&<>
-   <p className="text-label text-ink-2">{p.kind==='plan'?'New plan':'Plan change'} · {p.projectSlug}</p>
+   {/* N113 (mockup `13__Page`): kind heading, meta row, stage tiles and one decision row. */}
+   <h2 className="text-ink">{p.kind==='plan'?'New plan':'Plan change'}</h2>
+   <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-ink-2"><Sparkles size={16} aria-hidden="true"/>Tutor proposal
+    <span>· {p.projectSlug}</span>{comparisons&&<span>· {comparisons.after.length} checkpoints</span>}</p>
    {p.reason?<section aria-label="Proposal rationale">
     <h2 className="text-body font-semibold">Rationale</h2>
     <p className="whitespace-pre-wrap text-label">{p.reason}</p>
@@ -163,16 +167,16 @@ export default function PlanProposalV6(){
    {project.isError&&<p role="alert">Current plan unavailable; comparison is incomplete.
     <button type="button" className={control} onClick={()=>{void project.refetch()}}>Retry</button>
    </p>}
-   {comparisons&&<div className="grid grid-cols-1 gap-3 sm:grid-cols-2" aria-label="Before and after plan targets">
-    <section aria-label="Before targets" className="min-w-0 rounded-ctl border border-edge p-3">
-     <h2 className="text-body font-semibold">Before · {comparisons.before.length} checkpoints</h2>
-     <ul>{comparisons.before.map(node=><li key={node.code} className="border-b border-edge py-2 text-label">
+   {comparisons&&<div className="flex flex-col gap-3" aria-label="Before and after plan targets">
+    <section aria-label="Before targets" className="min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+     <div className="proposal-stage-toolbar"><div className="proposal-stage-heading"><h2>Current plan</h2><p>Before · {comparisons.before.length} checkpoints</p></div></div>
+     <ul className="grid grid-cols-2 gap-2">{comparisons.before.map(node=><li key={node.code} className="min-w-0 rounded-[8px] border border-[var(--edge)] bg-[var(--paper-2)] px-3 py-2 text-label">
       <strong>{node.code}</strong> · {node.title}</li>)}</ul>
      {!comparisons.before.length&&<p className="text-caption">No approved checkpoints yet.</p>}
     </section>
-    <section aria-label="After targets" className="min-w-0 rounded-ctl border border-edge p-3">
-     <h2 className="text-body font-semibold">After · {comparisons.after.length} checkpoints</h2>
-     <ul>{comparisons.after.map(node=><li key={node.code} className="border-b border-edge py-2 text-label">
+    <section aria-label="After targets" className="min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+     <div className="proposal-stage-toolbar"><div className="proposal-stage-heading"><h2>Plan stages</h2><p>After · {comparisons.after.length} checkpoints</p></div></div>
+     <ul className="grid grid-cols-2 gap-2">{comparisons.after.map(node=><li key={node.code} className="min-w-0 rounded-[8px] border border-[var(--edge)] bg-[var(--paper-2)] px-3 py-2 text-label">
       <strong>{node.code}</strong> · {node.title}
       {comparisons.adds.includes(node.code)&&<span className="ml-2 text-amber">Added</span>}
       {comparisons.changed.includes(node.code)&&<span className="ml-2 text-amber">Changed</span>}
@@ -187,7 +191,7 @@ export default function PlanProposalV6(){
      {comparisons.citations.map(s=><li key={s}>{s}</li>)}</ul>:
      <p className="text-label text-ink-2">No cited sources in this proposal.</p>}
    </section>
-   <section aria-label="Editable proposal draft" className="flex flex-col gap-3 rounded-ctl border border-edge p-3">
+   <section aria-label="Editable proposal draft" className="flex flex-col gap-3 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
     <h2 className="text-body font-semibold">Editable proposal draft</h2>
     {status==='loading'&&<p role="status">Loading drafts…</p>}
     {status==='error'&&<button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Retry drafts</button>}
@@ -248,9 +252,9 @@ export default function PlanProposalV6(){
     </section>}
    </section>
    {editor&&<p className="text-caption text-ink-2">Save or cancel your draft edit before deciding on this plan.</p>}
-   <div className="flex flex-wrap gap-2">
-    <button type="button" disabled={decisionUnavailable} className={control} onClick={()=>{void decide(true)}}>Approve plan</button>
-    <button type="button" disabled={decisionUnavailable} className={control} onClick={()=>{void decide(false)}}>Reject proposal</button>
+   <div className="lemma-plan-decisions">
+    <button type="button" disabled={decisionUnavailable} className="ui-button ghost px-4" data-ui="proposal-reject" onClick={()=>{void decide(false)}}>Reject proposal</button>
+    <button type="button" disabled={decisionUnavailable} className="ui-button px-4 font-semibold" onClick={()=>{void decide(true)}}>Approve plan</button>
    </div>
   </>}
  </main>;

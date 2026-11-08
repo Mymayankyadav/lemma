@@ -2,6 +2,8 @@ import {lazy,Suspense,useEffect,useRef,useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {ArrowLeft,Ellipsis,Inbox,Plus} from 'lucide-react';
 import {useHome} from '../data/hooks';
+import {plainMath} from '../lib/plain-math';
+import {useV6RouteTitle} from './v6Title';
 const TaskSheet=lazy(()=>import('../features/tasks/TaskSheet'));
 
 /** N13's shared v6 title and actions; the legacy page headers stay unchanged when the flag is off. */
@@ -12,8 +14,8 @@ export function v6PageTitle(pathname:string){
   '/calendar':'Calendar','/insights':'Progress','/proposals':'Inbox','/tasks':'Tasks',
   '/cards':'Cards','/atlas':'Concept map','/settings':'Settings','/kit':'Kit',
  };
- return titles[pathname]??(pathname.startsWith('/proposals/')?'Proposal':
-  pathname.startsWith('/cards/')?'Card':pathname.startsWith('/p/')?'Path':
+ return titles[pathname]??(pathname.startsWith('/proposals/')?'Plan proposal':
+  pathname.startsWith('/cards/')?'Card detail':pathname.startsWith('/p/')?'Path':
   pathname.startsWith('/s/')?'Session':'Lemma');
 }
 
@@ -66,6 +68,7 @@ function HeaderCluster({pathname,onTask}:{pathname:string;onTask:()=>void}){
 export default function V6Header({pathname}:{pathname:string}){
  const location=useLocation(),navigate=useNavigate();
  const header=useRef<HTMLElement>(null);
+ const title=plainMath(useV6RouteTitle(pathname,v6PageTitle(pathname)));
  const [taskOpen,setTaskOpen]=useState(false);
  const [taskSaved,setTaskSaved]=useState(false);
  const closeTask=()=>{setTaskOpen(false);queueMicrotask(()=>header.current?.querySelector<HTMLElement>('.lemma-add-menu summary, [data-ui=utility-menu] summary')?.focus());};
@@ -102,7 +105,6 @@ export default function V6Header({pathname}:{pathname:string}){
   </header>;
  }
  const back=!v6TabRoutes.has(pathname);
- const title=v6PageTitle(pathname);
  return <header ref={header} data-v6-header="" data-ui="page-header" data-back={back} data-header-layout="compact"
   className="page-header lemma-page-header">
   <div className="lemma-page-title-row">

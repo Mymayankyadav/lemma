@@ -9,7 +9,6 @@ import {setV6Root} from './v6Root';
 import '../ui/v6/tokens.css';
 import '../ui/v6/mockup.css';
 import '../ui/v6/mockup-bindings.css';
-import {useV6BottomChrome} from './v6Chrome';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
@@ -20,7 +19,6 @@ export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  const v6=isFlagOn('v6Shell');
  useEffect(()=>{setV6Root(v6);return ()=>setV6Root(false);},[v6]);
- useV6BottomChrome(v6,location.pathname);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';

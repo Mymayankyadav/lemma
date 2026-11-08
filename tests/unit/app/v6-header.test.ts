@@ -8,7 +8,7 @@ describe('N13 v6 shared chrome',()=>{
   expect(v6PageTitle('/insights')).toBe('Progress');
   expect(v6PageTitle('/proposals')).toBe('Inbox');
   expect(v6PageTitle('/calendar')).toBe('Calendar');
-  expect(v6PageTitle('/cards/7')).toBe('Card');
+  expect(v6PageTitle('/cards/7')).toBe('Card detail');
  });
  it('leaves the N14 focus accessory empty until it is implemented',()=>{
   expect(FocusAccessorySlot()).toBeNull();

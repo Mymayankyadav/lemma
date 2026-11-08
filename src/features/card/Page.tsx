@@ -250,7 +250,16 @@ export default function Page() {
       title="Card detail"
       back="/cards"
       actions={
-        note ? (
+        note && isFlagOn('v6Shell') ? (
+          <>
+            {/* N117 (mockup `21__Page`): three labelled card actions under the header. */}
+            <button type="button" className="lemma-header-chip" onClick={() => setEditing(true)}>Edit card</button>
+            <button type="button" className="lemma-header-chip" disabled={status.isPending}
+              onClick={() => { void setStatus(note.status === "suspended" ? "active" : "suspended"); }}>
+              {note.status === "suspended" ? "Resume card" : "Pause card"}</button>
+            <button type="button" className="lemma-header-chip lemma-destructive-text" onClick={() => setDeleting(true)}>Delete card</button>
+          </>
+        ) : note ? (
           <>
             <IconButton
               icon={PencilLine}
@@ -327,16 +336,6 @@ export default function Page() {
             <span data-card-subject-glyph aria-hidden="true" className="mr-1 font-math text-card italic text-ink-2">{project?.subject.glyph ?? "∫"}</span> {project?.title ?? note.projectSlug}{" "}
             {note.checkpointCode && `· ${note.checkpointCode}`} · N{note.noteNo}
           </p>
-          {isFlagOn('v6Shell')&&<CardVariants
-           variants={detail.cards.map(c=>({
-            ordinal:c.ord,due:c.state.due,stability:c.state.stability,
-            difficulty:c.state.difficulty,state:c.state.state,
-            lastReview:c.state.lastReview,reps:c.state.reps,lapses:c.state.lapses,
-           }))}
-           status={note.status} busy={status.isPending||update.isPending}
-           onEdit={()=>setEditing(true)}
-           onToggleStatus={()=>{void setStatus(note.status==='suspended'?'active':'suspended')}}
-          />}
           <Slab as="article" className="p-5" aria-label="Card front and answer">
             <MathText
               source={note.front}
@@ -408,6 +407,16 @@ export default function Page() {
               </div>
             )}
           </Slab>
+          {isFlagOn('v6Shell')&&<CardVariants
+           variants={detail.cards.map(c=>({
+            ordinal:c.ord,due:c.state.due,stability:c.state.stability,
+            difficulty:c.state.difficulty,state:c.state.state,
+            lastReview:c.state.lastReview,reps:c.state.reps,lapses:c.state.lapses,
+           }))}
+           status={note.status} busy={status.isPending||update.isPending}
+           onEdit={()=>setEditing(true)}
+           onToggleStatus={()=>{void setStatus(note.status==='suspended'?'active':'suspended')}}
+          />}
           <section>
             <h2 className="mb-4 text-headline font-medium" style={{fontFamily:"var(--font-display)"}}>For your tutor</h2>
             <div className="flex flex-col gap-3">

@@ -47,3 +47,18 @@
 :root[data-v6] body:has(.ui-sheet[aria-modal=true]) nav[data-ui=main-navigation]{display:flex}
 :root[data-v6] .ui-switch-thumb{translate:none!important}
 :root[data-v6] #main-content label{overflow-wrap:anywhere}
+/* Bottom chrome (N110): the bar and the focus dock have rem-based heights, so the dock, Inbox
+ * decisions and page padding stack exactly at any text size without measuring in script. */
+html[data-v6]{--lemma-nav-height:calc(3.75rem + env(safe-area-inset-bottom));--lemma-dock-height:3.5rem;--lemma-bottom-chrome:var(--lemma-nav-height)}
+html[data-v6]:has(#cr-mobile-dock){--lemma-bottom-chrome:calc(var(--lemma-nav-height) + var(--lemma-dock-height))}
+:root[data-v6] nav[data-ui=main-navigation]{box-sizing:border-box;height:var(--lemma-nav-height);min-height:0}
+:root[data-v6] #cr-mobile-dock{box-sizing:border-box;min-height:var(--lemma-dock-height)}
+/* The grade tick is decoration: empty alt text keeps it out of each grade's accessible name. */
+:root[data-v6] [data-ui=review-grades]>button:nth-child(n+2):before{content:'✓'/''}
+/* Screen action rows start at the left edge, as in the mockup's page headers. */
+:root[data-v6] #main-content [data-ui=page-actions].lemma-page-action-row{justify-content:flex-start;flex-wrap:wrap;overflow:visible}
+:root[data-v6] .lemma-header-chip.lemma-destructive-text{min-height:44px;padding:10px 14px}
+/* Header icon actions are plain glyphs (mockup), boxed only while their menu is open. */
+:root[data-v6] [data-v6-header] .lemma-header-cluster details:not([open])>summary,
+:root[data-v6] [data-v6-header] .lemma-header-cluster>a{border-color:transparent;background:transparent;box-shadow:none}
+:root[data-v6] .lemma-page-action-row>.lemma-header-chip.lemma-destructive-text{color:var(--action-destructive);border-color:var(--action-destructive);background:var(--danger-tint)}
