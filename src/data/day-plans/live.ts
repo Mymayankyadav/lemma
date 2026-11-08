@@ -365,7 +365,8 @@ export function createLiveDayPlanApi():DayPlanApi{
      if(attempt===0)continue;
      return unavailable('Missing atomic planner receipt');
     }
-    receipt=response.data as typeof receipt;break;
+    receipt=response.data as Receipt&{plans?:Row[];blockIds?:unknown;
+     conflict?:{reason?:string;currentVersion?:number}};break;
    }
    if(receipt?.status==='conflict'){
     atomicRetries.delete(key);
