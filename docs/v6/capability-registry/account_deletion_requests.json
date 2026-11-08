@@ -1,0 +1,20 @@
+{
+  "table": "account_deletion_requests",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/features/settings/v6/DeleteAccount.tsx (owner may read only its own marker; writes are service-role only)",
+      "mcpPath": "none: MCP cannot call account deletion (N103)",
+      "exportPolicy": "excluded: operational deletion marker, not owner content",
+      "deletionPolicy": "removed by Auth FK cascade when the account is deleted (N103)"
+    },
+    "requested_at": {
+      "classification": "derived",
+      "appPath": "src/features/settings/v6/DeleteAccount.tsx (owner may read only its own marker; writes are service-role only)",
+      "mcpPath": "none: MCP cannot call account deletion (N103)",
+      "exportPolicy": "excluded: operational deletion marker, not owner content",
+      "deletionPolicy": "removed by Auth FK cascade when the account is deleted (N103)"
+    }
+  }
+}
