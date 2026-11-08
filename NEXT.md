@@ -165,13 +165,12 @@ Tests: `tests/mcp/sql/card-schedule-command.mjs` (owner separation, replay, undo
 Scope: supabase/migrations/<one new additive file>, src/data/api.ts (two methods), the demo and live card adapters in src/data/**, src/features/card/v6/**, tests/mcp/sql/card-schedule-command.mjs, tests/unit/card-v6/**, docs/current/N104.md.
 Not: review grading or FSRS changes, other screens.
 
-## N105 Concept graph edits (write path and v6 Atlas actions)
-Stage: Build · Status: open · Needs: N86 · Assigned: —
-Done = one additive migration adds `public.concepts_command(p)` with operations create, update (name, blurb), reparent, link and unlink (prerequisite or related) and merge (moving links and card references to the kept concept, impact returned first by a preview), refusing cycles with a reason, owner-checked, with exactly-once receipts, one journalled undoable action each and a `lemma_command_resources` entry for `mcp_command`; `LemmaApi` gains the matching methods (demo and live), and the v6 Atlas list (N86) offers them. Flag off: nothing changes.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/concepts-command.mjs` (cycles, merge impact, owner separation, replay, undo, MCP parity) and `tests/unit/atlas-v6/**`
-Scope: supabase/migrations/<one new additive file>, src/data/api.ts (concept methods), the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/mcp/sql/concepts-command.mjs, tests/unit/atlas-v6/**, docs/current/N105.md.
-Not: concept placement layout, other screens.
+## N105.2 Atlas concept mutations in demo/live adapters and v6 controls
+Stage: Build · Status: open · Needs: N105.1, N86 · Assigned: —
+Done = Finish N105 with matching LemmaApi create/update/reparent/link/unlink/merge and preview methods (demo/live), error mapping, and v6 Atlas list controls. The live adapter sends the N105.1 owner-authenticated command and preserves exactly-once operation IDs; the demo adapter respects version, cycle and merge impact parity. Flag-off remains unchanged.
+Tests: tests/unit/atlas-v6/**
+Scope: src/data/api.ts, the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/unit/atlas-v6/**, docs/current/N105.2.md.
+Not: schema, other screens, unreviewed direct DML.
 
 ## N106 Study entry linked to its calendar block
 Stage: Build · Status: open · Needs: N70 · Assigned: —
