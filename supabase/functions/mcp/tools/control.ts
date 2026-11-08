@@ -4,13 +4,14 @@ import {planningFields} from '../planning.ts';
 import {Context,scoped,all,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
+import {ownerEditableSettingsFields,prepareSettingsEdit} from './settings-edit.ts';
 import {slug,cut} from '../text.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
  projects:'target_date target_label title slug goal style status subject prompt',checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
  sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
- concepts:'topic name blurb subject prereqs related level parent star',subjects:'name glyph hue',styles:'name instructions',sources:'title short kind',settings:'desired_retention new_per_day reviews_per_day learn_steps relearn_steps rollover_hour default_style tutor_rules mix_decks preferred_chat master_prompt time_zone'
+ concepts:'topic name blurb subject prereqs related level parent star',subjects:'name glyph hue',styles:'name instructions',sources:'title short kind',settings:ownerEditableSettingsFields.join(' ')
 };
 const enqueue=(c:Context,table:string,where:any,values:any)=>c.batch!.push({op:'update',table,where,values});
 async function find(c:Context,table:string,key:string,value:any){const {data,error}=await scoped(c,table).eq(key,value).maybeSingle();if(error)throw Error(error.message);if(!data)throw Error('No '+table+' '+value);return data;}
@@ -86,7 +87,15 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
  lines.push('A'+x.no+' '+x.created_at.slice(0,16).replace('T',' ')+' '+x.source+' '+(x.tool||'app')+': '+x.summary+(x.undone_by?' (undone by A'+x.undone_by+')':''));}
  return lines.join('\n')||'No changes.';}
 export async function undo(c:Context,a:any){await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
-export async function edit(c:Context,a:any){const {table,row,p:given}=await target(c,a);if(!row)throw Error('Target not found');const valid=String(allowed[table]||'').split(' '),patch={...a.set};
+export async function edit(c:Context,a:any){const {table,row,p:given}=await target(c,a);if(!row)throw Error('Target not found');
+ if(table==='settings'){
+  const values=prepareSettingsEdit(row,a.set,a.expectedVersion);
+  c.batch!.push({op:'update',table:'settings',where:{user_id:c.userId},
+   ...(a.expectedVersion===undefined?{}:{expected:{version:a.expectedVersion}}),values});
+  return 'edited settings: '+Object.keys(a.set).join(', ');
+ }
+ if(a.expectedVersion!==undefined)throw Error('expectedVersion currently supported only for settings');
+ const valid=String(allowed[table]||'').split(' '),patch={...a.set};
  for(const k of Object.keys(patch))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));
  if(!Object.keys(patch).length)throw Error('Provide fields to change');
  planningFields(patch);
