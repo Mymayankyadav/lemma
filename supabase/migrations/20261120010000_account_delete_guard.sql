@@ -58,3 +58,80 @@ begin
  end if;
 end
 $guard_storage$;
+
+-- The Auth user cannot be hard-deleted while non-cascading owner audit
+-- references (notably actions.user_id) remain. Purge all *owner-keyed*
+-- public rows before Auth deletion; never touch another account's records.
+-- Leave the deletion marker until Auth's FK cascade removes it, so stale
+-- JWTs cannot resume Storage writes during a partially-completed deletion.
+create function public.lemma_purge_account_rows(p_owner uuid)
+returns jsonb language plpgsql security definer set search_path='' as $purge$
+declare
+ t record;
+ removed bigint;
+ changed bigint;
+ remaining bigint;
+ pass integer:=0;
+ total_removed bigint:=0;
+begin
+ if pg_catalog.current_setting('role',true) is distinct from 'service_role'
+   or p_owner is null then
+  raise exception 'Service role required for account cleanup';
+ end if;
+ if not exists(select 1 from public.account_deletion_requests d
+   where d.user_id=p_owner) then
+  raise exception 'Account deletion must be secured before cleanup';
+ end if;
+ -- Retry tables whose FK-referenced parents cannot be removed until a
+ -- child has been removed. On no progress, fail rather than weaken any FK.
+ loop
+  pass:=pass+1;
+  changed:=0;
+  for t in
+   select pg_catalog.format('%I.%I',n.nspname,c.relname) as qualified
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+   join pg_catalog.pg_attribute a on a.attrelid=c.oid
+   where n.nspname='public' and c.relkind in ('r','p')
+    and a.attname='user_id' and a.attnum>0 and not a.attisdropped
+    and c.relname<>'account_deletion_requests'
+   order by c.relname
+  loop
+   begin
+    execute 'delete from '||t.qualified||' where user_id=$1' using p_owner;
+    get diagnostics removed=row_count;
+    changed:=changed+removed;
+    total_removed:=total_removed+removed;
+   exception when foreign_key_violation then
+    -- An FK-dependent row will be retried on the next pass.
+    null;
+   end;
+  end loop;
+  remaining:=0;
+  for t in
+   select pg_catalog.format('%I.%I',n.nspname,c.relname) as qualified
+   from pg_catalog.pg_class c
+   join pg_catalog.pg_namespace n on n.oid=c.relnamespace
+   join pg_catalog.pg_attribute a on a.attrelid=c.oid
+   where n.nspname='public' and c.relkind in ('r','p')
+    and a.attname='user_id' and a.attnum>0 and not a.attisdropped
+    and c.relname<>'account_deletion_requests'
+   order by c.relname
+  loop
+   execute 'select count(*) from '||t.qualified||' where user_id=$1'
+    into removed using p_owner;
+   remaining:=remaining+removed;
+  end loop;
+  exit when remaining=0;
+  if changed=0 or pass>=100 then
+   raise exception 'Account rows remain blocked by foreign-key dependencies (% rows)',remaining;
+  end if;
+ end loop;
+ return pg_catalog.jsonb_build_object('status','purged',
+  'rowsRemoved',total_removed,'passes',pass);
+end
+$purge$;
+revoke all on function public.lemma_purge_account_rows(uuid)
+ from public,anon,authenticated;
+grant execute on function public.lemma_purge_account_rows(uuid)
+ to service_role;
