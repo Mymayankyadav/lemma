@@ -27,13 +27,6 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, docs/v6/capability-registry/lemma_command_resources.json (the day_plans fields only), tests/mcp/sql/parity.mjs (the day_plans close round trip only), CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N54.1 App sync from the change feed
-Stage: Build · Status: open · Needs: N54 · Assigned: —
-Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the query keys mapped to each changed `resource` in one table in `src/data/sync/keys.ts` (a resource missing from that table invalidates every owner query, so nothing is silently stale); on `reset` (cursor older than retained history) it invalidates every owner query once and continues from the cursor the server returns; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
-Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, backoff when hidden)
-Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
-Not: screens, supabase/**.
-
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
 Done = with `v6Shell` on, starting focus picks a preset or mode (Pomodoro/Flowtime/open) with its captured configuration; Focus shows the current phase, cycle and the server phase deadline (browser ticking is only display), offers Next phase and the long-session guard; a compact accessory in the v6 shell (all routes, above the dock, not overlapping Inbox decisions) shows the running entry with pause/resume/open; taking the lease on another tab is explicit; I drifted can now exclude the minutes. Flag off: nothing changes.

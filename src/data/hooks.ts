@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect } from 'react'
+import { subscribeOwnerChanges, clearOwnerChangesCursor } from './sync'
 import type { LemmaApi } from './api'
 import { getApi } from './index'
 const queryDefaults = { staleTime: 30_000, refetchOnWindowFocus: true }
@@ -65,8 +67,18 @@ export function useStyles(...args: Parameters<LemmaApi['listStyles']>) {
 export function useSubjects(...args: Parameters<LemmaApi['listSubjects']>) {
  return useQuery({ ...queryDefaults, queryKey: ['subjects'], queryFn: () => getApi().listSubjects() })
 }
+function useOwnerFeed(owner: string | null | undefined) {
+ const client = useQueryClient()
+ useEffect(() => {
+  if (owner === undefined) return
+  if (owner === null) { clearOwnerChangesCursor(); return }
+  return subscribeOwnerChanges(owner, client)
+ }, [owner, client])
+}
 export function useAuth(...args: Parameters<LemmaApi['getAuth']>) {
- return useQuery({ ...queryDefaults, queryKey: ['auth'], queryFn: () => getApi().getAuth() })
+ const auth = useQuery({ ...queryDefaults, queryKey: ['auth'], queryFn: () => getApi().getAuth() })
+ useOwnerFeed(auth.isSuccess ? auth.data?.email ?? null : undefined)
+ return auth
 }
 export function useReviewLog(...args: Parameters<LemmaApi['getReviewLog']>) {
  return useQuery({ ...queryDefaults, queryKey: ['review-log'], queryFn: () => getApi().getReviewLog() })
@@ -99,7 +111,7 @@ export function useSignIn() {
  return useWrite((api, _value: void) => api.signIn(), ['auth'])
 }
 export function useSignOut() {
- return useWrite((api, _value: void) => api.signOut(), ['*'])
+ return useWrite(async (api, _value: void) => { await api.signOut(); clearOwnerChangesCursor() }, ['*'])
 }
 export function useBootstrap() {
  return useWrite((api, _value: void) => api.bootstrap(), ['settings', 'styles', 'auth'])
