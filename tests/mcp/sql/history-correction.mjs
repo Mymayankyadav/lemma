@@ -87,6 +87,26 @@ try{
  assert.equal((await q('select voided_at from public.session_events where id=$1',
   [eventReceipt.revisedEventId]))[0].voided_at,null);
 
+ // Ordinary notes are not evidence: correcting or voiding them cannot reset a
+ // checkpoint that has progress but no evidence/recheck events.
+ await db.exec('reset role');
+ const noteCheckpoint='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps,status,current_step) values($1,$2,$3,'CP2',2,'In progress','Practice','Not demonstrated',$4::jsonb,'in_progress',1)",
+  [noteCheckpoint,owner,project,JSON.stringify(['Read','Prove'])]);
+ const noteEvent=(await q("insert into public.session_events(user_id,session_id,checkpoint_id,kind,body) values($1,$2,$3,'note','Observation') returning id",
+  [owner,session,noteCheckpoint]))[0].id;
+ await as(owner);
+ const correctedNote=await invoke('correct_session_event',command(
+  'session_event_corrections','correct',noteEvent,{reason:'Fix ordinary note',body:'Updated observation'}));
+ assert.equal(correctedNote.status,'ok');
+ assert.deepEqual((await q('select status,current_step from public.checkpoints where id=$1',[noteCheckpoint]))[0],
+  {status:'in_progress',current_step:1},'correcting a note must preserve progress');
+ const voidedNote=await invoke('void_session_event',command(
+  'session_event_corrections','void',correctedNote.revisedEventId,{reason:'Remove ordinary note'}));
+ assert.equal(voidedNote.status,'ok');
+ assert.deepEqual((await q('select status,current_step from public.checkpoints where id=$1',[noteCheckpoint]))[0],
+  {status:'in_progress',current_step:1},'voiding a note must preserve progress');
+
  // Explicit replacement, rather than replaying historic grades with today's
  // unrecorded weights, is stored with the precise owner-scoped parameters.
  await db.exec('reset role');

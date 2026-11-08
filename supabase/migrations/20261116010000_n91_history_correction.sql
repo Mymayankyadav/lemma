@@ -183,7 +183,10 @@ begin
   update public.session_events set voided_at=pg_catalog.clock_timestamp(),
     correction_reason=v_reason,actor=v_actor where id=v_old.id and user_id=v_owner;
  end if;
- if v_old.checkpoint_id is not null then
+ -- Ordinary notes must not overwrite independently recorded checkpoint progress.
+ if v_old.checkpoint_id is not null and
+   (v_old.kind in ('evidence','recheck') or
+    (v_op='correct' and v_new.kind in ('evidence','recheck'))) then
   perform public.lemma_rederive_checkpoint_evidence(v_owner,v_old.checkpoint_id);
  end if;
  select no into v_action from public.actions
