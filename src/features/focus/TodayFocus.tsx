@@ -228,7 +228,7 @@ export default function TodayFocus(){
    </label>}
    {!active&&isFlagOn('v6Shell')&&<>
     <PresetPicker selectedPresetId={chosenPreset?.presetId??null}
-     disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice){setIntent(choice.intent);setMode(choice.mode);}}}/>
+     disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice){setIntent(choice.intent);setMode(choice.mode);}else setMode('open');}}/>
     <label className="mt-3 block text-label font-semibold text-ink-2">Timer mode
      <select aria-label="Timer mode" value={chosenPreset?.mode??mode} disabled={busy||loading}
       onChange={e=>{setChosenPreset(null);setMode(e.target.value as StudyTimerMode);}}

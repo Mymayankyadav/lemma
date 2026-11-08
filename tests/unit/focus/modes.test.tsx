@@ -16,13 +16,19 @@ vi.mock('../../../src/data/presets',()=>({getPresetApi:()=>({
  listPresets:async()=>({items:[],total:0,nextCursor:null}),
  getPreset:async()=>null,createPreset:mocks.createPreset,
 })}));
-vi.mock('../../../src/data/study-events',()=>({getStudyEventApi:()=>({
- listEvents:async()=>({items:[],total:0,nextCursor:null}),
- recordEvent:vi.fn(async()=>({record:{},actionNo:1})),
-})}));
-vi.mock('../../../src/data/parked-thoughts',()=>({getThoughtApi:()=>({
- createThought:vi.fn(async()=>({record:{},actionNo:1})),
-})}));
+// Effects depend on API identity; return one stable fake per module to avoid
+// a render → new API → effect → setState → render loop.
+vi.mock('../../../src/data/study-events',()=>{
+ const api={
+  listEvents:vi.fn(async()=>({items:[],total:0,nextCursor:null})),
+  recordEvent:vi.fn(async()=>({record:{},actionNo:1})),
+ };
+ return {getStudyEventApi:()=>api};
+});
+vi.mock('../../../src/data/parked-thoughts',()=>{
+ const api={createThought:vi.fn(async()=>({record:{},actionNo:1}))};
+ return {getThoughtApi:()=>api};
+});
 
 const time=(minutes=0)=>new Date(Date.now()+minutes*60000).toISOString();
 const receipt=(record:StudyEntryRecord)=>({record,actionNo:1});

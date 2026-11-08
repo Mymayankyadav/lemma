@@ -12,6 +12,8 @@ const emptyStudy=(page:import('@playwright/test').Page)=>page.addInitScript(()=>
 test('N72 Pomodoro phases, explicit drift exclusion and cross-route accessory at 320×640',async({page})=>{
  test.setTimeout(90_000);
  await page.setViewportSize({width:320,height:640});
+ // Install before page scripts so fast-forward simulates real elapsed study time.
+ await page.clock.install();
  await emptyStudy(page);
  await page.goto(home);
  await expect(page.getByRole('combobox',{name:'Timer mode'})).toBeEnabled();
