@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
+import {assertValidAtlasParent,assertNoPrerequisiteCycle} from '../../../supabase/functions/mcp/tools/learning-graph';
 import {learningEditCommand,projectEditFields,validateProjectEditPatch}
  from '../../../supabase/functions/mcp/tools/learning-edit';
 
@@ -53,5 +54,31 @@ describe('N88 project learning-field MCP command',()=>{
   }
   expect(()=>validateProjectEditPatch({status:'done',pinned:false,slug:'math-101'}))
    .not.toThrow();
+ });
+});
+
+describe('N88 Atlas hierarchy and edges',()=>{
+ const a={id:'a',user_id:owner,subject_id:'subject',parent_id:null};
+ const b={id:'b',user_id:owner,subject_id:'subject',parent_id:'a'};
+ const child={id:'child',user_id:owner,subject_id:'subject',parent_id:'b'};
+ it('accepts valid same-owner parents and rejects descendant cycles',()=>{
+  expect(()=>assertValidAtlasParent(a,'b','subject',[a,b,child])).toThrow(/cycle/);
+  expect(()=>assertValidAtlasParent(child,'a','subject',[a,b,child])).not.toThrow();
+ });
+ it('rejects a foreign or cross-subject Atlas parent',()=>{
+  expect(()=>assertValidAtlasParent(child,'elsewhere','subject',[
+   ...[a,b,child],{id:'elsewhere',user_id:other,subject_id:'subject',parent_id:null},
+  ])).toThrow(/same owner subject/);
+  expect(()=>assertValidAtlasParent(child,'other-subject','subject',[
+   ...[a,b,child],{id:'other-subject',user_id:owner,subject_id:'other',parent_id:null},
+  ])).toThrow(/same owner subject/);
+ });
+ it('rejects prerequisite cycles while preserving unrelated and related edges',()=>{
+  const edges=[{from_id:'a',to_id:'b',kind:'prereq'},
+   {from_id:'b',to_id:'child',kind:'prereq'},
+   {from_id:'child',to_id:'a',kind:'related'}];
+  expect(()=>assertNoPrerequisiteCycle('child','a',edges)).not.toThrow();
+  expect(()=>assertNoPrerequisiteCycle('a','child',edges)).toThrow(/cycle/);
+  expect(()=>assertNoPrerequisiteCycle('a','a',edges)).toThrow(/itself/);
  });
 });
