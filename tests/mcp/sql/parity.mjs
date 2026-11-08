@@ -525,6 +525,8 @@ try{
  console.log('N94 unfinished operation paths ('+missingOps.length+'): '+missingOps.join(', '));
 
  console.log('PASS N94 10 resource families with study_events, owner GET, lifecycle, receipts and undo');
- console.log('N94 coverage pending expansion beyond ten covered registry resources: '+
-  registry.filter(r=>!Object.hasOwn(specs,r.resource)).map(r=>r.resource).join(', '));
+ const untestedResources=registry.filter(row=>!exercised.has(row.resource))
+  .map(row=>row.resource);
+ console.log('N94 resources without any complete owner/MCP round trip ('+
+  untestedResources.length+'): '+untestedResources.join(', '));
 }finally{await db.close();}
