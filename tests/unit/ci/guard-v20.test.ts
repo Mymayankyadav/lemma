@@ -23,6 +23,12 @@ describe('v2.0 review policy',()=>{
   expect(reviewRequired([{filename:'src/flags.ts',patch:'@@\n-  v6Shell: false,\n+  v6Shell: true,\n'}]).required).toBe(true)
   expect(flagsTurnedOn('@@\n+  a: true,\n+  b: false,\n-  c: true,\n')).toEqual(['a: true,'])
  })
+ it('requires review for v6 app captures, compared with the mockup (#1303)',()=>{
+  const r=reviewRequired([{filename:'docs/v6/release-captures/today-day.png'}])
+  expect(r.required).toBe(true)
+  expect(r.why[0]).toContain('docs/v6/screens/')
+  expect(reviewRequired([{filename:'docs/v6/screens/README.md'}]).required).toBe(false)
+ })
  it('a PR that needs no review merges on Ready + green checks, with no approval',()=>{
   const ready=c('Ready · Agent: lemma-2','2026-11-06T02:00:00Z')
   expect(evaluateMerge(ctx({reviewRequired:false,comments:[ready]})).merge).toBe(true)

@@ -1,0 +1,1 @@
+var e=class extends Error{code;constructor(e,t){super(t),this.name=`LemmaError`,this.code=e}};export{e as t};

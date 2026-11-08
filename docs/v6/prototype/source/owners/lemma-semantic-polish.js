@@ -1,0 +1,1 @@
+/* Accessible names and stable styling roles are now owned by their rendering components. */
