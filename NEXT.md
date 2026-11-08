@@ -44,6 +44,7 @@ Not: other screens' folders, `src/data/**` except reading through existing APIs,
 ## N88 MCP: paths, subjects, styles, concepts and sources fields
 Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
 Done = MCP covers project pinning and status lifecycle, slug rename with aliases, subject/style create/reorder/merge/delete-unused, concept hierarchy, Atlas pin coordinates and edges with cycle checks, and source metadata/order/coverage/verification and page text revisions, each through the existing transaction path with versions when given.
+Owner decision (2026-11-08): source ingest columns are derived (MCP read-only) and `sources.project_id` is fixed at creation; checkpoint source citations (coverage) reach MCP through owner-approved `propose_plan` / `propose_plan_change`, because `mcp_commit` does not write `checkpoint_sources`. The coverage test enumerates the registry's owner-editable columns of these tables and maps each to its MCP path.
 Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
 Tests: `tests/unit/mcp/learning-coverage.test.ts` enumerating the registry fields of those tables, plus SQL round trips in `tests/mcp/sql/learning-coverage.mjs`
 Scope: supabase/functions/mcp/**, tests/unit/mcp/learning-coverage.test.ts, tests/mcp/sql/learning-coverage.mjs, CURRENT.md.

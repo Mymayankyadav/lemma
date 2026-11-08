@@ -26,28 +26,28 @@
     "name": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 subjects coverage (planned)",
+      "mcpPath": "MCP add/edit(subject) through mcp_commit (tools/control.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "glyph": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 subjects coverage (planned)",
+      "mcpPath": "MCP add/edit(subject) through mcp_commit (tools/control.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "hue": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 subjects coverage (planned)",
+      "mcpPath": "MCP add/edit(subject) through mcp_commit (tools/control.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
     "position": {
       "classification": "owner-editable",
       "appPath": "src/data/live/adapter.ts",
-      "mcpPath": "N88 subjects coverage (planned)",
+      "mcpPath": "MCP add/edit(subject) through mcp_commit (tools/control.ts, N88)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
     },
