@@ -1355,6 +1355,69 @@ try{
  mark('proposal_drafts','create','save','submit','discard');
 
 
+
+ // N90: versioned proposal transitions through registered MCP and owner GET.
+ await role(null);
+ const versionOriginal=await proposalSeed('version transitions');
+ await role('service_role');
+ const withdrawRequest=command('proposals','withdraw',{
+  target:{id:versionOriginal.id},expectedVersion:versionOriginal.version,patch:{}});
+ const withdrawnVersion=status(await mcp(withdrawRequest),'proposals','withdraw');
+ assert.deepEqual(await mcp(withdrawRequest),withdrawnVersion,
+  'proposals: withdraw replay differs');
+ await role(null);
+ assert.ok((await q('select withdrawn_at from public.proposals where id=$1',
+  [versionOriginal.id]))[0].withdrawn_at,'app cannot see withdrawal');
+ const versionPage=await mcpPage('proposals',versionOriginal.id);
+ assert.equal(versionPage.total,1,'proposals: registered owner GET missing');
+ assert.equal(versionPage.items[0].version,withdrawnVersion.changed[0].version);
+ assert.equal((await mcpPage('proposals',versionOriginal.id,other)).total,0,
+  'proposals: foreign owner MCP read');
+ await role('service_role');
+ assert.equal((await mcp(command('proposals','reopen',{
+  target:{id:versionOriginal.id},expectedVersion:versionOriginal.version,
+  patch:{}}))).status,'conflict','proposals: stale version accepted');
+ const reopenRequest=command('proposals','reopen',{
+  target:{id:versionOriginal.id},
+  expectedVersion:withdrawnVersion.changed[0].version,patch:{}});
+ const reopenedVersion=status(await mcp(reopenRequest),'proposals','reopen');
+ assert.deepEqual(await mcp(reopenRequest),reopenedVersion);
+ assert.equal((await mcp({...reopenRequest,patch:{untrusted:true}})).status,'conflict',
+  'proposals: changed operationId payload accepted');
+ await role(null);
+ assert.equal((await q('select withdrawn_at from public.proposals where id=$1',
+  [versionOriginal.id]))[0].withdrawn_at,null);
+ await role('service_role');
+ const reviseRequest=command('proposals','revise',{
+  target:{id:versionOriginal.id},expectedVersion:reopenedVersion.changed[0].version,
+  patch:{payload:{front:'Revised parity proposal',back:'Not approved'},citations:[]}});
+ const revisedVersion=status(await mcp(reviseRequest),'proposals','revise');
+ assert.deepEqual(await mcp(reviseRequest),revisedVersion);
+ assert.equal(revisedVersion.changed.length,2,'proposals: revision receipt incomplete');
+ const revisionId=revisedVersion.proposal.id;
+ await role(null);
+ assert.equal((await q('select status from public.proposals where id=$1',
+  [revisionId]))[0].status,'pending','proposals: revision implicitly approved');
+ assert.equal((await mcpPage('proposals',revisionId)).items[0].revised_from,
+  versionOriginal.id,'proposals: registered GET lost lineage');
+ await role('service_role');
+ await assert.rejects(q(
+  'select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(command('proposals','withdraw',{
+   target:{id:versionOriginal.id},expectedVersion:revisedVersion.changed[0].version,
+   patch:{}
+  }))]),/Proposal not found for owner/i,'proposals: foreign owner mutation');
+ await as(owner);
+ assert.equal((await undo(revisedVersion.actionNo)).undone,revisedVersion.actionNo,
+  'proposals: revision undo failed');
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.proposals where id=$1',
+  [revisionId]))[0].n,0,'proposals: undo failed to delete successor');
+ assert.equal((await q('select withdrawn_at from public.proposals where id=$1',
+  [versionOriginal.id]))[0].withdrawn_at,null,
+  'proposals: undo failed to restore original');
+ mark('proposals','withdraw','reopen','revise');
+
  // N91 command-only corrections operate on real session events, reviews and
  // cards. They have no independent CRUD table or registered GET. The MCP
  // receipt and authenticated app view must describe the same owner rows.
