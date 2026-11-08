@@ -41,15 +41,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N88 MCP: paths, subjects, styles, concepts and sources fields
-Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
-Done = MCP covers project pinning and status lifecycle, slug rename with aliases, subject/style create/reorder/merge/delete-unused, concept hierarchy, Atlas pin coordinates and edges with cycle checks, and source metadata/order/coverage/verification and page text revisions, each through the existing transaction path with versions when given.
-Owner decision (2026-11-08): source ingest columns are derived (MCP read-only) and `sources.project_id` is fixed at creation; checkpoint source citations (coverage) reach MCP through owner-approved `propose_plan` / `propose_plan_change`, because `mcp_commit` does not write `checkpoint_sources`. The coverage test enumerates the registry's owner-editable columns of these tables and maps each to its MCP path.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/learning-coverage.test.ts` enumerating the registry fields of those tables, plus SQL round trips in `tests/mcp/sql/learning-coverage.mjs`
-Scope: supabase/functions/mcp/**, tests/unit/mcp/learning-coverage.test.ts, tests/mcp/sql/learning-coverage.mjs, CURRENT.md.
-Not: migrations, app code.
-
 ## N89 MCP: devices, holds and notifications
 Stage: Build · Status: open · Needs: N88 · Assigned: —
 Done = MCP lists push devices and renames, disables, restores or removes them (never synthesizing a subscription), creates/changes/clears notification holds, previews, schedules, updates, cancels, snoozes and dismisses notifications, and reads delivery history, with the same validation as the app.

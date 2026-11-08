@@ -5,16 +5,30 @@ import {Context,scoped,all,insert,update,rpc} from '../db.ts';
 import {project,checkpoint,session,source} from '../resolve.ts';
 import {settings} from '../packet.ts';
 import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.ts';
+import {projectEditFields,isLearningEditTable,learningEditCommand,validateProjectEditPatch} from './learning-edit.ts';
+import {assertValidAtlasParent,assertNoPrerequisiteCycle} from './learning-graph.ts';
 import {slug,cut} from '../text.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
- projects:'target_date target_label title slug goal style status subject prompt',checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
+ projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
  sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
- concepts:'topic name blurb subject prereqs related level parent star',subjects:'name glyph hue',styles:'name instructions',sources:'title short kind',settings:ownerEditableSettingsFields.join(' ')
+ concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position',settings:ownerEditableSettingsFields.join(' ')
 };
 const enqueue=(c:Context,table:string,where:any,values:any)=>c.batch!.push({op:'update',table,where,values});
 async function find(c:Context,table:string,key:string,value:any){const {data,error}=await scoped(c,table).eq(key,value).maybeSingle();if(error)throw Error(error.message);if(!data)throw Error('No '+table+' '+value);return data;}
+// A 1,000-row snapshot can hide a cycle. Read all owner edges, or refuse an oversized graph.
+async function ownerGraphRows(c:Context,table:string,select:string):Promise<any[]>{
+ const rows:any[]=[];
+ for(let offset=0;;offset+=500){
+  const {data,error}=await scoped(c,table,select).order(table==='concept_links'?'from_id':'id')
+   .range(offset,offset+499);
+  if(error)throw Error(error.message);
+  const page=data||[];rows.push(...page);
+  if(rows.length>20000)throw Error('Atlas graph is too large to validate safely');
+  if(page.length<500)return rows;
+ }
+}
 export async function target(c:Context,a:any):Promise<{table:string;row:any;p?:any}>{
  const t=a.target;
  if(t==='settings')return {table:'settings',row:await settings(c)};
@@ -39,8 +53,10 @@ async function idea(c:Context,name:string,subject_id:string){
 }
 async function ideaLinks(c:Context,row:any,fields:any,replace:boolean){
  const kinds={prereqs:'prereq',related:'related'} as const;
- const existing=(await all(c,'concept_links')).filter(x=>x.to_id===row.id);
+ const allLinks=await ownerGraphRows(c,'concept_links','from_id,to_id,kind');
+ const existing=allLinks.filter(x=>x.to_id===row.id);
  const replacing=new Set(Object.entries(kinds).filter(([field])=>replace&&field in fields).map(([,kind])=>kind));
+ const graph=allLinks.filter(x=>!(replace&&x.to_id===row.id&&replacing.has(x.kind)));
  const linked=new Map<string,string>();
  for(const x of existing){
   if(replacing.has(x.kind))c.batch!.push({op:'delete',table:'concept_links',where:{from_id:x.from_id,to_id:x.to_id}});
@@ -52,6 +68,10 @@ async function ideaLinks(c:Context,row:any,fields:any,replace:boolean){
   const previous=linked.get(other.id);
   if(previous&&previous!==kind)throw Error('Idea "'+name+'" cannot be both prerequisite and related; clear the previous relationship explicitly');
   if(previous)continue;
+  if(kind==='prereq'){
+   assertNoPrerequisiteCycle(row.id,other.id,graph);
+   graph.push({from_id:other.id,to_id:row.id,kind});
+  }
   linked.set(other.id,kind);
   c.batch!.push({op:'insert',table:'concept_links',values:{from_id:other.id,to_id:row.id,kind}});
  }
@@ -92,11 +112,27 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
   c.batch!.push(settingsEditCommand(row,a.set,c.userId,a.expectedVersion));
   return 'edited settings: '+Object.keys(a.set).join(', ');
  }
- if(a.expectedVersion!==undefined)throw Error('expectedVersion currently supported only for settings');
+ if(a.expectedVersion!==undefined&&!isLearningEditTable(table))
+  throw Error('expectedVersion currently supported only for settings and learning records');
  const valid=String(allowed[table]||'').split(' '),patch={...a.set};
  for(const k of Object.keys(patch))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));
  if(!Object.keys(patch).length)throw Error('Provide fields to change');
  planningFields(patch);
+ if((table==='subjects'||table==='styles')&&'position' in patch&&
+  (typeof patch.position!=='number'||!Number.isFinite(patch.position)))
+  throw Error('Position must be finite');
+ // N88: source order is an owner-chosen non-negative integer (int4).
+ if(table==='sources'&&'position' in patch&&
+  (typeof patch.position!=='number'||!Number.isSafeInteger(patch.position)||
+   patch.position<0||patch.position>2147483647))
+  throw Error('Source position must be a non-negative whole number');
+ if(table==='projects'){
+  validateProjectEditPatch(patch);
+  if(patch.subject_id!==undefined){
+   if(typeof patch.subject_id!=='string')throw Error('Subject ID must be text');
+   await find(c,'subjects','id',patch.subject_id);
+  }
+ }
  const p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
  if(table==='notes'&&patch.status!==undefined&&!['active','suspended'].includes(patch.status))throw Error('Card status must be active or suspended');
  if(patch.subject!==undefined){
@@ -118,17 +154,36 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  if(patch.after!==undefined){const cps=(await all(c,'checkpoints')).filter(x=>x.project_id===p.id&&x.id!==row.id).sort((a,b)=>a.position-b.position);const i=patch.after===null?-1:cps.findIndex(x=>x.code===patch.after);if(patch.after!==null&&i<0)throw Error('Unknown insertion point');patch.position=i<0?(cps[0]?.position||10)-10:(cps[i].position+(cps[i+1]?.position||cps[i].position+20))/2;delete patch.after;}
  for(const [field,join,left,right] of [['prereqs','checkpoint_prereqs','checkpoint_id','prereq_id'],['ideas','checkpoint_concepts','checkpoint_id','concept_id']] as const){if(table==='checkpoints'&&field in patch){for(const x of (await all(c,join)).filter(x=>x[left]===row.id))c.batch!.push({op:'delete',table:join,where:{[left]:x[left],[right]:x[right]}});const linked=new Set<string>();for(const name of patch[field]){const r=field==='prereqs'?await checkpoint(c,p,name):await idea(c,name,p.subject_id);if(linked.has(r.id))continue;linked.add(r.id);const vals:any={[left]:row.id,[right]:r.id};c.batch!.push({op:'insert',table:join,values:vals});}delete patch[field];}}
  if(table==='concepts'){
+  if(patch.parent!==undefined&&patch.parent_id!==undefined)
+   throw Error('Choose parent or parent_id, not both');
+  if(('pin_x' in patch)!==('pin_y' in patch)||
+   ('pin_x' in patch&&!( (patch.pin_x===null&&patch.pin_y===null)||
+    (typeof patch.pin_x==='number'&&Number.isFinite(patch.pin_x)&&
+     typeof patch.pin_y==='number'&&Number.isFinite(patch.pin_y)))))
+   throw Error('Atlas pin coordinates must be two finite numbers or two nulls');
+  if(patch.is_star!==undefined&&typeof patch.is_star!=='boolean')
+   throw Error('is_star must be boolean');
   if(patch.parent!==undefined){
    if(patch.parent===null)patch.parent_id=null;
-   else {const own=(await all(c,'concepts')).filter(x=>x.subject_id===row.subject_id&&x.id!==row.id);
+   else {const own=(await ownerGraphRows(c,'concepts','id,user_id,subject_id,parent_id,name'))
+    .filter(x=>x.subject_id===(patch.subject_id??row.subject_id)&&x.id!==row.id);
     const parent=own.find(x=>x.name.toLowerCase()===String(patch.parent).toLowerCase());
     if(!parent)throw Error('Atlas parent must be an idea in the same subject');patch.parent_id=parent.id;}
    delete patch.parent;
   }
   if(patch.star!==undefined){if(typeof patch.star!=='boolean')throw Error('star must be boolean');patch.is_star=patch.star;delete patch.star;}
+  if(patch.parent_id!==undefined||patch.subject_id!==undefined){
+   const nodes=await ownerGraphRows(c,'concepts','id,user_id,subject_id,parent_id');
+   assertValidAtlasParent(row,patch.parent_id===undefined?row.parent_id:patch.parent_id,
+    patch.subject_id===undefined?row.subject_id:patch.subject_id,nodes);
+  }
   await ideaLinks(c,row,patch,true);delete patch.prereqs;delete patch.related;
  }
- if(Object.keys(patch).length)enqueue(c,table,pk(table,row),patch);
+ if(Object.keys(patch).length){
+  if(isLearningEditTable(table))
+   c.batch!.push(learningEditCommand(table,row,patch,c.userId,a.expectedVersion));
+  else enqueue(c,table,pk(table,row),patch);
+ }
  return 'edited '+a.target+': '+Object.keys(a.set).join(', ');
 }
 export async function add(c:Context,a:any){const f={...a.fields};planningFields(f);const valid=String(allowed[({checkpoint:'checkpoints',card:'notes',subject:'subjects',idea:'concepts',style:'styles',comment:'card_comments',book:'sources'} as Record<string,string>)[a.kind]]||'').split(' ').concat(['card','key']);for(const k of Object.keys(f))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));const p=['checkpoint','card','book'].includes(a.kind)?await project(c,a.project):null;
@@ -142,11 +197,11 @@ export async function add(c:Context,a:any){const f={...a.fields};planningFields(
   if(!f.code)throw Error('No free checkpoint code');const prop=await insert(c,'proposals',{project_id:p.id,kind:'plan_change',origin:'other',payload:{ops:[{...f,op:'add',concepts:f.ideas,source:f.book}]}});await rpc(c,'approve_proposal',{p_id:prop.id});
   const extra:any={};for(const k of ['status','current_step','recheck_due','needs_revisit'])if(k in f)extra[k]=f[k];if(Object.keys(extra).length)enqueue(c,'checkpoints',{project_id:p.id,code:f.code},extra);return 'added '+f.code;
  }
- if(a.kind==='subject'){for(const k of Object.keys(f))if(!['name','glyph','hue'].includes(k))throw Error('Valid fields: name, glyph, hue');await insert(c,'subjects',{glyph:f.name?.slice(0,1)||'M',hue:'amber',...f});}
+ if(a.kind==='subject'){for(const k of Object.keys(f))if(!['name','glyph','hue','position'].includes(k))throw Error('Valid fields: name, glyph, hue, position');if(f.position!==undefined&&(typeof f.position!=='number'||!Number.isFinite(f.position)))throw Error('Position must be finite');await insert(c,'subjects',{glyph:f.name?.slice(0,1)||'M',hue:'amber',...f});}
  else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);const patch:any={};for(const k of ['topic','blurb','level'])if(f[k]!==undefined)patch[k]=f[k];if(f.star!==undefined)patch.is_star=!!f.star;
  if(f.parent){const parent=(await all(c,'concepts')).find(x=>x.subject_id===sub.id&&x.name.toLowerCase()===String(f.parent).toLowerCase());if(!parent)throw Error('Atlas parent must exist in this subject');patch.parent_id=parent.id;}
  if(Object.keys(patch).length)enqueue(c,'concepts',{id:row.id},patch);await ideaLinks(c,row,f,false);}
- else if(a.kind==='style'){const key=f.key||slug(f.name).replace(/-/g,'_').slice(0,20);if(!/^[a-z_]{2,20}$/.test(key))throw Error('Style key must contain lowercase letters or underscores');c.batch!.push({op:'insert',table:'styles',values:{user_id:c.userId,key,name:f.name,instructions:f.instructions,icon:'sparkles'}});}
+ else if(a.kind==='style'){if(f.position!==undefined&&(typeof f.position!=='number'||!Number.isFinite(f.position)))throw Error('Position must be finite');const key=f.key||slug(f.name).replace(/-/g,'_').slice(0,20);if(!/^[a-z_]{2,20}$/.test(key))throw Error('Style key must contain lowercase letters or underscores');c.batch!.push({op:'insert',table:'styles',values:{user_id:c.userId,key,name:f.name,instructions:f.instructions,icon:f.icon??'sparkles',...(f.position===undefined?{}:{position:f.position})}});}
  else if(a.kind==='comment'){const n=await find(c,'notes','no',Number(String(f.card).replace(/^N/i,'')));await insert(c,'card_comments',{note_id:n.id,body:f.body});}
  else if(a.kind==='book'){await insert(c,'sources',{project_id:p.id,title:f.title,short:f.short||slug(f.title).slice(0,20),filename:'attached.pdf',status:'ready',has_text:false,page_count:0});}
  else throw Error('Unknown kind');return 'added '+a.kind;
