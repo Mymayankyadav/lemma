@@ -16,7 +16,7 @@ for(const [theme,width] of [['graph',320],['graph-night',390]] as const){
   test.setTimeout(180_000);
   await fonts(page);await page.setViewportSize({width,height:740});
   await visit(page,'/projects','1',theme);
-  await expect(page.getByRole('heading',{name:'Paths',exact:true})).toBeVisible();
+  await expect(page.locator('#v6-paths-title')).toBeVisible();
   await zoom(page);await noOverflow(page);
   await visit(page,'/review','1',theme);
   await expect(page.getByRole('region',{name:'Review counts'})).toBeVisible();
