@@ -88,7 +88,8 @@ try{
  assert.equal((await row(first.id)).withdrawn_at,null,'withdraw undo failed');
 
  await db.exec('set role service_role');
- const withdrawnAgain=ok(await mcp(cmd('withdraw',first.id,first.version)));
+ const restoredVersion=(await row(first.id)).version;
+ const withdrawnAgain=ok(await mcp(cmd('withdraw',first.id,restoredVersion)));
  const reopen=cmd('reopen',first.id,withdrawnAgain.changed[0].version);
  const reopened=ok(await mcp(reopen));
  assert.deepEqual(await mcp(reopen),reopened);
