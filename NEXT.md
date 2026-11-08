@@ -69,13 +69,6 @@ Tests: `tests/unit/progress-v6/goals.test.tsx`
 Scope: src/features/progress-v6/**, tests/unit/progress-v6/goals.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
-Stage: Build · Status: open · Needs: N39 · Assigned: —
-Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
-Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
-Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
-
 ## N85 v6 plan review with proposal drafts behind the shell flag
 Stage: Build · Status: open · Needs: N63.2 · Assigned: —
 Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
