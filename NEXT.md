@@ -11,13 +11,6 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N59.2 Study goals live adapter (remaining after N59 split)
-Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
-Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
-Tests: tests/unit/study-goals/live.test.ts (RPC envelope and operationId retry/changed-payload conflict, every lifecycle op, stale expectedVersion, owner-RLS read, no owner ID in writes, >50 paged goals, date/time-zone and overlap parity); existing N59.1 demo tests stay green.
-Scope: src/data/study-goals/**, tests/unit/study-goals/**, CURRENT.md.
-Not: src/data/study/** or other data folders, UI, supabase/**, new dependencies.
-
 ## N63.2 Proposal drafts: persistent demo, versioned live RPC, retry and conflict views
 Stage: Build · Status: open · Needs: N49 · Assigned: —
 Done = finish N63 on top of N63.1's typed ProposalDraftApi, immutable full-edit payload validation, positive optimistic draft and target base versions, and explicit draft/saved/submitted/discarded lifecycle. Implement an isolated sessionStorage-backed demo adapter and mode-aware index facade under src/data/proposal-drafts/**. It must seed owner-safe proposal/target fixtures, keep draft edits separate from approved proposals, clone values, survive reload, preserve owner-independent drafts, require expectedDraftVersion for every save/submit/discard, and never silently overwrite a newer cross-device draft. List/get pages must use 1–50 filter-bound opaque keyset cursors, exact totals and no caller owner fields. Implement a live owner-RLS read adapter and an atomic server RPC for create/save/submit/discard after N49's proposal_drafts_command is deployed; each mutation has a unique operationId retained on uncertain retries, maps stale versions to typed conflicts carrying base/current/draft, and submits through the existing proposal edit path under both proposal and target base-version checks. Submission of a draft must not be an implicit approval without the N49 command receipt. Expose getProposalDraftApi/setProposalDraftApiForTests; keep v6 flag default off and other app folders untouched.
@@ -54,13 +47,6 @@ Done = the study contract gains, additively, mode/preset/config/phase/cycle/ener
 Tests: `tests/unit/study/modes.test.ts`
 Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
 Not: UI, supabase/**, other `src/data/**` folders.
-
-## N69 v6 day ritual and closure behind the shell flag
-Stage: Build · Status: open · Needs: N60.2, N58.2.3 · Assigned: —
-Done = with `v6Shell` on, `/today/close` (lazy route) shows the dated plan, what was saved today, open parked thoughts to resolve (convert, dismiss), carry-over choices for unfinished tasks and tomorrow's first task, then closes the date through the day plan `close` operation; a closed date can be reopened; nothing marks future dates closed. Flag off: nothing changes.
-Tests: `tests/unit/ritual/**`
-Scope: src/features/ritual/** (new), src/app/App.tsx (registering the route only), tests/unit/ritual/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
