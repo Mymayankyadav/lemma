@@ -115,7 +115,7 @@ try{
   [newBlockId]);
  await as(a);
  await assert.rejects(q('select public.undo_action($1::uuid,$2::bigint,false) result',
-  [a,viaMcp.actionNo]),/Undo [0-9]+ first/i,
+  [a,viaMcp.actionNo]),/Undo A[0-9]+ first/i,
   'newer owner change must block the original batch undo');
  await admin();
  assert.equal((await q('select title from public.calendar_blocks where id=$1',
