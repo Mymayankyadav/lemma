@@ -161,11 +161,13 @@ try{
   /Account deletion must be secured/);
  const purged=(await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result;
  checkEqual(purged.status,'purged');
- checkEqual((await q('select cleanup_txid from public.account_deletion_requests where user_id=$1',[A]))[0].cleanup_txid,null,
-  'only the trusted purge may open the cleanup window');
  checkEqual((await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result.status,
   'purged','retry is idempotent before Auth deletion');
  await db.exec('reset role');
+ // The PGlite fixture's plain service_role does not have production's
+ // BYPASSRLS. Verify the private marker postcondition as the fixture admin.
+ checkEqual((await q('select cleanup_txid from public.account_deletion_requests where user_id=$1',[A]))[0].cleanup_txid,null,
+  'only the trusted purge may open the cleanup window');
  const owners=await q("select c.relname table_name from pg_catalog.pg_class c "+
   "join pg_catalog.pg_namespace n on n.oid=c.relnamespace "+
   "join pg_catalog.pg_attribute a on a.attrelid=c.oid "+
