@@ -52,8 +52,19 @@ async function settled(page:Page,expected?:string){
 async function contained(page:Page,detail:string){
  const dims=await page.evaluate(()=>({
   content:document.documentElement.scrollWidth,viewport:window.innerWidth,
+  // On a failed assertion, name actual overflow owners; otherwise a width-only
+  // failure at 200% cannot distinguish an SVG, fixed action or intrinsic grid.
+  offenders:[...document.querySelectorAll<HTMLElement|SVGElement>('#main-content *')]
+   .map(el=>({el,rect:el.getBoundingClientRect()}))
+   .filter(x=>x.rect.right>window.innerWidth+1&&x.rect.width>0)
+   .slice(0,8).map(x=>({
+    tag:x.el.tagName,role:x.el.getAttribute('role'),
+    cls:String(x.el.getAttribute('class')??'').slice(0,100),
+    right:Math.ceil(x.rect.right),width:Math.ceil(x.rect.width),
+   })),
  }));
- expect(dims.content,detail+' must not scroll sideways').toBeLessThanOrEqual(dims.viewport+1);
+ expect(dims.content,detail+' must not scroll sideways; overflow nodes: '+
+  JSON.stringify(dims.offenders)).toBeLessThanOrEqual(dims.viewport+1);
 }
 for(const display of displays)for(const theme of themes)for(const [name,path,expected] of routes){
  const known=knownOverflow[display.width+' '+path];

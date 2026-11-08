@@ -183,3 +183,15 @@
 :root[data-v6] #main-content .grid > svg[role="img"] {
   display:block; width:100%; height:auto; min-width:0; max-width:100%;
 }
+
+/* Shared responsive layout contract: an intrinsic-size child of a flex/grid
+   row must shrink within the paper column at 200% browser text scaling. */
+:root[data-v6] #main-content :is(.grid,.flex) {
+  min-width:0;max-width:100%;
+}
+:root[data-v6] #main-content .grid > * {
+  min-width:0;max-width:100%;
+}
+:root[data-v6] #main-content .flex > :is(div,span,label,section,article) {
+  min-width:0;max-width:100%;
+}
