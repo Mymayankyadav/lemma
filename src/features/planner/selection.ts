@@ -34,3 +34,33 @@ export function selectPlannerPlacements(
  }
  return {selected,unplaced};
 }
+
+/** Refuse moved placements outside the chosen owner-local range or over
+ * existing active calendar blocks. Checking again immediately before writes
+ * matters even when the original allocator produced a conflict-free preview. */
+export function validatePlannerWindow(
+ placements:readonly PlannerPlacement[],
+ blocks:readonly {startsAt:string;endsAt:string;status:string}[],
+ from:string,through:string,zone:string
+):void{
+ const formatter=new Intl.DateTimeFormat('en-US',{timeZone:zone,
+  year:'numeric',month:'2-digit',day:'2-digit'});
+ const civil=(at:Date)=>{
+  const parts=formatter.formatToParts(at);
+  const read=(type:string)=>parts.find(p=>p.type===type)?.value??'';
+  return read('year')+'-'+read('month')+'-'+read('day');
+ };
+ for(const place of placements){
+  const start=Date.parse(place.start),end=Date.parse(place.end);
+  if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)
+   throw Error('Invalid selected planner interval');
+  const day=civil(new Date(start));
+  if(place.date!==day||day<from||day>through||civil(new Date(end-1))!==day)
+   throw Error('Selected placement leaves the chosen owner-local planning day');
+  if(blocks.some(block=>{
+   if(block.status==='cancelled')return false;
+   const a=Date.parse(block.startsAt),b=Date.parse(block.endsAt);
+   return Number.isFinite(a)&&Number.isFinite(b)&&a<end&&start<b;
+  }))throw Error('Selected placement overlaps an existing calendar block');
+ }
+}

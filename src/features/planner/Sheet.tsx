@@ -6,7 +6,7 @@ import {getTaskApi,type TaskRecord} from '../../data/tasks';
 import {getStudyApi,type CalendarBlockRecord} from '../../data/study';
 import {useToast} from '../../ui/Toast';
 import {planTaskPlacements,type PlannerPlacement,type PlannerResult} from './model';
-import {selectPlannerPlacements} from './selection';
+import {selectPlannerPlacements,validatePlannerWindow} from './selection';
 
 type Move={date:string;start:string;end:string};
 const button='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold disabled:opacity-50';
@@ -125,6 +125,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
    if(blocks.some(b=>scan.find(x=>x.id===b.id)?.version!==b.version)||
     scan.some(b=>!blocks.some(x=>x.id===b.id)))
     throw new Error('Calendar changed since preview; refresh the plan');
+   validatePlannerWindow(selection.items.selected,scan,anchor,end,ownerZone);
    const byDate=new Map<string,PlannerPlacement[]>();
    for(const entry of selection.items.selected){
     byDate.set(entry.date,[...(byDate.get(entry.date)??[]),entry]);

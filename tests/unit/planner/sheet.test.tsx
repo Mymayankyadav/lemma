@@ -110,3 +110,33 @@ describe('N68 split placement choices',()=>{
   expect(chosen.unplaced).toEqual([{taskId:'split',reason:'Deselected by owner'}]);
  });
 });
+
+import {validatePlannerWindow} from '../../../src/features/planner/selection';
+describe('N68 moved placement owner-day and busy-block guard',()=>{
+ const moved=[{taskId:'task-a',date:'2026-11-09',
+  start:'2026-11-09T10:00:00Z',end:'2026-11-09T10:30:00Z',
+  minutes:30,part:1}];
+ const window=()=>validatePlannerWindow(moved,[],'2026-11-09',
+  '2026-11-09','UTC');
+ it('accepts an available placement on the owner date',()=>{
+  expect(window).not.toThrow();
+ });
+ it('rejects placements moved out of the selected range or across midnight',()=>{
+  expect(()=>validatePlannerWindow(moved,[],'2026-11-10',
+   '2026-11-10','UTC')).toThrow(/chosen owner-local/);
+  expect(()=>validatePlannerWindow(moved,[],'2026-11-09',
+   '2026-11-09','Pacific/Kiritimati')).toThrow(/chosen owner-local/);
+  expect(()=>validatePlannerWindow([{...moved[0],end:'2026-11-10T00:00:01Z'}],
+   [],'2026-11-09','2026-11-09','UTC')).toThrow(/chosen owner-local/);
+ });
+ it('rejects clashes with a busy or study block but ignores cancelled blocks',()=>{
+  const active={startsAt:'2026-11-09T10:15:00Z',
+   endsAt:'2026-11-09T10:45:00Z',status:'planned'};
+  expect(()=>validatePlannerWindow(moved,[active],'2026-11-09',
+   '2026-11-09','UTC')).toThrow(/overlaps/);
+  expect(()=>validatePlannerWindow(moved,[{...active,status:'done'}],
+   '2026-11-09','2026-11-09','UTC')).toThrow(/overlaps/);
+  expect(()=>validatePlannerWindow(moved,[{...active,status:'cancelled'}],
+   '2026-11-09','2026-11-09','UTC')).not.toThrow();
+ });
+});
