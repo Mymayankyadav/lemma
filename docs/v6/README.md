@@ -6,8 +6,9 @@ Added by the priority run on 2026-11-05 from the Owner's "Lemma Mobile UI v6 Rev
 
 | File | What it is |
 |---|---|
-| `prototype/mockup.html` | Standalone UI mockup with example data (SHA-256 `aabfca9c101c0d38…`, the Inbox-repaired revision). **Not the product.** Open it in a browser to see interactions. Do not copy its code, `window.__lemma*` globals or browser-local storage into `src/`. |
-| `screens/<screen>-<day\|night>.png` | 390×844 captures of that mockup (Today, Paths, Review, Calendar, Progress, Inbox, Cards, Atlas, Settings; Focus in Day). Rendered with system fallback fonts. |
+| `prototype/mockup.html` | Standalone UI mockup with example data (SHA-256 `aabfca9c101c0d38…`, the Inbox-repaired revision). **The visual target** (Owner, 2026-11-08, #1303): the app must look like it. Open it in a browser to see interactions. Copy markup, classes and CSS from `prototype/source/`; never copy `window.__lemma*` globals, its demo store or browser-local storage into `src/`. |
+| `prototype/source/` | Editable source of the mockup: compiled React modules with exact markup and class strings, and its stylesheet. Start with `prototype/source/MAP.md` (screen → module → repo target). |
+| `screens/<screen>-<day\|night>.png` | The design target, never overwritten (`tests/unit/docs/mockup-screens.test.ts`): 390×844 captures of that mockup (Today, Paths, Review, Calendar, Progress, Inbox, Cards, Atlas, Settings; Focus in Day). Rendered with system fallback fonts. |
 | `Lemma_UI_v6_Direction_Plan.md` | Product direction and phased plan. The phases (V6-00 … V6-08) are milestones. NEXT.md turns them into items. Its hashes and some baseline notes refer to earlier inputs. |
 | `Lemma_v6_Data_MCP_Contract.md` | Data and MCP contract: command envelope, receipts, versions, sync, release gates G1–G7. |
 | `Lemma_v6_Capability_Registry.json`, `Lemma_v6_Schema_Inventory.json` | Inventory of current columns and the proposed new resources. Inputs, not implemented coverage. |

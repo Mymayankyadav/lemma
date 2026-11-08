@@ -1,0 +1,200 @@
+[
+  [
+    "$=\" projects\"",
+    "$=",
+    " projects",
+    "role-projects"
+  ],
+  [
+    "*=\"Field\"",
+    "*=",
+    "Field",
+    "role-field"
+  ],
+  [
+    "*=\"More actions\"",
+    "*=",
+    "More actions",
+    "role-more-actions"
+  ],
+  [
+    "*=\"More options\"",
+    "*=",
+    "More options",
+    "role-more-options"
+  ],
+  [
+    "*=\"more\" i",
+    "*=",
+    "more",
+    "role-more"
+  ],
+  [
+    "*=\"note\" i",
+    "*=",
+    "note",
+    "role-note"
+  ],
+  [
+    "*=\"project options\"",
+    "*=",
+    "project options",
+    "role-project-options"
+  ],
+  [
+    "=\"Appearance\"",
+    "=",
+    "Appearance",
+    "role-appearance"
+  ],
+  [
+    "=\"Atlas outline\"",
+    "=",
+    "Atlas outline",
+    "role-atlas-outline"
+  ],
+  [
+    "=\"Cards\"",
+    "=",
+    "Cards",
+    "role-cards"
+  ],
+  [
+    "=\"Checkpoint prerequisites\"",
+    "=",
+    "Checkpoint prerequisites",
+    "role-checkpoint-prerequisites"
+  ],
+  [
+    "=\"Checkpoint progress\"",
+    "=",
+    "Checkpoint progress",
+    "role-checkpoint-progress"
+  ],
+  [
+    "=\"Checkpoints\"",
+    "=",
+    "Checkpoints",
+    "role-checkpoints"
+  ],
+  [
+    "=\"Continue\"",
+    "=",
+    "Continue",
+    "role-continue"
+  ],
+  [
+    "=\"Decks\"",
+    "=",
+    "Decks",
+    "role-decks"
+  ],
+  [
+    "=\"Distance to your goals\"",
+    "=",
+    "Distance to your goals",
+    "role-distance-to-your-goals"
+  ],
+  [
+    "=\"From sessions\"",
+    "=",
+    "From sessions",
+    "role-from-sessions"
+  ],
+  [
+    "=\"From your tutor\"",
+    "=",
+    "From your tutor",
+    "role-from-your-tutor"
+  ],
+  [
+    "=\"Goal and distance\"",
+    "=",
+    "Goal and distance",
+    "role-goal-and-distance"
+  ],
+  [
+    "=\"Ideas in this plan\"",
+    "=",
+    "Ideas in this plan",
+    "role-ideas-in-this-plan"
+  ],
+  [
+    "=\"Plan errata\"",
+    "=",
+    "Plan errata",
+    "role-plan-errata"
+  ],
+  [
+    "=\"Project timeline\"",
+    "=",
+    "Project timeline",
+    "role-project-timeline"
+  ],
+  [
+    "=\"Project\"",
+    "=",
+    "Project",
+    "role-project"
+  ],
+  [
+    "=\"Proposal groups\"",
+    "=",
+    "Proposal groups",
+    "role-proposal-groups"
+  ],
+  [
+    "=\"Review summary\"",
+    "=",
+    "Review summary",
+    "role-review-summary"
+  ],
+  [
+    "=\"Sources\"",
+    "=",
+    "Sources",
+    "role-sources"
+  ],
+  [
+    "=\"Stages\"",
+    "=",
+    "Stages",
+    "role-stages"
+  ],
+  [
+    "=\"Subjects\"",
+    "=",
+    "Subjects",
+    "role-subjects"
+  ],
+  [
+    "=Atlas",
+    "=",
+    "Atlas",
+    "role-atlas"
+  ],
+  [
+    "^=\"Actions for\"",
+    "^=",
+    "Actions for",
+    "role-actions-for"
+  ],
+  [
+    "^=\"Delete \"",
+    "^=",
+    "Delete ",
+    "role-delete"
+  ],
+  [
+    "^=\"Open checkpoint\"",
+    "^=",
+    "Open checkpoint",
+    "role-open-checkpoint"
+  ],
+  [
+    "^=\"Page transcription\"",
+    "^=",
+    "Page transcription",
+    "role-page-transcription"
+  ]
+]

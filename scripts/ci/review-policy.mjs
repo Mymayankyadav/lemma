@@ -10,6 +10,9 @@ export function reviewRequired(files, cfg = readJson('ci/review-required.json'))
   const why = [];
   const prod = (files || []).map((f) => f.filename).filter((f) => matchesAny(f, cfg.paths || []));
   if (prod.length) why.push(`it changes ${prod.slice(0, 3).map((f) => '`' + f + '`').join(', ')}${prod.length > 3 ? ' …' : ''}, which deploys to production on merge`);
+  // 2026-11-08 (#1303): app captures prove the v6 port matches the Owner's mockup; a second agent compares them.
+  const design = (files || []).map((f) => f.filename).filter((f) => matchesAny(f, cfg.designPaths || []));
+  if (design.length) why.push(`it changes v6 app captures (${design.slice(0, 3).map((f) => '`' + f + '`').join(', ')}${design.length > 3 ? ' …' : ''}); compare each with the same-named mockup in docs/v6/screens/`);
   const flags = (files || []).find((f) => f.filename === cfg.flagsFile);
   const on = flags ? flagsTurnedOn(flags.patch) : [];
   if (on.length) why.push(`it turns a flag on by default (${on.map((l) => '`' + l + '`').join(', ')})`);

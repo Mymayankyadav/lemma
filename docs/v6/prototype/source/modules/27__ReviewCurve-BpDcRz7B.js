@@ -1,0 +1,1 @@
+import{t as e}from"@lemma/store-3lADaAh6.js";import{t}from"@lemma/jsx-runtime-DApVmHJR.js";var n=t();function r({path:t,opacity:r}){return e(e=>e.completedRound)?(0,n.jsx)(`path`,{d:t,fill:`none`,stroke:`var(--accent)`,strokeWidth:`1.5`,opacity:r,strokeDasharray:`3 5`}):null}export{r as default};
