@@ -19,7 +19,6 @@ Tests: `tests/mcp/sql/notify-command.mjs` (rename, disable, restore, hold create
 Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/**, tests/mcp/sql/notify-command.mjs, tests/unit/mcp/notify-coverage.test.ts, tests/mcp/sql/parity.mjs (the two new resources only), docs/v6/capability-registry/{lemma_command_resources,lemma_undo_tables,push_devices,notify_holds,notifications}.json, CURRENT.md.
 Not: the notify Edge function, app code, sending or scheduling notifications.
 
-
 ## N100 Harden: learning screens
 Stage: Build · Status: open · Needs: N80, N81, N82, N83, N84, N85, N86 · Assigned: —
 Done = as N98 for Paths/project, checkpoint, session, sources, Review/run/done, Cards and card detail, Inbox and plan review, Atlas and Settings, with realistic account sizes (2,000+ cards, long sources) and the Inbox decision-bar invariant (contract §9).

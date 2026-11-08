@@ -435,6 +435,33 @@
           "reason"
         ]
       }
+    },
+    {
+      "resource": "proposals",
+      "command_fn": "proposals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "withdraw",
+          "revise",
+          "reopen"
+        ],
+        "fields": [
+          "project_id",
+          "session_id",
+          "kind",
+          "payload",
+          "reason",
+          "status",
+          "origin",
+          "payload_version",
+          "base_target_versions",
+          "group_id",
+          "citations",
+          "withdrawn_at",
+          "revised_from"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

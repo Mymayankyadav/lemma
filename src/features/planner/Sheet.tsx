@@ -229,7 +229,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
      </div>;
     })}
     <h3 className="text-label font-semibold">Unplaced work and reasons</h3>
-    {selection.items?.unplaced.length?selection.items.unplaced.map((entry,i)=><p key={entry.taskId+':'+i} className="text-label">
+    {selection.items?.unplaced.length?selection.items.unplaced.map((entry,i)=><p key={entry.taskId+':'+i} className="min-w-0 break-words text-label">
      {tasks.find(t=>t.id===entry.taskId)?.title??entry.taskId}: {entry.reason}
     </p>):<p className="text-label">Every task is placed.</p>}
     <button type="button" className={button+' w-full bg-amber text-amber-ink'}

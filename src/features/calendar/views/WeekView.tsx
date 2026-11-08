@@ -31,7 +31,8 @@ export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]}
   const conflicts=overlapWindows(entries,blocks,viewRange);
   return <section aria-label="Calendar week" className="min-w-0">
     <h2 className="mb-2 text-body font-semibold text-ink">Week of {label(days[0].day,zone)}</h2>
-    <div className="max-w-full overflow-x-auto" role="region" aria-label="Week schedule">
+    <div className="max-w-full overflow-x-auto rounded-ctl focus-visible:outline-2 focus-visible:outline-amber"
+      role="region" aria-label="Week schedule" tabIndex={0}>
       <div className="grid min-w-[700px] grid-cols-7 gap-2">
         {days.map(day=><section key={day.day} data-week-day={day.day}
           aria-label={'Schedule for '+label(day.day,zone)}

@@ -31,6 +31,9 @@ export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topic
   });
   return <section aria-label="Calendar month" className="min-w-0">
     <h2 className="mb-2 text-body font-semibold text-ink">{label}</h2>
+    <div role="region" aria-label="Month schedule" tabIndex={0}
+      className="max-w-full overflow-x-auto rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
+      <div className="min-w-[320px]">
     <div className="grid grid-cols-7 gap-1 text-center text-caption font-semibold text-ink-2">
       {names.map((name,index)=><span key={index}>{name}</span>)}
     </div>
@@ -63,6 +66,8 @@ export function MonthView({date, zone, entries, blocks, dues={deadlines:[],topic
             {overlapCount} conflict{overlapCount===1?'':'s'}</span>}
         </button>;
       })}
+    </div>
+      </div>
     </div>
     {conflicts.length>0&&<section aria-label="Month overlap acknowledgements"
       className="mt-4 space-y-2">
