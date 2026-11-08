@@ -297,6 +297,8 @@ describe('N85 v6 proposal draft editor',()=>{
   await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
   await click('Edit draft');
   await click('Save draft');
+  const cancel=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Cancel edit');
+  expect(cancel?.disabled).toBe(true);
   await act(async()=>host.querySelector<HTMLAnchorElement>('a')!.click());
   await vi.waitFor(()=>expect(adapter.listDrafts).toHaveBeenCalledWith(
    expect.objectContaining({proposalId:secondId})));

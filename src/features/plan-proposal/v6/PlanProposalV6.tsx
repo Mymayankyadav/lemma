@@ -188,7 +188,7 @@ export default function PlanProposalV6(){
       {editor?<button className={control} disabled={pending} onClick={()=>{void save()}} type="button">Save draft</button>:
        <button className={control} disabled={pending||!['draft','saved'].includes(draft.status)}
         onClick={()=>setEditor(true)} type="button">Edit draft</button>}
-      {editor&&<button className={control} type="button" onClick={()=>{setEditor(false);setText(payloadText(draft.payload))}}>Cancel edit</button>}
+      {editor&&<button className={control} type="button" disabled={pending} onClick={()=>{setEditor(false);setText(payloadText(draft.payload))}}>Cancel edit</button>}
       <button type="button" className={control} disabled={pending||draft.status!=='saved'||editor}
        onClick={()=>{void submit()}}>Submit draft</button>
      </div>
