@@ -25,16 +25,23 @@ function ownerDay(zone:string):string{
 }
 async function readTasks():Promise<TaskRecord[]>{
  const rows:TaskRecord[]=[];let cursor:string|null=null;
+ const seen=new Set<string>();
  for(let i=0;i<10;i++){
   const page=await getTaskApi().listTasks({
    status:['backlog','in_progress'],limit:50,cursor});
-  rows.push(...page.items);cursor=page.nextCursor;
-  if(!cursor)return rows;
+  if(page.items.length>50||!Number.isSafeInteger(page.total)||page.total<0)
+   throw new Error('Malformed owner task page');
+  rows.push(...page.items);
+  if(!page.nextCursor)return rows;
+  if(seen.has(page.nextCursor))
+   throw new Error('Repeated owner task cursor; refresh the planner');
+  seen.add(page.nextCursor);cursor=page.nextCursor;
  }
  throw new Error('Task list exceeds 500; narrow your task selection');
 }
 export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const notify=useToast(),dialog=useRef<HTMLDialogElement>(null);
+ const loadEpoch=useRef(0);
  const [opened,setOpened]=useState(false);
  useEffect(()=>{
   if(!opened||!dialog.current)return;
@@ -59,7 +66,8 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
   catch(e){return {items:null,error:e instanceof Error?e.message:'Invalid planning move'};}
  },[preview,selected,overrides]);
  async function load(){
-  setLoading(true);setError(null);
+  const epoch=++loadEpoch.current;
+  setLoading(true);setError(null);setPreview(null);
   try{
    const taskRows=await readTasks();
    const start=shiftDay(anchor,-2)+'T00:00:00Z';
@@ -82,19 +90,25 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
     savedEntries:entries.map(entry=>({id:entry.id,status:entry.status,
      intervals:entry.intervals})),
    });
+   if(epoch!==loadEpoch.current)return;
    setTasks(taskRows);setBlocks(blockRows);setEntries(entries);setPreview(result);
    setSelected(new Set(result.placements.map(p=>p.taskId+':'+p.part)));
    setOverrides(new Map());
-  }catch(e){setError(e instanceof Error?e.message:'Could not preview a plan');setPreview(null);}
-  finally{setLoading(false);}
+  }catch(e){
+   if(epoch===loadEpoch.current){
+    setError(e instanceof Error?e.message:'Could not preview a plan');
+    setPreview(null);
+   }
+  }finally{if(epoch===loadEpoch.current)setLoading(false);}
  }
  function show(){
   setOpened(true);
   void load();
  }
  function close(){
+  ++loadEpoch.current;
   if(typeof dialog.current?.close==='function')dialog.current.close();
-  setOpened(false);
+  setOpened(false);setLoading(false);setPreview(null);
  }
  function changeMove(key:string,part:'start'|'end',value:string,
   original:Move){
@@ -131,7 +145,9 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  }
  return <>
   <button type="button" className={button} onClick={show}>Plan study tasks</button>
-  {opened&&<dialog ref={dialog} onClose={()=>setOpened(false)}
+  {opened&&<dialog ref={dialog} onClose={()=>{
+    ++loadEpoch.current;setOpened(false);setLoading(false);setPreview(null);
+   }}
    aria-label="Plan study tasks" className="max-h-[85dvh] w-[min(95vw,580px)] overflow-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink">
    <div className="flex items-center justify-between gap-3">
     <h2 className="text-title-s font-semibold">Plan study tasks</h2>
@@ -140,7 +156,10 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
    <p className="mt-2 text-label text-ink-2">Owner time zone: {ownerZone}. Times below are ISO instants.</p>
    <label className="mt-3 flex flex-col gap-1 text-label">Days to preview
     <select className={field} value={rangeDays} disabled={loading||busy}
-     onChange={e=>{setRangeDays(Number(e.target.value));setPreview(null);}}>
+     onChange={e=>{
+      ++loadEpoch.current;setRangeDays(Number(e.target.value));
+      setPreview(null);setLoading(false);
+     }}>
      {[1,2,3,4,5,6,7].map(n=><option key={n} value={n}>{n} {n===1?'day':'days'}</option>)}
     </select>
    </label>

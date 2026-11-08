@@ -306,3 +306,56 @@ describe('N68 unknown commit receipt safety',()=>{
   expect(f.deleted).toEqual([]);
  });
 });
+
+
+describe('N68 stale planner preview isolation',()=>{
+ it('discards an old failed request after the owner closes and reopens the dialog',async()=>{
+  services.tasks.mockReset();
+  let rejectOld:(error:Error)=>void=()=>{};
+  services.tasks.mockImplementationOnce(()=>new Promise((_resolve,reject)=>{rejectOld=reject;}));
+  services.tasks.mockResolvedValue({items:[],total:0,nextCursor:null});
+  services.blocks.mockResolvedValue([]);
+  services.entries.mockResolvedValue([]);
+  services.plans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-07" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   const close=[...host.querySelectorAll('button')].find(x=>x.textContent==='Close');
+   await act(async()=>close!.click());
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
+   await act(async()=>rejectOld(Error('Stale offline response')));
+   expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull();
+   expect(host.textContent).not.toContain('Stale offline response');
+   const picker=host.querySelector<HTMLSelectElement>('select')!;
+   await act(async()=>{
+    const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!;
+    setter.call(picker,'2');picker.dispatchEvent(new Event('change',{bubbles:true}));
+   });
+   expect(host.querySelector('[aria-label="Planner preview"]')).toBeNull();
+  }finally{
+   await act(async()=>root.unmount());host.remove();
+  }
+ });
+ it('rejects a repeated cursor before looping through hundreds of stale tasks',async()=>{
+  services.tasks.mockReset();
+  services.tasks.mockResolvedValue({items:[],total:1,nextCursor:'repeated'});
+  services.blocks.mockResolvedValue([]);
+  services.entries.mockResolvedValue([]);
+  const host=document.createElement('div');document.body.append(host);
+  const root=createRoot(host);
+  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
+  try{
+   await act(async()=>root.render(<PlannerLaunch date="2026-11-07" zone="UTC"/>));
+   await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
+   await vi.waitFor(()=>expect(host.querySelector('[role="alert"]')?.textContent)
+    .toContain('Repeated owner task cursor'));
+   expect(services.tasks.mock.calls.length).toBeLessThan(10);
+  }finally{
+   await act(async()=>root.unmount());host.remove();
+  }
+ });
+});
