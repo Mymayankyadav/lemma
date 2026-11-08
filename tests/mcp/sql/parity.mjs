@@ -96,6 +96,26 @@ async function mcpPage(resource,id,userId=owner){
  if(context.calls.length!==1)throw Error(resource+': MCP registered read not executed');
  return page;
 }
+/** Surface missing owner-editable command paths using the capability registry.
+ * These diagnostics are deliberately NOT green-completeness assertions until
+ * the remaining resource fixtures are implemented and reviewed. */
+async function capabilityPathGaps(registry){
+ const base=new URL('../../../docs/v6/capability-registry/',import.meta.url);
+ const manifest=JSON.parse(await readFile(new URL('lemma_command_resources.json',base),'utf8'));
+ const documented=new Set((manifest.resources||[]).map(r=>r.resource));
+ const gaps=[];
+ for(const row of registry){
+  if(!documented.has(row.resource))gaps.push(row.resource+': command metadata missing from capability manifest');
+  let cap;
+  try{cap=JSON.parse(await readFile(new URL(row.resource+'.json',base),'utf8'))}
+  catch{gaps.push(row.resource+': capability columns document missing');continue}
+  const accepted=new Set(row.schema.fields);
+  for(const [field,meta] of Object.entries(cap.columns||{}))
+   if(meta.classification==='owner-editable'&&!accepted.has(field))
+    gaps.push(row.resource+'.'+field+': owner-editable field lacks registered command/read path');
+ }
+ return gaps;
+}
 const specs={
  tasks:{fn:'task_command',create:{title:'MCP parity task',priority:'high'},
   update:{title:'App parity edited task'},column:'title',updated:'App parity edited task'},
@@ -250,7 +270,9 @@ try{
   new Set(['create','update'])),/missing_fixture.delete/);
  assert.throws(()=>requireFields('missing_fixture',['title','summary'],
   {title:{appPath:'app',mcpPath:'mcp'}}),/missing_fixture.summary/);
- console.log('PASS N94 registry metadata and missing-operation/path fixtures');
+ const capabilityGaps=await capabilityPathGaps(registry);
+ console.log('N94 capability path gaps ('+capabilityGaps.length+'): '+capabilityGaps.join('; '));
+  console.log('PASS N94 registry metadata and missing-operation/path fixtures');
 
  const registered=new Map(registry.map(row=>[row.resource,row]));
  for(const resource of Object.keys(specs)){
