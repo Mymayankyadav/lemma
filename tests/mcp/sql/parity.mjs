@@ -844,9 +844,155 @@ try{
   abandonRun.run.version,'review_runs: registered read disagrees after abandon');
  mark('review_runs','start','pause','resume','advance','complete','abandon');
 
+ // N105 concepts: real owner Atlas graph rows, related concept_links, app
+ // edits, registered MCP GET and an audited merge/undo. Preview_merge is a
+ // read-only registered verb: it must not invent a receipt or journal action.
+ await role('service_role');
+ const atlasCreate=(name,slug)=>command('concepts','create',{
+  patch:{subject_id:cardSubject,name,slug}});
+ const atlasFirst=atlasCreate('N94 Atlas First','n94-atlas-first');
+ const atlasCreated=status(await mcp(atlasFirst),'concepts','create');
+ const firstId=atlasCreated.concept.id;
+ assert.equal(atlasCreated.concept.version,1,'concepts: first create version');
+ assert.deepEqual(await mcp(atlasFirst),atlasCreated,
+  'concepts: exact create receipt replay');
+ const differentAtlas=await mcp({...atlasFirst,patch:{...atlasFirst.patch,
+  name:'N94 Atlas Alternate'}});
+ assert.equal(differentAtlas.status,'conflict',
+  'concepts: changed operationId payload must refuse');
+ const secondCreated=status(await mcp(atlasCreate('N94 Atlas Second',
+  'n94-atlas-second')),'concepts','create');
+ const secondId=secondCreated.concept.id;
+ const thirdCreated=status(await mcp(atlasCreate('N94 Atlas Third',
+  'n94-atlas-third')),'concepts','create');
+ const thirdId=thirdCreated.concept.id;
+ await as(owner);
+ assert.equal((await q('select name from public.concepts where id=$1',
+  [firstId]))[0].name,'N94 Atlas First',
+  'concepts: MCP create missing from authenticated owner app');
+ const atlasEdited=status(await app('concepts_command',command('concepts','update',{
+  target:{id:firstId},expectedVersion:1,patch:{blurb:'Owner annotated graph'}
+ })),'concepts','update');
+ assert.equal(atlasEdited.concept.version,2);
+ await role(null);
+ let firstPage=await mcpPage('concepts',firstId);
+ assert.equal(firstPage.total,1,'concepts: MCP registered read missing');
+ assert.equal(firstPage.items[0].blurb,'Owner annotated graph');
+ assert.equal(firstPage.items[0].version,2);
+ assert.equal((await mcpPage('concepts',firstId,other)).total,0,
+  'concepts: foreign MCP read showed another owner graph');
+ const atlasRow=(await q('select * from public.concepts where id=$1 and user_id=$2',
+  [firstId,owner]))[0];
+ const atlasSchema=registered.get('concepts').schema.fields;
+ const atlasColumns=JSON.parse(await readFile(new URL('concepts.json',
+  new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8')).columns;
+ const payloadOnly=atlasSchema.filter(field=>!Object.hasOwn(atlasColumns,field)).sort();
+ assert.deepEqual(payloadOnly,['other_id','kind','keep_id','keep_version'].sort(),
+  'concepts: unrecognized graph command payload fields');
+ const atlasPersisted=atlasSchema.filter(field=>Object.hasOwn(atlasColumns,field));
+ requireFields('concepts',atlasPersisted,Object.fromEntries(atlasPersisted.map(field=>[
+  field,{appPath:Object.hasOwn(atlasRow,field)?'owner app graph row':'missing',
+   mcpPath:Object.hasOwn(firstPage.items[0],field)?'MCP GET':'missing'}
+ ])));
+ await role('service_role');
+ const staleAtlas=await mcp(command('concepts','update',{
+  target:{id:firstId},expectedVersion:1,patch:{blurb:'Stale owner annotation'}}));
+ assert.equal(staleAtlas.status,'conflict','concepts: stale owner version accepted');
+ const parentRequest=command('concepts','reparent',{
+  target:{id:secondId},expectedVersion:1,patch:{parent_id:firstId}});
+ const parented=status(await mcp(parentRequest),'concepts','reparent');
+ assert.equal(parented.concept.version,2,'concepts: reparent version did not advance');
+ assert.deepEqual(await mcp(parentRequest),parented,
+  'concepts: exact reparent replay');
+ await as(owner);
+ assert.equal((await q('select parent_id from public.concepts where id=$1',
+  [secondId]))[0].parent_id,firstId,
+  'concepts: app hierarchy does not show MCP reparent');
+ await role('service_role');
+ const linkRequest=command('concepts','link',{
+  target:{id:firstId},expectedVersion:2,
+  patch:{other_id:secondId,kind:'prereq'}});
+ const linked=status(await mcp(linkRequest),'concepts','link');
+ assert.equal(linked.concept.version,3,'concepts: link version did not advance');
+ assert.deepEqual(await mcp(linkRequest),linked,
+  'concepts: exact link replay');
+ await role(null);
+ assert.equal((await q("select count(*)::int n from public.concept_links where user_id=$1 and from_id=$2 and to_id=$3 and kind='prereq'",
+  [owner,firstId,secondId]))[0].n,1,
+  'concepts: MCP link not persisted');
+ await role('service_role');
+ const unlinkRequest=command('concepts','unlink',{
+  target:{id:firstId},expectedVersion:3,
+  patch:{other_id:secondId,kind:'prereq'}});
+ const unlinked=status(await mcp(unlinkRequest),'concepts','unlink');
+ assert.equal(unlinked.concept.version,4,'concepts: unlink version did not advance');
+ await role(null);
+ assert.equal((await q("select count(*)::int n from public.concept_links where user_id=$1 and from_id=$2 and to_id=$3",
+  [owner,firstId,secondId]))[0].n,0,
+  'concepts: unlink left an edge');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.concepts where id=$1',
+  [firstId]))[0].n,0,'concepts: foreign owner app read');
+ await role('service_role');
+ const foreignAtlas=command('concepts','update',{
+  target:{id:firstId},expectedVersion:4,patch:{name:'Foreign overwrite'}});
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(foreignAtlas)]),/Atlas concept not found for owner/i,
+  'concepts: foreign MCP principal should not alter graph');
+ await role(null);
+ const graphNote=(await q("insert into public.notes(user_id,project_id,concept_id,front,back) values($1,$2,$3,'N94 merge note','N94 merge answer') returning id",
+  [owner,cardProject,secondId]))[0].id;
+ const actionsBeforePreview=(await q('select count(*)::int n from public.actions where user_id=$1',
+  [owner]))[0].n;
+ await role('service_role');
+ const previewRequest=command('concepts','preview_merge',{
+  target:{id:secondId},patch:{keep_id:thirdId}});
+ const preview=await mcp(previewRequest);
+ assert.equal(preview.status,'ok','concepts: merge preview refused');
+ assert.equal(preview.actionNo,null,'concepts: read-only preview invented action');
+ assert.deepEqual(preview.changed,[],'concepts: read-only preview claimed mutations');
+ assert.equal(preview.sourceVersion,2);
+ assert.equal(preview.keepVersion,1);
+ assert.ok(preview.impact.notesAndCards>=1,
+  'concepts: real owner note missing from merge preview');
+ assert.deepEqual(await mcp(previewRequest),preview,
+  'concepts: same preview must be deterministic');
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',
+  [owner]))[0].n,actionsBeforePreview,
+  'concepts: read-only preview created an audit action');
+ await role('service_role');
+ const mergeRequest=command('concepts','merge',{
+  target:{id:secondId},expectedVersion:2,
+  patch:{keep_id:thirdId,keep_version:1}});
+ const merged=status(await mcp(mergeRequest),'concepts','merge');
+ assert.equal(merged.mergedId,secondId,'concepts: wrong merged concept');
+ assert.deepEqual(await mcp(mergeRequest),merged,
+  'concepts: exact merge receipt replay');
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.concepts where id=$1',
+  [secondId]))[0].n,0,'concepts: merged source still exists');
+ assert.equal((await q('select concept_id from public.notes where id=$1',
+  [graphNote]))[0].concept_id,thirdId,
+  'concepts: merge did not rewire real owner note');
+ const keepPage=await mcpPage('concepts',thirdId);
+ assert.equal(keepPage.items[0].version,merged.concept.version,
+  'concepts: registered MCP kept-version projection mismatch');
+ await as(owner);
+ assert.equal((await undo(merged.actionNo)).undone,merged.actionNo,
+  'concepts: atomic merge undo unavailable');
+ await role(null);
+ assert.equal((await q('select count(*)::int n from public.concepts where id=$1',
+  [secondId]))[0].n,1,'concepts: undo did not restore source row');
+ assert.equal((await q('select concept_id from public.notes where id=$1',
+  [graphNote]))[0].concept_id,secondId,
+  'concepts: undo did not restore owner note association');
+ mark('concepts','create','update','reparent','link','unlink',
+  'preview_merge','merge');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['concepts','review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
