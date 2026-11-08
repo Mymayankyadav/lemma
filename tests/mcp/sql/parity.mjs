@@ -544,6 +544,7 @@ try{
  assert.equal(closedPlan.plan.status,'closed');
  assert.equal(closedPlan.plan.tomorrow_first_task_id,planTaskId);
  assert.equal(closedPlan.plan.version,5);
+ await as(owner);
  const carried=await q('select disposition,reason,calendar_block_id from public.day_plan_items where plan_id=$1 and task_id=$2',[planId,planTaskId]);
  assert.ok(carried.length>0&&carried.every(x=>x.disposition==='carried_over'&&x.reason==='Tomorrow priority'&&x.calendar_block_id===null));
  await as(owner);
