@@ -62,10 +62,11 @@ export function buildServer(c:Context):McpServer{
   // receipt, not the legacy 160-char write summary or a second mcp_commit.
   const studyEnvelope=z.object({
     operationId:S().uuid(),schemaVersion:z.literal(1),
-    resource:z.enum(['study_entries','study_intervals','calendar_blocks','tasks'])
-      .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),
-    operation:z.enum(['create','update','delete','start','pause','resume','break','save','discard'])
-      .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),
+    // Both legacy enum branches were subsets of this pattern. Keeping them
+    // also serialized redundant anyOf/enum schemas into every tools/list.
+    // The dynamic registry validates exact resource/operation authorization.
+    resource:S().regex(/^[a-z][a-z0-9_]{0,60}$/),
+    operation:S().regex(/^[a-z][a-z0-9_]{0,60}$/),
     target:z.object({id:S().uuid()}).strict().optional(),
     expectedVersion:z.number().int().min(0).optional(),
     patch:z.record(S(),z.unknown()).optional()
