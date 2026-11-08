@@ -18,6 +18,7 @@ import Planning from './Planning';
 import Focus from './Focus';
 import Reminders from './Reminders';
 import ExportSettings from './Export';
+import DeleteAccount from './DeleteAccount';
 
 /** N28.1 navigation; N28.2.1 adds the dedicated Study defaults panel. */
 export const SETTINGS_SECTIONS = [
@@ -120,6 +121,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
             toast("Couldn't sign out.",{tone:'danger'});
           }
         }}>Sign out</button>
+      <DeleteAccount onExport={()=>setSelected('export')}/>
     </Slab>;
     if(selected==='appearance')return <Slab className="p-5">
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>
