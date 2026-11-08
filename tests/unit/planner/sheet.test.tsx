@@ -30,6 +30,16 @@ describe('N68 owner-directed preview selection',()=>{
   expect(preview.placements[1].date).toBe('2026-11-09');
   expect(moved.unplaced).toEqual([{taskId:'task-c',reason:'no_capacity'}]);
  });
+ it('moving a placement does not silently resize its allotted focus minutes',()=>{
+  expect(()=>selectPlannerPlacements(preview,new Set(['task-a']),new Map([
+   ['task-a:1',{date:'2026-11-09',
+    start:'2026-11-09T10:00:00Z',end:'2026-11-09T10:45:00Z'}],
+  ]))).toThrow('Moved planner interval must preserve its allocated minutes');
+  expect(()=>selectPlannerPlacements(preview,new Set(['task-a']),new Map([
+   ['task-a:1',{date:'2026-11-09',
+    start:'2026-11-09T10:00:00Z',end:'2026-11-09T10:30:00Z'}],
+  ]))).not.toThrow();
+ });
  it('refuses overlaps, invalid instants and silent drops',()=>{
   const all=new Set(['task-a','task-b']);
   expect(()=>selectPlannerPlacements(preview,all,new Map([
@@ -135,6 +145,12 @@ describe('N68 moved placement owner-day and busy-block guard',()=>{
     start:'2026-11-09T10:15:00Z',end:'2026-11-09T10:45:00Z'},
   ],[],'2026-11-09','2026-11-09','UTC'))
    .toThrow('Selected planner placements overlap each other');
+ });
+ it('also rejects a resized block supplied directly to commit preflight',()=>{
+  expect(()=>validatePlannerWindow([
+   {...moved[0],end:'2026-11-09T10:45:00Z'},
+  ],[],'2026-11-09','2026-11-09','UTC'))
+   .toThrow('Selected planner interval changed its allocated minutes');
  });
  it('rejects clashes with a busy or study block but ignores cancelled blocks',()=>{
   const active={startsAt:'2026-11-09T10:15:00Z',

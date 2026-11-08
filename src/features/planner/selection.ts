@@ -29,6 +29,10 @@ export function selectPlannerPlacements(
    !Number.isFinite(Date.parse(moved.end))||
    Date.parse(moved.end)<=Date.parse(moved.start))
    throw new Error('Invalid moved planner interval');
+  // A planner move relocates the allocated work; it cannot silently resize
+  // that work and make the displayed estimate disagree with the block.
+  if(Date.parse(moved.end)-Date.parse(moved.start)!==p.minutes*60000)
+   throw new Error('Moved planner interval must preserve its allocated minutes');
   if(!/^\d{4}-\d{2}-\d{2}$/.test(moved.date))
    throw new Error('Invalid moved planner date');
   if(selected.some(x=>Date.parse(x.start)<Date.parse(moved.end)&&
@@ -59,6 +63,8 @@ export function validatePlannerWindow(
   const start=Date.parse(place.start),end=Date.parse(place.end);
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)
    throw Error('Invalid selected planner interval');
+  if(end-start!==place.minutes*60000)
+   throw Error('Selected planner interval changed its allocated minutes');
   const day=civil(new Date(start));
   if(place.date!==day||day<from||day>through||civil(new Date(end-1))!==day)
    throw Error('Selected placement leaves the chosen owner-local planning day');
