@@ -54,6 +54,7 @@ export function validatePlannerWindow(
   const read=(type:string)=>parts.find(p=>p.type===type)?.value??'';
   return read('year')+'-'+read('month')+'-'+read('day');
  };
+ const accepted:{start:number;end:number}[]=[];
  for(const place of placements){
   const start=Date.parse(place.start),end=Date.parse(place.end);
   if(!Number.isFinite(start)||!Number.isFinite(end)||end<=start)
@@ -61,6 +62,10 @@ export function validatePlannerWindow(
   const day=civil(new Date(start));
   if(place.date!==day||day<from||day>through||civil(new Date(end-1))!==day)
    throw Error('Selected placement leaves the chosen owner-local planning day');
+  // Commit preflight also validates caller-provided selection snapshots.
+  if(accepted.some(p=>p.start<end&&start<p.end))
+   throw Error('Selected planner placements overlap each other');
+  accepted.push({start,end});
   if(blocks.some(block=>{
    if(block.status==='cancelled')return false;
    const a=Date.parse(block.startsAt),b=Date.parse(block.endsAt);

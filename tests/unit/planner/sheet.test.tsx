@@ -129,6 +129,13 @@ describe('N68 moved placement owner-day and busy-block guard',()=>{
   expect(()=>validatePlannerWindow([{...moved[0],end:'2026-11-10T00:00:01Z'}],
    [],'2026-11-09','2026-11-09','UTC')).toThrow(/chosen owner-local/);
  });
+ it('refuses overlapping selected intervals even if UI selection checks are bypassed',()=>{
+  expect(()=>validatePlannerWindow([
+   ...moved,{...moved[0],taskId:'task-b',
+    start:'2026-11-09T10:15:00Z',end:'2026-11-09T10:45:00Z'},
+  ],[],'2026-11-09','2026-11-09','UTC'))
+   .toThrow('Selected planner placements overlap each other');
+ });
  it('rejects clashes with a busy or study block but ignores cancelled blocks',()=>{
   const active={startsAt:'2026-11-09T10:15:00Z',
    endsAt:'2026-11-09T10:45:00Z',status:'planned'};
@@ -193,6 +200,17 @@ function commitFixture(){
  return {apis,snapshot,written,deleted,cleared};
 }
 describe('N68 owner commit preflight and partial-failure containment',()=>{
+ it('does not create blocks for a stale overlapping selected snapshot',async()=>{
+  const f=commitFixture();
+  f.snapshot.selection.selected=[
+   f.snapshot.selection.selected[0],
+   {...f.snapshot.selection.selected[0],taskId:'task-b',
+    start:'2026-11-09T09:15:00Z',end:'2026-11-09T09:45:00Z'},
+  ];
+  await expect(commitPlannerSelection(f.snapshot,f.apis))
+   .rejects.toThrow('Selected planner placements overlap each other');
+  expect(f.written).toEqual([]);
+ });
  it('checks every day-plan state before creating even the first block',async()=>{
   const f=commitFixture();
   vi.mocked(f.apis.plans.listPlans).mockResolvedValueOnce({
