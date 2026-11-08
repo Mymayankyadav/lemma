@@ -57,7 +57,19 @@ try {
     assert.equal(resource.mcp_ok, true);
     const documented = resourceDoc.resources.find(row => row.resource === resource.resource);
     const shape = typeof resource.schema === 'string' ? JSON.parse(resource.schema) : resource.schema;
-    assert.deepEqual(shape, documented.schema);
+    // N109 intentionally extends the original N36.1 registry after its seed
+    // migration. This fixture examines the immutable SEED; remove only the
+    // four N109 additions when comparing it to today's full manifest.
+    const seedSchema = structuredClone(documented.schema);
+    if(resource.resource==='study_entries'){
+      seedSchema.fields=seedSchema.fields.filter(x=>
+        !['calendar_block_id','preset_id','energy'].includes(x));
+      seedSchema.operations=seedSchema.operations.filter(x=>
+        !['take_lease','next_phase','exclude_minutes'].includes(x));
+    }
+    if(resource.resource==='calendar_blocks')
+      seedSchema.fields=seedSchema.fields.filter(x=>x!=='task_id');
+    assert.deepEqual(shape, seedSchema);
     assert.ok(Array.isArray(shape.operations) && shape.operations.length > 0);
     assert.ok(Array.isArray(shape.fields) && shape.fields.length > 0);
     assert.ok(['study_command','task_command'].includes(resource.command_fn));
@@ -129,7 +141,21 @@ try {
     assert.ok(next,'original command resource missing: '+baseline.resource);
     assert.equal(next.command_fn,baseline.command_fn);
     assert.equal(next.mcp_ok,baseline.mcp_ok);
-    assert.deepEqual(next.schema,baseline.schema);
+    // D8 N109 explicitly authorizes append-only additions to exactly two
+    // frozen N36.1 rows. Preserve every seed field and operation in order.
+    const addedFields=baseline.resource==='study_entries'?
+      ['calendar_block_id','preset_id','energy']:
+      baseline.resource==='calendar_blocks'?['task_id']:[];
+    const addedOps=baseline.resource==='study_entries'?
+      ['take_lease','next_phase','exclude_minutes']:[];
+    assert.deepEqual(next.schema.fields.slice(0,baseline.schema.fields.length),
+      baseline.schema.fields,'N36.1 baseline fields were rewritten');
+    assert.deepEqual(next.schema.operations.slice(0,baseline.schema.operations.length),
+      baseline.schema.operations,'N36.1 baseline operations were rewritten');
+    assert.deepEqual(next.schema.fields.slice(baseline.schema.fields.length),addedFields,
+      'N109 registry fields not append-only');
+    assert.deepEqual(next.schema.operations.slice(baseline.schema.operations.length),addedOps,
+      'N109 registry operations not append-only');
   }
   for (const entry of finalResources) {
     const shape = typeof entry.schema === 'string' ? JSON.parse(entry.schema) : entry.schema;

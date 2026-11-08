@@ -8,10 +8,22 @@ export type StudyInput = {
     // Existing resources keep their exact legacy bridge; later registered
     // resources use the generic service-role mcp_command dispatcher.
     resource: string;
+    /** Includes N52 owner-versioned take_lease, next_phase and exclude_minutes. */
     operation: string;
     target?: { id: string };
     expectedVersion?: number;
-    patch?: Record<string, unknown>;
+    /** N109 links are created on a draft, never by forging owner identity. */
+    patch?: Record<string, unknown> & {
+      calendar_block_id?: string | null;
+      preset_id?: string | null;
+      task_id?: string | null;
+      energy?: 'low' | 'steady' | 'high' | null;
+      device?: string;
+      lease_version?: number;
+      lease_minutes?: number;
+      minutes?: number;
+      reason?: string;
+    };
   };
   client?: 'claude' | 'chatgpt' | 'other';
 };
