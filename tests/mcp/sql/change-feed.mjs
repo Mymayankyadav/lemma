@@ -185,6 +185,39 @@ try{
   .result.changes.some(x=>x.record_id===mcp.changed[0].id),false,
   'second owner cannot read the MCP action delta');
 
+ // Undo is another owner journal transaction. It must emit the inverse
+ // tombstone with a strictly newer cursor, never silently disappear merely
+ // because its source action had already produced a change-feed item.
+ await as(a);
+ const undoEnvelope={schemaVersion:1,resource:'tasks',operation:'create',
+  operationId:'dddddddd-dddd-4ddd-8ddd-000000000001',
+  patch:{title:'Undo delta proof'}};
+ const added=(await q('select public.task_command($1::jsonb) receipt',
+  [JSON.stringify(undoEnvelope)]))[0].receipt;
+ assert.equal(added.status,'ok');
+ const undoTask=added.changed[0].id;
+ const appInsert=(await q('select public.changes_since(0,100) result'))[0]
+  .result.changes.filter(x=>x.resource==='tasks'&&x.record_id===undoTask);
+ assert.equal(appInsert.length,1,'new task emits exactly one owner delta');
+ assert.equal(appInsert[0].op,'insert');
+ assert.equal(appInsert[0].tombstone,false);
+ const undoneTask=(await q('select public.undo_action($1,$2,false) result',
+  [a,added.actionNo]))[0].result;
+ assert.equal(Number(undoneTask.undone),Number(added.actionNo));
+ const taskInverse=(await q('select public.changes_since(0,100) result'))[0]
+  .result.changes.filter(x=>x.resource==='tasks'&&x.record_id===undoTask);
+ assert.equal(taskInverse.length,2,'undo appends exactly one inverse owner delta');
+ assert.deepEqual(taskInverse.map(x=>x.op),['insert','delete']);
+ assert.deepEqual(taskInverse.map(x=>x.tombstone),[false,true]);
+ assert.ok(taskInverse[1].cursor>taskInverse[0].cursor,
+  'undo inverse must follow its original event');
+ assert.equal((await q('select count(*)::int n from public.tasks where id=$1',
+  [undoTask]))[0].n,0,'task undo removes the original owner row');
+ await as(b);
+ assert.equal((await q('select public.changes_since(0,100) result'))[0]
+  .result.changes.some(x=>x.record_id===undoTask),false,
+  'foreign owners cannot see either undo delta');
+
  // A scheduled notification tick must not be blocked by an unbounded
  // multi-tenant backlog. Drain a 550-row expired batch in bounded calls.
  await db.exec('reset role');
