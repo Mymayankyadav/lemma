@@ -8,18 +8,23 @@ vi.mock('../../../src/data/mode',()=>({getMode:()=>getMode()}));
 vi.mock('../../../src/data/live/client',()=>({liveClient:()=>({
  functions:{invoke},auth:{signOut},
 })}));
-vi.mock('react-router',()=>({Link:({children}:{children:unknown})=><span>{children}</span>,
- useNavigate:()=>navigate}));
+vi.mock('react-router',()=>({useNavigate:()=>navigate}));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>vi.fn()}));
 beforeEach(()=>{invoke.mockReset();signOut.mockReset();navigate.mockReset();
  getMode.mockReturnValue('live')});
 describe('N103 deliberate account deletion control',()=>{
+ it('opens the actual parent export section instead of a dead settings URL',()=>{
+  const go=vi.fn();
+  render(<DeleteAccount onExport={go}/>);
+  fireEvent.click(screen.getByRole('button',{name:'Open export settings'}));
+  expect(go).toHaveBeenCalledTimes(1);
+ });
  it('refuses demo and incomplete confirmation without ever invoking deletion',()=>{
   expect(canDeleteAccount(DELETE_CONFIRMATION,true,false,'demo')).toBe(false);
   expect(canDeleteAccount(DELETE_CONFIRMATION,false,false,'live')).toBe(false);
   expect(canDeleteAccount(DELETE_CONFIRMATION,true,true,'live')).toBe(false);
   getMode.mockReturnValue('demo');
-  render(<DeleteAccount/>);
+  render(<DeleteAccount onExport={vi.fn()}/>);
   expect(screen.getByRole('button',{name:'Delete account permanently'}))
    .toBeDisabled();
   expect(invoke).not.toHaveBeenCalled();
@@ -27,7 +32,7 @@ describe('N103 deliberate account deletion control',()=>{
  it('requires typed text AND explicit export choice before a single owner-free request',async()=>{
   invoke.mockResolvedValue({data:{deleted:true},error:null});
   signOut.mockResolvedValue({error:null});
-  render(<DeleteAccount/>);
+  render(<DeleteAccount onExport={vi.fn()}/>);
   const button=screen.getByRole('button',{name:'Delete account permanently'});
   fireEvent.change(screen.getByRole('textbox',{name:'Type delete confirmation'}),{
    target:{value:DELETE_CONFIRMATION}});
@@ -43,7 +48,7 @@ describe('N103 deliberate account deletion control',()=>{
  });
  it('keeps the account screen visible on an unverified deletion',async()=>{
   invoke.mockResolvedValue({data:{deleted:false},error:null});
-  render(<DeleteAccount/>);
+  render(<DeleteAccount onExport={vi.fn()}/>);
   fireEvent.change(screen.getByRole('textbox',{name:'Type delete confirmation'}),{
    target:{value:DELETE_CONFIRMATION}});
   fireEvent.click(screen.getByRole('checkbox'));

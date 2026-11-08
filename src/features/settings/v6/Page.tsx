@@ -117,7 +117,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
             toast("Couldn't sign out.",{tone:'danger'});
           }
         }}>Sign out</button>
-      <DeleteAccount/>
+      <DeleteAccount onExport={()=>setSelected('export')}/>
     </Slab>;
     if(selected==='appearance')return <Slab className="p-5">
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>

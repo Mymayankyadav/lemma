@@ -1,6 +1,6 @@
 // N103: deliberate live-account deletion request. Backend owns all deletion.
 import {useState} from 'react';
-import {Link,useNavigate} from 'react-router';
+import {useNavigate} from 'react-router';
 import {getMode} from '../../../data/mode';
 import {liveClient} from '../../../data/live/client';
 import {useToast} from '../../../ui/Toast';
@@ -8,7 +8,7 @@ export const DELETE_CONFIRMATION='DELETE MY ACCOUNT';
 export function canDeleteAccount(confirm:string,exported:boolean,busy:boolean,mode:string){
  return mode==='live'&&!busy&&exported&&confirm===DELETE_CONFIRMATION;
 }
-export default function DeleteAccount(){
+export default function DeleteAccount({onExport}:{onExport:()=>void}){
  const mode=getMode(),navigate=useNavigate(),notify=useToast();
  const [confirmation,setConfirmation]=useState('');
  const [exported,setExported]=useState(false);
@@ -37,9 +37,9 @@ export default function DeleteAccount(){
    Permanently delete your study record, uploaded files, connector access and sign-in.
    This cannot be undone. Export a copy before continuing.
   </p>
-  <Link to="/settings?section=export" className="mt-2 inline-flex min-h-11 items-center text-label font-semibold underline">
+  <button type="button" onClick={onExport} className="mt-2 inline-flex min-h-11 items-center text-label font-semibold underline">
    Open export settings
-  </Link>
+  </button>
   <label className="mt-2 flex min-h-11 items-center gap-2 text-label">
    <input type="checkbox" checked={exported} disabled={busy||mode!=='live'}
     onChange={e=>setExported(e.target.checked)}/>
