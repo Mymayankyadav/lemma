@@ -23,6 +23,9 @@ test('N72 Pomodoro phases, explicit drift exclusion and cross-route accessory at
  await expect(dialog).toContainText('Mode: pomodoro');
  await expect(dialog).toContainText('Server phase deadline');
  await expect(dialog.getByRole('button',{name:'Next phase'})).toBeEnabled();
+ // Grow a real one-minute focus span without waiting on wall-clock time;
+ // remain inside the two-minute lease acquired when the entry was created.
+ await page.clock.fastForward(90_000);
  await dialog.getByRole('button',{name:'Next phase'}).click();
  await expect(dialog).toContainText('Break · Cycle');
  await dialog.getByRole('button',{name:'Close'}).click();

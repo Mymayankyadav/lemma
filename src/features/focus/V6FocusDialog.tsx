@@ -1,6 +1,6 @@
 import {useEffect,useRef} from 'react';
-import type {StudyEntryRecord} from '../../../data/study/contract';
-import {remainingFocusMinutes,type FocusState} from '../../../lib/focus/machine';
+import type {StudyEntryRecord} from '../../data/study/contract';
+import {remainingFocusMinutes,type FocusState} from '../../lib/focus/machine';
 
 export interface V6FocusDialogProps {
  open:boolean;
