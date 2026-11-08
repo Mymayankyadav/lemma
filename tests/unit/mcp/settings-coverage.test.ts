@@ -119,4 +119,27 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   const schema=readFileSync('supabase/functions/mcp/server.ts','utf8');
   expect(schema).toContain('expectedVersion:z.number().int().positive().optional()');
  });
+ it('preserves the owner snapshot while merging future JSON and rejects unbounded payloads',()=>{
+  const current={...row,ui:{colors:{main:'blue',future:{x:1}},
+   oldArray:[{retained:true}]}};
+  const original=JSON.parse(JSON.stringify(current));
+  const change=settingsEditCommand(current,{ui:{colors:{future:{y:2}},
+   newArray:[{safe:true}]},notify:{email:{digest:true}}},current.user_id,version);
+  expect(change).toMatchObject({op:'update',table:'settings',
+   where:{user_id:current.user_id},expected:{version}});
+  expect(change.values.ui).toMatchObject({colors:{main:'blue',future:{x:1,y:2}},
+   oldArray:[{retained:true}],newArray:[{safe:true}]});
+  expect(change.values.notify).toMatchObject({email:{digest:true},
+   future:{doNotDrop:true}});
+  expect(current).toEqual(original);
+  // Both size and depth limits apply before queuing a real connector edit.
+  let deep:Record<string,unknown>={leaf:true};
+  for(let i=0;i<22;i++)deep={child:deep};
+  expect(()=>prepareSettingsEdit(current,{ui:deep})).toThrow(/JSON nesting too deep/);
+  expect(()=>prepareSettingsEdit(current,{ui:{oversized:'x'.repeat(16000)}}))
+   .toThrow(/JSON section too large/);
+  expect(()=>prepareSettingsEdit(current,{ui:{list:[JSON.parse(
+   '{"constructor":{"prototype":{"unsafe":true}}}')]}}))
+   .toThrow(/unsafe JSON key/);
+ });
 });
