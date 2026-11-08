@@ -43,13 +43,6 @@ Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, b
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
 
-## N66 StudyApi: timer modes, phases, drift exclusion and lease
-Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
-Done = the study contract gains, additively, mode/preset/config/phase/cycle/energy/lease fields and `nextPhase`, `takeLease`, `excludeMinutes`, in both adapters with the N52 envelope; the live adapter keeps one device lease per tab and renews it while visible.
-Tests: `tests/unit/study/modes.test.ts`
-Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
-
 ## N68 v6 planner sheet: preview and commit placements behind the shell flag
 Stage: Build · Status: open · Needs: N67, N65, N60.2, N107 · Assigned: —
 Done = with `v6Shell` on, a Plan action on Today and Calendar opens a titled native dialog that previews placements for the selected tasks over the chosen days (from N67), lets the owner deselect or move items, and commits only the selected placements as study blocks with `taskId` and the day plan's `commit` (refused with an explanation when a task or block changed since the preview); unplaced work stays listed with its reason; one toast with Undo. Flag off: nothing changes.
