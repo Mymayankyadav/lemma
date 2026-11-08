@@ -198,5 +198,25 @@ try{
  assert.equal(tick3,0,'the bounded prune is idempotent when the queue drains');
  await as(a);
  assert.equal((await q("select count(*)::int n from public.owner_changes where user_id=$1 and committed_at<now()-interval '30 days'",[a]))[0].n,0);
+ // N54 regression: a scheduled retention invocation cannot monopolize the
+ // notify tick by visiting every account in a large expired multi-owner set.
+ // Nine independent expired owners require exactly two bounded service ticks.
+ await db.exec('reset role');
+ const nineOwners=Array.from({length:9},(_,i)=>
+  'bbbbbbbb-bbbb-4bbb-8bbb-'+String(i+1).padStart(12,'0'));
+ for(const id of nineOwners){
+  await q('insert into auth.users(id) values($1)',[id]);
+  await q("insert into public.owner_changes(user_id,resource,record_id,version,op,tombstone,committed_at) values($1,'tasks','bounded',1,'insert',false,now()-interval '40 days')",[id]);
+ }
+ await db.exec('set role service_role');
+ const firstOwnerBatch=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(firstOwnerBatch,8,'one tick visits no more than eight expired owners');
+ const secondOwnerBatch=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(secondOwnerBatch,1,'second tick drains the ninth owner');
+ const thirdOwnerBatch=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(thirdOwnerBatch,0,'completed retention batch is idempotent');
+ await db.exec('reset role');
+ const removedOwners=(await q('select count(*)::int n from public.owner_change_retention where user_id=any($1::uuid[])',[nineOwners]))[0].n;
+ assert.equal(removedOwners,9,'each owner has its own preserved reset watermark');
  console.log('PASS N54 owner-scoped journal projection, paging, non-UUID keys, tombstones, MCP and reset');
 }finally{await db.close()}
