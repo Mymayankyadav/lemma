@@ -57,11 +57,17 @@ function V6Calendar() {
   useEffect(()=>{
     let active=true;
     const load=()=>{
-      void getApi().getSettings().then(settings=>{
-        if(!active)return;
-        setOwnerSettings({weekStart:settings.weekStart,clock24h:settings.clock24h});
-        setPreferencesError(false);
-      }).catch(()=>{if(active)setPreferencesError(true)});
+      try{
+        void getApi().getSettings().then(settings=>{
+          if(!active)return;
+          setOwnerSettings({weekStart:settings.weekStart,clock24h:settings.clock24h});
+          setPreferencesError(false);
+        }).catch(()=>{if(active)setPreferencesError(true)});
+      }catch{
+        // Adapter initialization can also fail synchronously (configuration,
+        // unavailable mode data); never break the whole Calendar route.
+        if(active)setPreferencesError(true);
+      }
     };
     load();
     window.addEventListener('focus',load);
