@@ -1,4 +1,6 @@
 import {describe,expect,it} from 'vitest';
+import {formatCalendarTime} from '../../../src/features/calendar/views/WeekView';
+import {weekStartDay,monthBounds} from '../../../src/features/calendar/model';
 import {DemoAdapter} from '../../../src/data/demo/adapter';
 import {validatePlanningValues,validateCalendarValues} from '../../../src/features/settings/v6/Planning';
 import {SettingsNavigation,settingsTabDestination} from '../../../src/features/settings/v6/Page';
@@ -97,5 +99,18 @@ describe('N79 planning, calendar preferences, and owner JSON compatibility',()=>
    });
    expect(selected).toContain('planning');
   }finally{await act(async()=>root.unmount());container.remove()}
+ });
+});
+
+
+describe('N79 owner Calendar display preferences',()=>{
+ it('uses saved Sunday or Monday first-day settings for week and month ranges',()=>{
+  expect(weekStartDay('2026-11-11',0)).toBe('2026-11-08');
+  expect(weekStartDay('2026-11-11',1)).toBe('2026-11-09');
+  expect(monthBounds('2026-11-11','UTC',0).days[0]?.day??'2026-11-01').toBe('2026-11-01');
+ });
+ it('formats the same owner instant with the selected 12/24-hour clock',()=>{
+  expect(formatCalendarTime('2026-11-08T14:05:00Z','UTC',true)).toMatch(/14:05/);
+  expect(formatCalendarTime('2026-11-08T14:05:00Z','UTC',false)).toMatch(/2:05.*PM/i);
  });
 });

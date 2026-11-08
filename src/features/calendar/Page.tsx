@@ -2,11 +2,12 @@ import BlockSheetActions from './block-sheet/BlockSheetActions';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
 import { isFlagOn } from '../../flags';
+import { useSettings } from '../../data/hooks';
 import { getStudyApi } from '../../data/study';
 import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '../../data/study/contract';
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
-import { WeekView } from './views/WeekView';
+import { WeekView,formatCalendarTime } from './views/WeekView';
 import { MonthView } from './views/MonthView';
 import {DueDayItems,dueForDay,emptyCalendarDues,type CalendarDues} from './deadlines/DueDayItems';
 import {loadCalendarDues} from './deadlines/load';
@@ -19,11 +20,6 @@ function dateLabel(day: string, zone: string): string {
   return new Intl.DateTimeFormat('en', {
     timeZone: zone, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
   }).format(new Date(calendarRange(day, zone).start));
-}
-function timeLabel(iso: string, zone: string): string {
-  return new Intl.DateTimeFormat('en', {
-    timeZone: zone, hour: 'numeric', minute: '2-digit',
-  }).format(new Date(iso));
 }
 function localInput(iso: string): string {
   const d = new Date(iso), pad = (n: number) => String(n).padStart(2, '0');
@@ -41,19 +37,22 @@ function writeError(error: unknown): string {
     ? 'Changed elsewhere, reload to see the latest changes.'
     : (value?.message || 'Could not save the block. Try again.');
 }
-function SavedRow({ slice, zone }: { slice: LoggedSlice; zone: string }) {
+function SavedRow({ slice, zone, clock24h }: { slice: LoggedSlice; zone: string; clock24h:boolean }) {
   const minutes = Math.round((Date.parse(slice.end) - Date.parse(slice.start)) / 60000);
   return <article className="rounded-ctl bg-fill-1 p-2 text-label">
     <strong className="block text-ink">{slice.entry.intent || 'Study'}</strong>
-    <span className="text-ink-2">{timeLabel(slice.start, zone)}–{timeLabel(slice.end, zone)} · {minutes} min logged</span>
+    <span className="text-ink-2">{formatCalendarTime(slice.start, zone, clock24h)}–{formatCalendarTime(slice.end, zone, clock24h)} · {minutes} min logged</span>
   </article>;
 }
-function BlockSummary({ block, zone }: { block: CalendarBlockRecord; zone: string }) {
+function BlockSummary({ block, zone, clock24h }: { block: CalendarBlockRecord; zone: string; clock24h:boolean }) {
   return <><strong className="block break-words text-ink">{block.title}</strong>
-    <span className="text-caption text-ink-2">{block.kind === 'busy' ? 'Busy' : 'Study'} · {timeLabel(block.startsAt, zone)}–{timeLabel(block.endsAt, zone)}{block.status === 'done' ? ' · Done' : ''}</span></>;
+    <span className="text-caption text-ink-2">{block.kind === 'busy' ? 'Busy' : 'Study'} · {formatCalendarTime(block.startsAt, zone, clock24h)}–{formatCalendarTime(block.endsAt, zone, clock24h)}{block.status === 'done' ? ' · Done' : ''}</span></>;
 }
 
 function V6Calendar() {
+  const {data:ownerSettings}=useSettings();
+  const firstDay=ownerSettings?.weekStart??1;
+  const clock24h=ownerSettings?.clock24h??true;
   const [params, setParams] = useSearchParams();
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const view = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : params.get('view') === 'month' ? 'month' : 'agenda';
@@ -79,8 +78,8 @@ function V6Calendar() {
   useEffect(() => {
     let active = true;
     setPhase('loading'); setReadError('');
-    const range = view === 'month' ? monthBounds(date, zone).range :
-      calendarRange(view === 'week' ? weekStartDay(date) : date, zone, view === 'day' ? 1 : 7);
+    const range = view === 'month' ? monthBounds(date, zone, firstDay).range :
+      calendarRange(view === 'week' ? weekStartDay(date, firstDay) : date, zone, view === 'day' ? 1 : 7);
     const api = getStudyApi();
     // Load owner-only due and projected records alongside saved study data.
     // Their read-only presence never changes dayCapacity or saved effort totals.
@@ -96,7 +95,7 @@ function V6Calendar() {
         setReadError((error as Error).message || 'Could not load the calendar.'); setPhase('error');
       });
     return () => { active = false; };
-  }, [date, zone, view, reload]);
+  }, [date, zone, view, reload, firstDay]);
 
   useEffect(() => {
     const refetch = () => setReload(n => n + 1);
@@ -203,19 +202,19 @@ function V6Calendar() {
         {group.entries.length === 0 && group.blocks.length === 0 &&
           !dueForDay(group.day,date,zone,dues).length &&
           <p className="text-label text-ink-2">Nothing planned.</p>}
-        {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} />)}
-        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone}/></article>)}
+        {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} clock24h={clock24h} />)}
+        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone} clock24h={clock24h}/></article>)}
         <DueDayItems date={group.day} firstVisible={date} zone={zone} dues={dues}/>
       </Slab>)}
     </div>}
 
-    {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone}
+    {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone} firstDay={firstDay} clock24h={clock24h}
       entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
 
-    {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone}
+    {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone} firstDay={firstDay}
       entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
@@ -255,9 +254,9 @@ function V6Calendar() {
         </div>
         {slots.map(row => <div key={row.at} className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge py-2">
           <time dateTime={row.at} className="break-words text-caption tabular-nums text-ink-2">{row.label}</time>
-          <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone}/>)}</div>
+          <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone} clock24h={clock24h}/>)}</div>
           <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label">
-            <BlockSummary block={block} zone={zone}/>
+            <BlockSummary block={block} zone={zone} clock24h={clock24h}/>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" className={actionClass} disabled={saving} onClick={() => beginMove(block)} aria-label={'Move ' + block.title}>Move</button>
               {block.status !== 'done' && <button type="button" className={actionClass} disabled={saving} onClick={() => doneBlock(block)} aria-label={'Mark ' + block.title + ' done'}>Done</button>}
