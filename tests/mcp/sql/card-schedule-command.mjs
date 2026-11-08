@@ -60,6 +60,14 @@ try{
  await assert.rejects(act(request('reset',second,1)),/Card not found for owner/);
  await assert.rejects(act(request('reschedule',first,1,{due:'2026-12-01T12:30:00'})),/offset-aware/);
  await assert.rejects(act(request('reset',first,1,{state:0})),/Reset does not accept/);
+ // Undo reschedule before touching the same card again; the audit journal
+ // rejects undo of an older action while a newer inverse still changes it.
+ await q('select public.undo_action($1,$2,false)',[a,res.actionNo]);
+ assert.equal(new Date((await card(first,1)).due).toISOString(),
+  new Date(initial.due).toISOString(),'reschedule is independently undoable');
+ const res2=await act(request('reschedule',first,1,{due}));
+ assert.equal(res2.status,'ok');
+ assert.equal(new Date((await card(first,1)).due).toISOString(),'2026-12-01T12:30:00.000Z');
  const reset=await act(request('reset',first,1));
  assert.equal(reset.status,'ok');
  let row=await card(first,1);
@@ -76,9 +84,10 @@ try{
  assert.equal(row.state,2,'undo restores previous schedule state');
  assert.equal(row.stability,3);
  assert.equal(new Date(row.due).toISOString(),'2026-12-01T12:30:00.000Z');
- await q('select public.undo_action($1,$2,false)',[a,res.actionNo]);
- assert.equal(new Date((await card(first,1)).due).toISOString(),
-  new Date(initial.due).toISOString(),'undo restores pre-reschedule due');
+ // Reset's journalled inverse is a later action on the same card. Verify
+ // the shared undo guard refuses an older conflicting undo, not bypassing it.
+ await assert.rejects(q('select public.undo_action($1,$2,false)',[a,res2.actionNo]),
+  /Undo A[0-9]+ first/,'journal blocks non-LIFO conflicting undo');
  // Direct authenticated caller cannot forge an operation for another owner.
  await as(b);
  await assert.rejects(act(request('reset',first,1)),/Card not found for owner/);
