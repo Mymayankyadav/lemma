@@ -78,6 +78,39 @@ export default function TodayFocus(){
    .finally(()=>{if(alive)setLoading(false);});
   return ()=>{alive=false;};
  },[api,range.start,range.end,zone]);
+ // Reload the server-authoritative session after returning from another tab.
+ // An external version change always invalidates this tab's timer lease.
+ useEffect(()=>{
+  let alive=true;
+  const sync=()=>{void Promise.all([api.activeStudyEntry(),api.listStudyEntries(range)])
+   .then(([current,entries])=>{
+    if(!alive)return;
+    setLogged(loggedToday(entries,range,zone,new Date().toISOString()));
+    if(current?.id!==active?.id||current?.version!==active?.version||
+      (current?.leaseExpiresAt&&Date.parse(current.leaseExpiresAt)<=Date.now())){
+     setLeaseOwned(false);setActive(current);
+     setFocus(current?focusFromEntry(current):idleFocus());
+     if(current)setNote(current.reflection??'');
+     else setOpened(false);
+    }
+   }).catch(e=>{if(alive)setError(e instanceof Error?e.message:'Could not refresh focus.');});};
+  const visible=()=>{if(document.visibilityState!=='hidden')sync();};
+  window.addEventListener('focus',visible);
+  document.addEventListener('visibilitychange',visible);
+  return ()=>{alive=false;window.removeEventListener('focus',visible);
+   document.removeEventListener('visibilitychange',visible);};
+ },[api,active?.id,active?.version,range.start,range.end,zone]);
+ useEffect(()=>{
+  // Starting a committed block in the adjacent Today plan must open this
+  // same session, not a second browser-only timer.
+  const planned=()=>{
+   lastTrigger.current=document.activeElement instanceof HTMLButtonElement?
+    document.activeElement:heroTrigger.current;
+   void refresh().then(()=>{setLeaseOwned(false);setOpened(true);}).catch(report);
+  };
+  window.addEventListener('lemma:planned-focus-started',planned);
+  return ()=>window.removeEventListener('lemma:planned-focus-started',planned);
+ },[api,range.start,range.end,zone]);
  useEffect(()=>{
   const open=()=>{if(active)setOpened(true);};
   window.addEventListener('lemma:open-focus',open);
