@@ -19,14 +19,6 @@ Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle ru
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N49 Proposal drafts: migration (proposal_drafts)
-Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
-Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
-
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
@@ -114,13 +106,12 @@ Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-
 ## N79 v6 Settings: planning, focus and review-budget preferences behind the shell flag
 Stage: Build · Status: open · Needs: N39 · Assigned: —
 Done = with `v6Shell` on, Settings gains Focus and Planning sections editing `focus_defaults`, `planning`, `review_budget`, `attention`, `week_start` and `clock_24h` with validated units, through the existing settings save path extended additively (unknown keys preserved); Calendar week start and time format follow them. Flag off: nothing changes.
 Tests: `tests/unit/settings-v6/planning.test.tsx`
-Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, CURRENT.md.
-Not: other screens, other settings sections, supabase/**.
+Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
+Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
 
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
@@ -165,14 +156,6 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/aliases-revisions.mjs` (rename keeps old links resolvable, collisions refused, revisions captured once per change, second owner)
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisions.mjs, docs/v6/capability-registry/record_aliases.json, docs/v6/capability-registry/source_revisions.json, docs/v6/capability-registry/source_page_revisions.json, CURRENT.md.
 Not: app or MCP code.
-
-## N37 MCP: generic commands and resource discovery
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the `study` tool sends any registered resource's envelope to `mcp_command` (study entries, calendar blocks and tasks keep their current behaviour), `get` and `search` read registered resources in bounded pages, and a `resources` capability (inside an existing tool, so `tools/list` stays under 15,000 characters) lists registered resources with their field/operation schemas from `lemma_command_resources`, so new resources need no MCP code change.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/**` and `tests/mcp/sql/mcp-generic.mjs` (a resource registered only in the test is discoverable, readable and writable; existing study/task MCP tests unchanged)
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/mcp-generic.mjs, CURRENT.md.
-Not: migrations, existing tools' inputs or outputs.
 
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
@@ -238,7 +221,8 @@ Not: data adapters, supabase/**, flag-off pages.
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = the account export includes every table in `lemma_undo_tables` (so later tables are included by registry), owner-scoped and paged past former row caps, with a manifest of tables, counts and schema version; a unit test fails if a registered table is missing from the export.
 Tests: `tests/unit/export/v6-export.test.ts`, `tests/mcp/sql/export-registry.mjs`
-Scope: the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, CURRENT.md.
+Scope: one additive migration adding a read-only `security definer` owner export function (Owner, bug #1156): it lists the names in `lemma_undo_tables` and returns only the caller's own rows (`user_id = auth.uid()`) of one registered table per call in bounded keyset pages, rejects names not in the registry, is executable by `authenticated` only, and grants nothing on the registry itself; the export implementation in src/data/live/adapter.ts and src/data/api.ts (export only), tests/unit/export/v6-export.test.ts, tests/mcp/sql/export-registry.mjs, docs/current/N95.md.
+Owner-authorized (D1): deploys on merge, so this PR needs a review.
 Not: other adapter methods, UI.
 
 ## N104 Card reschedule and reset (write path and v6 buttons)
@@ -256,6 +240,14 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/concepts-command.mjs` (cycles, merge impact, owner separation, replay, undo, MCP parity) and `tests/unit/atlas-v6/**`
 Scope: supabase/migrations/<one new additive file>, src/data/api.ts (concept methods), the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/mcp/sql/concepts-command.mjs, tests/unit/atlas-v6/**, docs/current/N105.md.
 Not: concept placement layout, other screens.
+
+## N106 Study entry linked to its calendar block
+Stage: Build · Status: open · Needs: N70 · Assigned: —
+Done = one additive migration adds a nullable owner-composite `calendar_block_id` on study entries (an entry may point only at one of the owner's own blocks); `StudyApi.startStudyEntry` accepts it (demo and live) and v6 Today's Start passes the block it starts. Existing entries and callers are unchanged. Flag off: nothing changes.
+Owner-authorized (D1): deploys on merge, so this PR needs a review.
+Tests: `tests/mcp/sql/study-entry-block-link.mjs` (owner separation, foreign block refused) and `tests/unit/home-v6/today-plan.test.tsx`
+Scope: supabase/migrations/<one new additive file>, the study entry types and start method in src/data/** (demo and live), the Start call in src/features/home/** (v6 branch), tests/mcp/sql/study-entry-block-link.mjs, tests/unit/home-v6/today-plan.test.tsx, docs/current/N106.md.
+Not: calendar editing, other screens.
 
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
