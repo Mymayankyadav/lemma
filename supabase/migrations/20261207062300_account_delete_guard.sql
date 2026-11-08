@@ -178,7 +178,9 @@ begin
   blocked:=exists(select 1 from public.account_deletion_requests d
    where d.user_id=old.user_id and not (
     pg_catalog.pg_trigger_depth()>1 or
-    (caller='service_role' and d.cleanup_txid=pg_catalog.txid_current()
+    (caller='service_role' and d.cleanup_txid is not null
+     and d.cleanup_pid is not null
+     and d.cleanup_txid=pg_catalog.txid_current()
      and d.cleanup_pid=pg_catalog.pg_backend_pid())));
  elsif pg_catalog.pg_trigger_depth()=1 then
   blocked:=exists(select 1 from public.account_deletion_requests d
