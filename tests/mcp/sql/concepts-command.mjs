@@ -87,6 +87,16 @@ try{
  await db.exec('reset role');
  const registry=(await q("select command_fn from public.lemma_command_resources where resource='concepts'"))[0];
  assert.equal(registry.command_fn,'concepts_command');
+ // Registered MCP dispatch must use the identical owner-bound command path.
+ const current=(await q('select version from public.concepts where id=$1',[three]))[0].version;
+ await db.exec('set role service_role');
+ const mcpReq=req('update',{id:three},{blurb:'Edited through MCP'},current);
+ const mcp=(await q('select public.mcp_command($1,$2,$3::jsonb) result',
+  [a,'chatgpt',JSON.stringify(mcpReq)]))[0].result;
+ assert.equal(mcp.status,'ok');assert(mcp.actionNo>0);
+ await db.exec('reset role');
+ assert.equal((await q('select blurb from public.concepts where id=$1',[three]))[0].blurb,
+  'Edited through MCP');
  const receiptCount=(await q("select count(*)::int n from public.command_receipts where resource='concepts'"))[0].n;
  assert(receiptCount>4,'each accepted mutation uses command receipt');
  console.log('PASS N105.1 owner graph create/update/reparent/link/merge/receipt/cycle and MCP registry');
