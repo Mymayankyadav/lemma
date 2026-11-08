@@ -21,6 +21,10 @@ export default function PlanProposalV6(){
  const [status,setStatus]=useState<'loading'|'ready'|'error'>('loading');
  const [problem,setProblem]=useState(''),[pending,setPending]=useState(false);
  const [conflict,setConflict]=useState<ProposalDraftConflict|null>(null),[reload,setReload]=useState(0);
+ // React Router reuses this route component between proposal IDs. An open
+ // editor must not stay bound to the prior proposal or disable the next
+ // proposal's independent approve/reject decision.
+ useEffect(()=>{setEditor(false);setText('');setConflict(null)},[id]);
  useEffect(()=>{
   if(!id||!proposal.data)return;
   let alive=true;

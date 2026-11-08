@@ -1,6 +1,6 @@
 import {act} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
-import {MemoryRouter,Route,Routes} from 'react-router';
+import {Link,MemoryRouter,Route,Routes} from 'react-router';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Proposal} from '../../../src/data/types';
 import type {ProposalDraftRecord,ProposalDraftApi} from '../../../src/data/proposal-drafts/contract';
@@ -150,6 +150,30 @@ describe('N85 v6 proposal draft editor',()=>{
    expect(button?.disabled).toBe(true);
   }
   expect(host.textContent).toContain('Save or cancel your draft edit');
+ });
+ it('clears a previous proposal editor when the router switches to another proposal',async()=>{
+  const secondId='55555555-5555-4555-8555-555555555555';
+  mocks.proposal.mockImplementation((id:string)=>({
+   data:{...proposal,id},isPending:false,isError:false,refetch:vi.fn(),
+  }));
+  vi.mocked(adapter.listDrafts).mockImplementation(async args=>({
+   items:[{...existing,proposalId:args.proposalId}],
+   total:1,nextCursor:null,
+  }));
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Link to={'/proposals/'+secondId}>Open second proposal</Link>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6/>}/></Routes>
+  </MemoryRouter>));
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await click('Edit draft');
+  expect(host.querySelector('[aria-label="Full draft payload"]')).not.toBeNull();
+  const nav=host.querySelector<HTMLAnchorElement>('a')!;
+  await act(async()=>nav.click());
+  await vi.waitFor(()=>expect(adapter.listDrafts).toHaveBeenCalledWith(
+   expect.objectContaining({proposalId:secondId})));
+  expect(host.querySelector('[aria-label="Full draft payload"]')).toBeNull();
+  const approve=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Approve plan');
+  expect(approve?.disabled).toBe(false);
  });
  it('keeps an immutable submitted draft visible after reload and prefers a newer editable draft',async()=>{
   const submittedRow:ProposalDraftRecord={...existing,id:'44444444-4444-4444-8444-444444444444',
