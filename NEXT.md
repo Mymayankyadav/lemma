@@ -97,14 +97,6 @@ Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N87 MCP: every settings field
-Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
-Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/settings-coverage.test.ts` enumerating the registry's settings fields
-Scope: supabase/functions/mcp/**, tests/unit/mcp/settings-coverage.test.ts, CURRENT.md.
-Not: migrations, app code.
-
 ## N88 MCP: paths, subjects, styles, concepts and sources fields
 Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
 Done = MCP covers project pinning and status lifecycle, slug rename with aliases, subject/style create/reorder/merge/delete-unused, concept hierarchy, Atlas pin coordinates and edges with cycle checks, and source metadata/order/coverage/verification and page text revisions, each through the existing transaction path with versions when given.
