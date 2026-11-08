@@ -46,8 +46,8 @@ try {
  const preview=ok(await call(command('preview',{availability:{
   sources:[{resource:'tasks',id:task.id,version:task.version}]},
   items:[{task_id:task.id,disposition:'unplaced',reason:'Not done',position:0}]},
-  {id:planId},1));
- const committed=ok(await call(command('commit',{}, {id:planId},preview.plan.version));
+  {id:planId},1)));
+ const committed=ok(await call(command('commit',{}, {id:planId},preview.plan.version)));
  const count=async()=>(await q('select disposition,reason,version,calendar_block_id from public.day_plan_items where plan_id=$1',[planId]))[0];
  assert.equal((await count()).disposition,'unplaced');
 
