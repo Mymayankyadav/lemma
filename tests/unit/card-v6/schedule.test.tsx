@@ -58,6 +58,46 @@ describe('N104 card scheduling adapters',()=>{
  });
 });
 
+
+describe('bug #1202 lost-acknowledgement card schedule retries',()=>{
+ it('keeps the exact operationId across explicit retry and only one committed action',async()=>{
+  const stored=new Map<string,{status:'ok';actionNo:number}>();
+  const calls:Array<Record<string,unknown>>=[];
+  let journalActions=0,loseNext=true;
+  const rpc=vi.fn(async(name:string,args:{p:Record<string,unknown>})=>{
+   expect(name).toBe('card_schedule_command');
+   const p=structuredClone(args.p),id=String(p.operationId);
+   calls.push(p);
+   let receipt=stored.get(id);
+   if(!receipt){receipt={status:'ok',actionNo:++journalActions};stored.set(id,receipt)}
+   if(loseNext){
+    loseNext=false;
+    return {data:null,error:{message:'Failed to fetch after commit'}};
+   }
+   return {data:receipt,error:null};
+  });
+  vi.mocked(liveClient).mockReturnValue({
+   auth:{getUser:async()=>({data:{user:{id:'owner-id'}},error:null})},rpc
+  } as never);
+  const live=new LiveAdapter(),due='2026-12-10T09:00:00Z';
+  await expect(live.rescheduleCard(8,2,due)).rejects.toMatchObject({code:'offline'});
+  expect(journalActions).toBe(1);
+  await expect(live.resetCard(8,2)).rejects.toMatchObject({code:'conflict'});
+  expect(calls).toHaveLength(1);
+  await live.rescheduleCard(8,2,due);
+  expect(calls[0]).toEqual(calls[1]);
+  expect(journalActions).toBe(1);
+  await live.rescheduleCard(8,2,due);
+  expect(calls[2].operationId).not.toBe(calls[1].operationId);
+  expect(journalActions).toBe(2,'a genuinely new successful click is a new action');
+  loseNext=true;
+  await expect(live.resetCard(8,2)).rejects.toMatchObject({code:'offline'});
+  await live.resetCard(8,2);
+  expect(calls[3]).toEqual(calls[4]);
+  expect(journalActions).toBe(3,'reset with lost reply still journals once');
+ });
+});
+
 describe('N104 v6 variant actions',()=>{
  it('offers per-sibling reschedule and a two-step confirmed reset',async()=>{
   const original=window.location.pathname;
