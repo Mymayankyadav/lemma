@@ -1228,7 +1228,7 @@ try{
  await role(null);
  const correctionCheckpoint=(await q(
   "insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) "+
-  "values($1,$2,'N94-CP',1,'Review evidence','Demonstrate','Evidence',"+
+  "values($1,$2,'CP94',1,'Review evidence','Demonstrate','Evidence',"+
   "$3::jsonb) returning id",
   [owner,cardProject,JSON.stringify(['Explain the proof'])]))[0].id;
  const correctionSession=(await q(
