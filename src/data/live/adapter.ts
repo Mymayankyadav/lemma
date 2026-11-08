@@ -44,6 +44,10 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ /** Uncertain Atlas results must retain the exact command receipt identity. */
+ private readonly pendingAtlasEdits=new Map<string,{
+  fingerprint:string;envelope:ReturnType<typeof buildAtlasEnvelope>
+ }>()
  /** A lost RPC acknowledgement leaves the exact envelope pending for retry.
   * Keyed by owner + sibling, so a second intent cannot race an uncertain one.
   * Cleared only by a definitive command receipt/conflict or server rejection. */
@@ -796,6 +800,38 @@ export class LiveAdapter implements LemmaApi {
    throw new LemmaError('server','Concept version missing');
   return row.version;
  }
+ /** User-level retries of an uncertain Atlas mutation replay the exact request.
+  * Keep pending state per authenticated owner and concept; changed intents on
+  * the same concept cannot race an outcome that may already have committed. */
+ private async auditedAtlasEdit(
+  operation:Exclude<import('./atlas-command').AtlasOperation,'preview_merge'>,
+  id:string|null,patch:Record<string,unknown>,expectedVersion?:number
+ ):Promise<import('../api').AtlasMutationResult>{
+  const db=liveClient(),uid=await owner(db);
+  const candidate=buildAtlasEnvelope(operation,id,patch,expectedVersion);
+  const key=uid+':'+(candidate.target.id??('new:'+JSON.stringify(candidate.patch)));
+  const fingerprint=JSON.stringify([candidate.operation,candidate.target,
+   candidate.patch,candidate.expectedVersion??null]);
+  const previous=this.pendingAtlasEdits.get(key);
+  if(previous&&previous.fingerprint!==fingerprint)
+   throw new LemmaError('conflict',
+    'Previous Atlas edit outcome is uncertain. Retry that exact edit first.');
+  const envelope=previous?.envelope??candidate;
+  // Store before dispatch; even simultaneous clicks must use one operationId.
+  if(!previous)this.pendingAtlasEdits.set(key,{fingerprint,envelope});
+  try{
+   const result=await runAtlasMutation(db,envelope);
+   this.pendingAtlasEdits.delete(key);
+   return result;
+  }catch(error){
+   // Offline, gateway and unknown server failures could follow a committed
+   // write. Only authoritative validation, ownership or version errors clear it.
+   if(error instanceof LemmaError&&
+    ['invalid','not_found','conflict','auth'].includes(error.code))
+    this.pendingAtlasEdits.delete(key);
+   throw error;
+  }
+ }
  async createConcept(...args:Parameters<LemmaApi['createConcept']>):ReturnType<LemmaApi['createConcept']>{
   const input=args[0];
   if(!input||!input.name?.trim()||!input.subjectId)
@@ -804,30 +840,26 @@ export class LiveAdapter implements LemmaApi {
   if(input.blurb!==undefined)patch.blurb=input.blurb;
   if(input.parentId!==undefined)patch.parent_id=input.parentId;
   if(input.slug!==undefined)patch.slug=input.slug;
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('create',null,patch,0));
+  return this.auditedAtlasEdit('create',null,patch,0);
  }
  async updateConcept(...args:Parameters<LemmaApi['updateConcept']>):ReturnType<LemmaApi['updateConcept']>{
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('update',args[0],{...args[2]},args[1]));
+  return this.auditedAtlasEdit('update',args[0],{...args[2]},args[1]);
  }
  async reparentConcept(...args:Parameters<LemmaApi['reparentConcept']>):ReturnType<LemmaApi['reparentConcept']>{
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('reparent',args[0],
-   {parent_id:args[2]},args[1]));
+  return this.auditedAtlasEdit('reparent',args[0],{parent_id:args[2]},args[1]);
  }
  async linkConcept(...args:Parameters<LemmaApi['linkConcept']>):ReturnType<LemmaApi['linkConcept']>{
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('link',args[0],
-   {other_id:args[2],kind:args[3]},args[1]));
+  return this.auditedAtlasEdit('link',args[0],{other_id:args[2],kind:args[3]},args[1]);
  }
  async unlinkConcept(...args:Parameters<LemmaApi['unlinkConcept']>):ReturnType<LemmaApi['unlinkConcept']>{
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('unlink',args[0],
-   {other_id:args[2],kind:args[3]},args[1]));
+  return this.auditedAtlasEdit('unlink',args[0],{other_id:args[2],kind:args[3]},args[1]);
  }
  async previewConceptMerge(...args:Parameters<LemmaApi['previewConceptMerge']>):ReturnType<LemmaApi['previewConceptMerge']>{
   return runAtlasPreview(liveClient(),buildAtlasEnvelope('preview_merge',args[0],
    {keep_id:args[1]}));
  }
  async mergeConcept(...args:Parameters<LemmaApi['mergeConcept']>):ReturnType<LemmaApi['mergeConcept']>{
-  return runAtlasMutation(liveClient(),buildAtlasEnvelope('merge',args[0],
-   {keep_id:args[2],keep_version:args[3]},args[1]));
+  return this.auditedAtlasEdit('merge',args[0],{keep_id:args[2],keep_version:args[3]},args[1]);
  }
  async pinConcept(...args: Parameters<LemmaApi['pinConcept']>): ReturnType<LemmaApi['pinConcept']> {
   const [id,x,y]=args,db=liveClient(),uid=await owner(db)

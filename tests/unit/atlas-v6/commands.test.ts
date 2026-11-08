@@ -127,3 +127,73 @@ describe('N105.2 live owner-RLS command envelopes and retry',()=>{
    .rejects.toMatchObject({code:'conflict'});
  });
 });
+
+
+ describe('bug #1201 cross-invocation Atlas command idempotence',()=>{
+  const id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const other='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  it('replays a committed edit after two dropped replies and refuses changed intent',async()=>{
+   const requests:Array<Record<string,unknown>>=[];
+   const receipts=new Map<string,{status:'ok';actionNo:number;changed:[];concept:{id:string;version:number}}>();
+   let actions=0,loseReplies=2;
+   const rpc=vi.fn(async(_name:string,args:{p:Record<string,unknown>})=>{
+    expect(_name).toBe('concepts_command');
+    const envelope=structuredClone(args.p),operationId=String(envelope.operationId);
+    requests.push(envelope);
+    if(!receipts.has(operationId))
+     receipts.set(operationId,{status:'ok',actionNo:++actions,changed:[],concept:{id,version:2}});
+    if(loseReplies-->0)throw Error('Failed to fetch after database commit');
+    return {data:receipts.get(operationId),error:null};
+   });
+   vi.mocked(liveClient).mockReturnValue({auth:{getUser:async()=>({
+    data:{user:{id:'owner-one'}},error:null})},rpc} as never);
+   const api=new LiveAdapter();
+   await expect(api.updateConcept(id,1,{name:'Exactly once'}))
+    .rejects.toMatchObject({code:'offline'});
+   expect(requests).toHaveLength(2);
+   expect(actions).toBe(1);
+   await expect(api.updateConcept(id,1,{name:'Changed without acknowledgement'}))
+    .rejects.toMatchObject({code:'conflict'});
+   expect(requests).toHaveLength(2);
+   const result=await api.updateConcept(id,1,{name:'Exactly once'});
+   expect(result.actionNo).toBe(1);
+   expect(requests).toHaveLength(3);
+   expect(requests[0]).toEqual(requests[1]);
+   expect(requests[1]).toEqual(requests[2]);
+   expect(actions).toBe(1);
+   await api.updateConcept(id,2,{name:'A new committed edit'});
+   expect(actions).toBe(2);
+   expect(requests[3].operationId).not.toBe(requests[2].operationId);
+  });
+
+  const otherMutations=[
+   {name:'create',act:(api:LiveAdapter)=>api.createConcept({subjectId:other,name:'Unique proof'})},
+   {name:'link',act:(api:LiveAdapter)=>api.linkConcept(id,1,other,'prereq')},
+   {name:'merge',act:(api:LiveAdapter)=>api.mergeConcept(id,1,other,1)},
+  ];
+  for(const {name,act} of otherMutations){
+   it('reuses the saved receipt for a retried '+name+' command',async()=>{
+    const requests:Array<Record<string,unknown>>=[],receipts=new Map<string,number>();
+    let lost=2,journalActions=0;
+    const rpc=vi.fn(async(_name:string,args:{p:Record<string,unknown>})=>{
+     expect(_name).toBe('concepts_command');
+     requests.push(structuredClone(args.p));
+     const operationId=String(args.p.operationId);
+     if(!receipts.has(operationId))receipts.set(operationId,++journalActions);
+     if(lost-->0)return {data:null,error:{message:'Gateway timeout after commit'}};
+     return {data:{status:'ok',actionNo:receipts.get(operationId),changed:[],
+      concept:{id,version:2}},error:null};
+    });
+    vi.mocked(liveClient).mockReturnValue({auth:{getUser:async()=>({
+     data:{user:{id:'owner-one'}},error:null})},rpc} as never);
+    const api=new LiveAdapter();
+    await expect(act(api)).rejects.toMatchObject({code:'server'});
+    const reply=await act(api);
+    expect(reply.actionNo).toBe(1);
+    expect(requests).toHaveLength(3);
+    expect(requests[0]).toEqual(requests[1]);
+    expect(requests[1]).toEqual(requests[2]);
+    expect(journalActions).toBe(1);
+   });
+  }
+ });
