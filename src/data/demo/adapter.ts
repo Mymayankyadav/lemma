@@ -2148,6 +2148,29 @@ export class DemoAdapter implements LemmaApi {
       return clone(card.state);
     });
   }
+
+  /** N104: demo schedule changes use the same per-variant identity as live. */
+  async rescheduleCard(noteNo:number,ordinal:number,due:string):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1||
+    typeof due!=='string'||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
+    !Number.isFinite(Date.parse(due)))invalid('Invalid card due instant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state.due=new Date(due).toISOString();
+   });
+  }
+  async resetCard(noteNo:number,ordinal:number):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1)
+    invalid('Invalid card variant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state={state:0,due:this.iso(),stability:0,difficulty:0,
+     lastReview:null,step:0,reps:0,lapses:0};
+   });
+  }
   async searchCards(query: string, slug?: string): Promise<CardRow[]> {
     if (slug) this.project(slug);
     const needle = query.toLowerCase();

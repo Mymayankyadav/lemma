@@ -123,6 +123,10 @@ export interface LemmaApi {
  recordReview(input: RecordReviewInput): Promise<{ reviewId: number }>
  /** Undo the newest answer for a card. */
  undoReview(reviewId: number): Promise<CardState>
+ /** Change the next review instant of one note variant without changing FSRS history. */
+ rescheduleCard(noteNo:number,ordinal:number,due:string):Promise<void>
+ /** Return one note variant to the new-card state without deleting review history. */
+ resetCard(noteNo:number,ordinal:number):Promise<void>
  /** Search up to 100 cards by front or back. */
  searchCards(query: string, slug?: string): Promise<CardRow[]>
  /** Search a single 50-row page with server-side filters and a continuation offset. */
