@@ -17,6 +17,28 @@ export interface CreateNoteInput { projectSlug: string; front: string; back: str
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
 export type InsightDays = 7 | 30 | 90
 export interface ReviewLogEntry { cardId: string; reviewedAt: string; rating: Rating }
+/** N105.2: only the audited owner command changes the concept graph. */
+export type ConceptLinkKind = 'prereq' | 'related'
+/** Alias used by the v6 Atlas editor and demo command helper. */
+export type AtlasLinkKind = ConceptLinkKind
+export interface NewAtlasConcept {
+ subjectId:string;name:string;blurb?:string|null;parentId?:string|null;slug?:string
+}
+export interface AtlasConceptPatch {name?:string;blurb?:string|null}
+export interface AtlasMergeImpact {
+ childConcepts:number;incomingPrerequisites:number;outgoingPrerequisites:number;
+ relatedConcepts:number;notesAndCards:number;checkpointRefs:number
+}
+export interface AtlasMutationResult {
+ status:'ok';actionNo:number|null;
+ changed:{resource:string;id:string;version?:number}[];
+ concept:{id:string;version:number;name?:string;slug?:string};
+ impact?:AtlasMergeImpact;mergedId?:string
+}
+export interface AtlasMergePreview {
+ status:'ok';actionNo:null;changed:[];
+ sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact
+}
 export interface LemmaApi {
  readonly mode: 'live' | 'demo'
  /** Read the signed-in owner, or null. */
@@ -123,6 +145,10 @@ export interface LemmaApi {
  recordReview(input: RecordReviewInput): Promise<{ reviewId: number }>
  /** Undo the newest answer for a card. */
  undoReview(reviewId: number): Promise<CardState>
+ /** Change the next review instant of one note variant without changing FSRS history. */
+ rescheduleCard(noteNo:number,ordinal:number,due:string):Promise<void>
+ /** Return one note variant to the new-card state without deleting review history. */
+ resetCard(noteNo:number,ordinal:number):Promise<void>
  /** Search up to 100 cards by front or back. */
  searchCards(query: string, slug?: string): Promise<CardRow[]>
  /** Search a single 50-row page with server-side filters and a continuation offset. */
@@ -149,6 +175,15 @@ export interface LemmaApi {
  getAtlas(): Promise<AtlasGraph>
  /** Save a concept position in the Atlas. */
  pinConcept(id: string, x: number | null, y: number | null): Promise<void>
+ /** Server-owned version for the exact concept; never guess from an old render. */
+ getConceptVersion(id:string):Promise<number>
+ createConcept(input:NewAtlasConcept):Promise<AtlasMutationResult>
+ updateConcept(id:string,expectedVersion:number,patch:AtlasConceptPatch):Promise<AtlasMutationResult>
+ reparentConcept(id:string,expectedVersion:number,parentId:string|null):Promise<AtlasMutationResult>
+ linkConcept(id:string,expectedVersion:number,otherId:string,kind:ConceptLinkKind):Promise<AtlasMutationResult>
+ unlinkConcept(id:string,expectedVersion:number,otherId:string,kind:ConceptLinkKind):Promise<AtlasMutationResult>
+ previewConceptMerge(id:string,keepId:string):Promise<AtlasMergePreview>
+ mergeConcept(id:string,expectedVersion:number,keepId:string,keepVersion:number):Promise<AtlasMutationResult>
  /** Read non-undone reviews for the FSRS optimizer. */
  getReviewLog(): Promise<ReviewLogEntry[]>
  /** Read raw insight rows for the selected period. */

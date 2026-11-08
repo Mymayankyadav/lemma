@@ -60,7 +60,7 @@ describe('N70 verified focus Start does not trust stale owner preview',()=>{
     subjectId:'owner-subject',source:'timer',intent:'Study',startedAt:at,
    }));
    expect((study.startStudyEntry as ReturnType<typeof vi.fn>).mock.calls[0][0])
-    .not.toHaveProperty('calendarBlockId');
+    .toHaveProperty('calendarBlockId','block-1');
   }finally{setDayPlanApiForTests(null);setStudyApiForTests(null)}
  });
  it('refuses replaced and cancelled blocks, changed plans and active sessions',async()=>{
