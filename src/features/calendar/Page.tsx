@@ -194,7 +194,7 @@ function V6Calendar() {
   const capacity = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks) : null;
   const step = view === 'day' ? 1 : 7;
 
-  return <section aria-labelledby="calendar-title" className="flex flex-col gap-4 pb-8">
+  return <section aria-labelledby="calendar-title" className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
     <div onKeyDown={event => {
@@ -267,7 +267,7 @@ function V6Calendar() {
           <button type="submit" disabled={saving} className={actionClass + ' self-start'}>Add block</button>
         </form>
       </Slab>
-      <Slab as="section" aria-label="Day schedule" className="p-3">
+      <Slab as="section" aria-label="Day schedule" className="min-w-0 max-w-full p-3">
         <h2 className="mb-3 text-body font-semibold">Day schedule</h2>
         {slots.every(row => row.entries.length === 0 && row.blocks.length === 0) &&
           dueForDay(date,date,zone,dues).length===0 &&

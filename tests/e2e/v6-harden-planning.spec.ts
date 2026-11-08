@@ -114,3 +114,34 @@ test('N99 ritual and Practice routes retain readable empty states and keyboard c
  await expect(page.getByRole('region',{name:'Archived practice topics'})).toBeVisible();
  await noPageOverflow(page);
 });
+
+// The Ritual uses a separate bounded owner listing; the 51st task must not vanish.
+test('N99 day ritual retains the 55th unfinished task across paginated owner reads',async({page})=>{
+ test.setTimeout(120_000);
+ await page.setViewportSize({width:360,height:640});
+ await page.addInitScript(()=>{
+  if(!sessionStorage.getItem('lemma.v6.demo.tasks.v1')){
+   const tasks=Array.from({length:55},(_,i)=>({
+    id:'n99-task-'+i,title:'Owner ritual task '+i,body:'',status:'backlog',
+    position:i,subjectId:null,projectId:null,checkpointId:null,
+    due:{kind:'none'},priority:'normal',estimateMinutes:25,completedAt:null,version:1,
+    createdAt:'2026-11-06T08:00:00.000Z',updatedAt:'2026-11-06T08:00:00.000Z',
+   }));
+   sessionStorage.setItem('lemma.v6.demo.tasks.v1',JSON.stringify({schema:1,tasks}));
+  }
+  if(!sessionStorage.getItem('lemma.v6.demo.day-plans.v1')){
+   const plan={id:'n99-plan',planDate:'2026-11-06',timeZone:'America/New_York',
+    intention:'Review unfinished theorems',capacityMinutes:60,availability:{sources:[]},
+    status:'committed',closedAt:null,tomorrowFirstTaskId:null,ritual:{},version:1,
+    createdAt:'2026-11-06T08:00:00.000Z',updatedAt:'2026-11-06T08:00:00.000Z'};
+   sessionStorage.setItem('lemma.v6.demo.day-plans.v1',
+    JSON.stringify({schema:1,plans:[plan],items:[]}));
+  }
+ });
+ await route(page,'/today/close?date=2026-11-06');
+ const choices=page.getByRole('region',{name:'Carry over unfinished tasks'});
+ await expect(choices.getByRole('checkbox')).toHaveCount(55);
+ await choices.getByRole('checkbox',{name:'Owner ritual task 54'}).check();
+ await expect(choices.getByRole('checkbox',{name:'Owner ritual task 54'})).toBeChecked();
+ await noPageOverflow(page);
+});

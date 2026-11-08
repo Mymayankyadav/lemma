@@ -38,20 +38,40 @@ export default function Page(){
    const p=plans.items[0]??null;
    const tasksOut:TaskRecord[]=[];
    let cursor:string|null=null;
+   const taskCursors=new Set<string>();
    for(let page=0;page<20;page++){
     const batch=await getTaskApi().listTasks({
      status:['backlog','in_progress'],limit:50,cursor});
+    if(!Array.isArray(batch.items)||batch.items.length>50||
+     !Number.isSafeInteger(batch.total)||batch.total<tasksOut.length+batch.items.length)
+     throw new Error('Invalid unfinished task page; reload the ritual');
     tasksOut.push(...batch.items);
     cursor=batch.nextCursor;
-    if(!cursor)break;
+    if(!cursor){
+     if(tasksOut.length!==batch.total)throw new Error('Unfinished task list changed; reload');
+     break;
+    }
+    if(typeof cursor!=='string'||taskCursors.has(cursor)||batch.items.length===0)
+     throw new Error('Unfinished task cursor did not advance; reload');
+    taskCursors.add(cursor);
     if(page===19)throw new Error('Unfinished tasks exceed the bounded ritual listing');
    }
    const thoughtOut:ParkedThought[]=[];
+   const thoughtCursors=new Set<string>();
    cursor=null;
    for(let page=0;page<10;page++){
     const batch=await getThoughtApi().listThoughts({status:['open'],limit:50,cursor});
+    if(!Array.isArray(batch.items)||batch.items.length>50||
+     !Number.isSafeInteger(batch.total)||batch.total<thoughtOut.length+batch.items.length)
+     throw new Error('Invalid open thought page; reload the ritual');
     thoughtOut.push(...batch.items);cursor=batch.nextCursor;
-    if(!cursor)break;
+    if(!cursor){
+     if(thoughtOut.length!==batch.total)throw new Error('Open thoughts changed; reload');
+     break;
+    }
+    if(typeof cursor!=='string'||thoughtCursors.has(cursor)||batch.items.length===0)
+     throw new Error('Open thought cursor did not advance; reload');
+    thoughtCursors.add(cursor);
     if(page===9)throw new Error('Open thoughts exceed the bounded ritual listing');
    }
    const baseline=Date.parse(date+'T00:00:00Z');
