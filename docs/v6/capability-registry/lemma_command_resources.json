@@ -194,7 +194,8 @@
           "preview",
           "commit",
           "close",
-          "reopen"
+          "reopen",
+          "commit_placements"
         ],
         "fields": [
           "plan_date",
