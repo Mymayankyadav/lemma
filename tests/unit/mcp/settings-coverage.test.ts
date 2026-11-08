@@ -21,6 +21,7 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   expect(wanted).not.toContain('connector_secret');
   expect(wanted).not.toContain('fsrs_tuned_at');
   expect(wanted).not.toContain('version');
+  expect(wanted).not.toContain('connector_last_client');
  });
  it('accepts all registered editable settings families without owner-controlled metadata',()=>{
   const accepted:Record<string,unknown>={
@@ -30,7 +31,7 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
    learn_ahead_minutes:25,fsrs_weights:[...FSRS.DEFAULT_W],
    macros:'\\newcommand{\\N}{\\mathbb{N}}',default_style:'socratic',
    tutor_rules:null,mix_decks:true,preferred_chat:'chatgpt',
-   connector_last_client:'other',time_zone:'Asia/Kolkata',master_prompt:'study',
+   time_zone:'Asia/Kolkata',master_prompt:'study',
    ui:{layout:'dense'},notify:{email:{digest:true}},
    week_start:1,clock_24h:true,focus_defaults:{mode:'flowtime'},
    planning:{gap_minutes:15},review_budget:{minutes:30},
@@ -69,8 +70,8 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   ])expect(()=>prepareSettingsEdit(row,payload)).toThrow();
  });
  it('refuses a misleading connector_last_client commit while preserving real audit source',()=>{
-  // The underlying owner-editable registry classification conflicts with
-  // mcp_commit's mandatory post-batch telemetry. Build should fail closed.
+  // Owner decision #1197 classifies this field as command-managed, while
+  // mcp_commit always records the true connector source. Fail closed.
   for(const requested of ['claude','other',null]){
    expect(()=>settingsEditCommand(row,{connector_last_client:requested},
     row.user_id,version)).toThrow(/server-managed by mcp_commit/);

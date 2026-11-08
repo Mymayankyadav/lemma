@@ -5,7 +5,7 @@ export const ownerEditableSettingsFields = [
  'desired_retention','new_per_day','reviews_per_day','learn_steps','relearn_steps',
  'rollover_hour','max_interval_days','fuzz','load_balance','learn_ahead_minutes',
  'fsrs_weights','macros','default_style','tutor_rules','mix_decks','preferred_chat',
- 'connector_last_client','time_zone','master_prompt','ui','notify','week_start',
+ 'time_zone','master_prompt','ui','notify','week_start',
  'clock_24h','focus_defaults','planning','review_budget','attention',
 ] as const;
 const allowed=new Set<string>(ownerEditableSettingsFields);
@@ -104,9 +104,6 @@ function verify(key:string,value:unknown):unknown{
   return [...value];
  }else if(key==='preferred_chat'){
   if(value!=='claude'&&value!=='chatgpt')bad('preferred_chat invalid');
- }else if(key==='connector_last_client'){
-  if(value!==null&&!['claude','chatgpt','other'].includes(String(value)))
-   bad('connector client invalid');
  }else if(key==='time_zone'){
   text(value,100,key);
   try{new Intl.DateTimeFormat('en-US',{timeZone:value as string})}
@@ -137,6 +134,10 @@ export function prepareSettingsEdit(current:Record<string,unknown>,patch:Record<
  }
  const out:Record<string,unknown>={};
  for(const [key,value] of Object.entries(patch)){
+  // Owner decision #1197: connector provenance is command-managed and
+  // mcp_commit records the actual caller after every queued settings write.
+  if(key==='connector_last_client')
+   bad('connector_last_client is server-managed by mcp_commit; owner edits are not permitted');
   if(!allowed.has(key))bad('field is not owner-editable: '+key);
   const checked=verify(key,value);
   out[key]=sections.has(key)?merged(current[key],checked):checked;
@@ -152,11 +153,6 @@ export function prepareSettingsEdit(current:Record<string,unknown>,patch:Record<
 export function settingsEditCommand(current:Record<string,unknown>,
  patch:Record<string,unknown>,ownerId:string,expectedVersion?:number){
  const values=prepareSettingsEdit(current,patch,expectedVersion);
- // mcp_commit overwrites connector_last_client from its real p_source after
- // applying all queued edits. Never report a successful nonpersistent edit or
- // falsify audit provenance by substituting a fake connector source (#1197).
- if(Object.prototype.hasOwnProperty.call(values,'connector_last_client'))
-  throw Error('connector_last_client is server-managed by mcp_commit; owner edit is blocked pending bug #1197');
  return {op:'update',table:'settings',where:{user_id:ownerId},
   ...(expectedVersion===undefined?{}:{expected:{version:expectedVersion}}),values};
 }
