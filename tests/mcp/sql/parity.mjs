@@ -165,7 +165,11 @@ async function roundTrip(resource,details){
  assert.deepEqual(await mcp(create),created,resource+': exact MCP retry differs');
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
   journalCount,resource+': replay created another audit action');
- const altered=await mcp({...create,patch:{...create.patch,_different:'attempted'}});
+ // Reuse the operationId with a *valid different* field value. Some command
+ // validators reject unknown fields before their receipt lookup, which would
+ // only test envelope rejection rather than exact-once replay semantics.
+ const altered=await mcp({...create,patch:{...create.patch,
+  [details.column]:details.updated}});
  // D8 task dispatcher rejects a changed payload, whereas the original
  // study_command compatibility bridge intentionally returns its first
  // stored receipt for any same-operationId retry (N12 contract). Both must
