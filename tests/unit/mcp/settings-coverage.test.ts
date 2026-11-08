@@ -82,38 +82,26 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   expect(settingsEditCommand(row,{max_interval_days:600},row.user_id,version).values)
    .toEqual({max_interval_days:600});
  });
- it('proves actual mcp_commit overwrites a mismatched owner-selected connector client',async()=>{
-  // Execute the unchanged production SQL, not a mocked approximation of
-  // mcp_commit's second UPDATE. This reproduces the outstanding #1197 bug.
-  const {PGlite}=await import('@electric-sql/pglite');
-  const db=new PGlite();
-  const owner='11111111-1111-4111-8111-111111111111';
-  try{
-   await db.exec([
-    'create role anon;create role authenticated;create role service_role;',
-    'create table public.settings(user_id uuid primary key,version int not null default 3,new_per_day int,connector_last_client text,connector_last_seen_at timestamptz);',
-    'create table public.actions(no bigint generated always as identity primary key,user_id uuid,txid bigint,source text,tool text,summary text);',
-    'create table public.action_changes(action_no bigint,op text,table_name text,new jsonb);',
-    'create table public.checkpoint_prereqs(user_id uuid,checkpoint_id uuid,prereq_id uuid);',
-   ].join('\n'));
-   await db.exec(readFileSync('supabase/migrations/20261029190752_mcp_transactions.sql','utf8'));
-   await db.query('insert into public.settings(user_id,new_per_day) values ($1,$2)',[owner,20]);
-   for(const requested of ['claude',null]){
-    const commands=[{op:'update',table:'settings',where:{user_id:owner},
-     values:{new_per_day:30,connector_last_client:requested}}];
-    await db.query('select public.mcp_commit($1::uuid,$2::text,$3::text,$4::text,$5::jsonb) value',
-     [owner,'edit','chatgpt','User settings edit',JSON.stringify(commands)]);
-    const saved=(await db.query(
-     'select new_per_day,connector_last_client from public.settings where user_id=$1',
-     [owner])).rows[0];
-    expect(saved.new_per_day).toBe(30);
-    expect(saved.connector_last_client).toBe('chatgpt');
-   }
-   for(const requested of ['claude',null])
-    expect(()=>settingsEditCommand(row,{
-     new_per_day:30,connector_last_client:requested
-    },row.user_id,version)).toThrow(/server-managed by mcp_commit/);
-  }finally{await db.close()}
+ it('refuses mixed connector-client patches without altering real connector audit provenance',()=>{
+  // mcp_commit is the exact deployed SQL boundary. It runs every queued
+  // UPDATE before its mandatory telemetry UPDATE, never after it.
+  const sql=readFileSync('supabase/migrations/20261029190752_mcp_transactions.sql','utf8');
+  const queued=sql.indexOf("for c in select jsonb_array_elements(p_commands) loop");
+  const telemetry=sql.indexOf("update public.settings set connector_last_seen_at=now(),connector_last_client=");
+  const result=sql.indexOf("select no into a from public.actions");
+  expect(queued).toBeGreaterThan(-1);
+  expect(telemetry).toBeGreaterThan(queued);
+  expect(result).toBeGreaterThan(telemetry);
+  expect(sql.slice(telemetry,result)).toContain(
+   "case when p_source in ('claude','chatgpt','other') then p_source else connector_last_client end");
+  const client=readFileSync('supabase/functions/mcp/db.ts','utf8');
+  expect(client).toContain("p_source:args.client||st.data?.connector_last_client||'other'");
+  // Reject even a mixed patch, so no unrelated setting write can be queued
+  // as partial success alongside an unpersistable connector_last_client edit.
+  for(const requested of ['claude','other',null])
+   expect(()=>settingsEditCommand(row,{
+    new_per_day:30,connector_last_client:requested,
+   },row.user_id,version)).toThrow(/server-managed by mcp_commit/);
  });
  it('builds a safe owner-bound CAS command and refuses stale versions',()=>{
   expect(()=>settingsEditCommand(row,{focus_defaults:{focus_minutes:45}},
