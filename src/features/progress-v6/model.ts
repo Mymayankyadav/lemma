@@ -1,7 +1,7 @@
 import { dayBounds, loggedMinutes, subjectPartition, type StudyEntry as EffortEntry } from '../../lib/effort';
 import type { StudyEntryRecord, StudyRange } from '../../data/study/contract';
 
-export type EffortRange = 'day' | 'week' | 'month';
+export type EffortRange = 'day' | 'week' | 'month' | '7' | '30' | '90';
 export type EffortPeriod = { days: string[]; span: StudyRange; range: EffortRange };
 const minute = 60000;
 
@@ -20,9 +20,10 @@ export function periodFor(range: EffortRange, now: Date, zone: string): EffortPe
   const today = civilDay(now, zone);
   const [y, m, d] = today.split('-').map(Number);
   const weekday = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // local civil date, not UTC instant
-  const first = range === 'day' ? today : range === 'week'
+  const rolling = range === '7' || range === '30' || range === '90' ? Number(range) : null;
+  const first = rolling !== null ? addDays(today, 1 - rolling) : range === 'day' ? today : range === 'week'
     ? addDays(today, -((weekday + 6) % 7)) : today.slice(0, 7) + '-01';
-  const next = range === 'day' ? addDays(first, 1) : range === 'week'
+  const next = rolling !== null ? addDays(today, 1) : range === 'day' ? addDays(first, 1) : range === 'week'
     ? addDays(first, 7) : new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10);
   const count = Math.round((Date.parse(next + 'T00:00:00Z') - Date.parse(first + 'T00:00:00Z')) / (24 * 60 * minute));
   const days = Array.from({ length: count }, (_, i) => addDays(first, i));
@@ -69,5 +70,15 @@ export function effortSummary(entries: StudyEntryRecord[], period: EffortPeriod,
   const exact = subjectPartition(closed, period.span, zone, now);
   const parts = partitionWholeMinutes(exact, total)
     .sort((a, b) => a.id === 'unassigned' ? 1 : b.id === 'unassigned' ? -1 : b.minutes - a.minutes);
-  return { minutes: total, displayMinutes: Math.round(total), daily, parts };
+  // Charts show actual values, not rounded whole-minute approximations. The
+  // hundredth-minute allocation remains additive even for overlapping sessions.
+  const exactParts = partitionWholeMinutes(
+    Object.fromEntries(Object.entries(exact).map(([id, value]) => [id, value * 100])),
+    total * 100,
+  ).map(part => ({ ...part, minutes: part.minutes / 100 }))
+    .sort((a,b) => a.id === 'unassigned' ? 1 : b.id === 'unassigned' ? -1 : b.minutes - a.minutes);
+  return { minutes: total, displayMinutes: Math.round(total), daily, parts, exactParts };
 }
+
+/** Visible chart values keep two decimals, without rounding everything to minutes. */
+export const formatExactMinutes = (minutes: number): string => String(Number(Math.max(0, minutes).toFixed(2)));
