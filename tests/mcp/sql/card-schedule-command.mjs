@@ -31,7 +31,7 @@ try{
  for(const file of files)await db.exec(await readFile(new URL(file,dir),'utf8'));
  await q('insert into auth.users(id) values($1),($2)',[a,b]);
  const makeOwner=async(id,label)=>{
-  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[id,'a'.repeat(48)]);
+  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[id,(id===a?'a':'b').repeat(48)]);
   const subject=(await q("insert into public.subjects(user_id,name,glyph,hue) values($1,$2,'M','cyan') returning id",[id,label]))[0].id;
   const project=(await q("insert into public.projects(user_id,subject_id,slug,title,goal) values($1,$2,$3,$4,'Study') returning id",[id,subject,label.toLowerCase(),label]))[0].id;
   const note=(await q("insert into public.notes(user_id,project_id,front,back) values($1,$2,'Q','A') returning id,no",[id,project]))[0];
