@@ -85,7 +85,16 @@ async function roundTrip(resource,details){
  assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
   journalCount,resource+': replay created another audit action');
  const altered=await mcp({...create,patch:{...create.patch,_different:'attempted'}});
- assert.equal(altered.status,'conflict',resource+': altered payload reuses operationId');
+ // D8 task dispatcher rejects a changed payload, whereas the original
+ // study_command compatibility bridge intentionally returns its first
+ // stored receipt for any same-operationId retry (N12 contract). Both must
+ // prevent a second mutation or receipt; don't conflate the two policies.
+ if(resource==='tasks')
+  assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
+ else
+  assert.deepEqual(altered,created,resource+': compatibility replay must return original receipt');
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,
+  journalCount,resource+': changed-payload retry journalled a second mutation');
  await as(owner);
  const row=(await q('select * from public.'+resource+' where id=$1',[id]))[0];
  assert.ok(row,resource+': MCP-created row missing from app owner read');
