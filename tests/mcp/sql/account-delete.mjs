@@ -25,6 +25,15 @@ try{
  for(const id of [A,B])
   await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
    [id,id===A?'a'.repeat(48):'b'.repeat(48)]);
+ // Audit details do not carry user_id. Their FK to owner actions must be
+ // removed before the parent action; another owner's audit remains intact.
+ const actionA=(await q("insert into public.actions(user_id,txid,source,summary) "+
+  "values($1,90000001,'system','delete-A fixture') returning no",[A]))[0].no;
+ const actionB=(await q("insert into public.actions(user_id,txid,source,summary) "+
+  "values($1,90000002,'system','preserve-B fixture') returning no",[B]))[0].no;
+ for(const actionNo of [actionA,actionB])
+  await q("insert into public.action_changes(action_no,seq,table_name,row_pk,op) "+
+   "values($1,1,'settings','{}'::jsonb,'insert')",[actionNo]);
  await db.exec('set role authenticated');
  await q("select set_config('test.uid',$1,false)",[A]);
  assert.equal((await q('select public.lemma_storage_owner_can_write() ok'))[0].ok,true);
@@ -56,6 +65,8 @@ try{
  await db.exec('reset role');
  await q("select set_config('test.uid','',false)");
  await db.exec('set role service_role');
+ await assert.rejects(q('select public.lemma_purge_account_rows($1::uuid)',[B]),
+  /Account deletion must be secured/);
  const purged=(await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result;
  assert.equal(purged.status,'purged');
  assert.equal((await q('select public.lemma_purge_account_rows($1::uuid) result',[A]))[0].result.status,
@@ -73,6 +84,12 @@ try{
  }
  assert.equal((await q('select count(*)::int n from public.account_deletion_requests where user_id=$1',[A]))[0].n,
   1,'deletion guard remains until Auth user is removed');
+ assert.equal((await q('select count(*)::int n from public.action_changes where action_no=$1',[actionA]))[0].n,
+  0,'owner A audit details must be purged before Auth');
+ assert.equal((await q('select count(*)::int n from public.action_changes where action_no=$1',[actionB]))[0].n,
+  1,'owner B audit details must be retained');
+ assert.equal((await q('select count(*)::int n from public.actions where no=$1 and user_id=$2',[actionB,B]))[0].n,
+  1,'owner B audit action must be retained');
  await q('delete from auth.users where id=$1',[A]);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[A]))[0].n,0);
  assert.equal((await q('select count(*)::int n from public.settings where user_id=$1',[B]))[0].n,1);
