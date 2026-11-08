@@ -152,6 +152,11 @@ export function prepareSettingsEdit(current:Record<string,unknown>,patch:Record<
 export function settingsEditCommand(current:Record<string,unknown>,
  patch:Record<string,unknown>,ownerId:string,expectedVersion?:number){
  const values=prepareSettingsEdit(current,patch,expectedVersion);
+ // mcp_commit overwrites connector_last_client from its real p_source after
+ // applying all queued edits. Never report a successful nonpersistent edit or
+ // falsify audit provenance by substituting a fake connector source (#1197).
+ if(Object.prototype.hasOwnProperty.call(values,'connector_last_client'))
+  throw Error('connector_last_client is server-managed by mcp_commit; owner edit is blocked pending bug #1197');
  return {op:'update',table:'settings',where:{user_id:ownerId},
   ...(expectedVersion===undefined?{}:{expected:{version:expectedVersion}}),values};
 }

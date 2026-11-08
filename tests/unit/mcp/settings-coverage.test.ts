@@ -68,6 +68,20 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
    {user_id:'foreign'}, {connector_secret:'forged'},{updated_source:'forged'}
   ])expect(()=>prepareSettingsEdit(row,payload)).toThrow();
  });
+ it('refuses a misleading connector_last_client commit while preserving real audit source',()=>{
+  // The underlying owner-editable registry classification conflicts with
+  // mcp_commit's mandatory post-batch telemetry. Build should fail closed.
+  for(const requested of ['claude','other',null]){
+   expect(()=>settingsEditCommand(row,{connector_last_client:requested},
+    row.user_id,version)).toThrow(/server-managed by mcp_commit/);
+  }
+  const sql=readFileSync('supabase/migrations/20261029190752_mcp_transactions.sql','utf8');
+  expect(sql).toContain('connector_last_client=case when p_source');
+  expect(sql).toContain('then p_source else connector_last_client end');
+  // Other field edits still retain the real connector provenance from commitBatch.
+  expect(settingsEditCommand(row,{max_interval_days:600},row.user_id,version).values)
+   .toEqual({max_interval_days:600});
+ });
  it('builds a safe owner-bound CAS command and refuses stale versions',()=>{
   expect(()=>settingsEditCommand(row,{focus_defaults:{focus_minutes:45}},
    row.user_id,2)).toThrow(/version conflict/i);
