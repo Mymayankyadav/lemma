@@ -164,9 +164,7 @@ describe('N85 v6 proposal draft editor',()=>{
   vi.mocked(adapter.listDrafts).mockResolvedValue({
    items:[submittedRow],total:1,nextCursor:null,
   });
-  const reload=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()==='Retry drafts');
-  // The editor has no network error; test a new mount using a different id
-  // by invoking the hook's refetch route through re-render.
+  // No network error; remount the route to exercise persisted query history.
   await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
    <Routes><Route path="/proposals/:id" element={<PlanProposalV6 key="reload"/>}/></Routes>
   </MemoryRouter>));
