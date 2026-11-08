@@ -197,3 +197,47 @@ describe('N105.2 live owner-RLS command envelopes and retry',()=>{
    });
   }
  });
+
+
+describe('bug #1209 pending Atlas create is owner-wide until acknowledged',()=>{
+ it('blocks changed create payload after a lost acknowledgement, replays exact intent',async()=>{
+  const subjectId='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const conceptId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const receipts=new Map<string,{status:'ok';actionNo:number;changed:[];concept:{id:string;version:number}}>();
+  const sent:Array<Record<string,unknown>>=[];
+  let actions=0,lostReplies=2;
+  const rpc=vi.fn(async(_name:string,args:{p:Record<string,unknown>})=>{
+   expect(_name).toBe('concepts_command');
+   const request=structuredClone(args.p);
+   sent.push(request);
+   const operationId=String(request.operationId);
+   if(!receipts.has(operationId))
+    receipts.set(operationId,{status:'ok',actionNo:++actions,changed:[],
+     concept:{id:conceptId,version:1}});
+   if(lostReplies-->0)throw Error('Failed to fetch after database commit');
+   return {data:receipts.get(operationId),error:null};
+  });
+  vi.mocked(liveClient).mockReturnValue({auth:{getUser:async()=>({
+   data:{user:{id:'account-one'}},error:null})},rpc} as never);
+  const live=new LiveAdapter();
+  const first={subjectId,name:'Lemma A',blurb:'Original proof'};
+  await expect(live.createConcept(first)).rejects.toMatchObject({code:'offline'});
+  expect(sent).toHaveLength(2);
+  expect(actions).toBe(1);
+  await expect(live.createConcept({...first,name:'Lemma B'}))
+   .rejects.toMatchObject({code:'conflict'});
+  await expect(live.createConcept({...first,blurb:'Edited proof'}))
+   .rejects.toMatchObject({code:'conflict'});
+  expect(sent).toHaveLength(2);
+  const receipt=await live.createConcept({...first});
+  expect(receipt.actionNo).toBe(1);
+  expect(sent).toHaveLength(3);
+  expect(sent[0]).toEqual(sent[1]);
+  expect(sent[1]).toEqual(sent[2]);
+  expect(actions).toBe(1);
+  await live.createConcept({...first,name:'Lemma B'});
+  expect(sent).toHaveLength(4);
+  expect(sent[3].operationId).not.toBe(sent[2].operationId);
+  expect(actions).toBe(2);
+ });
+});
