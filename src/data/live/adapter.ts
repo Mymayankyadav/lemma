@@ -9,6 +9,8 @@ import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, 
 import { LemmaError, notImplemented } from '../api'
 import { mergeNotifyPrefs } from '../notify'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
+import {atlasId,atlasInput,atlasPatch,atlasVersion,atlasKind,atlasImpact} from '../atlas-command'
+import type {AtlasConceptInput,AtlasConceptPatch,AtlasLinkKind,AtlasEditResult,AtlasMergePreview} from '../atlas-command'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -43,6 +45,7 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  readonly mode = 'live' as const
+ private atlasRetries=new Map<string,string>()
  /** Reminders stay unavailable in live mode until NOTIF-6. */
  async listPushDevices(..._args:Parameters<LemmaApi['listPushDevices']>):ReturnType<LemmaApi['listPushDevices']> {throw notImplemented('listPushDevices')}
  async addPushDevice(..._args:Parameters<LemmaApi['addPushDevice']>):ReturnType<LemmaApi['addPushDevice']> {throw notImplemented('addPushDevice')}
@@ -719,7 +722,7 @@ export class LiveAdapter implements LemmaApi {
       topic:c.topic??null,level:c.level??'planet',parentId:c.parent_id??null,isStar:!!c.is_star,
       status:conceptStatus(linkedCps.map(getView).map(v=>v.ui),
         misconceptions.some(m=>m.concept_id===c.id&&!m.resolved_at),again),
-      pinX:c.pin_x,pinY:c.pin_y,
+      version:Number(c.version??1),pinX:c.pin_x,pinY:c.pin_y,
       checkpointRefs:linkedCps.map(cp=>({projectSlug:projects.find(p=>p.id===cp.project_id)?.slug??'',code:cp.code})),
       dueCards:due.filter(item=>relevantNotes.some(n=>n.id===item.noteId)).length}
   })
@@ -731,6 +734,97 @@ export class LiveAdapter implements LemmaApi {
   if((x===null)!==(y===null)||(x!==null&&!Number.isFinite(x))||(y!==null&&!Number.isFinite(y)))
     throw new LemmaError('invalid','Invalid Atlas coordinates')
   checked(await db.from('concepts').update({pin_x:x,pin_y:y}).eq('id',id).eq('user_id',uid).select('id').single())
+ }
+ /** N105.2: one owner-only authenticated RPC; an uncertain response retains the
+  * original immutable operationId on an explicit retry of the same request. */
+ private async atlasExecute(operation:'create'|'update'|'reparent'|'link'|'unlink'|'merge'|'preview_merge',
+  target:Record<string,unknown>,patch:Record<string,unknown>,expectedVersion?:number):
+  Promise<AtlasEditResult|AtlasMergePreview>{
+  const base={schemaVersion:1,resource:'concepts',operation,target,patch,
+   ...(expectedVersion===undefined?{}:{expectedVersion})};
+  const fingerprint=JSON.stringify(base);
+  const operationId=this.atlasRetries.get(fingerprint)??(()=>{
+   if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();
+   if(!globalThis.crypto?.getRandomValues)throw new LemmaError('server','Secure Atlas operation ID unavailable');
+   const bytes=new Uint8Array(16);globalThis.crypto.getRandomValues(bytes);
+   bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+   const hex=[...bytes].map(n=>n.toString(16).padStart(2,'0')).join('');
+   return [hex.slice(0,8),hex.slice(8,12),hex.slice(12,16),hex.slice(16,20),hex.slice(20)].join('-');
+  })();
+  this.atlasRetries.set(fingerprint,operationId);
+  const db=liveClient();await owner(db);
+  const response=await db.rpc('concepts_command',{p:{operationId,...base}});
+  if(response.error){
+   const message=response.error.message??'Atlas command failed';
+   if(/not found for owner|referenced atlas concept not found/i.test(message)){
+    this.atlasRetries.delete(fingerprint);
+    throw new LemmaError('not_found',message);
+   }
+   if(/cycle|constraint|invalid|requires|cannot|already|unsupported|not found/i.test(message)){
+    this.atlasRetries.delete(fingerprint);
+    throw new LemmaError('invalid',message);
+   }
+   throw new LemmaError('server',message);
+  }
+  const reply=response.data as Record<string,unknown>|null;
+  if(!reply||typeof reply!=='object'||Array.isArray(reply))
+   throw new LemmaError('server','Missing audited Atlas command response');
+  if(reply.status==='conflict'){
+   this.atlasRetries.delete(fingerprint);
+   throw new LemmaError('conflict',String(reply.reason??'Atlas concept version changed'));
+  }
+  if(reply.status!=='ok')throw new LemmaError('server','Malformed Atlas status');
+  if(operation==='preview_merge'){
+   this.atlasRetries.delete(fingerprint);
+   return {impact:atlasImpact(reply.impact),sourceVersion:atlasVersion(reply.sourceVersion as number),
+    keepVersion:atlasVersion(reply.keepVersion as number)};
+  }
+  const changed=reply.changed;
+  if(!Array.isArray(changed)||changed.length!==1||
+   !Number.isSafeInteger(reply.actionNo)||Number(reply.actionNo)<1)
+   throw new LemmaError('server','Unaudited Atlas command receipt');
+  const row=changed[0] as Record<string,unknown>;
+  const id=atlasId(row.id as string),version=atlasVersion(row.version as number);
+  this.atlasRetries.delete(fingerprint);
+  return {id,version,actionNo:Number(reply.actionNo),
+   ...(reply.mergedId?{mergedId:atlasId(reply.mergedId as string)}:{}),
+   ...(reply.impact?{impact:atlasImpact(reply.impact)}:{})};
+ }
+ async createAtlasConcept(input:AtlasConceptInput):Promise<AtlasEditResult>{
+  const value=atlasInput(input);
+  return this.atlasExecute('create',{},{
+   subject_id:value.subjectId,name:value.name,
+   ...(value.blurb===undefined?{}:{blurb:value.blurb}),
+   ...(value.parentId===undefined?{}:{parent_id:value.parentId}),
+  }) as Promise<AtlasEditResult>;
+ }
+ async updateAtlasConcept(id:string,expectedVersion:number,patch:AtlasConceptPatch):Promise<AtlasEditResult>{
+  const value=atlasPatch(patch);
+  return this.atlasExecute('update',{id:atlasId(id)},{
+   ...('name' in value?{name:value.name}:{}),...('blurb' in value?{blurb:value.blurb}:{})
+  },atlasVersion(expectedVersion)) as Promise<AtlasEditResult>;
+ }
+ async reparentAtlasConcept(id:string,expectedVersion:number,parentId:string|null):Promise<AtlasEditResult>{
+  return this.atlasExecute('reparent',{id:atlasId(id)},
+   {parent_id:parentId===null?null:atlasId(parentId)},
+   atlasVersion(expectedVersion)) as Promise<AtlasEditResult>;
+ }
+ async linkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>{
+  return this.atlasExecute('link',{id:atlasId(id)},
+   {other_id:atlasId(otherId),kind:atlasKind(kind)},atlasVersion(expectedVersion)) as Promise<AtlasEditResult>;
+ }
+ async unlinkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>{
+  return this.atlasExecute('unlink',{id:atlasId(id)},
+   {other_id:atlasId(otherId),kind:atlasKind(kind)},atlasVersion(expectedVersion)) as Promise<AtlasEditResult>;
+ }
+ async previewAtlasMerge(sourceId:string,keepId:string):Promise<AtlasMergePreview>{
+  return this.atlasExecute('preview_merge',{id:atlasId(sourceId)},
+   {keep_id:atlasId(keepId)}) as Promise<AtlasMergePreview>;
+ }
+ async mergeAtlasConcept(sourceId:string,expectedVersion:number,keepId:string,keepVersion:number):Promise<AtlasEditResult>{
+  return this.atlasExecute('merge',{id:atlasId(sourceId)},
+   {keep_id:atlasId(keepId),keep_version:atlasVersion(keepVersion)},
+   atlasVersion(expectedVersion)) as Promise<AtlasEditResult>;
  }
  async getReviewLog(...args: Parameters<LemmaApi['getReviewLog']>): ReturnType<LemmaApi['getReviewLog']> {
   const db=liveClient(),uid=await owner(db)

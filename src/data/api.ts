@@ -17,6 +17,7 @@ export interface CreateNoteInput { projectSlug: string; front: string; back: str
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
 export type InsightDays = 7 | 30 | 90
 export interface ReviewLogEntry { cardId: string; reviewedAt: string; rating: Rating }
+import type {AtlasConceptInput,AtlasConceptPatch,AtlasLinkKind,AtlasEditResult,AtlasMergePreview} from './atlas-command'
 export interface LemmaApi {
  readonly mode: 'live' | 'demo'
  /** Read the signed-in owner, or null. */
@@ -149,6 +150,14 @@ export interface LemmaApi {
  getAtlas(): Promise<AtlasGraph>
  /** Save a concept position in the Atlas. */
  pinConcept(id: string, x: number | null, y: number | null): Promise<void>
+ /** N105.2: audited owner concept, hierarchy, link and merge commands. */
+ createAtlasConcept(input:AtlasConceptInput):Promise<AtlasEditResult>
+ updateAtlasConcept(id:string,expectedVersion:number,patch:AtlasConceptPatch):Promise<AtlasEditResult>
+ reparentAtlasConcept(id:string,expectedVersion:number,parentId:string|null):Promise<AtlasEditResult>
+ linkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>
+ unlinkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>
+ previewAtlasMerge(sourceId:string,keepId:string):Promise<AtlasMergePreview>
+ mergeAtlasConcept(sourceId:string,expectedVersion:number,keepId:string,keepVersion:number):Promise<AtlasEditResult>
  /** Read non-undone reviews for the FSRS optimizer. */
  getReviewLog(): Promise<ReviewLogEntry[]>
  /** Read raw insight rows for the selected period. */

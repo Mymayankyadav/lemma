@@ -243,7 +243,7 @@ export interface CardComment {
 export interface AtlasGraph {
  subjects: Subject[]
  concepts: {id: string; slug: string; name: string; topic?: string | null; level?: ConceptLevel; parentId?: string | null; isStar?: boolean; blurb: string | null; subjectId: string
- status: 'revisit' | 'demonstrated' | 'in_progress' | 'not_started'; pinX: number | null; pinY: number | null
+ status: 'revisit' | 'demonstrated' | 'in_progress' | 'not_started'; version?:number; pinX: number | null; pinY: number | null
  checkpointRefs: {projectSlug: string; code: string}[]; dueCards: number}[]
  links: {fromId: string; toId: string; kind: 'prereq' | 'related'}[]
 }

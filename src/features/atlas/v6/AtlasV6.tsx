@@ -4,6 +4,7 @@ import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import ConceptPin from './ConceptPin';
 import AtlasImpactPreview from './ImpactPreview';
+import AtlasEditor from './AtlasEditor';
 import {FastTex} from '../../../ui/FastTex';
 import {buildAtlasTree,initialExpanded,matches,visibleRows,type AtlasTree} from '../tree';
 
@@ -23,12 +24,15 @@ export default function AtlasV6(){
  const [folded,setFolded]=useState<Set<string>|null>(null);
  const [pinId,setPinId]=useState<string|null>(null);
  const [inspectId,setInspectId]=useState<string|null>(null);
+ const [editorId,setEditorId]=useState<string|null>(null);
  const open=folded??(tree?initialExpanded(tree):new Set<string>());
  const filter=search.trim()?(node:Parameters<typeof matches>[0])=>matches(node,search):undefined;
  const rows=tree?visibleRows(tree,open,filter):[];
  const ideaCount=tree?realIdeas(tree):0;
  const selectedPin=pinId?tree?.nodes.get(pinId):null;
  const inspecting=inspectId?tree?.nodes.get(inspectId):null;
+ const edited=editorId&&editorId!=='new'?query.data?.concepts.find(c=>c.id===editorId)??null:null;
+ const afterEdit=async()=>{await query.refetch();setEditorId(null);setInspectId(null);};
  const savePin=async(id:string,x:number|null,y:number|null)=>{
   // Only the existing owner-scoped, audited LemmaApi pinConcept write is used.
   await getApi().pinConcept(id,x,y);
@@ -54,7 +58,10 @@ export default function AtlasV6(){
    <div className="flex items-center justify-between gap-3">
     <div><h1 className="text-title-s font-semibold">Atlas ideas</h1>
      <p className="text-label text-ink-2" aria-label="Real idea count">{ideaCount} ideas (generated groups excluded)</p></div>
-    <Link to="/atlas?view=map" className={control}>Map</Link>
+    <div className="flex flex-wrap gap-2">
+     {query.data?.subjects.length?<button type="button" className={control} onClick={()=>setEditorId('new')}>New idea</button>:null}
+     <Link to="/atlas?view=map" className={control}>Map</Link>
+    </div>
    </div>
    <label className="mt-3 block text-label font-semibold text-ink-2">Find an idea
     <input aria-label="Find an idea" className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 text-body text-ink"
@@ -90,8 +97,10 @@ export default function AtlasV6(){
         aria-label={'Edit map pin for '+node.name}>
         {node.pinX===null?'Pin on map':'Edit map pin'}
        </button>
+       <button type="button" className={control} onClick={()=>setEditorId(node.id)}
+        aria-label={'Edit idea '+node.name}>Edit idea</button>
        <button type="button" className={control} onClick={()=>setInspectId(node.id)}
-        aria-label={'Preview changes for '+node.name}>Preview edits</button>
+        aria-label={'Preview changes for '+node.name}>Edit links / merge</button>
        {node.checkpointRefs.map(checkpoint=>
         <Link key={checkpoint.projectSlug+checkpoint.code} className={control}
          to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}>Checkpoint {checkpoint.code}</Link>
@@ -105,8 +114,12 @@ export default function AtlasV6(){
    key={selectedPin.id} id={selectedPin.id} name={selectedPin.name}
    x={selectedPin.pinX} y={selectedPin.pinY}
    onSave={savePin} onClose={()=>setPinId(null)}/>}
+  {editorId&&query.data&&<AtlasEditor key={editorId}
+   graph={query.data} concept={edited} onSaved={afterEdit}
+   onClose={()=>setEditorId(null)}/>}
   {inspecting&&!inspecting.synthetic&&query.data&&
    <AtlasImpactPreview key={inspecting.id} graph={query.data}
-    sourceId={inspecting.id} onClose={()=>setInspectId(null)}/>}
+    sourceId={inspecting.id} onSaved={afterEdit}
+    onClose={()=>setInspectId(null)}/>}
  </main>;
 }

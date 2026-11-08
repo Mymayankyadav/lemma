@@ -48,6 +48,8 @@ import type {
   Style,
   Subject,
 } from "../types";
+import {atlasId,atlasVersion,atlasInput,atlasPatch,atlasKind} from '../atlas-command';
+import type {AtlasConceptInput,AtlasConceptPatch,AtlasLinkKind,AtlasEditResult,AtlasMergeImpact,AtlasMergePreview} from '../atlas-command';
 import type {
   DemoCheckpoint,
   DemoConcept,
@@ -2489,6 +2491,154 @@ export class DemoAdapter implements LemmaApi {
     );
     c.pinX = x;
     c.pinY = y;
+  }
+  /** N105.2: demo Atlas commands preserve version, cycle and impact semantics. */
+  private atlasOwned(id:string,version?:number){
+    const concept=found(this.store.concepts.find(c=>c.id===atlasId(id)),'Atlas concept');
+    if(version!==undefined&&(concept.version??1)!==atlasVersion(version))
+      throw new LemmaError('conflict','Atlas concept version changed');
+    return concept;
+  }
+  private atlasBump(id:string):AtlasEditResult{
+    const item=this.atlasOwned(id);
+    item.version=(item.version??1)+1;
+    return {id:item.id,version:item.version,actionNo:null};
+  }
+  private atlasParentCycle(id:string,parentId:string|null):void{
+    const visited=new Set<string>([id]);
+    let current=parentId;
+    while(current){
+      if(visited.has(current))throw new LemmaError('invalid','Atlas hierarchy cycle');
+      visited.add(current);
+      current=this.atlasOwned(current).parentId??null;
+    }
+  }
+  private atlasPrerequisiteCycle(id:string,otherId:string):void{
+    const seen=new Set<string>(),stack=[otherId];
+    while(stack.length){
+      const current=stack.pop()!;
+      if(current===id)throw new LemmaError('invalid','Atlas prerequisite cycle');
+      if(seen.has(current))continue;
+      seen.add(current);
+      for(const edge of this.store.links)
+        if(edge.kind==='prereq'&&edge.fromId===current)stack.push(edge.toId);
+    }
+  }
+  private atlasMergeImpact(sourceId:string):AtlasMergeImpact{
+    return {
+      childConcepts:this.store.concepts.filter(c=>c.parentId===sourceId).length,
+      incomingPrerequisites:this.store.links.filter(e=>e.kind==='prereq'&&e.toId===sourceId).length,
+      outgoingPrerequisites:this.store.links.filter(e=>e.kind==='prereq'&&e.fromId===sourceId).length,
+      relatedConcepts:this.store.links.filter(e=>e.kind==='related'&&
+        (e.toId===sourceId||e.fromId===sourceId)).length,
+      notesAndCards:this.store.notes.filter(n=>n.conceptId===sourceId).length,
+      checkpointRefs:this.store.checkpoints.reduce((sum,c)=>sum+
+        (c.conceptIds.includes(sourceId)?1:0),0),
+    };
+  }
+  async createAtlasConcept(input:AtlasConceptInput):Promise<AtlasEditResult>{
+    const p=atlasInput(input);
+    return this.transaction(()=>{
+      found(this.store.subjects.find(s=>s.id===p.subjectId),'Atlas subject');
+      const slug=conceptSlug(p.name);
+      if(this.store.concepts.some(c=>c.subjectId===p.subjectId&&c.slug===slug))
+        throw new LemmaError('conflict','Atlas concept name already exists in subject');
+      if(p.parentId){
+        const parent=this.atlasOwned(p.parentId);
+        if(parent.subjectId!==p.subjectId)
+          throw new LemmaError('invalid','Atlas parent must share a subject');
+      }
+      const id=crypto.randomUUID();
+      this.store.concepts.push({id,slug,name:p.name,subjectId:p.subjectId,
+       parentId:p.parentId??null,blurb:p.blurb??null,level:'planet',
+       isStar:false,pinX:null,pinY:null,version:1});
+      return {id,version:1,actionNo:null};
+    });
+  }
+  async updateAtlasConcept(id:string,expectedVersion:number,patch:AtlasConceptPatch):Promise<AtlasEditResult>{
+    const p=atlasPatch(patch);
+    return this.transaction(()=>{
+      const concept=this.atlasOwned(id,expectedVersion);
+      if(p.name!==undefined){
+        const slug=conceptSlug(p.name);
+        if(this.store.concepts.some(c=>c.id!==concept.id&&
+          c.subjectId===concept.subjectId&&c.slug===slug))
+          throw new LemmaError('conflict','Atlas concept name already exists');
+        concept.name=p.name;concept.slug=slug;
+      }
+      if(p.blurb!==undefined)concept.blurb=p.blurb;
+      return this.atlasBump(concept.id);
+    });
+  }
+  async reparentAtlasConcept(id:string,expectedVersion:number,parentId:string|null):Promise<AtlasEditResult>{
+    return this.transaction(()=>{
+      const concept=this.atlasOwned(id,expectedVersion);
+      const parent=parentId===null?null:this.atlasOwned(parentId);
+      if(parent&&parent.subjectId!==concept.subjectId)
+        throw new LemmaError('invalid','Atlas parent must share a subject');
+      this.atlasParentCycle(concept.id,parent?.id??null);
+      concept.parentId=parent?.id??null;
+      return this.atlasBump(concept.id);
+    });
+  }
+  async linkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>{
+    atlasKind(kind);
+    return this.transaction(()=>{
+      const source=this.atlasOwned(id,expectedVersion),target=this.atlasOwned(otherId);
+      if(source.id===target.id)throw new LemmaError('invalid','Self-links are not allowed');
+      if(this.store.links.some(l=>l.fromId===source.id&&l.toId===target.id))
+        throw new LemmaError('conflict','Atlas link already exists');
+      if(kind==='prereq')this.atlasPrerequisiteCycle(source.id,target.id);
+      this.store.links.push({fromId:source.id,toId:target.id,kind});
+      return this.atlasBump(source.id);
+    });
+  }
+  async unlinkAtlasConcept(id:string,expectedVersion:number,otherId:string,kind:AtlasLinkKind):Promise<AtlasEditResult>{
+    atlasKind(kind);
+    return this.transaction(()=>{
+      const source=this.atlasOwned(id,expectedVersion),other=this.atlasOwned(otherId);
+      const index=this.store.links.findIndex(l=>l.fromId===source.id&&
+        l.toId===other.id&&l.kind===kind);
+      if(index<0)throw new LemmaError('not_found','Atlas link not found');
+      this.store.links.splice(index,1);
+      return this.atlasBump(source.id);
+    });
+  }
+  async previewAtlasMerge(sourceId:string,keepId:string):Promise<AtlasMergePreview>{
+    const source=this.atlasOwned(sourceId),keep=this.atlasOwned(keepId);
+    if(source.id===keep.id||source.subjectId!==keep.subjectId)
+      throw new LemmaError('invalid','Merge requires two concepts in the same subject');
+    return {impact:this.atlasMergeImpact(source.id),
+      sourceVersion:source.version??1,keepVersion:keep.version??1};
+  }
+  async mergeAtlasConcept(sourceId:string,expectedVersion:number,keepId:string,keepVersion:number):Promise<AtlasEditResult>{
+    return this.transaction(()=>{
+      const source=this.atlasOwned(sourceId,expectedVersion),keep=this.atlasOwned(keepId,keepVersion);
+      if(source.id===keep.id||source.subjectId!==keep.subjectId)
+        throw new LemmaError('invalid','Merge requires two concepts in the same subject');
+      const impact=this.atlasMergeImpact(source.id);
+      if(keep.parentId===source.id)keep.parentId=source.parentId===keep.id?null:source.parentId??null;
+      for(const concept of this.store.concepts)
+        if(concept.id!==keep.id&&concept.parentId===source.id)concept.parentId=keep.id;
+      const original=[...this.store.links];
+      this.store.links=[];
+      for(const edge of original){
+        const fromId=edge.fromId===source.id?keep.id:edge.fromId;
+        const toId=edge.toId===source.id?keep.id:edge.toId;
+        if(fromId===toId)continue;
+        if(this.store.links.some(e=>e.fromId===fromId&&e.toId===toId))continue;
+        if(edge.kind==='prereq')this.atlasPrerequisiteCycle(fromId,toId);
+        this.store.links.push({fromId,toId,kind:edge.kind});
+      }
+      for(const note of this.store.notes)if(note.conceptId===source.id)note.conceptId=keep.id;
+      for(const cp of this.store.checkpoints)
+        if(cp.conceptIds.includes(source.id))
+          cp.conceptIds=[...new Set(cp.conceptIds.map(x=>x===source.id?keep.id:x))];
+      for(const misconception of this.store.misconceptions)
+        if(misconception.conceptId===source.id)misconception.conceptId=keep.id;
+      this.store.concepts=this.store.concepts.filter(c=>c.id!==source.id);
+      return {...this.atlasBump(keep.id),mergedId:source.id,impact};
+    });
   }
   async getReviewLog(): Promise<ReviewLogEntry[]> {
     return this.store.reviews
