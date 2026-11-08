@@ -75,6 +75,23 @@ try{
  assert.equal(changes[2].version,2,`delete must retain old version: ${JSON.stringify(changes[2])}`);
  const after=(await q('select public.changes_since($1,100) result',[page.nextCursor]))[0].result;
  assert.ok(after.changes.every(x=>x.cursor>page.nextCursor));
+ // The journal and its owner change event must share the same transaction.
+ // A failed command transaction may not leak a cursor or a replay receipt.
+ const txBefore=(await q('select count(*)::int n from public.owner_changes where user_id=$1',[a]))[0].n;
+ await db.exec('begin');
+ const transient=await cmd('create');
+ assert.equal(transient.status,'ok');
+ const transientId=transient.changed[0].id;
+ const transientEnvelope=lastCommandEnvelope;
+ await db.exec('rollback');
+ assert.equal((await q('select count(*)::int n from public.owner_changes where user_id=$1',[a]))[0].n,txBefore,
+  'rolled-back owner commands cannot leak feed deltas');
+ assert.equal((await q('select count(*)::int n from public.study_entries where id=$1',[transientId]))[0].n,0,
+  'rolled-back owner command must not persist a study entry');
+ const retriedAfterRollback=(await q('select public.study_command($1::jsonb) receipt',[transientEnvelope]))[0].receipt;
+ assert.equal(retriedAfterRollback.status,'ok','rolled-back receipt must not masquerade as a committed operation');
+ assert.equal((await q('select count(*)::int n from public.owner_changes where user_id=$1',[a]))[0].n,txBefore+1,
+  'the first committed retry projects exactly one owner delta');
  await assert.rejects(q('select public.changes_since(0,101)'),/Invalid change feed/);
  await as(b);
  // This fixture also inserted the other owner's settings row; its own
