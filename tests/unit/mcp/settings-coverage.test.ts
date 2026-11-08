@@ -6,8 +6,7 @@ import FSRS from '../../../supabase/functions/_shared/fsrs.js';
 import {ownerEditableSettingsFields,prepareSettingsEdit} from
  '../../../supabase/functions/mcp/tools/settings-edit';
 
-const registry=JSON.parse(readFileSync('docs/v6/capability-registry/settings.json','utf8'))
- as {columns:Record<string,{classification:string;fields?:Record<string,unknown>}>};
+const registry=JSON.parse(readFileSync('docs/v6/capability-registry/settings.json','utf8'));
 const wanted=Object.entries(registry.columns)
  .filter(([,v])=>v.classification==='owner-editable').map(([k])=>k).sort();
 const version=3;
