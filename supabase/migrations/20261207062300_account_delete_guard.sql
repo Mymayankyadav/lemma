@@ -177,7 +177,8 @@ begin
  if TG_OP='DELETE' then
   blocked:=exists(select 1 from public.account_deletion_requests d
    where d.user_id=old.user_id and not (
-    pg_catalog.pg_trigger_depth()>1 or
+    (pg_catalog.pg_trigger_depth()>1 and not exists (
+      select 1 from auth.users u where u.id=old.user_id)) or
     (caller='service_role' and d.cleanup_txid is not null
      and d.cleanup_pid is not null
      and d.cleanup_txid=pg_catalog.txid_current()
