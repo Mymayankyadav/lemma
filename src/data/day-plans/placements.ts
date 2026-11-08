@@ -86,12 +86,14 @@ export function normalizeCommitPlacements(raw:CommitPlacementsInput):CommitPlace
   const planId=value.planId===undefined?undefined:ident(value.planId);
   const expectedVersion=value.expectedVersion===undefined?undefined:
    version(value.expectedVersion);
-  const intention=value.intention===undefined?'':value.intention;
-  if(typeof intention!=='string'||intention.length>1200)
-   fail('Invalid plan intention');
-  const capacityMinutes=value.capacityMinutes===undefined?0:value.capacityMinutes;
-  if(typeof capacityMinutes!=='number'||!Number.isSafeInteger(capacityMinutes)||
-   capacityMinutes<0||capacityMinutes>1440)fail('Invalid plan capacity');
+  const intention:string=value.intention===undefined?'':
+   typeof value.intention==='string'&&value.intention.length<=1200?
+    value.intention:fail('Invalid plan intention');
+  const candidateCapacity=value.capacityMinutes;
+  const capacityMinutes:number=candidateCapacity===undefined?0:
+   typeof candidateCapacity==='number'&&Number.isSafeInteger(candidateCapacity)&&
+   candidateCapacity>=0&&candidateCapacity<=1440?
+    candidateCapacity:fail('Invalid plan capacity');
   if(!Array.isArray(value.sources)||value.sources.length>2000)
    return fail('Atomic placement sources must be a bounded list');
   const keys=new Set<string>();
@@ -117,8 +119,8 @@ export function normalizeCommitPlacements(raw:CommitPlacementsInput):CommitPlace
     fail('Placement task is missing its preview version');
    if(positions.has(position))fail('Duplicate plan item position');
    positions.add(position);
-   if(typeof p.title!=='string'||!p.title.trim()||p.title.length>500)
-    fail('Placement block needs a title');
+   const title:string=typeof p.title==='string'&&p.title.trim()&&p.title.length<=500?
+    p.title:fail('Placement block needs a title');
    const startsAt=instant(p.startsAt),endsAt=instant(p.endsAt);
    const start=Date.parse(startsAt),end=Date.parse(endsAt);
    if(end<=start||end-start>24*3600000)
@@ -128,21 +130,22 @@ export function normalizeCommitPlacements(raw:CommitPlacementsInput):CommitPlace
    if(spans.some(s=>start<s.end&&end>s.start))
     fail('New placements overlap');
    spans.push({start,end});
-   return {taskId,title:p.title,startsAt,endsAt,position};
+   return {taskId,title,startsAt,endsAt,position};
   });
-  if(value.unplaced!==undefined&&!Array.isArray(value.unplaced))
-   fail('Unplaced items must be an array');
-  if((value.unplaced?.length??0)>500)fail('Too many unplaced items');
-  const unplaced=(value.unplaced??[]).map((u:unknown):AtomicUnplaced=>{
+  const unplacedInput:unknown[]=value.unplaced===undefined?[]:
+   Array.isArray(value.unplaced)?value.unplaced:
+    fail('Unplaced items must be an array');
+  if(unplacedInput.length>500)fail('Too many unplaced items');
+  const unplaced=unplacedInput.map((u:unknown):AtomicUnplaced=>{
    if(!obj(u))return fail('Invalid unplaced item');
    fields(u,['taskId','reason','position']);
    const taskId=ident(u.taskId),position=ordinal(u.position);
    if(!keys.has('tasks:'+taskId))fail('Unplaced task missing preview version');
    if(positions.has(position))fail('Duplicate plan item position');
    positions.add(position);
-   if(typeof u.reason!=='string'||!u.reason.trim()||u.reason.length>1200)
-    fail('Unplaced task requires a reason');
-   return {taskId,reason:u.reason,position};
+   const reason:string=typeof u.reason==='string'&&u.reason.trim()&&
+    u.reason.length<=1200?u.reason:fail('Unplaced task requires a reason');
+   return {taskId,reason,position};
   });
   return {planDate,timeZone,...(planId?{planId,expectedVersion}:{}),
    intention,capacityMinutes,sources,placements,unplaced};
