@@ -1,4 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
+import {isFlagOn} from '../../flags';
+import V6Sources from './sources-v6/V6Sources';
 import {Tex} from '../../ui/Tex';
 import {MathPreview} from '../../ui/MathPreview';
 import {Check,FileText,Plus,Trash2} from 'lucide-react';
@@ -15,7 +17,10 @@ const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','
 const limit=50*1024*1024;
 const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
 const storageLimit=1024*1024*1024;
-export function SourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
+export function SourcesPanel(props:{projectId:string;sources:Source[]}){
+ return isFlagOn('v6Shell')?<V6Sources {...props} manage={<LegacySourcesPanel {...props}/>}/>:<LegacySourcesPanel {...props}/>;
+}
+function LegacySourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
  const add=useAddSource(),update=useUpdateSource(),remove=useDeleteSource(),notify=useToast();
  const transcriptStats=useSourceTranscriptionStats(projectId);
  const summary=new Map((transcriptStats.data??[]).map(item=>[item.sourceId,item]));

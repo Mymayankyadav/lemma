@@ -58,15 +58,39 @@ export function isRevokeOnNewFunction(stmt, created) {
   return names.length > 0 && names.every((n) => created.has(n));
 }
 
+/** Pure (v2.7, bugs #1126/#1145): tables this migration creates with a plain `create table` (not `if not exists`, which
+ *  could name an existing table). */
+export function createdTables(stripped) {
+  return new Set([...String(stripped).matchAll(/\bcreate\s+(?:unlogged\s+)?table\s+(?!if\s+not\s+exists\b)(?:"?public"?\.)?"?(\w+)"?/gi)].map((m) => m[1].toLowerCase()));
+}
+
+const TABLE_PRIVS = new Set(['select', 'insert', 'update', 'delete', 'truncate', 'references', 'trigger', 'all', 'all privileges']);
+/** Pure (v2.7): true for `revoke <table privileges> on [table] t[, u] from anon|authenticated|public…` where EVERY table is
+ *  created by this same migration. AGENTS.md requires it (Supabase grants new tables to browsers by default); it only
+ *  removes default access from a table that did not exist before, so it cannot harm anything. Revoking on existing
+ *  tables, schemas or `all tables in schema` stays rejected, and `truncate` as a statement is still rejected. */
+export function isRevokeOnNewTable(stmt, created) {
+  const m = /^\s*revoke\s+([a-z,\s]+?)\s+on\s+(?:table\s+)?([\w".,\s]+?)\s+from\s+([\w",\s]+)$/i.exec(stmt);
+  if (!m) return false;
+  const privs = m[1].split(',').map((x) => x.trim().toLowerCase().replace(/\s+/g, ' '));
+  if (!privs.length || !privs.every((x) => TABLE_PRIVS.has(x))) return false;
+  if (/\ball\s+tables\b|\bschema\b/i.test(m[2])) return false;
+  const tables = m[2].split(',').map((x) => x.trim().replace(/"/g, '').replace(/^public\./i, '').toLowerCase());
+  const roles = m[3].split(',').map((x) => x.trim().replace(/"/g, '').toLowerCase());
+  return tables.length > 0 && tables.every((t) => /^\w+$/.test(t) && created.has(t)) && roles.every((r) => /^\w+$/.test(r));
+}
+
 /** Pure: findings for one new migration's SQL. replacesOk = names the PR body declares with
  *  `Replaces function: <name> (reviewer verified signature and behaviour)`. */
 export function sqlFindings(sql, { existing = new Set(), replacesOk = new Set() } = {}) {
   const findings = [];
   const stripped = stripSql(sql);
   const created = new Set([...functionNames(sql)].filter((n) => !existing.has(n)));
+  const newTables = createdTables(stripped);
   for (const stmt of stripped.split(';')) {
     const st = stmt.trim();
     if (!st) continue;
+    if (isRevokeOnNewTable(st, newTables)) continue;
     for (const [re, label] of RULES) {
       if (!re.test(st)) continue;
       if (!(label === 'REVOKE' && isRevokeOnNewFunction(st, created))) findings.push(`${label}: \`${st.replace(/\s+/g, ' ').slice(0, 90)}\``);
