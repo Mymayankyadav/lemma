@@ -15,6 +15,8 @@ import type {
 import { LemmaError } from "../api";
 import { makeDemoNotifyData } from "./notify-fixture";
 import { mergeNotifyPrefs } from "../notify";
+import {createDemoConcept,updateDemoConcept,reparentDemoConcept,editDemoLink,
+ previewDemoConceptMerge,mergeDemoConcept,demoConceptVersion} from './atlas-command';
 import {decodeCardPageCursor,encodeCardPageCursor,olderThanKey} from "../card-cursor";
 import type {
   AtlasGraph,
@@ -2208,6 +2210,29 @@ export class DemoAdapter implements LemmaApi {
       return clone(card.state);
     });
   }
+
+  /** N104: demo schedule changes use the same per-variant identity as live. */
+  async rescheduleCard(noteNo:number,ordinal:number,due:string):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1||
+    typeof due!=='string'||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(due)||
+    !Number.isFinite(Date.parse(due)))invalid('Invalid card due instant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state.due=new Date(due).toISOString();
+   });
+  }
+  async resetCard(noteNo:number,ordinal:number):Promise<void>{
+   if(!Number.isSafeInteger(noteNo)||noteNo<1||!Number.isSafeInteger(ordinal)||ordinal<1)
+    invalid('Invalid card variant');
+   this.transaction(()=>{
+    const note=found(this.store.notes.find(n=>n.note.noteNo===noteNo),'Note');
+    const card=found(note.cards.find(c=>c.ord===ordinal),'Card');
+    card.state={state:0,due:this.iso(),stability:0,difficulty:0,
+     lastReview:null,step:0,reps:0,lapses:0};
+   });
+  }
   async searchCards(query: string, slug?: string): Promise<CardRow[]> {
     if (slug) this.project(slug);
     const needle = query.toLowerCase();
@@ -2464,6 +2489,7 @@ export class DemoAdapter implements LemmaApi {
           // DemoConcept contains only primitive fields; a shallow copy is
           // independent and avoids thousands of structuredClone calls at 4x CPU.
           ...c,
+          version:demoConceptVersion(c),
           status: conceptStatus(
             checkpoints.map(cp => this.cpUi(cp)),
             unresolved.has(c.id), reviews, now,
@@ -2479,6 +2505,32 @@ export class DemoAdapter implements LemmaApi {
       // callers cannot mutate the underlying demo store.
       links: this.store.links.map(link => ({...link})),
     };
+  }
+  async getConceptVersion(id:string):Promise<number>{
+    const concept=this.store.concepts.find(c=>c.id===id);
+    if(!concept)throw new LemmaError('not_found','Owner concept not found');
+    return demoConceptVersion(concept);
+  }
+  async createConcept(...args:Parameters<LemmaApi['createConcept']>):ReturnType<LemmaApi['createConcept']>{
+    return this.transaction(()=>createDemoConcept(this.store,args[0]));
+  }
+  async updateConcept(...args:Parameters<LemmaApi['updateConcept']>):ReturnType<LemmaApi['updateConcept']>{
+    return this.transaction(()=>updateDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async reparentConcept(...args:Parameters<LemmaApi['reparentConcept']>):ReturnType<LemmaApi['reparentConcept']>{
+    return this.transaction(()=>reparentDemoConcept(this.store,args[0],args[1],args[2]));
+  }
+  async linkConcept(...args:Parameters<LemmaApi['linkConcept']>):ReturnType<LemmaApi['linkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'link',args[0],args[1],args[2],args[3]));
+  }
+  async unlinkConcept(...args:Parameters<LemmaApi['unlinkConcept']>):ReturnType<LemmaApi['unlinkConcept']>{
+    return this.transaction(()=>editDemoLink(this.store,'unlink',args[0],args[1],args[2],args[3]));
+  }
+  async previewConceptMerge(...args:Parameters<LemmaApi['previewConceptMerge']>):ReturnType<LemmaApi['previewConceptMerge']>{
+    return previewDemoConceptMerge(this.store,args[0],args[1]);
+  }
+  async mergeConcept(...args:Parameters<LemmaApi['mergeConcept']>):ReturnType<LemmaApi['mergeConcept']>{
+    return this.transaction(()=>mergeDemoConcept(this.store,args[0],args[1],args[2],args[3]));
   }
   async pinConcept(id: string, x: number | null, y: number | null) {
     if ((x===null)!==(y===null) || (x!==null&&!Number.isFinite(x)) || (y!==null&&!Number.isFinite(y)))
