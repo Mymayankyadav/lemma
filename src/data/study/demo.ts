@@ -192,6 +192,33 @@ function withEditedMinutes(intervals: StudyInterval[], minutes: number, at: stri
   });
 }
 
+// N66: demo uses the same captured phase/lease/exclusion shape as the owner SQL.
+const demoDevice = id();
+const defaults = {mode:'open' as const,focus_minutes:25,break_minutes:5,
+ long_break_minutes:15,cycles:4,flowtime_break_ratio:0.2};
+const count = (v:unknown,fallback:number):number =>
+  typeof v==='number'&&Number.isFinite(v)?v:fallback;
+function freeFocus(entry:StudyEntryRecord,now:number):Array<[number,number]> {
+  const focus=entry.intervals.filter(i=>i.kind==='focus').map(i=>
+    [Date.parse(i.start),Math.min(Date.parse(i.end??new Date(now).toISOString()),now)] as [number,number])
+    .filter(([a,b])=>b>a).sort((a,b)=>a[0]-b[0]);
+  const joined:Array<[number,number]>=[];
+  for(const range of focus){
+    const last=joined.at(-1);
+    if(last&&range[0]<=last[1])last[1]=Math.max(last[1],range[1]);
+    else joined.push([...range]);
+  }
+  let available=joined;
+  for(const removed of entry.excludedIntervals??[]){
+    const from=Date.parse(removed.from),to=Date.parse(removed.to);
+    available=available.flatMap(([a,b]):Array<[number,number]>=>{
+      if(b<=from||a>=to)return [[a,b]];
+      return [[a,Math.min(b,from)],[Math.max(a,to),b]].filter(([x,y])=>y>x) as Array<[number,number]>;
+    });
+  }
+  return available;
+}
+
 export function createDemoStudyApi(): StudyApi {
   const snapshot = load();
   persist(snapshot);
@@ -233,11 +260,27 @@ export function createDemoStudyApi(): StudyApi {
         !snapshot.blocks.some(block=>block.id===input.calendarBlockId&&block.kind==='study'))
         fail('not_found','Calendar block does not belong to this demo study plan');
       const at = instant(input.startedAt ?? new Date().toISOString(), 'start');
+      const preset=input.presetId
+        ? await (await import('../presets')).getPresetApi().getPreset(input.presetId)
+        : null;
+      if(input.presetId&&!preset)fail('not_found','Selected timer preset is unavailable');
+      if(preset?.archivedAt)fail('conflict','Archived timer preset cannot start');
+      const config=preset?{
+        mode:preset.mode,focus_minutes:preset.focusMinutes,
+        break_minutes:preset.breakMinutes,long_break_minutes:preset.longBreakMinutes,
+        cycles:preset.cycles,flowtime_break_ratio:defaults.flowtime_break_ratio,
+      }: {...defaults};
+      const timerMode=config.mode;
+      const phaseEndsAt=timerMode==='pomodoro'
+        ? new Date(Date.parse(at)+config.focus_minutes*60_000).toISOString():null;
       const record: StudyEntryRecord = {
         ...links(input), calendarBlockId:input.calendarBlockId??null,
         id: id(), intent: input.intent.trim(), source: input.source,
         status: 'running', reflection: null, rating: null, version: 1,
         createdAt: at, updatedAt: at, savedAt: null,
+        presetId:input.presetId??null,mode:timerMode,config,phase:'focus',
+        cycle:1,phaseEndsAt,energy:null,leaseDevice:null,leaseVersion:0,
+        leaseExpiresAt:null,excludedIntervals:[],
         intervals: [{ id: id(), kind: 'focus', start: at, end: null }],
       };
       snapshot.entries.push(record);
@@ -265,6 +308,85 @@ export function createDemoStudyApi(): StudyApi {
       const time = checkAt(entry, at);
       return storeEntry({ ...entry, status: 'paused', updatedAt: time, version: entry.version + 1,
         intervals: [...closeOpen(entry, time), { id: id(), kind: 'break', start: time, end: null }] });
+    },
+    async takeLease(key,expectedVersion,leaseMinutes=2){
+      const entry=entryById(key);version(entry,expectedVersion);
+      if(!['draft','running','paused'].includes(entry.status))
+        fail('conflict','Finished study entry cannot take a lease');
+      if(!Number.isSafeInteger(leaseMinutes)||leaseMinutes<1||leaseMinutes>30)
+        fail('invalid','Lease duration must be 1–30 minutes');
+      const at=new Date().toISOString();
+      return storeEntry({...entry,leaseDevice:demoDevice,
+        leaseVersion:(entry.leaseVersion??0)+1,
+        leaseExpiresAt:new Date(Date.parse(at)+leaseMinutes*60_000).toISOString(),
+        updatedAt:at,version:entry.version+1});
+    },
+    async nextPhase(key,expectedVersion,energy){
+      const entry=entryById(key);version(entry,expectedVersion);
+      if(!['running','paused'].includes(entry.status))
+        fail('conflict','Only active timers have a next phase');
+      const now=Date.now(),at=new Date(now).toISOString();
+      if(entry.leaseDevice!==demoDevice||!entry.leaseExpiresAt||
+         Date.parse(entry.leaseExpiresAt)<=now)
+        fail('conflict','Current device lease is required');
+      if(energy!==undefined&&energy!==null&&!['low','steady','high'].includes(energy))
+        fail('invalid','Invalid energy');
+      const open=latest(entry);
+      if(!open||open.end!==null) throw new LemmaError('conflict','Expected one open timer interval');
+      const mode=entry.mode??'open',config=entry.config??defaults;
+      const focus=(entry.phase??'focus')==='focus';
+      if(open.kind!==(focus?'focus':'break'))
+        fail('conflict','Timer phase and open interval disagree');
+      const ended=closeOpen(entry,at),cycle=entry.cycle??1;
+      const long=mode==='pomodoro'&&cycle%count(config.cycles,4)===0;
+      const nextPhase=focus?(long?'long_break':'break'):'focus';
+      const minutes=focus
+        ? (mode==='pomodoro'
+          ? count(long?config.long_break_minutes:config.break_minutes,long?15:5)
+          : mode==='flowtime'
+          ? Math.max(1,Math.min(180,Math.ceil((now-Date.parse(open.start))/60_000*
+              count(config.flowtime_break_ratio,0.2))))
+          : null)
+        : mode==='pomodoro'?count(config.focus_minutes,25):null;
+      return storeEntry({...entry,status:focus?'paused':'running',
+        phase:nextPhase,cycle:focus?cycle:cycle+1,
+        phaseEndsAt:minutes===null?null:new Date(now+minutes*60_000).toISOString(),
+        energy:energy===undefined?entry.energy??null:energy,
+        intervals:[...ended,{id:id(),kind:focus?'break':'focus',start:at,end:null}],
+        version:entry.version+1,updatedAt:at});
+    },
+    async excludeMinutes(key,expectedVersion,minutes,reason){
+      const entry=entryById(key);version(entry,expectedVersion);
+      if(!['running','paused','saved'].includes(entry.status))
+        fail('conflict','Only active or saved focus can be excluded');
+      if(!Number.isSafeInteger(minutes)||minutes<1||minutes>1440)
+        fail('invalid','Excluded minutes must be 1–1440');
+      if(typeof reason!=='string'||!reason.trim()||reason.trim().length>200)
+        fail('invalid','Exclusion reason must be 1–200 characters');
+      const now=Date.now();
+      if(['running','paused'].includes(entry.status)&&entry.leaseExpiresAt&&
+        Date.parse(entry.leaseExpiresAt)>now&&entry.leaseDevice!==demoDevice)
+        fail('conflict','Another device owns the timer lease');
+      let cutoff=now;
+      if(entry.status==='running'){
+        const previous=(entry.excludedIntervals??[]).map(x=>Date.parse(x.to))
+          .filter(Number.isFinite).reduce((max,v)=>Math.max(max,v),0);
+        if(previous>now-60_000&&previous<=now)cutoff=previous;
+      }
+      const available=freeFocus(entry,cutoff).reverse();
+      let remain=minutes*60_000;
+      const additions:NonNullable<StudyEntryRecord['excludedIntervals']>=[];
+      for(const [from,to] of available){
+        if(remain<=0)break;
+        const duration=Math.min(remain,to-from);
+        if(duration<=0)continue;
+        additions.push({from:new Date(to-duration).toISOString(),
+          to:new Date(to).toISOString(),reason:reason.trim()});
+        remain-=duration;
+      }
+      if(remain>0)fail('conflict','Not enough unexcluded focus minutes');
+      return storeEntry({...entry,excludedIntervals:[...(entry.excludedIntervals??[]),...additions],
+        updatedAt:new Date(now).toISOString(),version:entry.version+1});
     },
     async saveStudyEntry(key, expectedVersion, patch = {}) {
       const entry = entryById(key);

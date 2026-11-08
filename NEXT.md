@@ -11,13 +11,13 @@ v6 screen lanes (N28–N33). Each screen item owns only its own feature folder: 
 
 Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/v6/README.md`). **Resource migration items** ("migration" below) follow D8(b): one additive migration, `public.<resource>_command(p)`, rows in `lemma_undo_tables` and `lemma_command_resources`, and a PGlite test in `tests/mcp/sql/<resource>.mjs` covering create/update/delete or the named lifecycle, `operationId` retry, changed-payload conflict, stale `expectedVersion`, a second owner rejected, undo through `undo_action`, and `mcp_command` as service_role writing as `p_user`; they deploy on merge and need a review. **App module items** ("module") follow D8(c): `src/data/<resource>/` with a typed contract shaped like the migration item's fields (camelCase, dates `YYYY-MM-DD`, instants ISO, durations in minutes), a demo adapter with a small fixture and reload persistence under its own key, a live adapter over `rpc('<resource>_command', envelope)` with bounded owner reads, `get…Api()` / `set…ApiForTests()`, and unit tests in `tests/unit/<resource>/**`; they never wait for the migration. **Screen items** follow the v6 screen-lane rules above, may also read the new modules through their `get…Api()`, and test with the `set…ApiForTests` fakes. Every new table or column is added to the capability registry (N40) in the same PR that creates it.
 
-## N107 Atomic planner commit: blocks, day plan and items as one journalled action
+## N109 Register planner links and N52 timer controls for MCP
 Stage: Build · Status: open · Needs: — · Assigned: —
-Done = per D8, one additive migration replaces `day_plans_command` compatibly and adds the operation `commit_placements`. In one transaction and one journalled action, for one or more civil days of the owner, it verifies every task, calendar-block and saved-focus source version captured at preview, creates the study calendar blocks (with `task_id`), creates or reuses each draft or previewed day plan, writes its items and commits it. A stale source or any conflict rolls everything back with a typed conflict and nothing written. `DayPlanApi.commitPlacements(input)` (live and demo) returns one `StudyReceipt` whose action undoes every block, plan and item together through the existing undo path (refused when a newer owner write exists), and is idempotent on its operation ID. Existing operations behave exactly as before; the operation is registered in `lemma_command_resources`. Owner decision (#1177): this is the prerequisite N68 needs for its single Undo.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: day_plans_command (reviewer verified signature and behaviour)`.
-Tests: `tests/mcp/sql/planner-commit.mjs` (two-day commit, stale task, block and focus refusal with nothing written, replay and changed-payload conflict, undo of every row, second owner isolation, MCP parity), `tests/unit/day-plans/commit-placements.test.ts`
-Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/planner-commit.mjs, tests/unit/day-plans/commit-placements.test.ts, docs/v6/capability-registry/lemma_command_resources.json (the day_plans operation list only), CURRENT.md.
-Not: screens, other functions, MCP code, new dependencies.
+Done = per D8, one additive migration appends `task_id` to the `calendar_blocks` row, and `calendar_block_id`, `preset_id`, `energy` plus the N52 operations `take_lease`, `next_phase` and `exclude_minutes` to the `study_entries` row of `lemma_command_resources` (append only, when missing), and `study_command` accepts `calendar_block_id` on study entry create and start with the same owner-composite check the app relies on (a foreign-owner or non-study block is refused, nothing written). MCP study tools expose both fields. Owner decision (bug #1231): this is the one authorized change to the frozen N36.1 baseline rows; `tests/mcp/sql/registries.mjs` changes only to expect these two appended fields. The static manifest and the four capability-registry `mcpPath` entries (`calendar_blocks.task_id`, `study_entries.calendar_block_id`, `preset_id`, `energy`) are updated so N94 reports no tracked gaps.
+Owner-authorized (D1, D8): deploys on merge, so this PR needs a review. PR body line `Replaces function: study_command (reviewer verified signature and behaviour)`.
+Tests: `tests/mcp/sql/study-block-link-mcp.mjs` (registry rows, MCP start with a block, foreign-owner and non-study block refused, replay, undo), the existing `registries.mjs` and `command-manifest-mirror.mjs`
+Scope: supabase/migrations/<one new additive file>, supabase/functions/mcp/tools/study.ts, tests/mcp/sql/study-block-link-mcp.mjs, tests/mcp/sql/registries.mjs (the appended fields and operations only), docs/v6/capability-registry/{lemma_command_resources,calendar_blocks,study_entries}.json, CURRENT.md.
+Not: app code, other commands, other registry rows.
 
 ## N108 Day close: canonical carry-over and tomorrow's-first-task transitions
 Stage: Build · Status: open · Needs: N107 · Assigned: —
@@ -27,36 +27,12 @@ Tests: `tests/mcp/sql/day-plan-close.mjs` (column and items updated, stale versi
 Scope: supabase/migrations/<one new additive file>, src/data/day-plans/**, tests/mcp/sql/day-plan-close.mjs, tests/unit/day-plans/close-transitions.test.ts, CURRENT.md.
 Not: screens, other functions, MCP code, new dependencies.
 
-## N54 Owner change feed and catch-up cursor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
-Owner decision (#1147): the notify tick makes one bounded service-role call to the pruning function on each run, with a focused unit test; nothing else about the tick changes. The pruning migration deploys only together with that call.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/change-feed.mjs` (app and `mcp_command` writes both appear once in commit order, deletes as tombstones, paging, reset, second owner invisible)
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/change-feed.mjs, supabase/functions/notify/tick-core.ts (one call), tests/unit/notify/change-prune-tick.test.ts, docs/v6/capability-registry/owner_changes.json, CURRENT.md.
-Not: app code (N54.1), MCP code, other notify behaviour.
-
 ## N54.1 App sync from the change feed
 Stage: Build · Status: open · Needs: N54 · Assigned: —
 Done = `src/data/sync/` polls `changes_since` while the app is visible (and on focus/reconnect), keyed by account and mode, invalidating only the affected query keys; on `reset` it refetches bounded projections; cursors are cleared on sign-out or account switch. Demo mode does nothing. This replaces refresh-only sync (D4) for the v6 screens.
 Tests: `tests/unit/sync/**` (invalidation per resource, reset, account switch, backoff when hidden)
 Scope: src/data/sync/** (new), src/data/hooks.ts (one subscription call), tests/unit/sync/**, CURRENT.md.
 Not: screens, supabase/**.
-
-## N66 StudyApi: timer modes, phases, drift exclusion and lease
-Stage: Build · Status: open · Needs: N52, N65 · Assigned: —
-Done = the study contract gains, additively, mode/preset/config/phase/cycle/energy/lease fields and `nextPhase`, `takeLease`, `excludeMinutes`, in both adapters with the N52 envelope; the live adapter keeps one device lease per tab and renews it while visible.
-Tests: `tests/unit/study/modes.test.ts`
-Scope: src/data/study/**, tests/unit/study/modes.test.ts, CURRENT.md.
-Not: UI, supabase/**, other `src/data/**` folders.
-
-## N68 v6 planner sheet: preview and commit placements behind the shell flag
-Stage: Build · Status: open · Needs: N67, N65, N60.2, N107 · Assigned: —
-Done = with `v6Shell` on, a Plan action on Today and Calendar opens a titled native dialog that previews placements for the selected tasks over the chosen days (from N67), lets the owner deselect or move items, and commits only the selected placements as study blocks with `taskId` and the day plan's `commit` (refused with an explanation when a task or block changed since the preview); unplaced work stays listed with its reason; one toast with Undo. Flag off: nothing changes.
-Owner decision (#1177): the commit makes a single call to the atomic planner command from N107 (`DayPlanApi.commitPlacements`), so there is one receipt and one truthful Undo for every selected day; the per-block and per-day orchestration is removed, and a stale source refuses the whole commit with nothing written.
-Tests: `tests/unit/planner/sheet.test.tsx` (preview, deselect, stale-preview refusal, unplaced reasons, Undo)
-Scope: src/features/planner/** (except model.ts), src/features/home/Page.tsx and src/features/calendar/Page.tsx (opening the sheet only), tests/unit/planner/sheet.test.tsx, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N72 v6 Focus modes and the persistent focus accessory behind the shell flag
 Stage: Build · Status: open · Needs: N66, N71, N41.2.2.2.2.2 · Assigned: —
@@ -84,7 +60,7 @@ Not: migrations, app code.
 
 ## N94 Parity harness for every registered resource (G2, G4)
 Stage: Build · Status: open · Needs: N37, N40 · Assigned: —
-Done = `tests/mcp/sql/parity.mjs` iterates `lemma_command_resources` and, for every resource and every operation in its registered schema, runs that operation through `mcp_command` against the real target rows and compares the observable effect with the app's owner read path and the registered MCP GET. Concrete record resources are checked on their owner table (create, read, update, delete or void, restore); command-only resources (`card_schedule`, `review_corrections`, `session_event_corrections`) are checked on the real rows their operations change. Each operation also asserts the receipt, version, exact replay, changed-payload conflict, foreign-owner isolation and undo. Owner decision (#1206): it never requires a verb a resource does not register (no delete for `concepts`, no create for `card_schedule`) and never invents a table. It fails, naming `resource.operation` or `resource.field`, when a registered operation has no passing round trip, or when a registry entry or owner-editable capability-registry column lacks a read or write path.
+Done = `tests/mcp/sql/parity.mjs` iterates `lemma_command_resources` and, for every resource and every operation in its registered schema, runs that operation through `mcp_command` against the real target rows and compares the observable effect with the app's owner read path and the registered MCP GET. Concrete record resources are checked on their owner table (create, read, update, delete or void, restore); command-only resources (`card_schedule`, `review_corrections`, `session_event_corrections`) are checked on the real rows their operations change. Each operation also asserts the receipt, version, exact replay, changed-payload conflict, foreign-owner isolation and undo. Owner decision (#1231): `docs/v6/capability-registry/lemma_command_resources.json` now mirrors the database registry (18 resources; `tests/mcp/sql/command-manifest-mirror.mjs` enforces it). An owner-editable column whose `mcpPath` begins `none yet` and names an open NEXT.md item (today `calendar_blocks.task_id` and `study_entries.calendar_block_id`, `preset_id` and `energy`, item N109) is listed by `resource.field` as a tracked gap rather than failing; the harness fails if that item is no longer open in NEXT.md or the column gains a registered path, so the list cannot go stale. An MCP write path is either a field of the resource's `lemma_command_resources` row or the table's entry in the legacy `mcp_commit` allowlist (`allowed` in `supabase/functions/mcp/tools/control.ts`). The command-only resources need no table inventory. Owner decision (#1206): it never requires a verb a resource does not register (no delete for `concepts`, no create for `card_schedule`) and never invents a table. It fails, naming `resource.operation` or `resource.field`, when a registered operation has no passing round trip, or when a registry entry or owner-editable capability-registry column lacks a read or write path.
 Tests: the harness itself, on main's resources, plus a fixture resource missing a path
 Scope: tests/mcp/sql/parity.mjs, CURRENT.md.
 Not: migrations, app or MCP code.
@@ -116,14 +92,6 @@ Done = a PGlite test loads a representative pre-v6 account fixture (paths, sourc
 Tests: `tests/mcp/sql/upgrade-rehearsal.mjs` and its fixture
 Scope: tests/mcp/sql/upgrade-rehearsal.mjs, tests/mcp/sql/fixtures/pre-v6-account.sql (new), CURRENT.md.
 Not: migrations, app code.
-
-## N103 Account deletion
-Stage: Build · Status: open · Needs: N95 · Assigned: —
-Done = Settings offers Delete account after an export prompt and a typed confirmation; a service-role edge function (or SQL function) deletes every owner row in dependency order, storage objects and the auth user, and is refused for any other user; MCP cannot call it.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/account-delete.mjs` (all owner rows gone, another owner untouched), `tests/unit/settings-v6/delete-account.test.tsx`
-Scope: supabase/migrations/<one new additive file>, supabase/functions/account-delete/** (new), src/features/settings/v6/DeleteAccount.tsx (new), src/features/settings/v6/Page.tsx (section link only), tests/mcp/sql/account-delete.mjs, tests/unit/settings-v6/delete-account.test.tsx, CURRENT.md.
-Not: other functions, MCP code.
 
 ## N101 Release audit, screenshots and docs
 Stage: Build · Status: open · Needs: N98, N99, N100, N94, N96, N97 · Assigned: —

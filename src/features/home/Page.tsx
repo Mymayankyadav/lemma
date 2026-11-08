@@ -21,6 +21,7 @@ import {FastHomeTex} from './FastHomeTex'
 import {FastGoalDistance} from './FastGoalDistance'
 import {shouldUseFastGoals} from './fastGoalPolicy'
 import {isFlagOn} from '../../flags';
+import PlannerLaunch from '../planner/Sheet';
 import type {HomeSummary} from '../../data/types';
 
 
@@ -215,6 +216,7 @@ export default function Page(){
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6 pb-6">
   <TodayHeader pending={home.data.pendingProposals}/>
+  {isFlagOn('v6Shell')&&<PlannerLaunch zone={settings.data?.timeZone}/>}
   {isFlagOn('v6Shell')&&<Suspense fallback={null}>
    <TodayFocus/>
    <V6TodayPlan zone={settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC'}

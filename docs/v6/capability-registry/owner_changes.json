@@ -1,0 +1,63 @@
+{
+  "table": "owner_changes",
+  "version": 1,
+  "description": "N54 append-only, owner-scoped action journal feed. Record IDs are actual simple primary-key text (UUID, numeric or legacy text), or JSON text for composite PKs. The cursor is per-owner commit-ordered and retention watermarks require replay/reset; the service-role 30-day pruning helper runs daily from the pg_cron job lemma-prune-owner-changes (#1216).",
+  "columns": {
+    "cursor": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "resource": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "record_id": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "op": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "tombstone": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    },
+    "committed_at": {
+      "classification": "derived",
+      "appPath": "N54.1 change-feed sync (planned)",
+      "mcpPath": "changes_since owner-scoped RPC",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "30-day scheduled pruning and N103 owner purge (planned)"
+    }
+  }
+}

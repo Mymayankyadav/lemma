@@ -82,6 +82,15 @@ jobs:
           else
             echo "::notice::MCP-1 has not landed yet; no function to deploy."
           fi
+      # N103 is only deployed after its independently reviewed source lands on main.
+      # The handler itself verifies the user bearer through Auth getUser(token);
+      # this legacy gateway flag avoids rejecting newer signing-key formats.
+      - name: Deploy account deletion function
+        if: steps.credentials.outputs.ready == 'true'
+        run: |
+          if [[ -f supabase/functions/account-delete/index.ts ]]; then
+            supabase functions deploy account-delete --no-verify-jwt
+          fi
       - name: Set up Node.js for MCP smoke
         if: steps.deploy_mcp.outputs.deployed == 'true'
         uses: actions/setup-node@v4

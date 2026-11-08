@@ -4,7 +4,7 @@ import {DayPlanError,type DayPlanStatus,type NewDayPlan,type NewDayPlanItem,
  type PlanAvailability,type PlanSourceResource,type PlanSourceVersion} from './contract';
 
 const invalid=(message:string):never=>{throw new DayPlanError('invalid',message)};
-const resourceNames:PlanSourceResource[]=['tasks','calendar_blocks'];
+const resourceNames:PlanSourceResource[]=['tasks','calendar_blocks','study_entries'];
 const statuses:DayPlanStatus[]=['draft','previewed','committed','closed'];
 const isObject=(x:unknown):x is Record<string,unknown>=>
  x!==null&&typeof x==='object'&&!Array.isArray(x);

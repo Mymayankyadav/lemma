@@ -7,6 +7,17 @@
 export type StudyEntryStatus = 'running' | 'paused' | 'draft' | 'saved' | 'discarded';
 export type StudyEntrySource = 'timer' | 'manual';
 export type StudyIntervalKind = 'focus' | 'break';
+/** N52 server-captured timer state: the browser never writes these fields directly. */
+export type StudyTimerMode = 'pomodoro' | 'flowtime' | 'open';
+export type StudyTimerPhase = 'focus' | 'break' | 'long_break';
+export type StudyEnergy = 'low' | 'steady' | 'high';
+export interface StudyTimerConfig {
+ mode?: StudyTimerMode;
+ focus_minutes?: number; break_minutes?: number; long_break_minutes?: number;
+ cycles?: number; flowtime_break_ratio?: number;
+ [key: string]: unknown;
+}
+export interface StudyFocusExclusion { from: string; to: string; reason: string }
 export type CalendarBlockKind = 'study' | 'busy';
 export type CalendarBlockStatus = 'planned' | 'done' | 'cancelled';
 
@@ -44,6 +55,18 @@ export interface StudyEntryRecord extends StudyLinks {
  calendarBlockId?: string | null;
  /** N51 void retains historical intervals until restore. */
  voidedAt?: string | null;
+ /** N52 fields are optional for legacy demo fixtures and pre-migration records. */
+ mode?: StudyTimerMode;
+ presetId?: string | null;
+ config?: StudyTimerConfig;
+ phase?: StudyTimerPhase;
+ cycle?: number;
+ phaseEndsAt?: string | null;
+ energy?: StudyEnergy | null;
+ leaseDevice?: string | null;
+ leaseVersion?: number;
+ leaseExpiresAt?: string | null;
+ excludedIntervals?: StudyFocusExclusion[];
  intervals: StudyInterval[];
 }
 
@@ -67,7 +90,12 @@ export interface StudyRange { start: string; end: string }
 /** Every write returns the record's new version, and an actionNo when the write can be undone. */
 export interface StudyReceipt<T> { record: T; actionNo: number | null }
 
-export interface NewStudyEntry extends StudyLinks { intent: string; source: StudyEntrySource; startedAt?: string; calendarBlockId?: string | null }
+export interface NewStudyEntry extends StudyLinks {
+ intent: string; source: StudyEntrySource; startedAt?: string;
+ calendarBlockId?: string | null;
+ /** Server captures the selected owner preset on first start; mode/config are read-only. */
+ presetId?: string | null;
+}
 export interface NewCalendarBlock extends StudyLinks { kind: CalendarBlockKind; title: string; startsAt: string; endsAt: string; timeZone: string; taskId?: string | null }
 export type CalendarBlockPatch = Partial<Pick<CalendarBlockRecord, 'title' | 'startsAt' | 'endsAt' | 'timeZone' | 'status' | 'kind' | 'taskId'>> & StudyLinks;
 /** N51 corrections replace a saved entry's complete interval set. */
@@ -97,6 +125,12 @@ export interface StudyApi {
  pauseStudyEntry(id: string, expectedVersion: number, at?: string): Promise<StudyReceipt<StudyEntryRecord>>;
  resumeStudyEntry(id: string, expectedVersion: number, at?: string): Promise<StudyReceipt<StudyEntryRecord>>;
  breakStudyEntry(id: string, expectedVersion: number, at?: string): Promise<StudyReceipt<StudyEntryRecord>>;
+ /** N52 takes over the owner/device lease explicitly, incrementing its generation. */
+ takeLease(id: string, expectedVersion: number, leaseMinutes?: number): Promise<StudyReceipt<StudyEntryRecord>>;
+ /** N52 transitions focus / break phases using the captured configuration and lease. */
+ nextPhase(id: string, expectedVersion: number, energy?: StudyEnergy | null): Promise<StudyReceipt<StudyEntryRecord>>;
+ /** N52 subtracts reasoned whole minutes from non-overlapping focus spans. */
+ excludeMinutes(id: string, expectedVersion: number, minutes: number, reason: string): Promise<StudyReceipt<StudyEntryRecord>>;
  /** Closes any open interval and saves. Saving an already saved entry returns it unchanged. */
  saveStudyEntry(id: string, expectedVersion: number, patch?: { reflection?: string | null; rating?: StudyEntryRecord['rating']; minutes?: number }): Promise<StudyReceipt<StudyEntryRecord>>;
  discardStudyEntry(id: string, expectedVersion: number): Promise<StudyReceipt<StudyEntryRecord>>;
@@ -129,6 +163,9 @@ export function emptyStudyApi(mode: 'live' | 'demo'): StudyApi {
   pauseStudyEntry: refuse('pauseStudyEntry'),
   resumeStudyEntry: refuse('resumeStudyEntry'),
   breakStudyEntry: refuse('breakStudyEntry'),
+  takeLease: refuse('takeLease'),
+  nextPhase: refuse('nextPhase'),
+  excludeMinutes: refuse('excludeMinutes'),
   saveStudyEntry: refuse('saveStudyEntry'),
   discardStudyEntry: refuse('discardStudyEntry'),
   correctStudyEntry: refuse('correctStudyEntry'),
