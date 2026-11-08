@@ -54,7 +54,7 @@ After finishing a step, continue to the next applicable step in the same run. Ke
 | S1 | the same failure signature on 2 or more PRs | One owner fixes it on its own PR. Affected PRs must not patch it locally; they wait, then update from main. |
 | S2 | a failure on one PR only | That PR's author fixes it. |
 | S3 | unreproduced report | Leave it for the priority run. |
-CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0. CI also resolves them: a signature incident opened from PRs (including one escalated to S0) closes on its own once fewer than 3 open PRs still fail with it on their current head, so a fixed failure cannot keep the S0 freeze on; a main incident closes only when main is green. Never strip an S0 label by hand.
+CI creates incidents and names them by failure signature. Before acting on any failure, search open incidents for the same signature. Unresolved S1 for 2 runs becomes S0. CI also resolves them: a signature incident opened from PRs (including one escalated to S0) closes on its own once fewer than 3 open PRs still fail with it on their current head, so a fixed failure cannot keep the S0 freeze on; a main incident closes only when main is green. Never strip an S0 label by hand. When CI merges a `bug #<n>` or `incident #<n>` PR it closes issue #<n> (v2.8), so a fixed S0 never keeps the freeze on.
 
 ## Review and merge
 CI merges. Agents never merge, never update a branch from main for the sake of merging, and never remove labels.
