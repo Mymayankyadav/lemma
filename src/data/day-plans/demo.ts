@@ -234,6 +234,10 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
    save(state.plans.map(p=>p.id===id?next:p),[...replaced,...entries]);
    return receipt(next);
   },
+  async undoPlacements(){
+   // Demo receipts carry actionNo:null (no journal), so no Undo is offered.
+   return fail('conflict','Demo mode has no undo journal for planner commits');
+  },
   async commitPlacements(input:CommitPlacementsInput){
    const value=normalizeCommitPlacements(input),operationId=value.operationId??newId();
    const fingerprint=JSON.stringify(value),state=current();

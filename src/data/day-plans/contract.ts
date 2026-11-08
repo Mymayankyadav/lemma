@@ -60,6 +60,10 @@ export interface DayPlanApi {
   availability:PlanAvailability):Promise<StudyReceipt<DayPlanRecord>>;
  /** N107: one journalled owner action covers every placement, plan and item. */
  commitPlacements(input:CommitPlacementsInput):Promise<StudyReceipt<AtomicPlacementResult>>;
+ /** Undo one atomic placement action (every block, plan and item together)
+  * through the journalled undo path. Refused when a newer owner write exists
+  * or when the receipt had no action number (demo mode has no journal). */
+ undoPlacements(actionNo:number):Promise<void>;
  /** Server atomically validates snapshot versions before creating placements. */
  commitPlan(id:string,expectedVersion:number):Promise<StudyReceipt<DayPlanRecord>>;
  closePlan(id:string,expectedVersion:number,
