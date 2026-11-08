@@ -128,11 +128,14 @@ try{
  for(const kind of ['action','seen','subject','delete'])
   await assert.rejects(q('select public.test_mcp_owner_write($1::uuid,$2)',[A,kind]),
    /Account deletion is in progress/,'MCP-style '+kind+' write for marked A');
- // A root MCP DELETE on marked A must fail before the AFTER DELETE audit trigger.
- checkEqual((await q('select count(*)::int n from public.notes where user_id=$1',[A]))[0].n,1);
  // A service-role write for an owner without a marker is unaffected.
  await q('select public.test_mcp_owner_write($1::uuid,$2)',[B,'seen']);
  await db.exec('reset role');
+ // The SQL test creates a plain service_role (without BYPASSRLS). It cannot
+ // directly SELECT protected notes under owner RLS; inspect after reset,
+ // while still testing the service-role DELETE under the actual role.
+ checkEqual((await q('select count(*)::int n from public.notes where user_id=$1',[A]))[0].n,1,
+  'denied MCP-style DELETE must preserve the marked owner note');
  checkEqual((await q('select count(*)::int n from public.actions where user_id=$1',[A]))[0].n,
   actionCountBefore,'rejected MCP writes must not create audit rows');
  checkEqual((await q("select count(*)::int n from public.subjects where user_id=$1 and name='Rejected MCP'",[A]))[0].n,
