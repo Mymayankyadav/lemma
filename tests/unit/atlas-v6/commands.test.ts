@@ -54,6 +54,25 @@ describe('N105.2 owner Atlas graph demo commands',()=>{
 });
 
 describe('N105.2 live owner-RLS command envelopes and retry',()=>{
+
+ it('maps P0001-raised missing concepts and graph cycles to typed owner failures',async()=>{
+  let errorMessage='Atlas concept not found for owner';
+  const rpc=vi.fn(async()=>({data:null,error:{code:'P0001',message:errorMessage}}));
+  vi.mocked(liveClient).mockReturnValue({auth:{getUser:async()=>({
+   data:{user:{id:'owner'}},error:null})},rpc} as never);
+  const api=new LiveAdapter(),id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+   other='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  await expect(api.updateConcept(id,1,{name:'Updated'}))
+   .rejects.toMatchObject({code:'not_found'});
+  errorMessage='Atlas prerequisite would create a dependency cycle';
+  await expect(api.linkConcept(id,1,other,'prereq'))
+   .rejects.toMatchObject({code:'conflict'});
+  errorMessage='Invalid Atlas command envelope';
+  await expect(api.updateConcept(id,1,{name:'Bad'}))
+   .rejects.toMatchObject({code:'invalid'});
+  expect(rpc).toHaveBeenCalledTimes(3);
+ });
+
  it('uses exact v1 owner-free envelopes for every write and one preview',async()=>{
   const requests:Array<Record<string,unknown>>=[];
   const rpc=vi.fn(async(_name:string,args:{p:Record<string,unknown>})=>{

@@ -40,6 +40,20 @@ export function buildAtlasEnvelope(operation:AtlasOperation,
  }
  return payload;
 }
+/** PostgreSQL RAISE EXCEPTION returns P0001. Preserve the domain error
+ * instead of labelling a missing owner concept or graph cycle as a server fault. */
+function atlasFailure(error:unknown):never{
+ const message=error instanceof Error?error.message:
+  typeof error==='object'&&error!==null&&'message'in error?
+    String(error.message):String(error);
+ if(/^(?:Atlas concept|Referenced Atlas concept|Atlas graph link) not found(?: for owner)?/i.test(message))
+  throw new LemmaError('not_found',message);
+ if(/(?:Atlas prerequisite.*cycle|Atlas parent.*cycle|dependency cycle|unique constraint|duplicate key)/i.test(message))
+  throw new LemmaError('conflict',message);
+ if(/^(?:Invalid Atlas|Unsupported Atlas|Unknown Atlas|Merge requires|Cannot merge|Atlas link requires|Atlas create requires)/i.test(message))
+  throw new LemmaError('invalid',message);
+ return fail(error);
+}
 function retryable(error:unknown){
  const msg=error instanceof Error?error.message:
   typeof error==='object'&&error!==null&&'message'in error?String(error.message):String(error);
@@ -53,13 +67,13 @@ async function dispatch(db:SupabaseClient,p:AtlasEnvelope):Promise<unknown>{
    const response=await db.rpc('concepts_command',{p});
    if(!response.error)return checked(response);
    last=response.error;
-   if(!retryable(last)||attempt===1) return fail(last);
+   if(!retryable(last)||attempt===1) return atlasFailure(last);
   }catch(error){
    last=error;
-   if(!retryable(error)||attempt===1) return fail(error);
+   if(!retryable(error)||attempt===1) return atlasFailure(error);
   }
  }
- return fail(last);
+ return atlasFailure(last);
 }
 export async function runAtlasMutation(db:SupabaseClient,p:AtlasEnvelope):Promise<AtlasMutationResult>{
  const raw=await dispatch(db,p) as Record<string,unknown>;
