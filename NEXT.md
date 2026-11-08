@@ -65,15 +65,6 @@ Tests: `tests/unit/focus/modes.test.tsx`, `tests/e2e/v6-focus-modes.spec.ts` (ac
 Scope: src/features/focus/**, src/app/V6Shell.tsx (mounting the accessory only), src/app/FocusAccessory.tsx (new), tests/unit/focus/modes.test.tsx, tests/e2e/v6-focus-modes.spec.ts, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-## N87 MCP: every settings field
-Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
-Done = the settings edit path covers every column classified owner-editable in the capability registry (maximum interval, fuzz, load balancing, learn-ahead, FSRS weights set/restore with validation, macros, UI and notification preferences, and the N39 typed settings), merging JSON sections without losing unknown keys and checking `version` when given.
-Owner decision (#1197): `connector_last_client` is command-managed (the registry now says so): `mcp_commit` writes it from the true connector source, so the settings edit path refuses it with a clear message instead of reporting a lost write. The coverage test asserts that refusal and covers every other owner-editable column.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/settings-coverage.test.ts` enumerating the registry's settings fields
-Scope: supabase/functions/mcp/**, tests/unit/mcp/settings-coverage.test.ts, CURRENT.md.
-Not: migrations, app code.
-
 ## N88 MCP: paths, subjects, styles, concepts and sources fields
 Stage: Build · Status: open · Needs: N87, N93 · Assigned: —
 Done = MCP covers project pinning and status lifecycle, slug rename with aliases, subject/style create/reorder/merge/delete-unused, concept hierarchy, Atlas pin coordinates and edges with cycle checks, and source metadata/order/coverage/verification and page text revisions, each through the existing transaction path with versions when given.
