@@ -41,14 +41,6 @@ Tests: `tests/mcp/sql/study-modes.mjs` (Pomodoro cycle and long break, Flowtime 
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study-modes.mjs, docs/v6/capability-registry/study_entries.json, CURRENT.md.
 Not: app or MCP code, other functions.
 
-## N53 Pending decisions with a server executor
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = one additive migration adds `public.pending_commands` (operation ID, resource, payload, `not_before`, `undo_until`, `status` `scheduled`/`executing`/`succeeded`/`failed`/`cancelled`, result, error class) and `public.pending_command(p)` to schedule, extend or cancel a registered-resource command, plus `public.lemma_run_due_commands()` that executes due rows once each through the registry (row lock, idempotent on retry). It runs every minute from a `pg_cron` job scheduled by the same migration (`cron.schedule('lemma-run-due-commands','* * * * *','select public.lemma_run_due_commands()')`), inside a `do` block that first runs `create extension if not exists pg_cron` and does nothing when `pg_available_extensions` has no `pg_cron` (PGlite), never from a browser timer, an Edge function or a client secret: no `notify` function is deployed (Owner, bug #1146). An optional `runDueCommands` hook in `tick-core.ts` may stay but is not the production path. The app's delayed-approval toasts may later use it; nothing changes for current flows.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/pending-commands.mjs` (due execution exactly once, cancel before due, extension, failure recorded, second owner, undo of the executed command) and the migration's guarded `cron.schedule` call (checked as text; PGlite has no `pg_cron`)
-Scope: supabase/migrations/<one new additive file>, supabase/functions/notify/tick-core.ts (optional hook only), tests/mcp/sql/pending-commands.mjs, tests/unit/notify/pending-tick.test.ts (optional), docs/v6/capability-registry/pending_commands.json (new), CURRENT.md.
-Not: other notify behaviour, MCP code, app code.
-
 ## N54 Owner change feed and catch-up cursor
 Stage: Build · Status: open · Needs: N36.2 · Assigned: —
 Done = one additive migration adds `public.owner_changes` (ordered `cursor bigserial`, owner, resource, record ID, version, `op`, `tombstone`, `committed_at`) filled in the same transaction by triggers on every table in `lemma_undo_tables` (the registry, so later tables are covered by inserting their name), and `public.changes_since(p_cursor bigint, p_limit int)` returning a bounded ordered page and a `reset` flag when the cursor is older than retention (30 days, pruned by the notify tick).
