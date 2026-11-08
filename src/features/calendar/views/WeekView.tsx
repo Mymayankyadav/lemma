@@ -12,18 +12,19 @@ export interface WeekViewProps {
   dues?:CalendarDues;
   onDay: (day: string) => void;
   firstDay?: number;
+  clock24h?: boolean;
 }
 function label(date: string, zone: string): string {
   return new Intl.DateTimeFormat('en', {timeZone: zone, weekday: 'short',month: 'short',day: 'numeric'})
     .format(new Date(calendarRange(date,zone).start));
 }
-function time(instant: string, zone: string): string {
-  return new Intl.DateTimeFormat('en', {timeZone: zone,hour: 'numeric',minute:'2-digit'})
-    .format(new Date(instant));
+export function formatCalendarTime(instant: string, zone: string, clock24h = true): string {
+  return new Intl.DateTimeFormat('en', {timeZone: zone, hour:'numeric',
+    minute:'2-digit', hourCycle:clock24h?'h23':'h12'}).format(new Date(instant));
 }
 /** Seven civil days; each block is rendered independently even if times overlap. */
 export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]},
-  onDay,firstDay=1}:WeekViewProps) {
+  onDay,firstDay=1,clock24h=true}:WeekViewProps) {
   const days=weekDays(date,zone,entries,blocks,firstDay);
   const viewRange=calendarRange(days[0].day,zone,7);
   const controls=useCalendarOverlaps(viewRange);
@@ -51,7 +52,7 @@ export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]}
             {day.logged.map((slice,index)=><article key={slice.entry.id+':'+index}
               className="rounded-ctl bg-raised-2 p-1 text-caption text-ink">
               <strong className="block break-words">{slice.entry.intent||'Study'}</strong>
-              <span>{time(slice.start,zone)} · Logged</span>
+              <span>{formatCalendarTime(slice.start,zone,clock24h)} · Logged</span>
             </article>)}
             <DueDayItems date={day.day} firstVisible={days[0].day}
               zone={zone} dues={dues} compact/>
@@ -63,7 +64,7 @@ export function WeekView({date,zone,entries,blocks,dues={deadlines:[],topics:[]}
               style={{marginInlineStart:Math.min(lane,5)*4}}
               className="rounded-ctl border border-edge p-1 text-caption text-ink">
               <strong className="block break-words">{block.title}</strong>
-              <span>{time(block.startsAt,zone)} · {block.kind==='busy'?'Busy':'Study'}
+              <span>{formatCalendarTime(block.startsAt,zone,clock24h)} · {block.kind==='busy'?'Busy':'Study'}
                 {block.status==='done'?' · Done':''}</span>
             </article>)}
           </div>

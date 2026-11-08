@@ -229,9 +229,13 @@ export function createDemoStudyApi(): StudyApi {
         fail('conflict', 'Another study entry is already active');
       if (typeof input.intent !== 'string' || !input.intent.trim() || !['timer', 'manual'].includes(input.source))
         fail('invalid', 'Study intent and source are required');
+      if(input.calendarBlockId!==undefined&&input.calendarBlockId!==null&&
+        !snapshot.blocks.some(block=>block.id===input.calendarBlockId&&block.kind==='study'))
+        fail('not_found','Calendar block does not belong to this demo study plan');
       const at = instant(input.startedAt ?? new Date().toISOString(), 'start');
       const record: StudyEntryRecord = {
-        ...links(input), id: id(), intent: input.intent.trim(), source: input.source,
+        ...links(input), calendarBlockId:input.calendarBlockId??null,
+        id: id(), intent: input.intent.trim(), source: input.source,
         status: 'running', reflection: null, rating: null, version: 1,
         createdAt: at, updatedAt: at, savedAt: null,
         intervals: [{ id: id(), kind: 'focus', start: at, end: null }],
