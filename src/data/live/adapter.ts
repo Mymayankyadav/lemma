@@ -809,7 +809,9 @@ export class LiveAdapter implements LemmaApi {
  ):Promise<import('../api').AtlasMutationResult>{
   const db=liveClient(),uid=await owner(db);
   const candidate=buildAtlasEnvelope(operation,id,patch,expectedVersion);
-  const key=uid+':'+(candidate.target.id??('new:'+JSON.stringify(candidate.patch)));
+  // A new concept has no target ID yet. Reserve one create slot per owner,
+  // independent of its form payload, or changed create intents bypass the guard.
+  const key=uid+':'+(candidate.target.id??'new');
   const fingerprint=JSON.stringify([candidate.operation,candidate.target,
    candidate.patch,candidate.expectedVersion??null]);
   const previous=this.pendingAtlasEdits.get(key);
