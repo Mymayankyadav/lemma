@@ -353,7 +353,8 @@ try{
   assert.equal(row.version,expectedVersion+1);
   const page=await mcpPage('presets',presetId);
   assert.equal(page.total,1,'presets.'+operation+': owner MCP read');
-  assert.equal(Boolean(page.items[0].archived_at),isArchived);
+  assert.equal(page.items[0].version,expectedVersion+1,
+   'registered MCP projection version mismatch');
   mark('presets',operation);
   if(operation==='restore')presetRestoreAction=receipt.actionNo;
   await role('service_role');
@@ -409,7 +410,8 @@ try{
   assert.equal(row.version,expectedVersion+1);
   const page=await mcpPage('study_goals',goalId);
   assert.equal(page.total,1,'study_goals.'+operation+': owner MCP read');
-  assert.equal(Boolean(page.items[0].archived_at),isArchived);
+  assert.equal(page.items[0].version,expectedVersion+1,
+   'registered MCP projection version mismatch');
   mark('study_goals',operation);
   if(operation==='restore')goalRestoreAction=receipt.actionNo;
   await role('service_role');
