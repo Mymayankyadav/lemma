@@ -86,7 +86,7 @@ try {
  const fp=ok(await call(command('preview',{availability:{sources:[]},items:[]},
   {id:future.plan.id},1)));
  const fc=ok(await call(command('commit',{}, {id:future.plan.id},fp.plan.version)));
- await assert.rejects(call(command('close',{}, {id:future.plan.id},fc.plan.version)),
+ await assert.rejects(call(command('close',{carry_over:[]}, {id:future.plan.id},fc.plan.version)),
   /Future day plans/);
  assert.equal((await q('select status from public.day_plans where id=$1',[future.plan.id]))[0].status,'committed');
  await role(b);

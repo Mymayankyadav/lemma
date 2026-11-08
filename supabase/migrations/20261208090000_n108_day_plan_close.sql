@@ -148,7 +148,11 @@ begin
       pg_catalog.jsonb_typeof(v_patch->'ritual') is distinct from 'object') then
     raise exception 'Only committed plans may close with a JSON ritual';
    end if;
-   if v_plan.plan_date > pg_catalog.timezone(v_plan.time_zone,
+   -- Legacy ritual-only close semantics remain unchanged. The N108
+   -- canonical transition (even an explicit empty carry_over selection)
+   -- must never close a future owner-local day.
+   if (v_patch ? 'carry_over' or v_patch ? 'tomorrow_first_task_id')
+    and v_plan.plan_date > pg_catalog.timezone(v_plan.time_zone,
        pg_catalog.clock_timestamp())::date then
     raise exception 'Future day plans cannot close';
    end if;
