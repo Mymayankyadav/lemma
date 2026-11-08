@@ -107,5 +107,22 @@ try{
  assert.equal((await q('select source from public.actions where no=$1',
   [viaMcp.actionNo]))[0].source,'chatgpt');
  assert.equal((await q("select count(*)::int n from public.lemma_command_resources where resource='day_plans' and \"schema\"->'operations' ? 'commit_placements'"))[0].n,1);
+
+ // The single undo must refuse if a later owner write edited a created block.
+ const newBlockId=viaMcp.blockIds[0];
+ assert.ok(newBlockId,'atomic MCP reply omitted the created block ID');
+ await q("update public.calendar_blocks set title='Newer owner edit',version=version+1 where id=$1",
+  [newBlockId]);
+ await as(a);
+ await assert.rejects(q('select public.undo_action($1::uuid,$2::bigint,false) result',
+  [a,viaMcp.actionNo]),/Undo [0-9]+ first/i,
+  'newer owner change must block the original batch undo');
+ await admin();
+ assert.equal((await q('select title from public.calendar_blocks where id=$1',
+  [newBlockId]))[0].title,'Newer owner edit');
+ assert.equal((await q('select count(*)::int n from public.day_plans where id=$1',
+  [viaMcp.plans[0].id]))[0].n,1,
+  'failed undo must not partially delete the owner plan');
+
  console.log('PASS N107 two-day atomic owner/MCP planner, typed conflict, exact replay and whole undo');
 }finally{await db.close()}
