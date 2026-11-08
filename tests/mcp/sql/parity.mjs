@@ -661,9 +661,69 @@ try{
   [eventId]))[0].voided_at,'study_events: undo restore did not re-void');
  mark('study_events','record','edit','void','restore');
 
+ // Command-only parity: card_schedule has no CRUD table or generic MCP
+ // GET resource. Exercise both real registered operations against one owner
+ // card, compare authenticated app state to the MCP receipt/replay and undo.
+ await role(null);
+ const cardSubject=(await q("insert into public.subjects(user_id,name,glyph,hue) values($1,'N94 schedule','S','cyan') returning id",
+  [owner]))[0].id;
+ const cardProject=(await q("insert into public.projects(user_id,subject_id,slug,title,goal) values($1,$2,'n94-schedule','N94 schedule','Parity') returning id",
+  [owner,cardSubject]))[0].id;
+ const cardNote=(await q("insert into public.notes(user_id,project_id,front,back) values($1,$2,'N94 Q','N94 A') returning id,no",
+  [owner,cardProject]))[0];
+ const card=(await q("insert into public.cards(user_id,note_id,ord,state,stability,difficulty,reps) values($1,$2,1,2,3,4,5) returning id",
+  [owner,cardNote.id]))[0];
+ const cardOwnerRow=async()=> (await q("select due,state,stability,difficulty,reps from public.cards where id=$1 and user_id=$2",
+  [card.id,owner]))[0];
+ const beforeSchedule=await cardOwnerRow();
+ await role('service_role');
+ const due='2026-12-15T12:30:00Z';
+ const rescheduleRequest=command('card_schedule','reschedule',{
+  target:{noteNo:cardNote.no,ord:1},patch:{due},
+ });
+ const rescheduled=status(await mcp(rescheduleRequest),'card_schedule','reschedule');
+ assert.deepEqual(await mcp(rescheduleRequest),rescheduled,
+  'card_schedule: reschedule receipt did not replay');
+ const alteredSchedule=await mcp({...rescheduleRequest,patch:{due:'2026-12-16T12:30:00Z'}});
+ assert.equal(alteredSchedule.status,'conflict',
+  'card_schedule: operationId payload conflict not preserved');
+ await as(owner);
+ const scheduled=(await q('select due,state,stability,difficulty,reps from public.cards where id=$1',
+  [card.id]))[0];
+ assert.equal(new Date(scheduled.due).toISOString(),'2026-12-15T12:30:00.000Z');
+ assert.equal(scheduled.state,beforeSchedule.state);
+ assert.equal(scheduled.stability,beforeSchedule.stability);
+ await role(null);
+ assert.deepEqual(await cardOwnerRow(),scheduled,'card_schedule: app and MCP effect disagree');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.cards where id=$1',
+  [card.id]))[0].n,0,'card_schedule: foreign app access');
+ await role('service_role');
+ await assert.rejects(mcp(command('card_schedule','reset',{
+  target:{noteNo:cardNote.no,ord:1},patch:{},
+ })),/Card not found for owner/);
+ const resetRequest=command('card_schedule','reset',{
+  target:{noteNo:cardNote.no,ord:1},patch:{},
+ });
+ const reset=status(await mcp(resetRequest),'card_schedule','reset');
+ assert.deepEqual(await mcp(resetRequest),reset,
+  'card_schedule: reset receipt did not replay');
+ await as(owner);
+ const afterReset=(await q('select due,state,stability,difficulty,reps from public.cards where id=$1',
+  [card.id]))[0];
+ assert.equal(afterReset.state,0,'card_schedule: reset not persisted');
+ assert.equal(afterReset.stability,0,'card_schedule: reset did not clear scheduler state');
+ await role(null);
+ assert.equal((await undo(reset.actionNo)).undone,reset.actionNo);
+ const undoneSchedule=await cardOwnerRow();
+ assert.equal(undoneSchedule.state,2,'card_schedule: undo reset did not recover state');
+ assert.equal(undoneSchedule.stability,3,'card_schedule: undo lost FSRS state');
+ assert.equal(new Date(undoneSchedule.due).toISOString(),'2026-12-15T12:30:00.000Z');
+ mark('card_schedule','reschedule','reset');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
