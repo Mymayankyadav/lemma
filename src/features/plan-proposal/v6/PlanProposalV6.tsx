@@ -28,6 +28,9 @@ export default function PlanProposalV6(){
  // proposal's independent approve/reject decision.
  useEffect(()=>{
   routeRef.current=id;
+  // A -> B -> A navigation may return before B's draft load completes.
+  // Invalidate the old key so revisiting A fetches its draft again.
+  loadedDraftKey.current='';
   setEditor(false);setText('');setConflict(null);setPending(false);
  },[id]);
  useEffect(()=>{

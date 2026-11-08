@@ -216,6 +216,34 @@ describe('N85 v6 proposal draft editor',()=>{
   expect(host.textContent).toContain('Older draft');
   expect(host.textContent).not.toContain('No saved draft exists');
  });
+ it('reloads the original proposal after navigating away and back during a pending draft read',async()=>{
+  const secondId='77777777-7777-4777-8777-777777777777';
+  const other={...proposal,id:secondId};
+  mocks.proposal.mockImplementation((id:string)=>({
+   data:id===secondId?other:proposal,isPending:false,isError:false,refetch:vi.fn(),
+  }));
+  let settleOther:(page:unknown)=>void=()=>{};
+  vi.mocked(adapter.listDrafts).mockImplementation(async args=>{
+   if(args.proposalId!==secondId)
+    return {items:[existing],total:1,nextCursor:null};
+   return new Promise(resolve=>{settleOther=resolve as (page:unknown)=>void});
+  });
+  await act(async()=>root.render(<MemoryRouter initialEntries={['/proposals/'+proposal.id]}>
+   <Link to={'/proposals/'+secondId}>Go to other</Link>
+   <Link to={'/proposals/'+proposal.id}>Back to first</Link>
+   <Routes><Route path="/proposals/:id" element={<PlanProposalV6/>}/></Routes>
+  </MemoryRouter>));
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  await act(async()=>host.querySelectorAll<HTMLAnchorElement>('a')[0].click());
+  await vi.waitFor(()=>expect(adapter.listDrafts).toHaveBeenCalledWith(
+   expect.objectContaining({proposalId:secondId})));
+  await act(async()=>host.querySelectorAll<HTMLAnchorElement>('a')[1].click());
+  await vi.waitFor(()=>expect(host.textContent).toContain('Older draft'));
+  expect(vi.mocked(adapter.listDrafts).mock.calls.filter(c=>
+   c[0].proposalId===proposal.id)).toHaveLength(2);
+  await act(async()=>settleOther({items:[],total:0,nextCursor:null}));
+  expect(host.textContent).toContain('Older draft');
+ });
  it('ignores an old proposal save acknowledgement after navigating to another proposal',async()=>{
   const secondId='66666666-6666-4666-8666-666666666666';
   const secondProposal={...proposal,id:secondId};
