@@ -144,14 +144,6 @@ Tests: tests/unit/atlas-v6/**
 Scope: src/data/api.ts, the demo and live atlas adapters in src/data/**, src/features/atlas/v6/**, tests/unit/atlas-v6/**, docs/current/N105.2.md.
 Not: schema, other screens, unreviewed direct DML.
 
-## N106 Study entry linked to its calendar block
-Stage: Build · Status: open · Needs: N70 · Assigned: —
-Done = one additive migration adds a nullable owner-composite `calendar_block_id` on study entries (an entry may point only at one of the owner's own blocks); `StudyApi.startStudyEntry` accepts it (demo and live) and v6 Today's Start passes the block it starts. Existing entries and callers are unchanged. Flag off: nothing changes.
-Owner-authorized (D1): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/study-entry-block-link.mjs` (owner separation, foreign block refused) and `tests/unit/home-v6/today-plan.test.tsx`
-Scope: supabase/migrations/<one new additive file>, the study entry types and start method in src/data/** (demo and live), the Start call in src/features/home/** (v6 branch), tests/mcp/sql/study-entry-block-link.mjs, tests/unit/home-v6/today-plan.test.tsx, docs/current/N106.md.
-Not: calendar editing, other screens.
-
 ## N97 Upgrade rehearsal on representative existing data (G5)
 Stage: Build · Status: open · Needs: N53, N54, N91, N92, N93 · Assigned: —
 Done = a PGlite test loads a representative pre-v6 account fixture (paths, sources, cards with history, sessions, proposals), applies all migrations, and checks no lost rows, links or schedules, historical estimates still labelled, new records creatable, and export/undo across old and new records.
