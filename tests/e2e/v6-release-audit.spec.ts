@@ -3,17 +3,25 @@ import {test,expect,type Page} from '@playwright/test';
 // N101 audits the Vite build in the same checkout, not the standalone mockup.
 const url=(path:string,stress=false)=>
  './?demo='+(stress?'stress':'1')+'&flags=v6Shell#'+path;
-const routes=[
+// Deep links use ids that exist in the demo fixture; the third entry is text the
+// loaded screen must show, so a "not found" page cannot pass as a deep link.
+const routes:readonly (readonly [string,string,string?])[]=[
  ['Today','/'],['Paths','/projects'],['New path','/projects/new'],
- ['Path','/p/real-analysis'],['Checkpoint','/p/real-analysis/cp/CP4'],
+ ['Path','/p/real-analysis','Real Analysis'],['Checkpoint','/p/real-analysis/cp/CP4','Compactness'],
  ['Session','/s/real-analysis/7'],['Inbox','/proposals'],
- ['Proposal','/proposals/example'],['Review','/review'],
+ ['Proposal','/proposals/proposal-6'],['Review','/review'],
  ['Review round','/review/run'],['Review complete','/review/done'],
- ['Cards','/cards'],['Card','/cards/7'],['Atlas','/atlas'],
+ ['Cards','/cards'],['Card','/cards/7','N7'],['Atlas','/atlas'],
  ['Progress','/insights'],['Settings','/settings'],['Sign in','/sign-in'],
  ['Kit','/kit'],['Calendar','/calendar'],['Tasks','/tasks'],
  ['Time log','/log'],['Practice','/practice'],['Close day','/today/close?date=2026-11-06'],
-] as const;
+];
+// Known release defects: only the sideways-overflow measurement is an expected
+// failure; every other check on these routes still runs and must pass.
+const knownOverflow:Record<string,string>={
+ '320 /':'Known release defect #1298: Today wider than a 320px viewport at 200% text',
+ '320 /kit':'Known release defect #1300: Kit wider than a 320px viewport at 200% text',
+};
 const displays=[{width:320,height:640},{width:360,height:780},{width:390,height:844}] as const;
 const themes=[{name:'Day',value:'graph'},{name:'Night',value:'graph-night'}] as const;
 async function setup(page:Page){
@@ -26,19 +34,29 @@ async function presentation(page:Page,theme:string,large=true){
   document.documentElement.style.fontSize=large?'200%':'100%';
  },{theme,large});
 }
+// A lazy route renders "Loading screen…" inside #main-content and data screens
+// show "Loading …" status text, so the shell alone does not prove the screen loaded.
+async function settled(page:Page,expected?:string){
+ await page.waitForLoadState('networkidle');
+ const main=page.locator('#main-content');
+ await expect(main.getByText(/^Loading\b/),'screen still loading').toHaveCount(0,{timeout:20_000});
+ // Screen states are labelled "<Thing> loading" / "<Thing> unavailable" (e.g. "Project loading").
+ await expect(main.getByRole('region',{name:/^\w+ loading$/})).toHaveCount(0);
+ await expect(main.getByRole('region',{name:/^\w+ unavailable$/}),'deep link shows an unavailable screen').toHaveCount(0);
+ await expect(page.getByText(/^(Couldn’t open this screen|Proposal unavailable\.|This card could not be loaded\.)/),
+  'screen shows an error state').toHaveCount(0);
+ if(expected)await expect(main).toContainText(expected);
+}
 async function contained(page:Page,detail:string){
  const dims=await page.evaluate(()=>({
   content:document.documentElement.scrollWidth,viewport:window.innerWidth,
  }));
  expect(dims.content,detail+' must not scroll sideways').toBeLessThanOrEqual(dims.viewport+1);
 }
-for(const display of displays)for(const theme of themes)for(const [name,path] of routes){
+for(const display of displays)for(const theme of themes)for(const [name,path,expected] of routes){
+ const known=knownOverflow[display.width+' '+path];
  test('N101 '+display.width+'px '+theme.name+' 200% '+name+' '+path,async({page})=>{
   test.setTimeout(90_000);
-  // #1298 remains a real failing overflow assertion. The expected-failure marker
-  // tracks the known defect, rather than skipping this route or declaring G7 green.
-  if(display.width===320&&(path==='/'||path==='/kit'))
-   test.fail(true,path==='/kit'?'Known release defect #1300: Kit 324px content in 320px viewport':'Known release defect #1298: Today 336px content in 320px viewport');
   await page.setViewportSize(display);
   await setup(page);
   const exceptions:string[]=[];
@@ -55,10 +73,21 @@ for(const display of displays)for(const theme of themes)for(const [name,path] of
    await expect(page.getByRole('navigation',{name:'Main navigation'})).toHaveCount(0);
   }
   await expect(page.locator('#main-content')).toBeVisible();
+  await settled(page,expected);
   expect(await page.evaluate(()=>getComputedStyle(document.documentElement).colorScheme))
    .toBe(theme.name==='Night'?'dark':'light');
-  await contained(page,display.width+'px '+theme.name+' '+name);
+  if(!known)await contained(page,display.width+'px '+theme.name+' '+name);
   expect(exceptions,'uncaught browser exceptions on '+name).toEqual([]);
+ });
+ if(known)test('N101 '+display.width+'px '+theme.name+' 200% '+name+' '+path+' overflow',async({page})=>{
+  test.fail(true,known);
+  test.setTimeout(90_000);
+  await page.setViewportSize(display);
+  await setup(page);
+  await page.goto(url(path));
+  await presentation(page,theme.value);
+  await settled(page,expected);
+  await contained(page,display.width+'px '+theme.name+' '+name);
  });
 }
 // The existing docs/v6/screens PNGs are historical mockup captures.
@@ -72,9 +101,11 @@ const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
  ? 'docs/v6/screens' : 'test-results/v6-release/screens';
 
 // Capture PNGs from the actual Vite application, not the historical prototype.
+// Viewport captures (what a 390×844 phone shows): full-page captures drew the
+// fixed bottom navigation over the middle of long screens.
 async function releaseScreenshot(page:Page,file:string){
  await page.screenshot({path:captureDir+'/'+file,
-  fullPage:true,animations:'disabled',scale:'css'});
+  animations:'disabled',scale:'css'});
 }
 
 test('N101 screenshot capture of the real app, both palettes at 390x844',async({page})=>{
@@ -85,10 +116,12 @@ test('N101 screenshot capture of the real app, both palettes at 390x844',async({
   await page.goto(url(path));
   await expect(page.locator('[data-v6-header]')).toBeVisible();
   await presentation(page,theme.value,false);
+  await settled(page);
   await contained(page,'screenshot '+name+'-'+theme.name);
   await releaseScreenshot(page,name+'-'+theme.name.toLowerCase()+'.png');
  }
  await page.goto(url('/'));
+ await settled(page);
  await expect(page.getByRole('textbox',{name:'Focus intention'})).toBeVisible();
  await page.getByRole('textbox',{name:'Focus intention'}).fill('Release capture: focus');
  await page.getByRole('button',{name:'Start focus'}).click();
