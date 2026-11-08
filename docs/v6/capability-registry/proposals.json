@@ -1,6 +1,6 @@
 {
   "table": "proposals",
-  "version": 2,
+  "version": 1,
   "columns": {
     "id": {
       "classification": "derived",
