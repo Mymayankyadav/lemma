@@ -122,14 +122,6 @@ Tests: `tests/e2e/v6-harden-learning.spec.ts`
 Scope: src/features/*/v6/**, src/features/*-v6/**, tests/e2e/v6-harden-learning.spec.ts, CURRENT.md.
 Not: data adapters, supabase/**, flag-off pages.
 
-## N104 Card reschedule and reset (write path and v6 buttons)
-Stage: Build · Status: open · Needs: N84 · Assigned: —
-Done = one additive migration adds `public.card_schedule_command(p)` with operations `reschedule` (set the card's next due date) and `reset` (back to new), owner-checked, with an exactly-once operation receipt, one journalled action that `undo_action` reverses, and a `lemma_command_resources` entry so `mcp_command` can run it; `LemmaApi` gains `rescheduleCard` and `resetCard` (demo and live), and the v6 card detail (N84) shows both actions. Flag off: nothing changes.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/card-schedule-command.mjs` (owner separation, replay, undo, MCP parity) and `tests/unit/card-v6/**`
-Scope: supabase/migrations/<one new additive file>, src/data/api.ts (two methods), the demo and live card adapters in src/data/**, src/features/card/v6/**, tests/mcp/sql/card-schedule-command.mjs, tests/unit/card-v6/**, docs/current/N104.md.
-Not: review grading or FSRS changes, other screens.
-
 ## N105.2 Atlas concept mutations in demo/live adapters and v6 controls
 Stage: Build · Status: open · Needs: N105.1, N86 · Assigned: —
 Done = Finish N105 with matching LemmaApi create/update/reparent/link/unlink/merge and preview methods (demo/live), error mapping, and v6 Atlas list controls. The live adapter sends the N105.1 owner-authenticated command and preserves exactly-once operation IDs; the demo adapter respects version, cycle and merge impact parity. Flag-off remains unchanged.
