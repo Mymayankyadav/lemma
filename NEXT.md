@@ -104,32 +104,11 @@ Tests: `tests/unit/settings-v6/planning.test.tsx`
 Scope: src/features/settings/v6/Planning.tsx and src/features/settings/v6/Focus.tsx (new), src/features/settings/v6/Page.tsx (section links only), src/data/types.ts and the settings patch in src/data/live/adapter.ts and src/data/demo/** (new fields only), tests/unit/settings-v6/planning.test.tsx, and (Owner, bug #1166) the week-start and time-format reads only in src/features/calendar/Page.tsx, src/features/calendar/views/WeekView.tsx and src/features/calendar/views/MonthView.tsx with a targeted test under tests/unit/settings-v6/, docs/current/N79.md.
 Not: other screens (except the Calendar week-start and time-format reads above), other settings sections, supabase/**.
 
-## N82 v6 sources panel and page text behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
-Tests: `tests/unit/sources-v6/**`
-Scope: src/features/project/sources-v6/** (new), src/features/project/SourcesPanel.tsx (the flag branch only), src/features/project/v6/V6Project.tsx (mount the v6 sources panel in place of its source list only; Owner, bug #1119), tests/unit/sources-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N84 v6 card detail and editor behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, `/cards/:no` shows the note's variants, scheduling state, review history and comments with the existing edit, suspend/restore and comment actions (reschedule and reset have no write path yet; they arrive in N104, Owner, bug #1140); the editor previews mathematics and keeps the existing save path. Flag off: nothing changes.
-Tests: `tests/unit/card-v6/**`
-Scope: src/features/card/v6/** (new), src/features/card/Page.tsx (the flag branch only), tests/unit/card-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
 ## N85 v6 plan review with proposal drafts behind the shell flag
 Stage: Build · Status: open · Needs: N63.2 · Assigned: —
 Done = with `v6Shell` on, `/proposals/:id` shows the plan or change preview with before/after targets, rationale and citations, and an Edit that saves a draft (N63), shows base/current/draft on conflict, and submits through the draft; approve/reject keep the existing atomic paths. Flag off: nothing changes.
 Tests: `tests/unit/plan-proposal-v6/**`
 Scope: src/features/plan-proposal/v6/** (new), src/features/plan-proposal/Page.tsx (the flag branch only), tests/unit/plan-proposal-v6/**, CURRENT.md.
-Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
-
-## N86 v6 Atlas editing in the list behind the shell flag
-Stage: Build · Status: open · Needs: — · Assigned: —
-Done = with `v6Shell` on, the v6 Atlas list adds pin/unpin through the existing write path and a read-only merge impact and cycle check (create, edit, reparent, link/unlink and merge have no write path yet; they arrive in N105, Owner, bug #1140). Flag off: nothing changes.
-Tests: `tests/unit/atlas-v6/edit.test.tsx`
-Scope: src/features/atlas/v6/**, tests/unit/atlas-v6/edit.test.tsx, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
 ## N87 MCP: every settings field
