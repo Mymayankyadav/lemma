@@ -145,7 +145,7 @@ export default function V6Cards() {
         </p>}
         {more && <button type="button" className={button + ' self-center'} disabled={cards.isFetchingNextPage}
           onClick={() => { void showMore(); }}>{cards.isFetchingNextPage ? 'Loading more…' :
-            cards.isFetchNextPageError ? 'Retry loading cards' : 'Load 20 more'}</button>
+            cards.isFetchNextPageError ? 'Retry loading cards' : 'Load 20 more'}</button>}
       </>}
     <Sheet open={creating} onClose={() => setCreating(false)} title="New card">
       <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>
