@@ -87,10 +87,11 @@ test('N100 the 1,200th page remains reachable in a long source account',async({p
  await visit(page,'/p/real-analysis','stress');
  await expect(page.locator('#v6-project-title')).toBeVisible();
  await page.getByRole('button',{name:/^Show sources/}).click();
- const sources=page.getByRole('region',{name:'Sources'});
- await expect(sources.getByRole('group',{name:'Source storage'}))
-  .toContainText('30 sources',{timeout:90_000});
- const source=sources.getByRole('group',{name:'Source 5: mathematical notes and proofs'});
+ const sources=page.locator('[data-v6-sources]');
+ await expect(sources).toContainText('30 sources in plan order',{timeout:90_000});
+ const source=sources.locator('li').filter({has:
+  page.getByRole('heading',{name:'Source 5: mathematical notes and proofs',exact:true})}).first();
+ await expect(source).toBeVisible();
  await source.getByRole('button',{name:'View pages'}).click();
  const viewer=source.getByRole('region',{name:/Page transcription for Source 5/});
  await expect(viewer).toContainText('of 1200');
