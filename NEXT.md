@@ -19,14 +19,6 @@ Tests: `tests/mcp/sql/study_goals.mjs` per the lane rules, plus the lifecycle ru
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/study_goals.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
 Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
 
-## N49 Proposal drafts: migration (proposal_drafts)
-Stage: Build · Status: open · Needs: N36.2, N38, N92 · Assigned: —
-Done = per D8(b), table `public.proposal_drafts` with proposal and target IDs, `base_versions jsonb`, complete edit `payload jsonb`, `draft_version`, `status` (`draft`/`saved`/`submitted`/`discarded`), `edited_at`. Operations create, save (conflict when a newer draft exists), submit (applies through the existing proposal edit path, checking base versions), discard. An unsent draft is never approval.
-Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
-Tests: `tests/mcp/sql/proposal_drafts.mjs` per the lane rules, plus the lifecycle rules above
-Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/proposal_drafts.mjs, docs/v6/capability-registry/<each new table>.json (new), CURRENT.md.
-Not: other tables, `study_command`, `task_command`, `undo_action`, MCP function code, app code.
-
 ## N59.2 Study goals live adapter (remaining after N59 split)
 Stage: Build · Status: open · Needs: N59.1, N45 · Assigned: —
 Done = complete N59 after N59.1's typed GoalApi contract, isolated sessionStorage demo adapter and getGoalApi/setGoalApiForTests facade. Implement the owner-RLS live adapter for the N45 study_goals_command RPC, with idempotent v1 operationId receipts and retry using the same ID, expectedVersion for update/archive/restore/delete, typed conflict/not-found mapping, exact bounded 1–50 keyset pages and stable owner-scoped ID filters, correct archived state, inclusive YYYY-MM-DD period bounds and IANA time-zone intent. Refuse overlapping active goals of the same period and stable scope (subject/project IDs, never display names); restore must detect conflicts too. Live reads come from the signed-in owner's DB RLS and must not send an owner ID in the command envelope. Replace the live placeholder while retaining demo semantics and the stable facade.
@@ -121,7 +113,6 @@ Tests: `tests/unit/presets-ui/**`
 Scope: src/features/settings/v6/Activities.tsx (new), src/features/settings/v6/Page.tsx (section link only), src/features/focus/PresetPicker.tsx (new), src/features/focus/TodayFocus.tsx (a `v6Shell`-only branch that mounts PresetPicker at the start control; Owner, bug #1123), tests/unit/presets-ui/**, CURRENT.md.
 Not: other screens' folders, `src/data/**` except reading through existing APIs, new dependencies, existing tests' expectations.
 
-
 ## N82 v6 sources panel and page text behind the shell flag
 Stage: Build · Status: open · Needs: — · Assigned: —
 Done = with `v6Shell` on, the project's sources show kind/order, coverage and verification, pages with text, confidence and `[illegible]` markers, and the existing upload, transcription and export actions; long mathematics wraps. Flag off: nothing changes.
@@ -165,14 +156,6 @@ Owner-authorized (D1, D8): deploys on merge, so this PR needs a review.
 Tests: `tests/mcp/sql/aliases-revisions.mjs` (rename keeps old links resolvable, collisions refused, revisions captured once per change, second owner)
 Scope: supabase/migrations/<one new additive file>, tests/mcp/sql/aliases-revisions.mjs, docs/v6/capability-registry/record_aliases.json, docs/v6/capability-registry/source_revisions.json, docs/v6/capability-registry/source_page_revisions.json, CURRENT.md.
 Not: app or MCP code.
-
-## N37 MCP: generic commands and resource discovery
-Stage: Build · Status: open · Needs: N36.2 · Assigned: —
-Done = the `study` tool sends any registered resource's envelope to `mcp_command` (study entries, calendar blocks and tasks keep their current behaviour), `get` and `search` read registered resources in bounded pages, and a `resources` capability (inside an existing tool, so `tools/list` stays under 15,000 characters) lists registered resources with their field/operation schemas from `lemma_command_resources`, so new resources need no MCP code change.
-Owner-authorized (D1, D8): deploys the MCP function on merge, so this PR needs a review.
-Tests: `tests/unit/mcp/**` and `tests/mcp/sql/mcp-generic.mjs` (a resource registered only in the test is discoverable, readable and writable; existing study/task MCP tests unchanged)
-Scope: supabase/functions/mcp/**, tests/unit/mcp/**, tests/mcp/sql/mcp-generic.mjs, CURRENT.md.
-Not: migrations, existing tools' inputs or outputs.
 
 ## N87 MCP: every settings field
 Stage: Build · Status: open · Needs: N37, N39 · Assigned: —
