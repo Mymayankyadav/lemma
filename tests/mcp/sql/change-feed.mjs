@@ -185,5 +185,18 @@ try{
   .result.changes.some(x=>x.record_id===mcp.changed[0].id),false,
   'second owner cannot read the MCP action delta');
 
+ // A scheduled notification tick must not be blocked by an unbounded
+ // multi-tenant backlog. Drain a 550-row expired batch in bounded calls.
+ await db.exec('reset role');
+ await q("insert into public.owner_changes(user_id,resource,record_id,version,op,tombstone,committed_at) select $1,'tasks',i::text,1,'insert',false,now()-interval '32 days' from generate_series(1,550) i",[a]);
+ await db.exec('set role service_role');
+ const tick1=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(tick1,500,'one tick prunes at most 500 rows from one owner');
+ const tick2=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(tick2,50,'a subsequent tick drains the remaining expired rows');
+ const tick3=(await q('select public.lemma_prune_owner_changes() n'))[0].n;
+ assert.equal(tick3,0,'the bounded prune is idempotent when the queue drains');
+ await as(a);
+ assert.equal((await q("select count(*)::int n from public.owner_changes where user_id=$1 and committed_at<now()-interval '30 days'",[a]))[0].n,0);
  console.log('PASS N54 owner-scoped journal projection, paging, non-UUID keys, tombstones, MCP and reset');
 }finally{await db.close()}
