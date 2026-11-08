@@ -725,9 +725,119 @@ try{
  assert.equal(new Date(undoneSchedule.due).toISOString(),'2026-12-15T12:30:00.000Z');
  mark('card_schedule','reschedule','reset');
 
+ // N48 review run queue: test a real authenticated owner card as a queued
+ // item, then run every registered command verb across both app and MCP.
+ // Neither stale grading nor a fake review row is counted as parity.
+ await role(null);
+ const runNote=(await q("insert into public.notes(user_id,project_id,front,back) values($1,$2,'N94 review Q','N94 review A') returning id",
+  [owner,cardProject]))[0].id;
+ const runCard=(await q("insert into public.cards(user_id,note_id,ord) values($1,$2,1) returning id,version",
+  [owner,runNote]))[0];
+ await role('service_role');
+ const runPatch={filters:{includeNew:true},selected_deck_ids:['project:n94-schedule'],
+  card_budget:5,minute_budget:5,scheduler_version:'fsrs-5',settings_version:1};
+ const startRun=command('review_runs','start',{patch:runPatch});
+ const startedRun=status(await mcp(startRun),'review_runs','start');
+ assert.equal(startedRun.run.status,'running','review_runs: real queue must start');
+ assert.ok(startedRun.itemCount>=1,'review_runs: card selector produced no owner items');
+ const runId=startedRun.run.id;
+ assert.deepEqual(await mcp(startRun),startedRun,'review_runs: start exact replay');
+ const changedRun=await mcp({...startRun,patch:{...runPatch,card_budget:6}});
+ assert.equal(changedRun.status,'conflict','review_runs: changed start payload was accepted');
+ await as(owner);
+ const beforeRun=(await q('select status,version,position from public.review_runs where id=$1',
+  [runId]))[0];
+ assert.equal(beforeRun.status,'running','review_runs: authenticated app cannot see run');
+ assert.equal(beforeRun.version,startedRun.run.version);
+ const items=(await q('select id,card_id,state from public.review_run_items where run_id=$1 order by position',
+  [runId]));
+ assert.ok(items.some(x=>x.card_id===runCard.id),'review_runs: real owner card missing');
+ const pausedRun=status(await app('review_runs_command',command('review_runs','pause',{
+  target:{id:runId},expectedVersion:beforeRun.version,patch:{}
+ })),'review_runs','pause');
+ assert.equal(pausedRun.run.status,'paused','review_runs: app pause not persisted');
+ await role(null);
+ let seenRun=await mcpPage('review_runs',runId);
+ assert.equal(seenRun.total,1,'review_runs: MCP cannot read app pause');
+ assert.equal(seenRun.items[0].version,pausedRun.run.version);
+ assert.equal((await mcpPage('review_runs',runId,other)).total,0,
+  'review_runs: foreign MCP read leaked run');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.review_runs where id=$1',
+  [runId]))[0].n,0,'review_runs: foreign app read leaked run');
+ await role('service_role');
+ const foreignRun=command('review_runs','resume',{
+  target:{id:runId},expectedVersion:pausedRun.run.version,patch:{}});
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+  [other,'chatgpt',JSON.stringify(foreignRun)]),/not found for owner/i,
+  'review_runs: foreign MCP principal can resume another owner');
+ const staleRun=await mcp(command('review_runs','resume',{
+  target:{id:runId},expectedVersion:beforeRun.version,patch:{}
+ }));
+ assert.equal(staleRun.status,'conflict','review_runs: stale transition accepted');
+ const resumeRun=command('review_runs','resume',{
+  target:{id:runId},expectedVersion:pausedRun.run.version,patch:{}});
+ const resumedRun=status(await mcp(resumeRun),'review_runs','resume');
+ assert.deepEqual(await mcp(resumeRun),resumedRun,
+  'review_runs: resume exact retry mutated twice');
+ assert.equal(resumedRun.run.status,'running');
+ // A card version change makes its snapshotted queue item stale; advance
+ // must audit both the review_run and review_run_item in the same receipt.
+ await role(null);
+ await q('update public.cards set reps=reps+1 where id=$1',[runCard.id]);
+ const currentCard=(await q('select version from public.cards where id=$1',[runCard.id]))[0];
+ assert.ok(currentCard.version>runCard.version,'review_runs: fixture card version did not advance');
+ await role('service_role');
+ const staleItem=items.find(x=>x.card_id===runCard.id);
+ const advanceRun=command('review_runs','advance',{
+  target:{id:runId},expectedVersion:resumedRun.run.version,
+  patch:{kind:'stale',item_id:staleItem.id,reason:'Owner card changed after queue snapshot'}});
+ const advancedRun=status(await mcp(advanceRun),'review_runs','advance');
+ assert.deepEqual(await mcp(advanceRun),advancedRun,
+  'review_runs: advance exact replay changed receipt');
+ assert.ok(advancedRun.changed.some(x=>x.resource==='review_run_items'&&x.id===staleItem.id),
+  'review_runs: advance receipt lacks journalled queue item');
+ await as(owner);
+ assert.equal((await q('select state from public.review_run_items where id=$1',
+  [staleItem.id]))[0].state,'stale','review_runs: owner cannot see advance');
+ const undoneRun=await undo(advancedRun.actionNo);
+ assert.equal(Number(undoneRun.undone),advancedRun.actionNo,
+  'review_runs: advance undo failed');
+ await role(null);
+ assert.equal((await q('select state from public.review_run_items where id=$1',
+  [staleItem.id]))[0].state,'pending',
+  'review_runs: undo lost previous queue-item state');
+ const restoredRun=(await q('select status,version,position from public.review_runs where id=$1',
+  [runId]))[0];
+ assert.equal(restoredRun.status,'running');
+ assert.equal(restoredRun.position,0,'review_runs: undo did not restore queue position');
+ seenRun=await mcpPage('review_runs',runId);
+ assert.equal(seenRun.items[0].version,restoredRun.version,
+  'review_runs: registered MCP read diverged after undo');
+ await role('service_role');
+ const completeRun=status(await mcp(command('review_runs','complete',{
+  target:{id:runId},expectedVersion:restoredRun.version,patch:{}
+ })),'review_runs','complete');
+ assert.equal(completeRun.run.status,'completed','review_runs: complete missing');
+ const secondStart=status(await mcp(command('review_runs','start',{
+  patch:runPatch
+ })),'review_runs','start');
+ assert.equal(secondStart.run.status,'running','review_runs: second run not started');
+ const abandonRun=status(await mcp(command('review_runs','abandon',{
+  target:{id:secondStart.run.id},expectedVersion:secondStart.run.version,patch:{}
+ })),'review_runs','abandon');
+ assert.equal(abandonRun.run.status,'abandoned','review_runs: abandon missing');
+ await as(owner);
+ assert.equal((await q('select status from public.review_runs where id=$1',
+  [secondStart.run.id]))[0].status,'abandoned');
+ await role(null);
+ assert.equal((await mcpPage('review_runs',secondStart.run.id)).items[0].version,
+  abandonRun.run.version,'review_runs: registered read disagrees after abandon');
+ mark('review_runs','start','pause','resume','advance','complete','abandon');
+
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
- const full=['card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
+ const full=['review_runs','card_schedule','tasks','study_entries','calendar_blocks','study_intervals','deadlines',
   'presets','study_goals','overlap_acknowledgements',
   'parked_thoughts','practice_topics','study_events'];
  for(const resource of full)requireCoverage(resource,
