@@ -153,7 +153,7 @@ function normalizeDayCloseFields(value:Record<string,unknown>){
  if(Object.hasOwn(value,'carryOver')){
   const choices=value.carryOver;
   if(!Array.isArray(choices)||choices.length>500)
-   invalid('Invalid carry-over list');
+   return invalid('Invalid carry-over list');
   const seen=new Set<string>();
   result.carryOver=choices.map((choice:unknown)=>{
    let taskId:string,reason:string;
