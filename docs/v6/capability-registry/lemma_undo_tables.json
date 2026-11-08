@@ -92,6 +92,9 @@
     },
     {
       "table_name": "study_events"
+    },
+    {
+      "table_name": "notify_holds"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

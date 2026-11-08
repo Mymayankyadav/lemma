@@ -7,9 +7,12 @@ import { sourceLine } from '../v3.ts';
 import {readStudyRecords} from './study-read.ts';
 import {readTaskRecords} from './task-read.ts';
 import {registeredResources,readRegisteredResource} from './registry.ts';
+import {readNotificationRecords} from './notification-read.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
+  if(['push_devices','notify_holds','notifications'].includes(a.what))
+    return readNotificationRecords(c,a,'get');
   if(a.what&&/^[a-z][a-z0-9_]{0,60}$/.test(a.what)&&
     !['plan','plan_revisions','checkpoint','session','sources','outline',
       'cards','feedback','concepts','projects','prompt','diagnostics',
@@ -152,6 +155,8 @@ export async function readPages(c:Context,a:any):Promise<string>{
  return parts.join('\\n').slice(0,12000);
 }
 export async function search(c:Context,a:any):Promise<string>{
+  if(['push_devices','notify_holds','notifications'].includes(a.resource))
+    return readNotificationRecords(c,a,'search');
   if(a.resource&&a.resource!=='tasks'&&a.resource!=='study_entries'&&
    a.resource!=='calendar_blocks')
    return readRegisteredResource(c,a,'search');
