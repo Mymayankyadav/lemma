@@ -169,7 +169,7 @@ export default function PracticePage(){
    {!loading&&active.map(topic=><article key={topic.id} className="rounded-slab border border-edge p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
      <div>
-      <h2 className="text-body font-semibold">{topic.title}</h2>
+      <h2 className="break-words text-body font-semibold">{topic.title}</h2>
       <p className="text-label text-ink-2">{due(topic)} · {topic.cadence.kind==='fixed_days'?
        'Every '+topic.cadence.days+' days':'Rating-based cadence'}</p>
      </div>
@@ -231,7 +231,7 @@ export default function PracticePage(){
        <p>{dateOf(history.occurredAt)} · Rating {history.rating}
         {history.minutes!==null?' · '+history.minutes+' min':''}
         {history.voidedAt?' · Voided':''}</p>
-       {history.response?<p>{history.response}</p>:null}
+       {history.response?<p className="break-words">{history.response}</p>:null}
        {!history.voidedAt&&<button className={action+' mt-2'} type="button"
         disabled={busy} aria-label={'Void practice event '+history.id}
         onClick={()=>void run(()=>getPracticeTopicApi().voidPracticeEvent(
@@ -248,7 +248,7 @@ export default function PracticePage(){
    </button>
    {showArchived&&<section aria-label="Archived practice topics" className="space-y-2">
     {archived.map(topic=><article key={topic.id} className="rounded-slab border border-edge p-3">
-     <span className="text-label">{topic.title}</span>
+     <span className="break-words text-label">{topic.title}</span>
      <button className={action+' ml-3'} type="button" disabled={busy}
       aria-label={'Restore '+topic.title} onClick={()=>
        void run(()=>getPracticeTopicApi().restoreTopic(topic.id,topic.version),

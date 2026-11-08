@@ -194,7 +194,7 @@ function V6Calendar() {
   const capacity = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks) : null;
   const step = view === 'day' ? 1 : 7;
 
-  return <section aria-labelledby="calendar-title" className="flex flex-col gap-4 pb-8">
+  return <section aria-labelledby="calendar-title" className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
     <div onKeyDown={event => {
@@ -267,12 +267,15 @@ function V6Calendar() {
           <button type="submit" disabled={saving} className={actionClass + ' self-start'}>Add block</button>
         </form>
       </Slab>
-      <Slab as="section" aria-label="Day schedule" className="p-3">
+      <Slab as="section" aria-label="Day schedule" className="min-w-0 max-w-full p-3">
         <h2 className="mb-3 text-body font-semibold">Day schedule</h2>
         {slots.every(row => row.entries.length === 0 && row.blocks.length === 0) &&
           dueForDay(date,date,zone,dues).length===0 &&
           <p className="mb-3 text-label text-ink-2">Nothing planned.</p>}
         <DueDayItems date={date} firstVisible={date} zone={zone} dues={dues}/>
+        <div role="region" aria-label="Day hourly timetable" tabIndex={0}
+          className="max-w-full overflow-x-auto rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
+          <div className="min-w-[320px]">
         <div className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge pb-2 text-caption font-semibold text-ink-2">
           <span>Hour</span><span>Logged study</span><span>Planned blocks</span>
         </div>
@@ -297,6 +300,8 @@ function V6Calendar() {
             </div>}
           </article>)}</div>
         </div>)}
+          </div>
+        </div>
       </Slab>
     </>}
     <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
