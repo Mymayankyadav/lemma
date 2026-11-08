@@ -45,8 +45,11 @@ try{
  for(const file of migrations)await db.exec(await readFile(new URL(file,dir),'utf8'));
  await reset();
  await q('insert into auth.users(id) values($1),($2)',[owner,other]);
- await q("insert into public.settings(user_id,connector_secret) values($1,$2),($3,$4)",
-  [owner,'a'.repeat(48),other,'b'.repeat(48)]);
+ // The audit journal is owner-atomic: seed separate owners in distinct writes.
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [owner,'a'.repeat(48)]);
+ await q("insert into public.settings(user_id,connector_secret) values($1,$2)",
+  [other,'b'.repeat(48)]);
  const subj='33333333-3333-4333-8333-333333333333';
  const project='44444444-4444-4444-8444-444444444444';
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'Math','M','sky')",
