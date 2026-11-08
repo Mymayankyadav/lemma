@@ -80,6 +80,21 @@ try{
  const manualSaved=(await q(
    "insert into public.study_entries(user_id,source,status) values($1,'manual','saved') returning id",[owner]))[0].id;
  assert.ok(manualSaved,'existing direct manual saved-entry compatibility is preserved');
+ // A bare owner UPDATE of draft -> paused never triggers the captured
+ // draft->running snapshot. Without the status guard it would create an
+ // unaudited active timer despite all INSERT metadata checks.
+ const beforeStatus=(await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",
+  [browserDraft]))[0].n;
+ await q("select set_config('lemma.tool','study',false)");
+ for(const targetStatus of ['paused','running']){
+  await assert.rejects(q("update public.study_entries set status=$1 where id=$2",
+   [targetStatus,browserDraft]),/Active timer lease requires an audited study command/);
+ }
+ checkEqual((await q("select status from public.study_entries where id=$1",
+  [browserDraft]))[0].status,'draft','direct active UPDATE must leave owner draft unchanged');
+ checkEqual((await q("select count(*)::integer n from public.action_changes where table_name='study_entries' and row_pk->>'id'=$1",
+  [browserDraft]))[0].n,beforeStatus,'denied owner active UPDATE must not journal');
+ await q("select set_config('lemma.tool','',false)");
  const start={schemaVersion:1,resource:'study_entries',operation:'start',operationId:mkOp(1),
    target:{id:draft},expectedVersion:1,patch:{}};
  const result=(await q('select public.study_command($1::jsonb) result',[JSON.stringify(start)]))[0].result;

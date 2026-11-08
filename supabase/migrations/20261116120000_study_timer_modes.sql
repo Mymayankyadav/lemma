@@ -409,7 +409,11 @@ language plpgsql security invoker set search_path='' as $entry_guard$
 begin
  if current_user='authenticated'
    and (
-     old.mode is distinct from new.mode
+     -- Browser-RLS may keep legacy active-to-saved cleanup, but cannot
+     -- enter running or paused state without a versioned command receipt.
+     (new.status in ('running','paused')
+       and new.status is distinct from old.status)
+     or old.mode is distinct from new.mode
      or old.config is distinct from new.config
      or old.phase is distinct from new.phase
      or old.cycle is distinct from new.cycle
