@@ -32,12 +32,14 @@ test('N121 E2 demo plan proposals never show UUID or JSON draft editing',async({
 
 test('N121 D1 Progress uses one range selector and consistent saved effort',async({page})=>{
  await page.goto('/?demo=1&flags=v6Shell#/insights?range=30');
- await expect(page.getByRole('combobox',{name:'Time range'})).toHaveCount(1);
+ // One segmented "Time range" control; the Overview total is the Time tab's total.
+ await expect(page.getByRole('group',{name:'Time range'})).toHaveCount(1);
+ await expect(page.getByRole('combobox',{name:'Time range'})).toHaveCount(0);
  await expect(page.getByRole('group',{name:'Recent study ranges'})).toHaveCount(0);
  const total=page.getByRole('region',{name:'Total logged time'});
  await expect(total).toBeVisible();
- const metric=page.getByRole('group',{name:'Logged study time'});
- await expect(metric).toBeVisible();
+ await expect(total.locator('strong')).not.toHaveText('—');
  const formatted=(await total.locator('strong').innerText()).trim();
- await expect(metric.locator('strong')).toHaveText(formatted);
+ await page.getByRole('group',{name:'Progress views'}).getByRole('button',{name:'Time'}).click();
+ await expect(page.getByRole('region',{name:'Total logged time'}).locator('strong')).toHaveText(formatted);
 });

@@ -226,7 +226,7 @@ export default function TimeLog(){
  return <section aria-labelledby="time-log-title" className="flex min-w-0 flex-col gap-4 pb-8">
   <h1 id="time-log-title" className="sr-only">Time log</h1>
   <p className="text-label text-ink-2">Your saved focus time. Add time you studied without the timer, or correct an entry.</p>
-  <nav aria-label="Time log week" className="grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
+  <nav aria-label="Time log week" className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2">
    <button type="button" aria-label="Previous week" className="flex size-11 items-center justify-center rounded-[8px] text-ink" onClick={()=>setDay(addDays(day,-7))}><ChevronLeft size={22} aria-hidden="true"/></button>
    <strong className="text-center text-body font-medium text-ink">Week of {weekLabel}</strong>
    <button type="button" aria-label="Next week" className="flex size-11 items-center justify-center rounded-[8px] text-ink" onClick={()=>setDay(addDays(day,7))}><ChevronRight size={22} aria-hidden="true"/></button>

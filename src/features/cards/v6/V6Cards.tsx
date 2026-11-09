@@ -40,7 +40,7 @@ function CardItem({ row, path }: { row: CardRow; path: string }) {
     className="flex min-w-0 items-center gap-4 border-b border-[var(--edge)] text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
     <span aria-hidden="true" className="w-8 shrink-0 text-center font-math text-[1.75rem] text-ink-2">{row.glyph}</span>
     <span className="min-w-0 flex-1">
-      <span data-card-front className="block min-w-0 break-words font-math text-[1.125rem] leading-snug">
+      <span data-card-front className="block min-w-0 max-w-full overflow-x-auto overflow-y-hidden break-words font-math text-[1.125rem] leading-snug">
         {canRenderPlainCardFront(row.front) ? row.front : <Tex source={row.front} />}
       </span>
       <span data-card-meta className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-ink-2">

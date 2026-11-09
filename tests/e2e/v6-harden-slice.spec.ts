@@ -73,8 +73,9 @@ for(const {width,theme} of scenarios){
   await expect(page.getByRole('heading',{name:'Time log'})).toBeVisible();
   await layout(page,theme);
   await withinScreen(page,page.locator('main').last());
-  await touchTarget(page.getByRole('button',{name:'Add approximate time'}));
-  await page.getByRole('button',{name:'Add approximate time'}).click();
+  // N121 D5: "Add time" opens a dialog with date and time pickers.
+  await touchTarget(page.getByRole('button',{name:'Add time'}));
+  await page.getByRole('button',{name:'Add time'}).click();
   await page.getByRole('textbox',{name:'Manual intent'}).fill(longIntent);
   const end=new Date(Date.now()-5*60_000),begin=new Date(end.getTime()-10*60_000);
    const ownerFields=await page.evaluate(({start,stop})=>{
@@ -92,12 +93,12 @@ for(const {width,theme} of scenarios){
    await page.getByLabel('Manual date').fill(ownerFields.begin.day);
    await page.getByLabel('Manual start').fill(ownerFields.begin.clock);
    await page.getByLabel('Manual end').fill(ownerFields.end.clock);
-  await page.getByRole('button',{name:'Save approximate time'}).click();
+  await page.getByRole('button',{name:'Save time'}).click();
   await expect(page.locator('article')).toContainText(longIntent);
   await withinScreen(page,page.locator('article').first());
   await touchTarget(page.getByRole('button',{name:'Edit entry'}));
   await page.getByRole('button',{name:'Edit entry'}).click();
-  await withinScreen(page,page.getByRole('textbox',{name:'Subject ID'}));
+  await withinScreen(page,page.getByRole('combobox',{name:'Study subject'}));
 
   await page.goto(progress);
   await expect(page.getByRole('region',{name:'Saved study effort'})).toBeVisible();
@@ -105,7 +106,8 @@ for(const {width,theme} of scenarios){
   const saved=page.getByRole('region',{name:'Total logged time'});
   await expect(saved).toContainText('10 min');
   await withinScreen(page,saved);
-  const recent=page.getByRole('group',{name:'Recent study ranges'});
+  // N121 D1: one "Time range" control (Today · 7 · 30 · 90 days).
+  const recent=page.getByRole('group',{name:'Time range'});
   await touchTarget(recent.getByRole('button',{name:'7 days'}));
   await recent.getByRole('button',{name:'90 days'}).click();
   await withinScreen(page,page.getByRole('region',{name:'Daily logged minutes'}));
@@ -158,7 +160,7 @@ test('N98 long open focus asks for confirmation without auto-saving elapsed effo
  await expect(page.getByRole('dialog',{name:'Focus'})).toContainText('over three hours old');
  await page.getByRole('dialog',{name:'Focus'}).getByRole('button',{name:'Close'}).click();
  await page.goto(log);
- await expect(page.getByText('No saved study time in this seven-day range.')).toBeVisible();
+ await expect(page.getByText(/^No study time saved this week\./)).toBeVisible();
  await expect(page.getByRole('complementary',{name:'Focus accessory'})).toBeVisible();
 });
 

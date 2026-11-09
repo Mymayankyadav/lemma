@@ -151,8 +151,9 @@ function Backlog(){
       <button type="button" role="checkbox" aria-checked={done} disabled={busy||task.status==='cancelled'}
        aria-label={(done?'Reopen ':'Complete ')+task.title}
        onClick={()=>{void mutate(task,{status:done?'backlog':'completed'});}}
-       className={'mt-1 flex size-6 shrink-0 items-center justify-center rounded-[6px] border-2 disabled:opacity-40 '+(done?'border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]':'border-[var(--control-edge)]')}>
-       {done&&<Check size={16} aria-hidden="true"/>}</button>
+       className="-ml-2 flex size-11 shrink-0 items-center justify-center rounded-[8px] disabled:opacity-40">
+       <span aria-hidden="true" className={'flex size-6 items-center justify-center rounded-[6px] border-2 '+(done?'border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]':'border-[var(--control-edge)]')}>
+        {done&&<Check size={16}/>}</span></button>
       <div className="min-w-0 flex-1">
        <h3 className={'break-words text-body font-medium '+(closed?'text-ink-2 line-through':'text-ink')}>{task.title}</h3>
        <p className="mt-1 flex flex-wrap items-center gap-x-2 text-caption text-ink-2">

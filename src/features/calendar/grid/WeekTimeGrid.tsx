@@ -84,7 +84,7 @@ export default function WeekTimeGrid({date,zone,firstDay,clock24h,entries,blocks
   if(scroller.current)scroller.current.scrollTop=Math.max(0,(Math.min(540,...first)-firstMinute)*hourPx/60-100);
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[date,firstDay,zone]);
- return <section aria-label="Week time grid" className="min-w-0 overflow-hidden rounded-[12px] border border-[var(--hair)] bg-[var(--paper)]">
+ return <section aria-label="Week calendar" className="min-w-0 overflow-hidden rounded-[12px] border border-[var(--hair)] bg-[var(--paper)]">
   <div ref={scroller} role="region" aria-label="Week time grid" tabIndex={0}
    className="max-h-[65dvh] max-w-full min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain focus-visible:outline-2 focus-visible:outline-amber">
    <div className="sticky top-0 z-20 grid min-w-0 grid-cols-[36px_repeat(7,minmax(0,1fr))] border-b border-[var(--hair)] bg-[var(--paper)]">

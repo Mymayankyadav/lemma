@@ -57,10 +57,14 @@ test('#1316 #1317 #1318 Paths headings, Review search row, Inbox "Why this card?
  expect(await px(page,'[data-style="role-projects"] h2','font-size')).toBeGreaterThanOrEqual(20);
  await expect(page.locator('#main-content')).not.toContainText('Forecast unavailable');
  await page.goto(url('/review'));
- const search=page.getByRole('button',{name:'Search decks and checkpoints'});
+ // N121 F6: the deck search is a labelled field inside Decks & options, which opens in place.
+ const options=page.getByText('Decks & options',{exact:true});
+ await expect(options).toBeVisible();
+ await options.click();
+ const search=page.getByRole('searchbox',{name:'Search decks'});
  await expect(search).toBeVisible();
- await search.click();
- await expect(page.getByRole('searchbox',{name:'Find a deck or checkpoint'})).toBeFocused();
+ await search.focus();
+ await expect(search).toBeFocused();
  await page.goto(url('/proposals'));
  const why=page.getByText('Why this card?',{exact:true});
  await expect(why).toBeVisible();
@@ -79,8 +83,10 @@ test('#1320 #1321 #1322 Progress caption, one Planning tools button, time-first 
  await page.getByText('Planning tools',{exact:true}).click();
  await expect(page.getByRole('button',{name:'Plan study tasks'})).toBeVisible();
  const agenda=page.locator('[aria-label="Next seven days"]');
- await expect(agenda.locator('section').first().locator('h2')).toHaveClass(/sr-only/);
- const block=agenda.locator('article.cr-agenda-block').first();
+ // N121 B6: every agenda day, today included, has a visible heading.
+ await expect(agenda.locator('section').first().locator('h2')).toBeVisible();
+ await expect(agenda.locator('section').first().locator('h2')).not.toHaveClass(/sr-only/);
+ const block=agenda.locator('.cr-agenda-block').first();
  await expect(block).toBeVisible();
  expect((await block.textContent())!.trim()).toMatch(/^\d{1,2}:\d{2}/);
 });
@@ -100,11 +106,13 @@ test('#1325 #1326 #1302 Concept map subtitle, plain list rows, map header inset'
  await setup(page);
  await page.goto(url('/atlas'));
  await expect(page.locator('[data-v6-header-subtitle]')).toHaveText(/^\d+ concepts · \d+ connections$/);
- const hierarchy=page.getByRole('region',{name:'Idea hierarchy'});
+ const hierarchy=page.getByRole('region',{name:'Concept list'});
  const row=hierarchy.locator('button[aria-label^="Actions for "]').first();
  await expect(row).toBeVisible();
  await expect(hierarchy.locator('summary')).toHaveCount(0);
- await expect(hierarchy.getByText(/· \d+ due$/).first()).toHaveClass(/sr-only/);
+ // N121 E5: each row carries a quiet, visible status line.
+ await expect(hierarchy.locator('li p').first()).toBeVisible();
+ await expect(hierarchy.locator('li p').first()).toHaveText(/^(Demonstrated|In progress|Re-check due|Not started)/);
  await row.click();
  await expect(hierarchy.locator('button[aria-label^="Edit map pin for"]').first()).toBeVisible();
  await page.goto(url('/atlas?view=map'));
@@ -131,16 +139,20 @@ test('#1330 Progress subtitle is in the header, above its rule',async({page})=>{
 test('#1331 Calendar date labels carry no year within the current year',async({page})=>{
  await setup(page,false);
  await page.goto(url('/calendar?view=agenda'));
+ // N121 B7: the Agenda navigator names its seven-day range; day headings keep the mockup order.
  const label=page.getByRole('navigation',{name:'Calendar date'}).locator('strong');
- await expect(label).toHaveText(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
+ await expect(label).toHaveText(/^[A-Z][a-z]{2} \d{1,2} – (?:[A-Z][a-z]{2} )?\d{1,2}$/);
  const headings=await page.locator('[aria-label="Next seven days"] h2').allTextContents();
  expect(headings.length).toBeGreaterThan(1);
- for(const text of headings)expect(text).toMatch(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
+ for(const text of headings)expect(text).toMatch(/^(Today · )?[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
 });
 
 test('#1332 logged sessions and due items are bordered time-first cards',async({page})=>{
  await setup(page,false);
- await page.goto(url('/calendar?view=agenda'));
+ // N121 G1: the example's saved focus is in the past, so the agenda starts three days back.
+ const start=await page.evaluate(()=>{const d=new Date();d.setDate(d.getDate()-3);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');});
+ await page.goto(url('/calendar?view=agenda&date='+start));
  const agenda=page.locator('[aria-label="Next seven days"]');
  const saved=agenda.locator('article.cr-agenda-saved').first();
  await expect(saved).toBeVisible();
@@ -156,7 +168,7 @@ test('#1332 logged sessions and due items are bordered time-first cards',async({
 test('#1333 #1334 Concept map list is flat; the pressed segment is tinted and starts under the header',async({page})=>{
  await setup(page);
  await page.goto(url('/atlas'));
- const hierarchy=page.getByRole('region',{name:'Idea hierarchy'});
+ const hierarchy=page.getByRole('region',{name:'Concept list'});
  const rows=hierarchy.locator('li');
  await expect(rows.first()).toBeVisible();
  expect(await rows.count()).toBeGreaterThan(5);

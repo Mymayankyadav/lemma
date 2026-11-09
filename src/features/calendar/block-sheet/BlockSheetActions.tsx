@@ -14,12 +14,17 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
 }) {
  const [selected,setSelected]=useState<CalendarBlockRecord|null|undefined>(undefined);
  const [params,setParams]=useSearchParams();
+ // N121: open once per URL request. A refresh after saving must not reopen a dialog
+ // while the router is still removing ?new=block or ?edit= from the URL.
+ const handled=useRef<string|null>(null);
  useEffect(()=>{
-  if(!ready)return;
-  if(params.get('new')==='block'){setSelected(null);return;}
+  const key=(params.get('new')??'')+'|'+(params.get('edit')??'')+'|'+(params.get('start')??'');
+  if(key==='||'){handled.current=null;return;}
+  if(!ready||handled.current===key)return;
+  if(params.get('new')==='block'){handled.current=key;setSelected(null);return;}
   const id=params.get('edit');
   if(id){const found=blocks.find(block=>block.id===id);
-   if(found&&found.status!=='cancelled')setSelected(found);}
+   if(found&&found.status!=='cancelled'){handled.current=key;setSelected(found);}}
  },[ready,params,blocks]);
  const trigger=useRef<HTMLButtonElement|null>(null);
  const createOpener=useRef<HTMLButtonElement|null>(null);

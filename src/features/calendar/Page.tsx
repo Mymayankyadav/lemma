@@ -203,7 +203,7 @@ function V6Calendar() {
   return <section aria-labelledby="calendar-title" data-calendar-view={view} className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
-    <nav aria-label="Calendar date" className="grid grid-cols-[44px_minmax(0,1fr)_44px_auto] items-center gap-2">
+    <nav aria-label="Calendar date" className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2">
       <button type="button" className={arrowClass} aria-label={'Previous ' + unit(view)} onClick={() => shift(-1)}><ChevronLeft size={22} aria-hidden="true"/></button>
       <strong className="min-w-0 truncate text-center text-body font-medium text-ink" aria-live="polite">{viewLabel(view, date, firstDay)}</strong>
       <button type="button" className={arrowClass} aria-label={'Next ' + unit(view)} onClick={() => shift(1)}><ChevronRight size={22} aria-hidden="true"/></button>
@@ -256,12 +256,12 @@ function V6Calendar() {
       }} />}
 
     {phase === 'ready' && view === 'day' && <>
-      {full && inWindow && <p aria-label="Day capacity" className="text-label text-ink-2">
+      {full && inWindow && <section aria-label="Day capacity" className="text-label text-ink-2"><p>
         Logged <strong className="tabular-nums text-ink">{formatDuration(full.logged)}</strong>
         {full.busy > 0 && <> · Busy <strong className="tabular-nums text-ink">{formatDuration(full.busy)}</strong></>}
         {' · '}Planned <strong className="tabular-nums text-ink">{formatDuration(full.planned)}</strong>
         {' · '}Free <strong className="tabular-nums text-ink">{formatDuration(inWindow.free)}</strong>
-      </p>}
+      </p></section>}
       <section aria-label="Day schedule" className="min-w-0 max-w-full">
         <h2 className="sr-only">Day schedule</h2>
         <TimeGrid date={date} zone={zone} clock24h={clock24h}

@@ -10,7 +10,9 @@ test('N121 B3 Day uses a spatial grid; tapping an empty slot opens an editable n
  const surface=region.locator('[aria-label="Select empty time to create a block"]');
  const rect=await surface.boundingBox();
  expect(rect).not.toBeNull();
- await page.mouse.click(rect!.x+Math.min(12,rect!.width/2),rect!.y+Math.min(80,rect!.height/2));
+ // The grid opens scrolled near now, so tap inside its visible scroll area.
+ const view=(await region.boundingBox())!;
+ await page.mouse.click(rect!.x+rect!.width-8,view.y+12);
  const dialog=page.getByRole('dialog',{name:'New time block'});
  await expect(dialog).toBeVisible();
  await expect(dialog.getByRole('textbox',{name:'Calendar block title'})).toBeVisible();
@@ -32,9 +34,10 @@ test('N121 B2 duration presets use owner-local wall times',async({page})=>{
  await page.getByText('Planning tools',{exact:true}).click();
  await page.getByRole('button',{name:'New time block',exact:true}).click();
  const dialog=page.getByRole('dialog',{name:'New time block'});
- await dialog.getByLabel('Calendar block start').fill('2026-11-09T15:00');
+ await dialog.getByLabel('Calendar block date').fill('2026-11-09');
+ await dialog.getByLabel('Calendar block start').fill('15:00');
  await dialog.getByRole('group',{name:'Block duration'}).getByRole('button',{name:'50 min'}).click();
- await expect(dialog.getByLabel('Calendar block end')).toHaveValue('2026-11-09T15:50');
+ await expect(dialog.getByLabel('Calendar block end')).toHaveValue('15:50');
  await expect(dialog.getByLabel('Block path')).toBeVisible();
  await expect(dialog.getByLabel('Block task')).toBeVisible();
 });

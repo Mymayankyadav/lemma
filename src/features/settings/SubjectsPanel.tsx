@@ -49,10 +49,10 @@ export function SubjectsPanel(){
   }catch(error){notify(error instanceof Error?error.message:'Unable to merge subjects',{tone:'danger'})}
  }
  return <section aria-label="Subjects" className="rounded-slab border border-edge bg-[var(--card)] p-4">
-  <div className="flex items-center justify-between gap-3">
-   <div><h2 className="text-title-s font-semibold">Subjects</h2>
+  <div className="flex flex-wrap items-center justify-between gap-3">
+   <div className="min-w-0"><h2 className="text-title-s font-semibold">Subjects</h2>
     <p className="mt-1 text-caption text-ink-2">Keep your fields few and easy to find.</p></div>
-   <button type="button" onClick={()=>setOpen(true)} className="min-h-11 rounded-ctl border border-edge px-3 text-label text-amber">Manage</button>
+   <button type="button" onClick={()=>setOpen(true)} className="min-h-11 shrink-0 rounded-ctl border border-edge px-3 text-label text-amber">Manage</button>
   </div>
   <p className="mt-2 text-label text-ink-2">{all.map(subject=>subject.name).join(' · ')||'No subjects yet'}</p>
   <Sheet open={open} onClose={()=>setOpen(false)} title="Manage subjects">

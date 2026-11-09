@@ -26,22 +26,24 @@ test('N99 Tasks paginate 55 records, maintain 44px actions and reload without lo
  });
  await route(page,'/tasks');
  const backlog=page.getByRole('region',{name:'Tasks backlog'});
- await expect(backlog).toContainText('20 shown of 55 tasks');
+ // N121 F10: the count line shows only while more pages exist.
+ await expect(backlog).toContainText('20 of 55 tasks shown');
  await expect(backlog.locator('li')).toHaveCount(20);
- await backlog.getByRole('button',{name:'Show more'}).click();
- await expect(backlog).toContainText('40 shown of 55 tasks');
- await backlog.getByRole('button',{name:'Show more'}).click();
- await expect(backlog).toContainText('55 shown of 55 tasks');
+ await backlog.getByRole('button',{name:'Load more'}).click();
+ await expect(backlog).toContainText('40 of 55 tasks shown');
+ await backlog.getByRole('button',{name:'Load more'}).click();
+ await expect(backlog).not.toContainText('tasks shown');
  await expect(backlog.locator('li')).toHaveCount(55);
- await expect(backlog.getByRole('button',{name:'Show more'})).toHaveCount(0);
- const first=backlog.getByRole('button',{name:'Complete Prove the continuity lemma 0 with extended mathematical notation'});
+ await expect(backlog.getByRole('button',{name:'Load more'})).toHaveCount(0);
+ // N121 F10: completing is a checkbox (still a 44 px target).
+ const first=backlog.getByRole('checkbox',{name:'Complete Prove the continuity lemma 0 with extended mathematical notation'});
  const dimensions=await first.boundingBox();
  expect(dimensions).not.toBeNull();
  expect(dimensions!.height).toBeGreaterThanOrEqual(44);
  await enlargeText(page);
  await noPageOverflow(page);
  await page.reload();
- await expect(backlog).toContainText('20 shown of 55 tasks');
+ await expect(backlog).toContainText('20 of 55 tasks shown');
  await expect(backlog.locator('li')).toHaveCount(20);
 });
 
@@ -62,16 +64,18 @@ test('N99 all four Calendar views remain accessible through DST and 200% text',a
  await noPageOverflow(page);
  await month.focus();
  await page.keyboard.press('ArrowRight');
- await page.getByRole('button',{name:'Open 2026-11-01 in Day view'}).click();
+ await page.getByRole('button',{name:'Open Sun, Nov 1 in Day view'}).click();
  const day=page.getByRole('region',{name:'Day schedule'});
  await expect(day).toBeVisible();
- // The autumn fall-back in New York has 25 distinct real-hour rows.
- await expect(day.locator('time[datetime]')).toHaveCount(25);
- await expect(page.getByRole('region',{name:'Day hourly timetable'})).toHaveAttribute('tabindex','0');
+ // The autumn fall-back in New York is 25 real hours long; the N121 time grid lays out elapsed time.
+ await expect(page.getByRole('region',{name:'Day calendar'})).toHaveAttribute('data-day-minutes','1500');
+ const ticks=await day.locator('time[datetime]').evaluateAll(list=>list.map(t=>t.getAttribute('datetime')));
+ expect(new Set(ticks).size).toBe(ticks.length);
+ await expect(page.getByRole('region',{name:'Day time grid'})).toHaveAttribute('tabindex','0');
  await noPageOverflow(page);
  const views=page.getByRole('group',{name:'Calendar view'});
  await views.getByRole('button',{name:'Week'}).click();
- await expect(page.getByRole('region',{name:'Week schedule'})).toHaveAttribute('tabindex','0');
+ await expect(page.getByRole('region',{name:'Week time grid'})).toHaveAttribute('tabindex','0');
  await views.getByRole('button',{name:'Agenda'}).click();
  await expect(page.locator('[aria-label="Next seven days"]')).toBeVisible();
  await noPageOverflow(page);
@@ -102,11 +106,13 @@ test('N99 ritual and Practice routes retain readable empty states and keyboard c
  test.setTimeout(120_000);
  await page.setViewportSize({width:390,height:844});
  await route(page,'/today/close?date=2026-11-06');
- await expect(page.getByRole('main',{name:'Close day ritual'})).toBeVisible();
- await expect(page.getByText('No day plan exists for this date.')).toBeVisible();
+ await expect(page.getByRole('region',{name:'Close day ritual'})).toBeVisible();
+ // N121 C7: with no day plan the page still shows the day and offers to plan tomorrow.
+ await expect(page.getByText("You didn't make a day plan for this date")).toBeVisible();
+ await expect(page.getByRole('link',{name:'Start a plan for tomorrow'})).toBeVisible();
  await enlargeText(page);
  await noPageOverflow(page);
- await page.getByRole('button',{name:'Back to Today'}).click();
+ await page.getByRole('navigation',{name:'Main navigation'}).getByRole('link',{name:'Today',exact:true}).click();
  await expect(page).toHaveURL(/#\/$/);
  await route(page,'/practice');
  await expect(page.getByRole('heading',{name:'Practice topics'})).toBeVisible();

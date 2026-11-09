@@ -524,7 +524,7 @@ export default function Page() {
               {(cardPage+1)*20<cards.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n+1)}>More proposals · {cards.length-(cardPage+1)*20} remaining</button>}
              </div>
             </section>
-            {v6&&!browsing&&<div className="lemma-proposal-stepper lemma-proposal-pager" aria-label="Proposal position">
+            {v6&&!browsing&&<div className="lemma-proposal-stepper lemma-proposal-pager flex-wrap" aria-label="Proposal position">
               <div className="flex items-center gap-2">
               <button type="button" aria-label="Previous proposal" disabled={pending||cards.indexOf(active)<=0}
                 onClick={()=>{setSelected(cards[cards.indexOf(active)-1]?.id??active.id);setEditing(false)}}

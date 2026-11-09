@@ -144,7 +144,7 @@ export default function TimeGrid({date,zone,clock24h,entries,blocks,busy=false,
    </div>}
   </div>;
  }
- return <section aria-label="Day time grid" className="min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)]">
+ return <section aria-label="Day calendar" data-day-minutes={wholeMinutes} className="min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)]">
   <div className="flex items-center justify-between gap-2 border-b border-[var(--hair)] p-3 text-label">
    <strong>Time grid</strong><span className="text-ink-2">{zone.split('/').pop()?.replace(/_/g,' ')}</span>
   </div>

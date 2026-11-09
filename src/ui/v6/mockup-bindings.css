@@ -177,7 +177,9 @@ html[data-v6][data-theme=graph-night] [data-stage-chip][aria-pressed=true]{backg
    N121 H1 · desktop (≥ 1024 px): the tab bar follows the content column; Calendar is wider.
    --------------------------------------------------------------------------- */
 @media (min-width:1024px){
- :root[data-v6] nav[data-ui=main-navigation]{left:50%;right:auto;width:min(900px,calc(100vw - 32px));transform:translateX(-50%);border-inline:1px solid var(--hair);border-radius:12px 12px 0 0}
+ :root[data-v6] nav[data-ui=main-navigation]{left:50%;right:auto;width:min(640px,calc(100vw - 32px));transform:translateX(-50%);border-inline:1px solid var(--hair);border-radius:12px 12px 0 0}
  :root[data-v6] body:has([data-calendar-view=week]) #main-content,:root[data-v6] body:has([data-calendar-view=month]) #main-content{max-width:1100px}
  :root[data-v6] body:has([data-calendar-view=week]) nav[data-ui=main-navigation],:root[data-v6] body:has([data-calendar-view=month]) nav[data-ui=main-navigation]{width:min(1100px,calc(100vw - 32px))}
 }
+:root[data-v6] .lemma-proposal-pager{flex-wrap:wrap;row-gap:4px}
+:root[data-v6] .lemma-proposal-pager>div{min-width:0}
