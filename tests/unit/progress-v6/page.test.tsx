@@ -6,6 +6,7 @@ import ProgressV6 from '../../../src/features/progress-v6/Page';
 import InsightsPage from '../../../src/features/insights/Page';
 import { emptyStudyApi, type StudyEntryRecord } from '../../../src/data/study/contract';
 import { setStudyApiForTests } from '../../../src/data/study';
+import { useV6HeaderTitleStore } from '../../../src/app/v6Title';
 
 const flags = vi.hoisted(() => ({ on: true }));
 vi.mock('../../../src/flags', () => ({ isFlagOn: () => flags.on }));
@@ -96,7 +97,9 @@ it('renders v6 effort on Overview and the legacy Insights content on Learning wh
   await vi.waitFor(() => expect(host.textContent).toContain('60 min'));
   // N115: Overview carries the stat tiles and saved effort; Learning carries the legacy charts.
   expect(host.textContent).toContain('Study effort');
-  expect(host.textContent).toContain('Small steps, seen over time.');
+  // #1330: the subtitle lives in the shell header, not in the page body.
+  expect(useV6HeaderTitleStore.getState().subtitle).toBe('Small steps, seen over time.');
+  expect(host.textContent).not.toContain('Small steps');
   expect(host.textContent).not.toContain('Insights');
   await click('Learning');
   expect(host.textContent).toContain('Insights');
@@ -108,7 +111,7 @@ it('#1319 shows the overlap notice with a Time log link when saved focus overlap
   flags.on=true;
   fakeStudyApi([record]);
   await render('/insights?range=7', true);
-  await vi.waitFor(() => expect(host.textContent).toContain('Small steps'));
+  await vi.waitFor(() => expect(host.textContent).toContain('Time range'));
   expect(host.textContent).not.toContain('overlap or need correction');
   await act(async () => root.unmount()); root=createRoot(host); host.replaceChildren();
   const overlapping={...record,id:'math-2',intervals:[{ id:'second', kind:'focus' as const, start:'2026-11-07T09:30:00Z', end:'2026-11-07T10:30:00Z' }]};

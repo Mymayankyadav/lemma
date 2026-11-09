@@ -81,7 +81,8 @@ export function DueDayItems({date,firstVisible,zone,dues,compact=false}:{
   {rows.map(item=>{
    const title=item.value.title,show=opened===item.key;
    return <article key={item.key} data-due-id={item.key}
-    className="min-w-0 rounded-ctl border border-edge bg-fill-1 p-2 text-ink">
+    className={'cr-agenda-due min-w-0 text-ink '+(compact?'rounded-ctl border border-edge bg-fill-1 p-2':
+     'rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3')}>
     <button type="button" aria-expanded={show}
       aria-label={'Open '+(item.type==='deadline'?'deadline ':'practice topic ')+title}
       onClick={()=>setOpened(old=>old===item.key?null:item.key)}

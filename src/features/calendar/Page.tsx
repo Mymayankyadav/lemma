@@ -20,10 +20,14 @@ const fieldClass = 'min-h-11 min-w-0 w-full rounded-[8px] border border-[var(--c
 const blockCard = (block: CalendarBlockRecord) => 'cr-agenda-block min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4 text-body ' +
   (block.kind === 'busy' ? 'border-l-[3px] border-l-[var(--edge)] [border-left-style:double]' : 'border-l-[3px] border-l-[var(--accent)] [border-left-style:dashed]');
 
-function dateLabel(day: string, zone: string): string {
+/** #1331 (mockup "Thu, Nov 5"): the year is shown only for a day outside the current year. */
+function dateLabel(day: string, zone: string, now: Date = new Date()): string {
+  const start = new Date(calendarRange(day, zone).start);
+  const year = (d: Date) => new Intl.DateTimeFormat('en', { timeZone: zone, year: 'numeric' }).format(d);
   return new Intl.DateTimeFormat('en', {
-    timeZone: zone, weekday: 'short', month: 'short', day: 'numeric', year: 'numeric',
-  }).format(new Date(calendarRange(day, zone).start));
+    timeZone: zone, weekday: 'short', month: 'short', day: 'numeric',
+    ...(year(start) === year(now) ? {} : { year: 'numeric' as const }),
+  }).format(start);
 }
 function localInput(iso: string): string {
   const d = new Date(iso), pad = (n: number) => String(n).padStart(2, '0');
@@ -43,9 +47,11 @@ function writeError(error: unknown): string {
 }
 function SavedRow({ slice, zone, clock24h }: { slice: LoggedSlice; zone: string; clock24h:boolean }) {
   const minutes = Math.round((Date.parse(slice.end) - Date.parse(slice.start)) / 60000);
-  return <article className="rounded-ctl bg-fill-1 p-2 text-label">
-    <strong className="block text-ink">{slice.entry.intent || 'Study'}</strong>
-    <span className="text-ink-2">{formatCalendarTime(slice.start, zone, clock24h)}–{formatCalendarTime(slice.end, zone, clock24h)} · {minutes} min logged</span>
+  // #1332 (mockup agenda card): a bordered paper card, time range first, then the title and the meta line.
+  return <article className="cr-agenda-saved min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3 text-body">
+    <span className="block text-label tabular-nums text-ink-2">{formatCalendarTime(slice.start, zone, clock24h)}–{formatCalendarTime(slice.end, zone, clock24h)}</span>
+    <strong className="mt-1 block break-words text-body font-medium text-ink">{slice.entry.intent || 'Study'}</strong>
+    <span className="text-label text-ink-2">{minutes} min logged</span>
   </article>;
 }
 function BlockSummary({ block, zone, clock24h }: { block: CalendarBlockRecord; zone: string; clock24h:boolean }) {

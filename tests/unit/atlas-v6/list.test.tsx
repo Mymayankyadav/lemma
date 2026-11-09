@@ -52,7 +52,8 @@ describe('N29 v6 Atlas list',()=>{
   expect(realIdeas(tree)).toBe(4);
   expect([...tree.nodes.values()].some(node=>node.synthetic)).toBe(true);
   expect(host.querySelector('[aria-label="Real idea count"]')?.textContent).toContain('4 ideas');
-  expect(host.textContent).toContain('Generated grouping row — not an idea');
+  // #1333: generated groups are not listed, so every row is a real concept.
+  expect(host.textContent).not.toContain('Generated grouping row');
   expect(host.textContent).toContain('Proof of continuity');
   expect(host.textContent).toContain('2 due');
   // #1326: a concept's actions (map, pin, edit, checkpoints) open from its row.
@@ -64,19 +65,19 @@ describe('N29 v6 Atlas list',()=>{
   const map=[...host.querySelectorAll('a')].find(a=>a.textContent==='Map');
   expect(map?.getAttribute('href')).toBe('/atlas?view=map');
  });
- it('expands and collapses a nested idea with accessible 44px keyboard controls',async()=>{
+ it('#1333 lists every concept as one flat, name-sorted list: no expanders, no indentation',async()=>{
   await render();
-  const toggle=host.querySelector('button[aria-label="Expand Proof of continuity"]') as HTMLButtonElement;
-  expect(toggle).toBeDefined();
-  expect(toggle.getAttribute('aria-expanded')).toBe('false');
-  toggle.focus();expect(document.activeElement).toBe(toggle);
-  await click('Expand Proof of continuity');
-  expect(host.textContent).toContain('Counterexamples');
-  await click('Collapse Proof of continuity');
-  expect(host.textContent).not.toContain('Counterexamples');
-  expect(toggle.className).toContain('min-h-11');
+  const names=[...host.querySelectorAll('button[aria-label^="Actions for "]')].map(el=>el.getAttribute('aria-label')!.slice('Actions for '.length));
+  expect(names).toEqual(['Counterexamples','Foundations','Open sets','Proof of continuity']);
+  expect(host.querySelector('button[aria-label^="Expand "],button[aria-label^="Collapse "]')).toBeNull();
+  const items=[...host.querySelectorAll('[aria-label="Idea hierarchy"] li')] as HTMLElement[];
+  expect(items.length).toBe(4);
+  expect(items.every(li=>!li.style.paddingLeft)).toBe(true);
+  expect(host.textContent).toContain('4 matching concepts');
+  items[0].querySelector('button')!.focus();
+  expect(items[0].querySelector('button')!.className).toContain('min-h-11');
  });
- it('searches using real labels while preserving the ancestor path and reports filtered-empty',async()=>{
+ it('searches using real labels and reports filtered-empty',async()=>{
   await render();
   const input=host.querySelector('input[aria-label="Find an idea"]') as HTMLInputElement;
   await act(async()=>{
@@ -84,7 +85,8 @@ describe('N29 v6 Atlas list',()=>{
    input.dispatchEvent(new Event('input',{bubbles:true}));
   });
   expect(host.textContent).toContain('Counterexamples');
-  expect(host.textContent).toContain('Foundations');
+  expect(host.textContent).toContain('1 matching concept');
+  expect(host.textContent).not.toContain('Open sets');
   await act(async()=>{
    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'No exact idea 123');
    input.dispatchEvent(new Event('input',{bubbles:true}));

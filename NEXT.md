@@ -14,6 +14,14 @@ Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/
 
 Mockup port lane (Owner, 2026-11-08, #1303). The v6 app must look like the mockup captures in `docs/v6/screens/`. **Copy, don't redesign**: `docs/v6/prototype/source/MAP.md` names, for each screen, the mockup module that holds its exact markup and class strings and the repo folder to port it into; the CSS is `docs/v6/prototype/source/mockup-overrides.css`. Keep the repo's hooks, commands and behaviour, and wire mockup values to them; a value the hooks lack shows as unavailable. Everything stays behind `v6Shell`, and flag-off screens are unchanged. Every port PR refreshes its screen's Day and Night PNGs in `docs/v6/release-captures/` (capture command in MAP.md, or from CI), which requires an independent review: the reviewer compares each PNG with the same-named mockup and requests changes for any visible difference in layout, components, colour or type (demo data may differ). N110–N117 are merged (#1309, one PR at the Owner's direction); N118 audits them against the mockup and is now the only item left in this lane.
 
+## N120 Fix the v6 fidelity bugs from the N118 audit (Owner task, one PR)
+Owner task: "Fix the bugs"
+Stage: Harden · Status: open · Needs: — · Assigned: chat-528461#r7kq
+Done = #1330 (Progress subtitle in the header), #1331 (Calendar dates without the year), #1332 (time-first Calendar cards for logged and due items), #1333 (flat Concept map list), #1334 (Concept map segment fill and position), #1335 (Settings row height), #1336 (Inbox Edit outlined) and #1337 (Focus notices caption hidden) are fixed, each with a regression test, and the release captures are refreshed.
+Tests: `tests/e2e/v6-g7-fixes.spec.ts` (one check per issue), `tests/unit/atlas-v6/list.test.tsx`, `tests/unit/progress-v6/page.test.tsx`.
+Scope: v6 screens and shell under src/**, tests, docs/v6/release-captures/**, docs/current/N120.md (RELEASE.md stays with N118).
+Not: turning v6 on (N102); flag-off screens; database changes.
+
 ## N119 Fix the v6 release bugs (Owner task, one PR)
 Stage: Harden · Status: open · Needs: — · Assigned: chat-528461#r7kq
 Done = #1299 (undo the last answer in the durable v6 review run), #1300 (Kit at 320px), #1302 (Atlas header) and the N118 design differences #1312–#1326 are fixed, each with a regression test, and the release captures are refreshed.

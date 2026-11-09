@@ -11,6 +11,11 @@ async function setup(page:Page,emptyStudy=true){
    sessionStorage.setItem('lemma.v6.demo.study.v1',JSON.stringify({schema:1,entries:[],blocks:[]}));
  });
 }
+/** The computed colour of a design token (the e2e default theme may be Day or Night). */
+const token=(page:Page,name:string,property='background-color')=>page.evaluate(([n,prop])=>{
+ const probe=document.createElement('i');probe.style.setProperty(prop,'var('+n+')');document.body.append(probe);
+ const value=getComputedStyle(probe).getPropertyValue(prop);probe.remove();return value;
+},[name,property]);
 const px=(page:Page,selector:string,property:string)=>page.locator(selector).first()
  .evaluate((el,p)=>parseFloat(getComputedStyle(el).getPropertyValue(p)),property);
 
@@ -108,4 +113,97 @@ test('#1325 #1326 #1302 Concept map subtitle, plain list rows, map header inset'
  const box=await title.boundingBox();
  expect(box!.x).toBeGreaterThanOrEqual(16);
  await expect(page.getByText('Demo',{exact:true})).toHaveCount(0);
+});
+
+// N120: regression checks for the N118 round-2 differences (#1330–#1337).
+test('#1330 Progress subtitle is in the header, above its rule',async({page})=>{
+ await setup(page,false);
+ await page.goto(url('/insights'));
+ const subtitle=page.locator('[data-v6-header-subtitle]');
+ await expect(subtitle).toHaveText('Small steps, seen over time.');
+ const header=await page.locator('[data-v6-header]').boundingBox();
+ const sub=await subtitle.boundingBox();
+ expect(sub!.y+sub!.height).toBeLessThanOrEqual(header!.y+header!.height);
+ await expect(page.getByText('Small steps, seen over time.')).toHaveCount(1); // only the header copy
+ await expect(page.locator('.notebook-page-intro p')).toHaveCount(0);
+});
+
+test('#1331 Calendar date labels carry no year within the current year',async({page})=>{
+ await setup(page,false);
+ await page.goto(url('/calendar?view=agenda'));
+ const label=page.getByRole('navigation',{name:'Calendar date'}).locator('strong');
+ await expect(label).toHaveText(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
+ const headings=await page.locator('[aria-label="Next seven days"] h2').allTextContents();
+ expect(headings.length).toBeGreaterThan(1);
+ for(const text of headings)expect(text).toMatch(/^[A-Z][a-z]{2}, [A-Z][a-z]{2} \d{1,2}$/);
+});
+
+test('#1332 logged sessions and due items are bordered time-first cards',async({page})=>{
+ await setup(page,false);
+ await page.goto(url('/calendar?view=agenda'));
+ const agenda=page.locator('[aria-label="Next seven days"]');
+ const saved=agenda.locator('article.cr-agenda-saved').first();
+ await expect(saved).toBeVisible();
+ expect((await saved.textContent())!.trim()).toMatch(/^\d{1,2}:\d{2}[–-]\d{1,2}:\d{2}/);
+ const due=agenda.locator('article.cr-agenda-due').first();
+ await expect(due).toBeVisible();
+ for(const card of [saved,due]){
+  expect(await card.evaluate(el=>parseFloat(getComputedStyle(el).borderTopWidth))).toBeGreaterThanOrEqual(1);
+  expect(await card.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+ }
+});
+
+test('#1333 #1334 Concept map list is flat; the pressed segment is tinted and starts under the header',async({page})=>{
+ await setup(page);
+ await page.goto(url('/atlas'));
+ const hierarchy=page.getByRole('region',{name:'Idea hierarchy'});
+ const rows=hierarchy.locator('li');
+ await expect(rows.first()).toBeVisible();
+ expect(await rows.count()).toBeGreaterThan(5);
+ await expect(hierarchy.locator('button[aria-label^="Expand "],button[aria-label^="Collapse "]')).toHaveCount(0);
+ const indents=await rows.evaluateAll(list=>list.slice(0,40).map(li=>parseFloat(getComputedStyle(li).paddingLeft)));
+ expect(new Set(indents).size).toBe(1);
+ const names=await hierarchy.locator('button[aria-label^="Actions for "]').evaluateAll(list=>list.slice(0,40).map(b=>b.getAttribute('aria-label')!.slice(12)));
+ expect(names).toEqual([...names].sort((a,b)=>a.localeCompare(b,'en',{sensitivity:'base'})));
+ const picker=page.locator('.notebook-atlas-picker');
+ expect(await picker.locator('button[aria-pressed=true]').evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(await token(page,'--raised-2'));
+ const header=await page.locator('[data-v6-header]').boundingBox();
+ const box=await picker.boundingBox();
+ expect(box!.y-(header!.y+header!.height)).toBeLessThanOrEqual(20);
+});
+
+test('#1335 Settings group rows are 112px tall',async({page})=>{
+ await setup(page);
+ await page.goto(url('/settings'));
+ await expect(page.locator('.lemma-settings-link').first()).toBeVisible();
+ const heights=await page.locator('.lemma-settings-link').evaluateAll(list=>list.map(el=>Math.round(el.getBoundingClientRect().height)));
+ expect(heights).toHaveLength(4);
+ for(const h of heights.slice(1))expect(h).toBe(112);
+ const pitch=await page.locator('.lemma-settings-link').evaluateAll(list=>list.map(el=>Math.round(el.getBoundingClientRect().top)));
+ expect(pitch[2]-pitch[1]).toBe(112);expect(pitch[3]-pitch[2]).toBe(112);
+});
+
+test('#1336 Inbox Edit is outlined, not grey-filled',async({page})=>{
+ await setup(page);
+ await page.goto(url('/proposals'));
+ const edit=page.getByRole('button',{name:'Edit card'});
+ await expect(edit).toBeVisible();
+ expect(await edit.evaluate(el=>getComputedStyle(el).borderTopColor)).toBe(await token(page,'--edge','border-top-color'));
+ const paper2=await token(page,'--paper-2');
+ expect(await edit.evaluate(el=>getComputedStyle(el).backgroundColor)).not.toBe(paper2);
+});
+
+test('#1337 Focus page has no visible notices caption',async({page})=>{
+ await setup(page);
+ await page.goto(url('/'));
+ await page.getByRole('textbox',{name:'Focus intention'}).fill('Prove the quotient-map criterion');
+ await page.getByRole('button',{name:'Start focus'}).click();
+ const dialog=page.getByRole('dialog',{name:'Focus'});
+ await expect(dialog.getByRole('button',{name:'Park a thought'})).toBeVisible();
+ const caption=dialog.getByText(/Drift is recorded/);
+ await expect(caption).toHaveClass(/sr-only/);
+ await expect(dialog.getByLabel('Focus notice count')).toBeAttached();
+ const park=await dialog.getByRole('button',{name:'Park a thought'}).boundingBox();
+ const finish=await dialog.getByRole('button',{name:/Finish & log/}).boundingBox();
+ expect(finish!.y-(park!.y+park!.height)).toBeLessThan(60);
 });

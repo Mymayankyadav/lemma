@@ -1,6 +1,5 @@
 import {useMemo,useState} from 'react';
 import {Link} from 'react-router';
-import {ChevronDown} from 'lucide-react';
 import {useV6HeaderTitle} from '../../../app/v6Title';
 import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
@@ -8,7 +7,7 @@ import ConceptPin from './ConceptPin';
 import AtlasImpactPreview from './ImpactPreview';
 import AtlasCommands from './AtlasCommands';
 import {FastTex} from '../../../ui/FastTex';
-import {buildAtlasTree,initialExpanded,matches,visibleRows,type AtlasTree} from '../tree';
+import {buildAtlasTree,matches,type AtlasTree} from '../tree';
 
 const control='min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label font-medium text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 /** Real concepts alone contribute to the Atlas count; generated grouping rows never do. */
@@ -18,19 +17,20 @@ export function realIdeas(tree:AtlasTree):number {
  return total;
 }
 
+const PAGE=200;
 /** Flagged phone-first list: the unchanged legacy graph remains available at ?view=map. */
 export default function AtlasV6(){
  const query=useAtlas();
  const tree=useMemo(()=>query.data?buildAtlasTree(query.data):null,[query.data]);
  const [search,setSearch]=useState('');
- const [folded,setFolded]=useState<Set<string>|null>(null);
  const [pinId,setPinId]=useState<string|null>(null);
  const [inspectId,setInspectId]=useState<string|null>(null);
  const [editId,setEditId]=useState<string|null|undefined>(undefined);
  const [actionsFor,setActionsFor]=useState<string|null>(null);
- const open=folded??(tree?initialExpanded(tree):new Set<string>());
- const filter=search.trim()?(node:Parameters<typeof matches>[0])=>matches(node,search):undefined;
- const rows=tree?visibleRows(tree,open,filter):[];
+ const [shown,setShown]=useState(PAGE);
+ // #1333 (mockup): one flat, ruled list of concept names; generated groups are not listed.
+ const rows=useMemo(()=>tree?[...tree.nodes.values()].filter(node=>!node.synthetic&&(!search.trim()||matches(node,search)))
+  .sort((a,b)=>a.name.localeCompare(b.name,'en',{sensitivity:'base'})):[],[tree,search]);
  const ideaCount=tree?realIdeas(tree):0;
  const groupCount=tree?[...tree.nodes.values()].filter(node=>node.synthetic).length:0;
  useV6HeaderTitle('Concept map',tree?ideaCount+' concepts · '+(query.data?.links.length??0)+' connections':null);
@@ -40,13 +40,6 @@ export default function AtlasV6(){
   // Only the existing owner-scoped, audited LemmaApi pinConcept write is used.
   await getApi().pinConcept(id,x,y);
   await query.refetch();
- };
- const toggle=(id:string)=>{
-  setFolded(previous=>{
-   const next=new Set(previous??open);
-   if(next.has(id))next.delete(id);else next.add(id);
-   return next;
-  });
  };
  if(query.isPending)return <main aria-label="Atlas" className="p-4">
   <p role="status">Loading ideas…</p>
@@ -72,7 +65,7 @@ export default function AtlasV6(){
    <p className="text-label text-ink-2">Browse an idea to see its connections and linked checkpoints.</p>
    <label className="lg-outline-search flex flex-col gap-2 text-label text-ink-2">Find a concept
     <input aria-label="Find an idea" placeholder="Search all concepts" className="w-full rounded-[8px] text-body"
-     value={search} onChange={e=>setSearch(e.target.value)}/>
+     value={search} onChange={e=>{setSearch(e.target.value);setShown(PAGE);}}/>
    </label>
    <p className="text-caption text-ink-2">{rows.length} matching {rows.length===1?'concept':'concepts'}</p>
   </section>
@@ -81,25 +74,16 @@ export default function AtlasV6(){
    {ideaCount===0&&<p className="p-4 text-label text-ink-2">Your Atlas is empty. Ideas appear as your plans grow.</p>}
    {ideaCount>0&&rows.length===0&&<p className="p-4 text-label text-ink-2">No ideas match your search.</p>}
    <ul className="flex flex-col">
-    {rows.map(row=>{
-     const node=tree.nodes.get(row.id)!;
-     const hasChildren=node.children.length>0;
-     const isOpen=open.has(node.id)||!!filter;
-     const indent=Math.min(4,row.depth)*16;
+    {rows.slice(0,shown).map(node=>{
      const acting=actionsFor===node.id;
-     return <li key={node.id} role="listitem" className="min-w-0" style={{paddingLeft:indent}}>
+     return <li key={node.id} role="listitem" className="min-w-0">
       <div className="flex min-h-14 min-w-0 items-center gap-2">
-       {node.synthetic?<span className="lg-outline-name min-w-0 flex-1 break-words py-3 [overflow-wrap:anywhere]"><FastTex source={node.name}/></span>:
-        <button type="button" aria-expanded={acting} aria-label={'Actions for '+node.name}
-         onClick={()=>setActionsFor(acting?null:node.id)}
-         className="lg-outline-name min-h-11 min-w-0 flex-1 break-words text-left [overflow-wrap:anywhere]"><FastTex source={node.name}/></button>}
-       <span className="sr-only">{node.synthetic?'Generated grouping row — not an idea · '+node.due+' due in this group':
-        node.status.replaceAll('_',' ')+' · '+node.due+' due'}</span>
-       {hasChildren&&<button type="button" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[6px] text-ink-3" aria-expanded={isOpen}
-        aria-label={(isOpen?'Collapse ':'Expand ')+node.name} onClick={()=>toggle(node.id)}>
-        <ChevronDown size={18} aria-hidden="true" className={isOpen?'':'-rotate-90'}/></button>}
+       <button type="button" aria-expanded={acting} aria-label={'Actions for '+node.name}
+        onClick={()=>setActionsFor(acting?null:node.id)}
+        className="lg-outline-name min-h-11 min-w-0 flex-1 break-words text-left [overflow-wrap:anywhere]"><FastTex source={node.name}/></button>
+       <span className="sr-only">{node.status.replaceAll('_',' ')+' · '+node.due+' due'}</span>
       </div>
-      {acting&&!node.synthetic&&<div className="flex flex-wrap gap-2 pb-3">
+      {acting&&<div className="flex flex-wrap gap-2 pb-3">
        <span className="basis-full text-caption text-ink-2" aria-hidden="true">{node.status.replaceAll('_',' ')} · {node.due} due</span>
        <Link to={'/atlas?view=map&id='+encodeURIComponent(node.id)+'&focus='+encodeURIComponent(node.slug)}
         className={control+' inline-flex items-center'}>View on map</Link>
@@ -119,6 +103,8 @@ export default function AtlasV6(){
      </li>;
     })}
    </ul>
+   {rows.length>shown&&<button type="button" className="mt-2 min-h-11 text-label text-[var(--link)]" onClick={()=>setShown(n=>n+PAGE)}>
+    Show more concepts ({rows.length-shown} left)</button>}
    {ideaCount>0&&<button type="button" className="mt-4 min-h-11 text-label text-[var(--link)]" onClick={()=>setEditId(null)}>New idea</button>}
   </section>
   {selectedPin&&!selectedPin.synthetic&&<ConceptPin

@@ -5,6 +5,7 @@ import {getStudyApi} from '../../data/study';
 import {periodFor,type EffortRange} from '../progress-v6/model';
 import {needsAttention,savedTimeIssues,type SavedTimeIssues} from './savedTimeIssues';
 import {useSearchParams} from 'react-router';
+import {useV6HeaderTitle} from '../../app/v6Title';
 import {getMode} from '../../data/mode';
 import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
 import {useInsightData,useSettings} from '../../data/hooks';
@@ -67,6 +68,8 @@ function rangeCaption(days:number){
 /** N115 (mockup `22__Page`, `55__insights`): one time-range select, Overview / Learning / Time
  * tabs and stat tiles. Saved study time keeps the N52 selectors (ProgressV6) on Overview and Time. */
 function ProgressNotebook(){
+ // #1330: the mockup header carries the subtitle, above its rule.
+ useV6HeaderTitle('Progress','Small steps, seen over time.');
  const [params,setParams]=useSearchParams();
  const raw=params.get('range');
  const days:InsightDays=raw==='7'||raw==='90'?Number(raw) as InsightDays:30;
@@ -88,10 +91,7 @@ function ProgressNotebook(){
   <span>{label}</span><strong>{value}</strong><small>{note}</small></div>;
  const demonstrated=values?values.checkpointWeeks.reduce((n,w)=>n+w.demonstrated,0):0;
  return <div className="notebook-progress">
-  <div className="notebook-page-intro">
-   <p>Small steps, seen over time.</p>
-   {getMode()==='demo'&&<small className="lemma-sample-label basis-full">Example workspace · demonstration history</small>}
-  </div>
+  {getMode()==='demo'&&<div className="notebook-page-intro"><small className="lemma-sample-label basis-full">Example workspace · demonstration history</small></div>}
   <label className="lemma-progress-range">Time range
    <select aria-label="Time range" value={String(days)} onChange={event=>set('range',event.target.value)}>
     <option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option>
