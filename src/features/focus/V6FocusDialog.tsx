@@ -2,6 +2,7 @@ import {useEffect,useRef,type ReactNode} from 'react';
 import type {StudyEntryRecord} from '../../data/study/contract';
 import {cycleCaption,emptyFocusContext,type FocusContext} from './focusContext';
 import {inProgressFocusMinutes,remainingFocusMinutes,type FocusState} from '../../lib/focus/machine';
+import {focusStatus} from '../../lib/focus/status';
 
 export interface V6FocusDialogProps {
  open:boolean;
@@ -69,8 +70,7 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
  const clock=(seconds>=3600?Math.floor(seconds/3600)+':':'')+String(Math.floor(seconds%3600/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
  const span=Math.max(1,session.focusMinutes>=1440?25:session.focusMinutes)*60;
  const progress=remaining!==null?Math.min(100,Math.max(0,100-remaining/span*100)):(elapsed%span)/span*100;
- const eyebrow=state.phase==='finishing'?'Ready to save':state.phase==='paused'?'Paused':
-  state.phase==='break'||phase!=='focus'?'On a break':'In focus';
+ const eyebrow=focusStatus(state.phase,phase);
  // N111 + #1314/#1315 (mockup `cr-focus-overlay`): heading = path or activity, subtitle = checkpoint,
  // the Pomodoro plan under the bar, the intention as a serif line, two quiet text actions.
  // Nested dialogs (drift, parked thought) live inside this one; React hands their close/cancel

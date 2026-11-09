@@ -23,6 +23,7 @@ export default function PlanProposalV6(){
  const [problem,setProblem]=useState(''),[pending,setPending]=useState(false);
  const [conflict,setConflict]=useState<ProposalDraftConflict|null>(null),[reload,setReload]=useState(0);
  const loadedDraftKey=useRef('');
+ const draftSupported=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
  const routeRef=useRef(id);
  // React Router reuses this route component between proposal IDs. An open
  // editor must not stay bound to the prior proposal or disable the next
@@ -36,6 +37,7 @@ export default function PlanProposalV6(){
  },[id]);
  useEffect(()=>{
   if(!id||!proposal.data)return;
+  if(!draftSupported){setDraft(null);setProblem('');setStatus('ready');return;}
   // Query data may be revalidated while the owner types an unsaved draft.
   // Only an explicit Reload or a different proposal must replace the editor.
   const key=id+'|'+reload;
@@ -76,7 +78,7 @@ export default function PlanProposalV6(){
    setStatus('ready');
   })().catch(error=>{if(alive){setStatus('error');setProblem(error instanceof Error?error.message:'Could not read drafts');}});
   return ()=>{alive=false};
- },[id,proposal.data,reload]);
+ },[id,proposal.data,reload,draftSupported]);
  const p=proposal.data;
  // Empty approved checkpoints are meaningful only after the owner's project
  // read succeeds; do not present missing or failed data as a blank base plan.
@@ -158,7 +160,7 @@ export default function PlanProposalV6(){
    {/* N113 (mockup `13__Page`): kind heading, meta row, stage tiles and one decision row. */}
    <h2 className="text-ink">{p.kind==='plan'?'New plan':'Plan change'}</h2>
    <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-label text-ink-2"><Sparkles size={16} aria-hidden="true"/>Tutor proposal
-    <span>· {p.projectSlug}</span>{comparisons&&<span>· {comparisons.after.length} checkpoints</span>}</p>
+    <span>· {project.data?.project?.title??'Your learning path'}</span>{comparisons&&<span>· {comparisons.after.length} checkpoints</span>}</p>
    {p.reason?<section aria-label="Proposal rationale">
     <h2 className="text-body font-semibold">Rationale</h2>
     <p className="whitespace-pre-wrap text-label">{p.reason}</p>
@@ -191,8 +193,10 @@ export default function PlanProposalV6(){
      {comparisons.citations.map(s=><li key={s}>{s}</li>)}</ul>:
      <p className="text-label text-ink-2">No cited sources in this proposal.</p>}
    </section>
-   <section aria-label="Editable proposal draft" className="flex flex-col gap-3 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
-    <h2 className="text-body font-semibold">Editable proposal draft</h2>
+   {draftSupported&&<details className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+    <summary className="min-h-11 cursor-pointer text-label font-semibold">Edit before approving (advanced)</summary>
+    <section aria-label="Editable proposal draft" className="mt-3 flex flex-col gap-3">
+    <h2 className="sr-only">Editable proposal draft</h2>
     {status==='loading'&&<p role="status">Loading drafts…</p>}
     {status==='error'&&<button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Retry drafts</button>}
     {status==='ready'&&!draft&&<>
@@ -250,7 +254,8 @@ export default function PlanProposalV6(){
      </div>
      <button type="button" className={control} onClick={()=>setReload(x=>x+1)}>Reload current draft</button>
     </section>}
-   </section>
+    </section>
+   </details>}
    {editor&&<p className="text-caption text-ink-2">Save or cancel your draft edit before deciding on this plan.</p>}
    <div className="lemma-plan-decisions">
     <button type="button" disabled={decisionUnavailable} className="ui-button ghost px-4" data-ui="proposal-reject" onClick={()=>{void decide(false)}}>Reject proposal</button>

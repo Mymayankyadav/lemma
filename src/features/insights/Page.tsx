@@ -2,7 +2,8 @@ import {isFlagOn} from '../../flags';
 import ProgressV6 from '../progress-v6/Page';
 import {useEffect,useMemo,useState} from 'react';
 import {getStudyApi} from '../../data/study';
-import {periodFor,type EffortRange} from '../progress-v6/model';
+import {periodFor,effortSummary,type EffortRange} from '../progress-v6/model';
+import {formatDuration} from '../../lib/format';
 import {needsAttention,savedTimeIssues,type SavedTimeIssues} from './savedTimeIssues';
 import {useSearchParams} from 'react-router';
 import {useV6HeaderTitle} from '../../app/v6Title';
@@ -78,12 +79,13 @@ function ProgressNotebook(){
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
  const [issues,setIssues]=useState<SavedTimeIssues|null>(null);
+ const [savedMinutes,setSavedMinutes]=useState<number|null>(null);
  useEffect(()=>{
   let alive=true;
   const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
   const span=periodFor(String(days) as EffortRange,new Date(),zone).span;
-  void getStudyApi().listStudyEntries(span).then(rows=>{if(alive)setIssues(savedTimeIssues(rows,new Date().toISOString()));})
-   .catch(()=>{if(alive)setIssues(null);});
+  void getStudyApi().listStudyEntries(span).then(rows=>{if(alive){setIssues(savedTimeIssues(rows,new Date().toISOString()));setSavedMinutes(effortSummary(rows,periodFor(String(days) as EffortRange,new Date(),zone),zone,new Date().toISOString()).minutes);}})
+   .catch(()=>{if(alive){setIssues(null);setSavedMinutes(null);}});
   return()=>{alive=false;};
  },[days]);
  const set=(key:string,value:string)=>{const next=new URLSearchParams(params);next.set(key,value);setParams(next);};
@@ -108,16 +110,16 @@ function ProgressNotebook(){
     {query.isPending||settings.isPending?<p role="status" className="text-ink-2">Loading insights…</p>:
      query.isError||settings.isError?<div role="alert" className="lemma-log-warning">Couldn’t load insights. <button type="button" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>:
      values&&<div className="notebook-metrics" aria-label="Progress summary">
-      {metric('Logged study time',formatDurationMinutes(values.minutes),'Recorded session time')}
+      {metric('Logged study time',savedMinutes===null?'—':formatDuration(savedMinutes),'Saved focus time (breaks excluded)')}
       {metric('Reviews completed',formatCount(values.reviews),'Completed responses')}
       {metric('Recall on review',percent(values.recall),formatCount(values.reviews)+' responses in range')}
       {metric('Checkpoints demonstrated',formatCount(demonstrated),'Demonstrated events in the last 4 weeks')}
      </div>}
-    <ProgressV6/>
+    <ProgressV6 controls={false}/>
    </>}
    {view==='learning'&&<LegacyInsights fixedDays={days}/>}
    {view==='time'&&<>
-    <ProgressV6/>
+    <ProgressV6 controls={false}/>
     <a href="#/log" className="notebook-concept-entry"><span>Open your time log</span><span aria-hidden="true">›</span></a>
    </>}
   </div>

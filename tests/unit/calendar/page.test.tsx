@@ -97,7 +97,7 @@ it('defaults to seven-day Agenda and preserves the view and civil date in the UR
   expect(host.querySelector('[data-url]')?.textContent).toContain('view=day');
   expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-11-06');
   expect(host.textContent).toContain('Day schedule');
-  await click('Next dates');
+  await click('Next day');
   expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-11-07');
   expect(fake.listCalendarBlocks).toHaveBeenCalled();
   expect(fake.listStudyEntries).toHaveBeenCalled();
@@ -105,8 +105,9 @@ it('defaults to seven-day Agenda and preserves the view and civil date in the UR
 it('creates a study or busy block through StudyApi and renders it in the day', async () => {
   const fake = makeFake();
   await render('/calendar?view=day&date=2026-11-06');
+  await click('New time block');
   await enter('input[maxlength="200"]', 'Seminar');
-  await click('Add block');
+  await click('Create block');
   await vi.waitFor(() => expect(fake.createCalendarBlock).toHaveBeenCalledTimes(1));
   expect(fake.createCalendarBlock.mock.calls[0][0]).toMatchObject({ kind: 'study', title: 'Seminar', timeZone: expect.any(String) });
   expect(host.textContent).toContain('Seminar');
@@ -114,13 +115,11 @@ it('creates a study or busy block through StudyApi and renders it in the day', a
 it('also creates busy blocks when selected, without bypassing StudyApi', async () => {
   const fake = makeFake([], []);
   await render('/calendar?view=day&date=2026-11-06');
-  const select = host.querySelector('select')!;
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!.call(select, 'busy');
-    select.dispatchEvent(new Event('change', { bubbles: true }));
-  });
+  await click('New time block');
+  await click('Busy');
+  expect(host.querySelector('[role=radio][aria-checked=true]')?.textContent).toBe('Busy');
   await enter('input[maxlength="200"]', 'Busy hour');
-  await click('Add block');
+  await click('Create block');
   await vi.waitFor(() => expect(fake.createCalendarBlock).toHaveBeenCalledTimes(1));
   expect(fake.createCalendarBlock.mock.calls[0][0].kind).toBe('busy');
 });
@@ -128,9 +127,9 @@ it('moves, marks done and deletes a block once each through StudyApi', async () 
   const fake = makeFake();
   await render('/calendar?view=day&date=2026-11-06');
   await click('Move Appointment');
-  await enter('input[aria-label="Move block start"]', '2026-11-06T11:00');
-  await enter('input[aria-label="Move block end"]', '2026-11-06T12:00');
-  await click('Save move');
+  await enter('input[aria-label="Calendar block start"]', '11:00');
+  await enter('input[aria-label="Calendar block end"]', '12:00');
+  await click('Save changes');
   await vi.waitFor(() => expect(fake.updateCalendarBlock).toHaveBeenCalledTimes(1));
   expect(fake.updateCalendarBlock.mock.calls[0][0]).toBe('appointment');
   expect(fake.updateCalendarBlock.mock.calls[0][2]).toHaveProperty('startsAt');

@@ -13,6 +13,7 @@ export function v6PageTitle(pathname:string){
   '/review':'Review','/review/run':'Review round','/review/done':'Review complete',
   '/calendar':'Calendar','/insights':'Progress','/proposals':'Inbox','/tasks':'Tasks',
   '/cards':'Cards','/atlas':'Concept map','/settings':'Settings','/kit':'Kit',
+  '/log':'Time log','/practice':'Practice','/today/close':'Close the day',
  };
  return titles[pathname]??(pathname.startsWith('/proposals/')?'Plan proposal':
   pathname.startsWith('/cards/')?'Card detail':pathname.startsWith('/p/')?'Path':
@@ -37,11 +38,12 @@ function HeaderCluster({pathname,onTask}:{pathname:string;onTask:()=>void}){
  const compact=v6CompactHeader(pathname);
  const addItems=[
   <button key="task" type="button" onClick={event=>{closeDetails(event.currentTarget);onTask();}}>Task</button>,
-  <Link key="block" to="/calendar" onClick={event=>closeDetails(event.currentTarget)}>Time block</Link>,
+  <Link key="block" to="/calendar?new=block" onClick={event=>closeDetails(event.currentTarget)}>Time block</Link>,
   <Link key="card" to="/cards?new=1" onClick={event=>closeDetails(event.currentTarget)}>Card</Link>,
   <Link key="path" to="/projects/new" onClick={event=>closeDetails(event.currentTarget)}>New path</Link>,
  ];
- const destinations=([['/atlas','Concept map'],['/cards','Card library'],['/settings','Settings']] as const)
+ const destinations=([['/tasks','Tasks'],['/practice','Practice'],['/log','Time log'],
+  ['/today/close','Close the day'],['/atlas','Concept map'],['/cards','Card library'],['/settings','Settings']] as const)
   .filter(([to])=>to!==pathname);
  return <nav aria-label="Page actions" className="lemma-header-cluster">
   {!compact&&<Link to="/proposals" className="lemma-header-inbox" title="Inbox"

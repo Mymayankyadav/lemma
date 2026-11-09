@@ -3,7 +3,7 @@
 import type {CalendarBlockRecord,StudyEntryRecord,StudyRange} from '../../../data/study/contract';
 import type {OverlapAcknowledgement,OverlapParticipant,OverlapChoice} from '../../../data/overlap-acknowledgements/contract';
 
-type Span={kind:'block'|'entry';id:string;version:number;name:string;start:number;end:number};
+type Span={kind:'block'|'entry';id:string;version:number;name:string;start:number;end:number;blockKind?:'study'|'busy';linkedBlockId?:string|null};
 export interface CalendarOverlap {
  key:string;startsAt:string;endsAt:string;
  participants:OverlapParticipant[];names:[string,string];
@@ -19,7 +19,7 @@ export function overlapWindows(entries:readonly StudyEntryRecord[],
   if(block.status==='cancelled')continue;
   spans.push({kind:'block',id:block.id,version:block.version,
    name:block.title||'Calendar block',start:Date.parse(block.startsAt),
-   end:Date.parse(block.endsAt)});
+   end:Date.parse(block.endsAt),blockKind:block.kind});
  }
  for(const entry of entries){
   if(entry.status!=='saved')continue;
@@ -27,13 +27,19 @@ export function overlapWindows(entries:readonly StudyEntryRecord[],
    if(interval.kind!=='focus'||interval.end===null)continue;
    spans.push({kind:'entry',id:entry.id,version:entry.version,
     name:entry.intent||'Saved study',start:Date.parse(interval.start),
-    end:Date.parse(interval.end)});
+    end:Date.parse(interval.end),linkedBlockId:entry.calendarBlockId??null});
   }
  }
  const rows=new Map<string,CalendarOverlap>();
  for(let i=0;i<spans.length;i++)for(let j=i+1;j<spans.length;j++){
   const a=spans[i],b=spans[j];
   if(a.kind===b.kind&&a.id.toLowerCase()===b.id.toLowerCase())continue;
+  if(a.kind!==b.kind){
+   const planned=a.kind==='block'?a:b,logged=a.kind==='entry'?a:b;
+   // Studying a planned block fulfils it. Never ask the owner to attribute
+   // already-linked focus time, even if an old adapter labels it differently.
+   if(planned.blockKind==='study'||logged.linkedBlockId?.toLowerCase()===planned.id.toLowerCase())continue;
+  }
   // Keep the true intersection across week/month boundaries. A narrow
   // viewport must not change an acknowledgement's exact time identity.
   const from=Math.max(a.start,b.start),to=Math.min(a.end,b.end);

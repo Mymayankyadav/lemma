@@ -80,7 +80,7 @@ export default function ReviewV6(){
   }catch(error){setIssue(error instanceof Error?error.message:'Could not start review run')}
   finally{setBusy(false)}
  }
- const minutes=Math.max(1,Math.ceil(result.batch.length*4.5/60));
+ const minutes=Math.max(1,Math.ceil(result.batch.length*0.5));
  const selectedDecks=nodes.filter(project=>keysFor(project).some(key=>enabled.has(key))).length;
  // N112 (mockup `12__Page`): one review hero, then decks and queue details one tap away.
  return <main aria-label="Review" className="flex min-w-0 flex-col text-ink">

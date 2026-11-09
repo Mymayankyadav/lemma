@@ -9,11 +9,12 @@ import type { StudyEntryRecord } from '../../data/study/contract';
 import { Segmented } from '../../ui/Segmented';
 import { Slab } from '../../ui/Slab';
 import { effortSummary, periodFor, formatExactMinutes, type EffortRange } from './model';
+import {formatDuration} from '../../lib/format';
 
 const validRange = (value: string | null): EffortRange =>
   value === 'week' || value === 'month' || value === '7' || value === '30' || value === '90' ? value : 'day';
 
-export default function ProgressV6() {
+export default function ProgressV6({controls=true}:{controls?:boolean}={}) {
   const [params, setParams] = useSearchParams();
   const range = validRange(params.get('range'));
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -85,14 +86,16 @@ export default function ProgressV6() {
 
   return <section aria-label="Saved study effort" className="mb-6 flex flex-col gap-3">
     <h2 className="text-title-s font-semibold text-ink">Study effort</h2>
-    <Segmented label="Effort range" value={range} onChange={chooseRange}
-      options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
-    <div role="group" aria-label="Recent study ranges" className="flex flex-wrap gap-2">
-      {recentRanges.map(option=><button key={option.value} type="button"
-       aria-pressed={range===option.value} onClick={()=>chooseRange(option.value)}
-       className={'min-h-11 flex-1 rounded-ctl border border-edge px-3 text-label font-semibold '+(range===option.value?'bg-amber text-amber-ink':'bg-fill-1 text-ink')}>
-       {option.label}</button>)}
-    </div>
+    {controls&&<>
+     <Segmented label="Effort range" value={range} onChange={chooseRange}
+       options={[{ value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
+     <div role="group" aria-label="Recent study ranges" className="flex flex-wrap gap-2">
+       {recentRanges.map(option=><button key={option.value} type="button"
+        aria-pressed={range===option.value} onClick={()=>chooseRange(option.value)}
+        className={'min-h-11 flex-1 rounded-ctl border border-edge px-3 text-label font-semibold '+(range===option.value?'bg-amber text-amber-ink':'bg-fill-1 text-ink')}>
+        {option.label}</button>)}
+     </div>
+    </>}
     {status === 'loading' && <p role="status" className="text-label text-ink-2">Loading study effort…</p>}
     {status === 'error' && <p role="alert" className="text-label text-ink-2">
       {error} <button type="button" onClick={() => setRefresh(n => n + 1)} className="min-h-11 underline">Retry</button>
@@ -100,7 +103,7 @@ export default function ProgressV6() {
     {summary && <>
       <Slab as="section" aria-label="Total logged time" className="p-4">
         <p className="text-label text-ink-2">Saved focus time · {range}</p>
-        <strong className="block text-title font-semibold tabular-nums">{formatExactMinutes(summary.minutes)} min</strong>
+        <strong className="block text-title font-semibold tabular-nums">{formatDuration(summary.minutes)}</strong>
         <p className="text-caption text-ink-2">Only saved focus intervals count; breaks and unsaved sessions do not.</p>
       </Slab>
       {range !== 'day' && <Slab as="section" aria-label="Daily logged minutes" className="flex flex-col gap-2 p-3">

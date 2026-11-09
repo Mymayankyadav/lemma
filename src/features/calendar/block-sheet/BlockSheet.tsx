@@ -1,10 +1,16 @@
-import {useEffect, useId, useRef, useState, type FormEvent} from 'react';
+import {useEffect,useRef, useState, type FormEvent} from 'react';
+import {getApi} from '../../../data';
+import {getTaskApi} from '../../../data/tasks';
+import type {TaskRecord} from '../../../data/tasks/contract';
+import type {ProjectSummary,CheckpointView} from '../../../data/types';
+import Dialog from '../../../ui/v6/Dialog';
 import {getStudyApi} from '../../../data/study';
 import type {
   CalendarBlockKind, CalendarBlockPatch, CalendarBlockRecord, CalendarBlockStatus,
   NewCalendarBlock, StudyApi,
 } from '../../../data/study/contract';
 import {useToast} from '../../../ui/Toast';
+import {dayKey} from '../model';
 
 const field='min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
 const action='min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink';
@@ -57,34 +63,83 @@ function message(error:unknown):string {
 }
 function snapshotPatch(block:CalendarBlockRecord):CalendarBlockPatch {
  return {kind:block.kind,title:block.title,startsAt:block.startsAt,endsAt:block.endsAt,
-   timeZone:block.timeZone,status:block.status};
+   timeZone:block.timeZone,status:block.status,projectId:block.projectId??null,
+   subjectId:block.subjectId??null,checkpointId:block.checkpointId??null,taskId:block.taskId??null};
 }
 function originalInput(block:CalendarBlockRecord,zone:string) {
  return {title:block.title,kind:block.kind,start:zonedInput(block.startsAt,zone),
    end:zonedInput(block.endsAt,zone),status:block.status};
 }
 
+/** Prefer the next 30-minute slot, not the already elapsed 09:00 default. */
+export function suggestedBlockStart(date:string,zone:string,now:Date=new Date()):string{
+ if(date!==dayKey(now,zone))return date+'T09:00';
+ const wall=zonedInput(now.toISOString(),zone);
+ const [day,hour,minute]=[wall.slice(0,10),Number(wall.slice(11,13)),Number(wall.slice(14,16))];
+ const next=Math.floor((hour*60+minute)/30+1)*30;
+ if(next<1440)return day+'T'+String(Math.floor(next/60)).padStart(2,'0')+':'+String(next%60).padStart(2,'0');
+ const following=new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10);
+ return following+'T00:00';
+}
+function oneHourLater(wall:string):string{
+ const [day,hour,minute]=[wall.slice(0,10),Number(wall.slice(11,13)),Number(wall.slice(14,16))];
+ const plus=hour*60+minute+60;
+ const nextDay=plus>=1440?new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10):day;
+ return nextDay+'T'+String(Math.floor(plus%1440/60)).padStart(2,'0')+':'+String(plus%60).padStart(2,'0');
+}
 export interface BlockSheetProps {
  block:CalendarBlockRecord|null;
- date:string;zone:string;onClose:()=>void;onRefresh:()=>void;
+ date:string;zone:string;initialStart?:string;onClose:()=>void;onRefresh:()=>void;
 }
-export default function BlockSheet({block,date,zone,onClose,onRefresh}:BlockSheetProps) {
- const dialog=useRef<HTMLDialogElement>(null),busy=useRef(false),heading=useId();
+export default function BlockSheet({block,date,zone,initialStart,onClose,onRefresh}:BlockSheetProps) {
+ const busy=useRef(false);
+ const requested=initialStart&&Number.isFinite(Date.parse(initialStart))&&/Z$|[+-]\d\d:\d\d$/.test(initialStart)
+  ?zonedInput(initialStart,zone):null;
+ const proposed=requested??suggestedBlockStart(date,zone);
  const notify=useToast();
  const [current,setCurrent]=useState(block);
  const [title,setTitle]=useState(block?.title??'');
  const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??'study');
- const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):date+'T09:00');
- const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):date+'T10:00');
+ const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
+ const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):oneHourLater(proposed));
  const [status,setStatus]=useState<CalendarBlockStatus>(block?.status??'planned');
+ const [projects,setProjects]=useState<ProjectSummary[]>([]);
+ const [tasks,setTasks]=useState<TaskRecord[]>([]);
+ const [checkpoints,setCheckpoints]=useState<CheckpointView[]>([]);
+ const [projectId,setProjectId]=useState(block?.projectId??'');
+ const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
+ const [taskId,setTaskId]=useState(block?.taskId??'');
+ const [linksError,setLinksError]=useState('');
+ useEffect(()=>{
+  let active=true;
+  void Promise.resolve().then(()=>getApi().listProjects()).then(rows=>{if(active)setProjects(rows.filter(p=>p.status!=='archived'))})
+   .catch(()=>{if(active)setLinksError('Learning paths unavailable; existing links are preserved.')});
+  void (async()=>{
+   const rows:TaskRecord[]=[],seen=new Set<string>();let cursor:string|null=null;
+   for(let i=0;i<100;i++){
+    const page=await getTaskApi().listTasks({status:['backlog','in_progress'],limit:50,cursor});
+    rows.push(...page.items);
+    if(!page.nextCursor){if(active)setTasks(rows);return;}
+    if(!page.items.length||seen.has(page.nextCursor))throw Error('Task list changed during loading');
+    seen.add(page.nextCursor);cursor=page.nextCursor;
+   }
+   throw Error('Too many tasks to list');
+  })().catch(()=>{if(active)setLinksError('Some links are unavailable; existing links are preserved.')});
+  return()=>{active=false};
+ },[]);
+ useEffect(()=>{
+  let active=true;
+  const project=projects.find(p=>p.id===projectId);
+  if(!project){setCheckpoints([]);return;}
+  void getApi().getProject(project.slug).then(detail=>{
+   if(active)setCheckpoints(detail.checkpoints);
+  }).catch(()=>{if(active)setLinksError('Checkpoints unavailable; you can save without changing the checkpoint.')});
+  return()=>{active=false};
+ },[projectId,projects]);
  const [saving,setSaving]=useState(false);
  const [confirmDelete,setConfirmDelete]=useState(false);
  const [error,setError]=useState('');
- useEffect(()=>{
-  const node=dialog.current;if(!node)return;
-  if(typeof node.showModal==='function')node.showModal();else node.setAttribute('open','');
-  return ()=>{if(node.open&&typeof node.close==='function')node.close();};
- },[]);
+
  function restore(record:CalendarBlockRecord) {
   setCurrent(record);
   const form=originalInput(record,zone);
@@ -113,7 +168,13 @@ export default function BlockSheet({block,date,zone,onClose,onRefresh}:BlockShee
  async function save(event:FormEvent<HTMLFormElement>){
   event.preventDefault();if(busy.current)return;
   let input:NewCalendarBlock;
-  try{input=blockFormInput({title,kind,start,end,zone});}
+  try{
+   input=blockFormInput({title,kind,start,end,zone});
+   const project=projects.find(p=>p.id===projectId);
+   input={...input,projectId:projectId||null,
+    subjectId:project?.subject.id??(projectId===current?.projectId?current?.subjectId:null)??null,
+    checkpointId:checkpointId||null,taskId:taskId||null};
+  }
   catch(e){setError(e instanceof Error?e.message:'Invalid block details.');return;}
   busy.current=true;setSaving(true);setError('');setConfirmDelete(false);
   const api=getStudyApi(),prior=current;
@@ -151,33 +212,95 @@ export default function BlockSheet({block,date,zone,onClose,onRefresh}:BlockShee
    if((e as {code?:string})?.code==='conflict')await reloadConflict(api,prior);
   }finally{busy.current=false;setSaving(false);}
  }
- return <dialog ref={dialog} aria-labelledby={heading}
-   onCancel={event=>{event.preventDefault();if(!busy.current)onClose();}}
-   className="w-[calc(100%-2rem)] max-w-[460px] max-h-[90dvh] overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-xl backdrop:bg-black/50"
-   style={{paddingBottom:'max(1rem,env(safe-area-inset-bottom))'}}>
-   <h2 id={heading} className="text-title-s font-semibold">{current?'Edit calendar block':'New calendar block'}</h2>
-   <p className="text-label text-ink-2">Times are in {zone}. Saved study entries cannot be edited here.</p>
-   <form noValidate onSubmit={event=>{void save(event);}} className="mt-4 flex flex-col gap-3">
+const day=start.slice(0,10);
+ const eyebrow='CALENDAR · '+(/^\d{4}-\d\d-\d\d$/.test(day)?new Intl.DateTimeFormat('en',{timeZone:'UTC',month:'short',day:'numeric'})
+  .format(new Date(day+'T12:00:00Z')).toUpperCase():'');
+ const setPart=(part:'day'|'start'|'end',value:string)=>{
+  if(part==='day'){
+   setStart(value+'T'+start.slice(11,16));
+   // An end on the same day moves with the date; an overnight end keeps its offset.
+   const sameDay=end.slice(0,10)===start.slice(0,10);
+   setEnd((sameDay?value:end.slice(0,10))+'T'+end.slice(11,16));
+  }else if(part==='start')setStart(day+'T'+value);
+  else{
+   // A block that already runs past midnight keeps its next-day end; otherwise a
+   // reversed range stays on the same day and is rejected on save.
+   const overnight=end.slice(0,10)!==day&&value<=start.slice(11,16);
+   setEnd((overnight?end.slice(0,10):day)+'T'+value);
+  }
+ };
+ const otherZone=current?.timeZone&&current.timeZone!==zone&&new Intl.DateTimeFormat('en',{timeZone:current.timeZone,timeZoneName:'short'})
+  .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value!==new Intl.DateTimeFormat('en',{timeZone:zone,timeZoneName:'short'})
+  .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value;
+ return <Dialog title={current?'Edit time block':'New time block'} eyebrow={eyebrow}
+   onClose={onClose} busy={saving} footer={<>
+    {current&&!confirmDelete&&<button type="button" className={action+' lemma-destructive mr-auto'} disabled={saving}
+      onClick={()=>setConfirmDelete(true)}>Delete block</button>}
+    <button type="button" className={action} disabled={saving} onClick={onClose}>Cancel</button>
+    <button type="submit" form="n121-block-form" className={action+' bg-amber text-amber-ink'} disabled={saving}>
+      {saving?'Saving…':current?'Save changes':'Create block'}
+    </button>
+   </>}>
+   {otherZone&&<p className="text-label text-ink-2">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
+   <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="flex flex-col gap-3">
     <label className="text-label">Title
-     <input aria-label="Calendar block title" className={field} autoFocus maxLength={200} value={title}
+     <input aria-label="Calendar block title" className={field} placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title}
        onChange={event=>setTitle(event.target.value)}/>
     </label>
-    <label className="text-label">Type
-     <select aria-label="Calendar block type" className={field} value={kind}
-       onChange={event=>setKind(event.target.value as CalendarBlockKind)}>
-       <option value="study">Study</option><option value="busy">Busy</option>
-     </select>
-    </label>
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div role="radiogroup" aria-label="Calendar block type" className="ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1">
+     {(['study','busy'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={kind===value}
+      onClick={()=>setKind(value)}
+      className={'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold '+(kind===value?'bg-raised-2 text-ink':'text-ink-3')}>
+      {value==='study'?'Study':'Busy'}</button>)}
+    </div>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+     <label className="text-label">Date
+      <input aria-label="Calendar block date" type="date" className={field}
+        value={day} onChange={event=>setPart('day',event.target.value)}/>
+     </label>
      <label className="text-label">Start
-      <input aria-label="Calendar block start" type="datetime-local" className={field}
-        value={start} onChange={event=>setStart(event.target.value)}/>
+      <input aria-label="Calendar block start" type="time" className={field}
+        value={start.slice(11,16)} onChange={event=>setPart('start',event.target.value)}/>
      </label>
      <label className="text-label">End
-      <input aria-label="Calendar block end" type="datetime-local" className={field}
-        value={end} onChange={event=>setEnd(event.target.value)}/>
+      <input aria-label="Calendar block end" type="time" className={field}
+        value={end.slice(11,16)} onChange={event=>setPart('end',event.target.value)}/>
      </label>
     </div>
+    <div role="group" aria-label="Block duration" className="flex flex-wrap items-center gap-2 text-label">
+     <span className="mr-1 text-ink-2">Length</span>
+     {[25,50,90].map(minutes=><button key={minutes} type="button" className={action}
+      disabled={saving} onClick={()=>{
+       const first=instantInZone(start,zone);
+       if(first){setEnd(zonedInput(new Date(Date.parse(first)+minutes*60000).toISOString(),zone));setError('')}
+       else setError('Choose a valid start time first.');
+      }}>{minutes} min</button>)}
+    </div>
+    <label className="text-label">Path (optional)
+     <select aria-label="Block path" className={field} value={projectId} disabled={saving}
+       onChange={event=>{setProjectId(event.target.value);setCheckpointId('')}}>
+      <option value="">No path</option>
+      {projectId&&!projects.some(p=>p.id===projectId)&&<option value={projectId}>Previously linked path</option>}
+      {projects.map(project=><option key={project.id} value={project.id}>{project.title}</option>)}
+     </select>
+    </label>
+    {projectId&&<label className="text-label">Checkpoint (optional)
+      <select aria-label="Block checkpoint" className={field} value={checkpointId} disabled={saving}
+       onChange={event=>setCheckpointId(event.target.value)}>
+       <option value="">No checkpoint</option>
+       {checkpointId&&!checkpoints.some(c=>c.id===checkpointId)&&<option value={checkpointId}>Previously linked checkpoint</option>}
+       {checkpoints.map(cp=><option key={cp.id} value={cp.id}>{cp.title}</option>)}
+      </select>
+    </label>}
+    <label className="text-label">Task (optional)
+     <select aria-label="Block task" className={field} value={taskId} disabled={saving}
+      onChange={event=>setTaskId(event.target.value)}>
+      <option value="">No task</option>
+      {taskId&&!tasks.some(t=>t.id===taskId)&&<option value={taskId}>Previously linked task</option>}
+      {tasks.map(task=><option key={task.id} value={task.id}>{task.title}</option>)}
+     </select>
+    </label>
+    {linksError&&<p role="status" className="text-caption text-ink-2">{linksError}</p>}
     {current&&<label className="text-label">Status
      <select aria-label="Calendar block status" className={field} value={status}
        onChange={event=>setStatus(event.target.value as CalendarBlockStatus)}>
@@ -186,21 +309,14 @@ export default function BlockSheet({block,date,zone,onClose,onRefresh}:BlockShee
      </select>
     </label>}
     {error&&<p role="alert" className="text-label text-again">{error}</p>}
-    <div className="flex flex-wrap gap-2">
-      <button type="button" className={action} disabled={saving} onClick={onClose}>Cancel</button>
-      <button type="submit" className={action+' bg-amber text-amber-ink'} disabled={saving}>
-       {saving?'Saving…':current?'Save changes':'Create block'}
-      </button>
-      {current&&!confirmDelete&&<button type="button" className={action+' text-again'} disabled={saving}
-        onClick={()=>setConfirmDelete(true)}>Delete block</button>}
-    </div>
+
     {current&&confirmDelete&&<div className="rounded-ctl border border-edge p-3">
       <p className="text-label">Delete this block? You can restore it with Undo.</p>
       <div className="mt-2 flex gap-2">
        <button type="button" className={action} disabled={saving} onClick={()=>setConfirmDelete(false)}>Keep block</button>
-       <button type="button" className={action+' text-again'} disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</button>
+       <button type="button" className={action+' lemma-destructive'} disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</button>
       </div>
     </div>}
    </form>
- </dialog>;
+ </Dialog>;
 }

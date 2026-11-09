@@ -153,8 +153,13 @@ export default function V6Cards() {
           onClick={() => { void showMore(); }}>{cards.isFetchingNextPage ? 'Loading more…' :
             cards.isFetchNextPageError ? 'Retry loading cards' : 'Load 20 more'}</button>}
       </>}
-    <Sheet open={creating} onClose={() => setCreating(false)} title="New card">
-      <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>
+    <Sheet open={creating} onClose={() => setCreating(false)} title="New card" footer={<>
+      <button type="button" className={button} onClick={() => setCreating(false)}>Cancel</button>
+      <button type="submit" form="v6-new-card" disabled={create.isPending}
+        className="min-h-11 rounded-[8px] bg-amber px-4 py-2 text-body font-semibold text-amber-ink disabled:opacity-50">
+        {create.isPending ? 'Creating…' : 'Create card'}</button>
+    </>}>
+      <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating formId="v6-new-card" busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>
     </Sheet>
   </section>;
 }

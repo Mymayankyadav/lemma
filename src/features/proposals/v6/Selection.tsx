@@ -1,5 +1,8 @@
 import type {Proposal} from '../../../data/types';
 import {groupProposals} from '../groups';
+import {MathText} from '../../../ui/MathText';
+import {plainCardText} from './plain-card-text';
+export {plainCardText} from './plain-card-text';
 
 export type Decision='approve'|'reject';
 /** Selection is a bounded set of owner-visible proposal IDs, not a server-side filter. */
@@ -34,15 +37,25 @@ const control='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font
 function summary(p:Proposal):string{
  if(p.kind==='card')return p.card?.front??'Card proposal';
  if(p.kind==='card_edit')return 'Card edit: N'+(p.cardEdit?.note_no??'');
- if(p.kind==='plan')return 'Plan: '+(p.plan?.checkpoints[0]?.title??p.projectSlug);
+ if(p.kind==='plan')return p.plan?.checkpoints[0]?.title??'Plan proposal';
  return 'Plan change: '+(p.planChange?.ops.length??0)+' edits';
 }
+/** "S7 / CP4" → "Session 7 · CP4"; never the raw ∫ codes. */
+export function groupLabel(label:string):string{
+ const [session,checkpoint]=label.split(' / ');
+ const s=/^S(\d+)$/.exec(session??'');
+ const first=s?'Session '+s[1]:session??'';
+ return checkpoint?first+' · Checkpoint '+checkpoint:first;
+}
+function projectTitle(slug:string):string{
+ return slug.split('-').filter(Boolean).map(part=>part.charAt(0).toUpperCase()+part.slice(1)).join(' ')||'General';
+}
 /** N32.2.1: native, keyboard-operable selected batches for both Inbox tabs. */
-export default function SelectionPanel({visible,all,ids,busy,kind,onToggle,onSelectPage,onClear,onStage}:{
+export default function SelectionPanel({visible,all,ids,busy,kind,projectTitles,onToggle,onSelectPage,onClear,onOpen,onStage}:{
  visible:Proposal[];all:Proposal[];ids:ReadonlySet<string>;busy:boolean;
- kind:'cards'|'plan';
+ kind:'cards'|'plan';projectTitles?:ReadonlyMap<string,string>;
  onToggle:(id:string)=>void;onSelectPage:()=>void;onClear:()=>void;
- onStage:(decision:Decision)=>void;
+ onOpen:(id:string)=>void;onStage:(decision:Decision)=>void;
 }){
  const selected=selectedPending(all,ids),groups=groupProposals(visible);
  if(!visible.length)return null;
@@ -57,16 +70,23 @@ export default function SelectionPanel({visible,all,ids,busy,kind,onToggle,onSel
   </div>
   {groups.map(group=><fieldset key={group.key} className="min-w-0 border-t border-edge pt-2">
    <legend className="px-1 text-label font-medium text-ink-2">
-    {group.project.replaceAll('-',' ')} · {group.label}
+    {projectTitles?.get(group.project)??projectTitle(group.project)} · {groupLabel(group.label)}
    </legend>
    <div className="flex flex-col gap-1">
-    {group.proposals.map(p=><label key={p.id}
-     className="flex min-h-11 min-w-0 items-center gap-3 rounded-ctl px-2 text-label text-ink">
-     <input type="checkbox" data-inbox-proposal-id={p.id} className="size-5 shrink-0 accent-amber"
-      disabled={busy} checked={ids.has(p.id)} onChange={()=>onToggle(p.id)}
-      aria-label={'Select '+summary(p)}/>
-     <span className="min-w-0 flex-1 break-words [overflow-wrap:anywhere]">{summary(p)}</span>
-    </label>)}
+    {group.proposals.map(p=>{
+     const front=p.card?.front??p.cardEdit?.front??summary(p);
+     return <div key={p.id} className="flex min-h-11 min-w-0 items-center gap-3 rounded-ctl px-2 text-label text-ink">
+      <input type="checkbox" data-inbox-proposal-id={p.id} className="size-5 shrink-0 accent-amber"
+       disabled={busy} checked={ids.has(p.id)} onChange={()=>onToggle(p.id)}
+       aria-label={'Select '+plainCardText(front)}/>
+      <button type="button" disabled={busy} onClick={()=>onOpen(p.id)}
+       className="min-h-11 min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber">
+       <MathText source={front} variant="body"
+        cloze={p.card?.type==='cloze'?{ord:1,revealed:false}:undefined}
+        className="min-w-0 break-words [overflow-wrap:anywhere]"/>
+      </button>
+     </div>;
+    })}
    </div>
   </fieldset>)}
   <p className="text-caption text-ink-2">Select up to 20 proposals. Each decision saves separately after the Undo window; failures stop the batch and leave the rest untouched.</p>

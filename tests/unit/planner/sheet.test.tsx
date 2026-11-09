@@ -65,7 +65,7 @@ describe('N68 multi-part selection and invalid preview inputs',()=>{
 
 import {act} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
-import {vi} from 'vitest';
+import {afterAll,beforeAll,vi} from 'vitest';
 import PlannerLaunch from '../../../src/features/planner/Sheet';
 
 const services=vi.hoisted(()=>({
@@ -85,6 +85,10 @@ vi.mock('../../../src/data/day-plans',()=>({
    commitPlacements:services.commitPlacements,undoPlacements:services.undoPlacements}),
 }));
 vi.mock('../../../src/ui/Toast',()=>({useToast:()=>services.notify}));
+// N121 B8: the planner never offers a slot before now. These UI cases plan 7–10 Nov,
+// so the clock is fixed before them (only Date is faked; timers and promises stay real).
+beforeAll(()=>{vi.useFakeTimers({toFake:['Date'],now:new Date('2026-11-06T00:00:00Z')});});
+afterAll(()=>{vi.useRealTimers();});
 
 describe('N68 v6 native Planner launch lifecycle',()=>{
  it('does not create a dialog before opening, and removes it after close',async()=>{
@@ -101,7 +105,7 @@ describe('N68 v6 native Planner launch lifecycle',()=>{
    await act(async()=>launch?.click());
    await vi.waitFor(()=>expect(host.querySelector('dialog')).not.toBeNull());
    const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(x=>x.textContent==='Close');
+    .find(x=>x.getAttribute('aria-label')==='Close');
    await act(async()=>close?.click());
    expect(host.querySelector('dialog')).toBeNull();
   }finally{
@@ -129,10 +133,10 @@ describe('N68 planner commit pending dialog safety',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    const commit=[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Commit selected placements')!;
+    .find(b=>b.textContent==='Add 1 block to calendar')!;
    await act(async()=>commit.click());
    const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Close')!;
+    .find(b=>b.getAttribute('aria-label')==='Close')!;
    expect(close.disabled).toBe(true);
    expect(host.querySelector<HTMLInputElement>('input[type="checkbox"]')?.disabled).toBe(true);
    expect(host.querySelector<HTMLInputElement>('input[aria-label^="Move "]')?.disabled).toBe(true);
@@ -329,7 +333,7 @@ describe('N68 stale planner preview isolation',()=>{
   try{
    await act(async()=>root.render(<PlannerLaunch date="2026-11-07" zone="UTC"/>));
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
-   const close=[...host.querySelectorAll('button')].find(x=>x.textContent==='Close');
+   const close=[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Close');
    await act(async()=>close!.click());
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
@@ -341,7 +345,9 @@ describe('N68 stale planner preview isolation',()=>{
     const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')!.set!;
     setter.call(picker,'2');picker.dispatchEvent(new Event('change',{bubbles:true}));
    });
-   expect(host.querySelector('[aria-label="Planner preview"]')).toBeNull();
+   // N121 B8: changing Days reloads a fresh preview at once (no Refresh button), never reusing the old one.
+   await vi.waitFor(()=>expect(services.tasks).toHaveBeenCalledTimes(3));
+   expect(host.textContent).not.toContain('Stale offline response');
   }finally{
    await act(async()=>root.unmount());host.remove();
   }
@@ -384,7 +390,7 @@ describe('N68 Calendar owner date navigation',()=>{
   const host=document.createElement('div');document.body.append(host);
   const root=createRoot(host);
   const commit=()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
-   .find(b=>b.textContent==='Commit selected placements'||b.textContent==='Committing…');
+   .find(b=>b.textContent==='Add 1 block to calendar'||b.textContent==='Saving…');
   try{
    await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
@@ -398,9 +404,9 @@ describe('N68 Calendar owner date navigation',()=>{
    await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledTimes(2));
    await act(async()=>rejectOld(Error('Earlier date rejected')));
    const close=[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Close')!;
+    .find(b=>b.getAttribute('aria-label')==='Close')!;
    expect(close.disabled).toBe(true);
-   expect(commit()?.textContent).toBe('Committing…');
+   expect(commit()?.textContent).toBe('Saving…');
    expect(host.textContent).not.toContain('Earlier date rejected');
    await act(async()=>finishNew(task));
    await vi.waitFor(()=>expect(services.commitPlacements).toHaveBeenCalledTimes(1));
@@ -425,7 +431,7 @@ describe('N68 Calendar owner date navigation',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Commit selected placements')!.click());
+    .find(b=>b.textContent==='Add 1 block to calendar')!.click());
    await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledTimes(1));
    await act(async()=>root.render(<PlannerLaunch date="2026-11-10" zone="UTC"/>));
    await act(async()=>root.render(<PlannerLaunch date="2026-11-09" zone="UTC"/>));
@@ -456,7 +462,8 @@ describe('N68 Calendar owner date navigation',()=>{
    expect(host.querySelector('[aria-label="Planner preview"]')).toBeNull();
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
-   expect(host.textContent).toContain('Owner time zone: UTC');
+   expect(host.textContent).toContain('Plan your tasks');
+   expect(host.textContent).not.toMatch(/\d{4}-\d\d-\d\dT\d\d:\d\d/);
   }finally{
    await act(async()=>root.unmount());host.remove();
   }
@@ -480,7 +487,7 @@ describe('N68 Calendar owner date navigation',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Commit selected placements')!.click());
+    .find(b=>b.textContent==='Add 1 block to calendar')!.click());
    await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledWith(task.id));
    await act(async()=>root.render(<PlannerLaunch date="2026-11-10" zone="UTC"/>));
    expect(host.querySelector('dialog')).toBeNull();
@@ -509,7 +516,7 @@ describe('N68 Calendar owner date navigation',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Commit selected placements')!.click());
+    .find(b=>b.textContent==='Add 1 block to calendar')!.click());
    await vi.waitFor(()=>expect(services.getTask).toHaveBeenCalledWith(task.id));
    await act(async()=>root.render(<PlannerLaunch date="2026-11-10" zone="UTC"/>));
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
@@ -543,7 +550,7 @@ describe('N68 one toast with a truthful Undo',()=>{
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
    const commit=[...host.querySelectorAll<HTMLButtonElement>('button')]
-    .find(b=>b.textContent==='Commit selected placements')!;
+    .find(b=>b.textContent==='Add 1 block to calendar')!;
    await act(async()=>commit.click());
    await vi.waitFor(()=>expect(services.notify).toHaveBeenCalledTimes(1));
    expect(services.commitPlacements).toHaveBeenCalledTimes(1);
@@ -552,7 +559,7 @@ describe('N68 one toast with a truthful Undo',()=>{
  }
  it('offers Undo for the whole live commit and undoes exactly that action',async()=>{
   const [message,options]=await commitOnce(57);
-  expect(message).toMatch(/Study placements committed for 1 day/);
+  expect(message).toMatch(/Added 1 block to your calendar/);
   expect(options.action.label).toBe('Undo');
   await act(async()=>options.action.onClick());
   expect(services.undoPlacements).toHaveBeenCalledWith(57);

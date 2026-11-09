@@ -85,20 +85,26 @@ describe('N73 time log',()=>{
  it('shows a bounded 50-entry client page, day groups and saved intervals',async()=>{
   const items=Array.from({length:54},(_,i)=>row('row-'+i));
   api(items);await render();
-  expect(host.textContent).toContain('54 saved entries');
+  expect(host.textContent).toContain('54 entries');
   expect(host.querySelectorAll('article')).toHaveLength(50);
   await click(button('Next page'));
   expect(host.querySelectorAll('article')).toHaveLength(4);
-  expect(host.textContent).toContain('focus:');
+  expect(host.textContent).toContain('Focus:');
  });
  it('edits interval, intent and unknown rating through optimistic StudyApi',async()=>{
   const client=api();await render();await click(button('Edit entry'));
   const input=host.querySelector('[aria-label="Edit intent"]') as HTMLInputElement;
   await change(input,'Revised proof');
+  const start=host.querySelector('[aria-label="Interval 1 start time"]') as HTMLInputElement;
+  expect(start).toBeTruthy();
+  await change(start,'10:00');
   await click(button('Save changes'));
   await vi.waitFor(()=>expect(client.correctStudyEntry).toHaveBeenCalledTimes(1));
-  expect(client.correctStudyEntry).toHaveBeenCalledWith('row-1',1,
-   expect.objectContaining({intent:'Revised proof',rating:null,intervals:[{kind:'focus',start:at,end}]}));
+  const corrected=vi.mocked(client.correctStudyEntry).mock.calls[0][2] as {intent:string;rating:number|null;intervals:{start:string;end:string}[]};
+  expect(corrected).toEqual(expect.objectContaining({intent:'Revised proof',rating:null}));
+  expect(corrected.intervals).toHaveLength(1);
+  expect(corrected.intervals[0].start).not.toBe(at);
+  expect(corrected.intervals[0].end).toBe(end);
  });
  it('voids and then restores via versioned actions',async()=>{
   const client=api();await render();await click(button('Edit entry'));await click(button('Void entry'));
@@ -112,12 +118,13 @@ describe('N73 time log',()=>{
  it('validates manual approximate time and refuses reversal',async()=>{
   const client=api();await render();await click(button('Add approximate time'));
   await change(host.querySelector('[aria-label="Manual intent"]') as HTMLInputElement,'Reading notes');
-  await change(host.querySelector('[aria-label="Manual start"]') as HTMLInputElement,end);
-  await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,at);
+  await change(host.querySelector('[aria-label="Manual date"]') as HTMLInputElement,'2026-11-06');
+  await change(host.querySelector('[aria-label="Manual start"]') as HTMLInputElement,'10:00');
+  await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,'09:00');
   await click(button('Save approximate time'));
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('End must follow');
   expect(client.createManualStudyEntry).not.toHaveBeenCalled();
-  await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,'2026-11-06T10:00:00.000Z');
+  await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,'11:00');
   await click(button('Save approximate time'));
   await vi.waitFor(()=>expect(client.createManualStudyEntry).toHaveBeenCalledTimes(1));
   expect(host.textContent).toContain('Approximate');

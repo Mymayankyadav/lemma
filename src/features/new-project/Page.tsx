@@ -10,6 +10,7 @@ import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
+import {isFlagOn} from '../../flags';
 
 // The KaTeX preview is only needed after the owner types maths. Do not
 // evaluate its renderer on an empty cold New project form.
@@ -97,7 +98,7 @@ export default function Page(){
     notify('Project saved. Retry or remove failed files to continue.',{tone:'danger'});
     return;
    }
-   notify('Project created. Tell your tutor: '+planPrompt(project.title),{tone:'success'});
+   notify((isFlagOn('v6Shell')?'Path created. ':'Project created. ')+'Tell your tutor: '+planPrompt(project.title),{tone:'success'});
    navigate('/p/'+project.slug+'?tab=sources');
   }catch(cause){
    setError(cause instanceof Error?cause.message:'Could not create project');
@@ -113,9 +114,14 @@ export default function Page(){
     <Suspense fallback={<BackdropFallback/>}><ProjectsPage/></Suspense>:
     <BackdropFallback/>}
   </div>
-  <h1 className="sr-only">New project</h1>
-  <Sheet open onClose={close} title="New project">
-   <form onSubmit={event=>{void submit(event)}} className="flex flex-col gap-5">
+  <h1 className="sr-only">{isFlagOn('v6Shell')?'New path':'New project'}</h1>
+  <Sheet open route onClose={close} title={isFlagOn('v6Shell')?'New path':'New project'} footer={
+    <Button form="lemma-create-path" size="xl" className="w-full" type="submit"
+      variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
+      {saving?'Saving path and sources':created&&remaining?'Retry remaining uploads':'Create path'}
+    </Button>
+   }>
+   <form id="lemma-create-path" onSubmit={event=>{void submit(event)}} className="flex flex-col gap-5">
     <section className="flex flex-col gap-2">
      <label htmlFor="project-title" className="text-label font-medium text-ink-2">Name</label>
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
@@ -154,9 +160,10 @@ export default function Page(){
      </ul>
     </section>
     {error&&<p role="alert" className="flex gap-2 text-label text-again"><AlertTriangle size={16}/>{error}</p>}
-    <Button size="xl" className="w-full" type="submit" variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
+    {!isFlagOn('v6Shell')&&<Button size="xl" className="w-full" type="submit"
+     variant={saving||!name.trim()?'ghost':'lit'} disabled={saving||!name.trim()} loading={saving}>
      {saving?'Saving project and sources':created&&remaining?'Retry remaining uploads':'Create project'}
-    </Button>
+    </Button>}
     <button type="button" className="flex min-h-11 items-center justify-center gap-2 text-label text-ink-2 underline-offset-4 hover:underline focus-visible:underline"
      onClick={()=>{void navigator.clipboard.writeText(planPrompt(name.trim()||'your project')).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy unavailable',{tone:'danger'}))}}>
      <Copy size={15}/>Tell your tutor: {planPrompt(name.trim()||'your project')}

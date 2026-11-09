@@ -170,9 +170,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
           <li>In a new chat, enable Lemma from the + menu and confirm writes when prompted.</li>
         </ol>}
       </div>
-      <Sheet open={rotating} onClose={()=>setRotating(false)} title="Make a new address?">
-        <p className="mb-5 text-ink-2">The old address stops working in Claude and ChatGPT.</p>
-        <div className="grid grid-cols-2 gap-3">
+      <Sheet open={rotating} onClose={()=>setRotating(false)} title="Make a new address?" footer={<>
           <Button variant="ghost" onClick={()=>setRotating(false)}>Cancel</Button>
           <Button disabled={rotate.isPending} icon={RefreshCw} onClick={async()=>{
             try {
@@ -184,7 +182,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
               toast("Couldn't create a new address.",{tone:'danger'});
             }
           }}>Make new</Button>
-        </div>
+        </>}>
+        <p className="mb-5 text-ink-2">The old address stops working in Claude and ChatGPT.</p>
       </Sheet>
     </Slab>;
     if(selected==='reminders')return <>

@@ -31,6 +31,8 @@ export interface PlannerSavedEntry {
 }
 export interface PlannerInput {
  from:string;through:string;timeZone:string;
+ /** Absolute time bound: ignore elapsed time without changing existing callers. */
+ now?:string;
  tasks:readonly PlannerTask[];
  blocks?:readonly PlannerBlock[];
  savedEntries?:readonly PlannerSavedEntry[];
@@ -239,6 +241,7 @@ function sortTasks(tasks:readonly PlannerTask[],fmt:Intl.DateTimeFormat):Candida
 function makeDays(input:PlannerInput,fmt:Intl.DateTimeFormat,p:PlanningSettings|null,
  busy:Span[]):DayState[]{
  const from=civil(input.from),through=civil(input.through);
+ const now=input.now===undefined?null:instant(input.now);
  if(from>through)fail('Reverse date range');
  const endDate=addDay(from,30);
  if(through>endDate)fail('Planner range exceeds 31 civil days');
@@ -258,10 +261,14 @@ function makeDays(input:PlannerInput,fmt:Intl.DateTimeFormat,p:PlanningSettings|
   const endClock=override?.end??p.window_end;
   if(!clockRe.test(startClock)||!clockRe.test(endClock))
    fail('Invalid day window');
-  const start=localInstant(date,startClock,fmt,'start');
+  const earliest=localInstant(date,startClock,fmt,'start');
   const end=localInstant(endClock<=startClock?addDay(date,1):date,
    endClock,fmt,'end');
-  if(end<=start||end-start>26*3_600_000)fail('Invalid planning day window');
+  if(end<=earliest||end-earliest>26*3_600_000)fail('Invalid planning day window');
+  // DST-safe: compute elapsed time in absolute milliseconds, rounded up to 5 minutes.
+  // Past dates have zero remaining capacity, not an invalid-range error.
+  const start=now===null?earliest:Math.min(end,Math.max(earliest,
+   Math.ceil(now/(5*MINUTE))*5*MINUTE));
   const bounded=busy.map(([a,b]):Span=>[Math.max(start,a),Math.min(end,b)])
    .filter(([a,b])=>b>a);
   const gap=p.gap_minutes*MINUTE;

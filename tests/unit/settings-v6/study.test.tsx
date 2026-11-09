@@ -13,8 +13,8 @@ vi.mock('../../../src/data/hooks', () => ({
 vi.mock('../../../src/ui/Toast', () => ({ useToast: vi.fn() }));
 vi.mock('../../../src/ui/Sheet', async () => {
   const React = await import('react');
-  return { Sheet: ({ open, title, children }: { open: boolean; title: string; children: React.ReactNode }) =>
-    open ? React.createElement('section', { role: 'dialog', 'aria-label': title }, children) : null };
+  return { Sheet: ({ open, title, children, footer }: { open: boolean; title: string; children: React.ReactNode; footer?: React.ReactNode }) =>
+    open ? React.createElement('section', { role: 'dialog', 'aria-label': title }, children, footer) : null };
 });
 
 const settings: Settings = {

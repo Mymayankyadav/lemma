@@ -1,9 +1,16 @@
 import {useEffect,useMemo,useState} from 'react';
 import {Link,Navigate} from 'react-router';
 import {getStudyApi} from '../../data/study';
-import type {ClosedStudyIntervalInput,StudyEntryRecord,StudyRange,StudyCorrectionPatch} from '../../data/study/contract';
+import type {StudyEntryRecord,StudyRange,StudyCorrectionPatch} from '../../data/study/contract';
 import {dayBounds} from '../../lib/effort';
 import {isFlagOn} from '../../flags';
+import Dialog from '../../ui/v6/Dialog';
+import {formatDay,formatDuration,formatTimeRange} from '../../lib/format';
+import {manualFocusInterval,localClockInstant} from './local-time';
+import {weekStartDay} from '../calendar/model';
+import {intervalRows,intervalsFromRows} from './interval-editor';
+import {IntervalRowsEditor} from './IntervalRowsEditor';
+import {StudyRelationsEditor} from './StudyRelationsEditor';
 
 const PAGE=50;
 const field='min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink';
@@ -50,18 +57,6 @@ export function csvLog(entries:StudyEntryRecord[],zone:string):string{
  }
  return rows.join('\r\n')+'\r\n';
 }
-function parseIntervals(value:string):ClosedStudyIntervalInput[]{
- const candidate:unknown=JSON.parse(value);
- if(!Array.isArray(candidate)||candidate.length===0||
-  candidate.some(item=>!item||typeof item!=='object'||Array.isArray(item)||
-   !['focus','break'].includes((item as {kind?:unknown}).kind as string)||
-   typeof (item as {start?:unknown}).start!=='string'||
-   typeof (item as {end?:unknown}).end!=='string'))
-  throw Error('Intervals need a nonempty JSON array with kind, start and end.');
- return candidate.map(item=>({
-  kind:item.kind as 'focus'|'break',start:item.start as string,end:item.end as string
- }));
-}
 function rating(value:string):StudyEntryRecord['rating']{
  if(value==='')return null;
  const n=Number(value);
@@ -73,12 +68,12 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
  const [intent,setIntent]=useState(entry.intent);
  const [reflection,setReflection]=useState(entry.reflection??'');
  const [score,setScore]=useState(entry.rating===null?'':String(entry.rating));
- const [subject,setSubject]=useState(entry.subjectId??''),[project,setProject]=useState(entry.projectId??'');
- const [checkpoint,setCheckpoint]=useState(entry.checkpointId??''),[session,setSession]=useState(entry.sessionId??'');
- const [intervals,setIntervals]=useState(JSON.stringify(entry.intervals.filter(i=>i.end).map(i=>({
-  kind:i.kind,start:i.start,end:i.end
- })),null,2));
- const [splitAt,setSplitAt]=useState('');
+ const [relations,setRelations]=useState({subjectId:entry.subjectId??'',projectId:entry.projectId??'',checkpointId:entry.checkpointId??'',sessionId:entry.sessionId??''});
+ const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+ const [intervals,setIntervals]=useState(()=>intervalRows(entry.intervals.filter(i=>i.end!==null).map(i=>({
+  kind:i.kind,start:i.start,end:i.end as string
+ })),zone));
+ const [splitDay,setSplitDay]=useState(()=>localDay(new Date().toISOString(),zone)),[splitTime,setSplitTime]=useState('');
  const [submitting,setSubmitting]=useState(false),[error,setError]=useState('');
  async function commit(work:()=>Promise<unknown>){
   if(busy||submitting)return;
@@ -89,9 +84,11 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
  }
  function patch():StudyCorrectionPatch{
   const value:StudyCorrectionPatch={intent:intent.trim(),reflection:reflection.trim()||null,rating:rating(score),
-   subjectId:subject||null,projectId:project||null,checkpointId:checkpoint||null,sessionId:session||null};
+   subjectId:relations.subjectId||null,projectId:relations.projectId||null,checkpointId:relations.checkpointId||null,sessionId:relations.sessionId||null};
   if(!value.intent)throw Error('Intent must not be empty.');
-  value.intervals=parseIntervals(intervals);
+  const converted=intervalsFromRows(intervals,zone);
+  if(converted.errors.some(Boolean))throw Error(converted.errors.find(Boolean)??'Correct the interval rows.');
+  value.intervals=converted.intervals;
   return value;
  }
  const disabled=busy||submitting;
@@ -112,25 +109,23 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
    <select aria-label="Edit rating" className={field} value={score} onChange={e=>setScore(e.target.value)}>
     <option value="">Unknown</option>{[1,2,3,4,5].map(n=><option key={n} value={n}>{n}</option>)}
    </select></label>
-  <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
-   {([['Subject ID',subject,setSubject],['Project ID',project,setProject],
-    ['Checkpoint ID',checkpoint,setCheckpoint],['Session ID',session,setSession]] as const)
-    .map(([label,value,change])=><label key={label} className="min-w-0 text-caption">{label}
-     <input aria-label={label} className={field} value={value} onChange={e=>change(e.target.value)}
-      placeholder="UUID or blank"/></label>)}
-  </div>
-  <label className="mt-2 block text-label">Intervals (ISO instants, JSON array)
-   <textarea aria-label="Edit intervals" rows={5} className={field} value={intervals}
-    onChange={e=>setIntervals(e.target.value)}/></label>
+  <StudyRelationsEditor value={relations} onChange={setRelations}/>
+  <IntervalRowsEditor rows={intervals} onChange={setIntervals} zone={zone}/>
   <button className={action+' mt-2'} disabled={disabled} onClick={()=>{
    void commit(()=>api.correctStudyEntry(entry.id,entry.version,patch()));
   }}>Save changes</button>
-  <label className="mt-3 block text-label">Split at (ISO instant)
-   <input className={field} aria-label="Split at" placeholder="2026-11-07T13:00:00Z"
-    value={splitAt} onChange={e=>setSplitAt(e.target.value)}/></label>
+  <fieldset className="mt-3 grid min-w-0 grid-cols-2 gap-2">
+   <legend className="col-span-2 text-label">Split at</legend>
+   <label className="min-w-0 text-label">Date<input type="date" className={field} aria-label="Split date"
+    value={splitDay} onChange={e=>setSplitDay(e.target.value)}/></label>
+   <label className="min-w-0 text-label">Time<input type="time" className={field} aria-label="Split time"
+    value={splitTime} onChange={e=>setSplitTime(e.target.value)}/></label>
+  </fieldset>
   <div className="mt-2 flex flex-wrap gap-2">
-   <button className={action} disabled={disabled||!splitAt} onClick={()=>{
-    void commit(()=>api.splitStudyEntry(entry.id,entry.version,splitAt));
+   <button className={action} disabled={disabled||!splitTime} onClick={()=>{
+    const at=localClockInstant(splitDay,splitTime,zone);
+    if(!at){setError('Choose a valid local split date and time.');return;}
+    void commit(()=>api.splitStudyEntry(entry.id,entry.version,at));
    }}>Split saved entry</button>
    <button className={action} disabled={disabled} onClick={()=>{void commit(()=>api.voidStudyEntry(entry.id,entry.version));}}>Void entry</button>
   </div>
@@ -140,11 +135,11 @@ function EntryDetails({entry,onChange,busy}:{entry:StudyEntryRecord;onChange:()=
 export default function TimeLog(){
  const enabled=isFlagOn('v6Shell');
  const api=getStudyApi(),zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
- const [day,setDay]=useState(()=>localDay(new Date().toISOString(),zone));
+ const [day,setDay]=useState(()=>weekStartDay(localDay(new Date().toISOString(),zone)));
  const [rows,setRows]=useState<StudyEntryRecord[]>([]),[loading,setLoading]=useState(true);
  const [error,setError]=useState(''),[busy,setBusy]=useState(false),[page,setPage]=useState(0);
  const [selected,setSelected]=useState<string|null>(null),[manual,setManual]=useState(false);
- const [mIntent,setMIntent]=useState(''),[mStart,setMStart]=useState(''),[mEnd,setMEnd]=useState('');
+ const [mIntent,setMIntent]=useState(''),[mDay,setMDay]=useState(()=>localDay(new Date().toISOString(),zone)),[mStart,setMStart]=useState(''),[mEnd,setMEnd]=useState('');
  const [mReflection,setMReflection]=useState(''),[mError,setMError]=useState('');
  const range=useMemo(()=>visibleLogRange(day,zone),[day,zone]);
  async function refresh(){
@@ -178,11 +173,10 @@ export default function TimeLog(){
  async function manualSave(){
   setBusy(true);setMError('');
   try{
-   if(!mIntent.trim()||!mStart||!mEnd)throw Error('Fill in intent and both ISO instants.');
-   if(!Number.isFinite(Date.parse(mStart))||!Number.isFinite(Date.parse(mEnd))||
-    Date.parse(mEnd)<=Date.parse(mStart))throw Error('End must follow start.');
+   if(!mIntent.trim())throw Error('Enter what you studied.');
+   const interval=manualFocusInterval(mDay,mStart,mEnd,zone);
    await api.createManualStudyEntry({intent:mIntent.trim(),reflection:mReflection.trim()||null,
-    intervals:[{kind:'focus',start:mStart,end:mEnd}]});
+    intervals:[interval]});
    await refresh();setManual(false);setMIntent('');setMStart('');setMEnd('');setMReflection('');
   }catch(e){setMError(e instanceof Error?e.message:'Could not record manual time.');}
   finally{setBusy(false);}
@@ -195,60 +189,69 @@ export default function TimeLog(){
  }
  return <main className="mx-auto max-w-3xl space-y-4 p-4">
   <header className="flex items-center justify-between gap-2">
-   <div><Link to="/" className="text-label underline">Today</Link>
+   <div><Link to="/" className="inline-flex min-h-11 items-center text-label underline">Today</Link>
     <h1 className="text-title font-semibold">Time log</h1>
     <p className="text-caption text-ink-2">Saved focus intervals, including approximate manual records. Missing ratings are unknown.</p>
    </div>
   </header>
   <div className="flex flex-wrap items-end gap-2">
-   <label className="text-label">Week starting
-    <input aria-label="Week starting" className={field} type="date" value={day}
-     onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDay(e.target.value);}}/></label>
+   <strong className="text-label font-semibold text-ink">Week of {new Intl.DateTimeFormat('en',
+     {timeZone:'UTC',month:'short',day:'numeric'}).format(new Date(day+'T12:00:00Z'))}</strong>
    <button className={action} onClick={()=>setDay(addDays(day,-7))}>Previous week</button>
    <button className={action} onClick={()=>setDay(addDays(day,7))}>Next week</button>
    <button className={action} disabled={busy||loading} onClick={exportCsv}>Export visible range CSV</button>
    <button className={action} onClick={()=>setManual(v=>!v)}>Add approximate time</button>
   </div>
-  {manual&&<form aria-label="Manual time entry" onSubmit={e=>{e.preventDefault();void manualSave();}}
-   className="space-y-2 rounded-ctl border border-edge p-3">
-   <label className="block text-label">Intent<input className={field} aria-label="Manual intent"
-    value={mIntent} onChange={e=>setMIntent(e.target.value)}/></label>
-   <label className="block text-label">Start ISO instant<input className={field} aria-label="Manual start"
-    value={mStart} onChange={e=>setMStart(e.target.value)}/></label>
-   <label className="block text-label">End ISO instant<input className={field} aria-label="Manual end"
-    value={mEnd} onChange={e=>setMEnd(e.target.value)}/></label>
-   <label className="block text-label">Reflection<textarea className={field} aria-label="Manual reflection"
-    value={mReflection} onChange={e=>setMReflection(e.target.value)}/></label>
-   <button type="submit" disabled={busy} className={action}>Save approximate time</button>
-   {mError&&<p role="alert">{mError}</p>}
-  </form>}
+  {manual&&<Dialog title="Add time" eyebrow="TIME LOG" busy={busy} onClose={()=>setManual(false)}
+    footer={<>
+     <button type="button" className={action} disabled={busy} onClick={()=>setManual(false)}>Cancel</button>
+     <button type="submit" form="n121-manual-log" disabled={busy} className={action+' bg-amber text-amber-ink'}>Save approximate time</button>
+    </>}>
+   <form id="n121-manual-log" aria-label="Manual time entry" onSubmit={e=>{e.preventDefault();void manualSave();}}
+    className="flex flex-col gap-3">
+    <label className="block text-label">Intent<input className={field} aria-label="Manual intent" required
+     value={mIntent} onChange={e=>setMIntent(e.target.value)}/></label>
+    <label className="block text-label">Date<input className={field} type="date" aria-label="Manual date"
+     value={mDay} onChange={e=>setMDay(e.target.value)}/></label>
+    <div className="grid min-w-0 grid-cols-2 gap-2">
+     <label className="block min-w-0 text-label">Start<input className={field} type="time" aria-label="Manual start"
+      value={mStart} onChange={e=>setMStart(e.target.value)}/></label>
+     <label className="block min-w-0 text-label">End<input className={field} type="time" aria-label="Manual end"
+      value={mEnd} onChange={e=>setMEnd(e.target.value)}/></label>
+    </div>
+    <label className="block text-label">Reflection<textarea className={field} aria-label="Manual reflection"
+      value={mReflection} onChange={e=>setMReflection(e.target.value)}/></label>
+    {mError&&<p role="alert" className="text-label text-again">{mError}</p>}
+   </form>
+  </Dialog>}
   {loading&&<p role="status">Loading time log…</p>}
   {error&&<p role="alert">{error}</p>}
-  {!loading&&!error&&<p role="status">{rows.length} saved entries · Showing {index+1} of {totalPages} pages (50 per page)</p>}
+  {!loading&&!error&&<p role="status">{rows.length} {rows.length===1?'entry':'entries'}{totalPages>1?' · Page '+(index+1)+' of '+totalPages:''}</p>}
   {groups.map(([date,items])=><section key={date} aria-label={'Saved entries on '+date}>
-   <h2 className="mb-2 text-label font-semibold">{date}</h2>
+   <h2 className="mb-2 text-label font-semibold">{formatDay(date,{zone})}</h2>
    <div className="space-y-2">{items?.map(entry=><article key={entry.id}
     className="min-w-0 rounded-ctl border border-edge p-3 text-label">
     <div className="flex flex-wrap items-center justify-between gap-2">
      <div className="min-w-0"><strong className="block break-words [overflow-wrap:anywhere]">{entry.intent}</strong>
       <span className="text-ink-2">{entry.approximate?'Approximate · ':''}
-       {entry.voidedAt?'Voided · ':''}Rating: {entry.rating===null?'Unknown':entry.rating}</span></div>
+       {entry.voidedAt?'Voided · ':''}{entry.rating===null?'Not rated':'Rated '+entry.rating}</span></div>
      <button type="button" className={action} onClick={()=>setSelected(v=>v===entry.id?null:entry.id)}>
       {selected===entry.id?'Hide editor':'Edit entry'}</button>
     </div>
     <ol className="mt-2 space-y-1">
      {entry.intervals.map(i=><li key={i.id} className="break-words text-caption text-ink-2 [overflow-wrap:anywhere]">
-      {i.kind}: {i.start} – {i.end??'in progress'}</li>)}
+      {i.kind==='focus'?'Focus':'Break'}: {i.end?formatTimeRange(i.start,i.end,{zone,clock24h:true}):'In progress'}
+       {i.end?' · '+formatDuration((Date.parse(i.end)-Date.parse(i.start))/60000):''}</li>)}
     </ol>
     {selected===entry.id&&<EntryDetails key={entry.id+'-'+entry.version} entry={entry}
      busy={busy} onChange={changed}/>}
    </article>)}</div>
   </section>)}
   {!loading&&!error&&rows.length===0&&<p>No saved study time in this seven-day range.</p>}
-  <nav aria-label="Time log pages" className="flex flex-wrap items-center gap-2">
+  {totalPages>1&&<nav aria-label="Time log pages" className="flex flex-wrap items-center gap-2">
    <button className={action} disabled={index===0} onClick={()=>setPage(index-1)}>Previous page</button>
    <output aria-label="Page position">{index+1} / {totalPages}</output>
    <button className={action} disabled={index+1>=totalPages} onClick={()=>setPage(index+1)}>Next page</button>
-  </nav>
+  </nav>}
  </main>;
 }

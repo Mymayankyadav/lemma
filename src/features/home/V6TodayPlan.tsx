@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState,type ReactNode} from 'react';
+import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link} from 'react-router';
 import {CalendarDays,ChevronRight,Folder,Layers} from 'lucide-react';
 import {getDayPlanApi} from '../../data/day-plans';
@@ -6,7 +6,9 @@ import type {DayPlanRecord,DayPlanItem} from '../../data/day-plans/contract';
 import {getStudyApi} from '../../data/study';
 import type {CalendarBlockRecord} from '../../data/study/contract';
 import {dayBounds} from '../../lib/effort';
+import {formatTime,formatDuration} from '../../lib/format';
 import TaskSheet from '../tasks/TaskSheet';
+const TodayDue=lazy(()=>import('./TodayDue'));
 const button='min-h-11 self-start rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label font-semibold text-ink disabled:opacity-50';
 export function ownerToday(zone:string,now=new Date()):string{
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(now);
@@ -19,6 +21,11 @@ export function nextPlannedBlock(plan:DayPlanRecord|null,items:DayPlanItem[],
  const placed=new Set(items.filter(x=>x.disposition==='placed'&&x.blockId!==null).map(x=>x.blockId));
  return blocks.filter(x=>placed.has(x.id)&&x.kind==='study'&&x.status==='planned'&&
   Date.parse(x.endsAt)>Date.parse(now))
+  .sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)||a.id.localeCompare(b.id))[0]??null;
+}
+export function nextCalendarBlock(blocks:CalendarBlockRecord[],now:string):CalendarBlockRecord|null{
+ return blocks.filter(block=>block.kind==='study'&&block.status==='planned'&&
+  Date.parse(block.endsAt)>Date.parse(now))
   .sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)||a.id.localeCompare(b.id))[0]??null;
 }
 export async function readTodayPlan(date:string,zone:string):Promise<{
@@ -96,6 +103,8 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
  const [notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  const [taskOpen,setTaskOpen]=useState(false),[reload,setReload]=useState(0);
  const taskTrigger=useRef<HTMLButtonElement>(null);
+ const [dueReady,setDueReady]=useState(false);
+ useEffect(()=>{const timer=window.setTimeout(()=>setDueReady(true),400);return()=>window.clearTimeout(timer)},[]);
  useEffect(()=>{
   let alive=true;setLoading(true);setError('');
   void readTodayPlan(date,zone).then(data=>{
@@ -120,13 +129,23 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
   }catch(e){setError(e instanceof Error?e.message:'Could not save intention')}
   finally{setBusy(false)}
  }
- const next=nextPlannedBlock(plan,items,blocks,new Date().toISOString());
+ const next=nextCalendarBlock(blocks,new Date().toISOString());
  async function start(block:CalendarBlockRecord){
   if(busy)return;
   setBusy(true);setError('');setNotice('');
   try{
-   if(!plan)throw Error('No committed day plan is available');
-   const receipt=await startVerifiedPlannedBlock(date,zone,plan,block);
+   const placed=plan?.status==='committed'&&items.some(item=>item.disposition==='placed'&&item.blockId===block.id);
+   const receipt=placed&&plan?await startVerifiedPlannedBlock(date,zone,plan,block):
+    await (async()=>{
+     const study=getStudyApi();
+     if(await study.activeStudyEntry())throw Error('Finish or resume your active focus session first');
+     const fresh=(await study.listCalendarBlocks(dayBounds(date,zone))).find(item=>item.id===block.id);
+     if(!fresh||fresh.version!==block.version||fresh.status!=='planned')
+      throw Error('Calendar block changed. Refresh Today before starting focus.');
+     return study.startStudyEntry({source:'timer',intent:fresh.title,calendarBlockId:fresh.id,
+      subjectId:fresh.subjectId??null,projectId:fresh.projectId??null,
+      checkpointId:fresh.checkpointId??null,sessionId:fresh.sessionId??null});
+    })();
    setNotice('Focus started: '+receipt.record.intent);
    // The planner and Focus are sibling Today surfaces. Refresh their one
    // canonical session immediately rather than displaying a stale Start card.
@@ -137,12 +156,10 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
  }
  const batch=Math.min(Number.isFinite(due)?Math.max(0,Math.floor(due)):0,
   Number.isFinite(reviewLimit)?Math.max(0,Math.floor(reviewLimit)):0);
- const minutes=Math.max(1,Math.ceil(batch*4.5/60));
- const time=(iso:string)=>new Intl.DateTimeFormat('en',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(iso));
- const length=(block:CalendarBlockRecord)=>{
-  const m=Math.max(0,Math.round((Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000));
-  return m>=60?Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':''):m+' min';
- };
+ const minutes=Math.max(1,Math.ceil(batch*0.5));
+ const time=(iso:string)=>formatTime(iso,{zone,clock24h:true});
+ const length=(block:CalendarBlockRecord)=>formatDuration(Math.max(0,
+  (Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000));
  // N111 (mockup "Also in your notebook"): review and the next planned block as rows,
  // with the day plan's intention and tasks one tap further down.
  return <section aria-label="Today plan" className="notebook-secondary-tasks flex min-w-0 flex-col">
@@ -152,6 +169,7 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
    <span><strong>{batch.toLocaleString()} cards for today</strong><small>About {minutes} min · Review today</small></span>
    <ChevronRight size={19} aria-hidden="true"/>
   </Link>}
+  {dueReady&&<Suspense fallback={null}><TodayDue date={date} zone={zone}/></Suspense>}
   {next?<div aria-label="Next planned block" className="lemma-next-block-row">
    <Link to="/calendar" className="notebook-task-row">
     <CalendarDays size={20} aria-hidden="true"/>
@@ -184,7 +202,7 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
        onClick={()=>{void saveIntention()}}>Save intention</button>:
       <p className="text-label text-ink-2">Committed or closed plans can be edited from the planner.</p>}
      {next?<p className="text-caption text-ink-2">Focus started from the next block is linked to it and inherits its learning links.</p>:
-      <p className="text-label text-ink-2">No upcoming committed study block today.</p>}
+      <p className="text-label text-ink-2">No upcoming study block on Calendar today.</p>}
      {error&&<p role="alert">{error}</p>}
      {notice&&<p role="status">{notice}</p>}
      <button ref={taskTrigger} className={button} type="button"

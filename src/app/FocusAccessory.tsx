@@ -3,6 +3,7 @@ import {useLocation,useNavigate} from 'react-router';
 import {getStudyApi} from '../data/study';
 import type {StudyEntryRecord} from '../data/study/contract';
 import {useFocusContext} from '../features/focus/focusContext';
+import {focusStatus} from '../lib/focus/status';
 
 /** The shell owns the small, cross-route view of the server's active entry.
  * No second timer or browser-only focus record is created here. */
@@ -45,7 +46,7 @@ export default function FocusAccessory(){
  const remaining=entry.phaseEndsAt?Math.max(0,Date.parse(entry.phaseEndsAt)-now):null;
  const minutes=remaining===null?null:Math.ceil(remaining/60_000);
  const clock=remaining===null?null:formatClock(remaining);
- const state=entry.phase==='long_break'?'Long break':entry.phase==='break'?'Break':paused?'Paused':'In focus';
+ const state=focusStatus(entry.status,entry.phase);
  async function toggle(){
   if(!entry||busy)return;
   setBusy(true);setError('');

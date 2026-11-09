@@ -4,8 +4,9 @@ import {createPortal} from 'react-dom';
 import {motion,AnimatePresence,useReducedMotion} from 'motion/react';
 import {X} from 'lucide-react';
 import {sheet,fade,variantFor} from './motion';
-export interface SheetProps{open:boolean;onClose:()=>void;title?:ReactNode;children:ReactNode}
-export function Sheet({open,onClose,title,children}:SheetProps){
+import {isFlagOn} from '../flags';
+export interface SheetProps{open:boolean;onClose:()=>void;title?:ReactNode;children:ReactNode;footer?:ReactNode;route?:boolean}
+export function Sheet({open,onClose,title,children,footer,route=false}:SheetProps){
  const labelId=useId(),reduce=!!useReducedMotion(),panel=useRef<HTMLDivElement>(null);
  // Keep the latest close handler without restarting the focus trap on every render.
  // Inline onClose callbacks are common; restarting this effect steals textarea focus.
@@ -26,6 +27,25 @@ export function Sheet({open,onClose,title,children}:SheetProps){
   document.addEventListener('keydown',key);
   return ()=>{document.body.style.overflow=old;document.removeEventListener('keydown',key);prior?.focus()};
  },[open]);
+ // N121: v6 has a fixed header, an independently scrolling body, and a reachable footer.
+ // Keep the flag-off version below intact, including its swipe gesture.
+ if(isFlagOn('v6Shell'))return createPortal(<AnimatePresence>
+ {open&&<div data-sheet-overlay="" className="fixed inset-0 z-[100] flex items-end justify-center" role="presentation"
+  style={route?{bottom:'var(--lemma-nav-height)'}:undefined}>
+ <motion.div aria-hidden="true" initial="hidden" animate="visible" exit="exit"
+  variants={variantFor(fade,reduce)} className="absolute inset-0 bg-obsidian/75 backdrop-blur-[3px]" onClick={onClose}/>
+ <motion.div ref={panel} tabIndex={-1} role="dialog" aria-modal="true"
+  data-sheet-route={route?'':undefined} aria-labelledby={title?labelId:undefined}
+  aria-label={title?undefined:'Details'} initial="hidden" animate="visible" exit="exit"
+  variants={variantFor(sheet,reduce)} className="ui-sheet relative w-full min-w-0">
+  <div className="ui-sheet-header">
+   {title&&<h2 id={labelId} className="ui-sheet-title">{title}</h2>}
+   <button type="button" onClick={onClose} aria-label="Close" className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-ctl text-ink-2"><X size={22}/></button>
+  </div>
+  <div className="ui-sheet-body">{children}</div>
+  {footer&&<div className="ui-sheet-footer">{footer}</div>}
+ </motion.div></div>}
+ </AnimatePresence>,document.body);
  return createPortal(<AnimatePresence>
  {open&&<div className="fixed inset-0 z-40 flex items-end justify-center" role="presentation">
  <motion.div aria-hidden="true" initial="hidden" animate="visible" exit="exit" variants={variantFor(fade,reduce)} className="absolute inset-0 bg-obsidian/75 backdrop-blur-[3px]" onClick={onClose}/>

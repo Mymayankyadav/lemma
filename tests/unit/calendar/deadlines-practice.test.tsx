@@ -104,12 +104,17 @@ describe('N74 pure due/overdue civil-day projection',()=>{
   expect(deadlineDay(instant,'Asia/Kolkata')).toBe('2026-11-06');
  });
  it('pins overdue items to the first visible day without duplicating them or including archives',()=>{
-  const first=dueForDay('2026-11-06','2026-11-06','UTC',dues);
+  // Past due items stay on their original date; they appear once in the banner.
+  const first=dueForDay('2026-11-06','2026-11-06','UTC',dues,
+   new Date('2026-11-09T08:13:00Z'));
   expect(first.map(x=>x.key)).toEqual([
-   'practice:t-2','deadline:d-4','deadline:d-1','deadline:d-2','deadline:d-3',
-   'practice:t-1',
+   'deadline:d-1','deadline:d-2','deadline:d-3','practice:t-1',
   ]);
-  expect(first.slice(0,2).every(x=>x.overdue)).toBe(true);
+  expect(first.every(x=>x.overdue)).toBe(true);
+  expect(dueForDay('2026-11-02','2026-11-06','UTC',dues,
+   new Date('2026-11-09T08:13:00Z')).map(x=>x.key)).toEqual(['deadline:d-4']);
+  expect(dueForDay('2026-11-01','2026-11-06','UTC',dues,
+   new Date('2026-11-09T08:13:00Z')).map(x=>x.key)).toEqual(['practice:t-2']);
   expect(first.some(x=>x.value.title==='Completed task')).toBe(false);
   expect(first.some(x=>x.value.title==='Archived topic')).toBe(false);
   expect(first.some(x=>x.value.title==='No schedule')).toBe(false);
@@ -150,13 +155,13 @@ describe('N74 Calendar API loading and display',()=>{
   expect(host.textContent).toContain('Analysis path target');
   expect(host.textContent).toContain('Proof checkpoint');
   expect(host.textContent).toContain('Spaced topology');
-  expect(host.textContent).toContain('Project target');
+  expect(host.textContent).toContain('Path target date');
   expect(host.textContent).toContain('Checkpoint due');
-  expect(host.textContent).toContain('75 min remaining');
-  expect(host.textContent).toContain('Overdue since 2026-11-02');
+  expect(host.textContent).toContain('1 h 15 min left');
+  expect(host.querySelector('[aria-label="Overdue items"]')?.textContent).toContain('Late assignment');
   await press('Open deadline Analysis exam');
   expect(host.querySelector('[aria-label="Details for Analysis exam"]')?.textContent)
-   .toContain('75 minutes remaining');
+   .toContain('About 1 h 15 min of work left');
   await press('Open practice topic Spaced topology');
   expect(host.querySelector('[aria-label="Details for Spaced topology"]')?.textContent)
    .toContain('Repeat every 7 days');
@@ -171,10 +176,10 @@ describe('N74 Calendar API loading and display',()=>{
   const capacity=host.querySelector('[aria-label="Day capacity"]');
   expect(capacity?.textContent).toContain('Logged 0 min');
   expect(capacity?.textContent).toContain('Planned 0 min');
-  expect(capacity?.textContent).toContain('Busy 0 min');
+  expect(capacity?.textContent).toContain('Free');
   await press('Open deadline Proof checkpoint');
   expect(host.querySelector('[aria-label="Details for Proof checkpoint"]')?.textContent)
-   .toContain('Read-only projection');
+   .toContain("From your path's target date");
  });
  it('renders due records in Week alongside the original seven capacity columns',async()=>{
   install();
@@ -182,7 +187,8 @@ describe('N74 Calendar API loading and display',()=>{
   expect(host.querySelectorAll('[data-week-day]')).toHaveLength(7);
   const monday=host.querySelector('[data-week-day="2026-11-02"]');
   const friday=host.querySelector('[data-week-day="2026-11-06"]');
-  expect(monday?.textContent).toContain('Overdue algebra');
+  expect(monday?.textContent).not.toContain('Overdue algebra');
+  expect(host.querySelector('[aria-label="Overdue items"]')?.textContent).toContain('Overdue algebra');
   expect(friday?.textContent).toContain('Proof checkpoint');
   expect(friday?.textContent).toContain('Spaced topology');
   expect(friday?.textContent).toContain('Logged 0 min');
@@ -195,13 +201,13 @@ describe('N74 Calendar API loading and display',()=>{
   await render('/calendar?view=month&date=2026-11-06');
   expect(host.querySelectorAll('[data-month-day]')).toHaveLength(42);
   const sixth=host.querySelector('[data-month-day="2026-11-06"]');
-  expect(sixth?.textContent).toContain('4 due');
-  expect(sixth?.textContent).toContain('0m');
+  expect(sixth?.getAttribute('aria-label')).toContain('4 due');
+  expect(sixth?.textContent).not.toContain('0m');
   expect(host.querySelector('[aria-label="Month deadlines and practice"]'))
    .not.toBeNull();
   await press('Open deadline Analysis path target');
   expect(host.querySelector('[aria-label="Details for Analysis path target"]')?.textContent)
-   .toContain('Read-only projection');
+   .toContain("From your path's target date");
  });
  it('surfaces failed optional due reads rather than presenting misleading zero counts',async()=>{
   const f=install();

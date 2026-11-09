@@ -14,6 +14,7 @@ import {CalendarDays,ChevronRight} from 'lucide-react';
 
 const FOCUS_CAP=25;
 /** The logged-time rail's scale (minutes); the mockup's default daily study intention. */
+import {focusStatus} from '../../lib/focus/status';
 const DAILY_INTENTION=240;
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
 function civilDate(zone:string){
@@ -248,6 +249,7 @@ export default function TodayFocus(){
  const remaining=remainingFocusMinutes(focus,now);
  const accessory=active!==null&&(phase==='running'||phase==='paused'||phase==='break');
  const paused=phase==='paused';
+ const statusText=focusStatus(phase,active?.phase);
  const context=useFocusContext(active);
  const sessionClock=clockText(active,focus,now);
  const dialogProps={open:opened,state:focus,now,note,editedMinutes,busy,error,
@@ -269,7 +271,7 @@ export default function TodayFocus(){
    <h2>{active?context.heading??'Your focus session':'Make time for focused study'}</h2>
    <p className="notebook-study-description">{active?active.intent:'Choose an intention, then start a focused session.'}</p>
    {active&&<div className="notebook-focus-status">
-    <span>{phase==='break'?'On a break':paused?'Paused':'In focus'}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
+    <span>{statusText}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
     <time aria-label="Session timer">{sessionClock}</time>
    </div>}
    {!active&&<div className="lemma-quick-task mb-4">

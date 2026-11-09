@@ -181,26 +181,25 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
       <h3 className="mb-3 text-body font-semibold text-ink">Math shortcuts</h3>
       <button type="button" className={button} disabled={busy} onClick={openMacros}>Edit math shortcuts</button>
     </section>
-    <Sheet open={editor === 'rules'} onClose={() => setEditor(null)} title="Tutor rules">
+    <Sheet open={editor === 'rules'} onClose={() => setEditor(null)} title="Tutor rules" footer={<>
+        <button type="button" className={button} onClick={() => setRules('')}>Reset to default</button>
+        <button type="button" className={button} disabled={busy}
+          onClick={async () => { if (await save({ tutorRules: rules.trim() || null }, 'Tutor rules saved')) setEditor(null); }}>Save rules</button>
+      </>}>
       <label className="text-label text-ink">Rules
         <textarea aria-label="Tutor rules text" className={field} value={rules}
           onChange={event => setRules(event.target.value)}/>
       </label>
-      <div className="mt-3 flex flex-wrap gap-3">
-        <button type="button" className={button} onClick={() => setRules('')}>Reset to default</button>
-        <button type="button" className={button} disabled={busy}
-          onClick={async () => { if (await save({ tutorRules: rules.trim() || null }, 'Tutor rules saved')) setEditor(null); }}>Save rules</button>
-      </div>
     </Sheet>
-    <Sheet open={editor === 'macros'} onClose={() => setEditor(null)} title="Math shortcuts">
+    <Sheet open={editor === 'macros'} onClose={() => setEditor(null)} title="Math shortcuts" footer={
+      <button type="button" className={button + ' w-full'} disabled={busy}
+        onClick={async () => { if (await save({ macros }, 'Math shortcuts saved')) setEditor(null); }}>Save shortcuts</button>}>
       <label className="text-label text-ink">KaTeX macros
         <textarea aria-label="Math shortcuts text" className={field + ' font-mono'} value={macros}
           onChange={event => setMacros(event.target.value)}/>
       </label>
       <p className="mt-3 text-label text-ink-2">Preview</p>
       <div className="lemma-math my-3" dangerouslySetInnerHTML={{ __html: preview }}/>
-      <button type="button" className={button + ' w-full'} disabled={busy}
-        onClick={async () => { if (await save({ macros }, 'Math shortcuts saved')) setEditor(null); }}>Save shortcuts</button>
     </Sheet>
     <Sheet open={editor === 'optimizer'} onClose={closeOptimizer} title="Tune to your reviews">
       {progress !== null ? <p role="status">Analyzing reviews… {Math.round(progress * 100)}%</p> :

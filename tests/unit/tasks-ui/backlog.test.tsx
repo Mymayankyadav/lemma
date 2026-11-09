@@ -84,10 +84,11 @@ async function click(label:string){
  await act(async()=>control.click());
 }
 async function field(label:string,value:string){
- const control=[...host.querySelectorAll('input,select')].find(el=>el.getAttribute('aria-label')===label)!;
+ const control=[...host.querySelectorAll('input,select,textarea')].find(el=>el.getAttribute('aria-label')===label)!;
  expect(control).toBeDefined();
  await act(async()=>{
-  const p=control instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;
+  const p=control instanceof HTMLSelectElement?HTMLSelectElement.prototype:
+   control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(p,'value')!.set!.call(control,value);
   control.dispatchEvent(new Event('input',{bubbles:true}));
   control.dispatchEvent(new Event('change',{bubbles:true}));

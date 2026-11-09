@@ -24,6 +24,8 @@ import {
 } from "../../data/hooks";
 import { DEFAULT_W, retrievability } from "../../lib/fsrs";
 import { Editor, type EditorValue } from "../cards/Editor";
+import { formatInterval } from "../../lib/format";
+import { clientName, noteKindText } from "../../lib/labels";
 import { Button } from "../../ui/Button";
 import { Chip } from "../../ui/Chip";
 import { IconButton } from "../../ui/IconButton";
@@ -56,6 +58,7 @@ export default function Page() {
     status = useSetNoteStatus(),
     notify = useToast(),
     navigate = useNavigate();
+  const v6 = isFlagOn('v6Shell');
   const [editing, setEditing] = useState(false),
     [deleting, setDeleting] = useState(false),
     [message, setMessage] = useState(""),
@@ -252,12 +255,11 @@ export default function Page() {
       actions={
         note && isFlagOn('v6Shell') ? (
           <>
-            {/* N117 (mockup `21__Page`): three labelled card actions under the header. */}
+            {/* N117 (mockup `21__Page`) labelled card actions; N121 E4 moves Delete card to "More" at the end. */}
             <button type="button" className="lemma-header-chip" onClick={() => setEditing(true)}>Edit card</button>
             <button type="button" className="lemma-header-chip" disabled={status.isPending}
               onClick={() => { void setStatus(note.status === "suspended" ? "active" : "suspended"); }}>
               {note.status === "suspended" ? "Resume card" : "Pause card"}</button>
-            <button type="button" className="lemma-header-chip lemma-destructive-text" onClick={() => setDeleting(true)}>Delete card</button>
           </>
         ) : note ? (
           <>
@@ -370,7 +372,7 @@ export default function Page() {
                   <Chip icon={MessageCircle}>S{note.sessionNumber}</Chip>
                 </Link>
               )}
-              <Chip>{note.kind}</Chip>
+              <Chip>{v6 ? noteKindText(note.kind) : note.kind}</Chip>
               {note.status === "suspended" && <Chip tone="quiet">Paused</Chip>}
             </div>
           </Slab>
@@ -379,19 +381,19 @@ export default function Page() {
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <p className="text-label text-ink-3">Next</p>
-                <p className="mt-1 font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{next(card?.due ?? null)}</p>
+                <p className="mt-1 font-medium tabular-nums" style={v6?undefined:{fontFamily:"var(--font-num)"}}>{next(card?.due ?? null)}</p>
               </div>
               <div>
                 <p className="text-label text-ink-3">Stability</p>
-                <p className="mt-1 font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>
+                <p className="mt-1 font-medium tabular-nums" style={v6?undefined:{fontFamily:"var(--font-num)"}}>
                   {card && card.stability > 0
-                    ? `${Math.round(card.stability)} d`
+                    ? v6 ? formatInterval(card.stability) : `${Math.round(card.stability)} d`
                     : "—"}
                 </p>
               </div>
               <div>
                 <p className="text-label text-ink-3">Recall now</p>
-                <p data-recall-value className="mt-1 font-medium tabular-nums text-ink" style={{fontFamily:"var(--font-num)"}}>
+                <p data-recall-value className="mt-1 font-medium tabular-nums text-ink" style={v6?undefined:{fontFamily:"var(--font-num)"}}>
                   {recall === null ? "—" : `${Math.round(recall * 100)}%`}
                 </p>
               </div>
@@ -404,6 +406,8 @@ export default function Page() {
                   height={64}
                   title="Intervals between reviews"
                 />
+                {v6 && <p className="mt-1 flex justify-between text-caption text-ink-3" aria-label={`Intervals between your last ${chart.length} reviews`}>
+                  <span>First review</span><span>Latest review</span></p>}
               </div>
             )}
           </Slab>
@@ -449,7 +453,7 @@ export default function Page() {
                     <summary className="flex cursor-pointer items-center gap-2 text-label text-ink-2">
                       <Check size={15} className="text-easy" />
                       Addressed
-                      {c.resolvedByOrigin ? ` by ${c.resolvedByOrigin}` : ""}
+                      {c.resolvedByOrigin ? ` by ${v6 ? clientName(c.resolvedByOrigin) : c.resolvedByOrigin}` : ""}
                     </summary>
                     <MathText source={c.body} variant="body" className="mt-3 text-ink-3" />
                   </details>
@@ -518,14 +522,24 @@ export default function Page() {
             </button>
           </form>
           <MathPreview source={message}/>
+          {v6 && <section aria-labelledby="card-more" className="mt-6 border-t border-edge pt-4">
+            <h2 id="card-more" className="mb-3 text-body font-semibold text-ink">More</h2>
+            <button type="button" className="lemma-destructive min-h-11 rounded-[8px] px-4 text-label font-semibold"
+              onClick={() => setDeleting(true)}>Delete card</button>
+          </section>}
           <Sheet
             open={editing}
             onClose={closeEditing}
             title="Edit card"
+            footer={v6 ? <>
+              <Button variant="ghost" onClick={closeEditing}>Cancel</Button>
+              <Button type="submit" form="v6-edit-card" disabled={update.isPending}>Save changes</Button>
+            </> : undefined}
           >
             <Editor
               initial={note}
               busy={update.isPending}
+              formId={v6 ? "v6-edit-card" : undefined}
               onSubmit={(v) => void save(v)}
             />
           </Sheet>
@@ -533,11 +547,16 @@ export default function Page() {
             open={deleting}
             onClose={closeDeleting}
             title="Delete this card?"
+            footer={v6 ? <>
+              <Button variant="ghost" onClick={() => setDeleting(false)}>Cancel</Button>
+              <Button variant="danger" className="lemma-destructive" disabled={status.isPending}
+                onClick={() => void setStatus("deleted")}>Delete card</Button>
+            </> : undefined}
           >
             <p className="mb-5 text-ink-2">
               This removes the card from your library and review queue.
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            {!v6 && <div className="grid grid-cols-2 gap-3">
               <Button variant="ghost" onClick={() => setDeleting(false)}>
                 Cancel
               </Button>
@@ -548,7 +567,7 @@ export default function Page() {
               >
                 Delete card
               </Button>
-            </div>
+            </div>}
           </Sheet>
         </>
       )}

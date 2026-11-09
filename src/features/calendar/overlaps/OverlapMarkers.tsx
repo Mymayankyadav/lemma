@@ -53,12 +53,13 @@ export function useCalendarOverlaps(range:StudyRange){
  return {records,phase,error,busy,reload,acknowledge};
 }
 export type OverlapControls=ReturnType<typeof useCalendarOverlaps>;
-export function OverlapMarkers({windows,controls,zone,compact=false}:{
- windows:CalendarOverlap[];controls:OverlapControls;zone:string;compact?:boolean;
+export function OverlapMarkers({windows,controls,zone,compact=false,clock24h=true}:{
+ windows:CalendarOverlap[];controls:OverlapControls;zone:string;compact?:boolean;clock24h?:boolean;
 }){
  const fmt=useMemo(()=>new Intl.DateTimeFormat('en',{
-  timeZone:zone,hour:'numeric',minute:'2-digit'
- }),[zone]);
+  timeZone:zone,hour:'numeric',minute:'2-digit',hourCycle:clock24h?'h23':'h12'
+ }),[zone,clock24h]);
+ const day=useMemo(()=>new Intl.DateTimeFormat('en',{timeZone:zone,weekday:'short',month:'short',day:'numeric'}),[zone]);
  if(!windows.length)return null;
  const time=(instant:string)=>fmt.format(new Date(instant));
  return <section aria-label="Calendar overlap conflicts"
@@ -73,12 +74,12 @@ export function OverlapMarkers({windows,controls,zone,compact=false}:{
    const label=row.names.join(' and ');
    return <article key={row.key} data-overlap={row.key}
     className="rounded-ctl border border-amber bg-amber-tint p-2 text-ink">
-    <p className="font-semibold">{current?'Overlap acknowledged':'Overlap conflict'} ·
-     {time(row.startsAt)}–{time(row.endsAt)}</p>
+    <p className="font-semibold">{current?'Overlap acknowledged':'Overlap conflict'} · {day.format(new Date(row.startsAt))} ·
+     {' '}{time(row.startsAt)}–{time(row.endsAt)}</p>
     <p className="break-words">{label}</p>
-    {current?<p>Disposition: {current.disposition==='keep_both'?'Keep both':
-     'Attribute to '+(row.names[row.participants.findIndex(p=>
-       p.kind===current.attributedTo?.kind&&p.id===current.attributedTo?.id)]||'participant')}
+    {current?<p>{current.disposition==='keep_both'?'Kept both':
+     'Counted toward '+(row.names[row.participants.findIndex(p=>
+       p.kind===current.attributedTo?.kind&&p.id===current.attributedTo?.id)]||'one of them')}
     </p>:
     <div className="mt-2 flex flex-wrap gap-2">
      <button type="button" disabled={!canWrite}
@@ -88,10 +89,10 @@ export function OverlapMarkers({windows,controls,zone,compact=false}:{
       Keep both</button>
      {row.participants.map((participant,i)=><button type="button"
        key={participant.kind+participant.id} disabled={!canWrite}
-       aria-label={'Attribute overlap to '+row.names[i]}
+       aria-label={'Count this time toward '+row.names[i]}
        onClick={()=>void controls.acknowledge(row,'attribute_to',i)}
        className="min-h-11 rounded-ctl border border-edge px-2 disabled:opacity-50">
-       Attribute to {row.names[i]}</button>)}
+       Count this time toward {row.names[i]}</button>)}
     </div>}
     </article>;
   })}

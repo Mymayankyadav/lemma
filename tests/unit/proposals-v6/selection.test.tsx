@@ -4,7 +4,7 @@ import {createRoot,type Root} from 'react-dom/client';
 import {readFileSync} from 'node:fs';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {Proposal} from '../../../src/data/types';
-import SelectionPanel,{applySelectedDecisions,selectedPending} from '../../../src/features/proposals/v6/Selection';
+import SelectionPanel,{applySelectedDecisions,selectedPending,plainCardText} from '../../../src/features/proposals/v6/Selection';
 
 const make=(id:string,kind:Proposal['kind'],front:string,checkpoint:string):Proposal=>({
  id,kind,projectSlug:'proof-path',projectGlyph:'∑',sessionNumber:2,
@@ -54,16 +54,22 @@ describe('N32.2.1 v6 Inbox selected decisions',()=>{
   },async()=>undefined);
   expect(result).toEqual({succeeded:[],remaining:['a','b'],failed:true});
  });
- it('renders full group names, real proposals, 44px labels and independent approval/rejection actions',()=>{
+ it('turns TeX and cloze fronts into readable accessible names',()=>{
+  expect(plainCardText('What is $\\mathbb{R}^2$?')).toContain('ℝ');
+  expect(plainCardText('Find {{c1::compact}}ness')).toBe('Find compactness');
+  expect(plainCardText('\\(x_1\\)')).toContain('x₁');
+ });
+ it('renders one math-aware grouped list with readable project and checkpoint labels',()=>{
   const html=renderToStaticMarkup(createElement(SelectionPanel,{
    visible:[cardA,cardB],all:[cardA,cardB,planA],ids:new Set(['a']),
    kind:'cards',busy:false,onToggle:()=>{},onSelectPage:()=>{},onClear:()=>{},
-   onStage:()=>{}
+   onOpen:()=>{},onStage:()=>{}
   }));
   expect(html).toContain('Select Inbox proposals');
-  expect(html).toContain('S2 / C1');
+  expect(html).toContain('Session 2 · Checkpoint C1');
   expect(html).toContain('Proof of the fundamental theorem');
-  expect(html).toContain('Select Card edit: N3');
+  expect(html).toContain('Select Edit the argument');
+  expect(html).toContain('math');
   expect(html).toContain('min-h-11');
   expect(html).toContain('Approve 1 selected');
   expect(html).toContain('Reject 1 selected');
@@ -83,7 +89,7 @@ describe('N32.2.1 v6 Inbox selected decisions',()=>{
     ids={ids} kind="cards" busy={false}
     onToggle={id=>setIds(old=>{const next=new Set(old);next.has(id)?next.delete(id):next.add(id);return next})}
     onSelectPage={()=>setIds(new Set(['a','b']))} onClear={()=>setIds(new Set())}
-    onStage={action=>staged.push(action)}/>;
+    onOpen={()=>{}} onStage={action=>staged.push(action)}/>;
   }
   await act(async()=>root.render(createElement(Harness)));
   const selected=host.querySelector<HTMLInputElement>('input[aria-label="Select Proof of the fundamental theorem"]')!;
