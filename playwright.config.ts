@@ -6,6 +6,8 @@ import { basename } from 'node:path'
 //  - LEMMA_PERF=off  skips the timing-based specs listed in ci/perf-checks.json (they run in perf-report)
 //  - CI_JUNIT_DIR    also writes a JUnit report for failure signatures (file: e2e-<CI_JUNIT_NAME|e2e>.xml)
 //  - the web server builds with VITE_ALLOW_FLAG_OVERRIDES=1 so tests can use ?flags=a,b (never set in production builds)
+//  - the web server also builds with VITE_FLAGS=-v6Shell, so the legacy specs keep exercising the flag-off screens after
+//    N102 turns v6Shell on by default; the v6 specs opt in with ?flags=v6Shell (the URL wins over the build-time env)
 const perf: string[] = process.env.LEMMA_PERF === 'off'
   ? (JSON.parse(readFileSync('ci/perf-checks.json', 'utf8')).e2e as {path: string}[]).map((e) => '**/' + basename(e.path))
   : []
@@ -22,7 +24,7 @@ export default defineConfig({
  },
  projects: [{name: 'chromium', use: {browserName: 'chromium'}}],
  webServer: {
-  command: 'VITE_ALLOW_FLAG_OVERRIDES=1 npm run build && npm run preview -- --port 4173',
+  command: 'VITE_ALLOW_FLAG_OVERRIDES=1 VITE_FLAGS=-v6Shell npm run build && npm run preview -- --port 4173',
   url: 'http://localhost:4173/lemma/', reuseExistingServer: !process.env.CI, timeout: 120_000,
  },
 })
