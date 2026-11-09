@@ -49,8 +49,17 @@ function SavedRow({ slice, zone, clock24h }: { slice: LoggedSlice; zone: string;
   </article>;
 }
 function BlockSummary({ block, zone, clock24h }: { block: CalendarBlockRecord; zone: string; clock24h:boolean }) {
-  return <><strong className="block break-words text-ink">{block.title}</strong>
-    <span className="text-caption text-ink-2">{block.kind === 'busy' ? 'Busy' : 'Study'} · {formatCalendarTime(block.startsAt, zone, clock24h)}–{formatCalendarTime(block.endsAt, zone, clock24h)}{block.status === 'done' ? ' · Done' : ''}</span></>;
+  // #1322 (mockup agenda card): time range first, then the title, then kind and length.
+  const minutes = Math.max(0, Math.round((Date.parse(block.endsAt) - Date.parse(block.startsAt)) / 60000));
+  const length = minutes >= 60 ? Math.floor(minutes / 60) + ' h' + (minutes % 60 ? ' ' + (minutes % 60) + ' min' : '') : minutes + ' min';
+  return <><span className="block text-label tabular-nums text-ink-2">{formatCalendarTime(block.startsAt, zone, clock24h)}–{formatCalendarTime(block.endsAt, zone, clock24h)}</span>
+    <strong className="mt-1 block break-words text-body font-medium text-ink">{block.title}</strong>
+    <span className="text-label text-ink-2">{block.kind === 'busy' ? 'Busy' : 'Study'} · {length}{block.status === 'done' ? ' · Done' : block.kind === 'study' ? ' · Planned' : ''}</span></>;
+}
+/** Blocks on one day that overlap another block that day. */
+function overlappingBlocks(blocks: CalendarBlockRecord[]): number {
+  const spans = blocks.filter(b => b.status !== 'cancelled').map(b => [Date.parse(b.startsAt), Date.parse(b.endsAt)] as const);
+  return spans.filter(([a, b], i) => spans.some(([c, d], j) => i !== j && a < d && c < b)).length;
 }
 
 function V6Calendar() {
@@ -218,19 +227,25 @@ function V6Calendar() {
       <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
         options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
     </div>
-    <div aria-label="Planning tools" role="group" className="flex flex-wrap items-center justify-end gap-2">
-      <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
-        onRefresh={() => setReload(n => n + 1)}/>
-      <PlannerLaunch date={date} zone={zone}/>
-    </div>
+    {/* #1321 (mockup): one "Planning tools" button; the sheet and planner actions open from it. */}
+    <details className="lemma-planning-tools self-end">
+      <summary className="cr-calendar-tools flex min-h-11 cursor-pointer list-none items-center justify-center rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-ink [&::-webkit-details-marker]:hidden">Planning tools</summary>
+      <div aria-label="Planning tools" role="group" className="mt-2 flex flex-col items-end gap-2">
+        <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
+          onRefresh={() => setReload(n => n + 1)}/>
+        <PlannerLaunch date={date} zone={zone}/>
+      </div>
+    </details>
 
     {phase === 'loading' && <p role="status">Loading calendar…</p>}
     {phase === 'error' && <div role="alert">{readError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
     {actionError && <div role="alert" className="rounded-ctl border border-edge p-3 text-label">{actionError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
 
     {phase === 'ready' && view === 'agenda' && <div aria-label="Next seven days" className="flex flex-col gap-3">
-      {groups.map(group => <Slab as="section" key={group.day} className="flex flex-col gap-3 !border-0 !border-b !border-[var(--hair)] !rounded-none !bg-transparent px-0 pb-4 pt-1">
-        <h2 className="!font-[var(--font-ui)] !text-[.875rem] font-medium text-ink-2">{dateLabel(group.day, zone)}</h2>
+      {groups.map((group, index) => <Slab as="section" key={group.day} className="flex flex-col gap-3 !border-0 !border-b !border-[var(--hair)] !rounded-none !bg-transparent px-0 pb-4 pt-1">
+        {/* #1322: the selected day leads without repeating its date; later days keep a quiet heading. */}
+        <h2 className={index === 0 ? 'sr-only' : '!font-[var(--font-ui)] !text-[.875rem] font-medium text-ink-2'}>{dateLabel(group.day, zone)}</h2>
+        {index === 0 && overlappingBlocks(group.blocks) > 0 && <p className="self-start rounded-[8px] border border-[var(--warn)] px-3 py-2 text-label text-[var(--warn)]">{overlappingBlocks(group.blocks)} overlapping blocks</p>}
         {group.entries.length === 0 && group.blocks.length === 0 &&
           !dueForDay(group.day,date,zone,dues).length &&
           <p className="text-label text-ink-2">Nothing planned.</p>}

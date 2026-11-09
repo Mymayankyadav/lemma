@@ -3,7 +3,7 @@ import {Link,useLocation,useNavigate} from 'react-router';
 import {ArrowLeft,Ellipsis,Inbox,Plus} from 'lucide-react';
 import {useHome} from '../data/hooks';
 import {plainMath} from '../lib/plain-math';
-import {useV6RouteTitle} from './v6Title';
+import {useV6RouteSubtitle,useV6RouteTitle} from './v6Title';
 const TaskSheet=lazy(()=>import('../features/tasks/TaskSheet'));
 
 /** N13's shared v6 title and actions; the legacy page headers stay unchanged when the flag is off. */
@@ -38,6 +38,7 @@ function HeaderCluster({pathname,onTask}:{pathname:string;onTask:()=>void}){
  const addItems=[
   <button key="task" type="button" onClick={event=>{closeDetails(event.currentTarget);onTask();}}>Task</button>,
   <Link key="block" to="/calendar" onClick={event=>closeDetails(event.currentTarget)}>Time block</Link>,
+  <Link key="card" to="/cards?new=1" onClick={event=>closeDetails(event.currentTarget)}>Card</Link>,
   <Link key="path" to="/projects/new" onClick={event=>closeDetails(event.currentTarget)}>New path</Link>,
  ];
  const destinations=([['/atlas','Concept map'],['/cards','Card library'],['/settings','Settings']] as const)
@@ -69,6 +70,7 @@ export default function V6Header({pathname}:{pathname:string}){
  const location=useLocation(),navigate=useNavigate();
  const header=useRef<HTMLElement>(null);
  const title=plainMath(useV6RouteTitle(pathname,v6PageTitle(pathname)));
+ const subtitle=useV6RouteSubtitle(pathname);
  const [taskOpen,setTaskOpen]=useState(false);
  const [taskSaved,setTaskSaved]=useState(false);
  const closeTask=()=>{setTaskOpen(false);queueMicrotask(()=>header.current?.querySelector<HTMLElement>('.lemma-add-menu summary, [data-ui=utility-menu] summary')?.focus());};
@@ -112,7 +114,10 @@ export default function V6Header({pathname}:{pathname:string}){
     onClick={()=>{if(window.history.length>1)navigate(-1);else navigate('/');}}>
     <ArrowLeft size={22} aria-hidden="true"/>
    </button>}
-   <h1 title={title}>{title}</h1>
+   {subtitle?<div className="lg-heading min-w-0 flex-1">
+    <h1 title={title}>{title}</h1>
+    <p data-v6-header-subtitle="" className="text-label text-ink-2">{subtitle}</p>
+   </div>:<h1 title={title}>{title}</h1>}
    {cluster}
   </div>
   {extras}

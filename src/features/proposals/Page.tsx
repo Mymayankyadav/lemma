@@ -194,7 +194,18 @@ function PendingCard({
               Your note: {c.body}
             </p>
           ))}
-        {proposal.reason && (
+        {isFlagOn("v6Shell") ? (
+          /* #1318 (mockup `13__Page`): the reason and sources open from an outlined "Why this card?" button. */
+          <details className="lemma-why-card mt-6">
+            <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2 rounded-[8px] border border-[var(--control-edge)] px-4 font-semibold text-ink [&::-webkit-details-marker]:hidden">
+              <Sparkles size={17} aria-hidden="true" />
+              Why this card?
+            </summary>
+            <div className="pt-3">
+              <ProposalEvidence proposal={proposal} />
+            </div>
+          </details>
+        ) : proposal.reason && (
           <p className="mt-6 flex items-start gap-2 text-label italic text-ink-3">
             <Sparkles size={15} className="text-amber" />
             {proposal.reason}
@@ -457,7 +468,7 @@ export default function Page() {
               busy={pending}
               commit={(accepted) => void commit(active, accepted)}
             />
-            {v6&&<ProposalEvidence proposal={active}/>} 
+
             <div
               aria-label={`${completed} reviewed, ${cards.length} remaining`}
               hidden={v6||undefined}

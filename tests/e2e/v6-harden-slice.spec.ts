@@ -117,6 +117,8 @@ test('N98 reload and Back preserve one authoritative focus entry with explicit l
  await expect(page.getByRole('button',{name:'Return to focus'})).toBeEnabled();
  await page.getByRole('button',{name:'Return to focus'}).click();
  const dialog=page.getByRole('dialog',{name:'Focus'});
+ // #1315: the timer lease lives under Timer details on the Focus page.
+ await dialog.getByText('Timer details',{exact:true}).click();
  await expect(dialog.getByRole('button',{name:'Next phase'})).toBeDisabled();
  await dialog.getByRole('button',{name:'Take control of timer'}).click();
  await expect(dialog.getByRole('button',{name:'Next phase'})).toBeEnabled();

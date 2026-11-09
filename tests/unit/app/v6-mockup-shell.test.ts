@@ -48,7 +48,9 @@ describe('N110 mockup shell',()=>{
  it('keeps the owning destination highlighted on detail routes',()=>{
   expect(v6ActiveTab('/projects','/p/real-analysis')).toBe(true);
   expect(v6ActiveTab('/projects','/projects/new')).toBe(true);
-  expect(v6ActiveTab('/review','/cards/7')).toBe(true);
+  // #1324: Cards highlights no destination, as in the mockup captures.
+  expect(v6ActiveTab('/review','/cards/7')).toBe(false);
+  expect(v6ActiveTab('/review','/cards')).toBe(false);
   expect(v6ActiveTab('/review','/review/run')).toBe(true);
   expect(v6ActiveTab('/','/projects')).toBe(false);
   expect(v6ActiveTab('/insights','/insights')).toBe(true);

@@ -7,6 +7,7 @@ import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,t
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
 import V6FocusDialog from './V6FocusDialog';
 import FocusNotices from './FocusNotices';
+import {useFocusContext} from './focusContext';
 import PresetPicker,{focusPresetChoice,type FocusPresetChoice} from './PresetPicker';
 import {isFlagOn} from '../../flags';
 import {CalendarDays,ChevronRight} from 'lucide-react';
@@ -247,6 +248,7 @@ export default function TodayFocus(){
  const remaining=remainingFocusMinutes(focus,now);
  const accessory=active!==null&&(phase==='running'||phase==='paused'||phase==='break');
  const paused=phase==='paused';
+ const context=useFocusContext(active);
  const sessionClock=clockText(active,focus,now);
  const dialogProps={open:opened,state:focus,now,note,editedMinutes,busy,error,
   onDismiss:dismiss,onNote:setNote,onMinutes:setEditedMinutes,
@@ -255,15 +257,17 @@ export default function TodayFocus(){
   onSave:()=>{void save(false);},onDiscard:()=>{void save(true);}};
  return <>
   {/* The focus dialog is modal (top layer), so it leads the DOM; the card's notice dialog follows. */}
-  {active&&isFlagOn('v6Shell')?<V6FocusDialog {...dialogProps} entry={active}
-   leaseOwned={leaseOwned} onTakeLease={()=>{void takeControl();}} onNextPhase={()=>{void nextPhase();}}/>:
+  {active&&isFlagOn('v6Shell')?<V6FocusDialog {...dialogProps} entry={active} context={context}
+   leaseOwned={leaseOwned} onTakeLease={()=>{void takeControl();}} onNextPhase={()=>{void nextPhase();}}
+   notices={<FocusNotices entryId={active.id} onExclude={excludeMinutes}/>}/>:
    <FocusDialog {...dialogProps}/>}
   {/* N111 (mockup `notebook-study-card`): one primary study action, then the logged-time row. */}
   <section aria-label="Current study action" className="notebook-study-card" data-primary-state={active?'focus':'start'}>
    <span className="notebook-study-symbol" aria-hidden="true">{active?'τ':'∂'}</span>
    {!active&&<p className="notebook-study-meta notebook-eyebrow">YOUR NEXT STEP</p>}
-   <h2>{active?active.intent:'Make time for focused study'}</h2>
-   <p className="notebook-study-description">{active?(paused?'Paused. Pick up where you left off.':'One thing at a time. Your session is running.'):'Choose an intention, then start a focused session.'}</p>
+   {/* #1312 (mockup "Return to focus"): the path or activity is the heading, the intention its description. */}
+   <h2>{active?context.heading??'Your focus session':'Make time for focused study'}</h2>
+   <p className="notebook-study-description">{active?active.intent:'Choose an intention, then start a focused session.'}</p>
    {active&&<div className="notebook-focus-status">
     <span>{phase==='break'?'On a break':paused?'Paused':'In focus'}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
     <time aria-label="Session timer">{sessionClock}</time>
@@ -291,8 +295,8 @@ export default function TodayFocus(){
     disabled={busy||loading} className="notebook-primary disabled:opacity-60">
     {active?'Return to focus':'Start focus'}
    </button>
-   {active&&<FocusNotices entryId={active.id}
-    onExclude={isFlagOn('v6Shell')?excludeMinutes:undefined}/>}
+   {/* #1313: drift and parked thoughts live on the Focus page (V6FocusDialog), not on Today. */}
+   {active&&!isFlagOn('v6Shell')&&<FocusNotices entryId={active.id}/>}
    {loading&&<p role="status" className="notebook-paste-note">Loading study time…</p>}
    {error&&<p role="alert" className="notebook-paste-note text-ink">{error}</p>}
   </section>

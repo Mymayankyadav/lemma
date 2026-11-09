@@ -4,7 +4,7 @@ import {summarizeDurableRun,type DurableRunProgress,
  type DurableRunItem} from './position';
 
 type Row=Record<string,unknown>;
-type Operation='start'|'pause'|'resume'|'advance'|'abandon'|'complete';
+type Operation='start'|'pause'|'resume'|'advance'|'abandon'|'complete'|'undo_last';
 type Envelope={
  schemaVersion:1;resource:'review_runs';operation:Operation;operationId:string;
  target?:{id:string};expectedVersion?:number;patch:Row;
@@ -94,7 +94,7 @@ export async function resumeDurableRun():Promise<DurableRun|null>{
 }
 async function command(operation:Operation,patch:Row,target?:{
  id:string;expectedVersion:number
-}):Promise<DurableRun>{
+},fn:'review_runs_command'|'review_runs_undo_last'='review_runs_command'):Promise<DurableRun>{
  const base={
   schemaVersion:1 as const,resource:'review_runs' as const,operation,patch,
   ...(target?{target:{id:checkedId(target.id)},expectedVersion:version(target.expectedVersion)}:{}),
@@ -102,7 +102,7 @@ async function command(operation:Operation,patch:Row,target?:{
  const key=JSON.stringify(base),envelope=retry.get(key)??{...base,operationId:operationId()};
  retry.set(key,envelope);
  try{
-  const c=await db(),response=await c.rpc('review_runs_command',{p:envelope});
+  const c=await db(),response=await c.rpc(fn,{p:envelope});
   if(response.error)throw new Error(response.error.message);
   const receipt=response.data as Receipt|null;
   if(receipt?.status==='conflict'){
@@ -161,4 +161,9 @@ export function advanceStaleRun(id:string,expectedVersion:number,
   throw new Error('A stale review item needs a reason');
  return command('advance',{kind:'stale',item_id:checkedId(itemId),reason},
   {id,expectedVersion});
+}
+/** bug #1299: one atomic RPC restores the last answer's schedule (undo_review) and steps the run
+ * back to that item, which is then graded again like any pending item. */
+export function undoLastGradedRun(id:string,expectedVersion:number,itemId:string):Promise<DurableRun>{
+ return command('undo_last',{item_id:checkedId(itemId)},{id,expectedVersion},'review_runs_undo_last');
 }

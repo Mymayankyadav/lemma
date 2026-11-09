@@ -93,7 +93,7 @@ export default function V6Paths() {
            return <section key={group.key} aria-label={group.title + ' paths'} data-style="role-projects">
            <button type="button" aria-expanded={open} className="flex w-full items-center gap-3 text-left"
              onClick={() => setCollapsed(previous => { const next = new Set(previous); if (next.has(group.key)) next.delete(group.key); else next.add(group.key); return next; })}>
-             <h3 className="min-w-0 flex-1 font-[var(--font-display)] text-[1.375rem] text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h3>
+             <h2 className="min-w-0 flex-1 text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2>
              <span className="shrink-0 text-label text-ink-2">{group.items.length} {group.items.length === 1 ? 'project' : 'projects'}</span>
              <ChevronDown size={20} aria-hidden="true" className={'shrink-0 text-ink-2 ' + (open ? '' : '-rotate-90')} />
            </button>
@@ -105,7 +105,7 @@ export default function V6Paths() {
                    className="min-w-0 break-words text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
                    <div><span className="font-semibold">{project.title}</span></div>
                    <div>{project.pinned ? 'Pinned · ' : ''}{project.current ? 'Now ' + project.current.code + ' ' + project.current.title : 'No current checkpoint'}
-                     {' · '}{project.scheduleHeadline || 'Forecast unavailable'}</div>
+                     {project.scheduleHeadline ? ' · ' + project.scheduleHeadline : ''}</div>
                  </Link>
                  <button type="button" className="path-action-control" disabled={busyId === project.id}
                    aria-label={'Manage ' + project.title} aria-expanded={menu === project.id}
@@ -116,7 +116,7 @@ export default function V6Paths() {
                  <div><span className="notebook-progress-rail" role="progressbar" aria-label={project.title + ' checkpoints done'}
                    aria-valuemin={0} aria-valuemax={project.total} aria-valuenow={project.done}>
                    <span style={{ width: (project.total ? 100 * project.done / project.total : 0) + '%' }} /></span></div>
-                 <span className="tabular-nums text-ink-2">{project.done} of {project.total} checkpoints</span>
+                 <span className="tabular-nums text-ink-2" aria-label={project.done + ' of ' + project.total + ' checkpoints'}>{project.done} of {project.total}</span>
                </div>
                {menu === project.id && <div role="group" aria-label={'Manage ' + project.title + ' actions'}
                  className="grid grid-cols-2 gap-2 border-t border-[var(--hair)] pt-2">

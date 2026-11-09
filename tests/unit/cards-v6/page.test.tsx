@@ -23,7 +23,9 @@ vi.mock('../../../src/data/hooks', () => ({
   useCreateNote: () => ({ isPending: false, mutateAsync: vi.fn() }),
 }));
 vi.mock('../../../src/ui/Toast', () => ({ useToast: () => vi.fn() }));
-vi.mock('../../../src/ui/Sheet', () => ({ Sheet: () => null }));
+vi.mock('../../../src/ui/Sheet', () => ({
+  Sheet: ({ open, title }: { open: boolean; title?: string }) => open ? <div role="dialog">{title}</div> : null,
+}));
 
 const records: CardRow[] = Array.from({ length: 75 }, (_, i) => ({
   noteNo: i + 1, front: 'Card number ' + (i + 1), type: 'basic', kind: 'theorem',
@@ -108,7 +110,15 @@ describe('N31 v6 Cards', () => {
     await click('Load 20 more');
     expect(rows()).toHaveLength(75);
     expect(host.textContent).toContain('75 shown');
-    expect(button('New card')).toBeDefined();
+    // #1323: no list button; a new card starts from the header "+" menu (`/cards?new=1`).
+    expect([...host.querySelectorAll('button')].some(b => b.textContent?.trim() === 'New card')).toBe(false);
+  });
+
+  it('opens the new-card sheet from /cards?new=1 (the header Add menu)', async () => {
+    await act(async () => root.render(
+      <QueryClientProvider client={client}><MemoryRouter initialEntries={['/cards?new=1']}><Page/></MemoryRouter></QueryClientProvider>
+    ));
+    await vi.waitFor(() => expect(host.querySelector('[role="dialog"]')?.textContent ?? '').toBe('New card'));
   });
 
   it('applies existing server filters via native dialog and removes chips without replacing editor', async () => {

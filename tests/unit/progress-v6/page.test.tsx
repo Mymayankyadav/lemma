@@ -103,3 +103,17 @@ it('renders v6 effort on Overview and the legacy Insights content on Learning wh
   expect(host.querySelector('[data-url]')?.textContent).toContain('view=learning');
   expect(host.textContent).not.toContain('Study effort');
 });
+
+it('#1319 shows the overlap notice with a Time log link when saved focus overlaps, and not otherwise', async () => {
+  flags.on=true;
+  fakeStudyApi([record]);
+  await render('/insights?range=7', true);
+  await vi.waitFor(() => expect(host.textContent).toContain('Small steps'));
+  expect(host.textContent).not.toContain('overlap or need correction');
+  await act(async () => root.unmount()); root=createRoot(host); host.replaceChildren();
+  const overlapping={...record,id:'math-2',intervals:[{ id:'second', kind:'focus' as const, start:'2026-11-07T09:30:00Z', end:'2026-11-07T10:30:00Z' }]};
+  fakeStudyApi([record,overlapping]);
+  await render('/insights?range=7', true);
+  await vi.waitFor(() => expect(host.textContent).toContain('Some saved time entries overlap or need correction. Each minute is counted once.'));
+  expect(host.querySelector('a[href="#/log"]')?.textContent).toBe('Check your log');
+});

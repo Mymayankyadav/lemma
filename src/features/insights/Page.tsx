@@ -1,6 +1,9 @@
 import {isFlagOn} from '../../flags';
 import ProgressV6 from '../progress-v6/Page';
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
+import {getStudyApi} from '../../data/study';
+import {periodFor,type EffortRange} from '../progress-v6/model';
+import {needsAttention,savedTimeIssues,type SavedTimeIssues} from './savedTimeIssues';
 import {useSearchParams} from 'react-router';
 import {getMode} from '../../data/mode';
 import {Clock,MessageCircle,Layers,Target} from 'lucide-react';
@@ -71,6 +74,15 @@ function ProgressNotebook(){
  const view:View=rawView==='learning'||rawView==='time'?rawView:'overview';
  const query=useInsightData(days),settings=useSettings();
  const values=useMemo(()=>query.data?buildInsights(query.data,days,{timeZone:settings.data?.timeZone??'UTC',rolloverHour:settings.data?.rolloverHour??4}):null,[query.data,days,settings.data?.timeZone,settings.data?.rolloverHour]);
+ const [issues,setIssues]=useState<SavedTimeIssues|null>(null);
+ useEffect(()=>{
+  let alive=true;
+  const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
+  const span=periodFor(String(days) as EffortRange,new Date(),zone).span;
+  void getStudyApi().listStudyEntries(span).then(rows=>{if(alive)setIssues(savedTimeIssues(rows,new Date().toISOString()));})
+   .catch(()=>{if(alive)setIssues(null);});
+  return()=>{alive=false;};
+ },[days]);
  const set=(key:string,value:string)=>{const next=new URLSearchParams(params);next.set(key,value);setParams(next);};
  const metric=(label:string,value:string,note:string)=><div className="notebook-metric" role="group" aria-label={label}>
   <span>{label}</span><strong>{value}</strong><small>{note}</small></div>;
@@ -78,7 +90,7 @@ function ProgressNotebook(){
  return <div className="notebook-progress">
   <div className="notebook-page-intro">
    <p>Small steps, seen over time.</p>
-   {getMode()==='demo'&&<p className="lemma-sample-label">Example workspace · demonstration history</p>}
+   {getMode()==='demo'&&<small className="lemma-sample-label basis-full">Example workspace · demonstration history</small>}
   </div>
   <label className="lemma-progress-range">Time range
    <select aria-label="Time range" value={String(days)} onChange={event=>set('range',event.target.value)}>
@@ -86,6 +98,10 @@ function ProgressNotebook(){
    </select>
   </label>
   <Segmented label="Progress views" value={view} onChange={value=>set('view',value)} options={[...views]}/>
+  {needsAttention(issues)&&<div role="status" className="lemma-log-warning">
+   <p>Some saved time entries overlap or need correction. Each minute is counted once.</p>
+   <a href="#/log" className="inline-flex min-h-11 items-center text-[var(--link)] underline underline-offset-4">Check your log</a>
+  </div>}
   <div className="notebook-progress-content">
    {view==='overview'&&<>
     <p className="notebook-range-caption">{rangeCaption(days)}</p>

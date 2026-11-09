@@ -1,5 +1,7 @@
 import {useMemo,useState} from 'react';
 import {Link} from 'react-router';
+import {ChevronDown} from 'lucide-react';
+import {useV6HeaderTitle} from '../../../app/v6Title';
 import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import ConceptPin from './ConceptPin';
@@ -25,10 +27,13 @@ export default function AtlasV6(){
  const [pinId,setPinId]=useState<string|null>(null);
  const [inspectId,setInspectId]=useState<string|null>(null);
  const [editId,setEditId]=useState<string|null|undefined>(undefined);
+ const [actionsFor,setActionsFor]=useState<string|null>(null);
  const open=folded??(tree?initialExpanded(tree):new Set<string>());
  const filter=search.trim()?(node:Parameters<typeof matches>[0])=>matches(node,search):undefined;
  const rows=tree?visibleRows(tree,open,filter):[];
  const ideaCount=tree?realIdeas(tree):0;
+ const groupCount=tree?[...tree.nodes.values()].filter(node=>node.synthetic).length:0;
+ useV6HeaderTitle('Concept map',tree?ideaCount+' concepts · '+(query.data?.links.length??0)+' connections':null);
  const selectedPin=pinId?tree?.nodes.get(pinId):null;
  const inspecting=inspectId?tree?.nodes.get(inspectId):null;
  const savePin=async(id:string,x:number|null,y:number|null)=>{
@@ -51,11 +56,13 @@ export default function AtlasV6(){
   <p role="alert">Could not load your ideas.</p>
   <button type="button" className={control} onClick={()=>{void query.refetch();}}>Retry</button>
  </main>;
- const groupCount=tree?[...tree.nodes.values()].filter(node=>node.synthetic).length:0;
+
  // N117 (mockup Atlas list in `53__index`): List / Map picker, one search and a ruled concept list;
  // each concept's map, pin and edit actions sit behind its own disclosure.
+ // N117 + #1325/#1326 (mockup Atlas list): the count is the header subtitle; the list is plain names.
+ // A concept row opens its own actions; a group keeps a quiet expander; status stays for screen readers.
  return <main aria-label="Atlas" className="lg-page flex min-w-0 flex-col text-ink" data-atlas-view="list">
-  <p className="-mt-4 mb-2 text-label text-ink-2" aria-label="Real idea count">{ideaCount} ideas (generated groups excluded) · {query.data?.links.length??0} connections</p>
+  <p className="sr-only" aria-label="Real idea count">{ideaCount} ideas (generated groups excluded)</p>
   <div role="group" aria-label="Atlas view" className="notebook-atlas-picker">
    <button type="button" aria-pressed="true">List</button>
    <Link to="/atlas?view=map" className="flex min-h-11 flex-1 items-center justify-center rounded-[7px] text-[.875rem] font-medium text-ink-2">Map</Link>
@@ -67,10 +74,7 @@ export default function AtlasV6(){
     <input aria-label="Find an idea" placeholder="Search all concepts" className="w-full rounded-[8px] text-body"
      value={search} onChange={e=>setSearch(e.target.value)}/>
    </label>
-   <div className="flex items-center justify-between gap-3">
-    <p className="text-caption text-ink-2">{rows.length} matching {rows.length===1?'concept':'concepts'}</p>
-    <button type="button" className={control} onClick={()=>setEditId(null)}>New idea</button>
-   </div>
+   <p className="text-caption text-ink-2">{rows.length} matching {rows.length===1?'concept':'concepts'}</p>
   </section>
   <section role="region" aria-label="Idea hierarchy" tabIndex={0}
    className="lg-outline-list min-w-0 px-2 pb-6 focus-visible:outline-2 focus-visible:outline-[var(--link)]">
@@ -82,38 +86,40 @@ export default function AtlasV6(){
      const hasChildren=node.children.length>0;
      const isOpen=open.has(node.id)||!!filter;
      const indent=Math.min(4,row.depth)*16;
-     return <li key={node.id} role="listitem" className="min-w-0 py-2" style={{paddingLeft:indent}}>
-      <div className="flex min-h-12 min-w-0 items-center gap-2">
-       {hasChildren?<button type="button" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[6px] text-ink-2" aria-expanded={isOpen}
-        aria-label={(isOpen?'Collapse ':'Expand ')+node.name} onClick={()=>toggle(node.id)}>{isOpen?'−':'+'}</button>:null}
-       <div className="min-w-0 flex-1">
-        <p className="lg-outline-name break-words [overflow-wrap:anywhere]"><FastTex source={node.name}/></p>
-        {node.synthetic?<small className="block">Generated grouping row — not an idea · {node.due} due in this group</small>:
-         <small className="block">{node.status.replaceAll('_',' ')} · {node.due} due</small>}
-       </div>
-       {!node.synthetic&&<details className="relative shrink-0">
-        <summary aria-label={'Actions for '+node.name} className="flex min-h-11 min-w-11 list-none items-center justify-center rounded-[6px] text-ink-2 [&::-webkit-details-marker]:hidden">⋯</summary>
-        <div className="mt-2 flex w-[min(280px,calc(100vw-48px))] flex-wrap gap-2 rounded-[10px] border border-[var(--edge)] bg-[var(--paper)] p-2 shadow-lg absolute right-0 z-20">
-         <Link to={'/atlas?view=map&id='+encodeURIComponent(node.id)+'&focus='+encodeURIComponent(node.slug)}
-          className={control+' inline-flex items-center'}>View on map</Link>
-         <button type="button" className={control} onClick={()=>setPinId(node.id)}
-          aria-label={'Edit map pin for '+node.name}>
-          {node.pinX===null?'Pin on map':'Edit map pin'}
-         </button>
-         <button type="button" className={control} onClick={()=>setEditId(node.id)}
-          aria-label={"Edit idea "+node.name}>Edit idea</button>
-         <button type="button" className={control} onClick={()=>setInspectId(node.id)}
-          aria-label={'Preview changes for '+node.name}>Preview edits</button>
-         {node.checkpointRefs.map(checkpoint=>
-          <Link key={checkpoint.projectSlug+checkpoint.code} className={control+' inline-flex items-center'}
-           to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}>Checkpoint {checkpoint.code}</Link>
-         )}
-        </div>
-       </details>}
+     const acting=actionsFor===node.id;
+     return <li key={node.id} role="listitem" className="min-w-0" style={{paddingLeft:indent}}>
+      <div className="flex min-h-14 min-w-0 items-center gap-2">
+       {node.synthetic?<span className="lg-outline-name min-w-0 flex-1 break-words py-3 [overflow-wrap:anywhere]"><FastTex source={node.name}/></span>:
+        <button type="button" aria-expanded={acting} aria-label={'Actions for '+node.name}
+         onClick={()=>setActionsFor(acting?null:node.id)}
+         className="lg-outline-name min-h-11 min-w-0 flex-1 break-words text-left [overflow-wrap:anywhere]"><FastTex source={node.name}/></button>}
+       <span className="sr-only">{node.synthetic?'Generated grouping row — not an idea · '+node.due+' due in this group':
+        node.status.replaceAll('_',' ')+' · '+node.due+' due'}</span>
+       {hasChildren&&<button type="button" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-[6px] text-ink-3" aria-expanded={isOpen}
+        aria-label={(isOpen?'Collapse ':'Expand ')+node.name} onClick={()=>toggle(node.id)}>
+        <ChevronDown size={18} aria-hidden="true" className={isOpen?'':'-rotate-90'}/></button>}
       </div>
+      {acting&&!node.synthetic&&<div className="flex flex-wrap gap-2 pb-3">
+       <span className="basis-full text-caption text-ink-2" aria-hidden="true">{node.status.replaceAll('_',' ')} · {node.due} due</span>
+       <Link to={'/atlas?view=map&id='+encodeURIComponent(node.id)+'&focus='+encodeURIComponent(node.slug)}
+        className={control+' inline-flex items-center'}>View on map</Link>
+       <button type="button" className={control} onClick={()=>setPinId(node.id)}
+        aria-label={'Edit map pin for '+node.name}>
+        {node.pinX===null?'Pin on map':'Edit map pin'}
+       </button>
+       <button type="button" className={control} onClick={()=>setEditId(node.id)}
+        aria-label={"Edit idea "+node.name}>Edit idea</button>
+       <button type="button" className={control} onClick={()=>setInspectId(node.id)}
+        aria-label={'Preview changes for '+node.name}>Preview edits</button>
+       {node.checkpointRefs.map(checkpoint=>
+        <Link key={checkpoint.projectSlug+checkpoint.code} className={control+' inline-flex items-center'}
+         to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}>Checkpoint {checkpoint.code}</Link>
+       )}
+      </div>}
      </li>;
     })}
    </ul>
+   {ideaCount>0&&<button type="button" className="mt-4 min-h-11 text-label text-[var(--link)]" onClick={()=>setEditId(null)}>New idea</button>}
   </section>
   {selectedPin&&!selectedPin.synthetic&&<ConceptPin
    key={selectedPin.id} id={selectedPin.id} name={selectedPin.name}

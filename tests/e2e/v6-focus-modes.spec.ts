@@ -22,6 +22,9 @@ test('N72 Pomodoro phases, explicit drift exclusion and cross-route accessory at
  await page.getByRole('button',{name:'Start focus'}).click();
  const dialog=page.getByRole('dialog',{name:'Focus'});
  await expect(dialog).toBeVisible();
+ // #1314/#1315: the plan is the visible caption; mode, deadline and the lease sit under Timer details.
+ await expect(dialog).toContainText('Pomodoro 1 of 4 · 25 min focus / 5 min break');
+ await dialog.getByText('Timer details',{exact:true}).click();
  await expect(dialog).toContainText('Mode: pomodoro');
  await expect(dialog).toContainText('Server phase deadline');
  await expect(dialog.getByRole('button',{name:'Next phase'})).toBeEnabled();
@@ -30,14 +33,14 @@ test('N72 Pomodoro phases, explicit drift exclusion and cross-route accessory at
  await page.clock.fastForward(90_000);
  await dialog.getByRole('button',{name:'Next phase'}).click();
  await expect(dialog).toContainText('Break · Cycle');
- await dialog.getByRole('button',{name:'Close'}).click();
-
- await page.getByRole('button',{name:'I drifted'}).click();
+ // #1313/#1315: a distraction is recorded from the Focus page itself.
+ await dialog.getByRole('button',{name:'Noticed a distraction'}).click();
  const drift=page.getByRole('dialog',{name:'Record a drift'});
  await drift.getByRole('spinbutton',{name:'Minutes of drift'}).fill('1');
  await drift.getByRole('checkbox',{name:'Exclude drift minutes'}).check();
  await drift.getByRole('button',{name:'Record drift'}).click();
  await expect(drift).toBeHidden();
+ await dialog.getByRole('button',{name:'Close'}).click();
  await page.goto('./?demo=1&flags=v6Shell#/tasks');
  const accessory=page.getByRole('complementary',{name:'Focus accessory'});
  await expect(accessory).toContainText('N72 focused revision');
