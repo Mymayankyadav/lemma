@@ -22,7 +22,8 @@ describe('N121 v6 human formatting',()=>{
  it('uses readable lengths, never machine abbreviations',()=>{
   expect(formatDuration(2940)).toBe('49 h');
   expect(formatDuration(90)).toBe('1 h 30 min');
-  expect(formatInterval(30)).toBe('4.3 weeks');
+  expect(formatInterval(30)).toBe('30 days');
+  expect(formatInterval(61)).toBe('2 months');
   expect(formatInterval(548)).toBe('1.5 years');
   expect(formatInterval(10/1440)).toBe('10 min');
  });

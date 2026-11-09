@@ -29,6 +29,7 @@ vi.mock('../../../src/data/hooks', () => ({
   }),
   useApproveProposal: () => ({ isPending: false, mutateAsync: data.approve }),
   useRejectProposal: () => ({ isPending: false, mutateAsync: data.reject }),
+  useProjects: () => ({ data: [] }),
 }));
 vi.mock('../../../src/ui/Toast', () => ({ useToast: () => data.notify }));
 vi.mock('../../../src/ui/Screen', async () => {

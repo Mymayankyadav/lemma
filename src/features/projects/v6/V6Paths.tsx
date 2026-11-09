@@ -68,13 +68,13 @@ export default function V6Paths() {
     <label className="relative flex flex-col text-label text-ink-2"><span className="sr-only">Find a path</span>
       <Search size={20} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-2" />
       <input aria-label="Search paths" type="search" className="min-h-12 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] py-2 pl-12 pr-3 text-body text-ink"
-        value={search} onChange={event => setSearchValue(event.target.value)} placeholder="Find a project or subject" />
+        value={search} onChange={event => setSearchValue(event.target.value)} placeholder="Find a path or subject" />
     </label>
-    <Link to="/atlas" className="notebook-concept-entry"><Waypoints size={20} aria-hidden="true" /><span>Concept map</span><ChevronRight size={19} aria-hidden="true" /></Link>
     <div role="group" aria-label="Path status filters" className="ui-segmented flex">
       {statuses.filter(next => next !== 'archived').map(next => <button type="button" key={next} aria-pressed={status === next}
         className="min-h-11 flex-1 capitalize text-ink" onClick={() => selectStatus(next)}>{next}</button>)}
     </div>
+    <Link to="/atlas" className="notebook-concept-entry"><Waypoints size={20} aria-hidden="true" /><span>Concept map</span><ChevronRight size={19} aria-hidden="true" /></Link>
     {subjects.isPending && <p role="status" className="text-label text-ink-2">Loading subjects…</p>}
     {subjects.isError && <p role="alert" className="text-label text-ink-2">Subjects unavailable; saved path labels remain visible.</p>}
     {projects.isPending ? <p role="status" className="text-label text-ink-2">Loading paths…</p> :
@@ -89,26 +89,29 @@ export default function V6Paths() {
          {all.length > 0 && search && <button type="button" className={btn + ' self-start'} onClick={() => setSearchValue('')}>Clear search</button>}
        </div> : <div aria-label="Paths by subject" className="flex flex-col gap-6">
          {groups.map(group => {
-           const open = !collapsed.has(group.key);
+           // N121 F1: a subject with one path shows that path straight away; only several paths fold.
+           const single = group.items.length === 1;
+           const open = single || !collapsed.has(group.key);
            return <section key={group.key} aria-label={group.title + ' paths'} data-style="role-projects">
+           {single ? <h2 className="min-w-0 text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2> :
            <button type="button" aria-expanded={open} className="flex w-full items-center gap-3 text-left"
              onClick={() => setCollapsed(previous => { const next = new Set(previous); if (next.has(group.key)) next.delete(group.key); else next.add(group.key); return next; })}>
              <h2 className="min-w-0 flex-1 text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2>
-             <span className="shrink-0 text-label text-ink-2">{group.items.length} {group.items.length === 1 ? 'project' : 'projects'}</span>
+             <span className="shrink-0 text-label text-ink-2">{group.items.length} paths</span>
              <ChevronDown size={20} aria-hidden="true" className={'shrink-0 text-ink-2 ' + (open ? '' : '-rotate-90')} />
-           </button>
+           </button>}
            {open && <div className="flex flex-col">
              {group.items.map(project => <article key={project.id} data-v6-project={project.slug} data-project-row=""
-               className="border-t border-[var(--hair)]">
+               className="relative border-t border-[var(--hair)]">
                <div>
                  <Link to={'/p/' + project.slug}
                    className="min-w-0 break-words text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
                    <div><span className="font-semibold">{project.title}</span></div>
-                   <div>{project.pinned ? 'Pinned · ' : ''}{project.current ? 'Now ' + project.current.code + ' ' + project.current.title : 'No current checkpoint'}
+                   <div>{project.pinned ? 'Pinned · ' : ''}{project.current ? <span aria-label={'Now: ' + project.current.title + ' (' + project.current.code + ')'}>Now: {project.current.title}</span> : 'No current checkpoint'}
                      {project.scheduleHeadline ? ' · ' + project.scheduleHeadline : ''}</div>
                  </Link>
                  <button type="button" className="path-action-control" disabled={busyId === project.id}
-                   aria-label={'Manage ' + project.title} aria-expanded={menu === project.id}
+                   aria-label={'Manage ' + project.title} aria-expanded={menu === project.id} aria-haspopup="menu"
                    onClick={() => setMenu(value => value === project.id ? null : project.id)}>
                    <span className="path-action-mark"><Ellipsis size={18} aria-hidden="true" /></span></button>
                </div>
@@ -116,17 +119,18 @@ export default function V6Paths() {
                  <div><span className="notebook-progress-rail" role="progressbar" aria-label={project.title + ' checkpoints done'}
                    aria-valuemin={0} aria-valuemax={project.total} aria-valuenow={project.done}>
                    <span style={{ width: (project.total ? 100 * project.done / project.total : 0) + '%' }} /></span></div>
-                 <span className="tabular-nums text-ink-2" aria-label={project.done + ' of ' + project.total + ' checkpoints'}>{project.done} of {project.total}</span>
+                 <span className="tabular-nums text-ink-2" aria-label={project.done + ' of ' + project.total + ' checkpoints'}>{project.done} of {project.total} checkpoints</span>
                </div>
-               {menu === project.id && <div role="group" aria-label={'Manage ' + project.title + ' actions'}
-                 className="grid grid-cols-2 gap-2 border-t border-[var(--hair)] pt-2">
-                 {project.status !== 'archived' && <button type="button" className={btn} disabled={busyId !== null}
+               {menu === project.id && <div role="menu" aria-label={'Manage ' + project.title + ' actions'}
+                 onKeyDown={event => { if (event.key === 'Escape') { event.preventDefault(); setMenu(null); } }}
+                 onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node)) setMenu(null); }}
+                 className="absolute right-0 top-12 z-30 flex w-44 flex-col gap-1 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-1 shadow-lg">
+                 {project.status !== 'archived' && <button type="button" role="menuitem" autoFocus className={btn + ' text-left'} disabled={busyId !== null}
                    onClick={() => void change(project, { pinned: !project.pinned })}>{project.pinned ? 'Unpin' : 'Pin'}</button>}
-                 <button type="button" className={btn} disabled={busyId !== null}
+                 <button type="button" role="menuitem" autoFocus={project.status === 'archived'} className={btn + ' text-left'} disabled={busyId !== null}
                    onClick={() => void change(project, { status: project.status === 'archived' ? 'active' : 'archived' })}>
                    {project.status === 'archived' ? 'Restore' : 'Archive'}
                  </button>
-                 <button type="button" className={btn} onClick={() => setMenu(null)}>Close</button>
                </div>}
              </article>)}
            </div>}
@@ -135,10 +139,10 @@ export default function V6Paths() {
            onClick={() => setLimit(value => value + 20)}>Show 20 more</button>}
        </div>}
      </>}
-    <div aria-label="Archived projects navigation" className="border-t border-[var(--hair)]">
-      <button type="button" aria-pressed={status === 'archived'} className="min-h-11 capitalize text-[var(--link)]"
-        onClick={() => selectStatus(status === 'archived' ? 'active' : 'archived')}>{status === 'archived' ? 'active' : 'archived'}</button>
-      <Link to="/projects/new" className="notebook-concept-entry"><span>New path</span><ChevronRight size={19} aria-hidden="true" /></Link>
+    <Link to="/projects/new" className="notebook-primary flex min-h-12 items-center justify-center">New path</Link>
+    <div aria-label="Archived paths navigation">
+      <button type="button" aria-pressed={status === 'archived'} className="flex min-h-11 w-full items-center text-label text-[var(--link)]"
+        onClick={() => selectStatus(status === 'archived' ? 'active' : 'archived')}>{status === 'archived' ? 'Back to active paths' : 'Archived paths'}</button>
     </div>
   </section>;
 }

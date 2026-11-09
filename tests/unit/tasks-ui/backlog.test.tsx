@@ -103,16 +103,18 @@ describe('N25.2 v6 Tasks backlog and sheet handoff',()=>{
   await render();
   expect(list).toHaveBeenCalledWith({limit:20,status:allStatuses});
   expect(host.querySelectorAll('section[aria-label="Backlog"] li')).toHaveLength(20);
-  expect(host.textContent).toContain('20 shown of 45 tasks');
-  await click('Show more');
+  expect(host.textContent).toContain('20 of 45 tasks shown');
+  await click('Load more');
   expect(list).toHaveBeenLastCalledWith({limit:20,status:allStatuses,cursor:'20'});
   expect(host.querySelectorAll('section[aria-label="Backlog"] li')).toHaveLength(25);
   expect(host.querySelectorAll('section[aria-label="In progress"] li')).toHaveLength(10);
   expect(host.querySelectorAll('section[aria-label="Completed"] li')).toHaveLength(5);
-  await click('Show more');
+  await click('Load more');
   expect(host.querySelectorAll('section[aria-label="Cancelled"] li')).toHaveLength(5);
-  expect(host.textContent).toContain('45 shown of 45 tasks');
-  expect([...host.querySelectorAll('button')].some(b=>b.textContent?.trim()==='Show more')).toBe(false);
+  // N121 F10: once everything is loaded the count line goes; every row is on the page.
+  expect(host.querySelectorAll('section[aria-label] li')).toHaveLength(45);
+  expect(host.textContent).not.toContain('tasks shown');
+  expect([...host.querySelectorAll('button')].some(b=>b.textContent?.trim()==='Load more')).toBe(false);
  });
  it('sends versioned complete/reopen and adjacent reorder through updateTask',async()=>{
   await render();
@@ -164,7 +166,7 @@ describe('N25.2 v6 Tasks backlog and sheet handoff',()=>{
   const link=[...host.querySelectorAll('a')].find(el=>el.textContent?.includes('View in backlog'))!;
   expect(link?.getAttribute('href')).toBe('/tasks');
   await act(async()=>link.click());
-  expect(host.textContent).toContain('20 shown of 45 tasks');
+  expect(host.textContent).toContain('20 of 45 tasks shown');
  });
  it('redirects /tasks when v6Shell is off without querying tasks',async()=>{
   vi.mocked(isFlagOn).mockReturnValue(false);

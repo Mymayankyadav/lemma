@@ -1,5 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
-import {Navigate} from 'react-router';
+import {Navigate,useSearchParams} from 'react-router';
+import {Check,Ellipsis} from 'lucide-react';
+import {formatDateTime,formatDay} from '../../lib/format';
 import {isFlagOn} from '../../flags';
 import {getTaskApi} from '../../data/tasks';
 import type {TaskRecord,TaskStatus,TaskPatch,TaskPage} from '../../data/tasks/contract';
@@ -27,6 +29,17 @@ function checkTaskPage(page:TaskPage,limit:number):void {
   (page.nextCursor!==null&&(typeof page.nextCursor!=='string'||!page.nextCursor)))
   throw new Error('Invalid task page; refresh the backlog');
 }
+/** N121 F10: owner-zone overdue state: a civil due date before today, or a due instant already past. */
+export function taskOverdue(task:Pick<TaskRecord,'status'|'due'>,now:Date=new Date(),zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'):boolean{
+ if(task.status==='completed'||task.status==='cancelled'||task.due.kind==='none')return false;
+ if(task.due.kind==='instant')return Date.parse(task.due.at)<now.getTime();
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(now);
+ return task.due.date<today;
+}
+function dueText(task:TaskRecord):string{
+ if(task.due.kind==='none')return 'No due date';
+ return 'Due '+(task.due.kind==='date'?formatDay(task.due.date):formatDateTime(task.due.at,{clock24h:true}));
+}
 /** A one-row, versioned move crosses the adjacent row even when positions are equal. */
 export function movedPosition(task:TaskRecord,adjacent:TaskRecord,up:boolean):number {
  if(task.status!==adjacent.status)throw new Error('Move within one status only');
@@ -35,6 +48,8 @@ export function movedPosition(task:TaskRecord,adjacent:TaskRecord,up:boolean):nu
 }
 
 function Backlog(){
+ const [params,setParams]=useSearchParams();
+ const overdueOnly=params.get('show')==='overdue';
  const [rows,setRows]=useState<TaskRecord[]>([]);
  const [total,setTotal]=useState(0);
  const [cursor,setCursor]=useState<string|null>(null);
@@ -108,41 +123,62 @@ function Backlog(){
   setEditing(null);
   queueMicrotask(()=>editTrigger.current?.focus());
  }
- const groups=statuses.map(status=>({status,items:rows.filter(item=>item.status===status)}));
+ // N121 F10: overdue tasks lead their group; ?show=overdue keeps only them.
+ const groups=statuses.map(status=>({status,items:rows.filter(item=>item.status===status&&(!overdueOnly||taskOverdue(item)))
+  .sort((x,y)=>Number(taskOverdue(y))-Number(taskOverdue(x)))}))
+  .filter(group=>!overdueOnly||group.items.length>0);
+ const overdueCount=rows.filter(item=>taskOverdue(item)).length;
+ const toggleOverdue=()=>{const next=new URLSearchParams(params);if(overdueOnly)next.delete('show');else next.set('show','overdue');setParams(next,{replace:true});};
  return <section aria-label="Tasks backlog" className="flex flex-col gap-4 pb-8">
-  <div className="flex items-center justify-between gap-3">
-   <h1 className="text-title-s font-semibold">Tasks</h1>
-   <button type="button" onClick={refresh} className={button}>Refresh</button>
-  </div>
+  <h1 className="sr-only">Tasks</h1>
   {phase==='loading'&&<p role="status">Loading tasks…</p>}
   {phase==='error'&&<p role="alert">{message} <button type="button" onClick={refresh} className={button}>Retry</button></p>}
   {phase==='ready'&&<>
-   <p className="text-label text-ink-2">{rows.length} shown of {total} tasks</p>
+   {(overdueCount>0||overdueOnly)&&<button type="button" aria-pressed={overdueOnly} onClick={toggleOverdue}
+    className={'self-start rounded-full border px-3 py-2 text-label '+(overdueOnly?'border-[var(--again)] bg-danger-tint text-again':'border-[var(--control-edge)] text-ink')}>
+    {overdueOnly?'Showing overdue · Show all':overdueCount+' overdue'}</button>}
    {message&&<p role="alert" className="text-label text-again">{message}</p>}
    {total===0&&<p>No tasks yet. Use Add → Task to create one.</p>}
-   {groups.map(group=><section key={group.status} aria-label={statusNames[group.status]} className="rounded-ctl border border-edge bg-[var(--paper)] p-3">
-    <h2 className="mb-3 text-body font-semibold">{statusNames[group.status]} <span className="text-ink-2">({group.items.length} shown)</span></h2>
-    {group.items.length===0&&<p className="text-label text-ink-2">None on this page.</p>}
-    <ul className="flex flex-col gap-3">{group.items.map((task,index)=><li key={task.id} className="rounded-ctl border border-edge bg-fill-1 p-3">
-     <h3 className="break-words text-body font-semibold">{task.title}</h3>
-     <p className="mt-1 text-caption text-ink-2">{task.priority} priority{task.estimateMinutes==null?'':' · '+task.estimateMinutes+' min'} · {task.due.kind==='none'?'No due date':task.due.kind==='date'?'Due '+task.due.date:'Due '+new Date(task.due.at).toLocaleString()}</p>
-     <div className="mt-2 flex flex-wrap gap-2">
-      {task.status!=='completed'&&<button type="button" disabled={busy} className={button} aria-label={'Complete '+task.title}
-       onClick={()=>{void mutate(task,{status:'completed'});}}>Complete</button>}
-      {task.status==='completed'&&<button type="button" disabled={busy} className={button} aria-label={'Reopen '+task.title}
-       onClick={()=>{void mutate(task,{status:'backlog'});}}>Reopen</button>}
-      <button type="button" disabled={busy} className={button} aria-label={'Edit '+task.title}
-       onClick={event=>{editTrigger.current=event.currentTarget;setEditing(task);}}>Edit</button>
-      <button type="button" disabled={busy||index===0} className={button} aria-label={'Move '+task.title+' up'}
-       onClick={()=>{void mutate(task,{position:movedPosition(task,group.items[index-1],true)});}}>Up</button>
-      <button type="button" disabled={busy||index===group.items.length-1} className={button} aria-label={'Move '+task.title+' down'}
-       onClick={()=>{void mutate(task,{position:movedPosition(task,group.items[index+1],false)});}}>Down</button>
-     </div>
-    </li>)}</ul>
+   {groups.map(group=><section key={group.status} aria-label={statusNames[group.status]} className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+    <h2 className="mb-3 text-body font-semibold">{statusNames[group.status]} · {group.items.length}</h2>
+    {group.items.length===0&&<p className="text-label text-ink-2">No tasks here.</p>}
+    <ul className="flex flex-col divide-y divide-[var(--hair)]">{group.items.map((task,index)=>{
+     const done=task.status==='completed',closed=done||task.status==='cancelled',late=taskOverdue(task);
+     return <li key={task.id} className="flex min-w-0 items-start gap-3 py-2">
+      <button type="button" role="checkbox" aria-checked={done} disabled={busy||task.status==='cancelled'}
+       aria-label={(done?'Reopen ':'Complete ')+task.title}
+       onClick={()=>{void mutate(task,{status:done?'backlog':'completed'});}}
+       className={'mt-1 flex size-6 shrink-0 items-center justify-center rounded-[6px] border-2 disabled:opacity-40 '+(done?'border-[var(--accent)] bg-[var(--accent)] text-[var(--on-accent)]':'border-[var(--control-edge)]')}>
+       {done&&<Check size={16} aria-hidden="true"/>}</button>
+      <div className="min-w-0 flex-1">
+       <h3 className={'break-words text-body font-medium '+(closed?'text-ink-2 line-through':'text-ink')}>{task.title}</h3>
+       <p className="mt-1 flex flex-wrap items-center gap-x-2 text-caption text-ink-2">
+        {late?<span className="rounded-full bg-danger-tint px-2 py-0.5 font-medium text-again">Overdue · {task.due.kind==='date'?formatDay(task.due.date):task.due.kind==='instant'?formatDateTime(task.due.at,{clock24h:true}):''}</span>:<span>{dueText(task)}</span>}
+        <span>{({low:'Low',normal:'Normal',high:'High'} as Record<string,string>)[task.priority]??'Normal'} priority</span>
+        {task.estimateMinutes!=null&&<span>{task.estimateMinutes} min</span>}
+       </p>
+      </div>
+      <details className="relative shrink-0">
+       <summary aria-label={'More actions for '+task.title} className="flex size-11 cursor-pointer list-none items-center justify-center rounded-[8px] text-ink-2 [&::-webkit-details-marker]:hidden"><Ellipsis size={18} aria-hidden="true"/></summary>
+       <div className="absolute right-0 z-20 mt-1 flex w-44 flex-col gap-1 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-1 shadow-lg">
+        <button type="button" disabled={busy} className={button+' text-left'} aria-label={'Edit '+task.title}
+         onClick={event=>{(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open');editTrigger.current=event.currentTarget;setEditing(task);}}>Edit</button>
+        {!closed&&<button type="button" disabled={busy||index===0} className={button+' text-left'} aria-label={'Move '+task.title+' up'}
+         onClick={()=>{void mutate(task,{position:movedPosition(task,group.items[index-1],true)});}}>Move up</button>}
+        {!closed&&<button type="button" disabled={busy||index===group.items.length-1} className={button+' text-left'} aria-label={'Move '+task.title+' down'}
+         onClick={()=>{void mutate(task,{position:movedPosition(task,group.items[index+1],false)});}}>Move down</button>}
+        {!closed&&<button type="button" disabled={busy} className={button+' lemma-destructive text-left'} aria-label={'Cancel '+task.title}
+         onClick={()=>{void mutate(task,{status:'cancelled'});}}>Cancel task</button>}
+        {task.status==='cancelled'&&<button type="button" disabled={busy} className={button+' text-left'} aria-label={'Reopen '+task.title}
+         onClick={()=>{void mutate(task,{status:'backlog'});}}>Reopen</button>}
+       </div>
+      </details>
+     </li>;})}</ul>
    </section>)}
-   {cursor&&<button type="button" className={button} disabled={busy} onClick={()=>{void more();}}>
-    {busy?'Loading…':'Show more'}
-   </button>}
+   {cursor&&<div className="flex flex-wrap items-center gap-3 text-label text-ink-2">
+    <span>{rows.length} of {total} tasks shown</span>
+    <button type="button" className={button} disabled={busy} onClick={()=>{void more();}}>{busy?'Loading…':'Load more'}</button>
+   </div>}
   </>}
   {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={dismissEdit}
    onSaved={record=>{setRows(old=>appendTaskPage(old.filter(t=>t.id!==record.id),{items:[record],total,nextCursor:null}));}}

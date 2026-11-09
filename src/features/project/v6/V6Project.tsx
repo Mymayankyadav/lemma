@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { Link, useParams } from 'react-router';
-import { useProject } from '../../../data/hooks';
+import { useCheckpoint, useProject } from '../../../data/hooks';
+import { ProjectSwitcher } from '../ProjectSwitcher';
 import type { CheckpointUi, ProjectDetail, SessionSummary } from '../../../data/types';
 import { currentCheckpointIndex, groupCheckpointStages } from '../../../ui/timeline/progress';
 import { FastTex as Tex } from '../../../ui/FastTex';
@@ -35,19 +36,20 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
     Date.parse(b.startedAt) - Date.parse(a.startedAt) || b.number - a.number), [detail.sessions]);
   return <section aria-label="Project evidence" className="flex flex-col gap-3">
     <h2 className="text-ink">Sessions and sources</h2>
+    {/* N121 F3: the tiles are the toggles; their names keep "Show sessions (n)" / "Show sources (n)". */}
     <div className="notebook-metrics">
-      <p className="notebook-metric !min-h-0"><span>Tutor sessions</span>
-        <strong className="tabular-nums">{detail.sessions.length}</strong>
-      </p>
-      <p className="notebook-metric !min-h-0"><span>Sources</span>
-        <strong className="tabular-nums">{detail.sources.length}</strong>
-      </p>
-    </div>
-    <div className="border-b border-[var(--hair)] pb-3">
       <button type="button" aria-expanded={showSessions} aria-controls="v6-project-session-list"
-        className={action + ' w-full text-left'} onClick={() => setShowSessions(value => !value)}>
-        {showSessions ? 'Hide sessions' : 'Show sessions'} ({detail.sessions.length})
+        aria-label={(showSessions ? 'Hide sessions' : 'Show sessions') + ' (' + detail.sessions.length + ')'}
+        className="notebook-metric !min-h-0 text-left" onClick={() => setShowSessions(value => !value)}><span>Tutor sessions</span>
+        <strong className="tabular-nums">{detail.sessions.length}</strong>
       </button>
+      <button type="button" aria-expanded={showSources} aria-controls="v6-project-source-list"
+        aria-label={(showSources ? 'Hide sources' : 'Show sources') + ' (' + detail.sources.length + ')'}
+        className="notebook-metric !min-h-0 text-left" onClick={() => setShowSources(value => !value)}><span>Sources</span>
+        <strong className="tabular-nums">{detail.sources.length}</strong>
+      </button>
+    </div>
+    <div>
       {showSessions && <div id="v6-project-session-list" className="mt-3 flex flex-col gap-2">
         {sessions.length === 0 ? <p className="text-label text-ink-2">No tutor sessions yet.</p> :
           sessions.slice(0, sessionLimit).map(session => <Link key={session.id}
@@ -57,21 +59,8 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
           onClick={() => setSessionLimit(value => value + 20)}>Show 20 more sessions</button>}
       </div>}
     </div>
-    <div className="min-w-0 border-b border-[var(--hair)] pb-3">
-      <button type="button" aria-expanded={showSources} aria-controls="v6-project-source-list"
-        className={action + ' w-full text-left'} onClick={() => setShowSources(value => !value)}>
-        {showSources ? 'Hide sources' : 'Show sources'} ({detail.sources.length})
-      </button>
-      {showSources && <div id="v6-project-source-list" className="mt-3 flex flex-col gap-2">
-        {detail.sources.length === 0 ? <p className="text-label text-ink-2">No sources yet.</p> :
-          detail.sources.slice(0, sourceLimit).map(source =>
-            <p key={source.id} className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label text-ink">
-              <Tex source={source.title} />
-            </p>)}
-        {sourceLimit < detail.sources.length && <button type="button" className={action}
-          onClick={() => setSourceLimit(value => value + 20)}>Show 20 more sources</button>}
-      </div>}
-      {showSources && <div className="mt-4 min-w-0 max-w-full overflow-x-auto border-t border-edge pt-4" aria-label="Detailed project sources">
+    <div id="v6-project-source-list" className="min-w-0">
+      {showSources && <div className="min-w-0 max-w-full overflow-x-auto" aria-label="Detailed project sources">
         <SourcesPanel projectId={detail.project.id} sources={detail.sources} />
       </div>}
     </div>
@@ -79,11 +68,20 @@ function ScopeEvidence({ detail, slug }: { detail: ProjectDetail; slug: string }
 }
 
 /** N33.2 uses only the existing owner-scoped useProject hook. */
+/** "Next: Use a finite subcover · Step 3 of 4" — the step's own words when the checkpoint has them. */
+function NextStep({ slug, code, step, total }: { slug: string; code: string; step: number; total: number }) {
+  const checkpoint = useCheckpoint(slug, code);
+  const index = Math.min(Math.max(0, step), Math.max(0, total - 1));
+  const text = checkpoint.data?.steps?.[index];
+  return <div className="notebook-next-step !my-1"><span>Next</span>
+    <p>{text ? <Tex source={text}/> : 'Continue this checkpoint'}{total ? ' · Step ' + Math.min(step + 1, total) + ' of ' + total : ''}</p></div>;
+}
 export default function V6Project() {
   const { slug: rawSlug } = useParams();
   const slug = rawSlug ?? '';
   const projectQuery = useProject(slug);
   const [copied, setCopied] = useState('');
+  const [switching, setSwitching] = useState(false);
   useV6HeaderTitle(projectQuery.data?.project.title);
   async function copyPrompt(prompt: string) {
     try { await navigator.clipboard.writeText(prompt); setCopied('Prompt copied. Paste into your tutor to continue.'); }
@@ -120,7 +118,7 @@ export default function V6Project() {
   return <section aria-labelledby="v6-project-title" className="flex min-w-0 flex-col gap-5 pb-8">
     <h2 id="v6-project-title" className="sr-only"><Tex source={detail.project.title}/></h2>
     <div className="lemma-page-action-row -mt-3">
-      <Link to="/projects" className="lemma-header-chip">Switch path</Link>
+      <button type="button" className="lemma-header-chip" onClick={() => setSwitching(true)}>Switch path</button>
       <Link to="/atlas" className="lemma-header-chip">Concept map</Link>
     </div>
     {now && <article aria-label={'Current checkpoint ' + now.code} className="lemma-project-study !rounded-[12px] !border !border-[var(--hair)] !bg-[var(--paper)] !p-4">
@@ -130,12 +128,7 @@ export default function V6Project() {
         <span className="text-label font-semibold text-[var(--accent)]">{now.code} · In progress</span>
         <h3 className="!font-[var(--font-display)] text-[1.25rem] text-ink"><Tex source={now.title}/></h3>
       </Link>
-      <div className="notebook-next-step !my-1"><span>Next step</span>
-        <p>{now.stepsTotal ? 'Step ' + Math.min(now.currentStep + 1, now.stepsTotal) + ' of ' + now.stepsTotal : 'Continue working on this checkpoint'}</p></div>
-      <div className="flex items-center justify-between text-label text-ink-2">
-        <span>Step {now.stepsTotal ? Math.min(now.currentStep + 1, now.stepsTotal) : 0} of {now.stepsTotal}</span>
-        <span className="max-w-[60%] truncate">{detail.subject.name}</span>
-      </div>
+      <NextStep slug={slug} code={now.code} step={now.currentStep} total={now.stepsTotal}/>
       <span className="notebook-progress-rail" role="progressbar" aria-label={'Steps for ' + now.code}
         aria-valuemin={0} aria-valuemax={Math.max(1, now.stepsTotal)} aria-valuenow={Math.max(0, now.currentStep)}>
         <span style={{ width: (now.stepsTotal ? 100 * Math.max(0, now.currentStep) / now.stepsTotal : 0) + '%' }}/></span>
@@ -149,14 +142,13 @@ export default function V6Project() {
       <p className="notebook-paste-note">{copied || 'Paste into your tutor to continue.'}</p>
     </article>}
     <section aria-label="Project progress" className="flex flex-col gap-1 border-t border-[var(--hair)] pt-4">
-      <p className="text-label text-ink-2">{detail.subject.glyph} {detail.subject.name} · {detail.project.status}</p>
+      <p className="text-label text-ink-2">{detail.subject.glyph} {detail.subject.name} · {({ active: 'Active', planning: 'Planning', paused: 'Paused', done: 'Done', archived: 'Archived' } as Record<string, string>)[detail.project.status] ?? 'Active'}</p>
       <p className="break-words text-body text-ink-2">
         {detail.project.goal.trim() ? <Tex source={detail.project.goal}/> : 'Goal unavailable'}
       </p>
       <p className="text-label text-ink-2"><strong className="tabular-nums text-ink">{detail.done}</strong>
         {' of '}{detail.total} checkpoints complete
-        {detail.project.targetDate && <> · Target date: <time dateTime={detail.project.targetDate}>{detail.project.targetDate}</time></>}
-        {' · '}Forecast unavailable</p>
+        {detail.project.targetDate && <> · Target: <time dateTime={detail.project.targetDate}>{new Intl.DateTimeFormat('en', { timeZone: 'UTC', month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(detail.project.targetDate + 'T12:00:00Z'))}</time></>}</p>
       <span className="notebook-progress-rail mt-2" aria-hidden="true"><span style={{ width: (detail.total ? 100 * detail.done / detail.total : 0) + '%' }}/></span>
     </section>
     <section aria-labelledby="v6-stage-title" className="flex flex-col gap-3">
@@ -192,5 +184,6 @@ export default function V6Project() {
       </>}
     </section>
     <ScopeEvidence key={detail.project.id} detail={detail} slug={slug}/>
+    {switching && <ProjectSwitcher open onClose={() => setSwitching(false)} current={slug}/>}
   </section>;
 }

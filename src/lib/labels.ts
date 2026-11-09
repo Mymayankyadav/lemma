@@ -10,10 +10,12 @@ export function unplacedReasonText(code:string):string{
 }
 export function sessionStatusText(value:string):string{
  return ({yes:'Demonstrated',no:'Not demonstrated',partial:'Partially demonstrated',paused:'Paused',
-  completed:'Completed',active:'In progress',running:'In progress'} as Record<string,string>)[value]??'Status unavailable';
+  completed:'Completed',active:'In progress',running:'In progress',live:'In progress',ended:'Ended'} as Record<string,string>)[value]??'Status unavailable';
 }
 export function evidenceText(value:string):string{
- return ({hint:'Hint',explanation:'Explanation',partial:'Partial evidence',yes:'Demonstrated',no:'Not demonstrated'} as Record<string,string>)[value]??'Evidence';
+ return ({hint:'Hint',explanation:'Explanation',partial:'Partly there',yes:'Demonstrated',no:'Not yet',
+  demonstrated:'Demonstrated',recheck_ok:'Recheck passed',recheck_fail:'Recheck missed',attempt:'Attempt',
+  misconception:'Misconception',proof:'Proof',full:'Complete',none:'Not yet'} as Record<string,string>)[value]??'Evidence';
 }
 export function cardTypeText(value:string):string{
  return ({basic:'Basic · question and answer',cloze:'Fill in the blank',reverse:'Both ways · ask in either direction'} as Record<string,string>)[value]??'Card';

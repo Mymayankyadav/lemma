@@ -13,6 +13,19 @@ function payloadText(payload:ProposalEditPayload):string{return JSON.stringify(p
 function readPayload(text:string):ProposalEditPayload{
  return normalizeDraftPayload(JSON.parse(text) as ProposalEditPayload);
 }
+/** "Adds 3 checkpoints · changes 2 · removes 1". */
+export function changeSummary(adds:number,changes:number,removes:number):string{
+ const parts=[adds?'Adds '+adds+(adds===1?' checkpoint':' checkpoints'):'',changes?'changes '+changes:'',removes?'removes '+removes:'']
+  .filter(Boolean).join(' · ');
+ return parts?parts.charAt(0).toUpperCase()+parts.slice(1):'No checkpoint changes';
+}
+/** N121 E2: validator text never reaches the owner; JSON parse and schema errors become sentences. */
+function draftProblem(error:unknown,fallback:string):string{
+ const message=error instanceof Error?error.message:'';
+ if(error instanceof SyntaxError||/JSON|Unexpected token/i.test(message))return 'The edit is not valid. Check the brackets and quotes, then save again.';
+ if(/uuid|expected|invalid|schema|required/i.test(message))return 'This edit is not in a form Lemma can save. Check the changes and try again.';
+ return message&&message.length<120&&!/[{}[\]]/.test(message)?message:fallback;
+}
 export default function PlanProposalV6(){
  const {id=''}=useParams(),navigate=useNavigate(),proposal=useProposal(id);
  const project=useProject(proposal.data?.projectSlug??'');
@@ -76,7 +89,7 @@ export default function PlanProposalV6(){
    // Start a new explicit edit; the unchanged preview stays visible above.
    setDraft(found);setText(found?payloadText(found.payload):payloadText({ops:[]}));
    setStatus('ready');
-  })().catch(error=>{if(alive){setStatus('error');setProblem(error instanceof Error?error.message:'Could not read drafts');}});
+  })().catch(error=>{if(alive){setStatus('error');setProblem(draftProblem(error,'Could not read your saved edits. Try again.'));}});
   return ()=>{alive=false};
  },[id,proposal.data,reload,draftSupported]);
  const p=proposal.data;
@@ -101,7 +114,7 @@ export default function PlanProposalV6(){
   }catch(e){
    if(routeRef.current!==createFor)return;
    if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
-   setProblem(e instanceof Error?e.message:'Could not create draft');
+   setProblem(draftProblem(e,'Could not start your edit. Try again.'));
   }finally{if(routeRef.current===createFor)setPending(false)}
  }
  async function save(){
@@ -116,7 +129,7 @@ export default function PlanProposalV6(){
   }catch(e){
    if(routeRef.current!==saveFor)return;
    if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
-   setProblem(e instanceof Error?e.message:'Could not save draft');
+   setProblem(draftProblem(e,'Could not save your edit. Try again.'));
   }finally{if(routeRef.current===saveFor)setPending(false)}
  }
  async function submit(){
@@ -131,7 +144,7 @@ export default function PlanProposalV6(){
   }catch(e){
    if(routeRef.current!==submitFor)return;
    if(e instanceof ProposalDraftError&&e.details)setConflict(e.details);
-   setProblem(e instanceof Error?e.message:'Could not submit draft');
+   setProblem(draftProblem(e,'Could not send your edit. Try again.'));
   }finally{if(routeRef.current===submitFor)setPending(false)}
  }
  async function decide(accept:boolean){
@@ -169,7 +182,19 @@ export default function PlanProposalV6(){
    {project.isError&&<p role="alert">Current plan unavailable; comparison is incomplete.
     <button type="button" className={control} onClick={()=>{void project.refetch()}}>Retry</button>
    </p>}
-   {comparisons&&<div className="flex flex-col gap-3" aria-label="Before and after plan targets">
+   {comparisons&&<section aria-label="What changes" className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+    <h2 className="text-body font-semibold">What changes</h2>
+    <p className="text-label text-ink-2">{changeSummary(comparisons.adds.length,comparisons.changed.length,comparisons.removes.length)}</p>
+    {comparisons.adds.length+comparisons.changed.length>0&&<ul className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+     {comparisons.after.filter(node=>comparisons.adds.includes(node.code)||comparisons.changed.includes(node.code)).map(node=>
+      <li key={node.code} className="min-w-0 rounded-[8px] border border-[var(--accent)] bg-[var(--paper-2)] px-3 py-2 text-label">
+       <span className="text-caption text-ink-2">{comparisons.adds.includes(node.code)?'Added':'Changed'}</span>
+       <strong className="block font-medium">{node.title}</strong><span className="text-caption text-ink-2">{node.code}</span></li>)}
+    </ul>}
+    {comparisons.removes.length>0&&<p className="mt-2 text-label">Removed: {comparisons.removes.join(', ')}</p>}
+   </section>}
+   {comparisons&&<details className="lemma-disclosure"><summary className="min-h-11 cursor-pointer text-label font-semibold">Compare whole plan</summary>
+   <div className="mt-2 flex flex-col gap-3" aria-label="Before and after plan targets">
     <section aria-label="Before targets" className="min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
      <div className="proposal-stage-toolbar"><div className="proposal-stage-heading"><h2>Current plan</h2><p>Before · {comparisons.before.length} checkpoints</p></div></div>
      <ul className="grid grid-cols-2 gap-2">{comparisons.before.map(node=><li key={node.code} className="min-w-0 rounded-[8px] border border-[var(--edge)] bg-[var(--paper-2)] px-3 py-2 text-label">
@@ -185,8 +210,7 @@ export default function PlanProposalV6(){
      </li>)}</ul>
      {!comparisons.after.length&&<p className="text-caption">No checkpoints in the proposed plan.</p>}
     </section>
-   </div>}
-   {comparisons?.removes.length? <p className="text-label">Removed: {comparisons.removes.join(', ')}</p>:null}
+   </div></details>}
    <section aria-label="Source citations">
     <h2 className="text-body font-semibold">Source citations</h2>
     {comparisons?.citations.length?<ul className="list-disc pl-5 text-label">

@@ -102,7 +102,7 @@ export default function Page(){
    navigate('/p/'+project.slug+'?tab=sources');
   }catch(cause){
    setError(cause instanceof Error?cause.message:'Could not create project');
-   notify('Could not save your project',{tone:'danger'});
+   notify(isFlagOn('v6Shell')?'Could not save your path':'Could not save your project',{tone:'danger'});
   }finally{setSaving(false)}
  }
  const remaining=items.filter(item=>item.status!=='ready').length;
@@ -126,7 +126,7 @@ export default function Page(){
      <label htmlFor="project-title" className="text-label font-medium text-ink-2">Name</label>
      <input id="project-title" required maxLength={100} autoFocus autoComplete="off"
       value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}
-      placeholder="Real Analysis" className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink"/>
+      placeholder={isFlagOn('v6Shell')?'e.g. Real Analysis':'Real Analysis'} className="min-h-12 w-full rounded-ctl border border-edge-2 bg-well px-3 text-headline text-ink placeholder:text-ink-3"/>
      {(name.includes('$')||name.includes('\\(')||name.includes('\\['))&&
       <Suspense fallback={null}><MathPreview source={name}/></Suspense>}
      <p className="text-label text-ink-2">Your tutor fills in the subject, goal, teaching style and study plan.</p>
@@ -135,7 +135,7 @@ export default function Page(){
      onDragOver={event=>event.preventDefault()}
      onDrop={event=>{event.preventDefault();if(!saving)enqueue(event.dataTransfer.files)}}>
      <div className="flex items-center justify-between gap-2">
-      <h3 className="text-body font-semibold text-ink-2">Sources (optional)</h3>
+      <h3 className={isFlagOn('v6Shell')?'text-label font-medium text-ink-2':'text-body font-semibold text-ink-2'}>Sources (optional)</h3>
       <span className="text-label text-ink-3">PDF, .tex, .md · 50 MB each</span>
      </div>
      <input ref={input} hidden type="file" multiple accept=".pdf,application/pdf,.tex,.latex,.ltx,application/x-tex,text/x-tex,.md,.markdown,text/markdown"

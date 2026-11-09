@@ -46,7 +46,8 @@ function HeaderCluster({pathname,onTask}:{pathname:string;onTask:()=>void}){
   ['/today/close','Close the day'],['/atlas','Concept map'],['/cards','Card library'],['/settings','Settings']] as const)
   .filter(([to])=>to!==pathname);
  return <nav aria-label="Page actions" className="lemma-header-cluster">
-  {!compact&&<Link to="/proposals" className="lemma-header-inbox" title="Inbox"
+  {/* N121 E1: no Inbox shortcut while you are on the Inbox. */}
+  {!compact&&pathname!=='/proposals'&&<Link to="/proposals" className="lemma-header-inbox" title="Inbox"
    aria-label={pending?'Inbox, '+pending.toLocaleString()+' pending':'Inbox'}>
    <Inbox size={20} aria-hidden="true"/><span className="sr-only">Inbox</span>
    {pending>0&&<span className="lemma-header-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}

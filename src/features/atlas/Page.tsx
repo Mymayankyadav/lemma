@@ -17,7 +17,7 @@ import {STORE,clip,statusName,toneColor,StatusMark,MemoWires,Row} from './Outlin
 import {resolveAtlasDeepLink} from './deep-link';
 import {atlasRowAt,buildAtlasRowGeometry} from './rowGeometry';
 import {atlasFoldDepth} from './depthOf';
-import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
+import {ancestors,arcCountFor,arcsFor,budgetArcs,budgetArcsUnfocusedCached,buildAtlasTree,conceptCounts,expandedToDepth,initialExpanded,focusOn,matches,neighbours,rowTone,visibleRows} from './tree';
 
 
 // Optional surfaces should not load motion-backed sheets or four illustration
@@ -109,6 +109,8 @@ function LegacyAtlasPage(){
  const navigate=useNavigate(),[params,setParams]=useSearchParams();
  const query=useAtlas(),graph=query.data;
  const tree=useMemo(()=>graph?buildAtlasTree(graph):null,[graph]);
+ const v6=isFlagOn('v6Shell');
+ const v6Counts=useMemo(()=>tree&&v6?conceptCounts(tree):null,[tree,v6]);
  const [saved]=useState(load);
  const [expanded,setExpanded]=useState<Set<string>|null>(null);
  const [related,setRelated]=useState(saved?.related??false);
@@ -180,8 +182,10 @@ function LegacyAtlasPage(){
    const count=arcCountFor(tree,rows,kinds);
    if(count>60)return {visible:[],hidden:count};
   }
-  if(!focus)return budgetArcsUnfocusedCached(tree,rows,open,kinds);
-  return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus);
+  // N121 E5: the v6 map view draws at most 24 bundled arcs; the rest stay in the details panel.
+  const limit=isFlagOn('v6Shell')?24:60;
+  if(!focus)return budgetArcsUnfocusedCached(tree,rows,open,kinds,limit);
+  return budgetArcs(tree,rows,open,arcsFor(tree,rows,kinds),focus,limit);
  },[tree,rows,open,kinds,focus]);
  const selected=selectedId?tree?.nodes.get(selectedId)??null:null;
  const {ideas,demonstrated,links,recheckCount}=useMemo(()=>{
@@ -280,9 +284,12 @@ function LegacyAtlasPage(){
  return <main aria-label="Atlas" className="relative flex h-dvh flex-col text-ink">
   <header className={'z-20 shrink-0 border-b border-edge bg-obsidian/95 px-3 '+(getMode()==='demo'?'pt-[calc(env(safe-area-inset-top)+30px)]':'pt-[env(safe-area-inset-top)]')}>
    <div className="flex min-h-14 items-center gap-2 py-1">
-    <button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>
+    {/* N121 E5: inside the v6 shell the header is the shell's; one back control and one count. */}
+    {!v6&&<button type="button" aria-label="Back" onClick={()=>navigate(-1)} className="flex size-11 items-center justify-center rounded-ctl"><ArrowLeft size={19}/></button>}
+    {v6?<div className="min-w-0 flex-1"><h1 className="sr-only">Concept map</h1>
+     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{v6Counts?.concepts} concepts · {v6Counts?.connections} connections · {demonstrated} demonstrated</p></div>:
     <div className="min-w-0 flex-1"><h1 className="font-serif text-[28px] leading-[31px] font-medium">Atlas</h1>
-     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {links} links · {demonstrated} demonstrated</p></div>
+     <p data-atlas-summary className="whitespace-normal break-words text-caption leading-[18px] text-ink-3">{ideas} ideas · {links} links · {demonstrated} demonstrated</p></div>}
     <button type="button" aria-label="Find an idea" aria-pressed={searching} onClick={()=>{setSearching(v=>!v);if(searching)setSearch('')}}
      className="flex size-11 items-center justify-center rounded-ctl"><Search size={19}/></button>
    </div>
@@ -297,7 +304,7 @@ function LegacyAtlasPage(){
      className={'flex min-h-11 min-w-11 items-center gap-1.5 rounded-full px-3 text-label '+(related?'bg-[var(--paper-2)] font-semibold text-ink':'text-ink-2')}>
      <svg width="16" height="6" aria-hidden="true"><path d="M1 3H15" stroke="currentColor" strokeDasharray="2 3" strokeLinecap="round"/></svg>Related</button>
     {recheckCount>0&&<button type="button" aria-pressed={recheckOnly} aria-label={'Re-check '+recheckCount} title="Ideas due for a re-check" onClick={()=>setRecheckOnly(v=>!v)}
-     className={'flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full px-3 text-label tabular-nums '+(recheckOnly?'bg-[var(--paper-2)] font-semibold text-[var(--late)]':'text-[var(--late)]')}>
+     className={'flex min-h-11 min-w-11 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-full px-3 text-label tabular-nums '+(recheckOnly?'bg-[var(--paper-2)] font-semibold text-[var(--late)]':'text-[var(--late)]')}>
      <RotateCcw size={14}/>Re-check {recheckCount}</button>}
    </div>
   </header>

@@ -5,6 +5,8 @@ import {useNavigate,useSearchParams} from 'react-router';
 import {useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
 import {preview,scheduleConfig} from '../../../lib/fsrs';
+import {formatInterval} from '../../../lib/format';
+import {noteKindText} from '../../../lib/labels';
 import {MathText} from '../../../ui/MathText';
 import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,
  undoLast,unpauseRun,type DurableRun} from './adapter';
@@ -40,7 +42,7 @@ export default function ReviewRunV6(){
   void (async()=>{
    const loaded=runId?await getRun(runId):await resumeRun();
    if(cancelled)return;
-   if(!loaded){setMessage('No saved review run was found.');return}
+   if(!loaded){setMessage(null);return}
    const receipt=pendingGrade();
    if(receipt?.runId===loaded.id){
     const current=loaded.items[loaded.position];
@@ -127,13 +129,14 @@ export default function ReviewRunV6(){
   finally{setBusy(false)}
  }
  if(loading)return <main aria-label="Review run" role="status">Restoring saved review run…</main>;
+ // N121 F7: opening /review/run directly is not a dead end.
  if(!run)return <main aria-label="Review run" className="flex flex-col gap-3">
-  <p role="alert">{message??'No saved run'}</p>
-  <button className={button} onClick={()=>navigate('/review')}>Back to Review</button>
+  <h1 className="text-title-s font-semibold">No review in progress</h1>
+  {message?<p role="alert">{message}</p>:<p className="text-label text-ink-2">Start a review to work through today's cards.</p>}
+  <button className="notebook-primary" onClick={()=>navigate('/review')}>Start review</button>
  </main>;
  return <main aria-label="Durable review run" className="flex min-w-0 flex-col gap-4 pb-24">
   <header className="flex items-center justify-between gap-2">
-   <button className="min-h-11 rounded-[8px] px-2 text-label text-ink-2" disabled={busy} onClick={()=>{void leave()}}>✕ Leave</button>
    <div className="text-center">
     <h1 className="sr-only">Review run</h1>
     <p className="text-label tabular-nums" role="progressbar"
@@ -171,7 +174,7 @@ export default function ReviewRunV6(){
     {/* N112 (mockup `15__Page`): the card sits on review paper; grades use the mockup grid. */}
     <div data-ui="review-paper" className="min-w-0 break-words p-4 font-math">
      <div className="mb-3 flex items-center justify-between border-b border-[var(--hair)] pb-2 font-[var(--font-ui)] text-caption tracking-[.08em] text-ink-2">
-      <span>{card.kind.toUpperCase()}</span><span>Note {card.noteNo} · {card.kind}</span></div>
+      <span>{noteKindText(card.kind).toUpperCase()}</span><span>Note {card.noteNo}</span></div>
      <MathText source={faces.front} variant="card" interactiveMath/>
      {revealed&&<div className="mt-4 border-t border-edge pt-4">
       <MathText source={faces.back} variant="answer" interactiveMath/>
@@ -189,10 +192,12 @@ export default function ReviewRunV6(){
       Show answer
      </button>
     </section>:<section aria-label="Grade answer" data-ui="review-grades" className="grid">
-     {grades.map((label,i)=><button key={label} className={button+' min-w-0 [overflow-wrap:anywhere]'}
-      disabled={busy||!choices} onClick={()=>{void grade((i+1) as Rating)}}>
-      {label}<span className="block text-caption">{choices?.[(i+1) as Rating].label??'—'}</span>
-     </button>)}
+     {grades.map((label,i)=>{
+      const choice=choices?.[(i+1) as Rating];
+      return <button key={label} className={button+' min-w-0 [overflow-wrap:anywhere]'}
+       disabled={busy||!choices} onClick={()=>{void grade((i+1) as Rating)}}>
+       {label}<span className="block text-caption">{choice?formatInterval(choice.delay/86_400_000):'—'}</span>
+      </button>;})}
     </section>}
    </section>:<p role="status">Loading the saved card…</p>}
   </>:null}

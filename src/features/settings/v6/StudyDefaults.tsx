@@ -24,7 +24,8 @@ export function teachingStyleDestination(index: number, key: string, count: numb
 
 
 /** N28.2.1: v6 Study defaults. All writes use the existing updateSettings mutation. */
-export default function StudyDefaults({ settings }: { settings: Settings }) {
+/** N121 F9: `part` splits the page between Tutor (teaching style, tutor rules) and Study & review (memory, shortcuts). */
+export default function StudyDefaults({ settings, part = 'all' }: { settings: Settings; part?: 'all' | 'tutor' | 'study' }) {
   const styles = useStyles();
   const reviews = useReviewLog();
   const update = useUpdateSettings();
@@ -125,8 +126,8 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
   const preview = renderMarkdown('$\\R \\quad \\norm{x}$', { macros });
 
   return <section aria-labelledby="v6-study-title" className="flex flex-col gap-4 pb-8">
-    <h2 id="v6-study-title" className="text-title-s font-semibold text-ink">Study defaults</h2>
-    <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
+    <h2 id="v6-study-title" className="text-title-s font-semibold text-ink">{part === 'tutor' ? 'Teaching style' : 'Study defaults'}</h2>
+    {part !== 'study' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
       <h3 className="mb-2 text-body font-semibold text-ink">Teaching style</h3>
       {styles.isPending ? <p role="status">Loading teaching styles…</p> :
         styles.isError ? <div role="alert">Teaching styles unavailable.
@@ -135,14 +136,17 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
         <div role="radiogroup" aria-label="Teaching style" className="flex flex-col gap-2">
           {styles.data.map((style, index) => <button key={style.key} type="button" role="radio"
             aria-checked={settings.defaultStyle === style.key} disabled={busy}
-            className={button + ' w-full text-left'} onKeyDown={event => moveStyle(event, index)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-[8px] px-2 text-left text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)] disabled:opacity-50"
+            onKeyDown={event => moveStyle(event, index)}
             onClick={() => { void save({ defaultStyle: style.key }); }}>
-            {style.name}{settings.defaultStyle === style.key ? ' · Selected' : ''}
+            <span aria-hidden="true" className={'flex size-5 shrink-0 items-center justify-center rounded-full border-2 ' + (settings.defaultStyle === style.key ? 'border-[var(--accent)]' : 'border-[var(--control-edge)]')}>
+              {settings.defaultStyle === style.key && <span className="size-2.5 rounded-full bg-[var(--accent)]"/>}</span>
+            {style.name}
           </button>)}
         </div>}
       <button type="button" className={button + ' mt-3'} disabled={busy} onClick={openRules}>Tutor rules</button>
-    </section>
-    <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
+    </section>}
+    {part !== 'tutor' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
       <h3 className="mb-3 text-body font-semibold text-ink">Memory</h3>
       <label className="flex items-center justify-between gap-2 text-label font-semibold text-ink" htmlFor="v6-retention">
         <span>Target recall</span><output htmlFor="v6-retention">{Math.round((retention ?? settings.desiredRetention) * 100)}%</output>
@@ -176,11 +180,11 @@ export default function StudyDefaults({ settings }: { settings: Settings }) {
       <button type="button" className={button + ' mt-3 w-full'} disabled={busy || !canTune} onClick={tune}>
         Tune to my reviews
       </button>
-    </section>
-    <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
+    </section>}
+    {part !== 'tutor' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
       <h3 className="mb-3 text-body font-semibold text-ink">Math shortcuts</h3>
       <button type="button" className={button} disabled={busy} onClick={openMacros}>Edit math shortcuts</button>
-    </section>
+    </section>}
     <Sheet open={editor === 'rules'} onClose={() => setEditor(null)} title="Tutor rules" footer={<>
         <button type="button" className={button} onClick={() => setRules('')}>Reset to default</button>
         <button type="button" className={button} disabled={busy}

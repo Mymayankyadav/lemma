@@ -59,12 +59,13 @@ beforeEach(()=>{
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.clearAllMocks()});
 
-async function render(){
+async function render(group='Data & account'){
   await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
     <V6Settings legacy={<p>Existing settings: memory, reminders and export controls</p>}/>
   </MemoryRouter>));
   // N117: Settings opens on four grouped rows; Data & account opens on Account.
-  await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Data & account')!.click();await Promise.resolve();});
+  // N121 F9: each group page shows only its own sections, so a test opens the group it needs.
+  await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')===group)!.click();await Promise.resolve();});
 }
 function button(label:string){
   const found=[...host.querySelectorAll('button')].find(x=>x.textContent?.trim()===label||x.getAttribute('aria-label')===label);
@@ -89,9 +90,13 @@ describe('N28.1 v6 Settings core panels',()=>{
     expect(selected()).toBe('Account');
     const current=host.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
     await act(async()=>current.dispatchEvent(new KeyboardEvent('keydown',{bubbles:true,key:'ArrowRight'})));
-    expect(selected()).toBe('Appearance');
-    expect(document.activeElement).toBe(button('Appearance'));
-    await click('Reminders');
+    expect(selected()).toBe('Subjects');
+    expect(document.activeElement).toBe(button('Subjects'));
+    expect(host.querySelectorAll('[role="tab"][aria-selected="true"]')).toHaveLength(1);
+    await act(async()=>root.unmount());root=createRoot(host);host.replaceChildren();
+    await act(async()=>root.render(<MemoryRouter initialEntries={['/settings?section=reminders']}>
+      <V6Settings legacy={<p>Existing settings: memory, reminders and export controls</p>}/>
+    </MemoryRouter>));
     expect(selected()).toBe('Reminders');
     expect(host.textContent).toContain('Existing settings: memory, reminders and export');
     expect(host.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('v6-settings-tab-reminders');
@@ -107,12 +112,21 @@ describe('N28.1 v6 Settings core panels',()=>{
     await act(async()=>{rows[1].click();await Promise.resolve();});
     expect(selected()).toBe('Connector');
     expect(host.querySelector('.lemma-settings-page h2')?.textContent).toBe('Tutor');
-    await click('‹ All settings');
+    // N121 F9: the group shows only its sections; the header Back (history) returns to the index.
+    expect([...host.querySelectorAll('[role="tab"]')].map(x=>x.textContent?.trim())).toEqual(['Connector','Teaching style']);
+    await act(async()=>root.unmount());root=createRoot(host);host.replaceChildren();
+    await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
+      <V6Settings legacy={<p>Existing settings</p>}/>
+    </MemoryRouter>));
     expect(host.querySelectorAll('.lemma-settings-link')).toHaveLength(4);
+    await act(async()=>root.unmount());root=createRoot(host);host.replaceChildren();
+    await act(async()=>root.render(<MemoryRouter initialEntries={['/settings?section=planning']}>
+      <V6Settings legacy={<p>Existing settings</p>}/>
+    </MemoryRouter>));
+    expect(selected()).toBe('Planning');
   });
   it('saves appearance using the existing update-settings hook and reports errors',async()=>{
-    await render();
-    await click('Appearance');
+    await render('Appearance');
     await click('Choose Night');
     expect(update).toHaveBeenCalledWith({ui:{mode:'night'}});
     expect(notify).toHaveBeenCalledWith('Saved',{tone:'success'});
@@ -128,8 +142,7 @@ describe('N28.1 v6 Settings core panels',()=>{
   it('masks secret connector URL until reveal, copies only when requested, and rotates after confirmation',async()=>{
     const clipboard=vi.fn(async()=>undefined);
     Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:clipboard}});
-    await render();
-    await click('Connector');
+    await render('Tutor');
     expect(host.textContent).toContain('••••••');
     expect(host.textContent).not.toContain('private-token');
     await click('Show connector address');

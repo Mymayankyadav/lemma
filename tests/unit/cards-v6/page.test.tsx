@@ -48,7 +48,9 @@ function api(rows = records) {
     const end = Math.min(subset.length, offset + 50);
     return { rows: subset.slice(offset, end), nextOffset: end < subset.length ? end : null };
   });
-  mocks.api = { searchCardsPage: search };
+  // N121 E3: the checkpoint filter lists the chosen path's checkpoints.
+  mocks.api = { searchCardsPage: search, getProject: vi.fn(async () => ({ checkpoints: [
+    { code: 'C1', title: 'Compact sets', ui: 'active' }] })) } as typeof mocks.api;
 }
 async function mount() {
   await act(async () => root.render(
@@ -135,20 +137,22 @@ describe('N31 v6 Cards', () => {
     await vi.waitFor(() => expect(search.mock.calls.at(-1)?.[0]).toMatchObject({
       query: '', projectSlug: 'project-1', noteStatus: 'active', offset: 0,
     }));
-    expect(host.textContent).toContain('Project: Analysis');
-    expect(host.textContent).toContain('Status: active');
+    expect(host.textContent).toContain('Path: Analysis');
+    expect(host.textContent).toContain('Status: Active');
     expect(host.querySelector('dialog')).toBeNull();
     expect(document.body.style.overflow).toBe('');
     expect(document.activeElement).toBe(trigger);
-    await click('Status: active ×');
+    await click('Status: Active ×');
     await vi.waitFor(() => expect(search.mock.calls.at(-1)?.[0].noteStatus).toBeUndefined());
-    await click('Project: Analysis ×');
+    await click('Path: Analysis ×');
     await vi.waitFor(() => expect(search.mock.calls.at(-1)?.[0].projectSlug).toBeUndefined());
   });
 
   it('forwards checkpoint, scheduling state and comment-only filters', async () => {
     await mount();
     await click('Filters');
+    await change('Filter project', 'project-1');
+    await vi.waitFor(() => expect(host.querySelector('[aria-label="Filter checkpoint"] option[value="C1"]')).not.toBeNull());
     await change('Filter checkpoint', 'C1');
     await change('Filter scheduling state', '2');
     const checkbox = host.querySelector('[aria-label="Has open comments"]') as HTMLInputElement;

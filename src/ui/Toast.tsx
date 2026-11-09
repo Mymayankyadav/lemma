@@ -14,7 +14,9 @@ function ToastText({source}:{source:string}){
  </Suspense>;
 }
 
-export interface ToastOptions{action?:{label:string;onClick:()=>void};tone?:'normal'|'success'|'danger'}
+export interface ToastOptions{action?:{label:string;onClick:()=>void};tone?:'normal'|'success'|'danger';
+ /** N121 A7: how long the toast stays (default 4 s), e.g. the length of an Undo window. */
+ duration?:number}
 export interface ToastProps extends ToastOptions{message:string;id:number}
 let counter=0;
 let snapshot:ToastProps[]=[];
@@ -31,7 +33,8 @@ function pauseToast(id:number){
 function dismiss(id:number){pauseToast(id);snapshot=snapshot.filter(item=>item.id!==id);notify()}
 function resumeToast(id:number){
  pauseToast(id);
- if(snapshot.some(item=>item.id===id))timeouts.set(id,setTimeout(()=>dismiss(id),4000));
+ const item=snapshot.find(entry=>entry.id===id);
+ if(item)timeouts.set(id,setTimeout(()=>dismiss(id),item.duration??4000));
 }
 export function toast(message:string,options:ToastOptions={}){
  const id=++counter;

@@ -51,14 +51,14 @@ export function formatDuration(minutes:number):string{
  const total=Math.round(minutes),h=Math.floor(total/60),m=total%60;
  return h?`${h} h${m?' '+m+' min':''}`:`${m} min`;
 }
+/** Review intervals, stability and cadence: "10 min", "3 days", "30 days", "2 months", "1.5 years". Never "mo" or "d". */
 export function formatInterval(days:number):string{
  if(!Number.isFinite(days)||days<0)return 'Unknown interval';
  if(days<1)return formatDuration(days*1440);
- const rounded=(n:number)=>Number(n.toFixed(1)).toLocaleString('en');
- if(days<14){const n=rounded(days);return `${n} day${n==='1'?'':'s'}`;}
- if(days<60){const n=rounded(days/7);return `${n} week${n==='1'?'':'s'}`;}
- if(days<365){const n=rounded(days/30.4375);return `${n} month${n==='1'?'':'s'}`;}
- const n=rounded(days/365.25);return `${n} year${n==='1'?'':'s'}`;
+ if(days<45){const n=Math.round(days);return n+(n===1?' day':' days');}
+ if(days<365){const n=Math.round(days/30.4375);return n+(n===1?' month':' months');}
+ const n=Number((days/365.25).toFixed(1)).toLocaleString('en');
+ return n+(n==='1'?' year':' years');
 }
 export function formatZone(zone:string):string{
  const canonical=canonicalZone(zone),when=new Date();

@@ -39,7 +39,7 @@ describe('v6 source panel',()=>{
   const text=node.textContent??'';
   expect(text.indexOf('Source a')).toBeLessThan(text.indexOf('Source b'));
   expect(text).toContain('5 of 5 pages transcribed');
-  expect(text).toContain('1 page need checking');
+  expect(text).toContain('1 page needs checking');
   expect(text).toContain('View pages and export Source a');
   expect(text).toContain('Not yet checked against plan');
  });

@@ -19,8 +19,8 @@ export function coverageOf(source:Source,stat:SourceTranscriptionStat|undefined)
  const transcribed=Math.max(0,Math.min(pages,stat.transcribed));
  const needsCheck=Math.max(0,Math.min(transcribed,stat.needsCheck));
  return {label:transcribed+' of '+pages+' pages transcribed',
-  verification:needsCheck>0?needsCheck+' '+(needsCheck===1?'page':'pages')+' need checking':
-   transcribed>0?'No flagged transcription pages':'No verified transcription pages'};
+  verification:needsCheck>0?needsCheck+' '+(needsCheck===1?'page needs':'pages need')+' checking':
+   transcribed>0?'No pages to check':'No pages transcribed yet'};
 }
 /** N82 is presentation-only: existing owner-scoped ingestion and transcript controls remain authoritative. */
 type Props={projectId:string;sources:Source[];manage:ReactNode};
@@ -59,11 +59,11 @@ function V6SourcesWithStats({projectId,sources,manage}:Props){
      <div className="flex min-w-0 gap-3"><span className="shrink-0 text-caption text-amber">{index+1}</span>
       <div className="min-w-0 flex-1">
        <h3 className="break-words text-body-l font-semibold"><Tex source={source.title}/></h3>
-       <p className="mt-1 text-label text-ink-2">{source.kind??'other'} · {source.status}</p>
+       <p className="mt-1 text-label text-ink-2">{({book:'Book',notes:'Notes',paper:'Paper',lecture:'Lecture',other:'Other source'} as Record<string,string>)[source.kind??'other']??'Source'} · {({ready:'Ready',processing:'Processing',failed:'Could not read',uploading:'Uploading'} as Record<string,string>)[source.status]??'Added'}</p>
        <p aria-label={'Coverage for '+source.title} className="mt-1 text-label text-ink-2">{coverage.label}</p>
        <p aria-label={'Verification for '+source.title} className="mt-1 text-label text-ink-2">{coverage.verification}</p>
        <p className="mt-1 text-caption text-ink-2">
-        {source.planCheckedAt?'Checked against plan '+new Date(source.planCheckedAt).toLocaleDateString():'Not yet checked against plan'}</p>
+        {source.planCheckedAt?'Checked against plan '+new Intl.DateTimeFormat('en',{month:'short',day:'numeric'}).format(new Date(source.planCheckedAt)):'Not yet checked against plan'}</p>
        <div className="mt-3 min-w-0 break-words [overflow-wrap:anywhere]">
         <SourceTranscriptionView source={source} stat={stat}/></div>
       </div>

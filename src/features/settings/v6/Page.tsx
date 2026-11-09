@@ -1,5 +1,5 @@
 import {useState,type KeyboardEvent,type ReactNode} from 'react';
-import {useNavigate} from 'react-router';
+import {useNavigate,useSearchParams} from 'react-router';
 import {Copy,Eye,EyeOff,RefreshCw} from 'lucide-react';
 import type {UiPreferences} from '../../../data/types';
 import {useRotateConnectorSecret,useSettings,useSignOut,useUpdateSettings} from '../../../data/hooks';
@@ -34,16 +34,18 @@ const ACTIVITY_SECTION={id:'activities',label:'Activities'} as const;
 const V6_SETTINGS_SECTIONS=[
  ...SETTINGS_SECTIONS.slice(0,3),ACTIVITY_SECTION,
  {id:'focus',label:'Focus'},{id:'planning',label:'Planning'},
- ...SETTINGS_SECTIONS.slice(3),
+ ...SETTINGS_SECTIONS.slice(3),{id:'tutor',label:'Teaching style'},
 ] as const;
 /** N117 (mockup `10__Page`): Settings opens on four grouped rows; each opens a section page. */
+/** N121 F9: a group page shows only its own sections. */
 export const SETTINGS_GROUPS=[
-  {id:'appearance',title:'Appearance',description:'Day, Night and reading comfort',first:'appearance'},
-  {id:'tutor',title:'Tutor',description:'Connection, prompts and teaching style',first:'connector'},
-  {id:'study',title:'Study & review',description:'Planning, sessions and memory preferences',first:'study'},
-  {id:'data',title:'Data & account',description:'Subjects, shortcuts, backup and sign out',first:'account'},
+  {id:'appearance',title:'Appearance',description:'Day, Night and reading comfort',first:'appearance',sections:['appearance']},
+  {id:'tutor',title:'Tutor',description:'Connection, prompts and teaching style',first:'connector',sections:['connector','tutor']},
+  {id:'study',title:'Study & review',description:'Planning, sessions and memory preferences',first:'study',sections:['study','activities','focus','planning','reminders']},
+  {id:'data',title:'Data & account',description:'Subjects, shortcuts, backup and sign out',first:'account',sections:['account','subjects','export']},
 ] as const;
-export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities'|'focus'|'planning';
+export type SettingsSection = typeof SETTINGS_SECTIONS[number]['id']|'activities'|'focus'|'planning'|'tutor';
+export function settingsGroupOf(section:string){return SETTINGS_GROUPS.find(group=>(group.sections as readonly string[]).includes(section))??null;}
 
 export function settingsTabDestination(current:SettingsSection,key:string,
  sections:readonly {id:SettingsSection}[]=SETTINGS_SECTIONS):SettingsSection|null {
@@ -54,12 +56,14 @@ export function settingsTabDestination(current:SettingsSection,key:string,
   if(key==='ArrowLeft'||key==='ArrowUp')return sections[(index+sections.length-1)%sections.length].id;
   return null;
 }
-export function SettingsNavigation({selected,onSelect}:{
+export function SettingsNavigation({selected,onSelect,only}:{
   selected:SettingsSection;
   onSelect:(section:SettingsSection)=>void;
+  only?:readonly string[];
 }) {
+  const shown=V6_SETTINGS_SECTIONS.filter(section=>!only||only.includes(section.id));
   const keyDown=(event:KeyboardEvent<HTMLButtonElement>,current:SettingsSection)=>{
-    const next=settingsTabDestination(current,event.key,V6_SETTINGS_SECTIONS);
+    const next=settingsTabDestination(current,event.key,shown);
     if(next===null)return;
     event.preventDefault();
     onSelect(next);
@@ -67,7 +71,7 @@ export function SettingsNavigation({selected,onSelect}:{
   };
   return <nav aria-label="Settings sections">
     <div role="tablist" aria-label="Settings sections" className="flex flex-wrap gap-2">
-      {V6_SETTINGS_SECTIONS.map(section=><button key={section.id} type="button"
+      {shown.map(section=><button key={section.id} type="button"
         id={'v6-settings-tab-'+section.id} role="tab"
         aria-controls="v6-settings-panel" aria-selected={selected===section.id}
         tabIndex={selected===section.id?0:-1}
@@ -81,8 +85,24 @@ export function SettingsNavigation({selected,onSelect}:{
   </nav>;
 }
 export default function V6Settings({legacy}: {legacy:ReactNode}) {
-  const [selected,setSelected]=useState<SettingsSection>('account');
-  const [group,setGroup]=useState<typeof SETTINGS_GROUPS[number]|null>(null);
+  // N121 F9: the group and section live in the URL (?group=…&section=…), so deep links work
+  // and the header Back returns to the index; opening Settings from navigation shows the index.
+  const [params,setParams]=useSearchParams();
+  const requested=params.get('section');
+  const group=SETTINGS_GROUPS.find(item=>item.id===params.get('group'))??(requested?settingsGroupOf(requested):null);
+  const selected:SettingsSection=(group&&requested&&(group.sections as readonly string[]).includes(requested)?requested:group?.first??'account') as SettingsSection;
+  const setSelected=(section:SettingsSection)=>{
+    const owner=settingsGroupOf(section)??group;
+    const next=new URLSearchParams(params);
+    if(owner)next.set('group',owner.id);
+    next.set('section',section);
+    setParams(next,{replace:true});
+  };
+  const openGroup=(item:typeof SETTINGS_GROUPS[number])=>{
+    const next=new URLSearchParams(params);
+    next.set('group',item.id);next.set('section',item.first);
+    setParams(next);
+  };
   const [revealed,setRevealed]=useState(false);
   const [rotating,setRotating]=useState(false);
   const [setup,setSetup]=useState(false);
@@ -134,7 +154,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     if(selected==='appearance')return <Slab className="p-5">
       <EuclidAppearance ui={data?.ui} busy={busy} onChange={ui=>save({ui})}/>
     </Slab>;
-    if(selected==='study')return <StudyDefaults settings={data!}/>;
+    if(selected==='study')return <StudyDefaults settings={data!} part="study"/>;
+    if(selected==='tutor')return <StudyDefaults settings={data!} part="tutor"/>;
     if(selected==='activities')return <Activities/>;
     if(selected==='focus')return <Focus settings={data!}/>;
     if(selected==='planning')return <Planning settings={data!}/>;
@@ -142,7 +163,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     if(selected==='connector')return <Slab className="space-y-4 p-5">
       <h2 className="text-title-s font-semibold">Connector</h2>
       <p className="text-label text-ink-2">{data?.connectorLastSeenAt?'Connected':'Not connected yet'}</p>
-      {data?.connectorLastClient&&<p className="text-label text-ink-2">Last app: {data.connectorLastClient}</p>}
+      {data?.connectorLastClient&&<p className="text-label text-ink-2">Last app: {data.connectorLastClient==='claude'?'Claude':data.connectorLastClient==='chatgpt'?'ChatGPT':'Your tutor app'}</p>}
       <div className="flex min-w-0 items-center gap-1 rounded-ctl bg-well p-2">
         <ConnectorAddress value={revealed?data?.connectorUrl??'':data?.connectorUrl.replace(/\/[^/]+$/,'/••••••')??''}/>
         <button type="button" aria-label={revealed?'Hide connector address':'Show connector address'}
@@ -163,7 +184,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
       <div className="border-t border-edge pt-4">
         <p className="text-label font-semibold">Apps</p>
         <button type="button" onClick={()=>setSetup(value=>!value)}
-          aria-expanded={setup} className="min-h-11 text-label text-ink-2 underline">ChatGPT setup</button>
+          aria-expanded={setup} className="min-h-11 text-label text-ink-2 underline">{data?.connectorLastClient==='claude'?'Set up ChatGPT too':'ChatGPT setup'}</button>
         {setup&&<ol className="list-decimal space-y-2 pl-6 text-label text-ink-2">
           <li>In ChatGPT Settings open Apps, then Advanced settings, and enable Developer mode.</li>
           <li>Create an app using this connector address and choose No authentication.</li>
@@ -202,7 +223,7 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
     <nav aria-label="Settings groups" className="flex flex-col">
       {SETTINGS_GROUPS.map(item=><button key={item.id} type="button" className="lemma-settings-link"
         aria-label={item.title} aria-describedby={'v6-settings-group-'+item.id}
-        onClick={()=>{setGroup(item);setSelected(item.first);}}>
+        onClick={()=>openGroup(item)}>
         <strong>{item.title}</strong>
         <span id={'v6-settings-group-'+item.id}>{item.description}</span>
         <span aria-hidden="true">›</span>
@@ -212,9 +233,8 @@ export default function V6Settings({legacy}: {legacy:ReactNode}) {
   </Screen>;
   return <Screen title="Settings" back="/" className="pb-8">
     <div className="lemma-settings-page">
-      <button type="button" className="lemma-settings-back" onClick={()=>setGroup(null)}>‹ All settings</button>
       <h2>{group.title}</h2>
-      <SettingsNavigation selected={selected} onSelect={setSelected}/>
+      {group.sections.length>1&&<SettingsNavigation selected={selected} onSelect={setSelected} only={group.sections}/>}
     {settings.isLoading?<div role="status" className="rounded-slab border border-edge p-5 text-ink-2">
       Loading settings…
     </div>:

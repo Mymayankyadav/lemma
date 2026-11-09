@@ -8,7 +8,7 @@ describe('N121 reader-facing v6 labels',()=>{
  });
  it('formats known enums and falls back to human text',()=>{
   expect(sessionStatusText('yes')).toBe('Demonstrated');
-  expect(evidenceText('partial')).toBe('Partial evidence');
+  expect(evidenceText('partial')).toBe('Partly there');
   expect(cardTypeText('basic')).toBe('Basic · question and answer');
   expect(noteKindText('other')).toBe('Other');
   expect(noteKindText('counterexample')).toBe('Counterexample');

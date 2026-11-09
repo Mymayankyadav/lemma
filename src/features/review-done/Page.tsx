@@ -152,10 +152,26 @@ function LegacyReviewDonePage(){
  </Screen>;
 }
 
+function NothingReviewed(){
+ const navigate=useNavigate();
+ return <main aria-label="Review results" className="flex flex-col gap-4 pb-24">
+  <h1 className="sr-only">Review complete</h1>
+  <section className="notebook-review-summary pb-6">
+   <h2>Nothing reviewed yet today</h2>
+   <p className="text-label text-ink-2">Finish a review round to see how it went.</p>
+  </section>
+  <button className="notebook-primary" onClick={()=>navigate('/review')}>Start review</button>
+  <button className="min-h-11 text-label text-[var(--link)] underline" onClick={()=>navigate('/review')}>Back to Review</button>
+ </main>;
+}
 export default function Page(){
  const [search]=useSearchParams();
+ const answers=useReviewSession(s=>s.answers);
+ const v6=isFlagOn('v6Shell');
  // Existing local reminder/legacy rounds have no durable run ID and retain
  // their Done page, including reminder offers and the ordinary Done action.
- return isFlagOn('v6Shell')&&search.has('run')?
+ // N121 F8: in v6, opening the page with nothing reviewed shows an honest empty state.
+ if(v6&&!search.has('run')&&answers.length===0)return <NothingReviewed/>;
+ return v6&&search.has('run')?
   <ReviewDoneV6/>:<LegacyReviewDonePage/>;
 }

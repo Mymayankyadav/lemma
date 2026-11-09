@@ -77,7 +77,7 @@ describe('N33.1 v6 Paths list', () => {
     expect(host.textContent).toContain('Pinned');
     // #1316 (mockup rows): a short "2 of 5" whose accessible name keeps the unit, and no
     // "Forecast unavailable" filler when the path has no schedule headline.
-    expect(host.querySelector('[aria-label="2 of 5 checkpoints"]')?.textContent).toBe('2 of 5');
+    expect(host.querySelector('[aria-label="2 of 5 checkpoints"]')?.textContent).toBe('2 of 5 checkpoints');
     expect(host.textContent).not.toContain('Forecast unavailable');
     expect(host.querySelector('[aria-label="Analysis paths"] h2')).not.toBeNull();
     expect(host.querySelector('a[href="/p/analysis"]')).not.toBeNull();
@@ -97,7 +97,7 @@ describe('N33.1 v6 Paths list', () => {
   });
   it('navigates statuses including archived and paused without fabricating missing projects', async () => {
     await mount();
-    await click('archived');
+    await click('Archived paths');
     expect(projectRows()).toHaveLength(1);
     expect(host.textContent).toContain('Path archive');
     await click('paused');
@@ -117,7 +117,7 @@ describe('N33.1 v6 Paths list', () => {
     await click('Manage Path analysis');
     await click('Archive');
     expect(mocks.update).toHaveBeenCalledWith({ id: 'analysis', patch: { status: 'archived' } });
-    await click('archived');
+    await click('Archived paths');
     await click('Manage Path archive');
     await click('Restore');
     expect(mocks.update).toHaveBeenCalledWith({ id: 'archive', patch: { status: 'active' } });

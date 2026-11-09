@@ -52,9 +52,9 @@ describe('v6 session page',()=>{
  it('renders saved summary, resume question, note, outcome, time and checkpoint link',()=>{
   const {node}=render();
   const text=node.textContent??'';
-  expect(text).toContain('Understand groups');expect(text).toContain('10 minutes');
+  expect(text).toContain('Understand groups');expect(text).toContain('10 min');
   expect(text).toContain('What is closure?');expect(text).toContain('Event 1');
-  expect(text).toContain('Event 2');expect(text).toContain('partial');
+  expect(text).toContain('Event 2');expect(text).toContain('Partly there');
   expect(text).toContain('Source pages: 12');
   expect(node.querySelector('a[href="/p/demo/cp/C1"]')).toBeTruthy();
   expect(text.indexOf('Event 1')).toBeLessThan(text.indexOf('Event 2'));
@@ -71,7 +71,7 @@ describe('v6 session page',()=>{
   const saved=detail();saved.events=[];saved.resumeQuestion=null;saved.summary.minutes=null;mocks.session.data=saved;
   const {node}=render();
   expect(node.textContent).toContain('No tutor events recorded');
-  expect(node.textContent).toContain('No resume question recorded');
+  expect(node.textContent).not.toContain('No resume question recorded');
   expect(node.textContent).toContain('Study time not yet recorded');
  });
  it('pages long event histories without losing chronology or evidence',()=>{
