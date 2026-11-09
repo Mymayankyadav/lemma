@@ -29,12 +29,6 @@ Tests: `tests/e2e/v6-g7-fixes.spec.ts`, `tests/mcp/sql/review_runs_undo_last.mjs
 Scope: v6 screens and shell under src/**, one additive migration under supabase/migrations/, tests, docs/v6/release-captures/**, docs/current/N119.md.
 Not: turning v6 on (N102); flag-off screens.
 
-## N118 Mockup fidelity audit
-Stage: Harden · Status: open · Needs: N110, N111, N112, N113, N114, N115, N116, N117 · Assigned: —
-Done = all 19 release captures refreshed from one CI run and compared with `docs/v6/screens/`; one bug issue per visible difference; `docs/v6/RELEASE.md` G7 updated (passes only with no open design bug); #1303 closed when none remain.
-Tests: `tests/e2e/v6-release-audit.spec.ts`
-Scope: docs/v6/RELEASE.md, docs/v6/release-captures/**, docs/current/N118.md.
-Not: app code (file bugs instead).
 
 ## N102 Turn v6 on by default (Owner approval required)
 Stage: Build · Status: open · Needs: N101, N90, N95, N103, N54.1, N118 · Assigned: —
