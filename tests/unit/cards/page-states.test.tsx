@@ -7,6 +7,9 @@ import Page from '../../../src/features/cards/Page';
 import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter';
 import type {DemoStore} from '../../../src/data/demo/model';
 
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
+
 const mocks=vi.hoisted(()=>({api:null as unknown,projects:[] as any[]}));
 vi.mock('../../../src/data',()=>({getApi:()=>mocks.api}));
 vi.mock('../../../src/data/hooks',()=>({

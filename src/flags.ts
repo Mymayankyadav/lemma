@@ -5,8 +5,11 @@
  * Overrides (dev, tests and e2e builds only; ignored in production builds):
  *   - URL:  `?flags=a,b`   (the query string, i.e. before the `#/route` part)
  *   - env:  `VITE_FLAGS=a,b`
+ * A plain name turns the flag on; a name with a leading `-` turns it off (`?flags=-v6Shell`), which is how
+ * tests and e2e builds exercise a flag's off path once its default is on. Env flags apply first, the URL last.
  * An override is honoured only when `import.meta.env.DEV`, `MODE === 'test'` or
- * `VITE_ALLOW_FLAG_OVERRIDES=1` (set by the e2e web server). Unknown names are ignored.
+ * `VITE_ALLOW_FLAG_OVERRIDES=1` (set by the e2e web server). Unknown names are ignored. Production builds
+ * never honour overrides, so rolling a flag back there is a reviewed PR that changes its default.
  */
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
@@ -15,8 +18,8 @@ export const FLAG_DEFAULTS = {
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
   notificationsPush: false,
-  /** v6 navigation and shared shell remain opt-in until N13 is complete. */
-  v6Shell: false,
+  /** v6 navigation, screens and shared shell (default on since N102; `?flags=-v6Shell` shows the legacy app in dev/test/e2e builds). */
+  v6Shell: true,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
@@ -40,7 +43,9 @@ export function resolveFlags(env: FlagEnv): Record<FlagName, boolean> {
   if (!env.allowOverrides) return out;
   const fromQuery = names(new URLSearchParams(env.search ?? '').get('flags'));
   for (const n of [...names(env.envFlags), ...fromQuery]) {
-    if (n in FLAG_DEFAULTS) out[n as FlagName] = true;
+    const off = n.startsWith('-');
+    const name = off ? n.slice(1) : n;
+    if (name in FLAG_DEFAULTS) out[name as FlagName] = !off;
   }
   return out;
 }

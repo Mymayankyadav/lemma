@@ -2,8 +2,10 @@ import {describe,expect,it} from 'vitest'
 import {FLAG_DEFAULTS,resolveFlags,isFlagOn} from '../../src/flags'
 
 describe('feature flags',()=>{
- it('every flag is off by default',()=>{
-  expect(Object.values(FLAG_DEFAULTS).every(v=>v===false)).toBe(true)
+ it('every flag except v6Shell is off by default (v6Shell turned on by N102)',()=>{
+  const {v6Shell,...rest}=FLAG_DEFAULTS
+  expect(v6Shell).toBe(true)
+  expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
  it('androidShell is off by default and cannot be enabled in production',()=>{
@@ -16,10 +18,19 @@ describe('feature flags',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?flags=notificationsPush'}).notificationsPush).toBe(true)
   expect(resolveFlags({allowOverrides:false,search:'?flags=notificationsPush'}).notificationsPush).toBe(false)
  })
- it('v6Shell is off by default and only accepts development/test overrides',()=>{
-  expect(FLAG_DEFAULTS.v6Shell).toBe(false)
-  expect(resolveFlags({allowOverrides:true,search:'?flags=v6Shell'}).v6Shell).toBe(true)
-  expect(resolveFlags({allowOverrides:false,search:'?flags=v6Shell',envFlags:'v6Shell'}).v6Shell).toBe(false)
+ it('v6Shell is on by default; only development/test overrides can turn it off',()=>{
+  expect(FLAG_DEFAULTS.v6Shell).toBe(true)
+  expect(resolveFlags({allowOverrides:true}).v6Shell).toBe(true)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-v6Shell'}).v6Shell).toBe(false)
+  expect(resolveFlags({allowOverrides:true,envFlags:'-v6Shell'}).v6Shell).toBe(false)
+  // The URL wins over the build-time env, so a legacy e2e build can still opt a page back in.
+  expect(resolveFlags({allowOverrides:true,envFlags:'-v6Shell',search:'?flags=v6Shell'}).v6Shell).toBe(true)
+  // Production never honours an override in either direction: rolling back is a reviewed default change.
+  expect(resolveFlags({allowOverrides:false,search:'?flags=-v6Shell',envFlags:'-v6Shell'}).v6Shell).toBe(true)
+ })
+ it('a leading - turns a known flag off and is ignored for unknown names',()=>{
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-ciSelfTest,-nope'})).toEqual(FLAG_DEFAULTS)
+  expect(resolveFlags({allowOverrides:true,search:'?flags=ciSelfTest,-ciSelfTest'}).ciSelfTest).toBe(false)
  })
  it('?flags=a,b and the env variable turn known flags on when overrides are allowed',()=>{
   expect(resolveFlags({allowOverrides:true,search:'?demo=1&flags=ciSelfTest'}).ciSelfTest).toBe(true)

@@ -4,6 +4,9 @@ import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router';
 import Page from '../../../src/features/checkpoint/Page';
 
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
+
 const mocks=vi.hoisted(()=>({
  checkpoint:{isPending:true,error:null as Error|null,data:null as any,refetch:vi.fn()},
  project:{data:null as any},

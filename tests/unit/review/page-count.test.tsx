@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import {afterEach,describe,expect,it,vi} from 'vitest';
+import {afterEach,describe,expect,it,vi,beforeEach} from 'vitest';
 import {act} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
 import {MemoryRouter} from 'react-router';
@@ -26,6 +26,9 @@ vi.mock('react-router',async importOriginal=>{
  return {...original,useNavigate:()=>mocks.navigate};
 });
 import Page from '../../../src/features/review/Page';
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 describe('Review displayed count agrees with filtered quota-limited run',()=>{

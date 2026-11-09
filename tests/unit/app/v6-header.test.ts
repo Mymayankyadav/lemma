@@ -1,6 +1,9 @@
-import {describe,it,expect} from 'vitest';
+import {describe,it,expect,beforeEach} from 'vitest';
 import {v6PageTitle} from '../../../src/app/V6Header';
 import FocusAccessorySlot from '../../../src/app/FocusAccessorySlot';
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 
 describe('N13 v6 shared chrome',()=>{
  it('uses the v6 primary labels without renaming existing routes',()=>{

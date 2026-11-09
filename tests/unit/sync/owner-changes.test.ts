@@ -25,7 +25,7 @@ afterEach(() => {
 
 describe('N54.1 owner changes and targeted invalidation', () => {
  it('does not add polling traffic to legacy live screens with the v6 shell off', async () => {
-  window.history.replaceState(null, '', '/?demo=0')
+  window.history.replaceState(null, '', '/?demo=0&flags=-v6Shell')
   const read = vi.fn(async () => page([], 0))
   const stop = subscribeOwnerChanges('live-account', queryClient(), read)
   await vi.advanceTimersByTimeAsync(60_000)

@@ -39,7 +39,9 @@ describe('N19 flag-gated v6 visual contracts',()=>{
   expect(enabled).toBe(true);
   setV6Root(enabled);
   expect(root.hasAttribute('data-v6')).toBe(true);
-  expect(resolveFlags({allowOverrides:false,search:'?flags=v6Shell'}).v6Shell).toBe(false);
+  // N102: on by default; production ignores overrides, so only a build that allows them can turn it off.
+  expect(resolveFlags({allowOverrides:false,search:'?flags=-v6Shell'}).v6Shell).toBe(true);
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-v6Shell'}).v6Shell).toBe(false);
   setV6Root(false);
   expect(root.hasAttribute('data-v6')).toBe(false);
   expect(app).toContain('setV6Root(v6)');

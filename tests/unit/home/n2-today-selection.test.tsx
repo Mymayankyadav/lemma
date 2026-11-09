@@ -2,10 +2,13 @@ import React, {act} from 'react'
 import {createRoot} from 'react-dom/client'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
 import {MemoryRouter} from 'react-router'
-import {describe,expect,it,vi} from 'vitest'
+import {describe,expect,it,vi,beforeEach} from 'vitest'
 import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter'
 import type {DemoCheckpoint,DemoStore} from '../../../src/data/demo/model'
 import Today from '../../../src/features/home/Page'
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 
 // Use the actual Today page, its real hooks, and real component selection.
 // Only supply a deterministic DemoAdapter fixture through getApi.
