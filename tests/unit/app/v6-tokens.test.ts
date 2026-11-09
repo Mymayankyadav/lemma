@@ -39,7 +39,10 @@ describe('N19 flag-gated v6 visual contracts',()=>{
   expect(enabled).toBe(true);
   setV6Root(enabled);
   expect(root.hasAttribute('data-v6')).toBe(true);
-  expect(resolveFlags({allowOverrides:false,search:'?flags=v6Shell'}).v6Shell).toBe(false);
+  // Production defaults on and ignores attempts to switch it off via the URL.
+  expect(resolveFlags({allowOverrides:false,search:'?flags=-v6Shell'}).v6Shell).toBe(true);
+  // A permitted test override must still exercise the legacy path.
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-v6Shell'}).v6Shell).toBe(false);
   setV6Root(false);
   expect(root.hasAttribute('data-v6')).toBe(false);
   expect(app).toContain('setV6Root(v6)');
