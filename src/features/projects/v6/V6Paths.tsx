@@ -70,11 +70,11 @@ export default function V6Paths() {
       <input aria-label="Search paths" type="search" className="min-h-12 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] py-2 pl-12 pr-3 text-body text-ink"
         value={search} onChange={event => setSearchValue(event.target.value)} placeholder="Find a path or subject" />
     </label>
+    <Link to="/atlas" className="notebook-concept-entry"><Waypoints size={20} aria-hidden="true" /><span>Concept map</span><ChevronRight size={19} aria-hidden="true" /></Link>
     <div role="group" aria-label="Path status filters" className="ui-segmented flex">
       {statuses.filter(next => next !== 'archived').map(next => <button type="button" key={next} aria-pressed={status === next}
         className="min-h-11 flex-1 capitalize text-ink" onClick={() => selectStatus(next)}>{next}</button>)}
     </div>
-    <Link to="/atlas" className="notebook-concept-entry"><Waypoints size={20} aria-hidden="true" /><span>Concept map</span><ChevronRight size={19} aria-hidden="true" /></Link>
     {subjects.isPending && <p role="status" className="text-label text-ink-2">Loading subjects…</p>}
     {subjects.isError && <p role="alert" className="text-label text-ink-2">Subjects unavailable; saved path labels remain visible.</p>}
     {projects.isPending ? <p role="status" className="text-label text-ink-2">Loading paths…</p> :
@@ -93,7 +93,9 @@ export default function V6Paths() {
            const single = group.items.length === 1;
            const open = single || !collapsed.has(group.key);
            return <section key={group.key} aria-label={group.title + ' paths'} data-style="role-projects">
-           {single ? <h2 className="min-w-0 text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2> :
+           {single ? <div className="flex min-h-[52px] w-full items-center gap-3 p-3">
+             <h2 className="m-0 min-w-0 flex-1 text-[1.25rem] leading-[1.35] text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2>
+             <span className="shrink-0 text-label text-ink-2">1 path</span></div> :
            <button type="button" aria-expanded={open} className="flex w-full items-center gap-3 text-left"
              onClick={() => setCollapsed(previous => { const next = new Set(previous); if (next.has(group.key)) next.delete(group.key); else next.add(group.key); return next; })}>
              <h2 className="min-w-0 flex-1 text-ink"><span aria-hidden="true">{group.glyph} </span>{group.title}</h2>

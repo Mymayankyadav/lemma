@@ -86,7 +86,7 @@ export default function AgendaView({date,zone,clock24h,entries,blocks,dues,proje
    const open=overlapWindows([],group.blocks,dayRange).filter(row=>!matchingAcknowledgement(row,controls.records));
    const nothing=group.entries.length===0&&group.blocks.length===0&&!dueForDay(group.day,date,zone,dues).length;
    return <section key={group.day} aria-labelledby={'agenda-'+group.day} className="cr-agenda-day flex min-w-0 flex-col gap-3 border-b border-[var(--hair)] pb-4">
-    <h2 id={'agenda-'+group.day} className="sticky top-0 z-[2] -mx-1 bg-[var(--paper)] px-1 py-2 text-label font-medium text-ink-2">
+    <h2 id={'agenda-'+group.day} className="sticky top-0 z-[2] -mx-1 bg-[var(--bg)] px-1 py-2 text-label font-medium text-ink-2">
      {group.day===today?'Today · ':''}{civilDayLabel(group.day)}</h2>
     {open.map(row=>{
      const names=pairOf(row).map(b=>b.title);

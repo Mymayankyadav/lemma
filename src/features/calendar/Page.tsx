@@ -211,7 +211,7 @@ function V6Calendar() {
     </nav>
     {phase==='ready'&&<OverdueBanner dues={dues} zone={zone} projects={projects}
       onRefresh={()=>setReload(n=>n+1)}/>}
-    <div className="flex min-w-0 items-start gap-2" onKeyDown={event => {
+    <div className="flex min-w-0 flex-col gap-2" onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
       if (!(event.target as HTMLElement).closest('[role=group][aria-label="Calendar view"]')) return;
       const choices = ['agenda', 'day', 'week', 'month'];
@@ -221,10 +221,10 @@ function V6Calendar() {
       updateUrl('view', choices[next]);
       event.currentTarget.querySelectorAll<HTMLButtonElement>('[aria-label="Calendar view"] button')[next]?.focus();
     }}>
-      <div className="min-w-0 flex-1"><Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
+      <div className="min-w-0"><Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
         options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} /></div>
       {/* #1321 (mockup): one "Planning tools" button; N121 B7 makes it a right-anchored menu with two items. */}
-      <details ref={tools} className="lemma-planning-tools relative shrink-0">
+      <details ref={tools} className="lemma-planning-tools relative self-end">
         <summary className="cr-calendar-tools flex min-h-12 cursor-pointer list-none items-center justify-center rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label text-ink [&::-webkit-details-marker]:hidden">Planning tools</summary>
         <div aria-label="Planning tools" role="group" className="absolute right-0 top-full z-[60] mt-2 flex w-56 flex-col gap-1 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-2 shadow-lg [&_button]:w-full [&_button]:text-left">
           <button type="button" className={actionClass} disabled={phase!=='ready'} onClick={event=>openNew(event)}>New time block</button>

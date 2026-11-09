@@ -1,5 +1,6 @@
 import {useEffect,useState} from 'react';
 import {Link} from 'react-router';
+import {AlertCircle,ChevronRight,Clock} from 'lucide-react';
 import {getTaskApi} from '../../data/tasks';
 import type {TaskRecord} from '../../data/tasks/contract';
 import {loadCalendarDues} from '../calendar/deadlines/load';
@@ -67,15 +68,15 @@ export default function TodayDue({date,zone}:{date:string;zone:string}){
  },[date,zone,reload]);
  if(loading)return null; // cold Today never adds an intermediate list or loading wall
  return <>
-  {items.today.length>0&&<button type="button" className="notebook-task-row" onClick={()=>setOpen(true)}>
-   <span aria-hidden="true">◷</span>
+  {items.today.length>0&&<button type="button" className="notebook-task-row w-full text-left" onClick={()=>setOpen(true)}>
+   <Clock size={20} aria-hidden="true"/>
    <span><strong>{items.today.length} due today</strong><small>Tasks, deadlines and practice</small></span>
-   <span aria-hidden="true">›</span>
+   <ChevronRight size={19} aria-hidden="true"/>
   </button>}
   {items.overdue.length>0&&<div className="notebook-task-row">
-   <span aria-hidden="true">!</span>
+   <AlertCircle size={20} aria-hidden="true"/>
    <span><strong>{items.overdue.length} overdue</strong><small>{items.overdue.slice(0,2).map(row=>row.title).join(', ')}{items.overdue.length>2?'…':''}</small></span>
-   <span className="flex shrink-0 gap-3">
+   <span className="shrink-0 gap-3" style={{flex:"none",flexDirection:"row"}}>
     {items.overdue.some(row=>row.kind==='Task')&&<Link className="inline-flex min-h-11 items-center underline" to="/tasks?show=overdue">Tasks</Link>}
     {items.overdue.some(row=>row.kind!=='Task')&&<Link className="inline-flex min-h-11 items-center underline" to="/calendar">Calendar</Link>}
    </span>

@@ -14,8 +14,8 @@ import {formatDuration} from '../../lib/format';
 
 /** N121 D8: one range control (Today · 7 · 30 · 90 days). The URL still accepts the
  * older day|week|month values, read as Today, 7 and 30 days. */
-export const progressRange = (value: string | null): EffortRange =>
-  value === '7' || value === '30' || value === '90' ? value : value === 'week' ? '7' : value === 'month' ? '30' : 'day';
+export const progressRange = (value: string | null, fallback: EffortRange = 'day'): EffortRange =>
+  value === '7' || value === '30' || value === '90' ? value : value === 'week' ? '7' : value === 'month' ? '30' : value === 'day' ? 'day' : fallback;
 const validRange = progressRange;
 export const rangeOptions = [{ value: 'day', label: 'Today' }, { value: '7', label: '7 days' }, { value: '30', label: '30 days' }, { value: '90', label: '90 days' }];
 export function rangeWords(range: EffortRange): string {
@@ -32,9 +32,9 @@ export function dailyColumns(daily: { day: string; minutes: number }[], range: E
   return weeks;
 }
 
-export default function ProgressV6({controls=true,variant='full'}:{controls?:boolean;variant?:'full'|'compact'}={}) {
+export default function ProgressV6({controls=true,variant='full',defaultRange='day'}:{controls?:boolean;variant?:'full'|'compact';defaultRange?:EffortRange}={}) {
   const [params, setParams] = useSearchParams();
-  const range = validRange(params.get('range'));
+  const range = validRange(params.get('range'), defaultRange);
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
   const period = periodFor(range, new Date(), zone);
   const [entries, setEntries] = useState<StudyEntryRecord[]>([]);

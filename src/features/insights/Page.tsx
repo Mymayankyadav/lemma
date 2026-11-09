@@ -73,7 +73,8 @@ function ProgressNotebook(){
  // #1330: the mockup header carries the subtitle, above its rule.
  useV6HeaderTitle('Progress','Small steps, seen over time.');
  const [params,setParams]=useSearchParams();
- const range=progressRange(params.get('range'));
+ // The mockup and the pre-N121 page open on 30 days; ?range=day still shows today.
+ const range=progressRange(params.get('range'),'30');
  // Insight aggregates come in 7, 30 or 90 days; Today reads the 7-day data and keeps only today's reviews.
  const days:InsightDays=range==='30'||range==='90'?Number(range) as InsightDays:7;
  const rawView=params.get('view');
@@ -124,11 +125,11 @@ function ProgressNotebook(){
        {metric('Checkpoints demonstrated',formatCount(demonstrated),range==='day'?'This week':'Last '+weeks+' weeks')}
       </>}
     </div>
-    <ProgressV6 controls={false} variant="compact"/>
+    <ProgressV6 defaultRange="30" controls={false} variant="compact"/>
    </>}
    {view==='learning'&&<LegacyInsights fixedDays={days}/>}
    {view==='time'&&<>
-    <ProgressV6 controls={false}/>
+    <ProgressV6 defaultRange="30" controls={false}/>
     <a href="#/log" className="notebook-concept-entry"><span>Open your time log</span><span aria-hidden="true">›</span></a>
    </>}
   </div>

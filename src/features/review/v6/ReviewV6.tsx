@@ -112,7 +112,8 @@ export default function ReviewV6(){
    </section>
    <details ref={options} className="notebook-options-details lemma-disclosure" open={search?true:undefined}>
     <summary className="notebook-options-row mt-6">
-     <span><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
+     {/* The only span is also :last-child, which the mockup CSS centres for the old › glyph. */}
+     <span style={{textAlign:'left',fontSize:'inherit',flex:'1 1 auto'}}><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
     </summary>
     <div className="flex flex-col gap-3 py-4">
    {nodes.length===0?<p role="status">No cards due. Your Review queue is clear.</p>:<>

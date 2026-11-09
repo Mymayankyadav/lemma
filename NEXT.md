@@ -16,7 +16,7 @@ Mockup port lane (Owner, 2026-11-08, #1303). The v6 app must look like the mocku
 
 ## N121 Fix the 9 Nov 2026 v6 UI audit in one PR (Owner task)
 Owner task: "We will address the audit report by first making a plan then executing this plan and uploading just one pr with all the redressals."
-Stage: Harden · Status: open · Needs: — · Assigned: chat-110926#m3vq
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-n121
 Done = every finding in `docs/v6/ui-audit-2026-11-09/AUDIT.md` (top 15, X1–X15, the Calendar deep dive, every per-screen item, other widths, F1–F14) is fixed as planned in `docs/v6/ui-audit-2026-11-09/PLAN.md`, or waived with a reason in `docs/current/N121.md`; every Blocker and Major has a regression test that fails on `f46de0a`; the release captures are refreshed.
 Tests: `tests/e2e/v6-n121-audit.spec.ts` (new), the unit tests in PLAN.md §3.2, the deliberately updated tests in PLAN.md §3.3, and `tests/e2e/v6-release-audit.spec.ts` passing unchanged.
 Scope: v6 screens and shell under src/**, tests, docs/v6/release-captures/**, docs/v6/ui-audit-2026-11-09/**, docs/current/N121.md.
