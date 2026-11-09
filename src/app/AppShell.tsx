@@ -7,6 +7,8 @@ import FocusAccessorySlot from './FocusAccessorySlot';
 import {isFlagOn} from '../flags';
 import {setV6Root} from './v6Root';
 import '../ui/v6/tokens.css';
+import '../ui/v6/mockup.css';
+import '../ui/v6/mockup-bindings.css';
 import DemoChip from './DemoChip';
 import {Ground} from '../ui/Ground';
 import {GraphSketch} from '../ui/backgrounds/graph/GraphSketch';
@@ -17,13 +19,13 @@ export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
  const v6=isFlagOn('v6Shell');
  useEffect(()=>{setV6Root(v6);return ()=>setV6Root(false);},[v6]);
- const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas';
+ const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
- {fullBleed&&<DemoChip floating/>}
+ {fullBleed&&!v6&&<DemoChip floating/>}
  <main id="main-content" className={fullBleed?(v6?'v6-atlas-shell relative flex h-dvh w-full flex-col overflow-hidden pb-[calc(var(--tab)+env(safe-area-inset-bottom))] [&>div]:min-h-0 [&>div]:flex-1 [&>div>main]:!h-full':'relative min-h-dvh w-full overflow-hidden'):'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(inboxActions?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+112px)]':showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>
- {!fullBleed&&<DemoChip/>}
+ {!fullBleed&&!v6&&<DemoChip/>}
  {v6&&location.pathname!=='/sign-in'&&<V6Header pathname={location.pathname}/>}
  {!fullBleed&&<GraphSketch path={location.pathname}/>}
  {fullBleed||reduce?<div key={location.pathname}>{outlet}</div>:<AnimatePresence key={fullBleed?'atlas':'standard'} mode="wait" initial={false}>

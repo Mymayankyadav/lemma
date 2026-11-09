@@ -1,3 +1,5 @@
+import {Check,Target} from 'lucide-react';
+import {useV6HeaderTitle} from '../../../app/v6Title';
 import { useParams, Link } from 'react-router';
 import { useCheckpoint, useProject, useSettings } from '../../../data/hooks';
 import type { CheckpointDetail, CheckpointUi, CheckpointView } from '../../../data/types';
@@ -5,7 +7,7 @@ import { chatLink, studyPrompt } from '../../../lib/chat';
 import { FastTex as Tex } from '../../../ui/FastTex';
 import { useToast } from '../../../ui/Toast';
 
-const actionClass = 'inline-flex min-h-11 items-center justify-center rounded-ctl border border-edge bg-fill-1 px-4 py-2 text-label font-semibold text-ink focus-visible:outline-2 focus-visible:outline-amber';
+const actionClass='flex min-h-11 items-center rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 py-2 text-label text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 const states: Record<CheckpointUi,string> = {
  done:'Demonstrated', revisit:'Recheck due', now:'In progress', next:'Up next', locked:'Locked', proposed:'Proposed',
 };
@@ -43,6 +45,7 @@ export default function V6Checkpoint(){
  const checkpoint=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),notify=useToast();
  const detail=checkpoint.data,view=detail?.view,projectDetail=project.data;
  const base='/p/'+encodeURIComponent(slug);
+ useV6HeaderTitle(view?.title);
  if(checkpoint.isPending)return <section aria-label="Checkpoint loading" className="p-4">
   <p role="status" className="text-label text-ink-2">Loading checkpoint…</p>
  </section>;
@@ -65,26 +68,34 @@ export default function V6Checkpoint(){
    {(view.ui==='revisit'||view.ui==='done')&&<TutorAction label="Recheck" request={'Please recheck my understanding of checkpoint '+view.code+' and record the outcome.'} slug={slug} code={view.code} title={context} client={client} notify={notify}/>}
   </div>;
  return <section data-v6-checkpoint-page className="flex min-w-0 flex-col gap-5 pb-8">
-  <header className="flex flex-col gap-2">
-   <Link to={base} className={actionClass+' self-start'}>Back to path</Link>
-   <p className="text-label font-semibold text-amber">{view.code} · {states[view.ui]}</p>
-   <h1 className="text-title-l font-semibold text-ink"><Tex source={view.title}/></h1>
-   {view.stage&&<p className="text-label text-ink-2"><Tex source={view.stage}/></p>}
-   <p className="text-body text-ink-2"><Tex source={detail.objective}/></p>
+  {/* N114 (mockup `20__Page`): chips, italic statement, next step, evidence and step markers. */}
+  <header className="flex flex-col gap-4">
+   <h1 className="sr-only"><Tex source={view.title}/></h1>
+   <div className="flex flex-wrap items-center gap-2">
+    <span className="lemma-state-chip !ml-0" data-checkpoint-state="now">{view.code}</span>
+    <span className="lemma-state-chip !ml-0" data-checkpoint-state={view.ui}>{states[view.ui]}</span>
+    {view.stage&&<span className="lemma-state-chip !ml-0"><Tex source={view.stage}/></span>}
+    <Link to={base} className="lemma-switch-chip ml-auto">Back to path</Link>
+   </div>
+   <p className="font-math text-[1.125rem] italic leading-relaxed text-ink-2"><Tex source={detail.objective}/></p>
   </header>
-  <section aria-label="Evidence criterion" className="rounded-ctl border border-edge bg-raised p-4">
-   <h2 className="text-title-s font-semibold">What counts as demonstrated</h2>
-   <p className="mt-2 text-body text-ink-2"><Tex source={detail.criterion}/></p>
+  <section className="notebook-next-step !my-0"><h3>Next step</h3>
+   <p><Tex source={detail.steps[view.currentStep]||detail.objective}/></p></section>
+  <section aria-label="Evidence criterion" className="flex flex-col gap-2 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4">
+   <h2 className="flex items-center gap-2 !text-[1.125rem] italic text-ink-2"><Target size={17} aria-hidden="true" className="text-[var(--accent)]"/>What counts as demonstrated</h2>
+   <p className="text-body text-ink-2"><Tex source={detail.criterion}/></p>
   </section>
   <section aria-label="Checkpoint steps" className="flex flex-col gap-3">
-   <h2 className="text-title-s font-semibold">Steps</h2>
+   <h2 className="text-ink-2">Steps</h2>
    {detail.steps.length===0?<p className="text-label text-ink-2">No steps recorded.</p>:
-    <ol className="flex flex-col gap-2">{detail.steps.map((step,index)=><li key={index}
-     className="flex gap-3 rounded-ctl border border-edge bg-fill-1 p-3">
-     <span className="shrink-0 text-label font-semibold text-amber">{index+1}</span>
-     <span className="min-w-0 flex-1 text-body"><Tex source={step}/></span>
-     <span className="text-caption text-ink-2">{index<view.currentStep?'Complete':index===view.currentStep?'Current':'Upcoming'}</span>
-    </li>)}</ol>}
+    <ol className="flex flex-col gap-3">{detail.steps.map((step,index)=>{
+     const done=index<view.currentStep,current=index===view.currentStep;
+     return <li key={index} className="flex items-start gap-3">
+      <span aria-hidden="true" className={'flex size-7 shrink-0 items-center justify-center rounded-full text-caption '+(done?'bg-[var(--accent)] text-[var(--on-accent)]':current?'border border-[var(--accent)] text-[var(--accent)]':'border border-[var(--edge)] text-ink-3')}>
+       {done?<Check size={16}/>:current?<span className="size-2.5 rounded-full bg-current"/>:index+1}</span>
+      <span className={'min-w-0 flex-1 pt-1 text-body '+(done?'text-ink-2':current?'font-semibold text-ink':'text-ink-3')}><Tex source={step}/></span>
+      <span className="sr-only">{done?'Complete':current?'Current':'Upcoming'}</span>
+     </li>;})}</ol>}
   </section>
   <section aria-label="Prerequisites" className="flex flex-col gap-2">
    <h2 className="text-title-s font-semibold">Prerequisites</h2>
@@ -113,7 +124,7 @@ export default function V6Checkpoint(){
    {view.recheckDue&&<p className="text-label text-ink-2">Recheck due: <time dateTime={view.recheckDue}>{view.recheckDue}</time></p>}
    {detail.events.length===0?<p className="text-label text-ink-2">No evidence recorded yet.</p>:
     <ol className="flex flex-col gap-2">{detail.events.slice(0,20).map(event=><li key={event.id}
-     className="rounded-ctl border border-edge bg-raised p-3">
+     className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
      <p className="flex flex-wrap gap-2 text-caption text-ink-2">
       <strong>{event.kind.replaceAll('_',' ')}</strong>
       {event.outcome&&<span>{event.outcome}</span>}

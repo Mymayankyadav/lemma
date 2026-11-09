@@ -144,10 +144,12 @@ describe('N72 focus modes and shell accessory',()=>{
   </MemoryRouter>,api);
   try{
    await vi.waitFor(()=>expect(view.host.querySelector('[aria-label="Focus accessory"]')).not.toBeNull());
-   expect(view.host.textContent).toContain('15 min to phase deadline');
+   // N110: the dock shows the mockup's mm:ss clock; the minutes stay its accessible name.
+   expect(view.host.querySelector('#cr-mobile-dock time')?.getAttribute('aria-label')).toBe('15 min to phase deadline');
+   expect(view.host.querySelector('#cr-mobile-dock time')?.textContent).toMatch(/^1[45]:\d\d$/);
    await click(button(view.host,'Pause'));
    expect(api.pauseStudyEntry).toHaveBeenCalledTimes(1);
-   await click(button(view.host,'Open focus'));
+   await click(view.host.querySelector('button[aria-label="Open focus"]'));
    expect(view.host.querySelector('[aria-label="Focus accessory"]')).not.toBeNull();
   }finally{await view.cleanup();}
  });

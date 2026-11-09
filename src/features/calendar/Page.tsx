@@ -14,8 +14,11 @@ import {DueDayItems,dueForDay,emptyCalendarDues,type CalendarDues} from './deadl
 import {loadCalendarDues} from './deadlines/load';
 import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay, type LoggedSlice } from './model';
 
-const actionClass = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
-const fieldClass = 'min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
+const actionClass = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
+const fieldClass = 'min-h-11 min-w-0 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 py-2 text-body text-ink';
+/** N116 (mockup `calendar.css`): planned study blocks carry a dashed rule, busy time a solid one. */
+const blockCard = (block: CalendarBlockRecord) => 'cr-agenda-block min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4 text-body ' +
+  (block.kind === 'busy' ? 'border-l-[3px] border-l-[var(--edge)] [border-left-style:double]' : 'border-l-[3px] border-l-[var(--accent)] [border-left-style:dashed]');
 
 function dateLabel(day: string, zone: string): string {
   return new Intl.DateTimeFormat('en', {
@@ -197,6 +200,12 @@ function V6Calendar() {
   return <section aria-labelledby="calendar-title" className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
+    <nav aria-label="Calendar date" className="grid grid-cols-[44px_minmax(0,1fr)_44px_auto] items-center gap-2">
+      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-[1.5rem] text-ink" aria-label="Previous dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, -1) : shiftDay(date, -step))}>‹</button>
+      <strong className="text-center text-body font-medium text-ink">{dateLabel(date, zone)}</strong>
+      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-[1.5rem] text-ink" aria-label="Next dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, 1) : shiftDay(date, step))}>›</button>
+      <button type="button" className="min-h-11 rounded-[8px] px-2 text-body text-ink-2" onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
+    </nav>
     <div onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
       const choices = ['agenda', 'day', 'week', 'month'];
@@ -209,25 +218,24 @@ function V6Calendar() {
       <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
         options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
     </div>
-    <nav aria-label="Calendar date" className="flex flex-wrap items-center justify-between gap-2">
-      <button type="button" className={actionClass} aria-label="Previous dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, -1) : shiftDay(date, -step))}>‹</button>
-      <strong className="text-center text-label text-ink">{dateLabel(date, zone)}</strong>
-      <button type="button" className={actionClass} aria-label="Next dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, 1) : shiftDay(date, step))}>›</button>
-      <button type="button" className={actionClass} onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
-    </nav>
+    <div aria-label="Planning tools" role="group" className="flex flex-wrap items-center justify-end gap-2">
+      <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
+        onRefresh={() => setReload(n => n + 1)}/>
+      <PlannerLaunch date={date} zone={zone}/>
+    </div>
 
     {phase === 'loading' && <p role="status">Loading calendar…</p>}
     {phase === 'error' && <div role="alert">{readError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
     {actionError && <div role="alert" className="rounded-ctl border border-edge p-3 text-label">{actionError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
 
     {phase === 'ready' && view === 'agenda' && <div aria-label="Next seven days" className="flex flex-col gap-3">
-      {groups.map(group => <Slab as="section" key={group.day} className="flex flex-col gap-2 p-3">
-        <h2 className="text-body font-semibold text-ink">{dateLabel(group.day, zone)}</h2>
+      {groups.map(group => <Slab as="section" key={group.day} className="flex flex-col gap-3 !border-0 !border-b !border-[var(--hair)] !rounded-none !bg-transparent px-0 pb-4 pt-1">
+        <h2 className="!font-[var(--font-ui)] !text-[.875rem] font-medium text-ink-2">{dateLabel(group.day, zone)}</h2>
         {group.entries.length === 0 && group.blocks.length === 0 &&
           !dueForDay(group.day,date,zone,dues).length &&
           <p className="text-label text-ink-2">Nothing planned.</p>}
         {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} clock24h={clock24h} />)}
-        {group.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label"><BlockSummary block={block} zone={zone} clock24h={clock24h}/></article>)}
+        {group.blocks.map(block => <article key={block.id} className={blockCard(block)}><BlockSummary block={block} zone={zone} clock24h={clock24h}/></article>)}
         <DueDayItems date={group.day} firstVisible={date} zone={zone} dues={dues}/>
       </Slab>)}
     </div>}
@@ -282,7 +290,7 @@ function V6Calendar() {
         {slots.map(row => <div key={row.at} className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge py-2">
           <time dateTime={row.at} className="break-words text-caption tabular-nums text-ink-2">{row.label}</time>
           <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone} clock24h={clock24h}/>)}</div>
-          <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className="rounded-ctl border border-edge p-2 text-label">
+          <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className={blockCard(block)}>
             <BlockSummary block={block} zone={zone} clock24h={clock24h}/>
             <div className="mt-2 flex flex-wrap gap-2">
               <button type="button" className={actionClass} disabled={saving} onClick={() => beginMove(block)} aria-label={'Move ' + block.title}>Move</button>
@@ -304,9 +312,6 @@ function V6Calendar() {
         </div>
       </Slab>
     </>}
-    <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
-      onRefresh={() => setReload(n => n + 1)}/>
-    <PlannerLaunch date={date} zone={zone}/>
   </section>;
 }
 

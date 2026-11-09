@@ -239,6 +239,7 @@ export default function Page() {
     [slow, setSlow] = useState(false),
     [completed, setCompleted] = useState(0);
   const v6=isFlagOn('v6Shell');
+  const [browsing,setBrowsing]=useState(false);
   const [recovery,setRecovery]=useState<InboxOutcome|null>(null);
   const [focusRevision,setFocusRevision]=useState(0);
   const focusAfterBatch=useRef<string|null|undefined>(undefined);
@@ -361,21 +362,26 @@ export default function Page() {
         onChange={changeTab}
         options={[
           { value: "cards", label: "Cards", count: cards.length },
-          { value: "plan", label: "Plan", count: plans.length },
+          { value: "plan", label: v6 ? "Plans" : "Plan", count: plans.length },
         ]}
       />
-      {v6&&!query.isLoading&&!query.isError&&<SelectionPanel
+      {v6&&!query.isLoading&&!query.isError&&(tab==='cards'?cards:plans).length>0&&<div className="flex min-h-14 items-center justify-between gap-3 border-b border-[var(--hair)] pb-3">
+        <span className="min-w-0 break-words text-label text-ink-2">{tab==='cards'&&active?projectLabel(active.projectSlug??''):tab==='cards'?'Card proposals':'Plan proposals'}</span>
+        <button type="button" aria-expanded={browsing} onClick={()=>setBrowsing(b=>!b)}
+          className="min-h-11 shrink-0 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-4 text-label text-ink">{browsing?'Hide queue':'Browse queue'}</button>
+      </div>}
+      {v6&&!query.isLoading&&!query.isError&&<div hidden={!browsing||undefined} className="flex flex-col gap-3"><SelectionPanel
         kind={tab} visible={tab==='cards'?cards.slice(cardPage*20,(cardPage+1)*20):
           plans.slice(planPage*20,(planPage+1)*20)}
         all={tab==='cards'?cards:plans} ids={selectionIds} busy={pending}
-        onToggle={id=>setSelectionIds(previous=>{
+        onToggle={id=>{setBrowsing(true);setSelectionIds(previous=>{
           const next=new Set(previous);
           if(next.has(id))next.delete(id);
           else if(next.size<20)next.add(id);
           else notify('Select at most 20 proposals');
           return next;
-        })}
-        onSelectPage={()=>setSelectionIds(previous=>{
+        });}}
+        onSelectPage={()=>{setBrowsing(true);setSelectionIds(previous=>{
           const next=new Set(previous);
           for(const proposal of (tab==='cards'?cards.slice(cardPage*20,(cardPage+1)*20):
             plans.slice(planPage*20,(planPage+1)*20))){
@@ -383,7 +389,7 @@ export default function Page() {
             next.add(proposal.id);
           }
           return next;
-        })}
+        });}}
         onClear={()=>setSelectionIds(previous=>{
           const next=new Set(previous);
           for(const proposal of (tab==='cards'?cards:plans))next.delete(proposal.id);
@@ -396,7 +402,7 @@ export default function Page() {
           focusAfterBatch.current=ids[0]??null;
           setStaged({ids,action,label:tab==='cards'?'selected cards':'selected plans'});
         }}
-      />}
+      /></div>}
       {staged&&<div role="status" className="flex min-h-14 items-center gap-2 rounded-ctl border border-amber-line bg-fill-1 px-3 text-label">
        <span className="min-w-0 flex-1">{staged.ids.length} from {staged.label} queued · saving in 6 s</span>
        <button type="button" className="min-h-11 shrink-0 px-3 font-semibold text-amber" onClick={()=>{const action=staged.action;setStaged(null);notify(action==="approve"?"Batch approval cancelled":"Batch rejection cancelled");if(v6)setFocusRevision(n=>n+1);}}>Undo</button>
@@ -420,7 +426,7 @@ export default function Page() {
       ) : tab === "cards" ? (
         active ? (
           <>
-            <section aria-label="Proposal groups" className="flex flex-col gap-3">
+            <section aria-label="Proposal groups" hidden={v6&&!browsing||undefined} className="flex flex-col gap-3">
              <p className="text-label text-ink-3">{Math.min(cardPage*20+1,cards.length)}–{Math.min((cardPage+1)*20,cards.length)} of {cards.length} card proposals · grouped by session and checkpoint</p>
              {cardGroups.map(group=><Slab key={group.key} className="flex flex-col gap-2 p-3">
               <div className="flex flex-wrap items-center justify-between gap-2">
@@ -436,6 +442,15 @@ export default function Page() {
               {(cardPage+1)*20<cards.length&&<button type="button" className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-body text-amber" onClick={()=>setCardPage(n=>n+1)}>More proposals · {cards.length-(cardPage+1)*20} remaining</button>}
              </div>
             </section>
+            {v6&&<div className="lemma-proposal-stepper" aria-label="Proposal position">
+              <button type="button" aria-label="Previous proposal" disabled={pending||cards.indexOf(active)<=0}
+                onClick={()=>{setSelected(cards[cards.indexOf(active)-1]?.id??active.id);setEditing(false)}}
+                className="flex-1 rounded-[8px] border border-[var(--hair)] bg-[var(--paper)] disabled:opacity-40">‹</button>
+              <span>{cards.indexOf(active)+1} of {cards.length.toLocaleString()}</span>
+              <button type="button" aria-label="Next proposal" disabled={pending||cards.indexOf(active)>=cards.length-1}
+                onClick={()=>{setSelected(cards[cards.indexOf(active)+1]?.id??active.id);setEditing(false)}}
+                className="flex-1 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] disabled:opacity-40">›</button>
+            </div>}
             <PendingCard
               key={active.id}
               proposal={active}
@@ -445,6 +460,7 @@ export default function Page() {
             {v6&&<ProposalEvidence proposal={active}/>} 
             <div
               aria-label={`${completed} reviewed, ${cards.length} remaining`}
+              hidden={v6||undefined}
               className="flex justify-center gap-2"
             >
               {Array.from(
@@ -458,33 +474,21 @@ export default function Page() {
               )}
             </div>
             {v6?createPortal(
-              <div data-v6-proposal-actions="" aria-label="Proposal decisions" className="fixed inset-x-0 z-40 mx-auto max-w-[528px] border-t border-edge bg-[var(--tab-bg)] px-3 py-2 shadow-lg"
-                style={{bottom:'calc(var(--tab) + env(safe-area-inset-bottom))'}}>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                aria-label="Reject card"
-                disabled={pending}
+              <div data-v6-proposal-actions="" data-ui="proposal-actions" aria-label="Proposal decisions" className="grid grid-cols-3">
+              <button type="button" aria-label="Reject card" data-ui="proposal-reject" disabled={pending}
                 onClick={() => void commit(active, false)}
-                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-again bg-danger-tint px-2 text-again disabled:opacity-50"
-              >
-                <X size={18} /><span className="text-label">Reject</span>
+                className="flex items-center justify-center gap-2 px-2 disabled:opacity-50">
+                <X size={18} aria-hidden="true"/><span>Reject</span>
               </button>
-              <button
-                type="button"
-                aria-label="Edit card"
-                disabled={pending || !active.card}
-                onClick={openEdit}
-                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl border border-edge bg-fill-1 px-2 text-ink-2 disabled:opacity-40"
-              >
-                <PencilLine size={17} /><span className="text-label">Edit</span>
+              <button type="button" aria-label="Edit card" disabled={pending || !active.card} onClick={openEdit}
+                className="flex items-center justify-center gap-2 border border-[var(--control-edge)] bg-[var(--paper-2)] px-2 text-ink disabled:opacity-40">
+                <PencilLine size={17} aria-hidden="true"/><span>Edit</span>
               </button>
               <button type="button" aria-label="Approve card" disabled={pending}
                 onClick={() => void commit(active, true)}
-                className="flex min-h-12 items-center justify-center gap-1 rounded-ctl bg-amber px-2 text-amber-ink disabled:opacity-50">
-                <Check size={18}/><span className="text-label font-semibold">Approve</span>
+                className="flex items-center justify-center gap-2 px-2 font-semibold disabled:opacity-50">
+                <Check size={18} aria-hidden="true"/><span>Approve</span>
               </button>
-            </div>
               </div>,
               document.body
             ):(

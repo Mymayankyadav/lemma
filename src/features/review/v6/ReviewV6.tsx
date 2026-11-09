@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
-import {useNavigate} from 'react-router';
+import {Link,useNavigate} from 'react-router';
+import {Play} from 'lucide-react';
 import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
 import {getMode} from '../../../data/mode';
 import {useReviewSession} from '../../review-run/store';
@@ -78,41 +79,46 @@ export default function ReviewV6(){
   }catch(error){setIssue(error instanceof Error?error.message:'Could not start review run')}
   finally{setBusy(false)}
  }
- return <main aria-label="Review" className="flex min-w-0 flex-col gap-4 pb-24 text-ink">
-  <header className="flex flex-col gap-1">
-   <h1 className="text-title-s font-semibold">Review</h1>
-   <p className="text-label text-ink-2">Choose decks and checkpoints for this round.</p>
-  </header>
+ const minutes=Math.max(1,Math.ceil(result.batch.length*4.5/60));
+ const selectedDecks=nodes.filter(project=>keysFor(project).some(key=>enabled.has(key))).length;
+ // N112 (mockup `12__Page`): one review hero, then decks and queue details one tap away.
+ return <main aria-label="Review" className="flex min-w-0 flex-col text-ink">
   {loading&&<p role="status">Loading review decks…</p>}
-  {!loading&&error&&<section role="alert" className="rounded-ctl border border-edge p-4">
+  {!loading&&error&&<section role="alert" className="lemma-log-warning">
    <p>Could not load your review decks.</p>
-   <button type="button" className={button} onClick={()=>{
+   <button type="button" onClick={()=>{
     void decks.refetch();void cards.refetch();void settings.refetch();
    }}>Retry review data</button>
   </section>}
   {!loading&&!error&&<>
-   {issue&&<p role="alert" className="text-label text-ink-2">{issue}</p>}
-   {active&&<button type="button" className={button+' w-full'}
-    onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
-    Resume saved run · {active.progress.position+1} of {active.progress.total}
-   </button>}
-   <section aria-label="Review counts" className="rounded-ctl border border-edge bg-fill-1 p-4">
-    <div className="grid grid-cols-3 gap-2 text-center">
-     <div><strong className="block text-title-s tabular-nums">{result.allDue}</strong><span className="text-caption text-ink-2">All due</span></div>
-     <div><strong className="block text-title-s tabular-nums">{result.eligible}</strong><span className="text-caption text-ink-2">Selected eligible</span></div>
-     <div><strong className="block text-title-s tabular-nums" aria-label="Cards in this round">{result.batch.length}</strong><span className="text-caption text-ink-2">This round</span></div>
-    </div>
-    <p className="mt-2 text-label text-ink-2">Daily review limit: {Math.max(0,quota)}</p>
-    <button type="button" aria-label={'Start '+result.batch.length+' cards'}
-     className={button+' mt-3 w-full bg-amber font-semibold text-amber-ink'}
+   {issue&&<p role="alert" className="lemma-log-warning mb-4">{issue}</p>}
+   <section aria-label="Review counts" className="notebook-review-summary">
+    <p className="notebook-eyebrow">A SMALL SESSION, LASTING IDEAS</p>
+    <h2><span aria-label="Cards in this round">{result.batch.length}</span> cards for today</h2>
+    <p className="notebook-review-estimate">{result.batch.length?'About '+minutes+' min · at your pace':'Nothing selected for this round'}</p>
+    {active?<button type="button" className="notebook-primary"
+     onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
+     <Play size={20} aria-hidden="true"/>Resume saved run · {active.progress.position+1} of {active.progress.total}
+    </button>:
+    <button type="button" aria-label={'Start '+result.batch.length+' cards'} className="notebook-primary disabled:opacity-60"
      disabled={result.batch.length===0||busy||!!active} onClick={()=>{void start()}}>
-     {busy?'Starting…':'Start '+result.batch.length+' cards'}</button>
+     <Play size={20} aria-hidden="true"/>{busy?'Starting…':'Start review'}</button>}
+    <div className="notebook-budget-row">
+     <span><strong>Today’s batch</strong><small>Daily review limit: {Math.max(0,quota)}</small></span>
+     <Link to="/settings" className="notebook-text-button inline-flex items-center">Change</Link>
+    </div>
    </section>
+   <details className="notebook-options-details" open={search?true:undefined}>
+    <summary className="notebook-options-row mt-6">
+     <span><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
+     <span aria-hidden="true">›</span>
+    </summary>
+    <div className="flex flex-col gap-3 py-4">
    {nodes.length===0?<p role="status">No cards due. Your Review queue is clear.</p>:<>
     <label className="flex flex-col gap-1 text-label font-semibold text-ink-2">Find a deck or checkpoint
      <input aria-label="Find a deck or checkpoint" type="search" value={search}
       onChange={event=>setSearch(event.target.value)}
-      className="min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 text-body text-ink"/>
+      className="min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-body text-ink"/>
     </label>
     {search&&visible.length===0&&<p role="status">No matching decks or checkpoints.</p>}
     {result.eligible===0&&<p role="status">No cards in this selection. Choose another deck or checkpoint.</p>}
@@ -125,7 +131,7 @@ export default function ReviewV6(){
        (!q||project.label.toLocaleLowerCase().includes(q)||child.label.toLocaleLowerCase().includes(q)));
       const opened=!collapsed.has(project.key)||!!q;
       return <section key={project.key} aria-label={'Deck '+project.label}
-       className="rounded-ctl border border-edge bg-[var(--paper)] p-3">
+       className="border-b border-[var(--hair)] py-2">
        <div className="flex min-w-0 items-center gap-2">
         <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
          <input type="checkbox" aria-label={'Include deck '+project.label} className="size-5 shrink-0 accent-[var(--accent)]"
@@ -157,6 +163,12 @@ export default function ReviewV6(){
      })}
     </section>
    </>}
+    </div>
+   </details>
+   <details className="notebook-queue-details mt-6">
+    <summary>Queue details · {result.allDue.toLocaleString()} due across all decks</summary>
+    <p>All due: <strong className="tabular-nums">{result.allDue}</strong> · Selected eligible: <strong className="tabular-nums">{result.eligible}</strong> · This round: <strong className="tabular-nums">{result.batch.length}</strong></p>
+   </details>
   </>}
  </main>;
 }

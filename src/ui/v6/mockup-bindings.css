@@ -1,0 +1,64 @@
+/*
+ * N110 — repo bindings for the generated mockup layer (mockup.css). The mockup was
+ * captured from a different DOM; these rules map its presentation onto the repo's
+ * own shell elements. Every selector is scoped under :root[data-v6].
+ */
+/* The shell header sits above each screen, as the mockup page header does. */
+:root[data-v6] [data-v6-header]{margin-bottom:24px;font-family:var(--font-ui)}
+:root[data-v6] [data-v6-header].notebook-header{flex-wrap:nowrap}
+:root[data-v6] [data-v6-header] h1{color:var(--ink)}
+:root[data-v6] [data-v6-header] .lemma-header-cluster{border:0;padding:0;background:transparent}
+:root[data-v6] [data-v6-header] .lemma-header-cluster>nav,:root[data-v6] .lemma-header-cluster{display:flex}
+:root[data-v6] [data-v6-header] .lemma-header-cluster details>nav a,
+:root[data-v6] [data-v6-header] .lemma-header-cluster details>nav button{width:100%}
+:root[data-v6] [data-v6-header] .lemma-menu-add{display:flex;flex-direction:column}
+:root[data-v6] .lemma-header-cluster details>nav{z-index:90}
+/* Mockup v6 has no Demo chip or graph-paper ground; the workspace label lives in page footers. */
+:root[data-v6] .ground{background:var(--bg)!important;background-image:none!important}
+/* Focus dock text keeps the dock compact on narrow phones. */
+:root[data-v6] #cr-mobile-dock .lemma-dock-context{background:transparent;border:0;color:var(--ink);cursor:pointer}
+:root[data-v6] #cr-mobile-dock .cr-label{font-weight:500}
+:root[data-v6] #cr-mobile-dock .cr-meta{color:var(--ink-2)}
+:root[data-v6] #cr-mobile-dock>.cr-button{border:1px solid var(--control-edge);border-radius:8px;background:var(--paper);color:var(--ink);padding-inline:14px}
+/* Inbox (N113): the fixed decision bar sits on the dock/navigation; content scrolls clear of it. */
+:root[data-v6] body:has([data-ui=proposal-actions]) #main-content{padding-bottom:calc(var(--lemma-bottom-chrome,100px) + 96px)}
+:root[data-v6] [data-ui=proposal-actions]{margin:0 auto}
+:root[data-v6] [data-ui=proposal-actions]>button{min-height:48px;border-radius:9px}
+:root[data-v6] [data-ui=proposal-actions]>button:not(:last-child):not([data-ui=proposal-reject]){border:1px solid var(--control-edge);background:var(--paper-2);color:var(--ink)}
+:root[data-v6] .lemma-proposal-stepper>button{min-height:52px}
+/* Large text (rem-scaled, so 200% root text reflows like the mockup's data-large-text rules). */
+:root[data-v6] .notebook-metrics{grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr))}
+:root[data-v6] .notebook-metric>span,:root[data-v6] .notebook-metric>small{overflow-wrap:anywhere}
+:root[data-v6] .notebook-budget-row{flex-wrap:wrap}
+:root[data-v6] .ui-segmented{flex-wrap:wrap}
+:root[data-v6] .ui-segmented>button{flex:1 1 auto;min-width:0}
+:root[data-v6] [data-ui=proposal-actions]>button>span{min-width:0;overflow-wrap:anywhere}
+/* The repo keeps its five-tab bar in short landscape (the mockup moved destinations into the menu). */
+@media(max-height:480px) and (orientation:landscape){
+ :root[data-v6] nav[data-ui=main-navigation]{display:flex!important}
+ :root[data-v6] .lemma-header-cluster details nav .lemma-landscape-destination{display:none}
+}
+/* Fields and switches never widen a phone column at 200% text. */
+:root[data-v6] #main-content label{min-width:0;max-width:100%}
+:root[data-v6] #main-content :is(input[type=date],input[type=time],input[type=datetime-local]){min-width:0;max-width:100%;font-size:.875rem}
+:root[data-v6] .ui-switch-track{box-sizing:border-box}
+:root[data-v6] label:has(>.ui-switch-track)>span:first-child{min-width:0;overflow-wrap:anywhere}
+/* Route-level sheets (New path) keep the five destinations reachable, as the release audit requires. */
+:root[data-v6] body:has(.ui-sheet[aria-modal=true]) nav[data-ui=main-navigation]{display:flex}
+:root[data-v6] .ui-switch-thumb{translate:none!important}
+:root[data-v6] #main-content label{overflow-wrap:anywhere}
+/* Bottom chrome (N110): the bar and the focus dock have rem-based heights, so the dock, Inbox
+ * decisions and page padding stack exactly at any text size without measuring in script. */
+html[data-v6]{--lemma-nav-height:calc(3.75rem + env(safe-area-inset-bottom));--lemma-dock-height:3.5rem;--lemma-bottom-chrome:var(--lemma-nav-height)}
+html[data-v6]:has(#cr-mobile-dock){--lemma-bottom-chrome:calc(var(--lemma-nav-height) + var(--lemma-dock-height))}
+:root[data-v6] nav[data-ui=main-navigation]{box-sizing:border-box;height:var(--lemma-nav-height);min-height:0}
+:root[data-v6] #cr-mobile-dock{box-sizing:border-box;min-height:var(--lemma-dock-height)}
+/* The grade tick is decoration: empty alt text keeps it out of each grade's accessible name. */
+:root[data-v6] [data-ui=review-grades]>button:nth-child(n+2):before{content:'✓'/''}
+/* Screen action rows start at the left edge, as in the mockup's page headers. */
+:root[data-v6] #main-content [data-ui=page-actions].lemma-page-action-row{justify-content:flex-start;flex-wrap:wrap;overflow:visible}
+:root[data-v6] .lemma-header-chip.lemma-destructive-text{min-height:44px;padding:10px 14px}
+/* Header icon actions are plain glyphs (mockup), boxed only while their menu is open. */
+:root[data-v6] [data-v6-header] .lemma-header-cluster details:not([open])>summary,
+:root[data-v6] [data-v6-header] .lemma-header-cluster>a{border-color:transparent;background:transparent;box-shadow:none}
+:root[data-v6] .lemma-page-action-row>.lemma-header-chip.lemma-destructive-text{color:var(--action-destructive);border-color:var(--action-destructive);background:var(--danger-tint)}

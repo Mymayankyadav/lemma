@@ -211,6 +211,24 @@ export default function Page(){
    body={offline?'Reconnect to resume studying.':'Your study data is safe. Try loading again.'}
    action={{label:'Try again',onClick:()=>{void home.refetch()}}}/>
  </Screen>;
+ if(isFlagOn('v6Shell'))return <div className="notebook-today flex min-w-0 flex-col">
+  {/* N111 (mockup Today): the shell header carries the date and actions. */}
+  <Suspense fallback={null}>
+   <TodayFocus/>
+   <V6TodayPlan zone={settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC'}
+    due={home.data.due} reviewLimit={settings.data?.reviewsPerDay??200}>
+    <PlannerLaunch zone={settings.data?.timeZone}/>
+   </V6TodayPlan>
+  </Suspense>
+  {offline&&<div role="status" className="lemma-log-warning mt-4">
+   You're offline. Changes cannot be saved until you're connected.
+  </div>}
+  {getMode()==='live'&&settings.data&&!settings.data.connectorLastSeenAt&&<Link to="/settings" aria-label="Connect your tutor" className="notebook-task-row">
+   <span><strong>Tutor not connected.</strong><small>Set up the connector in Settings to record study progress.</small></span>
+   <ChevronRight size={19} aria-hidden="true"/>
+  </Link>}
+  {getMode()==='demo'&&<p className="notebook-example-note">Example workspace · changes stay in this browser</p>}
+ </div>;
  const projects=home.data.projects.filter(p=>!p.system&&p.status!=='archived')
   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));

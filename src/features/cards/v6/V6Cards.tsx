@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import { Link, useNavigate } from 'react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getApi } from '../../../data';
@@ -13,7 +14,7 @@ import type { EditorValue } from '../Editor';
 import CardFiltersSheet, { clearCardFilters, type CardFilters } from './CardFiltersSheet';
 
 const Editor = lazy(() => import('../Editor').then(module => ({ default: module.Editor })));
-const button = 'min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
+const button = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-transparent px-4 py-2 text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 const hasFilters = (filters: CardFilters) => Boolean(filters.projectSlug || filters.checkpointCode ||
   filters.state || filters.noteStatus || filters.hasOpenComments);
 const relative = (due: string | null) => {
@@ -23,20 +24,20 @@ const relative = (due: string | null) => {
 };
 
 function CardItem({ row }: { row: CardRow }) {
+  // N117 (mockup `18__Page`): a ruled list row with the subject glyph, serif front and a checkpoint chip.
   return <Link data-card-row to={'/cards/' + row.noteNo}
-    className="flex min-h-20 min-w-0 items-start gap-3 rounded-ctl border border-edge bg-fill-1 p-3 text-ink focus-visible:outline-2 focus-visible:outline-amber">
-    <span aria-hidden="true" className="min-w-7 text-center font-math text-card">{row.glyph}</span>
+    className="flex min-w-0 items-center gap-4 border-b border-[var(--edge)] text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
+    <span aria-hidden="true" className="w-8 shrink-0 text-center font-math text-[1.75rem] text-ink-2">{row.glyph}</span>
     <span className="min-w-0 flex-1">
-      <span data-card-front className="block min-w-0 break-words font-math text-body">
+      <span data-card-front className="block min-w-0 break-words font-math text-[1.125rem] leading-snug">
         {canRenderPlainCardFront(row.front) ? row.front : <Tex source={row.front} />}
       </span>
-      <span className="mt-2 flex flex-wrap gap-2 text-caption text-ink-2">
-        <span>{row.checkpointCode ?? 'No checkpoint'}</span>
+      <span className="mt-2 flex flex-wrap items-center gap-3 text-label text-ink-2">
+        <span className="rounded-[4px] border border-[var(--edge)] px-1.5 tabular-nums">{row.checkpointCode ?? 'No checkpoint'}</span>
         <span>{row.status === 'suspended' ? 'Paused' : relative(row.due)}</span>
         {row.openComments > 0 && <span>{row.openComments} open comments</span>}
       </span>
     </span>
-    <span aria-hidden="true" className="text-label text-ink-2">›</span>
   </Link>;
 }
 
@@ -105,16 +106,15 @@ export default function V6Cards() {
   }
 
   return <section aria-labelledby="v6-cards-title" className="flex flex-col gap-4 pb-8">
-    <header className="flex flex-wrap items-center justify-between gap-2">
-      <h1 id="v6-cards-title" className="text-title-l font-semibold text-ink">Cards</h1>
-      <button type="button" className={button} onClick={() => setCreating(true)}>New card</button>
-    </header>
-    <label className="flex flex-col gap-1 text-label text-ink-2">Search cards
-      <input type="search" aria-label="Search cards" className="min-h-11 min-w-0 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink"
-        placeholder="Search fronts and backs" value={search} onChange={event => setQuery(event.target.value)} />
+    <h2 id="v6-cards-title" className="sr-only">Cards</h2>
+    <label className="relative flex flex-col text-label text-ink-2"><span className="sr-only">Search cards</span>
+      <Search size={22} aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-2" />
+      <input type="search" aria-label="Search cards" className="min-h-12 min-w-0 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper-2)] py-2 pl-12 pr-3 text-body text-ink"
+        placeholder="Search cards" value={search} onChange={event => setQuery(event.target.value)} />
     </label>
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="lemma-filter-summary">
       <button type="button" className={button} onClick={() => setShowFilters(true)}>Filters</button>
+      <button type="button" className={button} onClick={() => setCreating(true)}>New card</button>
       {filters.projectSlug && <button type="button" className={button} onClick={() => apply({ ...filters, projectSlug: '', checkpointCode: '' })}>
         Project: {projects.data?.find(project => project.slug === filters.projectSlug)?.title ?? filters.projectSlug} ×
       </button>}
@@ -137,7 +137,7 @@ export default function V6Cards() {
         {rows.length === 0 ? <div className="rounded-ctl border border-edge bg-fill-1 p-6 text-center">
           <h2 className="text-body font-semibold text-ink">{filtered ? 'No cards match these filters' : 'No cards yet'}</h2>
           {filtered && <button type="button" className={button} onClick={clear}>Clear filters</button>}
-        </div> : <div role="list" aria-label="Card results" className="flex flex-col gap-2">
+        </div> : <div role="list" aria-label="Card results" className="lemma-card-list">
           {visible.map(row => <div role="listitem" key={row.noteNo}><CardItem row={row}/></div>)}
         </div>}
         {cards.isFetchNextPageError && <p role="alert" className="text-label text-ink-2">

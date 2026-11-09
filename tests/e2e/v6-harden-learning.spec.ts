@@ -25,15 +25,20 @@ for(const [theme,width] of [['graph',320],['graph-night',390]] as const){
   await expect(page.getByRole('list',{name:'Card results'})).toBeVisible();
   await zoom(page);await noOverflow(page);
   await visit(page,'/atlas','1',theme);
-  await expect(page.getByRole('heading',{name:'Atlas ideas'})).toBeVisible();
+  // N117: the mockup Atlas list ("Concept map" in the shell header) browses concepts and groups.
+  await expect(page.getByRole('heading',{name:/^Browse \d+ concepts and \d+ groups$/})).toBeVisible();
   const ideas=page.getByRole('region',{name:'Idea hierarchy'});
   await expect(ideas).toHaveAttribute('tabindex','0');
   await ideas.focus();await page.keyboard.press('PageDown');
   await zoom(page);await noOverflow(page);
+  // Each concept's map and edit actions open from its own disclosure.
+  await page.locator('summary[aria-label^="Actions for "]').first().click();
   const pin=page.locator('button[aria-label^="Edit map pin for"]').first();
   const size=await pin.boundingBox();
   expect(size).not.toBeNull();expect(size!.height).toBeGreaterThanOrEqual(44);
   await visit(page,'/settings','1',theme);
+  // N117: Settings opens on four grouped rows; Data & account opens on Account.
+  await page.getByRole('button',{name:'Data & account'}).click();
   const tabs=page.getByRole('tablist',{name:'Settings sections'});
   const account=tabs.getByRole('tab',{name:'Account'});
   await expect(account).toHaveAttribute('aria-selected','true');

@@ -72,16 +72,16 @@ export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclu
   }catch(cause){setError(cause instanceof Error?cause.message:'Unable to save; try again.');}
   finally{setBusy(false);}
  }
- return <section aria-label="Focus thoughts and notices" className="mt-3 border-t border-edge pt-3">
-  <p className="text-label text-ink-2">Notices: <output aria-label="Focus notice count" className="font-semibold text-ink tabular-nums">{count===null?'…':count}</output></p>
-  {loadError&&<p role="alert" className="text-label text-ink">{loadError}</p>}
-  <div className="mt-2 flex flex-wrap gap-2">
-   <button type="button" onClick={e=>open('park',e.currentTarget)}
-    className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink">Park a thought</button>
+ // N111 (mockup focus page "Noticed a distraction · Park a thought"): two quiet text actions.
+ return <section aria-label="Focus thoughts and notices" className="mt-3 flex flex-col items-center gap-1">
+  <div className="flex flex-wrap justify-center gap-x-6">
    <button type="button" onClick={e=>open('drift',e.currentTarget)}
-    className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink">I drifted</button>
+    className="min-h-11 px-1 text-label text-ink-2 underline-offset-4 hover:underline">I drifted</button>
+   <button type="button" onClick={e=>open('park',e.currentTarget)}
+    className="min-h-11 px-1 text-label text-ink-2 underline-offset-4 hover:underline">Park a thought</button>
   </div>
-  <p className="mt-1 text-caption text-ink-2">{onExclude?'Drift is recorded. Exclusion is optional and explicit.':'Drift is recorded, not deducted from saved time.'}</p>
+  {loadError&&<p role="alert" className="text-label text-ink">{loadError}</p>}
+  <p className="text-center text-caption text-ink-3">Notices: <output aria-label="Focus notice count" className="tabular-nums">{count===null?'…':count}</output> · {onExclude?'Drift is recorded. Exclusion is optional and explicit.':'Drift is recorded, not deducted from saved time.'}</p>
   <dialog ref={dialog} aria-label={dialogKind==='drift'?'Record a drift':'Park a thought'}
    aria-modal="true" onCancel={e=>{e.preventDefault();dismiss();}}
    onClose={()=>{setDialogKind(null);opener.current?.focus();}}

@@ -23,10 +23,12 @@ export default function FocusAccessory(){
   window.addEventListener('focus',visibleRefresh);
   window.addEventListener('online',visibleRefresh);
   document.addEventListener('visibilitychange',visibleRefresh);
+  // The clock ticks each second; the owner read stays on its 30-second cadence.
+  let ticks=0;
   const clock=window.setInterval(()=>{
    setNow(Date.now());
-   if(document.visibilityState!=='hidden')refresh();
-  },30_000);
+   if(++ticks%30===0&&document.visibilityState!=='hidden')refresh();
+  },1_000);
   return()=>{
    alive=false;request++;window.clearInterval(clock);
    window.removeEventListener('lemma:focus-changed',refresh);
@@ -37,7 +39,10 @@ export default function FocusAccessory(){
  },[api,pathname]);
  if(!entry||!['running','paused'].includes(entry.status))return null;
  const paused=entry.status==='paused';
- const minutes=entry.phaseEndsAt?Math.max(0,Math.ceil((Date.parse(entry.phaseEndsAt)-now)/60_000)):null;
+ const remaining=entry.phaseEndsAt?Math.max(0,Date.parse(entry.phaseEndsAt)-now):null;
+ const minutes=remaining===null?null:Math.ceil(remaining/60_000);
+ const clock=remaining===null?null:formatClock(remaining);
+ const state=entry.phase==='long_break'?'Long break':entry.phase==='break'?'Break':paused?'Paused':'In focus';
  async function toggle(){
   if(!entry||busy)return;
   setBusy(true);setError('');
@@ -55,24 +60,25 @@ export default function FocusAccessory(){
   window.dispatchEvent(new Event('lemma:open-focus'));
   navigate('/?focus=open');
  }
- return <aside aria-label="Focus accessory" data-v6-focus-accessory=""
-  className="fixed inset-x-3 z-30 mx-auto flex max-h-[56dvh] max-w-[504px] flex-col overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] px-3 py-2 shadow-lg"
-  style={{bottom:pathname==='/proposals'?
-   'calc(var(--tab) + env(safe-area-inset-bottom) + 128px)':
-   'calc(var(--tab) + env(safe-area-inset-bottom) + 8px)'}}>
-  <div className="flex min-w-0 flex-wrap items-center gap-2">
-   <div className="min-w-32 flex-1">
-    <p className="line-clamp-2 break-words text-label font-semibold text-ink [overflow-wrap:anywhere]" title={entry.intent}>{entry.intent}</p>
-    <p className="text-caption text-ink-2">{entry.phase==='long_break'?'Long break':
-      entry.phase==='break'?'Break':paused?'Paused':'Focus'} · {minutes===null?'No deadline':minutes+' min to phase deadline'}</p>
-   </div>
-   <button type="button" disabled={busy} onClick={()=>{void toggle();}}
-    className="min-h-11 shrink-0 rounded-ctl border border-edge px-3 text-label font-semibold text-ink">
-    {paused?'Resume':'Pause'}
-   </button>
-   <button type="button" onClick={open}
-    className="min-h-11 shrink-0 rounded-ctl bg-amber px-3 text-label font-semibold text-amber-ink">Open focus</button>
-  </div>
-  {error&&<p role="alert" className="mt-1 text-caption text-ink">{error}</p>}
+ // N110 (mockup `cr-mobile-dock`): a flat strip directly above the bottom navigation.
+ return <aside aria-label="Focus accessory" data-v6-focus-accessory="" id="cr-mobile-dock"
+  className="cr cr-mobile-dock lemma-time-dock flex-wrap items-center">
+  <button type="button" onClick={open} aria-label="Open focus" title={entry.intent+', '+state+', open timer details'}
+   className="lemma-dock-context lemma-time-tap">
+   <strong className="cr-label">{entry.intent}</strong>
+   <small className="cr-meta">{state}{minutes===null?' · No deadline':''}</small>
+   {clock&&<time aria-label={minutes+' min to phase deadline'}>{clock}</time>}
+  </button>
+  <button type="button" disabled={busy} onClick={()=>{void toggle();}} className="cr-button"
+   data-timer-action={paused?'Resume':'Pause'}>
+   {paused?'Resume':'Pause'}
+  </button>
+  {error&&<p role="alert" className="basis-full pb-1 text-caption text-ink">{error}</p>}
  </aside>;
+}
+
+function formatClock(ms:number){
+ const total=Math.ceil(ms/1000),h=Math.floor(total/3600),m=Math.floor(total%3600/60),sec=total%60;
+ const mm=String(m).padStart(2,'0'),ss=String(sec).padStart(2,'0');
+ return h?h+':'+mm+':'+ss:mm+':'+ss;
 }

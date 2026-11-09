@@ -89,10 +89,17 @@ it('keeps legacy Insights unchanged and does not mount v6 StudyApi when flag is 
   expect(host.textContent).not.toContain('Study effort');
   expect(list).not.toHaveBeenCalled();
 });
-it('renders v6 effort above the legacy Insights content when enabled', async () => {
+it('renders v6 effort on Overview and the legacy Insights content on Learning when enabled', async () => {
   flags.on=true;
   fakeStudyApi();
   await render('/insights?range=day', true);
   await vi.waitFor(() => expect(host.textContent).toContain('60 min'));
-  expect(host.textContent?.indexOf('Study effort')).toBeLessThan(host.textContent?.indexOf('Insights') ?? -1);
+  // N115: Overview carries the stat tiles and saved effort; Learning carries the legacy charts.
+  expect(host.textContent).toContain('Study effort');
+  expect(host.textContent).toContain('Small steps, seen over time.');
+  expect(host.textContent).not.toContain('Insights');
+  await click('Learning');
+  expect(host.textContent).toContain('Insights');
+  expect(host.querySelector('[data-url]')?.textContent).toContain('view=learning');
+  expect(host.textContent).not.toContain('Study effort');
 });
