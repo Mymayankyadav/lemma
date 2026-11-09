@@ -2,10 +2,13 @@ import React, {act} from 'react'
 import {createRoot} from 'react-dom/client'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
 import {MemoryRouter} from 'react-router'
-import {describe,expect,it,vi} from 'vitest'
+import {describe,expect,it,vi,beforeEach} from 'vitest'
 import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter'
 import type {DemoStore} from '../../../src/data/demo/model'
 import Page from '../../../src/features/home/Page'
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 
 // Preserve the real hooks, demo adapter and Today selection logic. Only choose
 // which real adapter getApi supplies and fix the page to demo mode for this test.
