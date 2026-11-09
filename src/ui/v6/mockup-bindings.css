@@ -24,7 +24,8 @@
 :root[data-v6] body:has([data-ui=proposal-actions]) #main-content{padding-bottom:calc(var(--lemma-bottom-chrome,100px) + 96px)}
 :root[data-v6] [data-ui=proposal-actions]{margin:0 auto}
 :root[data-v6] [data-ui=proposal-actions]>button{min-height:48px;border-radius:9px}
-:root[data-v6] [data-ui=proposal-actions]>button:not(:last-child):not([data-ui=proposal-reject]){border:1px solid var(--control-edge);background:var(--paper-2);color:var(--ink)}
+/* #1336: Edit is outlined: a near-paper fill (3% ink) and the mockup's edge colour. */
+:root[data-v6] [data-ui=proposal-actions]>button:not(:last-child):not([data-ui=proposal-reject]){border:1px solid var(--edge);background:color-mix(in srgb,var(--ink) 3%,transparent);color:var(--ink)}
 :root[data-v6] .lemma-proposal-stepper>button{min-height:52px}
 /* Large text (rem-scaled, so 200% root text reflows like the mockup's data-large-text rules). */
 :root[data-v6] .notebook-metrics{grid-template-columns:repeat(auto-fit,minmax(min(100%,8.5rem),1fr))}
@@ -65,3 +66,9 @@ html[data-v6]:has(#cr-mobile-dock){--lemma-bottom-chrome:calc(var(--lemma-nav-he
 /* #1300: Kit illustrations scale down inside their three-column grid instead of widening a 320px page. */
 :root[data-v6] section[aria-label="Illustrations and empty states"] svg{max-width:100%;height:auto}
 :root[data-v6] section[aria-label="Illustrations and empty states"] .grid>*{min-width:0}
+/* #1335: every Settings group row is 112px (the reference capture); the first already is, through the page's top space. */
+:root[data-v6] .lemma-settings-link+.lemma-settings-link{min-height:112px;padding-top:40px}
+/* #1334: the Atlas List/Map picker uses the mockup's calm-effects fill for the pressed segment. */
+:root[data-v6] .notebook-atlas-picker>button[aria-pressed=true]{background:var(--raised-2);border:1px solid var(--edge-2)}
+/* #1334: the Atlas list starts right under the header rule, as in the mockup (no shell gap above its picker). */
+:root[data-v6] .lg-page[data-atlas-view=list]{margin-top:-24px}

@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {getThoughtApi} from '../../data/parked-thoughts';
 import {getStudyEventApi} from '../../data/study-events';
+import {isFlagOn} from '../../flags';
 
 /** Every action is a separate owner-scoped write; neither action changes the timer. */
 export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclude?:(minutes:number,reason:string)=>Promise<void>}){
@@ -79,7 +80,7 @@ export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclu
    <button type="button" onClick={e=>open('park',e.currentTarget)} className="cr-button text">Park a thought</button>
   </div>
   {loadError&&<p role="alert" className="text-label text-ink">{loadError}</p>}
-  <p className="text-center text-caption text-ink-3">Notices: <output aria-label="Focus notice count" className="tabular-nums">{count===null?'…':count}</output> · {onExclude?'Drift is recorded. Exclusion is optional and explicit.':'Drift is recorded, not deducted from saved time.'}</p>
+  <p className={isFlagOn('v6Shell')?'sr-only':'text-center text-caption text-ink-3'}>Notices: <output aria-label="Focus notice count" className="tabular-nums">{count===null?'…':count}</output> · {onExclude?'Drift is recorded. Exclusion is optional and explicit.':'Drift is recorded, not deducted from saved time.'}</p>
   <dialog ref={dialog} aria-label={dialogKind==='drift'?'Record a drift':'Park a thought'}
    aria-modal="true" onCancel={e=>{e.preventDefault();dismiss();}}
    onClose={()=>{setDialogKind(null);opener.current?.focus();}}
