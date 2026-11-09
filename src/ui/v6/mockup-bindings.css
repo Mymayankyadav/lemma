@@ -62,3 +62,6 @@ html[data-v6]:has(#cr-mobile-dock){--lemma-bottom-chrome:calc(var(--lemma-nav-he
 :root[data-v6] [data-v6-header] .lemma-header-cluster details:not([open])>summary,
 :root[data-v6] [data-v6-header] .lemma-header-cluster>a{border-color:transparent;background:transparent;box-shadow:none}
 :root[data-v6] .lemma-page-action-row>.lemma-header-chip.lemma-destructive-text{color:var(--action-destructive);border-color:var(--action-destructive);background:var(--danger-tint)}
+/* #1300: Kit illustrations scale down inside their three-column grid instead of widening a 320px page. */
+:root[data-v6] section[aria-label="Illustrations and empty states"] svg{max-width:100%;height:auto}
+:root[data-v6] section[aria-label="Illustrations and empty states"] .grid>*{min-width:0}

@@ -64,7 +64,10 @@ describe('N32.1 v6 Inbox proposal evidence',()=>{
   });
   it('renders evidence only in the existing v6 branch, retaining legacy choices and previews',()=>{
     const code=readFileSync('src/features/proposals/Page.tsx','utf8');
-    expect(code).toContain('{v6&&<ProposalEvidence proposal={active}/> }'.replace(' />','/>').replace('/> }','/>}'));
+    // #1318: the card's evidence now opens from "Why this card?" inside PendingCard, still v6-only.
+    expect(code).toContain('{isFlagOn("v6Shell") ? (');
+    expect(code).toContain('<ProposalEvidence proposal={proposal} />');
+    expect(code).toContain('Why this card?');
     expect(code).toContain('{v6&&<ProposalEvidence proposal={p}/> }'.replace(' />','/>').replace('/> }','/>}'));
     expect(code).toContain('{!v6 && p.reason && (');
     expect(code).toContain('<PendingCard');

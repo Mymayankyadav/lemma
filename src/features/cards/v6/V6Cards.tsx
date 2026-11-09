@@ -1,6 +1,6 @@
-import { lazy, Suspense, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getApi } from '../../../data';
 import { useCreateNote, useProjects } from '../../../data/hooks';
@@ -48,6 +48,13 @@ export default function V6Cards() {
   const [showFilters, setShowFilters] = useState(false);
   const [shown, setShown] = useState(20);
   const [creating, setCreating] = useState(false);
+  // #1323 (mockup `18__Page`): a new card starts from the header "+" menu (`/cards?new=1`), not a list button.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.get('new') !== '1') return;
+    setCreating(true);
+    const next = new URLSearchParams(params); next.delete('new'); setParams(next, { replace: true });
+  }, [params, setParams]);
   const projects = useProjects();
   const create = useCreateNote();
   const notify = useToast();
@@ -114,7 +121,6 @@ export default function V6Cards() {
     </label>
     <div className="lemma-filter-summary">
       <button type="button" className={button} onClick={() => setShowFilters(true)}>Filters</button>
-      <button type="button" className={button} onClick={() => setCreating(true)}>New card</button>
       {filters.projectSlug && <button type="button" className={button} onClick={() => apply({ ...filters, projectSlug: '', checkpointCode: '' })}>
         Project: {projects.data?.find(project => project.slug === filters.projectSlug)?.title ?? filters.projectSlug} ×
       </button>}

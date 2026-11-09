@@ -1,6 +1,6 @@
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
-import {Play} from 'lucide-react';
+import {Play,Search} from 'lucide-react';
 import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
 import {getMode} from '../../../data/mode';
 import {useReviewSession} from '../../review-run/store';
@@ -30,6 +30,7 @@ export default function ReviewV6(){
  const [selected,setSelected]=useState<Set<string>|null>(null);
  const [collapsed,setCollapsed]=useState<Set<string>>(()=>new Set());
  const [search,setSearch]=useState('');
+ const options=useRef<HTMLDetailsElement>(null),searchField=useRef<HTMLInputElement>(null);
  const nodes=useMemo(()=>(decks.data??[]).filter(visibleDue),[decks.data]);
  const enabled=useMemo(()=>selected??defaultSelection(nodes),[selected,nodes]);
  const quota=settings.data?.reviewsPerDay??0;
@@ -92,6 +93,14 @@ export default function ReviewV6(){
   </section>}
   {!loading&&!error&&<>
    {issue&&<p role="alert" className="lemma-log-warning mb-4">{issue}</p>}
+   {/* #1317 (mockup `12__Page`): a search row under the header opens the deck search. */}
+   <div className="-mt-3 mb-6 flex min-h-14 items-center border-b border-[var(--hair)]">
+    <button type="button" aria-label="Search decks and checkpoints" title="Search decks and checkpoints"
+     className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-ink"
+     onClick={()=>{if(options.current)options.current.open=true;requestAnimationFrame(()=>searchField.current?.focus());}}>
+     <Search size={20} aria-hidden="true"/>
+    </button>
+   </div>
    <section aria-label="Review counts" className="notebook-review-summary">
     <p className="notebook-eyebrow">A SMALL SESSION, LASTING IDEAS</p>
     <h2><span aria-label="Cards in this round">{result.batch.length}</span> cards for today</h2>
@@ -108,7 +117,7 @@ export default function ReviewV6(){
      <Link to="/settings" className="notebook-text-button inline-flex items-center">Change</Link>
     </div>
    </section>
-   <details className="notebook-options-details" open={search?true:undefined}>
+   <details ref={options} className="notebook-options-details" open={search?true:undefined}>
     <summary className="notebook-options-row mt-6">
      <span><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
      <span aria-hidden="true">›</span>
@@ -116,7 +125,7 @@ export default function ReviewV6(){
     <div className="flex flex-col gap-3 py-4">
    {nodes.length===0?<p role="status">No cards due. Your Review queue is clear.</p>:<>
     <label className="flex flex-col gap-1 text-label font-semibold text-ink-2">Find a deck or checkpoint
-     <input aria-label="Find a deck or checkpoint" type="search" value={search}
+     <input ref={searchField} aria-label="Find a deck or checkpoint" type="search" value={search}
       onChange={event=>setSearch(event.target.value)}
       className="min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-body text-ink"/>
     </label>

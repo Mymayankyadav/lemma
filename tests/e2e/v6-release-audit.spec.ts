@@ -19,7 +19,6 @@ const routes:readonly (readonly [string,string,string?])[]=[
 // Known release defects: only the sideways-overflow measurement is an expected
 // failure; every other check on these routes still runs and must pass.
 const knownOverflow:Record<string,string>={
- '320 /kit':'Known release defect #1300: Kit wider than a 320px viewport at 200% text',
 };
 const displays=[{width:320,height:640},{width:360,height:780},{width:390,height:844}] as const;
 const themes=[{name:'Day',value:'graph'},{name:'Night',value:'graph-night'}] as const;
@@ -103,6 +102,8 @@ const captureDir=process.env.LEMMA_RELEASE_CAPTURE==='1'
 // Viewport captures (what a 390×844 phone shows): full-page captures drew the
 // fixed bottom navigation over the middle of long screens.
 async function releaseScreenshot(page:Page,file:string){
+ // A closed Focus page leaves the document scrolled a little; a capture always starts at the top.
+ await page.evaluate(()=>window.scrollTo(0,0));
  await page.screenshot({path:captureDir+'/'+file,
   animations:'disabled',scale:'css'});
 }
@@ -115,8 +116,9 @@ test('N101 screenshot capture of the real app, both palettes at 390x844',async({
  // navigation on every screen), so the app captures start one first.
  await page.goto(url('/'));
  await settled(page);
- await page.getByRole('textbox',{name:'Focus intention'}).fill('Topology');
- await page.getByRole('combobox',{name:'Timer mode'}).selectOption('pomodoro');
+ // As in the mockup: a chosen Pomodoro activity, with the intention as its own line.
+ await page.getByRole('combobox',{name:'Focus activity'}).selectOption({label:'Proof workshop · pomodoro · 25 min'});
+ await page.getByRole('textbox',{name:'Focus intention'}).fill('Prove the quotient-map criterion');
  await page.getByRole('button',{name:'Start focus'}).click();
  const focus=page.getByRole('dialog',{name:'Focus'});
  await expect(focus).toBeVisible();
@@ -193,6 +195,8 @@ test('N101 acceptance: Inbox, grading, Atlas and Planner remain reachable',async
  await page.goto(url('/atlas'));
  await expect(page.locator('[data-v6-header]')).toContainText('Concept map');
  await page.goto(url('/calendar'));
+ // #1321: planning actions open from the one "Planning tools" button.
+ await page.getByText('Planning tools',{exact:true}).click();
  await page.getByRole('button',{name:'Plan study tasks'}).click();
  await expect(page.getByRole('dialog',{name:'Plan study tasks'})).toBeVisible();
  await page.keyboard.press('Escape');
@@ -200,15 +204,24 @@ test('N101 acceptance: Inbox, grading, Atlas and Planner remain reachable',async
  await contained(page,'acceptance Planner');
 });
 
-test('N101 known release defect #1299: grading lacks undo in durable v6 Review',async({page})=>{
- test.fail(true,'Known release defect #1299: v6 Review omits undo-last-grade action');
+// bug #1299 (N119): the durable v6 Review run undoes its last answer and returns to that card.
+test('bug #1299 durable v6 Review undoes the last answer and returns to the card',async({page})=>{
  await setup(page);
  await page.goto(url('/review'));
  const start=page.getByRole('button',{name:/^Start [1-9][0-9]* cards$/});
  await expect(start).toBeEnabled();
  await start.click();
+ const position=page.getByRole('progressbar').first();
+ await expect(position).toContainText(/^1 of \d+$/);
  await page.getByRole('button',{name:'sure',exact:true}).click();
  await page.getByRole('region',{name:'Grade answer'})
   .getByRole('button',{name:/^Good/}).click();
- await expect(page.getByRole('button',{name:'Undo last answer'})).toBeVisible();
+ await expect(position).toContainText(/^2 of \d+$/);
+ const undo=page.getByRole('button',{name:'Undo last answer'});
+ await expect(undo).toBeEnabled();
+ await undo.click();
+ await expect(position).toContainText(/^1 of \d+$/);
+ await expect(page.getByRole('alert')).toContainText('Answer undone');
+ await expect(page.getByRole('button',{name:'sure',exact:true})).toBeVisible();
+ await expect(undo).toBeDisabled();
 });

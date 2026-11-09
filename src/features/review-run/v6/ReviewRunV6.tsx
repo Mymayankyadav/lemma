@@ -6,8 +6,10 @@ import {useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
 import {preview,scheduleConfig} from '../../../lib/fsrs';
 import {MathText} from '../../../ui/MathText';
-import {advanceGrade,advanceSkip,cardVersion,getRun,pauseRun,resumeRun,
- unpauseRun,type DurableRun} from './adapter';
+import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,
+ undoLast,unpauseRun,type DurableRun} from './adapter';
+import {Undo2} from 'lucide-react';
+import {useQueryClient} from '@tanstack/react-query';
 import {clearPendingGrade,pendingGrade,writePendingGrade,
  type PendingGrade} from './pending';
 
@@ -16,7 +18,7 @@ const button='min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-l
 const grades=['Again','Hard','Good','Easy'] as const;
 export default function ReviewRunV6(){
  const navigate=useNavigate(),[search]=useSearchParams();
- const settings=useSettings(),cards=useReviewItems(filter),record=useRecordReview();
+ const settings=useSettings(),cards=useReviewItems(filter),record=useRecordReview(),queries=useQueryClient();
  const [run,setRun]=useState<DurableRun|null>(null);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [message,setMessage]=useState<string|null>(null);
@@ -95,6 +97,17 @@ export default function ReviewRunV6(){
   }catch(error){setMessage(error instanceof Error?error.message:'Review could not be saved')}
   finally{setBusy(false)}
  }
+ /** bug #1299: undo the last answer; the card returns with its previous schedule, ready to grade again. */
+ async function undoAnswer(){
+  if(!run||busy||pending||!lastGraded(run))return;
+  setBusy(true);setMessage(null);
+  try{
+   const result=await undoLast(run);
+   setRun(result);setMessage('Answer undone. Grade this card again.');
+   await queries.invalidateQueries();
+  }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer')}
+  finally{setBusy(false)}
+ }
  async function skip(){
   if(!run||!item||busy||pending)return;
   setBusy(true);setMessage(null);
@@ -129,7 +142,14 @@ export default function ReviewRunV6(){
      {Math.min(run.progress.total,run.progress.position+1)} of {run.progress.total}
     </p>
    </div>
-   <span className="text-caption text-ink-2">{run.progress.skipped} skipped</span>
+   <div className="flex items-center gap-1">
+    <span className="text-caption text-ink-2">{run.progress.skipped} skipped</span>
+    <button type="button" aria-label="Undo last answer" title="Undo last answer"
+     disabled={busy||!!pending||!lastGraded(run)} onClick={()=>{void undoAnswer()}}
+     className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-ink-2 disabled:opacity-40">
+     <Undo2 size={20} aria-hidden="true"/>
+    </button>
+   </div>
   </header>
   {message&&<p role="alert" className="text-label text-ink-2">{message}</p>}
   {run.status==='paused'&&<button className={button} onClick={()=>{

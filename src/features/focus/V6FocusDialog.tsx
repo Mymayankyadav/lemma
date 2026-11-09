@@ -1,5 +1,6 @@
-import {useEffect,useRef} from 'react';
+import {useEffect,useRef,type ReactNode} from 'react';
 import type {StudyEntryRecord} from '../../data/study/contract';
+import {cycleCaption,emptyFocusContext,type FocusContext} from './focusContext';
 import {inProgressFocusMinutes,remainingFocusMinutes,type FocusState} from '../../lib/focus/machine';
 
 export interface V6FocusDialogProps {
@@ -23,6 +24,10 @@ export interface V6FocusDialogProps {
  leaseOwned:boolean;
  onTakeLease:()=>void;
  onNextPhase:()=>void;
+ /** #1314: heading (path or activity) and linked checkpoint, resolved by the caller. */
+ context?:FocusContext;
+ /** #1315: "Noticed a distraction" and "Park a thought" (FocusNotices), shown on this page. */
+ notices?:ReactNode;
 }
 /** Native modal semantics, Escape cancellation, and focus restoration to the opener. */
 export default function V6FocusDialog(props:V6FocusDialogProps){
@@ -56,6 +61,7 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
   const phaseLabel=phase==='long_break'?'Long break':phase==='break'?'Break':'Focus';
  const session=state.session;
  if(!session)return <dialog ref={dialog} aria-label="Focus session"/>;
+ const context=props.context??emptyFocusContext;
  const mode=props.entry.mode??'open';
  const remaining=deadline?Math.max(0,Math.ceil((Date.parse(deadline)-Date.parse(now))/1000)):null;
  const elapsed=Math.max(0,Math.floor(inProgressFocusMinutes(state,now)*60));
@@ -65,9 +71,13 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
  const progress=remaining!==null?Math.min(100,Math.max(0,100-remaining/span*100)):(elapsed%span)/span*100;
  const eyebrow=state.phase==='finishing'?'Ready to save':state.phase==='paused'?'Paused':
   state.phase==='break'||phase!=='focus'?'On a break':'In focus';
- // N111 (mockup `cr-focus-overlay`): a full-screen focus page with one large clock.
+ // N111 + #1314/#1315 (mockup `cr-focus-overlay`): heading = path or activity, subtitle = checkpoint,
+ // the Pomodoro plan under the bar, the intention as a serif line, two quiet text actions.
+ // Nested dialogs (drift, parked thought) live inside this one; React hands their close/cancel
+ // events to this handler too, so only this dialog's own events dismiss the Focus page.
  return <dialog ref={dialog} id="cr-focus-overlay" aria-label="Focus" aria-modal="true"
-  onCancel={event=>{event.preventDefault();close();}} onClose={onDismiss}
+  onCancel={event=>{if(event.target!==event.currentTarget)return;event.preventDefault();close();}}
+  onClose={event=>{if(event.target===event.currentTarget)onDismiss();}}
   className="cr cr-focus-overlay text-ink">
   <div className="cr-focus-wrap">
    <div className="cr-focus-header">
@@ -76,21 +86,19 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
    </div>
    <div className="cr-focus-center">
     <p className="cr-focus-eyebrow" aria-live="polite"><i className="cr-focus-indicator" aria-hidden="true"/>{eyebrow}</p>
-    <h2 className="cr-focus-subject break-words [overflow-wrap:anywhere]">{session.intent}</h2>
-    <p className="cr-focus-checkpoint">Mode: {mode} · {phaseLabel} · Cycle {props.entry.cycle??1}</p>
+    <h2 className="cr-focus-subject break-words [overflow-wrap:anywhere]">{context.heading??'Your focus session'}</h2>
+    {context.checkpoint&&<p className="cr-focus-checkpoint">{context.checkpoint}</p>}
     {state.phase!=='finishing'&&<>
      <time className="cr-focus-clock" aria-label={(remaining!==null?'Remaining ':'Elapsed ')+clock}>{clock}</time>
      <div className="cr-progress" role="progressbar" aria-label="Phase progress" aria-valuemin={0} aria-valuemax={100}
       aria-valuenow={Math.round(progress)}><i style={{width:progress+'%'}}/></div>
-     <p className="cr-focus-cycle">{deadline?
-      'Server phase deadline: '+new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(new Date(deadline))+
-      ' · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining':
-      'No scheduled phase deadline · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining'}</p>
+     <p className="cr-focus-cycle">{cycleCaption(props.entry)}</p>
     </>}
-    {stillStudying&&<p role="alert" className="lemma-log-warning mt-4 text-left">
+    <p className="cr-focus-intent break-words [overflow-wrap:anywhere]">{session.intent}</p>
+    {stillStudying&&<p role="alert" className="lemma-log-warning mb-4 text-left">
      This focus session is over three hours old. Check whether you are still studying; no time is saved automatically.
     </p>}
-    {state.phase!=='finishing'&&<div className="cr-focus-buttons mt-8">
+    {state.phase!=='finishing'&&<div className="cr-focus-buttons">
      {state.phase==='running'&&<>
       <button type="button" disabled={busy} onClick={props.onPause} className="cr-button primary">Pause</button>
       <button type="button" disabled={busy} onClick={props.onBreak} className="cr-button">Take a break</button>
@@ -98,21 +106,7 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
      {(state.phase==='paused'||state.phase==='break')&&
       <button type="button" disabled={busy} onClick={props.onResume} className="cr-button primary">Resume</button>}
     </div>}
-    <section aria-label="Timer phase and controls" className="cr-focus-bottom">
-     <button type="button" disabled={busy} onClick={props.onTakeLease} className="cr-button text">
-      {props.leaseOwned?'Retake control':'Take control of timer'}
-     </button>
-     <button type="button" disabled={busy||!props.leaseOwned||state.phase==='finishing'} onClick={props.onNextPhase}
-      className="cr-button text">Next phase</button>
-     {!props.leaseOwned&&<p className="basis-full text-caption text-ink-2">Take control explicitly in this tab before changing phases.</p>}
-    </section>
-    <label className="lemma-focus-park">
-     Park a thought
-     <textarea aria-label="Park a thought" rows={2} maxLength={4000} value={note}
-      onChange={event=>props.onNote(event.target.value)}
-      placeholder="Add a reflection to this focus entry"
-      className="min-h-16 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] p-3 text-body text-ink"/>
-    </label>
+    {state.phase!=='finishing'&&<div className="cr-focus-bottom">{props.notices}</div>}
     {(state.phase==='paused'||state.phase==='running')&&<div className="cr-focus-bottom">
      <button type="button" disabled={busy} onClick={props.onFinish} className="lemma-focus-finish">Finish &amp; log</button>
     </div>}
@@ -121,11 +115,34 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
       <input aria-label="Minutes to save" type="number" min="0" step="0.1" required
        value={editedMinutes} onChange={event=>props.onMinutes(event.target.value)}/>
      </label>
+     <label>What did you learn? · optional
+      <textarea aria-label="What did you learn?" rows={3} maxLength={4000} value={note}
+       onChange={event=>props.onNote(event.target.value)}
+       className="min-h-20 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] p-3 text-body text-ink"/>
+     </label>
      <div className="lemma-finish-actions flex flex-col gap-2">
       <button type="button" disabled={busy} onClick={props.onSave} className="notebook-primary">Save</button>
       <button type="button" disabled={busy} onClick={props.onDiscard} className="lemma-destructive-text">Discard</button>
      </div>
     </div>}
+    {/* The timer lease (N72) and the server's phase deadline stay available, one tap away. */}
+    <details className="lemma-focus-details mt-4 w-full max-w-[480px] text-left text-label text-ink-2">
+     <summary className="flex min-h-11 items-center justify-center">Timer details</summary>
+     <section aria-label="Timer phase and controls" className="flex flex-col gap-2 pt-2">
+      <p>Mode: {mode} · {phaseLabel} · Cycle {props.entry.cycle??1}</p>
+      <p>{deadline?'Server phase deadline: '+new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(new Date(deadline))+
+       ' · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining':
+       'No scheduled phase deadline · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining'}</p>
+      <div className="flex flex-wrap justify-center gap-2">
+       <button type="button" disabled={busy} onClick={props.onTakeLease} className="cr-button">
+        {props.leaseOwned?'Retake control':'Take control of timer'}
+       </button>
+       <button type="button" disabled={busy||!props.leaseOwned||state.phase==='finishing'} onClick={props.onNextPhase}
+        className="cr-button">Next phase</button>
+      </div>
+      {!props.leaseOwned&&<p>Take control explicitly in this tab before changing phases.</p>}
+     </section>
+    </details>
     {error&&<p role="alert" className="lemma-field-error mt-3">{error}</p>}
    </div>
    <p className="cr-focus-footnote">One step at a time · study time stays linked to your project</p>

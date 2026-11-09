@@ -75,8 +75,11 @@ describe('N33.1 v6 Paths list', () => {
     expect(host.querySelector('[aria-label="Analysis paths"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Geometry paths"]')).not.toBeNull();
     expect(host.textContent).toContain('Pinned');
-    expect(host.textContent).toContain('2 of 5 checkpoints');
-    expect(host.textContent).toContain('Forecast unavailable');
+    // #1316 (mockup rows): a short "2 of 5" whose accessible name keeps the unit, and no
+    // "Forecast unavailable" filler when the path has no schedule headline.
+    expect(host.querySelector('[aria-label="2 of 5 checkpoints"]')?.textContent).toBe('2 of 5');
+    expect(host.textContent).not.toContain('Forecast unavailable');
+    expect(host.querySelector('[aria-label="Analysis paths"] h2')).not.toBeNull();
     expect(host.querySelector('a[href="/p/analysis"]')).not.toBeNull();
     expect(host.querySelector('a[href="/projects/new"]')).not.toBeNull();
     expect(host.querySelectorAll('a[href="/projects/new"]')).toHaveLength(1);

@@ -97,3 +97,20 @@ export function demoSkip(runId:string,version:number,itemId:string,reason:string
   throw Error('Stale reason required');
  return advance(runId,version,itemId,null,reason);
 }
+/** bug #1299: step back to the last graded item (the caller undoes its demo review first). */
+export function demoUndoLast(runId:string,version:number,itemId:string){
+ return update(runId,version,r=>{
+  if((r.status!=='running'&&r.status!=='exhausted')||r.position<1)throw Error('No answer to undo in this run');
+  const item=r.items[r.position-1];
+  if(!item||item.id!==itemId||item.state!=='graded'||item.reviewId===null)
+   throw Error('Only the last graded item can be undone');
+  const items=r.items.map(x=>x.id!==itemId?x:{...x,state:'pending' as const,reviewId:null});
+  const position=r.position-1;
+  return {...r,items,position,version:r.version+1,status:'running',endedAt:null,
+   progress:{position,total:items.length,
+    graded:items.filter(x=>x.state==='graded').length,
+    skipped:items.filter(x=>x.state==='stale').length,
+    remaining:items.length-position,done:false},
+  };
+ });
+}

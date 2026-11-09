@@ -2,10 +2,11 @@
 import {getMode} from '../../../data/mode';
 import type {ReviewItem} from '../../../data/types';
 import {startDurableRun,readDurableRun,resumeDurableRun,
- pauseDurableRun,unpauseDurableRun,advanceGradedRun,advanceStaleRun,
+ pauseDurableRun,unpauseDurableRun,advanceGradedRun,advanceStaleRun,undoLastGradedRun,
  type StartRunInput,type DurableRun} from './transport';
 import {demoStart,demoRead,demoResume,demoGrade,demoSkip,
- demoPause,demoUnpause} from './demo';
+ demoPause,demoUnpause,demoUndoLast} from './demo';
+import {getApi} from '../../../data';
 export type {DurableRun};
 export async function currentSettingsVersion():Promise<number>{
  if(getMode()==='demo')return 1;
@@ -46,4 +47,17 @@ export function advanceGrade(r:DurableRun,itemId:string,reviewId:number):Promise
 export function advanceSkip(r:DurableRun,itemId:string,reason:string):Promise<DurableRun>{
  return getMode()==='demo'?Promise.resolve(demoSkip(r.id,r.version,itemId,reason)):
   advanceStaleRun(r.id,r.version,itemId,reason);
+}
+/** bug #1299: the last graded item of the run, if its answer can still be undone here. */
+export function lastGraded(r:DurableRun):DurableRun['items'][number]|null{
+ const item=r.items[r.position-1];
+ return r.position>0&&item?.state==='graded'&&item.reviewId!==null?item:null;
+}
+/** Undo the run's last answer: live is one atomic RPC; demo undoes its review, then steps back. */
+export async function undoLast(r:DurableRun):Promise<DurableRun>{
+ const item=lastGraded(r);
+ if(!item)throw new Error('No answer to undo');
+ if(getMode()!=='demo')return undoLastGradedRun(r.id,r.version,item.id);
+ await getApi().undoReview(item.reviewId!);
+ return demoUndoLast(r.id,r.version,item.id);
 }

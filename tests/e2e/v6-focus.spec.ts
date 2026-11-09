@@ -34,8 +34,9 @@ test('N20 demo Focus starts, pauses, resumes, finishes and saves logged time at 
  await expect(dialog.getByRole('button',{name:'Resume',exact:true})).toBeVisible();
  await dialog.getByRole('button',{name:'Resume',exact:true}).click();
  await expect(dialog.getByRole('button',{name:'Finish'})).toBeVisible();
- await dialog.getByRole('textbox',{name:'Park a thought'}).fill('Review the proof structure');
  await dialog.getByRole('button',{name:'Finish'}).click();
+ // #1315: the reflection is asked for when the session is logged.
+ await dialog.getByRole('textbox',{name:'What did you learn?'}).fill('Review the proof structure');
  await dialog.getByRole('spinbutton',{name:'Minutes to save'}).fill('4');
  await dialog.getByRole('button',{name:'Save',exact:true}).click();
  await expect(dialog).toBeHidden();

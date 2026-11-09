@@ -81,6 +81,8 @@ test('N99 Planner native sheet stays bounded and restores Calendar on Escape',as
  test.setTimeout(120_000);
  await page.setViewportSize({width:360,height:640});
  await route(page,'/calendar?view=agenda&date=2026-11-06');
+ // #1321: planning actions open from the one "Planning tools" button.
+ await page.getByText('Planning tools',{exact:true}).click();
  await page.getByRole('button',{name:'Plan study tasks'}).click();
  const dialog=page.getByRole('dialog',{name:'Plan study tasks'});
  await expect(dialog).toBeVisible();

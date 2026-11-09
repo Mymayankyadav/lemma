@@ -66,7 +66,7 @@ describe('N71 v6 Focus parked thoughts, drift and notices',()=>{
  it('records a positive whole-minute drift without deductions or a false notice',async()=>{
   const api=mocks(),v=await render();
   try{
-   await click(button(v.host,'I drifted'));
+   await click(button(v.host,'Noticed a distraction'));
    const dialog=v.host.querySelector('dialog')!;
    await value(dialog.querySelector('input')!,'0');
    await click(button(dialog,'Record drift'));

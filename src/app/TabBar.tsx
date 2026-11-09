@@ -10,7 +10,8 @@ export function navigationTabs(v6:boolean){return v6?v6Tabs:legacyTabs;}
 export function v6ActiveTab(to:string,pathname:string){
  if(to===pathname)return true;
  if(to==='/projects')return pathname.startsWith('/p/')||pathname==='/projects/new';
- if(to==='/review')return pathname.startsWith('/cards')||pathname.startsWith('/review/');
+ // #1324: the mockup captures highlight no destination on Cards (as on Atlas and Settings).
+ if(to==='/review')return pathname.startsWith('/review/');
  return false;
 }
 /** v6: the mockup's labelled five-tab bar. */

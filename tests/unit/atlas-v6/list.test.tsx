@@ -55,6 +55,11 @@ describe('N29 v6 Atlas list',()=>{
   expect(host.textContent).toContain('Generated grouping row — not an idea');
   expect(host.textContent).toContain('Proof of continuity');
   expect(host.textContent).toContain('2 due');
+  // #1326: a concept's actions (map, pin, edit, checkpoints) open from its row.
+  expect([...host.querySelectorAll('a')].some(a=>a.getAttribute('href')==='/p/proofs/cp/CP2')).toBe(false);
+  const row=host.querySelector<HTMLButtonElement>('button[aria-label="Actions for Proof of continuity"]')!;
+  await act(async()=>row.click());
+  expect(row.getAttribute('aria-expanded')).toBe('true');
   expect([...host.querySelectorAll('a')].some(a=>a.getAttribute('href')==='/p/proofs/cp/CP2')).toBe(true);
   const map=[...host.querySelectorAll('a')].find(a=>a.textContent==='Map');
   expect(map?.getAttribute('href')).toBe('/atlas?view=map');

@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {useLocation,useNavigate} from 'react-router';
 import {getStudyApi} from '../data/study';
 import type {StudyEntryRecord} from '../data/study/contract';
+import {useFocusContext} from '../features/focus/focusContext';
 
 /** The shell owns the small, cross-route view of the server's active entry.
  * No second timer or browser-only focus record is created here. */
@@ -37,6 +38,8 @@ export default function FocusAccessory(){
    document.removeEventListener('visibilitychange',visibleRefresh);
   };
  },[api,pathname]);
+ // Mockup dock: the linked path when there is one ("Topology"), otherwise the intention.
+ const context=useFocusContext(entry);
  if(!entry||!['running','paused'].includes(entry.status))return null;
  const paused=entry.status==='paused';
  const remaining=entry.phaseEndsAt?Math.max(0,Date.parse(entry.phaseEndsAt)-now):null;
@@ -65,7 +68,7 @@ export default function FocusAccessory(){
   className="cr cr-mobile-dock lemma-time-dock flex-wrap items-center">
   <button type="button" onClick={open} aria-label="Open focus" title={entry.intent+', '+state+', open timer details'}
    className="lemma-dock-context lemma-time-tap">
-   <strong className="cr-label">{entry.intent}</strong>
+   <strong className="cr-label">{context.path??entry.intent}</strong>
    <small className="cr-meta">{state}{minutes===null?' · No deadline':''}</small>
    {clock&&<time aria-label={minutes+' min to phase deadline'}>{clock}</time>}
   </button>
