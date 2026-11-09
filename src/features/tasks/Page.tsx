@@ -56,6 +56,7 @@ function Backlog(){
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading');
  const [message,setMessage]=useState('');
  const [busy,setBusy]=useState(false);
+ const busyRef=useRef(false);busyRef.current=busy;
  const [editing,setEditing]=useState<TaskRecord|null>(null);
  const editTrigger=useRef<HTMLButtonElement|null>(null);
  const [reloadKey,setReloadKey]=useState(0);
@@ -81,6 +82,8 @@ function Backlog(){
   return ()=>{active=false;};
  },[reloadKey]);
  function refresh(){++viewEpoch.current;setReloadKey(n=>n+1);}
+ // N121 X10: refetch when the window regains focus; there is no manual Refresh button.
+ useEffect(()=>{const again=()=>{if(!busyRef.current)refresh();};window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
  async function more(){
   if(busy||!cursor)return;
   const epoch=viewEpoch.current,requested=cursor;

@@ -79,7 +79,7 @@ export default function SelectionPanel({visible,all,ids,busy,kind,projectTitles,
       <input type="checkbox" data-inbox-proposal-id={p.id} className="size-5 shrink-0 accent-amber"
        disabled={busy} checked={ids.has(p.id)} onChange={()=>onToggle(p.id)}
        aria-label={'Select '+plainCardText(front)}/>
-      <button type="button" disabled={busy} onClick={()=>onOpen(p.id)}
+      <button type="button" disabled={busy} onClick={()=>onOpen(p.id)} aria-label={'Open '+plainCardText(front)}
        className="min-h-11 min-w-0 flex-1 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber">
        <MathText source={front} variant="body"
         cloze={p.card?.type==='cloze'?{ord:1,revealed:false}:undefined}

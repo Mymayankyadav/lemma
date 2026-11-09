@@ -1,3 +1,4 @@
+import { plainMath } from '../../../lib/plain-math';
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { Link, useParams } from 'react-router';
 import { useCheckpoint, useProject } from '../../../data/hooks';
@@ -123,7 +124,7 @@ export default function V6Project() {
     </div>
     {now && <article aria-label={'Current checkpoint ' + now.code} className="lemma-project-study !rounded-[12px] !border !border-[var(--hair)] !bg-[var(--paper)] !p-4">
       <Link data-v6-current-checkpoint={now.code} to={'/p/' + encodeURIComponent(slug) + '/cp/' + encodeURIComponent(now.code)}
-        aria-label={'Open checkpoint ' + now.code + ' ' + now.title + ', In progress'}
+        aria-label={'Open checkpoint ' + now.code + ' ' + plainMath(now.title) + ', In progress'}
         className="flex min-h-11 min-w-0 flex-col justify-center gap-1 text-left text-ink">
         <span className="text-label font-semibold text-[var(--accent)]">{now.code} · In progress</span>
         <h3 className="!font-[var(--font-display)] text-[1.25rem] text-ink"><Tex source={now.title}/></h3>
@@ -158,7 +159,7 @@ export default function V6Project() {
       </div> : <>
         <nav aria-label="Project stages" className="flex min-w-0 gap-2 overflow-x-auto pb-1" data-stage-jumps="">
           {stages.map((stage, index) => <button key={stage.key} type="button" data-stage-chip=""
-            aria-pressed={selected === index} aria-label={'Stage ' + (index + 1) + ': ' + stage.name}
+            aria-pressed={selected === index} aria-label={'Stage ' + (index + 1) + ': ' + plainMath(stage.name)}
             onKeyDown={event => stageKeyDown(event, index)}
             onClick={() => setSelected(index)}
             className={chip + ' shrink-0 whitespace-nowrap'}>
@@ -173,7 +174,7 @@ export default function V6Project() {
           <div className="flex flex-col">
             {active.checkpoints.map(checkpoint => <Link key={checkpoint.id} data-v6-checkpoint={checkpoint.code} data-cp-row=""
               to={'/p/' + encodeURIComponent(slug) + '/cp/' + encodeURIComponent(checkpoint.code)}
-              aria-label={checkpoint.code + ' ' + checkpoint.title + ', ' + statuses[checkpoint.ui]}
+              aria-label={checkpoint.code + ' ' + plainMath(checkpoint.title) + ', ' + statuses[checkpoint.ui]}
               className="flex min-h-14 min-w-0 items-center gap-3 border-b border-[var(--hair)] px-3 py-2 text-ink last:border-b-0">
               <span className="shrink-0 font-mono text-caption text-ink-2">{checkpoint.code}</span>
               <span className="min-w-0 flex-1 break-words"><Tex source={checkpoint.title}/></span>

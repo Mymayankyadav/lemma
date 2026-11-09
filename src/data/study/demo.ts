@@ -42,29 +42,41 @@ function links(input: { subjectId?: string | null; projectId?: string | null; ch
     checkpointId: input.checkpointId ?? null, sessionId: input.sessionId ?? null,
   };
 }
-function weekSeed(now: Date): Snapshot {
-  // Local calendar dates preserve "this week" when the device is not in UTC.
-  const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (now.getDay() + 6) % 7);
-  const at = (day: number, hour: number, minute = 0): string =>
-    new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + day, hour, minute).toISOString();
+/** N121 G1: saved focus is seeded only in the past (never overlapping "now"), and the
+ * calendar has one study block later today and one busy block tomorrow. */
+export function weekSeed(now: Date): Snapshot {
+  // Local calendar dates keep the example on sensible wall-clock hours in any zone.
+  const at = (dayOffset: number, hour: number, minute = 0): string =>
+    new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset, hour, minute).toISOString();
   const saved = (day: number, hour: number, duration: number, intent: string, subjectId: string, projectId: string): StudyEntryRecord => ({
     ...links({ subjectId, projectId }), id: id(), intent, source: 'timer', status: 'saved',
     reflection: null, rating: null, version: 1, createdAt: at(day, hour),
     updatedAt: at(day, hour, duration), savedAt: at(day, hour, duration),
     intervals: [{ id: id(), kind: 'focus', start: at(day, hour), end: at(day, hour, duration) }],
   });
-  const block = (day: number, hour: number, kind: CalendarBlockRecord['kind'], title: string): CalendarBlockRecord => ({
-    ...links({}), id: id(), kind, title, startsAt: at(day, hour), endsAt: at(day, hour + 1),
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC', status: 'planned', version: 1,
-  });
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  // Next full hour plus one, for 50 minutes; late in the evening it moves to tomorrow morning.
+  const nextHour = now.getHours() + 2;
+  const today = nextHour <= 22;
+  const studyStart = today ? at(0, nextHour) : at(1, 9);
+  const study: CalendarBlockRecord = {
+    ...links({ subjectId: 'subject-analysis', projectId: 'project-analysis' }), id: id(), kind: 'study',
+    title: 'Solve analysis problems', startsAt: studyStart,
+    endsAt: new Date(Date.parse(studyStart) + 50 * 60_000).toISOString(),
+    timeZone: zone, status: 'planned', version: 1,
+  };
+  const busy: CalendarBlockRecord = {
+    ...links({}), id: id(), kind: 'busy', title: 'Other commitment', startsAt: at(1, 15), endsAt: at(1, 16),
+    timeZone: zone, status: 'planned', version: 1,
+  };
   return {
     schema: 1,
     entries: [
-      saved(0, 9, 25, 'Review continuity proofs', 'subject-analysis', 'project-analysis'),
-      saved(2, 11, 40, 'Practice linear algebra', 'subject-linear', 'project-linear'),
-      saved(4, 14, 30, 'Review topology', 'subject-topology', 'project-topology'),
+      saved(-1, 9, 25, 'Review continuity proofs', 'subject-analysis', 'project-analysis'),
+      saved(-3, 11, 40, 'Practice linear algebra', 'subject-linear', 'project-linear'),
+      saved(-5, 14, 30, 'Review topology', 'subject-topology', 'project-topology'),
     ],
-    blocks: [block(1, 10, 'study', 'Solve analysis problems'), block(3, 15, 'busy', 'Other commitment')],
+    blocks: [study, busy],
   };
 }
 function load(): Snapshot {

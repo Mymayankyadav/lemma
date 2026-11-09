@@ -1,3 +1,4 @@
+import {plainMath} from '../../../lib/plain-math';
 import {useMemo,useState} from 'react';
 import {Link} from 'react-router';
 import {useV6HeaderTitle} from '../../../app/v6Title';
@@ -79,7 +80,7 @@ export default function AtlasV6(){
      const acting=actionsFor===node.id;
      return <li key={node.id} role="listitem" className="min-w-0">
       <div className="flex min-h-14 min-w-0 items-center gap-2">
-       <button type="button" aria-expanded={acting} aria-label={'Actions for '+node.name}
+       <button type="button" aria-expanded={acting} aria-label={'Actions for '+plainMath(node.name)}
         onClick={()=>setActionsFor(acting?null:node.id)}
         className="lg-outline-name min-h-11 min-w-0 flex-1 break-words text-left [overflow-wrap:anywhere]"><FastTex source={node.name}/></button>
       </div>
@@ -88,13 +89,13 @@ export default function AtlasV6(){
        <Link to={'/atlas?view=map&id='+encodeURIComponent(node.id)+'&focus='+encodeURIComponent(node.slug)}
         className={control+' inline-flex items-center'}>View on map</Link>
        <button type="button" className={control} onClick={()=>setPinId(node.id)}
-        aria-label={'Edit map pin for '+node.name}>
+        aria-label={'Edit map pin for '+plainMath(node.name)}>
         {node.pinX===null?'Pin on map':'Edit map pin'}
        </button>
        <button type="button" className={control} onClick={()=>setEditId(node.id)}
-        aria-label={"Edit concept "+node.name}>Edit concept</button>
+        aria-label={"Edit concept "+plainMath(node.name)}>Edit concept</button>
        <button type="button" className={control} onClick={()=>setInspectId(node.id)}
-        aria-label={'Preview changes for '+node.name}>Preview edits</button>
+        aria-label={'Preview changes for '+plainMath(node.name)}>Preview edits</button>
        {node.checkpointRefs.map(checkpoint=>
         <Link key={checkpoint.projectSlug+checkpoint.code} className={control+' inline-flex items-center'}
          to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}>Open checkpoint {checkpoint.code}</Link>

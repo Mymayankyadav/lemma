@@ -1,3 +1,4 @@
+import { plainCardText } from '../../proposals/v6/plain-card-text';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -35,7 +36,7 @@ export function sortCards(rows: CardRow[], sort: CardSort, pathTitle: (slug: str
 function CardItem({ row, path }: { row: CardRow; path: string }) {
   // N117 (mockup `18__Page`): a ruled list row with the subject glyph, serif front and a checkpoint chip.
   // N121 E3: the quiet meta line (number, path, checkpoint, due) tells equal fronts apart.
-  return <Link data-card-row to={'/cards/' + row.noteNo}
+  return <Link data-card-row to={'/cards/' + row.noteNo} aria-label={plainCardText(row.front) + ' · N' + row.noteNo + ' · ' + path}
     className="flex min-w-0 items-center gap-4 border-b border-[var(--edge)] text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
     <span aria-hidden="true" className="w-8 shrink-0 text-center font-math text-[1.75rem] text-ink-2">{row.glyph}</span>
     <span className="min-w-0 flex-1">

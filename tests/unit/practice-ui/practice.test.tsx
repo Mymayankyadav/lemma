@@ -112,15 +112,16 @@ describe('N78 v6 practice, never card review',()=>{
   await render();
   const texts=[...host.querySelectorAll('h2')].map(x=>x.textContent);
   expect(texts).toEqual(['Topic 1','Topic 2']);
-  expect(host.textContent).toContain('Due or overdue');
-  expect(host.textContent).toContain('Card review is separate');
+  // N121 F11: overdue and future dates are named; card review is linked from the description.
+  expect(host.textContent).toContain('Overdue · ');
+  expect(host.textContent).toContain('Cards are reviewed separately in Review');
   await click('Show archived topics (1)');
   expect(host.querySelector('[aria-label="Archived practice topics"]')?.textContent)
    .toContain('Topic 3');
   expect(api.listTopics).toHaveBeenCalledWith({archived:'all',limit:50,cursor:null});
  });
  it('records rating, response and optional whole minutes via practice API only',async()=>{
-  await render();await click('Manage Topic 1');
+  await render();await click('Practice Topic 1');
   await change('Practice rating','4');
   await change('Practice response','  The proof worked  ');
   await change('Practice minutes','35');
@@ -132,7 +133,7 @@ describe('N78 v6 practice, never card review',()=>{
   expect(host.textContent).toContain('Practice history');
  });
  it('edits cadence, archives and restores with optimistic versions',async()=>{
-  await render();await click('Manage Topic 1');
+  await render();await click('Practice Topic 1');
   await change('Cadence days','10');
   await click('Save cadence');
   expect(api.updateTopic).toHaveBeenCalledWith('practice-1',1,{
@@ -145,8 +146,12 @@ describe('N78 v6 practice, never card review',()=>{
   expect(api.restoreTopic).toHaveBeenCalledWith('practice-1',3);
  });
  it('voids a specific owner practice event with event version',async()=>{
-  await render();await click('Manage Topic 1');
-  await click('Void practice event event-1');
+  await render();await click('Practice Topic 1');
+  // N121 A4: the void action is named by its date, never by an internal event id.
+  const find=()=>[...host.querySelectorAll<HTMLButtonElement>('button')].find(x=>x.getAttribute('aria-label')?.startsWith('Void practice from'));
+  await vi.waitFor(()=>expect(find()).toBeTruthy());
+  const voidButton=find();
+  await act(async()=>{voidButton!.click();await Promise.resolve()});
   expect(api.voidPracticeEvent).toHaveBeenCalledWith('event-1',1);
   expect(host.textContent).toContain('Voided');
  });
@@ -156,7 +161,7 @@ describe('N78 v6 practice, never card review',()=>{
   expect(parsePracticeCadence('after_rating',['1','3','7','14']))
    .toEqual({kind:'after_rating',daysByRating:[1,3,7,14]});
   expect(()=>parsePracticeCadence('fixed_days',['4000'])).toThrow(/Cadence/);
-  await render();await click('Manage Topic 1');
+  await render();await click('Practice Topic 1');
   await change('Practice minutes','-1');
   await click('Record practice');
   expect(api.recordPractice).not.toHaveBeenCalled();

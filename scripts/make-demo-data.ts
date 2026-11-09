@@ -684,7 +684,7 @@ data.reviews.sort((a, b) => a.id - b.id);
 const cards = [
   {
     front: "Why must $U_y$ and $V_y$ be disjoint?",
-    back: "So the intersection of finitely many $V_y$ is an open set around $x$ that misses $K$.",
+    back: "Each $U_y$ (around $y\\in K$) misses its $V_y$ (around $x$). Finitely many $U_y$ cover $K$, so the intersection of the matching $V_y$ is an open set around $x$ that misses $K$.",
     kind: "why",
     type: "basic",
     reason: "From your step 2 hint",

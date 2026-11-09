@@ -1,3 +1,4 @@
+import {plainMath} from '../../../lib/plain-math';
 import {evidenceText,sessionStatusText} from '../../../lib/labels';
 import {formatDay} from '../../../lib/format';
 import {Check,Target} from 'lucide-react';
@@ -117,7 +118,7 @@ export default function V6Checkpoint(){
     {detail.sourceShort??'Source not identified'}{detail.pages?' · p. '+detail.pages:''}</p>:
     <p className="text-label text-ink-2">No source citation recorded.</p>}
    {detail.concepts.length>0&&<nav aria-label="Related concepts" className="flex flex-wrap gap-2">
-    {detail.concepts.map(concept=><Link key={concept.slug} className={actionClass}
+    {detail.concepts.map(concept=><Link key={concept.slug} className={actionClass} aria-label={plainMath(concept.name)}
      to={'/atlas?focus='+encodeURIComponent(concept.slug)}><Tex source={concept.name}/></Link>)}
    </nav>}
   </section>
