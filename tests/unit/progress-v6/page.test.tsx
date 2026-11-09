@@ -54,17 +54,17 @@ afterEach(async () => {
 it('reads StudyApi, shows saved totals, and preserves the range in the URL', async () => {
   const list = fakeStudyApi();
   await render();
-  await vi.waitFor(() => expect(host.textContent).toContain('60 min'));
+  await vi.waitFor(() => expect(host.textContent).toContain('1 h'));
   expect(list).toHaveBeenCalledTimes(1);
   expect(host.textContent).toContain('Number theory');
-  expect(host.textContent).toContain('Subject totals: 60 min');
-  await click('Week');
+  expect(host.textContent).toContain('Subject totals: 1 h');
+  await click('7 days');
   await vi.waitFor(() => expect(host.querySelector('[aria-label="Daily logged minutes"]')).not.toBeNull());
-  expect(host.querySelector('[data-url]')?.textContent).toContain('range=week');
+  expect(host.querySelector('[data-url]')?.textContent).toContain('range=7');
   expect(host.querySelectorAll('[aria-label="Daily logged minutes"] time')).toHaveLength(7);
-  await click('Month');
+  await click('30 days');
   await vi.waitFor(() => expect(host.querySelectorAll('[aria-label="Daily logged minutes"] time')).toHaveLength(30));
-  expect(host.querySelector('[data-url]')?.textContent).toContain('range=month');
+  expect(host.querySelector('[data-url]')?.textContent).toContain('range=30');
 });
 it('does not count draft or discarded records and shows the empty state', async () => {
   fakeStudyApi([{ ...record, status:'draft' }, { ...record, id:'discarded', status:'discarded' }]);
@@ -78,7 +78,7 @@ it('shows errors and permits retry', async () => {
   await render();
   await vi.waitFor(() => expect(host.querySelector('[role="alert"]')?.textContent).toContain('Offline'));
   await click('Retry');
-  await vi.waitFor(() => expect(host.textContent).toContain('60 min'));
+  await vi.waitFor(() => expect(host.textContent).toContain('1 h'));
   expect(list).toHaveBeenCalledTimes(2);
 });
 it('keeps legacy Insights unchanged and does not mount v6 StudyApi when flag is off', async () => {
@@ -94,9 +94,10 @@ it('renders v6 effort on Overview and the legacy Insights content on Learning wh
   flags.on=true;
   fakeStudyApi();
   await render('/insights?range=day', true);
-  await vi.waitFor(() => expect(host.textContent).toContain('60 min'));
+  await vi.waitFor(() => expect(host.textContent).toContain('1 h'));
   // N115: Overview carries the stat tiles and saved effort; Learning carries the legacy charts.
-  expect(host.textContent).toContain('Study effort');
+  // N121 D1: the one "Total logged time" tile leads Overview; the full effort block is on Time.
+  expect(host.querySelector('[aria-label="Total logged time"]')?.textContent).toContain('1 h');
   // #1330: the subtitle lives in the shell header, not in the page body.
   expect(useV6HeaderTitleStore.getState().subtitle).toBe('Small steps, seen over time.');
   expect(host.textContent).not.toContain('Small steps');
@@ -104,14 +105,15 @@ it('renders v6 effort on Overview and the legacy Insights content on Learning wh
   await click('Learning');
   expect(host.textContent).toContain('Insights');
   expect(host.querySelector('[data-url]')?.textContent).toContain('view=learning');
-  expect(host.textContent).not.toContain('Study effort');
+  expect(host.textContent).not.toContain('Total logged time');
 });
 
 it('#1319 shows the overlap notice with a Time log link when saved focus overlaps, and not otherwise', async () => {
   flags.on=true;
   fakeStudyApi([record]);
   await render('/insights?range=7', true);
-  await vi.waitFor(() => expect(host.textContent).toContain('Time range'));
+  await vi.waitFor(() => expect(host.querySelector('[role="group"][aria-label="Time range"]')).not.toBeNull());
+  await vi.waitFor(() => expect(host.querySelector('[aria-label="Total logged time"]')?.textContent).toContain('1 h'));
   expect(host.textContent).not.toContain('overlap or need correction');
   await act(async () => root.unmount()); root=createRoot(host); host.replaceChildren();
   const overlapping={...record,id:'math-2',intervals:[{ id:'second', kind:'focus' as const, start:'2026-11-07T09:30:00Z', end:'2026-11-07T10:30:00Z' }]};

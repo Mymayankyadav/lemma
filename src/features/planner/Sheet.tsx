@@ -180,7 +180,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  const count=selection.items?.selected.length??0;
  return <>
   <button type="button" className={button} onClick={show}>Plan study tasks</button>
-  {opened&&<Dialog title="Plan your tasks" eyebrow="PLAN YOUR DAY" busy={busy} onClose={close} footer={
+  {opened&&<Dialog title="Plan study tasks" eyebrow="PLAN YOUR DAY" busy={busy} onClose={close} footer={
    <button type="button" className={button+' w-full bg-amber text-amber-ink'}
     disabled={busy||loading||!!selection.error||!count}
     onClick={()=>void commit()}>{busy?'Saving…':count===1?'Add 1 block to calendar':'Add '+count+' blocks to calendar'}</button>}>

@@ -43,7 +43,7 @@ describe('N77 Focus activity preset picker',()=>{
   await act(async()=>{root.render(<PresetPicker onPick={pick}/>);await Promise.resolve()});
   const options=host.querySelectorAll<HTMLSelectElement>('[aria-label="Focus activity"] option');
   expect([...options].map(x=>x.textContent)).toEqual([
-   'No preset — use my intention','Activity 1 · flowtime · 45 min',
+   'No preset','Activity 1 · flowtime · 45 min',
    'Activity 2 · flowtime · 45 min',
   ]);
   expect(api.listPresets).toHaveBeenCalledWith({

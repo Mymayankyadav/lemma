@@ -113,8 +113,9 @@ describe('N76 range-correct Progress goals',()=>{
   await click('30 days');
   await vi.waitFor(()=>expect(host.querySelectorAll('[aria-label="Daily logged minutes"] time')).toHaveLength(30));
   await click('90 days');
-  await vi.waitFor(()=>expect(host.querySelectorAll('[aria-label="Daily logged minutes"] time')).toHaveLength(90));
-  expect(host.textContent).toContain('Subject totals: 120 min');
+  // N121 D2: 90 days are drawn as 13 weekly columns, never 90 rows.
+  await vi.waitFor(()=>expect(host.querySelectorAll('[aria-label="Daily logged minutes"] time')).toHaveLength(13));
+  expect(host.textContent).toContain('Subject totals: 2 h');
  });
  it('creates, edits with expectedVersion and archives using the goal API',async()=>{
   await render();

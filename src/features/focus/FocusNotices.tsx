@@ -85,8 +85,8 @@ export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclu
    aria-modal="true" onCancel={e=>{e.preventDefault();dismiss();}}
    onClose={()=>{setDialogKind(null);opener.current?.focus();}}
    className="fixed inset-0 z-50 m-auto w-[min(420px,calc(100vw-24px))] rounded-ctl border border-edge bg-[var(--paper)] p-5 text-ink shadow-xl backdrop:bg-black/65">
-   <form noValidate onSubmit={e=>{e.preventDefault();void save();}}>
-    <h2 className="text-title font-semibold">{dialogKind==='park'?'Park a thought':'Noticed a distraction'}</h2>
+   <form noValidate className="text-left" onSubmit={e=>{e.preventDefault();void save();}}>
+    <h2 className="text-left text-title font-semibold">{dialogKind==='park'?'Park a thought':'Noticed a distraction'}</h2>
     {dialogKind==='park'?<label className="mt-3 block text-label">
      Thought
      <textarea ref={firstField} aria-label="Thought to park" required maxLength={4000} rows={3}
@@ -101,9 +101,10 @@ export default function FocusNotices({entryId,onExclude}:{entryId:string;onExclu
     {dialogKind==='drift'&&onExclude&&<label className="mt-3 flex min-h-11 items-center gap-2 text-label">
      <input type="checkbox" aria-label="Exclude drift minutes" checked={deduct}
       disabled={busy||deducted} onChange={e=>setDeduct(e.target.checked)}/>
-     Exclude these minutes from logged focus (requires timer control)
+     Don't count these minutes
     </label>}
-    {deducted&&<p role="status" className="mt-2 text-label">Exclusion saved. Retry records the notice only.</p>}
+    {dialogKind==='drift'&&onExclude&&<p className="mt-1 text-caption text-ink-2">Needs control of the timer in this tab.</p>}
+    {deducted&&<p role="status" className="mt-2 text-label">Those minutes no longer count. Trying again only records the notice.</p>}
     {error&&<p role="alert" className="mt-2 text-label">{error}</p>}
     <div className="mt-4 flex flex-wrap gap-2">
      <button type="submit" disabled={busy}

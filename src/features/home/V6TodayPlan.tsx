@@ -1,6 +1,7 @@
 import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {Link} from 'react-router';
-import {CalendarDays,ChevronRight,Folder,Layers} from 'lucide-react';
+import {CalendarDays,ChevronRight,Folder,Layers,Moon} from 'lucide-react';
+import {useReviewEstimate} from '../review/v6/estimate';
 import {getDayPlanApi} from '../../data/day-plans';
 import type {DayPlanRecord,DayPlanItem} from '../../data/day-plans/contract';
 import {getStudyApi} from '../../data/study';
@@ -22,6 +23,15 @@ export function nextPlannedBlock(plan:DayPlanRecord|null,items:DayPlanItem[],
  return blocks.filter(x=>placed.has(x.id)&&x.kind==='study'&&x.status==='planned'&&
   Date.parse(x.endsAt)>Date.parse(now))
   .sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)||a.id.localeCompare(b.id))[0]??null;
+}
+/** N121 C1: today's planned blocks (study or busy) that have not ended, in start order. */
+export function todaysSchedule(blocks:CalendarBlockRecord[],now:string):CalendarBlockRecord[]{
+ return blocks.filter(block=>block.status==='planned'&&Date.parse(block.endsAt)>Date.parse(now))
+  .sort((a,b)=>Date.parse(a.startsAt)-Date.parse(b.startsAt)||a.id.localeCompare(b.id));
+}
+/** The owner-zone hour now (0–23), used to offer Close the day in the evening. */
+export function ownerHour(zone:string,now=new Date()):number{
+ return Number(new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',hourCycle:'h23'}).format(now));
 }
 export function nextCalendarBlock(blocks:CalendarBlockRecord[],now:string):CalendarBlockRecord|null{
  return blocks.filter(block=>block.kind==='study'&&block.status==='planned'&&
@@ -124,7 +134,7 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
    const receipt=plan
     ?await api.updatePlan(plan.id,plan.version,{intention})
     :await api.createPlan({planDate:date,timeZone:zone,intention});
-   setPlan(receipt.record);setNotice('Intention saved');
+   setPlan(receipt.record);setNotice('Aim saved');
    setReload(x=>x+1);
   }catch(e){setError(e instanceof Error?e.message:'Could not save intention')}
   finally{setBusy(false)}
@@ -156,53 +166,90 @@ export default function V6TodayPlan({zone,due,reviewLimit,children}:{
  }
  const batch=Math.min(Number.isFinite(due)?Math.max(0,Math.floor(due)):0,
   Number.isFinite(reviewLimit)?Math.max(0,Math.floor(reviewLimit)):0);
- const minutes=Math.max(1,Math.ceil(batch*0.5));
+ // N121 C4: real average review time, read only after first paint (the count shows meanwhile).
+ const minutes=useReviewEstimate(batch,dueReady);
  const time=(iso:string)=>formatTime(iso,{zone,clock24h:true});
  const length=(block:CalendarBlockRecord)=>formatDuration(Math.max(0,
   (Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000));
- // N111 (mockup "Also in your notebook"): review and the next planned block as rows,
- // with the day plan's intention and tasks one tap further down.
+ const nowIso=new Date().toISOString();
+ const schedule=todaysSchedule(blocks,nowIso);
+ const shown=schedule.slice(0,3);
+ const evening=ownerHour(zone)>=17;
+ // N111 (mockup "Also in your notebook"): review and the next planned block as rows.
+ // N121 C1: Today reads the calendar directly; up to three of today's blocks, the next study block keeps Start.
  return <section aria-label="Today plan" className="notebook-secondary-tasks flex min-w-0 flex-col">
   <h2 className="notebook-also-heading">Also in your notebook</h2>
   {batch>0&&<Link to="/review" className="notebook-task-row">
    <Layers size={20} aria-hidden="true"/>
-   <span><strong>{batch.toLocaleString()} cards for today</strong><small>About {minutes} min · Review today</small></span>
+   <span><strong>{batch.toLocaleString()} cards for today</strong><small>{minutes===null?'Review today':'About '+minutes+' min · Review today'}</small></span>
    <ChevronRight size={19} aria-hidden="true"/>
   </Link>}
   {dueReady&&<Suspense fallback={null}><TodayDue date={date} zone={zone}/></Suspense>}
-  {next?<div aria-label="Next planned block" className="lemma-next-block-row">
-   <Link to="/calendar" className="notebook-task-row">
+  {!loading&&<section aria-label="Today's schedule" className="flex min-w-0 flex-col">
+   {shown.map(block=>{
+    const started=Date.parse(block.startsAt)<=Date.parse(nowIso);
+    const when=started?'Now':time(block.startsAt)+'–'+time(block.endsAt);
+    const isNext=next?.id===block.id;
+    return <div key={block.id} aria-label={isNext?'Next planned block':undefined} className={isNext?'lemma-next-block-row':undefined}>
+     <Link to={'/calendar?view=day&edit='+encodeURIComponent(block.id)} className="notebook-task-row">
+      <CalendarDays size={20} aria-hidden="true"/>
+      <span><strong className="break-words [overflow-wrap:anywhere]">{block.title}</strong>
+       <small>{when} · {block.kind==='busy'?'Busy':length(block)}</small></span>
+      {!isNext&&<ChevronRight size={19} aria-hidden="true"/>}
+     </Link>
+     {isNext&&<button className="lemma-next-block-start" type="button" disabled={busy} aria-label="Start planned focus"
+      onClick={()=>{void start(block)}}>Start</button>}
+    </div>;
+   })}
+   {schedule.length>3&&<Link to="/calendar?view=day" className="notebook-task-row">
+    <CalendarDays size={20} aria-hidden="true"/>
+    <span><strong>{schedule.length-3} more in Calendar</strong><small>Today's schedule</small></span>
+    <ChevronRight size={19} aria-hidden="true"/>
+   </Link>}
+   {schedule.length===0&&<Link to="/calendar?new=block" className="notebook-task-row">
+    <CalendarDays size={20} aria-hidden="true"/>
+    <span><strong>Nothing else planned today</strong><small>Plan a block</small></span>
+    <ChevronRight size={19} aria-hidden="true"/>
+   </Link>}
+  </section>}
+  {next&&!shown.some(block=>block.id===next.id)&&<div aria-label="Next planned block" className="lemma-next-block-row">
+   <Link to="/calendar?view=day" className="notebook-task-row">
     <CalendarDays size={20} aria-hidden="true"/>
     <span><strong className="break-words [overflow-wrap:anywhere]">{next.title}</strong>
-     <small>Next up · {time(next.startsAt)} · {length(next)}</small></span>
+     <small>Next study · {time(next.startsAt)} · {length(next)}</small></span>
    </Link>
    <button className="lemma-next-block-start" type="button" disabled={busy} aria-label="Start planned focus"
     onClick={()=>{void start(next)}}>Start</button>
-  </div>:<Link to="/projects" className="notebook-task-row">
+  </div>}
+  {evening&&<Link to="/today/close" className="notebook-task-row">
+   <Moon size={20} aria-hidden="true"/>
+   <span><strong>Close the day</strong><small>Look back and set up tomorrow</small></span>
+   <ChevronRight size={19} aria-hidden="true"/>
+  </Link>}
+  <Link to="/projects" className="notebook-task-row">
    <Folder size={20} aria-hidden="true"/>
    <span><strong>Your learning paths</strong><small>Find checkpoints, sessions and sources</small></span>
    <ChevronRight size={19} aria-hidden="true"/>
-  </Link>}
-  <details className="notebook-queue-details border-b border-[var(--hair)]">
-   <summary>Today’s plan · {plan?'Review batch '+batch+' of '+Math.max(0,due)+' due':'No plan yet'}</summary>
+  </Link>
+  <details className="notebook-queue-details lemma-disclosure border-b border-[var(--hair)]">
+   <summary>Today’s plan · {plan?(plan.intention?plan.intention.slice(0,40)+(plan.intention.length>40?'…':''):'Planned'):'No plan yet'}</summary>
    <div className="flex flex-col gap-3 pb-4">
     {children}
     {loading?<p role="status">Loading your plan…</p>:error&&!plan?
      <p role="alert">{error} <button className={button} type="button"
       onClick={()=>setReload(n=>n+1)}>Retry</button></p>:<>
-     {!plan&&<p>No plan yet. Set an intention to begin your day.</p>}
-     <label className="block text-label">Today's intention
-      <textarea aria-label="Today's intention" maxLength={1200} value={intention}
+     {!plan&&<p>No plan yet. Write an aim for the day to begin.</p>}
+     <label className="block text-label">Aim for the day
+      <textarea aria-label="Aim for the day" maxLength={1200} value={intention}
        className="mt-1 min-h-20 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] p-3"
        disabled={busy||!!plan&&!['draft','previewed'].includes(plan.status)}
        onChange={e=>setIntention(e.target.value)}/>
      </label>
      {!plan||['draft','previewed'].includes(plan.status)?
       <button className={button} type="button" disabled={busy}
-       onClick={()=>{void saveIntention()}}>Save intention</button>:
+       onClick={()=>{void saveIntention()}}>Save aim</button>:
       <p className="text-label text-ink-2">Committed or closed plans can be edited from the planner.</p>}
-     {next?<p className="text-caption text-ink-2">Focus started from the next block is linked to it and inherits its learning links.</p>:
-      <p className="text-label text-ink-2">No upcoming study block on Calendar today.</p>}
+     {next&&<p className="text-caption text-ink-2">Starting focus from a block links the time to it.</p>}
      {error&&<p role="alert">{error}</p>}
      {notice&&<p role="status">{notice}</p>}
      <button ref={taskTrigger} className={button} type="button"

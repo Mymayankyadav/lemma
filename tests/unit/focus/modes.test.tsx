@@ -108,7 +108,7 @@ describe('N72 focus modes and shell accessory',()=>{
    expect(api.startStudyEntry).toHaveBeenCalledWith(expect.objectContaining({presetId:'preset-new'}));
    expect(api.takeLease).toHaveBeenCalledTimes(1);
    expect(view.host.querySelector('dialog')?.textContent).toContain('Mode: pomodoro');
-   expect(view.host.querySelector('dialog')?.textContent).toContain('Server phase deadline');
+   expect(view.host.querySelector('dialog')?.textContent).toContain('Phase ends at');
   }finally{await view.cleanup();}
  });
  it('requires explicit takeover after restoration and advances only through StudyApi',async()=>{
@@ -118,7 +118,7 @@ describe('N72 focus modes and shell accessory',()=>{
    await vi.waitFor(()=>expect(view.host.textContent).not.toContain('Loading study time'));
    await click(button(view.host,'Return to focus'));
    const dialog=view.host.querySelector('dialog')!;
-   const advance=button(dialog,'Next phase') as HTMLButtonElement;
+   const advance=button(dialog,'Skip to next phase') as HTMLButtonElement;
    expect(advance.disabled).toBe(true);
    await click(button(dialog,'Take control of timer'));
    expect(advance.disabled).toBe(false);

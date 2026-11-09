@@ -22,8 +22,14 @@ export function noteKindText(value:string):string{
  return ({other:'Other',definition:'Definition',theorem:'Theorem',why:'Why it is true',example:'Example',
   counterexample:'Counterexample',proof:'Proof',exercise:'Exercise'} as Record<string,string>)[value]??'Note';
 }
+/** Saved study time is rated 1–5 for focus. */
+export const studyRatings=[1,2,3,4,5] as const;
 export function ratingText(value:number|null|undefined):string{
- return value==null?'Not rated':({1:'1 · Scattered',2:'2 · Developing',3:'3 · Solid',4:'4 · Confident'} as Record<number,string>)[value]??'Not rated';
+ return value==null?'Not rated':({1:'1 · Scattered',2:'2 · Distracted',3:'3 · Solid',4:'4 · Focused',5:'5 · Deep focus'} as Record<number,string>)[value]??'Not rated';
+}
+/** Practice topics are rated 1–4 for recall. */
+export function practiceRatingText(value:number):string{
+ return ({1:"1 · Couldn't recall",2:'2 · Hard',3:'3 · Good',4:'4 · Easy'} as Record<number,string>)[value]??String(value);
 }
 export function clientName(value:string):string{
  return ({claude:'Claude',chatgpt:'ChatGPT',openai:'ChatGPT',gemini:'Gemini'} as Record<string,string>)[value.toLowerCase()]??'AI tutor';

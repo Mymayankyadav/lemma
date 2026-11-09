@@ -3,6 +3,7 @@ import type {StudyEntryRecord} from '../../data/study/contract';
 import {cycleCaption,emptyFocusContext,type FocusContext} from './focusContext';
 import {inProgressFocusMinutes,remainingFocusMinutes,type FocusState} from '../../lib/focus/machine';
 import {focusStatus} from '../../lib/focus/status';
+import {formatTime} from '../../lib/format';
 
 export interface V6FocusDialogProps {
  open:boolean;
@@ -99,20 +100,21 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
      This focus session is over three hours old. Check whether you are still studying; no time is saved automatically.
     </p>}
     {state.phase!=='finishing'&&<div className="cr-focus-buttons">
+     {/* N121 C6: Finish & log is the one primary action; Pause and Resume are outlined. */}
      {state.phase==='running'&&<>
-      <button type="button" disabled={busy} onClick={props.onPause} className="cr-button primary">Pause</button>
-      <button type="button" disabled={busy} onClick={props.onBreak} className="cr-button">Take a break</button>
+      <button type="button" disabled={busy} onClick={props.onPause} className="cr-button lemma-focus-secondary">Pause</button>
+      <button type="button" disabled={busy} onClick={props.onBreak} className="cr-button lemma-focus-secondary">Take a break</button>
      </>}
      {(state.phase==='paused'||state.phase==='break')&&
-      <button type="button" disabled={busy} onClick={props.onResume} className="cr-button primary">Resume</button>}
+      <button type="button" disabled={busy} onClick={props.onResume} className="cr-button lemma-focus-secondary">Resume</button>}
+    </div>}
+    {(state.phase==='paused'||state.phase==='running')&&<div className="cr-focus-bottom">
+     <button type="button" disabled={busy} onClick={props.onFinish} className="notebook-primary lemma-focus-finish">Finish &amp; log</button>
     </div>}
     {state.phase!=='finishing'&&<div className="cr-focus-bottom">{props.notices}</div>}
-    {(state.phase==='paused'||state.phase==='running')&&<div className="cr-focus-bottom">
-     <button type="button" disabled={busy} onClick={props.onFinish} className="lemma-focus-finish">Finish &amp; log</button>
-    </div>}
     {state.phase==='finishing'&&<div className="lemma-quick-task mt-6 w-full max-w-[480px] text-left">
      <label>Minutes to save
-      <input aria-label="Minutes to save" type="number" min="0" step="0.1" required
+      <input aria-label="Minutes to save" type="number" min="0" step="1" inputMode="numeric" required
        value={editedMinutes} onChange={event=>props.onMinutes(event.target.value)}/>
      </label>
      <label>What did you learn? · optional
@@ -126,21 +128,21 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
      </div>
     </div>}
     {/* The timer lease (N72) and the server's phase deadline stay available, one tap away. */}
-    <details className="lemma-focus-details mt-4 w-full max-w-[480px] text-left text-label text-ink-2">
+    {/* The timer lease (N72) and the phase deadline stay available, one tap away. */}
+    <details className="lemma-focus-details lemma-disclosure mt-4 w-full max-w-[480px] text-left text-label text-ink-2">
      <summary className="flex min-h-11 items-center justify-center">Timer details</summary>
      <section aria-label="Timer phase and controls" className="flex flex-col gap-2 pt-2">
       <p>Mode: {mode} · {phaseLabel} · Cycle {props.entry.cycle??1}</p>
-      <p>{deadline?'Server phase deadline: '+new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(new Date(deadline))+
-       ' · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining':
-       'No scheduled phase deadline · '+Math.ceil(remainingFocusMinutes(state,now))+' min remaining'}</p>
+      <p>{deadline?'Phase ends at '+formatTime(deadline,{clock24h:true})+' · '+Math.ceil(remainingFocusMinutes(state,now))+' min left':
+       'No set end for this phase · '+Math.ceil(remainingFocusMinutes(state,now))+' min left'}</p>
       <div className="flex flex-wrap justify-center gap-2">
-       <button type="button" disabled={busy} onClick={props.onTakeLease} className="cr-button">
-        {props.leaseOwned?'Retake control':'Take control of timer'}
+       <button type="button" disabled={busy} onClick={props.onTakeLease} className="cr-button lemma-focus-secondary">
+        Take control of timer
        </button>
        <button type="button" disabled={busy||!props.leaseOwned||state.phase==='finishing'} onClick={props.onNextPhase}
-        className="cr-button">Next phase</button>
+        className="cr-button lemma-focus-secondary">Skip to next phase</button>
       </div>
-      {!props.leaseOwned&&<p>Take control explicitly in this tab before changing phases.</p>}
+      {!props.leaseOwned&&<p>This timer is controlled in another tab or device. Take control here to change phases.</p>}
      </section>
     </details>
     {error&&<p role="alert" className="lemma-field-error mt-3">{error}</p>}

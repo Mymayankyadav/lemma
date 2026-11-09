@@ -74,8 +74,11 @@ export default function TodayDue({date,zone}:{date:string;zone:string}){
   </button>}
   {items.overdue.length>0&&<div className="notebook-task-row">
    <span aria-hidden="true">!</span>
-   <span><strong>{items.overdue.length} overdue</strong><small>Review tasks and missed dates</small></span>
-   <Link className="min-h-11 underline" to="/calendar">Calendar</Link>
+   <span><strong>{items.overdue.length} overdue</strong><small>{items.overdue.slice(0,2).map(row=>row.title).join(', ')}{items.overdue.length>2?'…':''}</small></span>
+   <span className="flex shrink-0 gap-3">
+    {items.overdue.some(row=>row.kind==='Task')&&<Link className="inline-flex min-h-11 items-center underline" to="/tasks?show=overdue">Tasks</Link>}
+    {items.overdue.some(row=>row.kind!=='Task')&&<Link className="inline-flex min-h-11 items-center underline" to="/calendar">Calendar</Link>}
+   </span>
   </div>}
   {error&&<div role="alert" className="text-caption text-ink-2">Due items unavailable.
    <button type="button" className="min-h-11 underline" onClick={()=>setReload(x=>x+1)}>Retry</button></div>}

@@ -462,7 +462,7 @@ describe('N68 Calendar owner date navigation',()=>{
    expect(host.querySelector('[aria-label="Planner preview"]')).toBeNull();
    await act(async()=>host.querySelector<HTMLButtonElement>('button')!.click());
    await vi.waitFor(()=>expect(host.querySelector('[aria-label="Planner preview"]')).not.toBeNull());
-   expect(host.textContent).toContain('Plan your tasks');
+   expect(host.textContent).toContain('Plan study tasks');
    expect(host.textContent).not.toMatch(/\d{4}-\d\d-\d\dT\d\d:\d\d/);
   }finally{
    await act(async()=>root.unmount());host.remove();

@@ -1,6 +1,7 @@
 import React,{act} from 'react';
 import {createRoot} from 'react-dom/client';
 import {MemoryRouter,Route,Routes} from 'react-router';
+import {QueryClient,QueryClientProvider} from '@tanstack/react-query';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import TimeLog,{csvLog,visibleLogRange,visibleLogRecords} from '../../../src/features/time-log/Page';
 import {setStudyApiForTests} from '../../../src/data/study';
@@ -51,9 +52,11 @@ afterEach(async()=>{
  await act(async()=>root.unmount());host.remove();setStudyApiForTests(null);vi.clearAllMocks();
 });
 async function render(){
- await act(async()=>root.render(<MemoryRouter initialEntries={['/log']}>
+ // N121 D5: the entry editor names subjects and paths through the shared React Query hooks.
+ const client=new QueryClient({defaultOptions:{queries:{retry:false}}});
+ await act(async()=>root.render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/log']}>
   <Routes><Route path="/log" element={<TimeLog/>}/><Route path="/" element={<p>Legacy</p>}/></Routes>
- </MemoryRouter>));
+ </MemoryRouter></QueryClientProvider>));
  await vi.waitFor(()=>expect(host.textContent).not.toContain('Loading time log'));
 }
 function button(text:string){
@@ -89,15 +92,18 @@ describe('N73 time log',()=>{
   expect(host.querySelectorAll('article')).toHaveLength(50);
   await click(button('Next page'));
   expect(host.querySelectorAll('article')).toHaveLength(4);
-  expect(host.textContent).toContain('Focus:');
+  expect(host.textContent).toContain('1 focus interval');
  });
  it('edits interval, intent and unknown rating through optimistic StudyApi',async()=>{
-  const client=api();await render();await click(button('Edit entry'));
+  const client=api();await render();await click(button('Edit'));
   const input=host.querySelector('[aria-label="Edit intent"]') as HTMLInputElement;
   await change(input,'Revised proof');
   const start=host.querySelector('[aria-label="Interval 1 start time"]') as HTMLInputElement;
   expect(start).toBeTruthy();
-  await change(start,'10:00');
+  // Ten minutes after the saved start, written in the device zone the editor uses.
+  const later=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',
+   timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone}).format(new Date(Date.parse(at)+10*60000));
+  await change(start,later);
   await click(button('Save changes'));
   await vi.waitFor(()=>expect(client.correctStudyEntry).toHaveBeenCalledTimes(1));
   const corrected=vi.mocked(client.correctStudyEntry).mock.calls[0][2] as {intent:string;rating:number|null;intervals:{start:string;end:string}[]};
@@ -107,25 +113,27 @@ describe('N73 time log',()=>{
   expect(corrected.intervals[0].end).toBe(end);
  });
  it('voids and then restores via versioned actions',async()=>{
-  const client=api();await render();await click(button('Edit entry'));await click(button('Void entry'));
+  const client=api();await render();await click(button('Edit'));await click(button('Void entry'));
+  expect(client.voidStudyEntry).not.toHaveBeenCalled();
+  await click(button('Confirm void'));
   await vi.waitFor(()=>expect(client.voidStudyEntry).toHaveBeenCalledWith('row-1',1));
   expect(host.textContent).toContain('Voided');
-  await click(button('Edit entry'));
+  await click(button('Restore'));
   expect(button('Restore entry')).toBeDefined();
   await click(button('Restore entry'));
   await vi.waitFor(()=>expect(client.restoreStudyEntry).toHaveBeenCalledWith('row-1',2));
  });
  it('validates manual approximate time and refuses reversal',async()=>{
-  const client=api();await render();await click(button('Add approximate time'));
+  const client=api();await render();await click(button('Add time'));
   await change(host.querySelector('[aria-label="Manual intent"]') as HTMLInputElement,'Reading notes');
   await change(host.querySelector('[aria-label="Manual date"]') as HTMLInputElement,'2026-11-06');
   await change(host.querySelector('[aria-label="Manual start"]') as HTMLInputElement,'10:00');
   await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,'09:00');
-  await click(button('Save approximate time'));
+  await click(button('Save time'));
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('End must follow');
   expect(client.createManualStudyEntry).not.toHaveBeenCalled();
   await change(host.querySelector('[aria-label="Manual end"]') as HTMLInputElement,'11:00');
-  await click(button('Save approximate time'));
+  await click(button('Save time'));
   await vi.waitFor(()=>expect(client.createManualStudyEntry).toHaveBeenCalledTimes(1));
   expect(host.textContent).toContain('Approximate');
  });

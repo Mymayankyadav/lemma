@@ -1,5 +1,5 @@
 import {isFlagOn} from '../../flags';
-import ProgressV6 from '../progress-v6/Page';
+import ProgressV6,{progressRange,rangeOptions,rangeWords} from '../progress-v6/Page';
 import {useEffect,useMemo,useState} from 'react';
 import {getStudyApi} from '../../data/study';
 import {periodFor,effortSummary,type EffortRange} from '../progress-v6/model';
@@ -37,8 +37,8 @@ function LegacyInsights({fixedDays}:{fixedDays?:InsightDays}={}){
   :query.isError||settings.isError?<div role="alert">Couldn’t load insights. <button className="text-amber" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>
   :values&&<>
   <div className="grid grid-cols-3 gap-2.5" aria-label="Study totals">
-   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Clock size={17} className="mb-2 text-ink-2"/><strong data-study-total-visible aria-hidden="true" title={studyTotal?.exact} className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{studyTotal?.short}</strong><span data-study-total-exact className="sr-only">Studied {studyTotal?.exact}</span><span aria-hidden="true" className="text-xs text-ink-2">studied</span></Tile>
-   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><MessageCircle size={17} className="mb-2 text-ink-2"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatCount(values.sessions)}</strong><span className="text-xs text-ink-2">sessions</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Clock size={17} className="mb-2 text-ink-2"/><strong data-study-total-visible aria-hidden="true" title={studyTotal?.exact} className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{studyTotal?.short}</strong><span data-study-total-exact className="sr-only">{fixedDays?'Tutor sessions':'Studied'} {studyTotal?.exact}</span><span aria-hidden="true" className="text-xs text-ink-2">{fixedDays?'in tutor sessions':'studied'}</span></Tile>
+   <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><MessageCircle size={17} className="mb-2 text-ink-2"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatCount(values.sessions)}</strong><span className="text-xs text-ink-2">{fixedDays?'tutor sessions':'sessions'}</span></Tile>
    <Tile className="min-w-0 overflow-hidden p-[var(--pad-tile)]"><Layers size={17} className="mb-2 text-ink-2"/><strong className="block whitespace-nowrap text-[clamp(0.9rem,4vw,1.6rem)] font-medium tabular-nums" style={{fontFamily:"var(--font-num)"}}>{formatCount(values.reviews)}</strong><span className="text-xs text-ink-2">reviews</span></Tile>
   </div>
   <Slab className="flex flex-col gap-3 p-4"><div className="flex items-center justify-between"><SectionHeading>Recall</SectionHeading><strong className="text-num-l font-medium tabular-nums text-ink" style={{fontFamily:"var(--font-num)"}}>{percent(values.recall)}</strong></div>
@@ -61,19 +61,21 @@ function LegacyInsights({fixedDays}:{fixedDays?:InsightDays}={}){
 
 const views=[{value:'overview',label:'Overview'},{value:'learning',label:'Learning'},{value:'time',label:'Time'}] as const;
 type View=typeof views[number]['value'];
-function rangeCaption(days:number){
+function rangeCaption(range:EffortRange){
+ const days=range==='day'?1:Number(range);
  const end=new Date(),start=new Date(end.getTime()-(days-1)*86_400_000);
  const f=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short'});
- return f.format(start)+' – '+f.format(end)+' · '+days+' days';
+ return days===1?'Today · '+f.format(end):f.format(start)+' – '+f.format(end)+' · '+days+' days';
 }
-/** N115 (mockup `22__Page`, `55__insights`): one time-range select, Overview / Learning / Time
- * tabs and stat tiles. Saved study time keeps the N52 selectors (ProgressV6) on Overview and Time. */
+/** N115 (mockup `22__Page`, `55__insights`): Overview / Learning / Time tabs and stat tiles.
+ * N121 D1: one "Time range" control, one study-time source (saved focus) and range-matched tiles. */
 function ProgressNotebook(){
  // #1330: the mockup header carries the subtitle, above its rule.
  useV6HeaderTitle('Progress','Small steps, seen over time.');
  const [params,setParams]=useSearchParams();
- const raw=params.get('range');
- const days:InsightDays=raw==='7'||raw==='90'?Number(raw) as InsightDays:30;
+ const range=progressRange(params.get('range'));
+ // Insight aggregates come in 7, 30 or 90 days; Today reads the 7-day data and keeps only today's reviews.
+ const days:InsightDays=range==='30'||range==='90'?Number(range) as InsightDays:7;
  const rawView=params.get('view');
  const view:View=rawView==='learning'||rawView==='time'?rawView:'overview';
  const query=useInsightData(days),settings=useSettings();
@@ -83,22 +85,26 @@ function ProgressNotebook(){
  useEffect(()=>{
   let alive=true;
   const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
-  const span=periodFor(String(days) as EffortRange,new Date(),zone).span;
-  void getStudyApi().listStudyEntries(span).then(rows=>{if(alive){setIssues(savedTimeIssues(rows,new Date().toISOString()));setSavedMinutes(effortSummary(rows,periodFor(String(days) as EffortRange,new Date(),zone),zone,new Date().toISOString()).minutes);}})
+  const period=periodFor(range,new Date(),zone);
+  void getStudyApi().listStudyEntries(period.span).then(rows=>{if(alive){setIssues(savedTimeIssues(rows,new Date().toISOString()));setSavedMinutes(effortSummary(rows,period,zone,new Date().toISOString()).minutes);}})
    .catch(()=>{if(alive){setIssues(null);setSavedMinutes(null);}});
   return()=>{alive=false;};
- },[days]);
+ },[range]);
  const set=(key:string,value:string)=>{const next=new URLSearchParams(params);next.set(key,value);setParams(next);};
  const metric=(label:string,value:string,note:string)=><div className="notebook-metric" role="group" aria-label={label}>
   <span>{label}</span><strong>{value}</strong><small>{note}</small></div>;
- const demonstrated=values?values.checkpointWeeks.reduce((n,w)=>n+w.demonstrated,0):0;
+ // Reviews and recall within the chosen range: today from the raw answers when the adapter has them.
+ const zone=settings.data?.timeZone??'UTC';
+ const todayKey=new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(new Date());
+ const todays=range==='day'&&query.data?.reviews.length?query.data.reviews.filter(r=>new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(new Date(r.reviewedAt))===todayKey):null;
+ const reviewCount=todays?todays.length:values?.reviews??0;
+ const recall=todays?(todays.length?todays.filter(r=>r.rating!==1).length/todays.length:null):values?.recall??null;
+ const weeks=Math.max(1,Math.ceil((range==='day'?1:Number(range))/7));
+ const demonstrated=values?values.checkpointWeeks.slice(-weeks).reduce((n,w)=>n+w.demonstrated,0):0;
+ const words=rangeWords(range);
  return <div className="notebook-progress">
   {getMode()==='demo'&&<div className="notebook-page-intro"><small className="lemma-sample-label basis-full">Example workspace · demonstration history</small></div>}
-  <label className="lemma-progress-range">Time range
-   <select aria-label="Time range" value={String(days)} onChange={event=>set('range',event.target.value)}>
-    <option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option>
-   </select>
-  </label>
+  <Segmented label="Time range" value={range} onChange={value=>set('range',value)} options={rangeOptions}/>
   <Segmented label="Progress views" value={view} onChange={value=>set('view',value)} options={[...views]}/>
   {needsAttention(issues)&&<div role="status" className="lemma-log-warning">
    <p>Some saved time entries overlap or need correction. Each minute is counted once.</p>
@@ -106,16 +112,19 @@ function ProgressNotebook(){
   </div>}
   <div className="notebook-progress-content">
    {view==='overview'&&<>
-    <p className="notebook-range-caption">{rangeCaption(days)}</p>
-    {query.isPending||settings.isPending?<p role="status" className="text-ink-2">Loading insights…</p>:
-     query.isError||settings.isError?<div role="alert" className="lemma-log-warning">Couldn’t load insights. <button type="button" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>:
-     values&&<div className="notebook-metrics" aria-label="Progress summary">
-      {metric('Logged study time',savedMinutes===null?'—':formatDuration(savedMinutes),'Saved focus time (breaks excluded)')}
-      {metric('Reviews completed',formatCount(values.reviews),'Completed responses')}
-      {metric('Recall on review',percent(values.recall),formatCount(values.reviews)+' responses in range')}
-      {metric('Checkpoints demonstrated',formatCount(demonstrated),'Demonstrated events in the last 4 weeks')}
-     </div>}
-    <ProgressV6 controls={false}/>
+    <p className="notebook-range-caption">{rangeCaption(range)}</p>
+    <div className="notebook-metrics" aria-label="Progress summary">
+     <section aria-label="Total logged time" className="notebook-metric">
+      <span>Total logged time</span><strong>{savedMinutes===null?'—':formatDuration(savedMinutes)}</strong><small>Saved focus · {words}</small></section>
+     {query.isPending||settings.isPending?<p role="status" className="text-ink-2">Loading insights…</p>:
+      query.isError||settings.isError?<div role="alert" className="lemma-log-warning">Couldn’t load insights. <button type="button" onClick={()=>{void query.refetch();void settings.refetch()}}>Try again</button></div>:
+      values&&<>
+       {metric('Reviews completed',formatCount(reviewCount),'Answers · '+words)}
+       {metric('Recall on review',percent(recall),'Remembered · '+words)}
+       {metric('Checkpoints demonstrated',formatCount(demonstrated),range==='day'?'This week':'Last '+weeks+' weeks')}
+      </>}
+    </div>
+    <ProgressV6 controls={false} variant="compact"/>
    </>}
    {view==='learning'&&<LegacyInsights fixedDays={days}/>}
    {view==='time'&&<>
