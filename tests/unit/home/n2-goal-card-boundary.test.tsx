@@ -2,7 +2,7 @@ import React, {act} from 'react'
 import {createRoot} from 'react-dom/client'
 import {MemoryRouter} from 'react-router'
 import {QueryClient,QueryClientProvider} from '@tanstack/react-query'
-import {describe,expect,it,vi} from 'vitest'
+import {describe,expect,it,vi,beforeEach} from 'vitest'
 import {DemoAdapter,demoSeedFixture} from '../../../src/data/demo/adapter'
 import type {DemoStore} from '../../../src/data/demo/model'
 
@@ -15,6 +15,9 @@ vi.mock('../../../src/features/home/ReviewOutlook',()=>({
 }))
 
 import Page from '../../../src/features/home/Page'
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 
 const sizes=[14,15,40] as const
 
@@ -49,7 +52,7 @@ function boundaryFixture():DemoStore{
 
 describe('N2: actual Today goal selection at 14/15/40 checkpoints',()=>{
  it('renders the same goal elements on both sides of the boundary using demo-adapter data',async()=>{
-  window.history.replaceState(null,'','/?demo=1')
+  window.history.replaceState(null,'','/?demo=1&flags=-v6Shell')
   adapter=new DemoAdapter({fixture:boundaryFixture(),now:()=>Date.parse('2026-11-04T12:00:00Z'),timeZone:'UTC'})
   const home=await adapter.getHome()
   const client=new QueryClient({defaultOptions:{queries:{retry:false,staleTime:60_000}}})
@@ -99,7 +102,7 @@ describe('N2: actual Today goal selection at 14/15/40 checkpoints',()=>{
    client.clear()
    host.remove()
    vi.unstubAllGlobals()
-   window.history.replaceState(null,'','/')
+   window.history.replaceState(null,'','/?flags=-v6Shell')
   }
  },30_000)
 })

@@ -5,6 +5,9 @@ import TodayFocus,{focusFromEntry,loggedToday} from '../../../src/features/focus
 import {setStudyApiForTests} from '../../../src/data/study';
 import type {StudyApi,StudyEntryRecord} from '../../../src/data/study/contract';
 
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
+
 const iso=(delta=0)=>new Date(Date.now()+delta*60_000).toISOString();
 const receipt=<T,>(record:T)=>({record,actionNo:null});
 const entry=(status:StudyEntryRecord['status']='running'):StudyEntryRecord=>({

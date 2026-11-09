@@ -10,7 +10,13 @@ describe('N13 v6 shared chrome',()=>{
   expect(v6PageTitle('/calendar')).toBe('Calendar');
   expect(v6PageTitle('/cards/7')).toBe('Card detail');
  });
- it('leaves the N14 focus accessory empty until it is implemented',()=>{
-  expect(FocusAccessorySlot()).toBeNull();
+ it('keeps the accessory absent on legacy screens and present for v6',()=>{
+  const previous=window.location.pathname+window.location.search+window.location.hash;
+  try{
+   window.history.replaceState(null,'','/?flags=-v6Shell');
+   expect(FocusAccessorySlot()).toBeNull();
+   window.history.replaceState(null,'','/?flags=v6Shell');
+   expect(FocusAccessorySlot()).not.toBeNull();
+  }finally{window.history.replaceState(null,'',previous);}
  });
 });

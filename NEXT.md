@@ -30,11 +30,5 @@ Scope: v6 screens and shell under src/**, one additive migration under supabase/
 Not: turning v6 on (N102); flag-off screens.
 
 
-## N102 Turn v6 on by default (Owner approval required)
-Stage: Build · Status: open · Needs: N101, N90, N95, N103, N54.1, N118 · Assigned: —
-Done = `v6Shell` defaults on in `src/flags.ts`. `?flags=-v6Shell` and `VITE_FLAGS=-v6Shell` turn it off in dev, test and e2e builds only: production builds never honour overrides, so rolling back there is a reviewed change of the default. The PR body lists the G1–G7 evidence from `docs/v6/RELEASE.md` with run links, and every open G7 bug is closed or waived by the Owner in writing. **The Owner's explicit approval comment on the PR is required before merge (D8 g), and the Owner's device checks must be done. CI does not check this: no agent posts Ready on this PR, and no agent approves it, until that comment exists.**
-Tests: the flag test; unit specs that cover the legacy screens opt out with `-v6Shell`; the e2e web server already builds with `VITE_FLAGS=-v6Shell` (rules PR), so legacy specs stay flag-off and v6 specs keep opting in with `?flags=v6Shell`; the rollback spec with it off.
-Scope: src/flags.ts, tests affected by the default (expectations updated deliberately), CURRENT.md, docs/current/N102.md.
-Not: anything else.
 
 (Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N119.)

@@ -1,8 +1,11 @@
 import {act, useEffect, useState} from 'react'
 import {createRoot} from 'react-dom/client'
 import {createMemoryRouter, RouterProvider} from 'react-router'
-import {expect,test,vi} from 'vitest'
+import {expect,test,vi,beforeEach} from 'vitest'
 import AppShell from '../../../src/app/AppShell'
+
+// N102: v6Shell defaults on; this suite covers the legacy (flag-off) screen.
+beforeEach(()=>{window.history.replaceState(null,'','/?flags=-v6Shell');});
 const motionPreference=vi.hoisted(()=>({reduce:false}))
 vi.mock('motion/react',async importOriginal=>({...await importOriginal<typeof import('motion/react')>(),useReducedMotion:()=>motionPreference.reduce}))
 vi.mock('../../../src/ui/Ground',()=>({Ground:()=>null}))
