@@ -34,7 +34,11 @@ export default function V7Page() {
     [sheet, setSheet] = useState(false),
     [confirm, setConfirm] = useState(false),
     [toast, setToast] = useState(""),
-    [filter, setFilter] = useState(true);
+    [filter, setFilter] = useState(true),
+    [filterAll, setFilterAll] = useState(false),
+    [pressed, setPressed] = useState(true),
+    [radio, setRadio] = useState("25 min"),
+    [toastSample, setToastSample] = useState(true);
   function notify(message: string) {
     setToast(message);
   }
@@ -47,7 +51,7 @@ export default function V7Page() {
         </div>
         <h1 className="v7-display">A little more clarity.</h1>
         <p className="v7-reading">
-          Room to think. A warm page, a clear next step, and the mathematics at
+          Room to think. {theme === "Day" ? "A warm page" : "A quiet night canvas"}, a clear next step, and the mathematics at
           the centre.
         </p>
         <UI.Segmented
@@ -68,12 +72,12 @@ export default function V7Page() {
         <div className="v7-stack">
           <div className="v7-wrap">
             <UI.Chip kind="subject">Analysis</UI.Chip>
-            <UI.Chip kind="status">Ready to begin</UI.Chip>
+            <UI.Chip kind="ready">Ready to begin</UI.Chip>
             <UI.Chip kind="live">50 min</UI.Chip>
-            <UI.Chip kind="gold">Demonstrated</UI.Chip>{" "}
+            <UI.Chip kind="mastery">Demonstrated</UI.Chip>
           </div>
           <h2 className="v7-title">Make space for a proof.</h2>
-          <p className="v7-meta">Hero surface · A single, focused action</p>
+          <p className="v7-reading">A clear intention makes the next session easier to start.</p>
           <UI.Button variant="primary" onClick={() => setSheet(true)}>
             Start a session <ArrowRight aria-hidden="true" />
           </UI.Button>
@@ -98,10 +102,10 @@ export default function V7Page() {
         </Section>
         <Section title="Actions">
           <div className="v7-wrap">
-            <UI.Button onClick={() => notify("Changes saved")}>
+            <UI.Button variant="primary" onClick={() => notify("Changes saved")}>
               Save changes
             </UI.Button>
-            <UI.Button variant="ghost" onClick={() => notify("Preview opened")}>
+            <UI.Button variant="secondary" onClick={() => notify("Preview opened")}>
               Preview
             </UI.Button>
             <UI.IconButton
@@ -116,6 +120,9 @@ export default function V7Page() {
             <UI.Button small variant="ghost">
               Small ghost
             </UI.Button>
+            <UI.Button small aria-pressed={pressed} onClick={() => setPressed(!pressed)}>
+              Pressed state
+            </UI.Button>
           </div>
           <div className="v7-wrap">
             <UI.Button disabled>Unavailable</UI.Button>
@@ -129,8 +136,8 @@ export default function V7Page() {
             </UI.Button>
           </div>
           <p className="v7-meta">
-            Focus with Tab. Press with Enter or Space. Destructive actions
-            confirm in a sheet.
+            Focus with Tab. Press with Enter or Space. The pressed example toggles;
+            Delete session opens a confirmation sheet.
           </p>
         </Section>
         <Section title="Subjects and states">
@@ -156,7 +163,7 @@ export default function V7Page() {
             <UI.Chip onClick={() => setFilter(!filter)} selected={filter}>
               Due today
             </UI.Chip>
-            <UI.Chip onClick={() => notify("All cards selected")}>
+            <UI.Chip onClick={() => setFilterAll(!filterAll)} selected={filterAll}>
               All cards
             </UI.Chip>
           </div>
@@ -172,8 +179,10 @@ export default function V7Page() {
             value={segment}
             onChange={setSegment}
           />
-          <p className="v7-meta" role="tabpanel">
-            {segment} selected
+          <p className="v7-reading" role="tabpanel">
+            {segment === "Overview" ? "See your learning, time and recall together." :
+              segment === "Learning" ? "Follow the ideas you have demonstrated." :
+              "See where your focused minutes have gone."}
           </p>
           <UI.Segmented
             tabs
@@ -182,11 +191,15 @@ export default function V7Page() {
             value={tab}
             onChange={setTab}
           />
-          <p className="v7-meta" role="tabpanel">
-            {tab} selected
+          <p className="v7-reading" role="tabpanel">
+            {tab === "Cards" ? "Review the ideas that are ready to return." :
+              tab === "Practice" ? "Try a question before seeing the answer." :
+              "Explore how your mathematical ideas connect."}
           </p>
+          <div className="v7-menu-preview">
           <UI.Menu
             label="Open menu"
+            defaultOpen
             items={[
               {
                 label: "Mark complete",
@@ -205,6 +218,7 @@ export default function V7Page() {
               },
             ]}
           />
+          </div>
         </Section>
         <Section title="Fields">
           <UI.Field
@@ -217,6 +231,11 @@ export default function V7Page() {
             error="Add a name before continuing."
           />
           <UI.Field label="Read only" value="Compactness" readOnly />
+          <UI.Field
+            label="Keyboard focus example"
+            className="v7-focus-example"
+            placeholder="Focus with Tab to try it"
+          />
           <UI.Field
             label="Unavailable field"
             placeholder="Not available"
@@ -245,6 +264,18 @@ export default function V7Page() {
           />
         </Section>
         <Section title="Small controls">
+          <div role="radiogroup" aria-label="Session pace" className="v7-stack">
+            <span className="v7-control-label">Session pace</span>
+            {["25 min", "50 min"].map((option) => (
+              <UI.RadioOption
+                key={option}
+                name="session-pace"
+                label={option}
+                checked={radio === option}
+                onChange={() => setRadio(option)}
+              />
+            ))}
+          </div>
           <UI.Checkbox
             label="Include review cards"
             checked={checked}
@@ -279,7 +310,7 @@ export default function V7Page() {
             onChange={setAmount}
           />
           <div className="v7-between">
-            <span>Daily sessions</span>
+            <span className="v7-control-label">Daily sessions</span>
             <UI.Stepper
               label="Daily sessions"
               value={steps}
@@ -291,7 +322,7 @@ export default function V7Page() {
         <Section title="Surfaces and rows">
           <UI.Card>
             <div className="v7-stack">
-              <p className="v7-eyebrow">Raised surface</p>
+              <p className="v7-eyebrow">Topology</p>
               <h3 className="v7-headline">Every open cover…</h3>
               <p className="v7-reading">
                 A compact space gives you a finite subcover.
@@ -307,7 +338,6 @@ export default function V7Page() {
             lead="λ"
             title="Linear transformations"
             meta="Algebra · 12 cards"
-            trailing={<UI.Chip>12</UI.Chip>}
           />
           <UI.ListRow
             lead="τ"
@@ -321,7 +351,7 @@ export default function V7Page() {
             <UI.StatTile
               label="Focused today"
               value="50 min"
-              change="+25 min"
+              change="+25 min vs yesterday"
             />
             <UI.StatTile label="Cards reviewed" value="23" />
           </div>
@@ -343,11 +373,22 @@ export default function V7Page() {
             action="Retry"
             onAction={() => notify("Saved successfully")}
           >
-            Could not save. Try again.
+            Could not save your changes.
           </UI.Banner>
           <UI.Button onClick={() => notify("Session removed")}>
             Show undo toast
           </UI.Button>
+          {toastSample ? (
+            <UI.Toast
+              preview
+              message="A session was removed"
+              action="Undo"
+              onAction={() => setToastSample(false)}
+              onClose={() => setToastSample(false)}
+            />
+          ) : (
+            <UI.Button onClick={() => setToastSample(true)}>Show toast example</UI.Button>
+          )}
           <UI.Skeleton />
           <UI.EmptyState
             action="Add a path"
@@ -357,9 +398,9 @@ export default function V7Page() {
           </UI.EmptyState>
         </Section>
         <Section title="Typography">
-          <p className="v7-display">Display · 36</p>
-          <p className="v7-title">Title · 28</p>
-          <p className="v7-headline">Headline · 22</p>
+          <p className="v7-display">Display · 48</p>
+          <p className="v7-title">Title · 36</p>
+          <p className="v7-headline">Headline · 28</p>
           <p className="v7-reading-l">A proof begins with a question.</p>
           <p className="v7-reading">
             <em>Every sequence has a story. · 18</em>
