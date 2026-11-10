@@ -7,6 +7,7 @@ import {
   type ButtonHTMLAttributes,
   type ReactNode,
   type InputHTMLAttributes,
+  type CSSProperties,
 } from "react";
 import {
   Check,
@@ -17,7 +18,10 @@ import {
   Minus,
   Plus,
   X,
-  Info,
+  CircleDot,
+  CircleCheck,
+  CircleX,
+  TriangleAlert,
 } from "lucide-react";
 import "./components.css";
 export function Button({
@@ -46,8 +50,8 @@ export function Button({
       }
       className={`v7-button v7-${variant} ${small ? "v7-small" : ""} ${destructive ? "v7-critical" : ""} ${className}`}
     >
-      <span className={loading ? "v7-hidden-label" : ""}>{children}</span>
-      {loading && <LoaderCircle className="v7-spinner" aria-label="Loading" />}
+      <span>{children}</span>
+      {loading && <LoaderCircle className="v7-spinner" aria-hidden="true" />}
     </button>
   );
 }
@@ -75,7 +79,7 @@ export function Chip({
   onClick,
 }: {
   children: ReactNode;
-  kind?: "neutral" | "subject" | "status" | "gold" | "live";
+  kind?: "neutral" | "subject" | "status" | "ready" | "mastery" | "gold" | "live";
   subject?: number;
   selected?: boolean;
   onClick?: () => void;
@@ -86,13 +90,16 @@ export function Chip({
         <span className={`v7-dot v7-subject-${subject}`} aria-hidden="true" />
       )}
       {kind === "status" && <Check aria-hidden="true" />}
+      {kind === "ready" && <CircleDot aria-hidden="true" />}
+      {kind === "mastery" && <span className="v7-proof" aria-hidden="true">∎</span>}
       {children}
     </>
   );
   return onClick ? (
     <button
+      type="button"
       className="v7-chip v7-filter"
-      aria-pressed={selected}
+      aria-pressed={!!selected}
       onClick={onClick}
     >
       {content}
@@ -158,6 +165,7 @@ export function Field({
   label,
   error,
   id,
+  className = "",
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   const auto = useId(),
@@ -168,14 +176,21 @@ export function Field({
       <input
         {...props}
         id={fieldId}
-        className="v7-field"
+        className={`v7-field ${className}`}
         data-v7-autofocus={props.autoFocus || undefined}
         aria-invalid={!!error}
-        aria-describedby={error ? `${fieldId}-error` : undefined}
+        aria-describedby={
+          error ? `${fieldId}-error` : props.readOnly ? `${fieldId}-readonly` : props["aria-describedby"]
+        }
       />
+      {props.readOnly && (
+        <p id={`${fieldId}-readonly`} className="v7-readonly-note">
+          Read only · Changes are unavailable here
+        </p>
+      )}
       {error && (
         <p id={`${fieldId}-error`} className="v7-error">
-          <Info aria-hidden="true" />
+          <CircleX aria-hidden="true" />
           {error}
         </p>
       )}
@@ -518,6 +533,10 @@ export function TimePicker({
   const [editing, setEditing] = useState<"start" | "end" | null>(null),
     [typing, setTyping] = useState(false);
   const value = editing === "start" ? start : end;
+  const [startHours, startMinutes] = start.split(":").map(Number);
+  const [endHours, endMinutes] = end.split(":").map(Number);
+  const selectedDuration =
+    ((endHours * 60 + endMinutes - (startHours * 60 + startMinutes)) + 1440) % 1440;
   function duration(minutes: number) {
     const [h, m] = start.split(":").map(Number),
       total = (h * 60 + m + minutes) % 1440;
@@ -534,11 +553,11 @@ export function TimePicker({
       </div>
       <div className="v7-wrap">
         {[25, 50, 90].map((n) => (
-          <Chip key={n} onClick={() => duration(n)}>
+          <Chip key={n} selected={selectedDuration === n} onClick={() => duration(n)}>
             {n} min
           </Chip>
         ))}
-        <Chip onClick={() => setEditing("end")}>Custom</Chip>
+        <Chip selected={!([25, 50, 90].includes(selectedDuration))} onClick={() => setEditing("end")}>Custom</Chip>
       </div>
       <Sheet
         open={editing !== null}
@@ -643,6 +662,26 @@ export function Checkbox({
     </label>
   );
 }
+export function RadioOption({
+  label,
+  name,
+  checked,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  name: string;
+  checked: boolean;
+  onChange: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="v7-radio-row">
+      <input type="radio" name={name} checked={checked} disabled={disabled} onChange={onChange} />
+      <span>{label}</span>
+    </label>
+  );
+}
 export function Switch({
   label,
   checked,
@@ -681,6 +720,7 @@ export function Slider({
   max?: number;
 }) {
   const id = useId();
+  const progress = max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0;
   return (
     <div className="v7-field-group">
       <label htmlFor={id}>
@@ -692,6 +732,7 @@ export function Slider({
       <input
         id={id}
         className="v7-slider"
+        style={{ "--v7-range-progress": `${progress}%` } as CSSProperties}
         type="range"
         min={min}
         max={max}
@@ -785,7 +826,7 @@ export function Meter({
   subject?: number;
 }) {
   return (
-    <div className={`v7-meter-row v7-subject-${subject}`}>
+    <div className={`v7-meter-row v7-subject-${subject}`} data-complete={value >= max && max > 0}>
       <div className="v7-between">
         <span>{label}</span>
         <span className="v7-meta">
@@ -799,6 +840,7 @@ export function Meter({
         aria-valuemax={max}
         aria-valuenow={value}
         aria-label={label}
+        aria-valuetext={value >= max && max > 0 ? "Complete" : `${value} of ${max}`}
       >
         <span
           style={{
@@ -822,22 +864,25 @@ export function StatTile({
     <div className="v7-stat">
       <p className="v7-meta">{label}</p>
       <p className="v7-figure-m">{value}</p>
-      {change && <Chip>{change}</Chip>}
+      {change && <span className="v7-stat-change">{change}</span>}
     </div>
   );
 }
 export function Menu({
   label,
   items,
+  defaultOpen = false,
 }: {
   label: string;
   items: { label: string; icon: ReactNode; onClick: () => void }[];
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false),
+  const [open, setOpen] = useState(defaultOpen),
+    interacted = useRef(false),
     ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!open) return;
-    ref.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
+    if (interacted.current) ref.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
     function outside(e: MouseEvent) {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     }
@@ -849,7 +894,10 @@ export function Menu({
       <Button
         aria-haspopup="menu"
         aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          interacted.current = true;
+          setOpen(!open);
+        }}
       >
         {label}
       </Button>
@@ -901,23 +949,27 @@ export function Toast({
   action,
   onAction,
   onClose,
+  preview = false,
 }: {
   message: string;
   action?: string;
   onAction?: () => void;
   onClose: () => void;
+  preview?: boolean;
 }) {
   const close = useRef(onClose);
   close.current = onClose;
   useEffect(() => {
+    if (preview) return;
     const id = setTimeout(() => close.current(), 6000);
     return () => clearTimeout(id);
-  }, [message]);
+  }, [message, preview]);
   const start = useRef(0);
   return (
     <div
-      className="v7-toast"
-      role="status"
+      className={preview ? "v7-toast v7-toast-preview" : "v7-toast"}
+      role={preview ? "group" : "status"}
+      aria-label={preview ? "Toast example" : undefined}
       onPointerDown={(e) => {
         start.current = e.clientX;
       }}
@@ -950,7 +1002,9 @@ export function Banner({
 }) {
   return (
     <aside className={`v7-banner v7-${tone}`}>
-      <Info aria-hidden="true" />
+      {tone === "warning" ? <TriangleAlert aria-hidden="true" /> :
+        tone === "critical" ? <CircleX aria-hidden="true" /> :
+        <CircleCheck aria-hidden="true" />}
       <p>{children}</p>
       <Button small variant="ghost" onClick={onAction}>
         {action}
