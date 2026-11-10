@@ -102,6 +102,11 @@ html[data-v7][data-v7] .v7-icon-button {
 html[data-v7][data-v7] .v7-hidden-label {
   visibility: hidden;
 }
+html[data-v7][data-v7] .v7-button-progress {
+  width: var(--v7-space-4);
+  height: var(--v7-space-4);
+  flex: none;
+}
 html[data-v7][data-v7] .v7-spinner {
   width: var(--v7-space-4);
   height: var(--v7-space-4);
