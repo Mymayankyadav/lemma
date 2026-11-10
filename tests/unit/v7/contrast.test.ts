@@ -45,7 +45,7 @@ for (const [i, theme] of ["Day", "Night"].entries())
   it(`${theme} interactive control edges are distinguishable from every form surface`, () => {
     const block = css.split("[data-v7]")[i ? 2 : 1];
     const tokens = Object.fromEntries(
-      [...block.matchAll(/--v7-([\\w-]+):\\s*(#[\\da-fA-F]{6}|#fff)\\s*;/g)].map(
+      [...block.matchAll(/--v7-([\w-]+):\s*(#[\da-fA-F]{6}|#fff)\s*;/g)].map(
         (m) => [m[1], m[2] === "#fff" ? "#ffffff" : m[2]],
       ),
     );
