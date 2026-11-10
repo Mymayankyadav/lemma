@@ -10,8 +10,16 @@
   --v7-accent-fill: #3641bc;
   --v7-accent-fill-hi: #4b4dcf;
   --v7-gold: #986603;
-  --v7-line: rgba(20, 28, 50, 0.1);
-  --v7-line-strong: rgba(20, 28, 50, 0.22);
+  --v7-line: rgba(20, 28, 50, 0.18);
+  --v7-line-strong: rgba(20, 28, 50, 0.3);
+  /* Explicit edges for interactive controls (>= 3:1 on Day surfaces). */
+  --v7-control-border: #7c8190;
+  --v7-surface-border: #c9c3b8;
+  --v7-control-track: #d0d3df;
+  --v7-disabled-ink: #676e81;
+  --v7-disabled-bg: #e7e3dc;
+  --v7-focus-ring: #293aa5;
+  --v7-good-fill: #087643;
   --v7-wash: rgba(57, 71, 186, 0.05);
   --v7-wash-strong: rgba(57, 71, 186, 0.1);
   --v7-glass: rgba(255, 253, 250, 0.8);
@@ -34,7 +42,7 @@
   --v7-subject-alpha: 12%;
   --v7-cover-alpha: 9%;
   --v7-hero-alpha: 13%;
-  --v7-shadow-1: 0 1px 2px rgba(20, 28, 50, 0.06), 0 0 0 1px var(--v7-line);
+  --v7-shadow-1: 0 1px 2px rgba(20, 28, 50, 0.06), 0 0 0 1px var(--v7-surface-border);
   --v7-shadow-2: 0 14px 32px -16px rgba(20, 28, 50, 0.22);
   --v7-shadow-3:
     0 28px 56px -24px rgba(20, 28, 50, 0.3), 0 0 0 1px var(--v7-line-strong);
@@ -95,6 +103,7 @@
   --v7-toast-layer: 30;
   --v7-hairline: 1px;
   --v7-ring: 2px;
+  --v7-focus-width: 3px;
   --v7-menu-width: 280px;
   --v7-dialog-min: 480px;
   --v7-dialog-max: 560px;
@@ -143,8 +152,15 @@
   --v7-accent-fill: #4d57dc;
   --v7-accent-fill-hi: #6165e8;
   --v7-gold: #f1c45e;
-  --v7-line: rgba(164, 177, 254, 0.12);
-  --v7-line-strong: rgba(164, 177, 254, 0.26);
+  --v7-line: rgba(164, 177, 254, 0.23);
+  --v7-line-strong: rgba(164, 177, 254, 0.4);
+  --v7-control-border: #767f9b;
+  --v7-surface-border: #46506c;
+  --v7-control-track: #38425f;
+  --v7-disabled-ink: #9da6b9;
+  --v7-disabled-bg: #242b42;
+  --v7-focus-ring: #bfcbff;
+  --v7-good-fill: #47a876;
   --v7-wash: rgba(164, 177, 254, 0.07);
   --v7-wash-strong: rgba(164, 177, 254, 0.14);
   --v7-glass: rgba(14, 20, 40, 0.72);
@@ -164,7 +180,7 @@
   --v7-cover-alpha: 16%;
   --v7-hero-alpha: 30%;
   --v7-shadow-1:
-    inset 0 1px rgba(255, 255, 255, 0.05), 0 0 0 1px var(--v7-line);
+    inset 0 1px rgba(255, 255, 255, 0.05), 0 0 0 1px var(--v7-surface-border);
   --v7-shadow-2:
     inset 0 1px rgba(255, 255, 255, 0.06), 0 18px 40px -20px rgba(0, 0, 0, 0.85);
   --v7-shadow-3:
