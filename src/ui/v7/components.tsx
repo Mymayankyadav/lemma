@@ -52,7 +52,7 @@ export function Button({
     >
       <span>{children}</span>
       <span className="v7-button-progress" aria-hidden="true">
-        {loading && <LoaderCircle className="v7-spinner" />}
+        {loading && <LoaderCircle className="v7-spinner" aria-hidden="true" />}
       </span>
     </button>
   );
