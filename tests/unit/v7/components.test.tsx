@@ -8,6 +8,12 @@ import {
   Stepper,
   Checkbox,
   Toast,
+  Chip,
+  Meter,
+  Field,
+  Slider,
+  RadioOption,
+  Banner,
 } from "../../../src/ui/v7/components";
 let host: HTMLDivElement, root: Root;
 beforeEach(() => {
@@ -137,4 +143,61 @@ it("keeps an undo notification for six seconds then dismisses", async () => {
   expect(close).not.toHaveBeenCalled();
   await act(async () => vi.advanceTimersByTime(1));
   expect(close).toHaveBeenCalledOnce();
+});
+
+it("separates ready, completed and mastery indicators from subject identity", async () => {
+  await act(async () =>
+    root.render(
+      <>
+        <Chip kind="ready">Ready to begin</Chip>
+        <Chip kind="status">Complete</Chip>
+        <Chip kind="mastery">Demonstrated</Chip>
+        <Meter label="Complete" value={100} subject={8} />
+        <Meter label="In progress" value={45} subject={2} />
+      </>,
+    ),
+  );
+  expect(host.querySelector(".v7-chip-ready svg")).not.toBeNull();
+  expect(host.querySelector(".v7-chip-status svg")).not.toBeNull();
+  expect(host.querySelector(".v7-chip-mastery .v7-proof")?.textContent).toBe("∎");
+  expect(host.querySelector('[role="meter"][aria-label="Complete"]')?.getAttribute("aria-valuetext")).toBe("Complete");
+  expect(host.querySelector(".v7-meter-row[data-complete=true]")).not.toBeNull();
+  expect(host.querySelector(".v7-meter-row[data-complete=false]")).not.toBeNull();
+});
+it("exposes filled slider progress, visible loading text and distinct read-only fields", async () => {
+  await act(async () =>
+    root.render(
+      <>
+        <Slider label="Length" value={45} onChange={() => {}} />
+        <Field label="Pinned title" value="Compactness" readOnly />
+        <Field label="Unavailable" disabled placeholder="Not available" />
+        <Button loading>Saving changes</Button>
+      </>,
+    ),
+  );
+  expect(host.querySelector('input[type="range"]')?.getAttribute("style")).toContain("--v7-range-progress: 45%");
+  expect(host.querySelector('input[readonly]')?.getAttribute("aria-describedby")).toMatch(/-readonly$/);
+  expect(host.querySelector(".v7-readonly-note")?.textContent).toContain("Read only");
+  expect(host.querySelector('input[disabled]')).not.toBeNull();
+  expect(host.querySelector(".v7-button > span")?.textContent).toBe("Saving changes");
+  expect(host.querySelector(".v7-spinner")?.getAttribute("aria-hidden")).toBe("true");
+});
+it("shows radio choices and a non-expiring toast preview", async () => {
+  vi.useFakeTimers();
+  const close = vi.fn(), change = vi.fn();
+  await act(async () =>
+    root.render(
+      <>
+        <RadioOption label="Fast" name="pace" checked onChange={change} />
+        <RadioOption label="Slow" name="pace" checked={false} onChange={change} />
+        <Toast preview message="Session removed" onClose={close} />
+        <Banner tone="critical" action="Retry" onAction={() => {}}>Could not save your changes.</Banner>
+      </>,
+    ),
+  );
+  expect(host.querySelectorAll('input[type="radio"]')).toHaveLength(2);
+  expect(host.querySelector(".v7-toast-preview")?.getAttribute("role")).toBe("group");
+  expect(host.querySelector(".v7-banner.v7-critical svg")).not.toBeNull();
+  await act(async () => vi.advanceTimersByTime(7000));
+  expect(close).not.toHaveBeenCalled();
 });
