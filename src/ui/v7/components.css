@@ -661,14 +661,14 @@ html[data-v7][data-v7] svg.v7-empty-art {
   stroke-width: var(--v7-ring);
 }
 html[data-v7][data-v7] .v7-display {
-  font: var(--v7-medium) var(--v7-size-7)/var(--v7-leading-7) var(--v7-serif);
+  font: var(--v7-medium) var(--v7-size-8)/var(--v7-leading-8) var(--v7-serif);
   letter-spacing: var(--v7-display-tracking);
 }
 html[data-v7][data-v7] .v7-title {
-  font: var(--v7-medium) var(--v7-size-6)/var(--v7-leading-6) var(--v7-serif);
+  font: var(--v7-medium) var(--v7-size-7)/var(--v7-leading-7) var(--v7-serif);
 }
 html[data-v7][data-v7] .v7-headline {
-  font: var(--v7-medium) var(--v7-size-5)/var(--v7-leading-5) var(--v7-serif);
+  font: var(--v7-medium) var(--v7-size-6)/var(--v7-leading-6) var(--v7-serif);
 }
 html[data-v7][data-v7] .v7-reading {
   font: var(--v7-regular) var(--v7-size-4)/var(--v7-leading-4) var(--v7-serif);
@@ -963,4 +963,9 @@ html[data-v7][data-v7] .v7-hero {
 }
 html[data-v7][data-v7] .v7-radio-row input:disabled {
   accent-color: var(--v7-disabled-ink);
+}
+
+html[data-v7][data-v7] .v7-control-label {
+  font-size: var(--v7-size-2);
+  font-weight: var(--v7-semibold);
 }
