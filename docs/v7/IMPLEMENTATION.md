@@ -1,6 +1,6 @@
 # Lemma v7 implementation decisions
 
-The Owner authorized one combined `rules:` PR, Agent `owner-setup-v7`, for the whole attached plan, including all `[New]` features. This is an incremental working PR, not a claim that the redesign is complete. The Owner chooses the model and effort for each part before it starts; only Part 1 has been selected.
+The Owner authorized one combined `rules:` PR, Agent `owner-setup-v7`, for the whole attached plan, including all `[New]` features. This is an incremental working PR, not a claim that the redesign is complete. The Owner chooses the model and effort for each part before it starts; Parts 1 and 2 have been selected.
 
 ## Accepted constraints and gates
 
@@ -15,10 +15,12 @@ The later performance gate must measure actual cold Today transfers, including f
 
 ## Parts and proposed models
 
-Only Part 1 is selected; later entries are proposals pending the Owner's choice.
+The Owner selected Part 1 and Part 2; later entries are proposals pending the Owner's choice.
+
+Part 1 baseline evidence at main `a4f8e86`: typecheck, lint and production build passed, as did 1,964 unit tests and 1,154 browser tests. On the Part 1 foundation, typecheck, lint, 27 focused unit tests and four v6 browser checks passed; CI `scope` and `fast-gate` passed at `98c306b`. The interface and release gates remain pending.
 
 1. Setup, baseline and integration — GPT-6.1 Terra, high (selected).
-2. Tokens, typography, fonts, components and gallery — GPT-6.1 Sol, medium.
+2. Tokens, typography, fonts, components and gallery — GPT-6.1 Sol, medium (selected).
 3. Mathematical emblems, motion, haptics and chart primitives — GPT-6.1 Terra, high.
 4. Shell and Today, Focus, review-round, Calendar-Day and Path golden screens — GPT-6.1 Terra, xhigh.
 5. Atlas golden canvas and worker — GPT-6 Astra, xhigh.
