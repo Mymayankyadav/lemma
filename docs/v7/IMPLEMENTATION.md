@@ -1,6 +1,6 @@
 # Lemma v7 implementation decisions
 
-The Owner authorized one combined `rules:` PR, Agent `owner-setup-v7`, for the whole attached plan, including all `[New]` features. This is an incremental working PR, not a claim that the redesign is complete. The Owner chooses the model and effort for each part before it starts; Parts 1 and 2 have been selected.
+The Owner authorized one combined `rules:` PR, Agent `owner-setup-v7`, for the whole attached plan, including all `[New]` features. This is an incremental working PR, not a claim that the redesign is complete. The Owner chooses the model and effort for each part before it starts; Parts 1–3 have been selected.
 
 ## Accepted constraints and gates
 
@@ -15,13 +15,13 @@ The later performance gate must measure actual cold Today transfers, including f
 
 ## Parts and proposed models
 
-The Owner selected Part 1 and Part 2; later entries are proposals pending the Owner's choice.
+The Owner selected Parts 1–3; later entries are proposals pending the Owner's choice.
 
 Part 1 baseline evidence at main `a4f8e86`: typecheck, lint and production build passed, as did 1,964 unit tests and 1,154 browser tests. On the Part 1 foundation, typecheck, lint, 27 focused unit tests and four v6 browser checks passed; CI `scope` and `fast-gate` passed at `98c306b`. The interface and release gates remain pending.
 
 1. Setup, baseline and integration — GPT-6.1 Terra, high (selected).
 2. Tokens, typography, fonts, components and gallery — GPT-6.1 Sol, medium (selected).
-3. Mathematical emblems, motion, haptics and chart primitives — GPT-6.1 Terra, high.
+3. Mathematical emblems, motion, haptics and chart primitives — GPT-6.1 Terra, high (selected).
 4. Shell and Today, Focus, review-round, Calendar-Day and Path golden screens — GPT-6.1 Terra, xhigh.
 5. Atlas golden canvas and worker — GPT-6 Astra, xhigh.
 6. Remaining daily loop, capture, search and completion — GPT-6.1 Terra, high.
@@ -42,4 +42,13 @@ The implemented v7 root is limited to `/kit`, applied before first React paint a
 
 Typecheck, lint, production build and PWA release checks pass. Seven new unit tests cover component behavior and every specified Day/Night contrast pair; the five unchanged v6 token tests also pass. All 16 targeted built-app browser checks pass (ten new v7 checks and six unchanged kit/v6 checks); details are in `docs/current/N122.md`. Intermediate 390 × 844 Day/Night viewport and full-gallery PNGs live beside this document. These have been visually inspected and are not golden-screen approvals.
 
-Part 2 stops here. No Part 3 emblems, motion presets, haptics or chart primitives, golden screens, backend changes, dependencies, default activation or release approval are included. Owner gallery approval remains after Part 3; the later design-lint/budget/release gates remain pending.
+Part 2 was completed before the Part 3 additions below. Golden screens, default activation and release approval remain pending.
+
+
+## Part 3 status
+
+Implemented with GPT-6.1 Terra, high effort: deterministic mathematical SVG emblems for all five subject families, seeded identity and bounded generation cache; Day/Night rendering, optional drawing and Focus rotation with reduced-motion support; token-backed motion presets, haptic patterns and an optional phase chime; and accessible line/area, grouped, stacked and horizontal bar and heatmap chart primitives. The gallery demonstrates the emblem families, completion feedback and graphics in both themes. Charts expose interactive values and text tables.
+
+Validation: typecheck, repository lint, production build/PWA artifact checks, 16 v7 unit tests and 13 built-app browser tests passed. The new browser tests cover Day and Night, 96 px emblem sizing, graphics interaction and tables, and reduced-motion rendering; the ten existing gallery tests also pass. Day/Night gallery captures are intermediate review artifacts, not approved golden references.
+
+The visual transitions are reusable presets; their integration into actual screens happens in subsequent parts. The Owner’s gallery approval, design lint, first-load budget and all later screen and release gates remain outstanding. `v7Shell` remains off by default; v6 remains available.

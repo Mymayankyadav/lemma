@@ -110,6 +110,18 @@
   --v7-eyebrow-tracking: 0.09em;
   --v7-instant: 90ms;
   --v7-fast: 160ms;
+  --v7-base: 240ms;
+  --v7-slow: 400ms;
+  --v7-scenic: 700ms;
+  --v7-ease-standard: cubic-bezier(.2, 0, 0, 1);
+  --v7-ease-out: cubic-bezier(.16, 1, .3, 1);
+  --v7-ease-in: cubic-bezier(.4, 0, 1, 1);
+  --v7-snappy-stiffness: 520;
+  --v7-snappy-damping: 38;
+  --v7-gentle-stiffness: 260;
+  --v7-gentle-damping: 28;
+  --v7-lively-stiffness: 400;
+  --v7-lively-damping: 22;
   --v7-skeleton: 1.2s;
   --v7-skeleton-delay: 300ms;
   --v7-pressed: 0.98;

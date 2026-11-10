@@ -1,6 +1,11 @@
 import { useState, type ReactNode } from "react";
+import {motion,useReducedMotion} from "motion/react";
 import { ArrowRight, Check, MoreHorizontal, Trash2, Undo2 } from "lucide-react";
 import * as UI from "../../ui/v7/components";
+import { Emblem } from "../../ui/v7/Emblem";
+import { Chart, Heatmap, HorizontalBars } from "../../ui/v7/Chart";
+import { haptic } from "../../ui/v7/haptics";
+import { transitionPresets } from "../../ui/v7/motion";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="v7-kit-section" aria-label={title}>
@@ -10,6 +15,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 export default function V7Page() {
+  const reduced=!!useReducedMotion();
+  const [proof,setProof]=useState(0);
   const [theme, setTheme] = useState(
       document.documentElement.dataset.theme === "graph-night"
         ? "Night"
@@ -54,8 +61,7 @@ export default function V7Page() {
           }}
         />
         <p className="v7-meta">
-          Part 2 · Standard components. Emblems, motion and charts follow in
-          Part 3.
+          Shared components, mathematical emblems and accessible charts.
         </p>
       </header>
       <UI.Card hero subject={1}>
@@ -74,6 +80,22 @@ export default function V7Page() {
         </div>
       </UI.Card>
       <div className="v7-kit-grid">
+        <Section title="Mathematical emblems">
+          <p className="v7-meta">The same path keeps the same mathematical drawing.</p>
+          <div className="v7-emblem-gallery">
+            {["Analysis", "Linear algebra", "Topology", "Number theory", "Other"].map((name, i) => (
+              <div key={name} className={`v7-subject-${i + 1}`}><Emblem subject={name} seed={`path-${i}`} animate={false}/><p className="v7-caption">{name}</p></div>
+            ))}
+          </div>
+          <UI.Button onClick={() => { haptic("complete", true); setProof(proof+1); notify("Completion feedback"); }}>Try completion feedback</UI.Button>
+          {proof>0&&<motion.span key={proof} {...transitionPresets(reduced).completion} className="v7-proof-mark" aria-label="Proof complete">∎</motion.span>}
+        </Section>
+        <Section title="Data graphics">
+          <Chart title="Study time" kind="stacked" series={[{label:"Analysis",color:"var(--v7-subject-1)"},{label:"Algebra",color:"var(--v7-subject-2)"}]} data={[{label:"Mon",values:[2,1]},{label:"Tue",values:[3,2]},{label:"Wed",values:[1,2]}]} format={n=>`${n} h`}/>
+          <Chart title="Recall" kind="line" series={[{label:"Recall"}]} data={[{label:"Mon",values:[72]},{label:"Tue",values:[86]},{label:"Wed",values:[91]}]} format={n=>`${Math.round(n)}%`}/>
+          <Heatmap title="Activity" data={Array.from({length:28},(_,i)=>({date:new Date(Date.UTC(2026,9,5+i)).toISOString().slice(0,10),value:i%5}))}/>
+          <HorizontalBars title="Time by subject" data={[{label:"Analysis",value:6,color:"var(--v7-subject-1)"},{label:"Algebra",value:4,color:"var(--v7-subject-2)"}]} format={n=>`${n} h`}/>
+        </Section>
         <Section title="Actions">
           <div className="v7-wrap">
             <UI.Button onClick={() => notify("Changes saved")}>
