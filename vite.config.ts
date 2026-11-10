@@ -73,7 +73,7 @@ export default defineConfig({
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
-    globIgnores:['**/screenshots/**'],
+    globIgnores:['**/screenshots/**','**/fonts/v7/**'],
     cleanupOutdatedCaches:true,
     maximumFileSizeToCacheInBytes:4*1024*1024,
     navigateFallback:'/lemma/index.html',

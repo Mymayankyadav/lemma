@@ -32,3 +32,14 @@ Part 1 baseline evidence at main `a4f8e86`: typecheck, lint and production build
 11. Sizes and keys — GPT-6.1 Sol, high.
 12. Performance, accessibility, rollback and default switch — GPT-6.1 Terra, xhigh.
 13. Independent complete-PR review — GPT-6 Astra, xhigh.
+
+
+## Part 2 status
+
+Implemented with GPT-6.1 Sol, medium effort: scoped Day/Night design tokens; the nine-size typography system; shared standard components from §4.7; licensed, namespaced WOFF2 fonts; and an interactive v7 branch of `/kit`. Canonical radii are 10, 14, 20, 28 and round, including the checkbox's nearest radius of 10. The phone date grid preserves 44 px days at 320 px; desktop subject selection uses a keyboard menu. Sheets use native `dialog.showModal()`, Escape cancellation, focus return, a scrolling body and fixed footer. The gallery demonstrates errors, disabled/loading controls, mixed selection, empty/loading feedback and meter endpoints in both themes.
+
+The implemented v7 root is limited to `/kit`, applied before first React paint and in a layout effect when routes change. Other routes continue using v6/legacy. Font loading follows route changes in both directions, retaining original Google font family names for v6 and using app-local `Lemma v7` names for v7. Official Google Fonts assets and individual OFL files live in `public/fonts/v7/`; identical variable font binaries are deduplicated. STIX Two Text omits several mathematical symbols, so its glyph stack includes an official 5 KB STIX Two Math symbol subset, with its own OFL, rather than system-font fallback. v7 assets are excluded from global Workbox precache to preserve flag-off traffic.
+
+Typecheck, lint, production build and PWA release checks pass. Seven new unit tests cover component behavior and every specified Day/Night contrast pair; the five unchanged v6 token tests also pass. All 16 targeted built-app browser checks pass (ten new v7 checks and six unchanged kit/v6 checks); details are in `docs/current/N122.md`. Intermediate 390 × 844 Day/Night viewport and full-gallery PNGs live beside this document. These have been visually inspected and are not golden-screen approvals.
+
+Part 2 stops here. No Part 3 emblems, motion presets, haptics or chart primitives, golden screens, backend changes, dependencies, default activation or release approval are included. Owner gallery approval remains after Part 3; the later design-lint/budget/release gates remain pending.
