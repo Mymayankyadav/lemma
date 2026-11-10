@@ -78,6 +78,8 @@ jobs:
       - run: npm ci
       - run: npx tsc -b
       - run: node scripts/ci/lint.mjs
+      - name: Block v7 token, contrast and colour-blind regressions
+        run: node scripts/v7/check-kit.mjs
 
   unit-affected:
     needs: changes

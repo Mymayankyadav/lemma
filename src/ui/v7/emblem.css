@@ -1,7 +1,7 @@
 html[data-v7] .v7-emblem {display:block;max-width:100%;height:auto;overflow:visible;color:var(--v7-subject,var(--v7-accent));}
-html[data-v7] .v7-emblem-ink {opacity:.85;}
+html[data-v7] .v7-emblem-ink {opacity:1;}
 html[data-v7] .v7-emblem-highlight {stop-color:currentColor;}
-html[data-v7][data-theme='graph-night'] .v7-emblem-ink {opacity:1;filter:drop-shadow(0 0 6px currentColor);}
+html[data-v7][data-theme='graph-night'] .v7-emblem-hero .v7-emblem-ink {opacity:1;filter:drop-shadow(0 0 6px currentColor);}
 html[data-v7] .v7-emblem-draw path {stroke-dasharray:1;stroke-dashoffset:0;animation:v7-emblem-draw var(--v7-scenic) var(--v7-ease-out) both;}
 html[data-v7] .v7-emblem-focus {animation:v7-emblem-spin 240s linear infinite;}
 html[data-v7][data-theme='graph-night'] .v7-emblem-highlight {stop-color:color-mix(in srgb,currentColor 45%,white);}

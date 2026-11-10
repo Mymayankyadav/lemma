@@ -300,7 +300,7 @@ export function Picker({
   }, []);
   useEffect(() => {
     if (!open || !desktop) return;
-    ref.current?.querySelector<HTMLElement>('[aria-checked="true"]')?.focus();
+    ref.current?.querySelector<HTMLElement>('[aria-selected="true"]')?.focus();
     const outside = (e: MouseEvent) => {
       if (!ref.current?.contains(e.target as Node)) setOpen(false);
     };
@@ -318,7 +318,7 @@ export function Picker({
       <button
         disabled={disabled}
         aria-label={`${label}: ${value}`}
-        aria-haspopup={desktop ? "menu" : "dialog"}
+        aria-haspopup={desktop ? "listbox" : "dialog"}
         aria-expanded={open}
         className="v7-field v7-picker"
         onClick={() => setOpen(!open)}
@@ -329,7 +329,7 @@ export function Picker({
       {desktop && open ? (
         <div
           className="v7-menu"
-          role="menu"
+          role="listbox"
           aria-label={label}
           onKeyDown={(e) => {
             const buttons = Array.from(
@@ -352,8 +352,8 @@ export function Picker({
         >
           {options.map((option) => (
             <button
-              role="menuitemradio"
-              aria-checked={value === option}
+              role="option"
+              aria-selected={value === option}
               key={option}
               onClick={() => choose(option)}
             >
@@ -901,7 +901,7 @@ export function Menu({
           setOpen(!open);
         }}
       >
-        {label}
+        {label}<ChevronDown aria-hidden="true" />
       </Button>
       {open && (
         <div
@@ -924,12 +924,15 @@ export function Menu({
                 (index + (e.key === "ArrowDown" ? 1 : buttons.length - 1)) %
                   buttons.length
               ].focus();
+            } else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
+              buttons.find(button => button.textContent?.trim().toLowerCase().startsWith(e.key.toLowerCase()))?.focus();
             }
           }}
         >
           {items.map((item) => (
             <button
               role="menuitem"
+              className={/delete|remove/i.test(item.label) ? "v7-menu-danger" : undefined}
               key={item.label}
               onClick={() => {
                 item.onClick();
@@ -961,17 +964,35 @@ export function Toast({
 }) {
   const close = useRef(onClose);
   close.current = onClose;
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const remaining = useRef(action?.toLowerCase() === "undo" ? 8000 : 6000);
+  const started = useRef(0);
+  function pause() {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    remaining.current = Math.max(0, remaining.current - (Date.now() - started.current));
+  }
+  function resume() {
+    if (preview || timer.current) return;
+    started.current = Date.now();
+    timer.current = setTimeout(() => close.current(), remaining.current);
+  }
   useEffect(() => {
-    if (preview) return;
-    const id = setTimeout(() => close.current(), 6000);
-    return () => clearTimeout(id);
-  }, [message, preview]);
+    remaining.current = action?.toLowerCase() === "undo" ? 8000 : 6000;
+    resume();
+    return () => { if (timer.current) clearTimeout(timer.current); timer.current = null; };
+  }, [message, action, preview]);
   const start = useRef(0);
   return (
     <div
       className={preview ? "v7-toast v7-toast-preview" : "v7-toast"}
       role={preview ? "group" : "status"}
       aria-label={preview ? "Toast example" : undefined}
+      aria-live={preview ? undefined : "polite"}
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onFocusCapture={pause}
+      onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resume(); }}
       onPointerDown={(e) => {
         start.current = e.clientX;
       }}

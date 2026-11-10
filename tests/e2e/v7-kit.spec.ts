@@ -1,291 +1,93 @@
-import { test, expect } from "@playwright/test";
-const kit = "/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit";
-test("v7 gallery has isolated fonts and themes, nine sizes and five canonical radii", async ({
-  page,
-}) => {
-  const external: string[] = [];
-  page.on("request", (r) => {
-    if (/fonts\.(googleapis|gstatic)\.com/.test(r.url()))
-      external.push(r.url());
-  });
-  await page.goto(kit);
-  await expect(
-    page.getByRole("heading", { name: "A little more clarity." }),
-  ).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  await expect(page.locator("html")).toHaveAttribute("data-v7", "");
-  await expect(page.locator("html")).not.toHaveAttribute("data-v6");
-  expect(external).toEqual([]);
-  const styles = await page.locator(".v7-kit").evaluate((root) => {
-    const nodes = [root, ...root.querySelectorAll("*")].filter(
-      (el) =>
-        el.getBoundingClientRect().width && el.getBoundingClientRect().height &&
-        !(el instanceof HTMLInputElement && el.type === "radio"),
-    );
-    return {
-      sizes: [...new Set(nodes.map((el) => getComputedStyle(el).fontSize))],
-      radii: [
-        ...new Set(
-          nodes
-            .map((el) => getComputedStyle(el).borderTopLeftRadius)
-            .filter((r) => r !== "0px"),
-        ),
-      ],
-    };
-  });
-  expect(styles.sizes.sort((a, b) => parseFloat(a) - parseFloat(b))).toEqual([
-    "12px",
-    "14px",
-    "16px",
-    "18px",
-    "22px",
-    "28px",
-    "36px",
-    "48px",
-    "64px",
-  ]);
-  expect(
-    styles.radii.every((r) =>
-      ["4px", "10px", "14px", "20px", "28px", "9999px"].includes(r),
-    ),
-  ).toBe(true);
-  // The 4 px checkbox exception is intentional: a checkbox must not read as a radio.
-  await expect(page.getByRole("checkbox", { name: "Unavailable checkbox" })).toHaveCSS("border-top-left-radius", "4px");
-  await page.getByRole("tab", { name: "Night", exact: true }).click();
-  await expect(page.locator("html")).toHaveAttribute(
-    "data-theme",
-    "graph-night",
-  );
-  await expect(page.locator("body")).toHaveCSS(
-    "background-color",
-    "rgb(10, 16, 35)",
-  );
+import {test,expect} from "@playwright/test";
+const kit="/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit";
+test("the new v7 gallery shows Day and Night together, and four contrast modes",async({page})=>{
+ await page.goto(kit);
+ await expect(page.getByRole("heading",{name:"A little more clarity."})).toBeVisible();
+ const intro=page.locator(".v7-kit-header .v7-intro"),themeToggle=page.locator(".v7-kit-header .v7-segmented");
+ const introBox=await intro.boundingBox(),toggleBox=await themeToggle.boundingBox();
+ expect(introBox).not.toBeNull();expect(toggleBox).not.toBeNull();
+ expect(introBox!.y+introBox!.height).toBeLessThan(toggleBox!.y);
+ await expect(page.getByRole("region",{name:"Principles"})).toBeVisible();
+ const pair=page.getByRole("region",{name:"Tokens and typography"}).locator(".v7-split-panel");
+ await expect(pair).toHaveCount(2);
+ await expect(pair.nth(0)).toHaveAttribute("data-theme","graph");
+ await expect(pair.nth(1)).toHaveAttribute("data-theme","graph-night");
+ await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(23);
+ await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(11);
+ await page.getByRole("checkbox",{name:"High contrast comparison"}).check();
+ await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");
+ await expect(pair.nth(1)).toHaveAttribute("data-contrast","high");
+ await page.getByRole("checkbox",{name:"High contrast comparison"}).uncheck();
+ await page.getByRole("tab",{name:"Night",exact:true}).click();
+ await expect(page.locator("html")).toHaveAttribute("data-theme","graph-night");
 });
-test("sheet traps focus, scrolls the body, retains footer, and returns focus on Escape", async ({
-  page,
-}) => {
-  await page.goto(kit);
-  const trigger = page.getByRole("button", { name: "Start a session" });
-  await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Make room for focus" });
-  await expect(dialog).toBeVisible();
-  await expect(
-    dialog.getByRole("textbox", { name: "Intention" }),
-  ).toBeFocused();
-  await expect
-    .poll(() =>
-      dialog
-        .locator(".v7-sheet-body")
-        .evaluate((el) => el.scrollHeight > el.clientHeight),
-    )
-    .toBe(true);
-  await dialog
-    .locator(".v7-sheet-body")
-    .evaluate((el) => (el.scrollTop = el.scrollHeight));
-  await expect(
-    dialog.getByRole("button", { name: "Save session" }),
-  ).toBeInViewport();
-  for (let i = 0; i < 8; i++) await page.keyboard.press("Tab");
-  expect(
-    await page.evaluate(() =>
-      document.querySelector("dialog[open]")?.contains(document.activeElement),
-    ),
-  ).toBe(true);
-  await page.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
-  await expect(trigger).toBeFocused();
+test("nine subject constructions and three levels appear in each mode",async({page})=>{
+ await page.goto(kit);
+ const art=page.getByRole("region",{name:"Icons and mathematical emblems"});
+ const pair=art.locator(".v7-split-panel");
+ await expect(pair).toHaveCount(2);
+ for(const panel of [pair.nth(0),pair.nth(1)]){
+  await expect(panel.locator(".v7-emblem-choice")).toHaveCount(9);
+  await expect(panel.locator(".v7-emblem-choice .v7-mark-glyph")).toHaveCount(9);
+  await expect(panel.locator(".v7-emblem-choice .v7-mark-tile")).toHaveCount(9);
+  await expect(panel.locator(".v7-emblem-stage .v7-emblem")).toBeVisible();
+  await panel.getByRole("button",{name:"Probability"}).click();
+  await expect(panel.locator(".v7-emblem-stage")).toContainText("Probability");
+  await expect(panel.locator(".v7-emblem-stage .v7-emblem path")).not.toHaveCount(0);
+ }
 });
-for (const width of [320, 360, 390])
-  test(`pickers and gallery fit ${width}px with keyboard controls`, async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width, height: 844 });
-    await page.goto(kit);
-    await expect(
-      page.getByRole("heading", { name: "A little more clarity." }),
-    ).toBeVisible();
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= innerWidth,
-      ),
-    ).toBe(true);
-    await page
-      .getByRole("button", { name: "Subject: Analysis", exact: true })
-      .click();
-    await page.getByRole("radio", { name: "Topology", exact: true }).check();
-    await expect(
-      page.getByRole("button", { name: "Subject: Topology", exact: true }),
-    ).toBeFocused();
-    await page.getByRole("button", { name: "Date: 2026-11-09" }).click();
-    const dialog = page.getByRole("dialog", { name: "Choose a date" });
-    await expect(dialog).toBeVisible();
-    const days = await dialog
-      .locator(".v7-calendar button")
-      .evaluateAll((nodes) =>
-        nodes.map((el) => ({
-          width: el.getBoundingClientRect().width,
-          height: el.getBoundingClientRect().height,
-          right: el.getBoundingClientRect().right,
-        })),
-      );
-    expect(
-      days.every((d) => d.width >= 44 && d.height >= 44 && d.right <= width),
-    ).toBe(true);
-    await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "Start 09:00" }).click();
-    await page
-      .getByRole("button", { name: "Type a time", exact: true })
-      .click();
-    await page.getByLabel("Time", { exact: true }).fill("10:15");
-    await page.getByRole("button", { name: "Use time", exact: true }).click();
-    await expect(
-      page.getByRole("button", { name: "Start 10:15" }),
-    ).toBeVisible();
-  });
-test("font and shell scopes follow kit to v6 routes and back without a reload", async ({
-  page,
-}) => {
-  await page.goto(kit);
-  await expect(
-    page.getByRole("heading", { name: "A little more clarity." }),
-  ).toBeVisible();
-  await page.evaluate(() => {
-    location.hash = "#/";
-  });
-  await expect(page.locator("html")).toHaveAttribute("data-v6", "");
-  await expect(page.locator("#lemma-google-fonts")).toHaveCount(1);
-  await page.evaluate(() => {
-    location.hash = "#/kit";
-  });
-  await expect(
-    page.getByRole("heading", { name: "A little more clarity." }),
-  ).toBeVisible();
-  await expect(page.locator("html")).not.toHaveAttribute("data-v6");
-  await expect(page.locator("#lemma-v7-fonts")).toHaveCount(1);
+test("time range, form states and controls are usable with keyboard",async({page})=>{
+ await page.goto(kit);
+ const controls=page.getByRole("region",{name:"Components and states"}).locator(".v7-split-panel").first();
+ await expect(controls.getByRole("button",{name:"50 min",exact:true})).toHaveAttribute("aria-pressed","true");
+ await controls.getByRole("button",{name:"25 min",exact:true}).click();
+ await expect(controls.getByRole("button",{name:"25 min",exact:true})).toHaveAttribute("aria-pressed","true");
+ await expect(controls.locator('input[type="time"]').nth(1)).toHaveValue("09:25");
+ await expect(controls.locator(".v7-form-field.v7-is-readonly input")).toHaveAttribute("readonly","");
+ await expect(controls.getByRole("switch",{name:/Session reminders/}).nth(1)).toBeDisabled();
+ const menu=controls.getByRole("button",{name:"Open menu"});
+ await menu.click();await expect(controls.getByRole("menu")).toBeVisible();
+ await page.keyboard.press("Escape");await expect(controls.getByRole("menu")).toBeHidden();
 });
-test("desktop subject menu supports arrow keys and returns focus", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto(kit);
-  const trigger = page.getByRole("button", {
-    name: "Subject: Analysis",
-    exact: true,
-  });
-  await trigger.click();
-  await expect(
-    page.getByRole("menu", { name: "Subject", exact: true }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("menuitemradio", { name: "Analysis", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
-  await expect(
-    page.getByRole("button", { name: "Subject: Algebra", exact: true }),
-  ).toBeFocused();
+test("progress and mathematical statements keep semantic completion",async({page})=>{
+ await page.goto(kit);
+ const patterns=page.getByRole("region",{name:"Patterns"}).locator(".v7-split-panel").first();
+ await expect(patterns.getByRole("progressbar",{name:"Topology mastery"})).toHaveAttribute("aria-valuetext","Demonstrated");
+ await expect(patterns.locator(".v7-constellation ol li")).toHaveCount(7);
+ await expect(patterns.locator(".v7-statement-theorem .v7-qed")).toHaveText("∎");
+ await patterns.getByRole("button",{name:/Open delete confirmation/}).click();
+ const dialog=page.getByRole("dialog",{name:"Delete this session and its 12 cards?"});
+ await expect(dialog).toBeVisible();
+ await dialog.getByRole("button",{name:"Cancel"}).click();
+ await expect(dialog).toBeHidden();
 });
-test("meters preserve zero and complete geometry and primary action stays48px", async ({
-  page,
-}) => {
-  await page.goto(kit);
-  const empty = page.getByRole("meter", { name: "Not started", exact: true }),
-    full = page.getByRole("meter", { name: "Complete", exact: true });
-  await expect(empty).toHaveAttribute("aria-valuenow", "0");
-  expect(
-    await empty
-      .locator("span")
-      .evaluate((el) => el.getBoundingClientRect().width),
-  ).toBe(0);
-  expect(
-    await full.evaluate(
-      (el) =>
-        el.querySelector("span")!.getBoundingClientRect().width ===
-        el.getBoundingClientRect().width,
-    ),
-  ).toBe(true);
-  await expect(page.getByRole("button", { name: "Start a session" })).toHaveCSS(
-    "height",
-    "48px",
-  );
+test("every chart has a summary, keyboard data and an equivalent table",async({page})=>{
+ await page.goto(kit);
+ const charts=page.getByRole("region",{name:"Data visualisation"}).locator(".v7-split-panel").first();
+ await expect(charts.locator(".v7-chart")).toHaveCount(4);
+ await expect(charts.locator(".v7-chart-summary")).toHaveCount(4);
+ const study=charts.locator(".v7-chart").filter({has:page.getByRole("heading",{name:"Study time"})});
+ const point=study.getByRole("button",{name:/Mon: Analysis/});
+ await point.focus();await page.keyboard.press("Enter");
+ await expect(study.getByRole("status")).toContainText("Analysis");
+ await study.getByRole("button",{name:"Show as table"}).click();
+ await expect(study.getByRole("table")).toContainText("2 h");
+ const heat=charts.locator(".v7-chart").filter({has:page.getByRole("heading",{name:"Activity"})});
+ await expect(heat.locator(".v7-heat-swatches span")).toHaveCount(5);
 });
-test("mathematical glyphs render with locally hosted STIX faces", async ({
-  page,
-}) => {
-  await page.goto(kit);
-  await expect(page.locator(".v7-glyph")).toBeVisible();
-  await page.evaluate(() => document.fonts.ready);
-  const client = await page.context().newCDPSession(page);
-  await client.send("DOM.enable");
-  await client.send("CSS.enable");
-  const { root } = await client.send("DOM.getDocument");
-  const { nodeId } = await client.send("DOM.querySelector", {
-    nodeId: root.nodeId,
-    selector: ".v7-glyph",
-  });
-  const { fonts } = await client.send("CSS.getPlatformFontsForNode", {
-    nodeId,
-  });
-  expect(fonts.length).toBeGreaterThan(0);
-  expect(
-    fonts.every(
-      (font) => font.isCustomFont && font.familyName.includes("STIX"),
-    ),
-  ).toBe(true);
+test("320px and 200% text remain readable without horizontal overflow",async({page})=>{
+ await page.setViewportSize({width:320,height:844});
+ await page.goto(kit);
+ await expect(page.getByRole("heading",{name:"A little more clarity."})).toBeVisible();
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+ await page.addStyleTag({content:"html { font-size:200%; }"});
+ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
-test("cold v6 visit loads no v7 fonts and can enter the gallery without a reload", async ({
-  page,
-}) => {
-  const requests: string[] = [];
-  page.on("request", (request) => {
-    if (request.url().includes("/fonts/v7/")) requests.push(request.url());
-  });
-  await page.goto("/lemma/?demo=1&flags=v6Shell,v7Shell&mode=day#/");
-  await expect(page.locator("html")).toHaveAttribute("data-v6", "");
-  await expect(page.locator("#lemma-google-fonts")).toHaveCount(1);
-  expect(requests).toEqual([]);
-  await page.evaluate(() => {
-    location.hash = "#/kit";
-  });
-  await expect(
-    page.getByRole("heading", { name: "A little more clarity." }),
-  ).toBeVisible();
-  await expect(page.locator("#lemma-v7-fonts")).toHaveCount(1);
-  await page.evaluate(() => document.fonts.ready);
-  expect(requests.some((url) => url.endsWith(".woff2"))).toBe(true);
-});
-
-test("gallery demonstrates selected, filled, focus, pressed, disabled and semantic states", async ({ page }) => {
-  await page.goto(kit);
-  const selected = page.getByRole("tab", { name: "Overview", exact: true });
-  await expect(selected).toHaveAttribute("aria-selected", "true");
-  await expect(selected).toHaveCSS("background-color", "rgb(54, 65, 188)");
-  await expect(page.getByRole("button", { name: "50 min", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "25 min", exact: true }).click();
-  await expect(page.getByRole("button", { name: "25 min", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".v7-slider")).toHaveAttribute("style", /--v7-range-progress: 45%/);
-  await expect(page.locator(".v7-focus-example")).toHaveCSS("outline-width", "3px");
-  await expect(page.getByRole("button", { name: "Pressed state" })).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Pressed state" }).click();
-  await expect(page.getByRole("button", { name: "Pressed state" })).toHaveAttribute("aria-pressed", "false");
-  await expect(page.getByRole("textbox", { name: "Read only" })).toHaveAttribute("readonly", "");
-  await expect(page.getByRole("textbox", { name: "Unavailable field" })).toBeDisabled();
-  await expect(page.getByRole("switch", { name: "Unavailable switch" })).toBeDisabled();
-  await expect(page.getByRole("radio", { name: "25 min" })).toBeChecked();
-  await page.getByRole("radio", { name: "50 min" }).check();
-  await expect(page.getByRole("radio", { name: "50 min" })).toBeChecked();
-  await expect(page.getByRole("meter", { name: "Complete" })).toHaveAttribute("aria-valuetext", "Complete");
-  await expect(page.locator('.v7-meter-row[data-complete="true"] .v7-meter > span')).toHaveCSS("background-color", "rgb(8, 118, 67)");
-  await expect(page.locator(".v7-chip-ready svg")).toBeVisible();
-  await expect(page.locator(".v7-chip-mastery .v7-proof")).toHaveText("∎");
-});
-test("gallery keeps the open menu, undo toast and deletion confirmation discoverable", async ({ page }) => {
-  await page.goto(kit);
-  await expect(page.getByRole("menu", { name: "Open menu" })).toBeVisible();
-  await expect(page.getByRole("group", { name: "Toast example" })).toBeVisible();
-  await page.getByRole("button", { name: "Delete session", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "Delete this session?" });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Keep session" }).click();
-  await expect(dialog).toBeHidden();
+test("v7 flag isolation keeps the v6 shell available",async({page})=>{
+ await page.goto(kit);
+ await expect(page.locator("html")).toHaveAttribute("data-v7","");
+ await page.evaluate(()=>{location.hash="#/";});
+ await expect(page.locator("html")).toHaveAttribute("data-v6","");
+ await page.evaluate(()=>{location.hash="#/kit";});
+ await expect(page.locator("html")).toHaveAttribute("data-v7","");
 });

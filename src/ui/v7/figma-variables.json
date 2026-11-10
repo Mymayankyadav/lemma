@@ -1,0 +1,562 @@
+{
+  "name": "Lemma v7 Constellation / Figma variable interchange",
+  "modes": [
+    "day",
+    "night",
+    "day-hc",
+    "night-hc"
+  ],
+  "mapping": {},
+  "variables": [
+    {
+      "name": "role/surface/page",
+      "type": "COLOR",
+      "description": "Page canvas, never a control",
+      "modes": {
+        "day": "#F8F5F0",
+        "night": "#091023",
+        "day-hc": "#F8F5F0",
+        "night-hc": "#091023"
+      }
+    },
+    {
+      "name": "role/surface/sunken",
+      "type": "COLOR",
+      "description": "Editable wells",
+      "modes": {
+        "day": "#F0ECE5",
+        "night": "#050A1B",
+        "day-hc": "#F0ECE5",
+        "night-hc": "#050A1B"
+      }
+    },
+    {
+      "name": "role/surface/raised",
+      "type": "COLOR",
+      "description": "Ordinary paper/card",
+      "modes": {
+        "day": "#FEFCF9",
+        "night": "#11192C",
+        "day-hc": "#FEFCF9",
+        "night-hc": "#11192C"
+      }
+    },
+    {
+      "name": "role/surface/overlay",
+      "type": "COLOR",
+      "description": "Menus, sheets and notifications",
+      "modes": {
+        "day": "#FFFFFF",
+        "night": "#192135",
+        "day-hc": "#FFFFFF",
+        "night-hc": "#192135"
+      }
+    },
+    {
+      "name": "role/surface/muted",
+      "type": "COLOR",
+      "description": "Secondary controls and neutral tags",
+      "modes": {
+        "day": "#E9E4DC",
+        "night": "#1E263B",
+        "day-hc": "#E9E4DC",
+        "night-hc": "#1E263B"
+      }
+    },
+    {
+      "name": "role/surface/muted-hover",
+      "type": "COLOR",
+      "description": "Semantic surface muted-hover role",
+      "modes": {
+        "day": "#E1DCD2",
+        "night": "#273045",
+        "day-hc": "#E1DCD2",
+        "night-hc": "#273045"
+      }
+    },
+    {
+      "name": "role/border/subtle",
+      "type": "COLOR",
+      "description": "Semantic border subtle role",
+      "modes": {
+        "day": "#DDD8D0",
+        "night": "#262D40",
+        "day-hc": "#DDD8D0",
+        "night-hc": "#262D40"
+      }
+    },
+    {
+      "name": "role/border/default",
+      "type": "COLOR",
+      "description": "Visible non-text edges, at least 3:1 on adjacent surfaces",
+      "modes": {
+        "day": "#857F77",
+        "night": "#687082",
+        "day-hc": "#625D55",
+        "night-hc": "#8A92A4"
+      }
+    },
+    {
+      "name": "role/border/strong",
+      "type": "COLOR",
+      "description": "Semantic border strong role",
+      "modes": {
+        "day": "#625D55",
+        "night": "#8A92A4",
+        "day-hc": "#625D55",
+        "night-hc": "#8A92A4"
+      }
+    },
+    {
+      "name": "role/text/primary",
+      "type": "COLOR",
+      "description": "Primary readable copy",
+      "modes": {
+        "day": "#121B31",
+        "night": "#EEF2FA",
+        "day-hc": "#121B31",
+        "night-hc": "#EEF2FA"
+      }
+    },
+    {
+      "name": "role/text/secondary",
+      "type": "COLOR",
+      "description": "Secondary readable copy",
+      "modes": {
+        "day": "#40495C",
+        "night": "#B1B7C6",
+        "day-hc": "#121B31",
+        "night-hc": "#EEF2FA"
+      }
+    },
+    {
+      "name": "role/text/tertiary",
+      "type": "COLOR",
+      "description": "Placeholder and supporting details",
+      "modes": {
+        "day": "#5B6375",
+        "night": "#8B92A2",
+        "day-hc": "#121B31",
+        "night-hc": "#EEF2FA"
+      }
+    },
+    {
+      "name": "role/text/disabled",
+      "type": "COLOR",
+      "description": "Clearly unavailable (exempt from text contrast)",
+      "modes": {
+        "day": "#878C99",
+        "night": "#676D7C",
+        "day-hc": "#878C99",
+        "night-hc": "#676D7C"
+      }
+    },
+    {
+      "name": "role/text/on-action",
+      "type": "COLOR",
+      "description": "Semantic text on-action role",
+      "modes": {
+        "day": "#FFFFFF",
+        "night": "#FFFFFF",
+        "day-hc": "#FFFFFF",
+        "night-hc": "#FFFFFF"
+      }
+    },
+    {
+      "name": "role/action/bg",
+      "type": "COLOR",
+      "description": "Primary actions only",
+      "modes": {
+        "day": "#4246C2",
+        "night": "#5159D7",
+        "day-hc": "#4246C2",
+        "night-hc": "#5159D7"
+      }
+    },
+    {
+      "name": "role/action/hover",
+      "type": "COLOR",
+      "description": "Semantic action hover role",
+      "modes": {
+        "day": "#393BAF",
+        "night": "#5862E1",
+        "day-hc": "#393BAF",
+        "night-hc": "#5862E1"
+      }
+    },
+    {
+      "name": "role/action/pressed",
+      "type": "COLOR",
+      "description": "Semantic action pressed role",
+      "modes": {
+        "day": "#313498",
+        "night": "#4C52D0",
+        "day-hc": "#313498",
+        "night-hc": "#4C52D0"
+      }
+    },
+    {
+      "name": "role/selection/subtle",
+      "type": "COLOR",
+      "description": "State selection only",
+      "modes": {
+        "day": "#E2E8FF",
+        "night": "#232953",
+        "day-hc": "#E2E8FF",
+        "night-hc": "#232953"
+      }
+    },
+    {
+      "name": "role/selection/hover",
+      "type": "COLOR",
+      "description": "Semantic selection hover role",
+      "modes": {
+        "day": "#D5DEFF",
+        "night": "#2C3363",
+        "day-hc": "#D5DEFF",
+        "night-hc": "#2C3363"
+      }
+    },
+    {
+      "name": "role/selection/fg",
+      "type": "COLOR",
+      "description": "Semantic selection fg role",
+      "modes": {
+        "day": "#3738AC",
+        "night": "#B9C6FF",
+        "day-hc": "#3738AC",
+        "night-hc": "#B9C6FF"
+      }
+    },
+    {
+      "name": "role/focus/ring",
+      "type": "COLOR",
+      "description": "Keyboard focus, non-text contrast",
+      "modes": {
+        "day": "#4246C2",
+        "night": "#B1BFFF",
+        "day-hc": "#4246C2",
+        "night-hc": "#B1BFFF"
+      }
+    },
+    {
+      "name": "role/link/fg",
+      "type": "COLOR",
+      "description": "Semantic link fg role",
+      "modes": {
+        "day": "#4246C2",
+        "night": "#A9B8FF",
+        "day-hc": "#4246C2",
+        "night-hc": "#A9B8FF"
+      }
+    },
+    {
+      "name": "role/status/success",
+      "type": "COLOR",
+      "description": "Completed or successful state",
+      "modes": {
+        "day": "#107C40",
+        "night": "#75D78D",
+        "day-hc": "#107C40",
+        "night-hc": "#75D78D"
+      }
+    },
+    {
+      "name": "role/status/success-subtle",
+      "type": "COLOR",
+      "description": "Semantic status success-subtle role",
+      "modes": {
+        "day": "#E2F6E6",
+        "night": "#112917",
+        "day-hc": "#E2F6E6",
+        "night-hc": "#112917"
+      }
+    },
+    {
+      "name": "role/status/warning",
+      "type": "COLOR",
+      "description": "Attention required state",
+      "modes": {
+        "day": "#9B610E",
+        "night": "#FFBF67",
+        "day-hc": "#9B610E",
+        "night-hc": "#FFBF67"
+      }
+    },
+    {
+      "name": "role/status/warning-subtle",
+      "type": "COLOR",
+      "description": "Semantic status warning-subtle role",
+      "modes": {
+        "day": "#FFF0DF",
+        "night": "#301F07",
+        "day-hc": "#FFF0DF",
+        "night-hc": "#301F07"
+      }
+    },
+    {
+      "name": "role/status/danger",
+      "type": "COLOR",
+      "description": "Destructive or failed state",
+      "modes": {
+        "day": "#9E1D1C",
+        "night": "#FF8579",
+        "day-hc": "#9E1D1C",
+        "night-hc": "#FF8579"
+      }
+    },
+    {
+      "name": "role/status/danger-subtle",
+      "type": "COLOR",
+      "description": "Semantic status danger-subtle role",
+      "modes": {
+        "day": "#FFE9E5",
+        "night": "#361A17",
+        "day-hc": "#FFE9E5",
+        "night-hc": "#361A17"
+      }
+    },
+    {
+      "name": "role/status/danger-solid",
+      "type": "COLOR",
+      "description": "Semantic status danger-solid role",
+      "modes": {
+        "day": "#9E1D1C",
+        "night": "#BA2B28",
+        "day-hc": "#9E1D1C",
+        "night-hc": "#BA2B28"
+      }
+    },
+    {
+      "name": "role/status/danger-hover",
+      "type": "COLOR",
+      "description": "Semantic status danger-hover role",
+      "modes": {
+        "day": "#94020D",
+        "night": "#AE2523",
+        "day-hc": "#94020D",
+        "night-hc": "#AE2523"
+      }
+    },
+    {
+      "name": "role/subject/analysis",
+      "type": "COLOR",
+      "description": "Semantic subject analysis role",
+      "modes": {
+        "day": "#00789C",
+        "night": "#17A9CB",
+        "day-hc": "#00789C",
+        "night-hc": "#17A9CB"
+      }
+    },
+    {
+      "name": "role/subject/analysis-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject analysis-subtle role",
+      "modes": {
+        "day": "#D9F4FD",
+        "night": "#082831",
+        "day-hc": "#D9F4FD",
+        "night-hc": "#082831"
+      }
+    },
+    {
+      "name": "role/subject/topology",
+      "type": "COLOR",
+      "description": "Semantic subject topology role",
+      "modes": {
+        "day": "#009C85",
+        "night": "#52D7C1",
+        "day-hc": "#009C85",
+        "night-hc": "#52D7C1"
+      }
+    },
+    {
+      "name": "role/subject/topology-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject topology-subtle role",
+      "modes": {
+        "day": "#DAF6EF",
+        "night": "#082A25",
+        "day-hc": "#DAF6EF",
+        "night-hc": "#082A25"
+      }
+    },
+    {
+      "name": "role/subject/logic",
+      "type": "COLOR",
+      "description": "Semantic subject logic role",
+      "modes": {
+        "day": "#417934",
+        "night": "#74A968",
+        "day-hc": "#417934",
+        "night-hc": "#74A968"
+      }
+    },
+    {
+      "name": "role/subject/logic-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject logic-subtle role",
+      "modes": {
+        "day": "#E4F4E1",
+        "night": "#192916",
+        "day-hc": "#E4F4E1",
+        "night-hc": "#192916"
+      }
+    },
+    {
+      "name": "role/subject/number-theory",
+      "type": "COLOR",
+      "description": "Semantic subject number-theory role",
+      "modes": {
+        "day": "#978722",
+        "night": "#CEC06A",
+        "day-hc": "#978722",
+        "night-hc": "#CEC06A"
+      }
+    },
+    {
+      "name": "role/subject/number-theory-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject number-theory-subtle role",
+      "modes": {
+        "day": "#F3EFD9",
+        "night": "#28240C",
+        "day-hc": "#F3EFD9",
+        "night-hc": "#28240C"
+      }
+    },
+    {
+      "name": "role/subject/algebra",
+      "type": "COLOR",
+      "description": "Semantic subject algebra role",
+      "modes": {
+        "day": "#9D5300",
+        "night": "#CE8545",
+        "day-hc": "#9D5300",
+        "night-hc": "#CE8545"
+      }
+    },
+    {
+      "name": "role/subject/algebra-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject algebra-subtle role",
+      "modes": {
+        "day": "#FEEADB",
+        "night": "#321F0F",
+        "day-hc": "#FEEADB",
+        "night-hc": "#321F0F"
+      }
+    },
+    {
+      "name": "role/subject/combinatorics",
+      "type": "COLOR",
+      "description": "Semantic subject combinatorics role",
+      "modes": {
+        "day": "#C86265",
+        "night": "#FF9D9E",
+        "day-hc": "#C86265",
+        "night-hc": "#FF9D9E"
+      }
+    },
+    {
+      "name": "role/subject/combinatorics-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject combinatorics-subtle role",
+      "modes": {
+        "day": "#FFE7E6",
+        "night": "#351C1C",
+        "day-hc": "#FFE7E6",
+        "night-hc": "#351C1C"
+      }
+    },
+    {
+      "name": "role/subject/geometry",
+      "type": "COLOR",
+      "description": "Semantic subject geometry role",
+      "modes": {
+        "day": "#984780",
+        "night": "#C97AAF",
+        "day-hc": "#984780",
+        "night-hc": "#C97AAF"
+      }
+    },
+    {
+      "name": "role/subject/geometry-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject geometry-subtle role",
+      "modes": {
+        "day": "#FDE7F5",
+        "night": "#311C2A",
+        "day-hc": "#FDE7F5",
+        "night-hc": "#311C2A"
+      }
+    },
+    {
+      "name": "role/subject/probability",
+      "type": "COLOR",
+      "description": "Semantic subject probability role",
+      "modes": {
+        "day": "#9E6EC0",
+        "night": "#D5A8F8",
+        "day-hc": "#9E6EC0",
+        "night-hc": "#D5A8F8"
+      }
+    },
+    {
+      "name": "role/subject/probability-subtle",
+      "type": "COLOR",
+      "description": "Semantic subject probability-subtle role",
+      "modes": {
+        "day": "#F5E9FE",
+        "night": "#2A1E33",
+        "day-hc": "#F5E9FE",
+        "night-hc": "#2A1E33"
+      }
+    },
+    {
+      "name": "role/viz/heat1",
+      "type": "COLOR",
+      "description": "Semantic viz heat1 role",
+      "modes": {
+        "day": "#7E8CAB",
+        "night": "#756B51",
+        "day-hc": "#7E8CAB",
+        "night-hc": "#756B51"
+      }
+    },
+    {
+      "name": "role/viz/heat2",
+      "type": "COLOR",
+      "description": "Semantic viz heat2 role",
+      "modes": {
+        "day": "#516494",
+        "night": "#9E8E65",
+        "day-hc": "#516494",
+        "night-hc": "#9E8E65"
+      }
+    },
+    {
+      "name": "role/viz/heat3",
+      "type": "COLOR",
+      "description": "Semantic viz heat3 role",
+      "modes": {
+        "day": "#2F4275",
+        "night": "#CFB883",
+        "day-hc": "#2F4275",
+        "night-hc": "#CFB883"
+      }
+    },
+    {
+      "name": "role/viz/heat4",
+      "type": "COLOR",
+      "description": "Semantic viz heat4 role",
+      "modes": {
+        "day": "#172448",
+        "night": "#FCEABE",
+        "day-hc": "#172448",
+        "night-hc": "#FCEABE"
+      }
+    }
+  ]
+}

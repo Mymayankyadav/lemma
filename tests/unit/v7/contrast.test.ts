@@ -1,56 +1,24 @@
-import { readFileSync } from "node:fs";
-import { expect, it } from "vitest";
-const css = readFileSync("src/ui/v7/tokens.css", "utf8");
-function luminance(hex: string) {
-  const rgb = hex
-    .slice(1)
-    .match(/../g)!
-    .map((c) => parseInt(c, 16) / 255)
-    .map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
-  return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+import {readFileSync} from "node:fs";
+import {expect,it} from "vitest";
+const tokens=JSON.parse(readFileSync("src/ui/v7/design-tokens.json","utf8"));
+const c=(a:string,b:string)=>{
+ const lum=(hex:string)=>{const [r,g,bl]=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);return .2126*r+.7152*g+.0722*bl;};
+ const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);
+};
+for(const mode of ["day","night","day-hc","night-hc"]){
+ const raw=tokens.raw[mode.startsWith("day")?"day":"night"];
+ const get=(role:string)=>raw[mode.endsWith("-hc")&&["text.secondary","text.tertiary"].includes(role)?"text.primary":mode.endsWith("-hc")&&role==="border.default"?"border.strong":role].$value;
+ it(mode+" has accessible text, controls and focus",()=>{
+  for(const text of ["text.primary","text.secondary","text.tertiary"])
+   for(const bg of ["surface.page","surface.raised","surface.sunken","surface.muted","surface.overlay"])
+    expect(c(get(text),get(bg)),text+" on "+bg).toBeGreaterThanOrEqual(4.5);
+  for(const bg of ["surface.page","surface.raised","surface.sunken","surface.muted","surface.overlay"])
+   expect(c(get("border.default"),get(bg)),bg).toBeGreaterThanOrEqual(3);
+  expect(c(get("focus.ring"),get("surface.page"))).toBeGreaterThanOrEqual(3);
+ });
 }
-function ratio(a: string, b: string) {
-  const x = luminance(a),
-    y = luminance(b);
-  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-}
-for (const [i, theme] of ["Day", "Night"].entries())
-  it(`${theme} text pairs meet WCAG AA against every specified surface`, () => {
-    const block = css.split("[data-v7]")[i ? 2 : 1];
-    const tokens = Object.fromEntries(
-      [...block.matchAll(/--v7-([\w-]+):\s*(#[\da-fA-F]{6}|#fff)\s*;/g)].map(
-        (m) => [m[1], m[2] === "#fff" ? "#ffffff" : m[2]],
-      ),
-    );
-    const pairs = [
-      ...["ink", "ink-2", "accent"].flatMap((ink) =>
-        ["bg", "bg-raised"].map((bg) => [ink, bg]),
-      ),
-      ...["bg", "bg-raised", "bg-overlay"].map((bg) => ["ink-3", bg]),
-      ["gold", "bg-raised"],
-      ...["accent-fill", "accent-fill-hi"].map((bg) => ["white", bg]),
-      ...["good", "warning", "serious", "critical"].map((ink) => [
-        ink,
-        "bg-raised",
-      ]),
-    ];
-    for (const [ink, bg] of pairs)
-      expect(
-        ratio(tokens[ink] ?? "#ffffff", tokens[bg]),
-        `${ink} on ${bg}`,
-      ).toBeGreaterThanOrEqual(4.5);
-  });
-
-for (const [i, theme] of ["Day", "Night"].entries())
-  it(`${theme} interactive control edges are distinguishable from every form surface`, () => {
-    const block = css.split("[data-v7]")[i ? 2 : 1];
-    const tokens = Object.fromEntries(
-      [...block.matchAll(/--v7-([\w-]+):\s*(#[\da-fA-F]{6}|#fff)\s*;/g)].map(
-        (m) => [m[1], m[2] === "#fff" ? "#ffffff" : m[2]],
-      ),
-    );
-    for (const bg of ["bg", "bg-raised", "bg-overlay", "bg-inset"])
-      expect(ratio(tokens["control-border"], tokens[bg]), `${theme} edge on ${bg}`).toBeGreaterThanOrEqual(3);
-    expect(tokens["good-fill"]).not.toBe(tokens["subject-8"]);
-    expect(tokens["focus-ring"]).not.toBe(tokens["control-border"]);
-  });
+it("uses one DTCG source with aliased components and 4 modes",()=>{
+ for(const [name,value] of Object.entries(tokens.component) as [string,{$value:string}][])
+  expect(value.$value,name).toMatch(/^\{role\./);
+ expect(tokens.$extensions["lemma.modes"]).toEqual(["day","night","day-hc","night-hc"]);
+});

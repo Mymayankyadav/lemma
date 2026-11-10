@@ -1,0 +1,1173 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "Lemma Constellation UI Kit 1.0 — role colours are the only styling API; mode aliases come from this source.",
+  "raw": {
+    "day": {
+      "surface.page": {
+        "$type": "color",
+        "$value": "#F8F5F0"
+      },
+      "surface.sunken": {
+        "$type": "color",
+        "$value": "#F0ECE5"
+      },
+      "surface.raised": {
+        "$type": "color",
+        "$value": "#FEFCF9"
+      },
+      "surface.overlay": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "surface.muted": {
+        "$type": "color",
+        "$value": "#E9E4DC"
+      },
+      "surface.muted-hover": {
+        "$type": "color",
+        "$value": "#E1DCD2"
+      },
+      "border.subtle": {
+        "$type": "color",
+        "$value": "#DDD8D0"
+      },
+      "border.default": {
+        "$type": "color",
+        "$value": "#857F77"
+      },
+      "border.strong": {
+        "$type": "color",
+        "$value": "#625D55"
+      },
+      "text.primary": {
+        "$type": "color",
+        "$value": "#121B31"
+      },
+      "text.secondary": {
+        "$type": "color",
+        "$value": "#40495C"
+      },
+      "text.tertiary": {
+        "$type": "color",
+        "$value": "#5B6375"
+      },
+      "text.disabled": {
+        "$type": "color",
+        "$value": "#878C99"
+      },
+      "text.on-action": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "action.bg": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "action.hover": {
+        "$type": "color",
+        "$value": "#393BAF"
+      },
+      "action.pressed": {
+        "$type": "color",
+        "$value": "#313498"
+      },
+      "selection.subtle": {
+        "$type": "color",
+        "$value": "#E2E8FF"
+      },
+      "selection.hover": {
+        "$type": "color",
+        "$value": "#D5DEFF"
+      },
+      "selection.fg": {
+        "$type": "color",
+        "$value": "#3738AC"
+      },
+      "focus.ring": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "link.fg": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "status.success": {
+        "$type": "color",
+        "$value": "#107C40"
+      },
+      "status.success-subtle": {
+        "$type": "color",
+        "$value": "#E2F6E6"
+      },
+      "status.warning": {
+        "$type": "color",
+        "$value": "#9B610E"
+      },
+      "status.warning-subtle": {
+        "$type": "color",
+        "$value": "#FFF0DF"
+      },
+      "status.danger": {
+        "$type": "color",
+        "$value": "#9E1D1C"
+      },
+      "status.danger-subtle": {
+        "$type": "color",
+        "$value": "#FFE9E5"
+      },
+      "status.danger-solid": {
+        "$type": "color",
+        "$value": "#9E1D1C"
+      },
+      "status.danger-hover": {
+        "$type": "color",
+        "$value": "#94020D"
+      },
+      "subject.analysis": {
+        "$type": "color",
+        "$value": "#00789C"
+      },
+      "subject.analysis-subtle": {
+        "$type": "color",
+        "$value": "#D9F4FD"
+      },
+      "subject.topology": {
+        "$type": "color",
+        "$value": "#009C85"
+      },
+      "subject.topology-subtle": {
+        "$type": "color",
+        "$value": "#DAF6EF"
+      },
+      "subject.logic": {
+        "$type": "color",
+        "$value": "#417934"
+      },
+      "subject.logic-subtle": {
+        "$type": "color",
+        "$value": "#E4F4E1"
+      },
+      "subject.number-theory": {
+        "$type": "color",
+        "$value": "#978722"
+      },
+      "subject.number-theory-subtle": {
+        "$type": "color",
+        "$value": "#F3EFD9"
+      },
+      "subject.algebra": {
+        "$type": "color",
+        "$value": "#9D5300"
+      },
+      "subject.algebra-subtle": {
+        "$type": "color",
+        "$value": "#FEEADB"
+      },
+      "subject.combinatorics": {
+        "$type": "color",
+        "$value": "#C86265"
+      },
+      "subject.combinatorics-subtle": {
+        "$type": "color",
+        "$value": "#FFE7E6"
+      },
+      "subject.geometry": {
+        "$type": "color",
+        "$value": "#984780"
+      },
+      "subject.geometry-subtle": {
+        "$type": "color",
+        "$value": "#FDE7F5"
+      },
+      "subject.probability": {
+        "$type": "color",
+        "$value": "#9E6EC0"
+      },
+      "subject.probability-subtle": {
+        "$type": "color",
+        "$value": "#F5E9FE"
+      },
+      "viz.heat1": {
+        "$type": "color",
+        "$value": "#7E8CAB"
+      },
+      "viz.heat2": {
+        "$type": "color",
+        "$value": "#516494"
+      },
+      "viz.heat3": {
+        "$type": "color",
+        "$value": "#2F4275"
+      },
+      "viz.heat4": {
+        "$type": "color",
+        "$value": "#172448"
+      }
+    },
+    "night": {
+      "surface.page": {
+        "$type": "color",
+        "$value": "#091023"
+      },
+      "surface.sunken": {
+        "$type": "color",
+        "$value": "#050A1B"
+      },
+      "surface.raised": {
+        "$type": "color",
+        "$value": "#11192C"
+      },
+      "surface.overlay": {
+        "$type": "color",
+        "$value": "#192135"
+      },
+      "surface.muted": {
+        "$type": "color",
+        "$value": "#1E263B"
+      },
+      "surface.muted-hover": {
+        "$type": "color",
+        "$value": "#273045"
+      },
+      "border.subtle": {
+        "$type": "color",
+        "$value": "#262D40"
+      },
+      "border.default": {
+        "$type": "color",
+        "$value": "#687082"
+      },
+      "border.strong": {
+        "$type": "color",
+        "$value": "#8A92A4"
+      },
+      "text.primary": {
+        "$type": "color",
+        "$value": "#EEF2FA"
+      },
+      "text.secondary": {
+        "$type": "color",
+        "$value": "#B1B7C6"
+      },
+      "text.tertiary": {
+        "$type": "color",
+        "$value": "#8B92A2"
+      },
+      "text.disabled": {
+        "$type": "color",
+        "$value": "#676D7C"
+      },
+      "text.on-action": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "action.bg": {
+        "$type": "color",
+        "$value": "#5159D7"
+      },
+      "action.hover": {
+        "$type": "color",
+        "$value": "#5862E1"
+      },
+      "action.pressed": {
+        "$type": "color",
+        "$value": "#4C52D0"
+      },
+      "selection.subtle": {
+        "$type": "color",
+        "$value": "#232953"
+      },
+      "selection.hover": {
+        "$type": "color",
+        "$value": "#2C3363"
+      },
+      "selection.fg": {
+        "$type": "color",
+        "$value": "#B9C6FF"
+      },
+      "focus.ring": {
+        "$type": "color",
+        "$value": "#B1BFFF"
+      },
+      "link.fg": {
+        "$type": "color",
+        "$value": "#A9B8FF"
+      },
+      "status.success": {
+        "$type": "color",
+        "$value": "#75D78D"
+      },
+      "status.success-subtle": {
+        "$type": "color",
+        "$value": "#112917"
+      },
+      "status.warning": {
+        "$type": "color",
+        "$value": "#FFBF67"
+      },
+      "status.warning-subtle": {
+        "$type": "color",
+        "$value": "#301F07"
+      },
+      "status.danger": {
+        "$type": "color",
+        "$value": "#FF8579"
+      },
+      "status.danger-subtle": {
+        "$type": "color",
+        "$value": "#361A17"
+      },
+      "status.danger-solid": {
+        "$type": "color",
+        "$value": "#BA2B28"
+      },
+      "status.danger-hover": {
+        "$type": "color",
+        "$value": "#AE2523"
+      },
+      "subject.analysis": {
+        "$type": "color",
+        "$value": "#17A9CB"
+      },
+      "subject.analysis-subtle": {
+        "$type": "color",
+        "$value": "#082831"
+      },
+      "subject.topology": {
+        "$type": "color",
+        "$value": "#52D7C1"
+      },
+      "subject.topology-subtle": {
+        "$type": "color",
+        "$value": "#082A25"
+      },
+      "subject.logic": {
+        "$type": "color",
+        "$value": "#74A968"
+      },
+      "subject.logic-subtle": {
+        "$type": "color",
+        "$value": "#192916"
+      },
+      "subject.number-theory": {
+        "$type": "color",
+        "$value": "#CEC06A"
+      },
+      "subject.number-theory-subtle": {
+        "$type": "color",
+        "$value": "#28240C"
+      },
+      "subject.algebra": {
+        "$type": "color",
+        "$value": "#CE8545"
+      },
+      "subject.algebra-subtle": {
+        "$type": "color",
+        "$value": "#321F0F"
+      },
+      "subject.combinatorics": {
+        "$type": "color",
+        "$value": "#FF9D9E"
+      },
+      "subject.combinatorics-subtle": {
+        "$type": "color",
+        "$value": "#351C1C"
+      },
+      "subject.geometry": {
+        "$type": "color",
+        "$value": "#C97AAF"
+      },
+      "subject.geometry-subtle": {
+        "$type": "color",
+        "$value": "#311C2A"
+      },
+      "subject.probability": {
+        "$type": "color",
+        "$value": "#D5A8F8"
+      },
+      "subject.probability-subtle": {
+        "$type": "color",
+        "$value": "#2A1E33"
+      },
+      "viz.heat1": {
+        "$type": "color",
+        "$value": "#756B51"
+      },
+      "viz.heat2": {
+        "$type": "color",
+        "$value": "#9E8E65"
+      },
+      "viz.heat3": {
+        "$type": "color",
+        "$value": "#CFB883"
+      },
+      "viz.heat4": {
+        "$type": "color",
+        "$value": "#FCEABE"
+      }
+    }
+  },
+  "role": {
+    "surface.page": {
+      "$type": "color",
+      "$value": "{raw.day.surface.page}",
+      "$description": "Page canvas, never a control",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.page}",
+          "day-hc": "{raw.day.surface.page}",
+          "night-hc": "{raw.night.surface.page}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "surface.sunken": {
+      "$type": "color",
+      "$value": "{raw.day.surface.sunken}",
+      "$description": "Editable wells",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.sunken}",
+          "day-hc": "{raw.day.surface.sunken}",
+          "night-hc": "{raw.night.surface.sunken}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "surface.raised": {
+      "$type": "color",
+      "$value": "{raw.day.surface.raised}",
+      "$description": "Ordinary paper/card",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.raised}",
+          "day-hc": "{raw.day.surface.raised}",
+          "night-hc": "{raw.night.surface.raised}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "surface.overlay": {
+      "$type": "color",
+      "$value": "{raw.day.surface.overlay}",
+      "$description": "Menus, sheets and notifications",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.overlay}",
+          "day-hc": "{raw.day.surface.overlay}",
+          "night-hc": "{raw.night.surface.overlay}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "surface.muted": {
+      "$type": "color",
+      "$value": "{raw.day.surface.muted}",
+      "$description": "Secondary controls and neutral tags",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.muted}",
+          "day-hc": "{raw.day.surface.muted}",
+          "night-hc": "{raw.night.surface.muted}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "surface.muted-hover": {
+      "$type": "color",
+      "$value": "{raw.day.surface.muted-hover}",
+      "$description": "Semantic surface muted-hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.muted-hover}",
+          "day-hc": "{raw.day.surface.muted-hover}",
+          "night-hc": "{raw.night.surface.muted-hover}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "border.subtle": {
+      "$type": "color",
+      "$value": "{raw.day.border.subtle}",
+      "$description": "Semantic border subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.subtle}",
+          "day-hc": "{raw.day.border.subtle}",
+          "night-hc": "{raw.night.border.subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "border.default": {
+      "$type": "color",
+      "$value": "{raw.day.border.default}",
+      "$description": "Visible non-text edges, at least 3:1 on adjacent surfaces",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.default}",
+          "day-hc": "{raw.day.border.default}",
+          "night-hc": "{raw.night.border.default}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ]
+      }
+    },
+    "border.strong": {
+      "$type": "color",
+      "$value": "{raw.day.border.strong}",
+      "$description": "Semantic border strong role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.strong}",
+          "day-hc": "{raw.day.border.strong}",
+          "night-hc": "{raw.night.border.strong}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "text.primary": {
+      "$type": "color",
+      "$value": "{raw.day.text.primary}",
+      "$description": "Primary readable copy",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.primary}",
+          "day-hc": "{raw.day.text.primary}",
+          "night-hc": "{raw.night.text.primary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ]
+      }
+    },
+    "text.secondary": {
+      "$type": "color",
+      "$value": "{raw.day.text.secondary}",
+      "$description": "Secondary readable copy",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.secondary}",
+          "day-hc": "{raw.day.text.secondary}",
+          "night-hc": "{raw.night.text.secondary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ]
+      }
+    },
+    "text.tertiary": {
+      "$type": "color",
+      "$value": "{raw.day.text.tertiary}",
+      "$description": "Placeholder and supporting details",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.tertiary}",
+          "day-hc": "{raw.day.text.tertiary}",
+          "night-hc": "{raw.night.text.tertiary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ]
+      }
+    },
+    "text.disabled": {
+      "$type": "color",
+      "$value": "{raw.day.text.disabled}",
+      "$description": "Clearly unavailable (exempt from text contrast)",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.disabled}",
+          "day-hc": "{raw.day.text.disabled}",
+          "night-hc": "{raw.night.text.disabled}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "text.on-action": {
+      "$type": "color",
+      "$value": "{raw.day.text.on-action}",
+      "$description": "Semantic text on-action role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.on-action}",
+          "day-hc": "{raw.day.text.on-action}",
+          "night-hc": "{raw.night.text.on-action}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "action.bg": {
+      "$type": "color",
+      "$value": "{raw.day.action.bg}",
+      "$description": "Primary actions only",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.bg}",
+          "day-hc": "{raw.day.action.bg}",
+          "night-hc": "{raw.night.action.bg}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "action.hover": {
+      "$type": "color",
+      "$value": "{raw.day.action.hover}",
+      "$description": "Semantic action hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.hover}",
+          "day-hc": "{raw.day.action.hover}",
+          "night-hc": "{raw.night.action.hover}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "action.pressed": {
+      "$type": "color",
+      "$value": "{raw.day.action.pressed}",
+      "$description": "Semantic action pressed role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.pressed}",
+          "day-hc": "{raw.day.action.pressed}",
+          "night-hc": "{raw.night.action.pressed}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "selection.subtle": {
+      "$type": "color",
+      "$value": "{raw.day.selection.subtle}",
+      "$description": "State selection only",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.subtle}",
+          "day-hc": "{raw.day.selection.subtle}",
+          "night-hc": "{raw.night.selection.subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "selection.hover": {
+      "$type": "color",
+      "$value": "{raw.day.selection.hover}",
+      "$description": "Semantic selection hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.hover}",
+          "day-hc": "{raw.day.selection.hover}",
+          "night-hc": "{raw.night.selection.hover}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "selection.fg": {
+      "$type": "color",
+      "$value": "{raw.day.selection.fg}",
+      "$description": "Semantic selection fg role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.fg}",
+          "day-hc": "{raw.day.selection.fg}",
+          "night-hc": "{raw.night.selection.fg}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "focus.ring": {
+      "$type": "color",
+      "$value": "{raw.day.focus.ring}",
+      "$description": "Keyboard focus, non-text contrast",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.focus.ring}",
+          "day-hc": "{raw.day.focus.ring}",
+          "night-hc": "{raw.night.focus.ring}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ]
+      }
+    },
+    "link.fg": {
+      "$type": "color",
+      "$value": "{raw.day.link.fg}",
+      "$description": "Semantic link fg role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.link.fg}",
+          "day-hc": "{raw.day.link.fg}",
+          "night-hc": "{raw.night.link.fg}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.success": {
+      "$type": "color",
+      "$value": "{raw.day.status.success}",
+      "$description": "Completed or successful state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.success}",
+          "day-hc": "{raw.day.status.success}",
+          "night-hc": "{raw.night.status.success}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.success-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.success-subtle}",
+      "$description": "Semantic status success-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.success-subtle}",
+          "day-hc": "{raw.day.status.success-subtle}",
+          "night-hc": "{raw.night.status.success-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.warning": {
+      "$type": "color",
+      "$value": "{raw.day.status.warning}",
+      "$description": "Attention required state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.warning}",
+          "day-hc": "{raw.day.status.warning}",
+          "night-hc": "{raw.night.status.warning}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.warning-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.warning-subtle}",
+      "$description": "Semantic status warning-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.warning-subtle}",
+          "day-hc": "{raw.day.status.warning-subtle}",
+          "night-hc": "{raw.night.status.warning-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.danger": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger}",
+      "$description": "Destructive or failed state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger}",
+          "day-hc": "{raw.day.status.danger}",
+          "night-hc": "{raw.night.status.danger}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.danger-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-subtle}",
+      "$description": "Semantic status danger-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-subtle}",
+          "day-hc": "{raw.day.status.danger-subtle}",
+          "night-hc": "{raw.night.status.danger-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.danger-solid": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-solid}",
+      "$description": "Semantic status danger-solid role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-solid}",
+          "day-hc": "{raw.day.status.danger-solid}",
+          "night-hc": "{raw.night.status.danger-solid}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "status.danger-hover": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-hover}",
+      "$description": "Semantic status danger-hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-hover}",
+          "day-hc": "{raw.day.status.danger-hover}",
+          "night-hc": "{raw.night.status.danger-hover}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.analysis": {
+      "$type": "color",
+      "$value": "{raw.day.subject.analysis}",
+      "$description": "Semantic subject analysis role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.analysis}",
+          "day-hc": "{raw.day.subject.analysis}",
+          "night-hc": "{raw.night.subject.analysis}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.analysis-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.analysis-subtle}",
+      "$description": "Semantic subject analysis-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.analysis-subtle}",
+          "day-hc": "{raw.day.subject.analysis-subtle}",
+          "night-hc": "{raw.night.subject.analysis-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.topology": {
+      "$type": "color",
+      "$value": "{raw.day.subject.topology}",
+      "$description": "Semantic subject topology role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.topology}",
+          "day-hc": "{raw.day.subject.topology}",
+          "night-hc": "{raw.night.subject.topology}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.topology-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.topology-subtle}",
+      "$description": "Semantic subject topology-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.topology-subtle}",
+          "day-hc": "{raw.day.subject.topology-subtle}",
+          "night-hc": "{raw.night.subject.topology-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.logic": {
+      "$type": "color",
+      "$value": "{raw.day.subject.logic}",
+      "$description": "Semantic subject logic role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.logic}",
+          "day-hc": "{raw.day.subject.logic}",
+          "night-hc": "{raw.night.subject.logic}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.logic-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.logic-subtle}",
+      "$description": "Semantic subject logic-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.logic-subtle}",
+          "day-hc": "{raw.day.subject.logic-subtle}",
+          "night-hc": "{raw.night.subject.logic-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.number-theory": {
+      "$type": "color",
+      "$value": "{raw.day.subject.number-theory}",
+      "$description": "Semantic subject number-theory role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.number-theory}",
+          "day-hc": "{raw.day.subject.number-theory}",
+          "night-hc": "{raw.night.subject.number-theory}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.number-theory-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.number-theory-subtle}",
+      "$description": "Semantic subject number-theory-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.number-theory-subtle}",
+          "day-hc": "{raw.day.subject.number-theory-subtle}",
+          "night-hc": "{raw.night.subject.number-theory-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.algebra": {
+      "$type": "color",
+      "$value": "{raw.day.subject.algebra}",
+      "$description": "Semantic subject algebra role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.algebra}",
+          "day-hc": "{raw.day.subject.algebra}",
+          "night-hc": "{raw.night.subject.algebra}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.algebra-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.algebra-subtle}",
+      "$description": "Semantic subject algebra-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.algebra-subtle}",
+          "day-hc": "{raw.day.subject.algebra-subtle}",
+          "night-hc": "{raw.night.subject.algebra-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.combinatorics": {
+      "$type": "color",
+      "$value": "{raw.day.subject.combinatorics}",
+      "$description": "Semantic subject combinatorics role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.combinatorics}",
+          "day-hc": "{raw.day.subject.combinatorics}",
+          "night-hc": "{raw.night.subject.combinatorics}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.combinatorics-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.combinatorics-subtle}",
+      "$description": "Semantic subject combinatorics-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.combinatorics-subtle}",
+          "day-hc": "{raw.day.subject.combinatorics-subtle}",
+          "night-hc": "{raw.night.subject.combinatorics-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.geometry": {
+      "$type": "color",
+      "$value": "{raw.day.subject.geometry}",
+      "$description": "Semantic subject geometry role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.geometry}",
+          "day-hc": "{raw.day.subject.geometry}",
+          "night-hc": "{raw.night.subject.geometry}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.geometry-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.geometry-subtle}",
+      "$description": "Semantic subject geometry-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.geometry-subtle}",
+          "day-hc": "{raw.day.subject.geometry-subtle}",
+          "night-hc": "{raw.night.subject.geometry-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.probability": {
+      "$type": "color",
+      "$value": "{raw.day.subject.probability}",
+      "$description": "Semantic subject probability role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.probability}",
+          "day-hc": "{raw.day.subject.probability}",
+          "night-hc": "{raw.night.subject.probability}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "subject.probability-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.probability-subtle}",
+      "$description": "Semantic subject probability-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.probability-subtle}",
+          "day-hc": "{raw.day.subject.probability-subtle}",
+          "night-hc": "{raw.night.subject.probability-subtle}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "viz.heat1": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat1}",
+      "$description": "Semantic viz heat1 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat1}",
+          "day-hc": "{raw.day.viz.heat1}",
+          "night-hc": "{raw.night.viz.heat1}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "viz.heat2": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat2}",
+      "$description": "Semantic viz heat2 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat2}",
+          "day-hc": "{raw.day.viz.heat2}",
+          "night-hc": "{raw.night.viz.heat2}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "viz.heat3": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat3}",
+      "$description": "Semantic viz heat3 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat3}",
+          "day-hc": "{raw.day.viz.heat3}",
+          "night-hc": "{raw.night.viz.heat3}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "viz.heat4": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat4}",
+      "$description": "Semantic viz heat4 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat4}",
+          "day-hc": "{raw.day.viz.heat4}",
+          "night-hc": "{raw.night.viz.heat4}"
+        },
+        "lemma.contrastWith": []
+      }
+    }
+  },
+  "component": {
+    "button.primary.bg": {
+      "$type": "color",
+      "$value": "{role.action.bg}"
+    },
+    "button.primary.hover": {
+      "$type": "color",
+      "$value": "{role.action.hover}"
+    },
+    "button.primary.pressed": {
+      "$type": "color",
+      "$value": "{role.action.pressed}"
+    },
+    "button.secondary.bg": {
+      "$type": "color",
+      "$value": "{role.surface.muted}"
+    },
+    "button.secondary.fg": {
+      "$type": "color",
+      "$value": "{role.text.primary}"
+    },
+    "button.tertiary.fg": {
+      "$type": "color",
+      "$value": "{role.link.fg}"
+    },
+    "tag.bg": {
+      "$type": "color",
+      "$value": "{role.surface.muted}"
+    },
+    "badge.info.bg": {
+      "$type": "color",
+      "$value": "{role.surface.muted}"
+    },
+    "filter.selected.bg": {
+      "$type": "color",
+      "$value": "{role.selection.subtle}"
+    },
+    "filter.selected.fg": {
+      "$type": "color",
+      "$value": "{role.selection.fg}"
+    },
+    "field.bg": {
+      "$type": "color",
+      "$value": "{role.surface.sunken}"
+    },
+    "field.border": {
+      "$type": "color",
+      "$value": "{role.border.default}"
+    },
+    "segmented.bg": {
+      "$type": "color",
+      "$value": "{role.surface.muted}"
+    },
+    "segmented.thumb": {
+      "$type": "color",
+      "$value": "{role.surface.overlay}"
+    },
+    "toast.bg": {
+      "$type": "color",
+      "$value": "{role.surface.overlay}"
+    },
+    "sheet.bg": {
+      "$type": "color",
+      "$value": "{role.surface.overlay}"
+    },
+    "mastery.track": {
+      "$type": "color",
+      "$value": "{role.border.subtle}"
+    },
+    "chart.axis": {
+      "$type": "color",
+      "$value": "{role.border.default}"
+    }
+  },
+  "$extensions": {
+    "lemma.modes": [
+      "day",
+      "night",
+      "day-hc",
+      "night-hc"
+    ],
+    "lemma.density": [
+      "comfortable",
+      "compact"
+    ]
+  }
+}

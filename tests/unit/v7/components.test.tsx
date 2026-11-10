@@ -131,7 +131,7 @@ it("enforces stepper bounds and exposes an indeterminate checkbox", async () => 
   expect(change).toHaveBeenCalledWith(1);
   expect(host.querySelector("input")!.indeterminate).toBe(true);
 });
-it("keeps an undo notification for six seconds then dismisses", async () => {
+it("keeps an undo notification for eight seconds then dismisses", async () => {
   vi.useFakeTimers();
   const close = vi.fn();
   await act(async () =>
@@ -139,7 +139,7 @@ it("keeps an undo notification for six seconds then dismisses", async () => {
       <Toast message="Session removed" action="Undo" onClose={close} />,
     ),
   );
-  await act(async () => vi.advanceTimersByTime(5999));
+  await act(async () => vi.advanceTimersByTime(7999));
   expect(close).not.toHaveBeenCalled();
   await act(async () => vi.advanceTimersByTime(1));
   expect(close).toHaveBeenCalledOnce();

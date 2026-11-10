@@ -1,11 +1,14 @@
-name: V7 gallery snapshots
+name: V7 Constellation gallery snapshots
 on:
   push:
     branches: ['owner-setup-v7/constellation']
-    paths: ['.github/workflows/v7-gallery-snapshots.yml']
+    paths:
+      - '.github/workflows/v7-gallery-snapshots.yml'
+      - 'src/ui/v7/**'
+      - 'src/features/kit/V7Page.tsx'
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   capture:
     runs-on: ubuntu-latest
@@ -37,13 +40,13 @@ jobs:
             await page.goto('http://127.0.0.1:4173/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit', {waitUntil:'networkidle'});
             await page.getByRole('heading', { name: 'A little more clarity.' }).waitFor();
             await page.evaluate(() => document.fonts.ready);
-            await page.screenshot({path:'docs/v7/kit-step2-reviewed-day-390x844.png'});
-            await page.screenshot({path:'docs/v7/kit-step2-reviewed-day-full.png', fullPage:true});
+            await page.screenshot({path:'docs/v7/kit-v7-1-0-day-390x844.png'});
+            await page.screenshot({path:'docs/v7/kit-v7-1-0-day-full.png', fullPage:true});
             await page.getByRole('tab', {name:'Night',exact:true}).click();
             await page.locator('html[data-theme="graph-night"]').waitFor();
             await page.evaluate(() => document.fonts.ready);
-            await page.screenshot({path:'docs/v7/kit-step2-reviewed-night-390x844.png'});
-            await page.screenshot({path:'docs/v7/kit-step2-reviewed-night-full.png', fullPage:true});
+            await page.screenshot({path:'docs/v7/kit-v7-1-0-night-390x844.png'});
+            await page.screenshot({path:'docs/v7/kit-v7-1-0-night-full.png', fullPage:true});
           } finally {
             await browser.close();
           }
@@ -51,18 +54,7 @@ jobs:
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
-          name: v7-step2-reviewed-gallery
-          path: docs/v7/kit-step2-reviewed-*.png
+          name: v7-constellation-kit-1-0-gallery
+          path: docs/v7/kit-v7-1-0-*.png
           if-no-files-found: error
           retention-days: 14
-      - name: Keep latest review captures on this PR
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/v7/kit-step2-reviewed-*.png
-          if ! git diff --cached --quiet; then
-            git commit -m "[shots] refresh v7 step 2 gallery captures"
-            git push
-          fi
