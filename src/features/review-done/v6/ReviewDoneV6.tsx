@@ -3,6 +3,7 @@
 import {useEffect,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {getApi} from '../../../data';
+import {formatDay} from '../../../lib/format';
 import {getRun,type DurableRun} from '../../review-run/v6/adapter';
 const button='min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label font-semibold';
 export default function ReviewDoneV6(){
@@ -28,9 +29,9 @@ export default function ReviewDoneV6(){
   {error&&<p role="alert">{error}</p>}
   {/* N112 (mockup `16__Page`): one summary card, then upcoming arrivals as ruled rows. */}
   {run?<section aria-label="Saved review counts" className="notebook-review-summary pb-6">
-   <p className="notebook-eyebrow">SAVED REVIEW RUN</p>
+   <p className="notebook-eyebrow">ROUND COMPLETE</p>
    <h2>{run.progress.graded} graded</h2>
-   <p className="text-label">{run.progress.skipped} stale cards skipped</p>
+   {run.progress.skipped>0&&<p className="text-label">{run.progress.skipped} {run.progress.skipped===1?'card':'cards'} skipped (changed since you started)</p>}
    <p className="text-label">{run.progress.total} cards selected</p>
    {!run.progress.done&&<p role="status">The run has {run.progress.remaining} items remaining.</p>}
   </section>:!error&&<p role="status">Loading saved review results…</p>}
@@ -38,7 +39,7 @@ export default function ReviewDoneV6(){
    <h3>Next arrivals</h3>
    {upcoming.length?<ul className="mt-2 flex flex-col gap-2">
     {upcoming.map(row=><li key={row.date} className="flex justify-between text-label">
-     <time dateTime={row.date}>{row.date}</time><span>{row.due} due</span>
+     <time dateTime={row.date}>{formatDay(row.date)}</time><span>{row.due} due</span>
     </li>)}
    </ul>:<p className="text-label text-ink-2">No upcoming reviews confirmed.</p>}
   </section>

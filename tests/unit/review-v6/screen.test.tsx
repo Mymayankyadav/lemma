@@ -79,8 +79,8 @@ afterEach(async()=>{
 describe('N30.2 v6 Review start and batch handoff',()=>{
  it('shows all-due, selected eligible and exact quota-limited round separately',async()=>{
   await render();
-  expect(host.textContent).toContain('All due');
-  expect(host.textContent).toContain('Selected eligible');
+  expect(host.textContent).toContain('due across all decks');
+  expect(host.textContent).toContain("in today's batch");
   expect(count('Cards in this round')).toBe('2');
   expect(host.textContent).toContain('Daily review limit: 2');
   expect(host.textContent).toContain('5');
@@ -124,7 +124,7 @@ describe('N30.2 v6 Review start and batch handoff',()=>{
   expect(host.textContent).toContain('No cards due');
   setData();
   await render();
-  const field=host.querySelector('input[aria-label="Find a deck or checkpoint"]') as HTMLInputElement;
+  const field=host.querySelector('input[aria-label="Search decks"]') as HTMLInputElement;
   await act(async()=>{
    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(field,'Not a deck');
    field.dispatchEvent(new Event('input',{bubbles:true}));
@@ -145,7 +145,7 @@ describe('N30.2 v6 Review start and batch handoff',()=>{
   setData({pending:true});
   await render();
   expect(host.textContent).not.toContain('Choose decks and checkpoints for this round');
-  expect(host.textContent).not.toContain('Selected eligible');
+  expect(host.textContent).not.toContain("in today's batch");
   expect(host.textContent).toContain('Review');
  });
 });

@@ -21,7 +21,8 @@ async function expectNavigation(page:Page,path:string){
  // N110 (mockup header): destinations, Inbox and Cards show Inbox, Add and Menu icon actions;
  // other detail screens keep only Menu, which then lists Inbox and Add.
  const compact=path.startsWith('/cards/');
- for(const label of compact?['Menu']:['Inbox','Add','Menu']){
+ // N121 E1: the Inbox itself shows no Inbox shortcut (you are already there).
+ for(const label of compact?['Menu']:path==='/proposals'?['Add','Menu']:['Inbox','Add','Menu']){
   const target=actions.getByText(label,{exact:true});
   await expect(target).toBeVisible();
   const size=await target.locator('xpath=..').boundingBox();

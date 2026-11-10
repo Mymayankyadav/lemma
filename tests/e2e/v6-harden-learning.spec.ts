@@ -26,8 +26,9 @@ for(const [theme,width] of [['graph',320],['graph-night',390]] as const){
   await zoom(page);await noOverflow(page);
   await visit(page,'/atlas','1',theme);
   // N117: the mockup Atlas list ("Concept map" in the shell header) browses concepts and groups.
-  await expect(page.getByRole('heading',{name:/^Browse \d+ concepts and \d+ groups$/})).toBeVisible();
-  const ideas=page.getByRole('region',{name:'Idea hierarchy'});
+  // N121 E5: one noun (concepts), counted once; the list region is the concept list.
+  await expect(page.getByRole('heading',{name:/^\d+ concepts$/})).toBeAttached();
+  const ideas=page.getByRole('region',{name:'Concept list'});
   await expect(ideas).toHaveAttribute('tabindex','0');
   await ideas.focus();await page.keyboard.press('PageDown');
   await zoom(page);await noOverflow(page);
@@ -42,8 +43,10 @@ for(const [theme,width] of [['graph',320],['graph-night',390]] as const){
   const tabs=page.getByRole('tablist',{name:'Settings sections'});
   const account=tabs.getByRole('tab',{name:'Account'});
   await expect(account).toHaveAttribute('aria-selected','true');
+  // N121 F9: the group page lists only its own sections (Account, Subjects, Export).
   await account.focus();await page.keyboard.press('ArrowRight');
-  await expect(tabs.getByRole('tab',{name:'Appearance'})).toHaveAttribute('aria-selected','true');
+  await expect(tabs.getByRole('tab',{name:'Subjects'})).toHaveAttribute('aria-selected','true');
+  await expect(tabs.getByRole('tab')).toHaveCount(3);
   await zoom(page);await noOverflow(page);
  });
 }
@@ -59,7 +62,9 @@ test('N100 project, checkpoint and session evidence remain navigable',async({pag
  await expect(stages.getByRole('button').last()).toBeFocused();
  await page.locator('[data-v6-checkpoint]').first().click();
  await expect(page.locator('[data-v6-checkpoint-page]')).toBeVisible();
- await page.getByRole('link',{name:'Back to path'}).click();
+ // N121 F4: one back control, the header's.
+ await page.locator('[data-v6-header] [data-ui=page-back]').click();
+ await expect(page.locator('#v6-project-title')).toBeAttached();
  await page.getByRole('button',{name:/^Show sessions/}).click();
  await expect(page.getByRole('region',{name:'Project evidence'})).toBeVisible();
  await visit(page,'/s/real-analysis/1');

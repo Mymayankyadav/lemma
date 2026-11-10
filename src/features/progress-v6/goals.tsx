@@ -7,6 +7,8 @@ import type {Subject,ProjectSummary} from '../../data/types';
 import {Slab} from '../../ui/Slab';
 import {civilDay,formatExactMinutes,periodFor} from './model';
 import {goalSavedMinutes} from './goal-model';
+import {civilRangeLabel} from '../calendar/views/labels';
+import {formatDuration} from '../../lib/format';
 
 type Draft={period:GoalPeriod;startDate:string;endDate:string;timeZone:string;
  targetMinutes:string;subjectId:string;projectId:string};
@@ -66,9 +68,10 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
   catch(reason){setFailure(reason instanceof Error?reason.message:'Could not archive the goal')}
   finally{setBusy(false)}
  }
- const nameSubject=(id:string|null|undefined)=>id?subjects.find(s=>s.id===id)?.name??id:'All subjects';
- const nameProject=(id:string|null|undefined)=>id?projects.find(p=>p.id===id)?.title??id:'All projects';
+ const nameSubject=(id:string|null|undefined)=>id?subjects.find(s=>s.id===id)?.name??'A subject':'All subjects';
+ const nameProject=(id:string|null|undefined)=>id?projects.find(p=>p.id===id)?.title??'A path':'All paths';
  const now=new Date().toISOString();
+ const today=civilDay(new Date(),zone);
  return <Slab as="section" aria-label="Study goals" className="flex flex-col gap-3 p-4">
   <div className="flex flex-wrap items-center justify-between gap-2">
    <div className="min-w-0"><h2 className="text-title-s font-semibold">Study goals</h2>
@@ -78,28 +81,41 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
   {error&&<p role="alert" className="text-label">{error}
    <button type="button" className={button} onClick={onSaved}>Retry</button></p>}
   {loading?<p role="status">Loading study goals…</p>:!error&&<>
-   {page.items.length===0?<p className="text-label text-ink-2">No active study goals on this page.</p>:
-   <ul className="space-y-3">{page.items.map(goal=>{
+   {page.items.length===0?<p className="text-label text-ink-2">No active study goals on this page.</p>:<>
+   {[{label:'',items:page.items.filter(goal=>goal.endDate>=today)},{label:'Past goals',items:page.items.filter(goal=>goal.endDate<today)}]
+    .filter(group=>group.items.length).map(group=><div key={group.label||'current'} className="flex flex-col gap-2">
+    {group.label&&<h3 className="text-label font-semibold text-ink-2">{group.label}</h3>}
+   <ul className="space-y-3">{group.items.map(goal=>{
     const saved=goalSavedMinutes(entries,goal,now),target=goal.targetMinutes;
     const percent=Math.min(100,Math.max(0,100*saved/target));
-    return <li key={goal.id} className="rounded-ctl border border-edge p-3" data-goal-id={goal.id}>
+    const ended=goal.endDate<today;
+    const current=goal.startDate<=today&&today<=goal.endDate;
+    const name=goal.period==='week'?(current?'This week':'Week'):goal.period==='month'?(current?'This month':'Month'):'Goal';
+    const scope=[goal.subjectId?nameSubject(goal.subjectId):'',goal.projectId?nameProject(goal.projectId):'']
+     .filter((part,index,all)=>part&&all.indexOf(part)===index).join(' · ')||'All study';
+    return <li key={goal.id} className="rounded-[12px] border border-[var(--hair)] p-3" data-goal-id={goal.id}>
      <div className="flex flex-wrap items-center justify-between gap-2">
-      <strong className="text-label">{goal.period==='week'?'Weekly':goal.period==='month'?'Monthly':'Custom'} goal</strong>
-      <span className="text-caption text-ink-2">{goal.startDate} – {goal.endDate}</span>
+      <strong className="text-label">{name} · {civilRangeLabel(goal.startDate,goal.endDate)}</strong>
      </div>
-     <p className="mt-1 break-words text-caption text-ink-2 [overflow-wrap:anywhere]">{nameSubject(goal.subjectId)} · {nameProject(goal.projectId)} · {goal.timeZone}</p>
+     <p className="mt-1 break-words text-caption text-ink-2 [overflow-wrap:anywhere]">{scope}{goal.timeZone!==zone?' · '+goal.timeZone.split('/').pop()?.replace(/_/g,' ')+' time':''}</p>
      <label className="mt-2 block text-label" htmlFor={'goal-progress-'+goal.id}>
       <span className="font-semibold tabular-nums">{formatExactMinutes(saved)} of {target} min saved</span>
-      <progress id={'goal-progress-'+goal.id} value={Math.min(saved,target)} max={target} className="mt-1 block h-3 w-full"
-       aria-label={'Goal '+goal.id+' progress'} />
+      <progress id={'goal-progress-'+goal.id} value={Math.min(saved,target)} max={target} className="lemma-goal-bar mt-1 block h-3 w-full"
+       aria-label={name+' goal progress'} />
      </label>
-     <p className="text-caption text-ink-2">{Math.round(percent)}% of goal · {formatExactMinutes(Math.max(0,target-saved))} min remaining</p>
-     <div className="mt-2 flex flex-wrap gap-2">
+     <p className="text-caption text-ink-2">{ended?(saved>=target?'Reached':formatDuration(target-saved)+' short'):
+      saved>=target?'Reached':Math.round(percent)+'% · '+formatDuration(Math.max(0,target-saved))+' to go'}</p>
+     <div className="mt-2 flex flex-wrap items-center gap-2">
       <button type="button" className={button} disabled={busy} onClick={()=>openEdit(goal)}>Edit goal</button>
-      <button type="button" className={button} disabled={busy} onClick={()=>{void archive(goal)}}>Archive goal</button>
+      <details className="relative">
+       <summary aria-label={'More actions for '+name.toLowerCase()+' goal'} className={button+' flex list-none items-center [&::-webkit-details-marker]:hidden'}>⋯</summary>
+       <div className="absolute left-0 z-10 mt-1 rounded-[8px] border border-[var(--hair)] bg-[var(--paper)] p-1 shadow-lg">
+        <button type="button" className={button+' lemma-destructive w-full'} disabled={busy} onClick={()=>{void archive(goal)}}>Archive goal</button>
+       </div>
+      </details>
      </div>
     </li>;
-   })}</ul>}
+   })}</ul></div>)}</>}
    <div className="flex flex-wrap items-center justify-between gap-2 text-label">
     <span>{page.items.length} shown · {page.total} active goal{page.total===1?'':'s'}</span>
     <div className="flex flex-wrap gap-2">
@@ -122,8 +138,7 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
     <label className="min-w-0 block text-label">End date (inclusive)
      <input className={input} type="date" required value={draft.endDate} onChange={e=>change('endDate',e.target.value)}/></label>
    </div>
-   <label className="block text-label">Time zone
-    <input className={input} required value={draft.timeZone} onChange={e=>change('timeZone',e.target.value)}/></label>
+   {draft.timeZone!==zone&&<p className="text-caption text-ink-2">Counted in {draft.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
    <label className="block text-label">Target minutes
     <input className={input} type="number" min={1} max={100000} step={1} required value={draft.targetMinutes}
      onChange={e=>change('targetMinutes',e.target.value)}/></label>
@@ -132,7 +147,7 @@ export default function ProgressGoals({zone,page,entries,error,loading,onSaved,o
      setDraft(old=>({...old,subjectId:e.target.value,projectId:''}));
     }}>
      <option value="">All subjects</option>
-     {draft.subjectId&&!subjects.some(s=>s.id===draft.subjectId)&&<option value={draft.subjectId}>{draft.subjectId}</option>}
+     {draft.subjectId&&!subjects.some(s=>s.id===draft.subjectId)&&<option value={draft.subjectId}>Current subject</option>}
      {subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
     </select></label>
    <label className="block text-label">Project scope

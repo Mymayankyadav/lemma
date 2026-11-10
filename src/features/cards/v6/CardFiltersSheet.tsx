@@ -1,4 +1,6 @@
-import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
+import {useEffect,useState,type FormEvent} from 'react';
+import { getApi } from '../../../data';
+import Dialog from '../../../ui/v6/Dialog';
 import type { ProjectSummary } from '../../../data/types';
 
 export interface CardFilters {
@@ -26,45 +28,34 @@ type Props = {
 
 /** The same six server search filters, without introducing any new API. */
 export default function CardFiltersSheet({ values, projects, projectsLoading, projectsError, onApply, onDismiss }: Props) {
-  const titleId = useId();
-  const dialog = useRef<HTMLDialogElement>(null);
-  const previousFocus = useRef<HTMLElement | null>(null);
   const [draft, setDraft] = useState<CardFilters>({ ...values });
-
+  // N121 E3: checkpoints come from the chosen path, so nobody has to know a code such as "CP4".
+  const [checkpoints, setCheckpoints] = useState<{ code: string; title: string }[]>([]);
   useEffect(() => {
-    previousFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const node = dialog.current;
-    const bodyOverflow = document.body.style.overflow;
-    const rootOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    if (node) {
-      if (typeof node.showModal === 'function') node.showModal();
-      else node.setAttribute('open', '');
-    }
-    return () => {
-      if (node?.open && typeof node.close === 'function') node.close();
-      document.body.style.overflow = bodyOverflow;
-      document.documentElement.style.overflow = rootOverflow;
-    };
-  }, []);
-
-  function close() {
-    onDismiss();
-    const prior = previousFocus.current;
-    queueMicrotask(() => { if (prior?.isConnected) prior.focus(); });
-  }
+    let alive = true;
+    setCheckpoints([]);
+    const slug = draft.projectSlug;
+    if (!slug) return;
+    try {
+      void Promise.resolve(getApi().getProject(slug)).then(detail => {
+        if (alive) setCheckpoints((detail?.checkpoints ?? []).filter(cp => cp.ui !== 'proposed').map(cp => ({ code: cp.code, title: cp.title })));
+      }).catch(() => { /* the select keeps "Any checkpoint" */ });
+    } catch { /* unavailable */ }
+    return () => { alive = false; };
+  }, [draft.projectSlug]);
+  function close(){onDismiss();}
   function apply(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     onApply({ ...draft, checkpointCode: draft.checkpointCode.trim() });
     close();
   }
-  return <dialog ref={dialog} aria-labelledby={titleId} onCancel={event => { event.preventDefault(); close(); }}
-    className="w-[calc(100%-2rem)] max-w-[440px] max-h-[90dvh] overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-xl backdrop:bg-black/50"
-    style={{ paddingBottom: 'max(1rem,env(safe-area-inset-bottom))' }}>
-    <h2 id={titleId} className="text-title-s font-semibold">Filter cards</h2>
-    <form className="mt-4 flex flex-col gap-3" onSubmit={apply}>
-      <label className={label}>Project
+  return <Dialog title="Filter cards" onClose={close} footer={<>
+    <button type="button" className={button} onClick={() => setDraft({ ...clearCardFilters })}>Clear</button>
+    <button type="button" className={button} onClick={close}>Cancel</button>
+    <button type="submit" form="n121-card-filters" className={button}>Apply filters</button>
+   </>}>
+    <form id="n121-card-filters" className="flex flex-col gap-3" onSubmit={apply}>
+      <label className={label}>Path
         <select autoFocus aria-label="Filter project" className={field} value={draft.projectSlug}
           onChange={event => setDraft(old => ({ ...old, projectSlug: event.target.value, checkpointCode: '' }))}>
           <option value="">All projects</option>
@@ -73,9 +64,14 @@ export default function CardFiltersSheet({ values, projects, projectsLoading, pr
       </label>
       {projectsLoading && <p role="status" className="text-label">Loading projects…</p>}
       {projectsError && <p role="alert" className="text-label">Projects unavailable. You can filter by other fields.</p>}
-      <label className={label}>Checkpoint code
-        <input aria-label="Filter checkpoint" className={field} value={draft.checkpointCode}
-          onChange={event => setDraft(old => ({ ...old, checkpointCode: event.target.value }))} />
+      <label className={label}>Checkpoint
+        <select aria-label="Filter checkpoint" className={field} value={draft.checkpointCode}
+          disabled={!draft.projectSlug} onChange={event => setDraft(old => ({ ...old, checkpointCode: event.target.value }))}>
+          <option value="">{draft.projectSlug ? 'Any checkpoint' : 'Choose a path first'}</option>
+          {draft.checkpointCode && !checkpoints.some(cp => cp.code === draft.checkpointCode) &&
+            <option value={draft.checkpointCode}>Current checkpoint</option>}
+          {checkpoints.map(cp => <option key={cp.code} value={cp.code}>{cp.title} · {cp.code}</option>)}
+        </select>
       </label>
       <label className={label}>Scheduling state
         <select aria-label="Filter scheduling state" className={field} value={draft.state}
@@ -96,11 +92,6 @@ export default function CardFiltersSheet({ values, projects, projectsLoading, pr
           onChange={event => setDraft(old => ({ ...old, hasOpenComments: event.target.checked }))}/>
         Has open comments
       </label>
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className={button} onClick={() => setDraft({ ...clearCardFilters })}>Clear</button>
-        <button type="button" className={button} onClick={close}>Cancel</button>
-        <button type="submit" className={button}>Apply filters</button>
-      </div>
     </form>
-  </dialog>;
+  </Dialog>;
 }

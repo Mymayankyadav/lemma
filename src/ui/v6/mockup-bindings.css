@@ -44,8 +44,20 @@
 :root[data-v6] #main-content :is(input[type=date],input[type=time],input[type=datetime-local]){min-width:0;max-width:100%;font-size:.875rem}
 :root[data-v6] .ui-switch-track{box-sizing:border-box}
 :root[data-v6] label:has(>.ui-switch-track)>span:first-child{min-width:0;overflow-wrap:anywhere}
-/* Route-level sheets (New path) keep the five destinations reachable, as the release audit requires. */
-:root[data-v6] body:has(.ui-sheet[aria-modal=true]) nav[data-ui=main-navigation]{display:flex}
+/* N121: overlay stack: nav 50 < page header 65 < menus 90 < sheets 100 < toasts 110.
+   Only the route-level New path sheet leaves the five-tab navigation visible. */
+:root[data-v6] body:has(.ui-sheet[data-sheet-route][aria-modal=true]) nav[data-ui=main-navigation]{display:flex}
+:root[data-v6] .ui-sheet{max-height:calc(100dvh - max(16px, env(safe-area-inset-top)));min-height:0}
+:root[data-v6] .ui-sheet[data-sheet-route]{max-height:calc(100dvh - var(--lemma-nav-height) - max(16px, env(safe-area-inset-top)))}
+:root[data-v6] .ui-sheet-body{overflow-y:auto;overscroll-behavior:contain;flex:1;min-height:0;padding:20px 20px calc(20px + env(safe-area-inset-bottom))}
+:root[data-v6] .ui-sheet-footer{display:flex;flex:none;gap:8px;align-items:center;border-top:1px solid var(--hair);padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--paper)}
+:root[data-v6] .ui-sheet-footer>button{min-height:48px;flex:1;min-width:0}
+:root[data-v6] .lemma-destructive{color:var(--action-destructive);background:var(--danger-tint);border:1px solid var(--action-destructive)}
+/* Native dialogs lose UA margin:auto to Tailwind preflight. Make them truly
+   centred on desktops; on phones make the form scroll in a bottom sheet. */
+:root[data-v6] dialog:modal:not(.project-action-dialog):not(.lemma-native-sheet){margin:auto;inset:0;max-height:calc(100dvh - 32px);overscroll-behavior:contain}
+@media(max-width:699px){:root[data-v6] dialog:modal:not(.project-action-dialog):not(.lemma-native-sheet){inset:auto 0 0;margin:0 auto;width:100%;max-width:100%;max-height:calc(100dvh - max(16px, env(safe-area-inset-top)));border-radius:14px 14px 0 0;overflow-y:auto}}
+
 :root[data-v6] .ui-switch-thumb{translate:none!important}
 :root[data-v6] #main-content label{overflow-wrap:anywhere}
 /* Bottom chrome (N110): the bar and the focus dock have rem-based heights, so the dock, Inbox
@@ -72,3 +84,102 @@ html[data-v6]:has(#cr-mobile-dock){--lemma-bottom-chrome:calc(var(--lemma-nav-he
 :root[data-v6] .notebook-atlas-picker>button[aria-pressed=true]{background:var(--raised-2);border:1px solid var(--edge-2)}
 /* #1334: the Atlas list starts right under the header rule, as in the mockup (no shell gap above its picker). */
 :root[data-v6] .lg-page[data-atlas-view=list]{margin-top:-24px}
+
+/* N121 accessibility and stacking safety net: keep actions away from the five-tab bar. */
+:root[data-v6] .ui-sheet-footer{position:relative;z-index:2}
+:root[data-v6] body:has([data-ui=proposal-actions]){--lemma-toast-lift:96px}
+:root[data-v6] .pointer-events-none:has(>[role=status]){z-index:110;bottom:calc(var(--lemma-bottom-chrome, 60px) + var(--lemma-toast-lift, 0px) + 12px)}
+:root[data-v6] #main-content select{max-width:100%;min-width:0;text-overflow:ellipsis;border-radius:8px}
+:root[data-v6] .lemma-destructive{color:var(--action-destructive);background:var(--danger-tint);border-color:var(--action-destructive)}
+
+/* N121 native dialogs: a bottom sheet on phones, centred in the desktop top layer. */
+:root[data-v6] dialog.lemma-native-sheet:modal{width:min(100%,640px);box-sizing:border-box}
+:root[data-v6] dialog.lemma-native-sheet .ui-sheet-footer{width:100%;flex-wrap:wrap}
+:root[data-v6] dialog.lemma-native-sheet .ui-sheet-footer>button{flex:1 1 130px}
+html[data-v6].lemma-native-sheet-open,html[data-v6].lemma-native-sheet-open body{overflow:hidden}
+@media(min-width:700px){:root[data-v6] dialog.lemma-native-sheet:modal{inset:0;margin:auto;width:min(90vw,640px);max-height:calc(100dvh - 48px);border-radius:14px}}
+
+/* N121 third pass: native modal layout independent of the UA's default dialog margin. */
+:root[data-v6] dialog.lemma-native-sheet:modal{
+ inset:auto 0 0;margin:0 auto;padding:0;
+ display:flex;flex-direction:column;min-width:0;width:100%;max-width:100%;
+ max-height:calc(100dvh - max(16px,env(safe-area-inset-top)));
+ border:1px solid var(--hair);border-radius:14px 14px 0 0;
+ background:var(--paper);color:var(--ink);overflow:hidden;
+ box-shadow:0 16px 60px #0005;
+}
+:root[data-v6] dialog.lemma-native-sheet:modal::backdrop{background:rgba(0,0,0,.55)}
+:root[data-v6] dialog.lemma-native-sheet .ui-sheet-header{display:flex;align-items:center;flex:none;gap:12px;padding:14px 20px;border-bottom:1px solid var(--hair)}
+:root[data-v6] dialog.lemma-native-sheet .ui-sheet-body{min-height:0;overflow-y:auto;flex:1 1 auto;padding:18px 20px}
+:root[data-v6] dialog.lemma-native-sheet .ui-sheet-footer{display:flex;flex:none;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:var(--paper)}
+@media(min-width:700px){
+ :root[data-v6] dialog.lemma-native-sheet:modal{
+  inset:0;margin:auto;width:min(90vw,640px);max-height:calc(100dvh - 48px);
+  border-radius:14px;
+ }
+}
+
+/* ---------------------------------------------------------------------------
+   N121 A8 · one control language (v6 only; legacy screens are untouched)
+   --------------------------------------------------------------------------- */
+/* Disclosures marked .lemma-disclosure get the app chevron instead of the browser triangle. */
+:root[data-v6] details.lemma-disclosure>summary{list-style:none;display:flex;align-items:center;gap:8px}
+:root[data-v6] details.lemma-disclosure>summary::-webkit-details-marker{display:none}
+:root[data-v6] details.lemma-disclosure>summary::after{content:'';flex:none;width:16px;height:16px;margin-left:auto;background:currentColor;opacity:.7;
+ -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/16px no-repeat;
+ mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center/16px no-repeat;transition:transform .15s}
+:root[data-v6] details.lemma-disclosure[open]>summary::after{transform:rotate(180deg)}
+/* Native selects look like the other fields and never push labels off-screen. */
+:root[data-v6] #main-content select,:root[data-v6] dialog select,:root[data-v6] .ui-sheet select{max-width:100%;min-width:0;text-overflow:ellipsis;border-radius:8px;border:1px solid var(--control-edge);background-color:var(--paper);color:var(--ink)}
+/* Action and chip rows always keep a gap; buttons keep their inner padding. */
+:root[data-v6] .lemma-page-action-row,:root[data-v6] .lemma-filter-summary{gap:8px}
+:root[data-v6] .lemma-page-action-row>:is(a,button){padding-inline:14px}
+/* Destructive actions: one style everywhere (danger text and border, tint fill). */
+:root[data-v6] .lemma-destructive{color:var(--action-destructive)!important;background:var(--danger-tint)!important;border:1px solid var(--action-destructive)!important}
+/* One form-label style. */
+:root[data-v6] #main-content label,:root[data-v6] dialog label,:root[data-v6] .ui-sheet label{font-weight:500}
+/* Focus page: Pause / Resume are outlined secondaries without the offset shadow. */
+:root[data-v6] #cr-focus-overlay .lemma-focus-secondary{box-shadow:none;background:transparent;border:1px solid var(--control-edge);color:var(--ink)}
+/* Goal bars use the accent token, never raw green on grey. */
+:root[data-v6] progress.lemma-goal-bar{accent-color:var(--accent);height:10px;border-radius:999px}
+:root[data-v6] progress.lemma-goal-bar::-webkit-progress-bar{background:var(--paper-2);border-radius:999px}
+:root[data-v6] progress.lemma-goal-bar::-webkit-progress-value{background:var(--accent);border-radius:999px}
+:root[data-v6] progress.lemma-goal-bar::-moz-progress-bar{background:var(--accent);border-radius:999px}
+
+/* N121 D4 · Learning charts: Good and Easy are told apart, labels never clip, tiles use sans figures. */
+:root[data-v6] .notebook-progress{--easy:#2f5f93}
+html[data-v6][data-theme=graph-night] .notebook-progress{--easy:#8fb8e6}
+:root[data-v6] .notebook-progress svg{overflow:visible}
+:root[data-v6] .notebook-progress-content [style*="--font-num"]{font-family:var(--font-ui)!important;font-variant-numeric:tabular-nums}
+:root[data-v6] .notebook-metrics{align-items:stretch}
+:root[data-v6] .notebook-metric{display:grid;grid-template-rows:auto 1fr auto;align-items:end}
+
+/* N121 F3 · stage chips scroll with fade edges and are never cut; Night selection is not solid white. */
+:root[data-v6] [data-stage-jumps]{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 12px,#000 calc(100% - 24px),transparent);padding-inline:12px 24px}
+html[data-v6][data-theme=graph-night] [data-stage-chip][aria-pressed=true]{background:var(--raised-2,var(--paper-2));color:var(--ink);border-color:var(--ink)}
+
+/* N121 F7 · Review round: four equal grades in the thumb zone above the nav, no check glyphs. */
+:root[data-v6] [data-ui=review-grades]{position:sticky;bottom:calc(var(--lemma-bottom-chrome) + 8px);z-index:5;grid-template-columns:repeat(4,minmax(0,1fr))!important;padding:8px 0!important}
+:root[data-v6] [data-ui=review-grades]>button:first-child{grid-column:auto!important}
+:root[data-v6] [data-ui=review-grades]>button:nth-child(n+2):before{content:none!important}
+
+/* N121 E1 · the opened "Why this card?" explanation scrolls clear of the Inbox action bar. */
+:root[data-v6] .lemma-why-card[open]{scroll-margin-bottom:calc(var(--lemma-bottom-chrome) + 112px)}
+:root[data-v6] .lemma-proposal-pager{justify-content:space-between}
+
+/* N121 E5 · Concept map tab strip: scrolls with a fade, labels stay on one line. */
+:root[data-v6] [role=toolbar][aria-label="Atlas view"]{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 24px),transparent);padding-right:24px}
+
+/* N121 B3/B6 · Agenda day headings stick under the page; the overdue banner keeps the page rhythm. */
+:root[data-v6] .cr-agenda-day>h2{position:sticky;top:0}
+
+/* ---------------------------------------------------------------------------
+   N121 H1 · desktop (≥ 1024 px): the tab bar follows the content column; Calendar is wider.
+   --------------------------------------------------------------------------- */
+@media (min-width:1024px){
+ :root[data-v6] nav[data-ui=main-navigation]{left:50%;right:auto;width:min(640px,calc(100vw - 32px));transform:translateX(-50%);border-inline:1px solid var(--hair);border-radius:12px 12px 0 0}
+ :root[data-v6] body:has([data-calendar-view=week]) #main-content,:root[data-v6] body:has([data-calendar-view=month]) #main-content{max-width:1100px}
+ :root[data-v6] body:has([data-calendar-view=week]) nav[data-ui=main-navigation],:root[data-v6] body:has([data-calendar-view=month]) nav[data-ui=main-navigation]{width:min(1100px,calc(100vw - 32px))}
+}
+:root[data-v6] .lemma-proposal-pager{flex-wrap:wrap;row-gap:4px}
+:root[data-v6] .lemma-proposal-pager>div{min-width:0}

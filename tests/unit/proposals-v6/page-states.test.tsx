@@ -29,6 +29,7 @@ vi.mock('../../../src/data/hooks', () => ({
   }),
   useApproveProposal: () => ({ isPending: false, mutateAsync: data.approve }),
   useRejectProposal: () => ({ isPending: false, mutateAsync: data.reject }),
+  useProjects: () => ({ data: [] }),
 }));
 vi.mock('../../../src/ui/Toast', () => ({ useToast: () => data.notify }));
 vi.mock('../../../src/ui/Screen', async () => {
@@ -270,5 +271,59 @@ describe('N32.2.2 v6 Inbox distinct states and recovery', () => {
     expect(host.textContent).not.toContain('No proposals yet');
     expect(host.querySelector('[aria-label="Select Inbox proposals"]')).toBeNull();
     expect(host.querySelector('[aria-label="Batch decision recovery"]')).toBeNull();
+  });
+});
+
+describe('N121 A7 single Inbox decisions wait six seconds with Undo and are never lost', () => {
+  it('advances at once, offers Undo, and Undo inside the window makes no API call', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    data.rows = [card('a'), card('b')];
+    await mount();
+    expect(document.body.textContent).toContain('Front a');
+    await click('Approve card');
+    expect(data.approve).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Front b');
+    expect(data.notify).toHaveBeenCalledWith('Approved', expect.objectContaining({ duration: 6000 }));
+    const options = data.notify.mock.calls.at(-1)![1] as { action: { label: string; onClick: () => void } };
+    expect(options.action.label).toBe('Undo');
+    await act(async () => options.action.onClick());
+    await act(async () => { vi.advanceTimersByTime(7000); });
+    expect(data.approve).not.toHaveBeenCalled();
+    expect(document.body.textContent).toContain('Front a');
+  });
+  it('commits exactly once when the window ends', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    data.rows = [card('a'), card('b')];
+    await mount();
+    await click('Approve card');
+    await act(async () => { vi.advanceTimersByTime(6100); await Promise.resolve(); });
+    expect(data.approve).toHaveBeenCalledTimes(1);
+    expect(data.approve).toHaveBeenCalledWith({ id: 'a', edit: undefined });
+  });
+  it('flushes a waiting decision exactly once when the page unmounts', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    data.rows = [card('a'), card('b')];
+    await mount();
+    await click('Reject card');
+    expect(data.reject).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    expect(data.reject).toHaveBeenCalledTimes(1);
+    expect(data.reject).toHaveBeenCalledWith('a');
+    await act(async () => { vi.advanceTimersByTime(7000); });
+    expect(data.reject).toHaveBeenCalledTimes(1);
+  });
+  it('flushes a staged batch when the page unmounts instead of dropping it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    data.rows = [card('a'), card('b')];
+    await mount();
+    const box = document.querySelector<HTMLInputElement>('input[data-inbox-proposal-id="a"]')!;
+    await act(async () => box.click());
+    await click('Approve 1 selected');
+    expect(data.approve).not.toHaveBeenCalled();
+    await act(async () => root.unmount());
+    root = createRoot(host);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+    expect(data.approve).toHaveBeenCalledTimes(1);
   });
 });

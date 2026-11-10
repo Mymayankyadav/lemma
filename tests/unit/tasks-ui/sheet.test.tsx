@@ -56,10 +56,11 @@ async function openSheet(){
  return {dialog:dialog!,add};
 }
 async function setField(label:string,value:string){
- const control=[...host.querySelectorAll('input,select')].find(node=>node.getAttribute('aria-label')===label);
+ const control=[...host.querySelectorAll('input,select,textarea')].find(node=>node.getAttribute('aria-label')===label);
  if(!control)throw Error('Missing field '+label);
  await act(async()=>{
-  const proto=control instanceof HTMLSelectElement?HTMLSelectElement.prototype:HTMLInputElement.prototype;
+  const proto=control instanceof HTMLSelectElement?HTMLSelectElement.prototype:
+   control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;
   Object.getOwnPropertyDescriptor(proto,'value')!.set!.call(control,value);
   control.dispatchEvent(new Event('input',{bubbles:true}));
   control.dispatchEvent(new Event('change',{bubbles:true}));

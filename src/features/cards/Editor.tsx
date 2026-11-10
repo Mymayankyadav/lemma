@@ -4,6 +4,8 @@ import { useProject, useProjects } from "../../data/hooks";
 import type { CardDetail, NoteKind, NoteType } from "../../data/types";
 import { Button } from "../../ui/Button";
 import { MathText } from "../../ui/MathText";
+import { isFlagOn } from "../../flags";
+import { cardTypeText, noteKindText } from "../../lib/labels";
 export interface EditorValue {
   front: string;
   back: string;
@@ -60,12 +62,16 @@ export function Editor({
   creating,
   busy,
   onSubmit,
+  formId,
 }: {
   initial?: CardDetail["note"];
   creating?: boolean;
   busy: boolean;
   onSubmit: (value: EditorValue) => void;
+  /** N121 (v6): the parent sheet renders the submit button in its fixed footer with form={formId}. */
+  formId?: string;
 }) {
+  const v6 = isFlagOn("v6Shell");
   const projects = useProjects(),
     [front, setFront] = useState(initial?.front ?? ""),
     [back, setBack] = useState(initial?.back ?? ""),
@@ -76,6 +82,7 @@ export function Editor({
     [tags, setTags] = useState(initial?.tags.join(", ") ?? "");
   return (
     <form
+      id={formId}
       className="flex flex-col gap-4 text-body text-ink-2"
       onSubmit={(e) => {
         e.preventDefault();
@@ -103,7 +110,7 @@ export function Editor({
         />
       </label>
       {front.length>300&&<p role="status" className="text-label text-amber">Long front ({front.length} characters). Consider splitting this into one idea per card.</p>}
-      <MathPreview source={front}/>
+      {!v6&&<MathPreview source={front}/>}
       <label>
         Back
         <textarea
@@ -113,10 +120,10 @@ export function Editor({
         />
       </label>
       {back.length>1200&&<p role="status" className="text-label text-amber">Long back ({back.length} characters). Consider splitting the explanation into smaller cards.</p>}
-      <MathPreview source={back}/>
-      <div className="grid grid-cols-2 gap-3">
+      {!v6&&<MathPreview source={back}/>}
+      <div className={v6?"grid grid-cols-1 gap-3 sm:grid-cols-2":"grid grid-cols-2 gap-3"}>
         <label>
-          Type
+          {v6?"Card type":"Type"}
           <select
             className={field}
             value={type}
@@ -124,13 +131,13 @@ export function Editor({
           >
             {types.map((t) => (
               <option key={t} value={t}>
-                {t}
+                {v6?cardTypeText(t):t}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Kind
+          {v6?"Note type":"Kind"}
           <select
             className={field}
             value={kind}
@@ -138,7 +145,7 @@ export function Editor({
           >
             {kinds.map((k) => (
               <option key={k} value={k}>
-                {k}
+                {v6?noteKindText(k):k}
               </option>
             ))}
           </select>
@@ -147,7 +154,7 @@ export function Editor({
       {creating ? (
         <>
           <label>
-            Project
+            {v6?"Path":"Project"}
             <select
               required
               className={field}
@@ -157,7 +164,7 @@ export function Editor({
                 setCheckpoint("");
               }}
             >
-              <option value="">Choose a project</option>
+              <option value="">{v6?"Choose a path":"Choose a project"}</option>
               {projects.data?.map((p) => (
                 <option key={p.id} value={p.slug}>
                   {p.title}
@@ -194,12 +201,12 @@ export function Editor({
         />
         {back && <MathText source={back} variant="answer" />}
       </div>
-      <Button
+      {!formId&&<Button
         type="submit"
         disabled={busy || !front.trim() || (!!creating && !project)}
       >
         {creating ? "Create card" : "Save changes"}
-      </Button>
+      </Button>}
     </form>
   );
 }

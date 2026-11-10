@@ -1,9 +1,12 @@
 // N74: owner-visible deadline projections and due practice topics in Calendar.
 // This view is read-only: neither due items nor estimates affect study effort totals.
 import {useState} from 'react';
+import {Link} from 'react-router';
+import type {ProjectSummary} from '../../../data/types';
 import type {DeadlineRecord} from '../../../data/deadlines/contract';
 import type {PracticeTopicRecord} from '../../../data/practice-topics/contract';
 import {dayKey} from '../model';
+import {formatDay,formatDateTime,formatDuration,formatInterval} from '../../../lib/format';
 
 export interface CalendarDues {
  deadlines:DeadlineRecord[];
@@ -18,60 +21,58 @@ export function deadlineDay(row:DeadlineRecord,zone:string):string {
  // Plain civil due dates are never timezone-converted. Instants are.
  return row.due.kind==='date'?row.due.date:dayKey(new Date(row.due.at),zone);
 }
-export function dueForDay(date:string,firstVisible:string,zone:string,
- dues:CalendarDues):DueItem[]{
+export function dueForDay(date:string,_firstVisible:string,zone:string,
+ dues:CalendarDues,now:Date=new Date()):DueItem[]{
+ const today=dayKey(now,zone);
  const result:DueItem[]=[];
  for(const row of dues.deadlines){
   if(row.status!=='open')continue;
-  const due=deadlineDay(row,zone),shown=due<firstVisible?firstVisible:due;
-  if(shown===date)result.push({type:'deadline',key:'deadline:'+row.id,date:due,
-   value:row,overdue:due<firstVisible});
+  const due=deadlineDay(row,zone);
+  if(due===date)result.push({type:'deadline',key:'deadline:'+row.id,date:due,
+   value:row,overdue:due<today});
  }
  for(const row of dues.topics){
   if(row.archivedAt!==null||row.nextDueDate===null)continue;
-  const due=row.nextDueDate,shown=due<firstVisible?firstVisible:due;
-  if(shown===date)result.push({type:'practice',key:'practice:'+row.id,date:due,
-   value:row,overdue:due<firstVisible});
+  const due=row.nextDueDate;
+  if(due===date)result.push({type:'practice',key:'practice:'+row.id,date:due,
+   value:row,overdue:due<today});
  }
  return result.sort((a,b)=>a.date.localeCompare(b.date)||
   a.type.localeCompare(b.type)||a.key.localeCompare(b.key));
 }
 const origin=(kind:DeadlineRecord['origin']):string=>
- kind==='owner'?'Deadline':kind==='project_target'?'Project target':'Checkpoint due';
-const days=(number:number)=>number===1?'day':'days';
-function detail(item:DueItem,zone:string){
+ kind==='owner'?'Deadline':kind==='project_target'?'Path target date':'Checkpoint due';
+function detail(item:DueItem,zone:string,projects:readonly ProjectSummary[]){
  if(item.type==='deadline'){
   const row=item.value;
+  const path=row.projectId?projects.find(project=>project.id===row.projectId):undefined;
   return <>
-   <p>Origin: {origin(row.origin)} · {row.kind}</p>
-   <p>Due: {row.due.kind==='date'?row.due.date:
-    new Intl.DateTimeFormat('en',{timeZone:zone,dateStyle:'medium',
-     timeStyle:'short'}).format(new Date(row.due.at))}</p>
+   <p>{origin(row.origin)} · {row.kind.charAt(0).toUpperCase()+row.kind.slice(1)}</p>
+   <p>Due {row.due.kind==='date'?formatDay(row.due.date,{zone}):
+    formatDateTime(row.due.at,{zone})}</p>
    <p>{row.remainingMinutes===null?'Remaining effort not estimated':
-     row.remainingMinutes+' minutes remaining'+
-      (row.estimateSource?' ('+row.estimateSource+' estimate)':'')}</p>
-   {row.origin!=='owner'&&<p>Read-only projection from an existing linked record</p>}
-   {row.projectId&&<p>Project: {row.projectId}</p>}
-   {row.checkpointId&&<p>Checkpoint: {row.checkpointId}</p>}
+     'About '+formatDuration(row.remainingMinutes)+' of work left'}</p>
+   {row.origin!=='owner'&&<p>From your path's target date</p>}
+   {path&&<p><Link to={'/p/'+path.slug} className="text-[var(--link)] underline">{path.title}</Link></p>}
   </>;
  }
  const row=item.value;
  return <>
-  <p>Next practice: {row.nextDueDate}</p>
+  <p>Next practice: {row.nextDueDate?formatDay(row.nextDueDate,{zone}):'Not scheduled'}</p>
   <p>{row.cadence.kind==='fixed_days'?
-    'Repeat every '+row.cadence.days+' '+days(row.cadence.days):
-    'After rating: '+row.cadence.daysByRating.join(' / ')+' days'}</p>
+    'Repeat every '+formatInterval(row.cadence.days):
+    'Next practice adapts to your rating'}</p>
   <p>{row.lastPracticedAt?
-    'Last practiced '+new Intl.DateTimeFormat('en',{timeZone:zone,dateStyle:'medium'})
-     .format(new Date(row.lastPracticedAt)):
+    'Last practiced '+formatDay(row.lastPracticedAt,{zone}):
     'Not yet practiced'}</p>
-  {row.checkpointId&&<p>Checkpoint: {row.checkpointId}</p>}
+  <p><Link to={'/practice#topic-'+row.id} className="text-[var(--link)] underline">Practice now</Link></p>
  </>;
 }
 
 /** Accessible record disclosures; no route to an unshipped feature is invented. */
-export function DueDayItems({date,firstVisible,zone,dues,compact=false}:{
+export function DueDayItems({date,firstVisible,zone,dues,compact=false,projects=[]}:{
  date:string;firstVisible:string;zone:string;dues:CalendarDues;compact?:boolean;
+ projects?:readonly ProjectSummary[];
 }){
  const [opened,setOpened]=useState<string|null>(null);
  const rows=dueForDay(date,firstVisible,zone,dues);
@@ -90,14 +91,14 @@ export function DueDayItems({date,firstVisible,zone,dues,compact=false}:{
      <strong className="block break-words">{title}</strong>
      <span className="block break-words text-ink-2">
       {item.type==='deadline'?origin(item.value.origin):'Practice due'}
-      {item.overdue?' · Overdue since '+item.date:''}
+      {item.overdue?' · Overdue since '+formatDay(item.date,{zone}):''}
       {item.type==='deadline'&&item.value.remainingMinutes!==null?
-        ' · '+item.value.remainingMinutes+' min remaining':''}
+        ' · '+formatDuration(item.value.remainingMinutes)+' left':''}
      </span>
     </button>
     {show&&<section aria-label={'Details for '+title}
       className="mt-2 space-y-1 border-t border-edge pt-2 text-ink-2">
-      {detail(item,zone)}
+      {detail(item,zone,projects)}
     </section>}
    </article>;
   })}

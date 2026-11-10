@@ -14,6 +14,14 @@ Remaining v6 lanes (priority run 2026-11-06 evening, Owner decision D8 in `docs/
 
 Mockup port lane (Owner, 2026-11-08, #1303). The v6 app must look like the mockup captures in `docs/v6/screens/`. **Copy, don't redesign**: `docs/v6/prototype/source/MAP.md` names, for each screen, the mockup module that holds its exact markup and class strings and the repo folder to port it into; the CSS is `docs/v6/prototype/source/mockup-overrides.css`. Keep the repo's hooks, commands and behaviour, and wire mockup values to them; a value the hooks lack shows as unavailable. Everything stays behind `v6Shell`, and flag-off screens are unchanged. Every port PR refreshes its screen's Day and Night PNGs in `docs/v6/release-captures/` (capture command in MAP.md, or from CI), which requires an independent review: the reviewer compares each PNG with the same-named mockup and requests changes for any visible difference in layout, components, colour or type (demo data may differ). N110–N117 are merged (#1309, one PR at the Owner's direction); N118 audits them against the mockup and is now the only item left in this lane.
 
+## N121 Fix the 9 Nov 2026 v6 UI audit in one PR (Owner task)
+Owner task: "We will address the audit report by first making a plan then executing this plan and uploading just one pr with all the redressals."
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-n121
+Done = every finding in `docs/v6/ui-audit-2026-11-09/AUDIT.md` (top 15, X1–X15, the Calendar deep dive, every per-screen item, other widths, F1–F14) is fixed as planned in `docs/v6/ui-audit-2026-11-09/PLAN.md`, or waived with a reason in `docs/current/N121.md`; every Blocker and Major has a regression test that fails on `f46de0a`; the release captures are refreshed.
+Tests: `tests/e2e/v6-n121-audit.spec.ts` (new), the unit tests in PLAN.md §3.2, the deliberately updated tests in PLAN.md §3.3, and `tests/e2e/v6-release-audit.spec.ts` passing unchanged.
+Scope: v6 screens and shell under src/**, tests, docs/v6/release-captures/**, docs/v6/ui-audit-2026-11-09/**, docs/current/N121.md.
+Not: database or Edge Function changes (supabase/**); flag defaults (src/flags.ts); flag-off screens; docs/v6/screens/**; new dependencies.
+
 ## N120 Fix the v6 fidelity bugs from the N118 audit (Owner task, one PR)
 Owner task: "Fix the bugs"
 Stage: Harden · Status: open · Needs: — · Assigned: chat-528461#r7kq

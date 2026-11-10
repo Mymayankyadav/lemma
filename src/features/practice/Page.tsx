@@ -1,4 +1,6 @@
 // N78: v6-only practice topic management. Practice records are distinct from card reviews.
+import {formatDay,formatInterval} from '../../lib/format';
+import {practiceRatingText} from '../../lib/labels';
 import {useEffect,useState,type FormEvent} from 'react';
 import {Link} from 'react-router';
 import {getPracticeTopicApi} from '../../data/practice-topics';
@@ -84,6 +86,8 @@ export default function PracticePage(){
  const [cadenceDays,setCadenceDays]=useState(['7','1','3','7','14']);
  const [showArchived,setShowArchived]=useState(false);
  const [reloadSignal,setReloadSignal]=useState(0);
+ // N121 X10: refetch when the window regains focus instead of a manual Refresh button.
+ useEffect(()=>{const again=()=>setReloadSignal(x=>x+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
  useEffect(()=>{
   let alive=true;
   setLoading(true);
@@ -150,32 +154,31 @@ export default function PracticePage(){
   void run(()=>getPracticeTopicApi().updateTopic(current.id,current.version,{cadence}),
    'Practice cadence saved');
  };
- const due=(topic:PracticeTopicRecord)=>topic.nextDueDate?
-  (topic.nextDueDate<=dateOf(new Date().toISOString())?'Due or overdue':'Due on '+topic.nextDueDate):
-  'Not scheduled';
+ // N121 F11: today is the owner's civil day (not the UTC date), and labels say which day.
+ const today=new Intl.DateTimeFormat('en-CA',{timeZone:Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC'}).format(new Date());
+ const due=(topic:PracticeTopicRecord)=>!topic.nextDueDate?'Not scheduled':
+  topic.nextDueDate<today?(formatDay(topic.nextDueDate)==='Yesterday'?'Due yesterday':'Overdue · '+formatDay(topic.nextDueDate)):
+  topic.nextDueDate===today?'Due today':'Due '+formatDay(topic.nextDueDate);
  return <Screen title="Practice" back="/" className="pb-8">
   <section aria-label="Practice topics" className="space-y-4">
    <div>
-    <h1 className="text-title-l font-semibold">Practice topics</h1>
-    <p className="text-label text-ink-2">Topic practice is separate from card review. Recording a rating advances this topic’s due date.</p>
+    <h1 className="sr-only">Practice topics</h1>
+    <p className="text-label text-ink-2">Practise a topic and rate how it went; the rating sets when it comes back. Cards are reviewed separately in <Link to="/review" className="text-[var(--link)] underline">Review</Link>.</p>
    </div>
-   <Link to="/review" className="inline-flex min-h-11 items-center text-label text-amber underline">
-    Card review is separate
-   </Link>
    {loading?<p role="status">Loading practice topics…</p>:null}
    {error?<p role="alert" className="text-label text-again">{error}</p>:null}
    {notice?<p role="status" className="text-label text-ink-2">{notice}</p>:null}
    {!loading&&!active.length?<p>No active practice topics yet.</p>:null}
-   {!loading&&active.map(topic=><article key={topic.id} className="rounded-slab border border-edge p-4">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-     <div>
+   {!loading&&active.map(topic=><article key={topic.id} id={'topic-'+topic.id} className="rounded-slab border border-edge p-4">
+    <div className="flex flex-col items-start gap-2">
+     <div className="min-w-0">
       <h2 className="break-words text-body font-semibold">{topic.title}</h2>
-      <p className="text-label text-ink-2">{due(topic)} · {topic.cadence.kind==='fixed_days'?
-       'Every '+topic.cadence.days+' days':'Rating-based cadence'}</p>
+      <p className={'text-label '+(topic.nextDueDate&&topic.nextDueDate<today?'text-again':'text-ink-2')}>{due(topic)} · {topic.cadence.kind==='fixed_days'?
+       'Every '+formatInterval(topic.cadence.days):'Next time depends on your rating'}</p>
      </div>
      <button type="button" className={action} disabled={busy}
       aria-expanded={selected===topic.id}
-      aria-label={'Manage '+topic.title}
+      aria-label={(selected===topic.id?'Close ':'Practice ')+topic.title}
       onClick={()=>selected===topic.id?setSelected(null):open(topic)}>
       {selected===topic.id?'Close':'Practice'}
      </button>
@@ -183,10 +186,10 @@ export default function PracticePage(){
     {selected===topic.id&&<div className="mt-3 space-y-4 border-t border-edge pt-3">
      <form noValidate onSubmit={record} aria-label={'Record '+topic.title} className="space-y-3">
       <h3 className="text-label font-semibold">Record practice</h3>
-      <label className="block text-label">Rating (1–4)
+      <label className="block text-label">How did it go?
        <select className={field+' ml-2'} aria-label="Practice rating" value={rating}
         onChange={event=>setRating(event.target.value)}>
-        {[1,2,3,4].map(x=><option key={x} value={x}>{x}</option>)}
+        {[1,2,3,4].map(x=><option key={x} value={x}>{practiceRatingText(x)}</option>)}
        </select>
       </label>
       <label className="block text-label">Response (optional)
@@ -204,14 +207,14 @@ export default function PracticePage(){
       <label className="block text-label">Schedule
        <select className={field+' ml-2'} aria-label="Cadence kind" value={cadenceKind}
         onChange={event=>setCadenceKind(event.target.value as 'fixed_days'|'after_rating')}>
-        <option value="fixed_days">Fixed days</option>
-        <option value="after_rating">After rating</option>
+        <option value="fixed_days">Every few days</option>
+        <option value="after_rating">Depends on my rating</option>
        </select>
       </label>
       <div className="flex flex-wrap gap-2">
        {(cadenceKind==='fixed_days'?[0]:[1,2,3,4]).map(index=>
         <label key={index} className="text-label">
-         {index===0?'Days':'Rating '+index+' days'}
+         {index===0?'Days':'After '+practiceRatingText(index)+', days'}
          <input className={field+' ml-2 w-24'} type="number" min={1} max={3650}
           aria-label={index===0?'Cadence days':'Rating '+index+' cadence days'}
           value={cadenceDays[index]} onChange={event=>setCadenceDays(old=>
@@ -228,12 +231,12 @@ export default function PracticePage(){
       <h3 className="text-label font-semibold">Practice history</h3>
       {!events.length?<p className="text-label">No practice events yet.</p>:null}
       {events.map(history=><div key={history.id} className="rounded-ctl bg-fill-1 p-3 text-label">
-       <p>{dateOf(history.occurredAt)} · Rating {history.rating}
+       <p>{formatDay(history.occurredAt)} · {practiceRatingText(history.rating)}
         {history.minutes!==null?' · '+history.minutes+' min':''}
         {history.voidedAt?' · Voided':''}</p>
        {history.response?<p className="break-words">{history.response}</p>:null}
        {!history.voidedAt&&<button className={action+' mt-2'} type="button"
-        disabled={busy} aria-label={'Void practice event '+history.id}
+        disabled={busy} aria-label={'Void practice from '+formatDay(history.occurredAt)}
         onClick={()=>void run(()=>getPracticeTopicApi().voidPracticeEvent(
          history.id,history.version),'Practice event voided; due date restored')}>
         Void event
@@ -255,8 +258,7 @@ export default function PracticePage(){
         'Practice topic restored')}>Restore</button>
     </article>)}
    </section>}
-   <button className={action} type="button" disabled={loading||busy}
-    onClick={()=>setReloadSignal(x=>x+1)}>Refresh topics</button>
+
   </section>
  </Screen>;
 }

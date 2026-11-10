@@ -5,6 +5,7 @@ import {useProjects} from '../../data/hooks';
 import {Tex} from '../../ui/Tex';
 import {Sheet} from '../../ui/Sheet';
 import {Skeleton} from '../../ui/Skeleton';
+import {isFlagOn} from '../../flags';
 
 // Loaded only when the owner opens the switcher; the default Project Route
 // should not evaluate the modal, search, or project-library UI on cold entry.
@@ -14,11 +15,12 @@ export function ProjectSwitcher({open,onClose,current}:{open:boolean;onClose:()=
   .filter(p=>!search.trim()||[p.title,p.subject?.name??'Unassigned'].some(v=>v.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase())))
   .sort((a,b)=>(Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0))
   .slice(0,search.trim()?30:6);
- return <Sheet open={open} onClose={onClose} title="Switch project">
+ const v6=isFlagOn('v6Shell');
+ return <Sheet open={open} onClose={onClose} title={v6?'Switch path':'Switch project'}>
   <div className="space-y-3">
-   <input aria-label="Find a project" type="search" value={search} onChange={event=>setSearch(event.target.value)}
-    placeholder="Find a project" className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body text-ink"/>
-   {projects.isPending?<Skeleton h={120}/>:!list.length?<p className="py-6 text-center text-label text-ink-2">No projects match</p>:
+   <input aria-label={v6?'Find a path':'Find a project'} type="search" value={search} onChange={event=>setSearch(event.target.value)}
+    placeholder={v6?'Find a path':'Find a project'} className="min-h-11 w-full rounded-ctl border border-edge bg-[var(--card)] px-3 text-body text-ink"/>
+   {projects.isPending?<Skeleton h={120}/>:!list.length?<p className="py-6 text-center text-label text-ink-2">{v6?'No paths match':'No projects match'}</p>:
     <div className="space-y-1">{list.map(p=><button type="button" key={p.id}
      aria-current={p.slug===current?'page':undefined}
      onClick={()=>{onClose();navigate('/p/'+p.slug)}}

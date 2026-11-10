@@ -586,3 +586,16 @@ export function neighbours(tree:AtlasTree,id:string){
   related:pick(tree.links.filter(l=>l.kind==='related'&&own.has(l.fromId)!==own.has(l.toId)).map(l=>own.has(l.fromId)?l.toId:l.fromId)),
  };
 }
+
+/** N121 E5: one count for every v6 surface: real concepts, and unique connections between two real concepts. */
+export function conceptCounts(tree:AtlasTree):{concepts:number;connections:number}{
+ let concepts=0;
+ for(const node of tree.nodes.values())if(!node.synthetic)concepts++;
+ const pairs=new Set<string>();
+ for(const link of tree.links){
+  const from=tree.nodes.get(link.fromId),to=tree.nodes.get(link.toId);
+  if(!from||!to||from.synthetic||to.synthetic||from.id===to.id)continue;
+  pairs.add([from.id,to.id].sort().join('|'));
+ }
+ return {concepts,connections:pairs.size};
+}

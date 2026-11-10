@@ -29,7 +29,8 @@ describe('v6 sources route integration',()=>{
   act(()=>root.render(<MemoryRouter initialEntries={['/p/math']}>
    <Routes><Route path="/p/:slug" element={<V6Project/>}/></Routes>
   </MemoryRouter>));
-  const toggle=Array.from(node.querySelectorAll('button')).find(button=>button.textContent?.includes('Show sources'));
+  // N121 F3: the Sources tile is the toggle; its accessible name keeps "Show sources (n)".
+  const toggle=Array.from(node.querySelectorAll('button')).find(button=>button.getAttribute('aria-label')?.startsWith('Show sources'));
   expect(toggle).toBeTruthy();
   act(()=>toggle!.click());
   expect(node.querySelector('[data-v6-sources]')).not.toBeNull();

@@ -1,6 +1,7 @@
+import {useReviewEstimate} from './estimate';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
-import {Play,Search} from 'lucide-react';
+import {Play} from 'lucide-react';
 import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
 import {getMode} from '../../../data/mode';
 import {useReviewSession} from '../../review-run/store';
@@ -80,7 +81,7 @@ export default function ReviewV6(){
   }catch(error){setIssue(error instanceof Error?error.message:'Could not start review run')}
   finally{setBusy(false)}
  }
- const minutes=Math.max(1,Math.ceil(result.batch.length*4.5/60));
+ const minutes=useReviewEstimate(result.batch.length);
  const selectedDecks=nodes.filter(project=>keysFor(project).some(key=>enabled.has(key))).length;
  // N112 (mockup `12__Page`): one review hero, then decks and queue details one tap away.
  return <main aria-label="Review" className="flex min-w-0 flex-col text-ink">
@@ -93,18 +94,10 @@ export default function ReviewV6(){
   </section>}
   {!loading&&!error&&<>
    {issue&&<p role="alert" className="lemma-log-warning mb-4">{issue}</p>}
-   {/* #1317 (mockup `12__Page`): a search row under the header opens the deck search. */}
-   <div className="-mt-3 mb-6 flex min-h-14 items-center border-b border-[var(--hair)]">
-    <button type="button" aria-label="Search decks and checkpoints" title="Search decks and checkpoints"
-     className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-ink"
-     onClick={()=>{if(options.current)options.current.open=true;requestAnimationFrame(()=>searchField.current?.focus());}}>
-     <Search size={20} aria-hidden="true"/>
-    </button>
-   </div>
    <section aria-label="Review counts" className="notebook-review-summary">
     <p className="notebook-eyebrow">A SMALL SESSION, LASTING IDEAS</p>
     <h2><span aria-label="Cards in this round">{result.batch.length}</span> cards for today</h2>
-    <p className="notebook-review-estimate">{result.batch.length?'About '+minutes+' min · at your pace':'Nothing selected for this round'}</p>
+    <p className="notebook-review-estimate">{result.batch.length?(minutes===null?'Estimating time…':'About '+minutes+' min · at your pace'):'Nothing selected for this round'}</p>
     {active?<button type="button" className="notebook-primary"
      onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
      <Play size={20} aria-hidden="true"/>Resume saved run · {active.progress.position+1} of {active.progress.total}
@@ -114,18 +107,18 @@ export default function ReviewV6(){
      <Play size={20} aria-hidden="true"/>{busy?'Starting…':'Start review'}</button>}
     <div className="notebook-budget-row">
      <span><strong>Today’s batch</strong><small>Daily review limit: {Math.max(0,quota)}</small></span>
-     <Link to="/settings" className="notebook-text-button inline-flex items-center">Change</Link>
+     <Link to="/settings?section=study" aria-label="Change daily review limit" className="notebook-text-button inline-flex items-center">Change</Link>
     </div>
    </section>
-   <details ref={options} className="notebook-options-details" open={search?true:undefined}>
+   <details ref={options} className="notebook-options-details lemma-disclosure" open={search?true:undefined}>
     <summary className="notebook-options-row mt-6">
-     <span><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
-     <span aria-hidden="true">›</span>
+     {/* The only span is also :last-child, which the mockup CSS centres for the old › glyph. */}
+     <span style={{textAlign:'left',fontSize:'inherit',flex:'1 1 auto'}}><strong>Decks &amp; options</strong><small>{selectedDecks} of {nodes.length} decks selected · Mixed order</small></span>
     </summary>
     <div className="flex flex-col gap-3 py-4">
    {nodes.length===0?<p role="status">No cards due. Your Review queue is clear.</p>:<>
-    <label className="flex flex-col gap-1 text-label font-semibold text-ink-2">Find a deck or checkpoint
-     <input ref={searchField} aria-label="Find a deck or checkpoint" type="search" value={search}
+    <label className="flex flex-col gap-1 text-label font-semibold text-ink-2">Search decks
+     <input ref={searchField} aria-label="Search decks" placeholder="Deck or checkpoint" type="search" value={search}
       onChange={event=>setSearch(event.target.value)}
       className="min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-body text-ink"/>
     </label>
@@ -151,10 +144,10 @@ export default function ReviewV6(){
          <span className="text-label tabular-nums text-ink-2">{project.due} due</span>
         </label>
         {shown.length>0&&<button type="button" className={button}
-         aria-label={(opened?'Collapse ':'Expand ')+project.label} aria-expanded={opened}
+         aria-label={(opened?'Hide sub-decks of ':'Show sub-decks of ')+project.label} aria-expanded={opened}
          onClick={()=>setCollapsed(previous=>{
           const next=new Set(previous);if(next.has(project.key))next.delete(project.key);else next.add(project.key);return next;
-         })}>{opened?'Less':'More'}</button>}
+         })}>{opened?'Hide sub-decks':'Show sub-decks'}</button>}
        </div>
        {opened&&shown.length>0&&<ul className="mt-1 ml-3 flex flex-col gap-1 border-l border-edge pl-3">
         {shown.map(child=><li key={child.key}>
@@ -174,9 +167,9 @@ export default function ReviewV6(){
    </>}
     </div>
    </details>
-   <details className="notebook-queue-details mt-6">
+   <details className="notebook-queue-details lemma-disclosure mt-6">
     <summary>Queue details · {result.allDue.toLocaleString()} due across all decks</summary>
-    <p>All due: <strong className="tabular-nums">{result.allDue}</strong> · Selected eligible: <strong className="tabular-nums">{result.eligible}</strong> · This round: <strong className="tabular-nums">{result.batch.length}</strong></p>
+    <p><strong className="tabular-nums">{result.eligible.toLocaleString()}</strong> due in the selected decks · <strong className="tabular-nums">{result.batch.length.toLocaleString()}</strong> in today's batch</p>
    </details>
   </>}
  </main>;

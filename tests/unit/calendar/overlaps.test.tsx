@@ -124,6 +124,13 @@ describe('N75 exact half-open owner Calendar overlap model',()=>{
   expect(rows[0].names).toContain('Saved proof study');
   expect(rows[0].names).not.toContain('After');
  });
+ it('does not flag saved focus fulfilling a planned study block, but still flags busy time',()=>{
+  const planned={...first,kind:'study' as const};
+  expect(overlapWindows([entry],[planned],range)).toHaveLength(0);
+  expect(overlapWindows([entry],[first],range)).toHaveLength(1);
+  // Durable calendarBlockId attribution also suppresses duplicate conflict prompts.
+  expect(overlapWindows([{...entry,calendarBlockId:first.id}],[first],range)).toHaveLength(0);
+ });
  it('preserves full conflicts when week begins or ends inside an overlap',()=>{
   const narrow={start:time('09:40'),end:time('09:50')};
   const visible=overlapWindows([], [first,second],narrow);
@@ -166,7 +173,7 @@ describe('N75 Week and Month overlap markers and audited acknowledgment writes',
   const api=fakeAcks();
   await render(weeks());
   const row=overlapWindows([entry],[first,second],range)[0];
-  await press('Attribute overlap to '+row.names[1]);
+  await press('Count this time toward '+row.names[1]);
   await vi.waitFor(()=>expect(api.create).toHaveBeenCalledTimes(1));
   expect(api.create.mock.calls[0][0]).toMatchObject({
    participants:row.participants,startsAt:row.startsAt,
@@ -188,8 +195,9 @@ describe('N75 Week and Month overlap markers and audited acknowledgment writes',
   const api=fakeAcks();
   await render(months());
   const friday=host.querySelector('[data-month-day="2026-11-06"]');
-  expect(friday?.textContent).toContain('3 conflicts');
-  expect(friday?.textContent).toContain('60m');
+  expect(friday?.getAttribute('aria-label')).toContain('3 time conflicts');
+  expect(friday?.getAttribute('aria-label')).toContain('1 h logged');
+  expect(friday?.textContent).not.toContain('0m');
   expect(host.querySelector('[aria-label="Month overlap acknowledgements"]'))
    .not.toBeNull();
   expect(host.querySelectorAll('[data-overlap]')).toHaveLength(3);

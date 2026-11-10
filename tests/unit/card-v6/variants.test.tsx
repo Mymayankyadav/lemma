@@ -34,11 +34,11 @@ describe('N84 v6 card sibling schedules',()=>{
     b.textContent==='Edit note and preview math')!.click());
    expect(edit).toHaveBeenCalledTimes(1);
    await act(async()=>[...host.querySelectorAll('button')].find(b=>
-    b.textContent==='Suspend card')!.click());
+    b.textContent==='Pause card')!.click());
    expect(toggle).toHaveBeenCalledTimes(1);
    await act(async()=>root.render(<CardVariants variants={[]} status="suspended"
     onEdit={edit} onToggleStatus={toggle} busy/>));
-   const restore=[...host.querySelectorAll('button')].find(b=>b.textContent==='Restore card')!;
+   const restore=[...host.querySelectorAll('button')].find(b=>b.textContent==='Resume card')!;
    expect((restore as HTMLButtonElement).disabled).toBe(true);
   }finally{await act(async()=>root.unmount());host.remove()}
  });

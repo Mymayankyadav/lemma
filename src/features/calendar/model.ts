@@ -1,3 +1,4 @@
+import { localClockInstant } from '../time-log/local-time';
 import { capacityStack, dayBounds } from '../../lib/effort';
 import type { CalendarBlockRecord, StudyEntryRecord, StudyRange } from '../../data/study/contract';
 
@@ -124,8 +125,16 @@ export function daySlots(date: string, zone: string, entries: StudyEntryRecord[]
 }
 
 /** Logged wins any overlaps; busy comes next, then remaining planned study time. */
-export function dayCapacity(date: string, zone: string, entries: StudyEntryRecord[], blocks: CalendarBlockRecord[]) {
-  const range = calendarRange(date, zone);
+/** N121 B3: `window` (Settings › Planning, "HH:MM") limits Free time to the planning hours; omitted, the whole civil day counts. */
+export function dayCapacity(date: string, zone: string, entries: StudyEntryRecord[], blocks: CalendarBlockRecord[],
+  window?: { start: string; end: string } | null) {
+  const day = calendarRange(date, zone);
+  let range = day;
+  if (window) {
+    const from = localClockInstant(date, window.start.slice(0, 5), zone);
+    const to = window.end.slice(0, 5) === '24:00' ? day.end : localClockInstant(date, window.end.slice(0, 5), zone);
+    if (from && to && Date.parse(to) > Date.parse(from)) range = { start: from, end: to };
+  }
   const logged = savedSlices(entries, range).map(slice => ({ start: slice.start, end: slice.end }));
   const visible = visibleBlocks(blocks, range);
   const busy = visible.filter(b => b.kind === 'busy').map(b => ({ start: b.startsAt, end: b.endsAt }));

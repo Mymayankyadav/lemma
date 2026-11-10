@@ -21,8 +21,9 @@ const queryClient = new QueryClient({defaultOptions: {queries: {
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
  retryDelay: attempt=>Math.min(2_000,250*2**attempt),
 }, mutations: {retry: false}}})
+const allowKit=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1';
 const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, errorElement: <RouteError />, children: [
- ...screenRoutes,
+ ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
  ...(isFlagOn('v6Shell')?[{path:'/today/close',

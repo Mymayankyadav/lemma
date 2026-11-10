@@ -6,17 +6,19 @@ import {plainMath} from '../../lib/plain-math';
 
 /** What a focus session is about, as the mockup shows it: the heading is the linked path
  * (or the chosen activity), the subtitle is the linked checkpoint. Bugs #1312, #1314. */
-export interface FocusContext {heading:string|null;checkpoint:string|null;path:string|null}
-export const emptyFocusContext:FocusContext={heading:null,checkpoint:null,path:null};
+export interface FocusContext {heading:string|null;checkpoint:string|null;path:string|null;
+ /** N121 C6: the linked path's subject glyph for the watermark; none without a link. */
+ glyph?:string|null}
+export const emptyFocusContext:FocusContext={heading:null,checkpoint:null,path:null,glyph:null};
 
 /** Owner reads only; any failure leaves a field empty rather than inventing a label. */
 export async function resolveFocusContext(entry:Pick<StudyEntryRecord,'presetId'|'projectId'|'checkpointId'>):Promise<FocusContext>{
- let heading:string|null=null,checkpoint:string|null=null,path:string|null=null;
+ let heading:string|null=null,checkpoint:string|null=null,path:string|null=null,glyph:string|null=null;
  if(entry.projectId){
   try{
    const project=(await getApi().listProjects()).find(row=>row.id===entry.projectId);
    if(project){
-    heading=plainMath(project.title);path=heading;
+    heading=plainMath(project.title);path=heading;glyph=project.subject?.glyph||null;
     if(entry.checkpointId){
      const detail=await getApi().getProject(project.slug);
      const cp=detail.checkpoints.find(row=>row.id===entry.checkpointId);
@@ -29,7 +31,7 @@ export async function resolveFocusContext(entry:Pick<StudyEntryRecord,'presetId'
   try{heading=(await getPresetApi().getPreset(entry.presetId))?.label??null;}
   catch{/* unavailable */}
  }
- return {heading,checkpoint,path};
+ return {heading,checkpoint,path,glyph};
 }
 
 export function useFocusContext(entry:StudyEntryRecord|null):FocusContext{

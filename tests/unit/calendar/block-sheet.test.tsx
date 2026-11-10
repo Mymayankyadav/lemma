@@ -97,12 +97,13 @@ describe('N27 calendar owner-zone block editor',()=>{
  it('opens from Calendar add action and creates busy time with one undo toast',async()=>{
   const api=makeFake([]);
   await render();
-  const trigger=button('Plan block in sheet');
-  await click('Plan block in sheet');
+  const trigger=button('New time block');
+  await click('New time block');
   expect(host.querySelector('dialog')?.open).toBe(true);
   expect(host.querySelector('dialog')?.getAttribute('aria-labelledby')).toBeTruthy();
   await enter('Calendar block title','Research meeting');
-  await enter('Calendar block type','busy');
+  await click('Busy');
+  expect(button('Busy').getAttribute('aria-checked')).toBe('true');
   await click('Create block');
   expect(api.createCalendarBlock).toHaveBeenCalledTimes(1);
   expect(api.createCalendarBlock).toHaveBeenCalledWith(expect.objectContaining({
@@ -124,11 +125,12 @@ describe('N27 calendar owner-zone block editor',()=>{
   await render();
   await click('Edit block Work through notes');
   expect(host.querySelector('dialog')?.open).toBe(true);
-  expect(host.querySelector('dialog')?.textContent).toContain('Edit calendar block');
+  expect(host.querySelector('dialog')?.textContent).toContain('Edit time block');
   await enter('Calendar block title','New lecture');
-  await enter('Calendar block type','busy');
-  await enter('Calendar block start','2026-11-06T11:00');
-  await enter('Calendar block end','2026-11-06T12:00');
+  await click('Busy');
+  await enter('Calendar block date','2026-11-06');
+  await enter('Calendar block start','11:00');
+  await enter('Calendar block end','12:00');
   await enter('Calendar block status','done');
   await click('Save changes');
   expect(api.updateCalendarBlock).toHaveBeenCalledTimes(1);
@@ -168,10 +170,11 @@ describe('N27 calendar owner-zone block editor',()=>{
  it('blocks invalid reversed times and does not write',async()=>{
   const api=makeFake();
   await render();
-  await click('Plan block in sheet');
+  await click('New time block');
   await enter('Calendar block title','Bad interval');
-  await enter('Calendar block start','2026-11-06T12:00');
-  await enter('Calendar block end','2026-11-06T11:00');
+  await enter('Calendar block date','2026-11-06');
+  await enter('Calendar block start','12:00');
+  await enter('Calendar block end','11:00');
   await click('Create block');
   expect(host.querySelector('dialog [role="alert"]')?.textContent).toContain('before the end');
   expect(api.createCalendarBlock).not.toHaveBeenCalled();

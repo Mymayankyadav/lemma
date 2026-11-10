@@ -1,76 +1,49 @@
 import BlockSheetActions from './block-sheet/BlockSheetActions';
+import OverdueBanner from './deadlines/OverdueBanner';
+import TimeGrid from './grid/TimeGrid';
+import AgendaView,{BlockLines} from './views/AgendaView';
+import {civilDayLabel,civilMonthLabel,civilRangeLabel} from './views/labels';
+import {useToast} from '../../ui/Toast';
 import PlannerLaunch from '../planner/Sheet';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Navigate, useSearchParams } from 'react-router';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { isFlagOn } from '../../flags';
 import { getApi } from '../../data';
 import { getStudyApi } from '../../data/study';
-import type { CalendarBlockRecord, CalendarBlockKind, StudyEntryRecord } from '../../data/study/contract';
+import type { CalendarBlockRecord, StudyEntryRecord } from '../../data/study/contract';
+import type { ProjectSummary } from '../../data/types';
 import { Segmented } from '../../ui/Segmented';
-import { Slab } from '../../ui/Slab';
-import { WeekView,formatCalendarTime } from './views/WeekView';
+import { formatDuration } from '../../lib/format';
+import { WeekView } from './views/WeekView';
 import { MonthView } from './views/MonthView';
 import {DueDayItems,dueForDay,emptyCalendarDues,type CalendarDues} from './deadlines/DueDayItems';
 import {loadCalendarDues} from './deadlines/load';
-import { agendaGroups, calendarRange, dayCapacity, dayKey, daySlots, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay, type LoggedSlice } from './model';
+import { calendarRange, dayCapacity, dayKey, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay } from './model';
 
 const actionClass = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
-const fieldClass = 'min-h-11 min-w-0 w-full rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 py-2 text-body text-ink';
-/** N116 (mockup `calendar.css`): planned study blocks carry a dashed rule, busy time a solid one. */
-const blockCard = (block: CalendarBlockRecord) => 'cr-agenda-block min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4 text-body ' +
-  (block.kind === 'busy' ? 'border-l-[3px] border-l-[var(--edge)] [border-left-style:double]' : 'border-l-[3px] border-l-[var(--accent)] [border-left-style:dashed]');
+const arrowClass = 'flex size-11 items-center justify-center rounded-[8px] text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
+type View = 'agenda' | 'day' | 'week' | 'month';
 
-/** #1331 (mockup "Thu, Nov 5"): the year is shown only for a day outside the current year. */
-function dateLabel(day: string, zone: string, now: Date = new Date()): string {
-  const start = new Date(calendarRange(day, zone).start);
-  const year = (d: Date) => new Intl.DateTimeFormat('en', { timeZone: zone, year: 'numeric' }).format(d);
-  return new Intl.DateTimeFormat('en', {
-    timeZone: zone, weekday: 'short', month: 'short', day: 'numeric',
-    ...(year(start) === year(now) ? {} : { year: 'numeric' as const }),
-  }).format(start);
-}
-function localInput(iso: string): string {
-  const d = new Date(iso), pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function toInstant(local: string): string | null {
-  const timestamp = new Date(local);
-  // A local time inside a daylight-saving gap must not be silently shifted.
-  return local && Number.isFinite(timestamp.getTime()) && localInput(timestamp.toISOString()) === local
-    ? timestamp.toISOString() : null;
-}
 function writeError(error: unknown): string {
   const value = error as { code?: string; message?: string } | null;
   return value?.code === 'conflict' || /conflict|version|stale/i.test(value?.message ?? '')
     ? 'Changed elsewhere, reload to see the latest changes.'
     : (value?.message || 'Could not save the block. Try again.');
 }
-function SavedRow({ slice, zone, clock24h }: { slice: LoggedSlice; zone: string; clock24h:boolean }) {
-  const minutes = Math.round((Date.parse(slice.end) - Date.parse(slice.start)) / 60000);
-  // #1332 (mockup agenda card): a bordered paper card, time range first, then the title and the meta line.
-  return <article className="cr-agenda-saved min-w-0 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3 text-body">
-    <span className="block text-label tabular-nums text-ink-2">{formatCalendarTime(slice.start, zone, clock24h)}–{formatCalendarTime(slice.end, zone, clock24h)}</span>
-    <strong className="mt-1 block break-words text-body font-medium text-ink">{slice.entry.intent || 'Study'}</strong>
-    <span className="text-label text-ink-2">{minutes} min logged</span>
-  </article>;
+/** N121 B7: the navigator names what each view shows. */
+function viewLabel(view: View, date: string, firstDay: number): string {
+  if (view === 'day') return civilDayLabel(date);
+  if (view === 'month') return civilMonthLabel(date);
+  const from = view === 'week' ? weekStartDay(date, firstDay) : date;
+  return civilRangeLabel(from, shiftDay(from, 6));
 }
-function BlockSummary({ block, zone, clock24h }: { block: CalendarBlockRecord; zone: string; clock24h:boolean }) {
-  // #1322 (mockup agenda card): time range first, then the title, then kind and length.
-  const minutes = Math.max(0, Math.round((Date.parse(block.endsAt) - Date.parse(block.startsAt)) / 60000));
-  const length = minutes >= 60 ? Math.floor(minutes / 60) + ' h' + (minutes % 60 ? ' ' + (minutes % 60) + ' min' : '') : minutes + ' min';
-  return <><span className="block text-label tabular-nums text-ink-2">{formatCalendarTime(block.startsAt, zone, clock24h)}–{formatCalendarTime(block.endsAt, zone, clock24h)}</span>
-    <strong className="mt-1 block break-words text-body font-medium text-ink">{block.title}</strong>
-    <span className="text-label text-ink-2">{block.kind === 'busy' ? 'Busy' : 'Study'} · {length}{block.status === 'done' ? ' · Done' : block.kind === 'study' ? ' · Planned' : ''}</span></>;
-}
-/** Blocks on one day that overlap another block that day. */
-function overlappingBlocks(blocks: CalendarBlockRecord[]): number {
-  const spans = blocks.filter(b => b.status !== 'cancelled').map(b => [Date.parse(b.startsAt), Date.parse(b.endsAt)] as const);
-  return spans.filter(([a, b], i) => spans.some(([c, d], j) => i !== j && a < d && c < b)).length;
-}
+const unit = (view: View) => view === 'day' ? 'day' : view === 'month' ? 'month' : 'week';
 
 function V6Calendar() {
-  const [ownerSettings,setOwnerSettings]=useState<{weekStart?:number;clock24h?:boolean}|null>(null);
+  const [ownerSettings,setOwnerSettings]=useState<{weekStart?:number;clock24h?:boolean;window?:{start:string;end:string}|null}|null>(null);
   const [preferencesError,setPreferencesError]=useState(false);
+  const [projects,setProjects]=useState<ProjectSummary[]>([]);
   // Calendar is also mounted by standalone N27/N74 tests without React Query.
   // Load owner settings through the same mode-aware API used by Settings.
   useEffect(()=>{
@@ -79,7 +52,9 @@ function V6Calendar() {
       try{
         void getApi().getSettings().then(settings=>{
           if(!active)return;
-          setOwnerSettings({weekStart:settings.weekStart,clock24h:settings.clock24h});
+          const planning=settings.planning;
+          setOwnerSettings({weekStart:settings.weekStart,clock24h:settings.clock24h,
+            window:planning?.window_start&&planning?.window_end?{start:planning.window_start,end:planning.window_end}:null});
           setPreferencesError(false);
         }).catch(()=>{if(active)setPreferencesError(true)});
       }catch{
@@ -89,14 +64,17 @@ function V6Calendar() {
       }
     };
     load();
+    try{void getApi().listProjects().then(rows=>{if(active)setProjects(rows)}).catch(()=>{/* names are optional */});}
+    catch{/* names are optional */}
     window.addEventListener('focus',load);
     return()=>{active=false;window.removeEventListener('focus',load)};
   },[]);
   const firstDay=ownerSettings?.weekStart??1;
   const clock24h=ownerSettings?.clock24h??true;
+  const notify=useToast();
   const [params, setParams] = useSearchParams();
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  const view = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : params.get('view') === 'month' ? 'month' : 'agenda';
+  const view: View = params.get('view') === 'day' ? 'day' : params.get('view') === 'week' ? 'week' : params.get('view') === 'month' ? 'month' : 'agenda';
   const rawDay = params.get('date');
   const date = validDayKey(rawDay) ? rawDay : dayKey(new Date(), zone);
   const [entries, setEntries] = useState<StudyEntryRecord[]>([]);
@@ -106,15 +84,10 @@ function V6Calendar() {
   const [readError, setReadError] = useState('');
   const [actionError, setActionError] = useState('');
   const [reload, setReload] = useState(0);
-  const [kind, setKind] = useState<CalendarBlockKind>('study');
-  const [title, setTitle] = useState('');
-  const [start, setStart] = useState(date + 'T09:00');
-  const [end, setEnd] = useState(date + 'T10:00');
-  const [editing, setEditing] = useState<string | null>(null);
-  const [moveStart, setMoveStart] = useState('');
-  const [moveEnd, setMoveEnd] = useState('');
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const opener = useRef<HTMLElement | null>(null);
+  const tools = useRef<HTMLDetailsElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -149,16 +122,36 @@ function V6Calendar() {
     };
   }, []);
 
-  useEffect(() => {
-    setStart(date + 'T09:00'); setEnd(date + 'T10:00');
-    setEditing(null); setConfirmDelete(null); setActionError('');
-  }, [date]);
+  useEffect(() => { setConfirmDelete(null); setActionError(''); }, [date]);
 
   function updateUrl(key: 'view' | 'date', value: string) {
     const next = new URLSearchParams(params);
     next.set('view', view); next.set('date', date);
     next.set(key, value);
     setParams(next);
+  }
+  function remember(event?: MouseEvent<HTMLElement>) {
+    if (event?.currentTarget) opener.current = event.currentTarget;
+    if (tools.current) tools.current.open = false;
+  }
+  function openNew(event?: MouseEvent<HTMLElement>, startsAt?: string) {
+    remember(event);
+    const next = new URLSearchParams(params);
+    next.set('new', 'block'); next.delete('edit');
+    if (startsAt) next.set('start', startsAt); else next.delete('start');
+    setParams(next);
+  }
+  function openEdit(block: CalendarBlockRecord, event?: MouseEvent<HTMLElement>) {
+    remember(event);
+    const next = new URLSearchParams(params);
+    next.set('edit', block.id); next.delete('new'); next.delete('start');
+    setParams(next);
+  }
+  function restoreFocus() {
+    const target = opener.current;
+    opener.current = null;
+    if (target?.isConnected) target.focus();
+    if (!target?.isConnected || document.activeElement !== target) tools.current?.querySelector('summary')?.focus();
   }
   async function mutate<T>(perform: () => Promise<T>, done: (receipt: T) => void) {
     if (saving) return;
@@ -167,34 +160,6 @@ function V6Calendar() {
     catch (error) { setActionError(writeError(error)); }
     finally { setSaving(false); }
   }
-  function createBlock(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const startsAt = toInstant(start), endsAt = toInstant(end);
-    if (!title.trim() || !startsAt || !endsAt || Date.parse(endsAt) <= Date.parse(startsAt)) {
-      setActionError('Enter a title and a valid start before the end.'); return;
-    }
-    void mutate(
-      () => getStudyApi().createCalendarBlock({ kind, title: title.trim(), startsAt, endsAt, timeZone: zone }),
-      receipt => {
-        setBlocks(old => [...old, receipt.record]); setTitle('');
-      },
-    );
-  }
-  function beginMove(block: CalendarBlockRecord) {
-    setEditing(block.id); setMoveStart(localInput(block.startsAt)); setMoveEnd(localInput(block.endsAt));
-    setConfirmDelete(null); setActionError('');
-  }
-  function moveBlock(event: FormEvent<HTMLFormElement>, block: CalendarBlockRecord) {
-    event.preventDefault();
-    const startsAt = toInstant(moveStart), endsAt = toInstant(moveEnd);
-    if (!startsAt || !endsAt || Date.parse(endsAt) <= Date.parse(startsAt)) {
-      setActionError('Enter a valid start before the end.'); return;
-    }
-    void mutate(
-      () => getStudyApi().updateCalendarBlock(block.id, block.version, { startsAt, endsAt }),
-      receipt => { setBlocks(old => old.map(b => b.id === block.id ? receipt.record : b)); setEditing(null); },
-    );
-  }
   function doneBlock(block: CalendarBlockRecord) {
     void mutate(
       () => getStudyApi().updateCalendarBlock(block.id, block.version, { status: 'done' }),
@@ -202,136 +167,128 @@ function V6Calendar() {
     );
   }
   function deleteBlock(block: CalendarBlockRecord) {
+    const api = getStudyApi();
     void mutate(
-      () => getStudyApi().deleteCalendarBlock(block.id, block.version),
-      () => { setBlocks(old => old.filter(b => b.id !== block.id)); setConfirmDelete(null); },
+      () => api.deleteCalendarBlock(block.id, block.version),
+      () => {
+        setBlocks(old => old.filter(b => b.id !== block.id)); setConfirmDelete(null);
+        notify('Calendar block deleted', { tone: 'success', action: { label: 'Undo', onClick: () => {
+          void api.createCalendarBlock(block).then(() => setReload(n => n + 1))
+            .catch(error => { setActionError(writeError(error)); setReload(n => n + 1); });
+        } } });
+      },
     );
   }
-  const groups = phase === 'ready' && view === 'agenda' ? agendaGroups(date, zone, entries, blocks) : [];
-  const slots = phase === 'ready' && view === 'day' ? daySlots(date, zone, entries, blocks) : [];
-  const capacity = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks) : null;
+  function adjustGridBlock(block:CalendarBlockRecord,patch:{startsAt?:string;endsAt?:string}){
+    if(saving)return;
+    if(!patch.startsAt||!patch.endsAt||Date.parse(patch.endsAt)<=Date.parse(patch.startsAt)){
+     setActionError('Block must finish after it starts.');return;
+    }
+    const before={startsAt:block.startsAt,endsAt:block.endsAt},api=getStudyApi();
+    void mutate(()=>api.updateCalendarBlock(block.id,block.version,patch),receipt=>{
+     setBlocks(old=>old.map(item=>item.id===block.id?receipt.record:item));
+     notify('Calendar block moved',{tone:'success',action:{label:'Undo',onClick:()=>{
+      void api.updateCalendarBlock(block.id,receipt.record.version,before).then(()=>{
+       setReload(n=>n+1);notify('Calendar change undone',{tone:'success'});
+      }).catch(error=>{setActionError(writeError(error));setReload(n=>n+1);});
+     }}});
+    });
+  }
+  const full = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks) : null;
+  const inWindow = phase === 'ready' && view === 'day' ? dayCapacity(date, zone, entries, blocks, ownerSettings?.window) : null;
+  const dayBlocks = view === 'day' ? blocks.filter(b => b.status !== 'cancelled').sort((a, b) => a.startsAt.localeCompare(b.startsAt)) : [];
   const step = view === 'day' ? 1 : 7;
+  const shift = (direction: 1 | -1) => updateUrl('date', view === 'month' ? shiftMonth(date, direction) : shiftDay(date, direction * step));
 
-  return <section aria-labelledby="calendar-title" className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
+  return <section aria-labelledby="calendar-title" data-calendar-view={view} className="flex min-w-0 max-w-full flex-col gap-4 overflow-x-clip pb-8">
     <h1 id="calendar-title" className="sr-only">Calendar</h1>
     {preferencesError&&<p aria-live="polite" className="text-label text-ink-2">Calendar preferences unavailable; showing default week start and clock format.</p>}
-    <nav aria-label="Calendar date" className="grid grid-cols-[44px_minmax(0,1fr)_44px_auto] items-center gap-2">
-      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-[1.5rem] text-ink" aria-label="Previous dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, -1) : shiftDay(date, -step))}>‹</button>
-      <strong className="text-center text-body font-medium text-ink">{dateLabel(date, zone)}</strong>
-      <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-[8px] text-[1.5rem] text-ink" aria-label="Next dates" onClick={() => updateUrl('date', view === 'month' ? shiftMonth(date, 1) : shiftDay(date, step))}>›</button>
+    <nav aria-label="Calendar date" className="grid grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-2">
+      <button type="button" className={arrowClass} aria-label={'Previous ' + unit(view)} onClick={() => shift(-1)}><ChevronLeft size={22} aria-hidden="true"/></button>
+      <strong className="min-w-0 truncate text-center text-body font-medium text-ink" aria-live="polite">{viewLabel(view, date, firstDay)}</strong>
+      <button type="button" className={arrowClass} aria-label={'Next ' + unit(view)} onClick={() => shift(1)}><ChevronRight size={22} aria-hidden="true"/></button>
       <button type="button" className="min-h-11 rounded-[8px] px-2 text-body text-ink-2" onClick={() => updateUrl('date', dayKey(new Date(), zone))}>Today</button>
     </nav>
-    <div onKeyDown={event => {
+    {phase==='ready'&&<OverdueBanner dues={dues} zone={zone} projects={projects}
+      onRefresh={()=>setReload(n=>n+1)}/>}
+    <div className="flex min-w-0 flex-col gap-2" onKeyDown={event => {
       if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+      if (!(event.target as HTMLElement).closest('[role=group][aria-label="Calendar view"]')) return;
       const choices = ['agenda', 'day', 'week', 'month'];
       const offset = event.key === 'ArrowRight' ? 1 : -1;
       const next = (choices.indexOf(view) + offset + choices.length) % choices.length;
       event.preventDefault();
       updateUrl('view', choices[next]);
-      event.currentTarget.querySelectorAll('button')[next]?.focus();
+      event.currentTarget.querySelectorAll<HTMLButtonElement>('[aria-label="Calendar view"] button')[next]?.focus();
     }}>
-      <Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
-        options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} />
+      <div className="min-w-0"><Segmented label="Calendar view" value={view} onChange={value => updateUrl('view', value)}
+        options={[{ value: 'agenda', label: 'Agenda' }, { value: 'day', label: 'Day' }, { value: 'week', label: 'Week' }, { value: 'month', label: 'Month' }]} /></div>
+      {/* #1321 (mockup): one "Planning tools" button; N121 B7 makes it a right-anchored menu with two items. */}
+      <details ref={tools} className="lemma-planning-tools relative self-end">
+        <summary className="cr-calendar-tools flex min-h-12 cursor-pointer list-none items-center justify-center rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label text-ink [&::-webkit-details-marker]:hidden">Planning tools</summary>
+        <div aria-label="Planning tools" role="group" className="absolute right-0 top-full z-[60] mt-2 flex w-56 flex-col gap-1 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-2 shadow-lg [&_button]:w-full [&_button]:text-left">
+          <button type="button" className={actionClass} disabled={phase!=='ready'} onClick={event=>openNew(event)}>New time block</button>
+          <PlannerLaunch date={date} zone={zone}/>
+        </div>
+      </details>
     </div>
-    {/* #1321 (mockup): one "Planning tools" button; the sheet and planner actions open from it. */}
-    <details className="lemma-planning-tools self-end">
-      <summary className="cr-calendar-tools flex min-h-11 cursor-pointer list-none items-center justify-center rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-ink [&::-webkit-details-marker]:hidden">Planning tools</summary>
-      <div aria-label="Planning tools" role="group" className="mt-2 flex flex-col items-end gap-2">
-        <BlockSheetActions blocks={blocks} date={date} zone={zone} ready={phase === 'ready'}
-          onRefresh={() => setReload(n => n + 1)}/>
-        <PlannerLaunch date={date} zone={zone}/>
-      </div>
-    </details>
+    <BlockSheetActions showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'}
+      onRefresh={()=>setReload(n=>n+1)} onClosed={restoreFocus}/>
 
     {phase === 'loading' && <p role="status">Loading calendar…</p>}
     {phase === 'error' && <div role="alert">{readError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
     {actionError && <div role="alert" className="rounded-ctl border border-edge p-3 text-label">{actionError} <button type="button" className={actionClass} onClick={() => { setActionError(''); setReload(n => n + 1); }}>Reload</button></div>}
 
-    {phase === 'ready' && view === 'agenda' && <div aria-label="Next seven days" className="flex flex-col gap-3">
-      {groups.map((group, index) => <Slab as="section" key={group.day} className="flex flex-col gap-3 !border-0 !border-b !border-[var(--hair)] !rounded-none !bg-transparent px-0 pb-4 pt-1">
-        {/* #1322: the selected day leads without repeating its date; later days keep a quiet heading. */}
-        <h2 className={index === 0 ? 'sr-only' : '!font-[var(--font-ui)] !text-[.875rem] font-medium text-ink-2'}>{dateLabel(group.day, zone)}</h2>
-        {index === 0 && overlappingBlocks(group.blocks) > 0 && <p className="self-start rounded-[8px] border border-[var(--warn)] px-3 py-2 text-label text-[var(--warn)]">{overlappingBlocks(group.blocks)} overlapping blocks</p>}
-        {group.entries.length === 0 && group.blocks.length === 0 &&
-          !dueForDay(group.day,date,zone,dues).length &&
-          <p className="text-label text-ink-2">Nothing planned.</p>}
-        {group.entries.map((entry, index) => <SavedRow key={entry.entry.id + ':' + index} slice={entry} zone={zone} clock24h={clock24h} />)}
-        {group.blocks.map(block => <article key={block.id} className={blockCard(block)}><BlockSummary block={block} zone={zone} clock24h={clock24h}/></article>)}
-        <DueDayItems date={group.day} firstVisible={date} zone={zone} dues={dues}/>
-      </Slab>)}
-    </div>}
+    {phase === 'ready' && view === 'agenda' && <AgendaView date={date} zone={zone} clock24h={clock24h}
+      entries={entries} blocks={blocks} dues={dues} projects={projects}
+      onEdit={openEdit} onRefresh={()=>setReload(n=>n+1)}/>}
 
     {phase === 'ready' && view === 'week' && <WeekView date={date} zone={zone} firstDay={firstDay} clock24h={clock24h}
-      entries={entries} blocks={blocks} dues={dues} onDay={selected => {
+      entries={entries} blocks={blocks} dues={dues} onEdit={block=>openEdit(block)} onAdjust={adjustGridBlock} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
 
-    {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone} firstDay={firstDay}
+    {phase === 'ready' && view === 'month' && <MonthView date={date} zone={zone} firstDay={firstDay} clock24h={clock24h}
       entries={entries} blocks={blocks} dues={dues} onDay={selected => {
         const next = new URLSearchParams(params);
         next.set('view', 'day'); next.set('date', selected); setParams(next);
       }} />}
 
     {phase === 'ready' && view === 'day' && <>
-      {capacity && <Slab as="section" aria-label="Day capacity" className="p-3">
-        <h2 className="mb-2 text-body font-semibold">Time accounted for</h2>
-        <div className="grid grid-cols-2 gap-2 text-label">
-          <p>Logged <strong className="block tabular-nums">{Math.round(capacity.logged)} min</strong></p>
-          <p>Busy <strong className="block tabular-nums">{Math.round(capacity.busy)} min</strong></p>
-          <p>Planned <strong className="block tabular-nums">{Math.round(capacity.planned)} min</strong></p>
-          <p>Free <strong className="block tabular-nums">{Math.round(capacity.free)} min</strong></p>
-        </div>
-      </Slab>}
-
-      <Slab as="section" aria-label="Plan a calendar block" className="p-3">
-        <h2 className="mb-3 text-body font-semibold">Add a block</h2>
-        <form className="flex flex-col gap-3" onSubmit={createBlock}>
-          <label className="text-label">Type<select className={fieldClass} value={kind} onChange={e => setKind(e.target.value as CalendarBlockKind)}><option value="study">Study</option><option value="busy">Busy</option></select></label>
-          <label className="text-label">Title<input className={fieldClass} value={title} onChange={e => setTitle(e.target.value)} required maxLength={200}/></label>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <label className="text-label">Start<input aria-label="Block start" type="datetime-local" className={fieldClass} value={start} onChange={e => setStart(e.target.value)} required/></label>
-            <label className="text-label">End<input aria-label="Block end" type="datetime-local" className={fieldClass} value={end} onChange={e => setEnd(e.target.value)} required/></label>
+      {full && inWindow && <section aria-label="Day capacity" className="text-label text-ink-2"><p>
+        Logged <strong className="tabular-nums text-ink">{formatDuration(full.logged)}</strong>
+        {full.busy > 0 && <> · Busy <strong className="tabular-nums text-ink">{formatDuration(full.busy)}</strong></>}
+        {' · '}Planned <strong className="tabular-nums text-ink">{formatDuration(full.planned)}</strong>
+        {' · '}Free <strong className="tabular-nums text-ink">{formatDuration(inWindow.free)}</strong>
+      </p></section>}
+      <section aria-label="Day schedule" className="min-w-0 max-w-full">
+        <h2 className="sr-only">Day schedule</h2>
+        <TimeGrid date={date} zone={zone} clock24h={clock24h}
+          entries={entries} blocks={blocks} busy={saving}
+          onCreate={startsAt=>openNew(undefined,startsAt)} onEdit={block=>openEdit(block)} onAdjust={adjustGridBlock}/>
+        {dayBlocks.length === 0 && entries.length === 0 && dueForDay(date,date,zone,dues).length===0 &&
+          <p className="mt-2 text-label text-ink-2">Nothing planned. Tap the grid to add a block.</p>}
+        <div className="mt-2"><DueDayItems date={date} firstVisible={date} zone={zone} dues={dues} projects={projects}/></div>
+      </section>
+      {dayBlocks.length > 0 && <section aria-labelledby="calendar-events" className="cr-event-details flex min-w-0 flex-col gap-2">
+        <h2 id="calendar-events" className="text-label font-semibold text-ink">Events for selected day · {dayBlocks.length}</h2>
+        <ul className="flex flex-col gap-2">{dayBlocks.map(block => <li key={block.id} className="flex min-w-0 flex-col gap-2 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
+          <button type="button" aria-label={'Edit block ' + block.title} className="min-h-11 min-w-0 text-left" onClick={event => openEdit(block, event)}>
+            <BlockLines block={block} zone={zone} clock24h={clock24h}/>
+          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={actionClass} disabled={saving} onClick={event => openEdit(block, event)} aria-label={'Move ' + block.title}>Move</button>
+            {block.status !== 'done' && <button type="button" className={actionClass} disabled={saving} onClick={() => doneBlock(block)} aria-label={'Mark ' + block.title + ' done'}>Done</button>}
+            <button type="button" className={actionClass + ' lemma-destructive'} disabled={saving} onClick={() => setConfirmDelete(block.id)} aria-label={'Delete ' + block.title}>Delete</button>
           </div>
-          <button type="submit" disabled={saving} className={actionClass + ' self-start'}>Add block</button>
-        </form>
-      </Slab>
-      <Slab as="section" aria-label="Day schedule" className="min-w-0 max-w-full p-3">
-        <h2 className="mb-3 text-body font-semibold">Day schedule</h2>
-        {slots.every(row => row.entries.length === 0 && row.blocks.length === 0) &&
-          dueForDay(date,date,zone,dues).length===0 &&
-          <p className="mb-3 text-label text-ink-2">Nothing planned.</p>}
-        <DueDayItems date={date} firstVisible={date} zone={zone} dues={dues}/>
-        <div role="region" aria-label="Day hourly timetable" tabIndex={0}
-          className="max-w-full overflow-x-auto rounded-ctl focus-visible:outline-2 focus-visible:outline-amber">
-          <div className="min-w-[320px]">
-        <div className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge pb-2 text-caption font-semibold text-ink-2">
-          <span>Hour</span><span>Logged study</span><span>Planned blocks</span>
-        </div>
-        {slots.map(row => <div key={row.at} className="grid grid-cols-[minmax(70px,auto)_minmax(0,1fr)_minmax(0,1fr)] gap-2 border-b border-edge py-2">
-          <time dateTime={row.at} className="break-words text-caption tabular-nums text-ink-2">{row.label}</time>
-          <div className="min-w-0 space-y-2">{row.entries.map((slice, index) => <SavedRow key={slice.entry.id + ':' + index} slice={slice} zone={zone} clock24h={clock24h}/>)}</div>
-          <div className="min-w-0 space-y-2">{row.blocks.map(block => <article key={block.id} className={blockCard(block)}>
-            <BlockSummary block={block} zone={zone} clock24h={clock24h}/>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button type="button" className={actionClass} disabled={saving} onClick={() => beginMove(block)} aria-label={'Move ' + block.title}>Move</button>
-              {block.status !== 'done' && <button type="button" className={actionClass} disabled={saving} onClick={() => doneBlock(block)} aria-label={'Mark ' + block.title + ' done'}>Done</button>}
-              <button type="button" className={actionClass} disabled={saving} onClick={() => {setConfirmDelete(block.id);setEditing(null);}} aria-label={'Delete ' + block.title}>Delete</button>
-            </div>
-            {editing === block.id && <form onSubmit={event => moveBlock(event, block)} className="mt-2 flex flex-col gap-2">
-              <label>Move start<input aria-label="Move block start" type="datetime-local" className={fieldClass} value={moveStart} onChange={event => setMoveStart(event.target.value)} required/></label>
-              <label>Move end<input aria-label="Move block end" type="datetime-local" className={fieldClass} value={moveEnd} onChange={event => setMoveEnd(event.target.value)} required/></label>
-              <div className="flex flex-wrap gap-2"><button className={actionClass} type="submit" disabled={saving}>Save move</button><button className={actionClass} type="button" onClick={() => setEditing(null)}>Cancel</button></div>
-            </form>}
-            {confirmDelete === block.id && <div className="mt-2 text-label">
-              <p>Delete this block?</p><button type="button" className={actionClass} disabled={saving} onClick={() => deleteBlock(block)}>Confirm delete</button>
-              <button type="button" className={actionClass} onClick={() => setConfirmDelete(null)}>Cancel</button>
-            </div>}
-          </article>)}</div>
-        </div>)}
-          </div>
-        </div>
-      </Slab>
+          {confirmDelete === block.id && <div className="flex flex-wrap items-center gap-2 text-label">
+            <span>Delete this block?</span>
+            <button type="button" className={actionClass} onClick={() => setConfirmDelete(null)}>Keep</button>
+            <button type="button" className={actionClass + ' lemma-destructive'} disabled={saving} onClick={() => deleteBlock(block)}>Confirm delete</button>
+          </div>}
+        </li>)}</ul>
+      </section>}
     </>}
   </section>;
 }

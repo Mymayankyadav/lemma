@@ -51,7 +51,7 @@ describe('N29 v6 Atlas list',()=>{
   const tree=buildAtlasTree(graph);
   expect(realIdeas(tree)).toBe(4);
   expect([...tree.nodes.values()].some(node=>node.synthetic)).toBe(true);
-  expect(host.querySelector('[aria-label="Real idea count"]')?.textContent).toContain('4 ideas');
+  expect(host.querySelector('[aria-label="Real concept count"]')?.textContent).toContain('4 concepts');
   // #1333: generated groups are not listed, so every row is a real concept.
   expect(host.textContent).not.toContain('Generated grouping row');
   expect(host.textContent).toContain('Proof of continuity');
@@ -70,16 +70,16 @@ describe('N29 v6 Atlas list',()=>{
   const names=[...host.querySelectorAll('button[aria-label^="Actions for "]')].map(el=>el.getAttribute('aria-label')!.slice('Actions for '.length));
   expect(names).toEqual(['Counterexamples','Foundations','Open sets','Proof of continuity']);
   expect(host.querySelector('button[aria-label^="Expand "],button[aria-label^="Collapse "]')).toBeNull();
-  const items=[...host.querySelectorAll('[aria-label="Idea hierarchy"] li')] as HTMLElement[];
+  const items=[...host.querySelectorAll('[aria-label="Concept list"] li')] as HTMLElement[];
   expect(items.length).toBe(4);
   expect(items.every(li=>!li.style.paddingLeft)).toBe(true);
-  expect(host.textContent).toContain('4 matching concepts');
+  expect(host.textContent).toContain('4 concepts');
   items[0].querySelector('button')!.focus();
   expect(items[0].querySelector('button')!.className).toContain('min-h-11');
  });
  it('searches using real labels and reports filtered-empty',async()=>{
   await render();
-  const input=host.querySelector('input[aria-label="Find an idea"]') as HTMLInputElement;
+  const input=host.querySelector('input[aria-label="Find a concept"]') as HTMLInputElement;
   await act(async()=>{
    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'Counterexamples');
    input.dispatchEvent(new Event('input',{bubbles:true}));
@@ -91,13 +91,13 @@ describe('N29 v6 Atlas list',()=>{
    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'No exact idea 123');
    input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  expect(host.textContent).toContain('No ideas match your search');
+  expect(host.textContent).toContain('No concepts match your search');
  });
  it('shows distinct loading, empty, and failure states with a retry action',async()=>{
   vi.mocked(useAtlas).mockReturnValue(fake(null,true) as ReturnType<typeof useAtlas>);
-  await render();expect(host.textContent).toContain('Loading ideas');
+  await render();expect(host.textContent).toContain('Loading concepts');
   vi.mocked(useAtlas).mockReturnValue(fake({subjects:[],concepts:[],links:[]}) as ReturnType<typeof useAtlas>);
-  await render();expect(host.textContent).toContain('Your Atlas is empty');
+  await render();expect(host.textContent).toContain('No concepts yet');
   const retry=vi.fn(async()=>{});
   vi.mocked(useAtlas).mockReturnValue({...fake(null,false,new Error('offline')),refetch:retry} as ReturnType<typeof useAtlas>);
   await render();expect(host.querySelector('[role="alert"]')?.textContent).toContain('Could not load');
@@ -107,10 +107,10 @@ describe('N29 v6 Atlas list',()=>{
   vi.mocked(useAtlas).mockReturnValue(fake(null,true) as ReturnType<typeof useAtlas>);
   vi.mocked(isFlagOn).mockReturnValue(false);
   await render(<AtlasPage/>);
-  expect(host.textContent).not.toContain('Loading ideas…');
+  expect(host.textContent).not.toContain('Loading concepts…');
   expect(host.querySelector('main[aria-label="Atlas"]')).toBeTruthy();
   vi.mocked(isFlagOn).mockReturnValue(true);
   await render(<AtlasPage/>);
-  expect(host.textContent).toContain('Loading ideas…');
+  expect(host.textContent).toContain('Loading concepts…');
  });
 });

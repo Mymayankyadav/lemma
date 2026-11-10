@@ -13,8 +13,8 @@ vi.mock('../../../src/data/hooks', () => ({
 vi.mock('../../../src/ui/Toast', () => ({ useToast: vi.fn() }));
 vi.mock('../../../src/ui/Sheet', async () => {
   const React = await import('react');
-  return { Sheet: ({ open, title, children }: { open: boolean; title: string; children: React.ReactNode }) =>
-    open ? React.createElement('section', { role: 'dialog', 'aria-label': title }, children) : null };
+  return { Sheet: ({ open, title, children, footer }: { open: boolean; title: string; children: React.ReactNode; footer?: React.ReactNode }) =>
+    open ? React.createElement('section', { role: 'dialog', 'aria-label': title }, children, footer) : null };
 });
 
 const settings: Settings = {
@@ -244,7 +244,9 @@ describe('N28.2.1 v6 Study defaults', () => {
     expect(teachingStyleDestination(0, 'Enter', 2)).toBeNull();
     expect(teachingStyleDestination(0, 'ArrowRight', 0)).toBeNull();
     await render();
-    const first = button('Socratic · Selected');
+    // N121 F9: the selected style is shown by its radio, not by "· Selected" text.
+    const first = button('Socratic');
+    expect(first.getAttribute('aria-checked')).toBe('true');
     first.focus();
     await act(async () => first.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'ArrowRight' })));
     expect(document.activeElement).toBe(button('Worked examples'));

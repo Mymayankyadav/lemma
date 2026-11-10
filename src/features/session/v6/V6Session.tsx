@@ -1,3 +1,5 @@
+import {evidenceText,sessionStatusText} from '../../../lib/labels';
+import {formatDateTime,formatDuration,formatTime} from '../../../lib/format';
 import {Bot,CalendarDays,Clock3} from 'lucide-react';
 import {useV6HeaderTitle} from '../../../app/v6Title';
 import {useState} from 'react';
@@ -53,21 +55,20 @@ export default function V6Session(){
   {/* N114 (mockup `11__Page`): "Session N" in the shell header, a meta row, then the goal card. */}
   <header className="flex flex-col gap-4">
    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-label text-ink-2">
-    <span className="inline-flex items-center gap-1.5"><Clock3 size={16} aria-hidden="true"/>{summary.minutes===null?'Study time not yet recorded':summary.minutes+' minutes'}</span>
+    <span className="inline-flex items-center gap-1.5"><Clock3 size={16} aria-hidden="true"/>{summary.minutes===null?'Study time not yet recorded':formatDuration(summary.minutes)}</span>
     <span className="inline-flex items-center gap-1.5"><Bot size={16} aria-hidden="true"/>{summary.client==='claude'?'Claude':summary.client==='chatgpt'?'ChatGPT':'Tutor'}</span>
-    <span className="inline-flex items-center gap-1.5"><CalendarDays size={16} aria-hidden="true"/><time dateTime={summary.startedAt}>{new Date(summary.startedAt).toLocaleString()}</time></span>
-    <span>Session {summary.number} · {summary.display}</span>
+    <span className="inline-flex items-center gap-1.5"><CalendarDays size={16} aria-hidden="true"/><time dateTime={summary.startedAt}>{formatDateTime(summary.startedAt,{clock24h:true})}</time></span>
+    <span>Session {summary.number} · {sessionStatusText(summary.display)}</span>
+    {summary.checkpointCode&&<Link className="inline-flex min-h-11 items-center text-[var(--link)] underline"
+      to={path+'/cp/'+encodeURIComponent(summary.checkpointCode)}>Checkpoint {summary.checkpointCode}</Link>}
    </div>
    <section aria-label="Session goal" className="flex flex-col gap-3 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4">
     <p className="text-label text-ink-2">Session goal</p>
     <h1 className="!font-[var(--font-ui)] !text-[1.125rem] !leading-snug font-medium text-ink"><Tex source={summary.goal}/></h1>
     <div className="flex flex-wrap gap-2">
-     {summary.goalMet&&<span className="lemma-state-chip !ml-0">Goal {summary.goalMet==='yes'?'met':summary.goalMet==='partial'?'partly met':'not met'}</span>}
-     {summary.checkpointCode&&<Link className="lemma-switch-chip"
-      to={path+'/cp/'+encodeURIComponent(summary.checkpointCode)}>Checkpoint {summary.checkpointCode}</Link>}
+     {summary.goalMet&&<span role="status" className="rounded-full bg-[var(--paper-2)] px-3 py-1 text-caption font-medium text-ink-2">Goal {summary.goalMet==='yes'?'met':summary.goalMet==='partial'?'partly met':'not met'}</span>}
     </div>
    </section>
-   <Link to={path+'?tab=sessions'} className="lemma-switch-chip self-start">Back to path sessions</Link>
   </header>
   <section aria-label="Session summary" className="flex flex-col gap-2 border-t border-[var(--hair)] pt-4">
    <h2>Summary</h2>
@@ -76,25 +77,25 @@ export default function V6Session(){
    <p className="text-caption text-ink-2">Teaching style: {data.styleName||'Not recorded'}</p>
    {data.pages&&<p className="text-caption text-ink-2">Source pages: {data.pages}</p>}
   </section>
-  <section aria-label="Resume checkpoint" className="flex flex-col gap-2 border-t border-[var(--hair)] pt-4">
+  {(data.resumeQuestion||data.resumeStep!==null)&&<section aria-label="Resume checkpoint" className="flex flex-col gap-2 border-t border-[var(--hair)] pt-4">
    <h2>Pick up where you left off</h2>
    {data.resumeStep!==null&&<p className="text-label text-ink-2">Resume step {data.resumeStep}</p>}
    {data.resumeQuestion?<p className="text-body"><Tex source={data.resumeQuestion}/></p>:
-    <p className="text-label text-ink-2">No resume question recorded.</p>}
-  </section>
+    null}
+  </section>}
   <section aria-label="Session event timeline" className="flex flex-col gap-3">
    <h2>Tutor timeline</h2>
    {events.length===0?<p className="text-label text-ink-2">No tutor events recorded.</p>:
     <ol className="flex flex-col gap-2">{events.slice(0,visibleEvents).map((event,index)=><li key={event.id}
      className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">
      <div className="flex flex-wrap items-center gap-2 text-caption text-ink-2">
-      <span className="font-semibold">{index+1}. {event.kind.replaceAll('_',' ')}</span>
-      {event.outcome&&<span>· {event.outcome}</span>}
+      <span className="font-semibold">{index+1}. {evidenceText(event.kind)}</span>
+      {event.outcome&&<span>· {evidenceText(event.outcome)}</span>}
       {event.hintLevel!==null&&<span>· Hint level {event.hintLevel}</span>}
-      <time dateTime={event.createdAt}>{new Date(event.createdAt).toLocaleString()}</time>
+      <time dateTime={event.createdAt}>{formatTime(event.createdAt,{clock24h:true})}</time>
      </div>
      <div className="mt-2 break-words text-body"><Tex source={event.body}/></div>
-     {event.checkpointCode&&<Link className="mt-2 inline-flex min-h-11 items-center text-label text-amber"
+     {event.checkpointCode&&event.checkpointCode!==summary.checkpointCode&&<Link className="mt-2 inline-flex min-h-11 items-center text-label text-amber"
        to={path+'/cp/'+encodeURIComponent(event.checkpointCode)}>Checkpoint {event.checkpointCode}</Link>}
     </li>)}</ol>}
    {events.length>visibleEvents&&<button type="button" className={control} onClick={()=>setVisibleEvents(count=>count+50)}>

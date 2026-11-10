@@ -1,4 +1,5 @@
-import { useLocation } from "react-router";
+import { Link, useLocation } from "react-router";
+import { isFlagOn } from "../../flags";
 import { useSignIn } from "../../data/hooks";
 import { getMode } from "../../data/mode";
 import { Button } from "../../ui/Button";
@@ -29,11 +30,19 @@ export default function Page() {
       >
         Continue with Google
       </Button>}
-      {getMode() === "demo" && (
+      {getMode() !== "demo" && isFlagOn("v6Shell") && (
+        <a href="?demo=1#/" className="mt-4 inline-flex min-h-11 items-center text-label text-ink-2 underline">Try the example workspace</a>
+      )}
+      {getMode() === "demo" && (isFlagOn("v6Shell") ? <div className="mt-6 flex w-full max-w-sm flex-col items-center gap-3">
+        {/* N121 F12: demo mode is not a dead end; go back, or switch to your own record. */}
+        <p className="text-label text-ink-2">You're in the example workspace.</p>
+        <Link to="/" className="flex min-h-12 w-full items-center justify-center rounded-[8px] bg-[var(--accent)] font-semibold text-[var(--on-accent)]">Back to Today</Link>
+        <a href="?demo=0#/sign-in" className="inline-flex min-h-11 items-center text-label text-ink-2 underline">Sign in with Google</a>
+      </div> : (
         <p className="mt-4 text-label text-ink-3">
           Sign-in is available in live mode.
         </p>
-      )}
+      ))}
     </section>
   );
 }

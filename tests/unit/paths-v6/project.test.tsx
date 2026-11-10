@@ -15,6 +15,7 @@ vi.mock('../../../src/data/hooks', () => ({
   usePlanRevisions: () => ({ data: [], isPending: false, error: null }),
   useProjects: () => ({ data: [] }),
   useInsightData: () => ({ data: undefined, isPending: false }),
+  useCheckpoint: () => ({ data: undefined }),
 }));
 vi.mock('../../../src/ui/Toast', () => ({ useToast: () => vi.fn() }));
 vi.mock('../../../src/ui/Screen', async () => {
@@ -94,8 +95,9 @@ describe('N33.2 v6 project detail', () => {
     expect(host.textContent).toContain('Algebra');
     expect(host.textContent).toContain('Prove lemmas');
     expect(host.textContent).toContain('1 of 4 checkpoints complete');
-    expect(host.textContent).toContain('Forecast unavailable');
-    expect(host.textContent).toContain('Target date: 2026-12-01');
+    // N121 F3: a forecast that is unavailable is not shown; the target date reads as a date.
+    expect(host.textContent).not.toContain('Forecast unavailable');
+    expect(host.textContent).toContain('Target: Dec 1, 2026');
     const evidence = host.querySelector('[aria-label="Project evidence"]')!;
     expect([...evidence.querySelectorAll('strong')].map(x => x.textContent)).toEqual(['2', '3']);
     expect(useProject).toHaveBeenCalledWith('path-a');
@@ -152,10 +154,11 @@ describe('N33.2 v6 project detail', () => {
     expect(host.querySelectorAll('[aria-label="Project evidence"] a[href^="/s/"]')).toHaveLength(20);
     await click('Show 20 more sessions');
     expect(host.querySelectorAll('[aria-label="Project evidence"] a[href^="/s/"]')).toHaveLength(40);
+    // N121 F3: sources are listed once, by the sources panel, which pages them itself.
     await click('Show sources (41)');
-    expect(host.querySelectorAll('#v6-project-source-list p')).toHaveLength(20);
-    await click('Show 20 more sources');
-    expect(host.querySelectorAll('#v6-project-source-list p')).toHaveLength(40);
+    const rows = host.querySelectorAll('#v6-project-source-list [data-v6-sources] li');
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(20);
   });
 
   it('labels synthetic stage groups as grouped checkpoints rather than tutor-defined stages', async () => {

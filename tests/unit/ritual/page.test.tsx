@@ -60,7 +60,7 @@ describe('N69 owner-zone ritual view and command',()=>{
  it('allows a day already reached in the owner zone, not the device UTC day',async()=>{
   await render('2026-11-08');
   const close=[...host.querySelectorAll('button')]
-   .find(b=>b.textContent?.trim()==='Close 2026-11-08');
+   .find(b=>b.textContent?.trim()==='Close Sun, Nov 8');
   expect(close).toBeDefined();expect(close?.disabled).toBe(false);
   await act(async()=>close?.click());
   expect(mocks.closePlan).toHaveBeenCalledWith(base.id,3,{
@@ -71,7 +71,7 @@ describe('N69 owner-zone ritual view and command',()=>{
   mocks.listPlans.mockResolvedValueOnce({items:[{...base,planDate:'2026-11-09'}],total:1,nextCursor:null});
   await render('2026-11-09');
   const close=[...host.querySelectorAll('button')]
-   .find(b=>b.textContent?.trim()==='Close 2026-11-09');
+   .find(b=>b.textContent?.trim()==='Close Mon, Nov 9');
   expect(close?.disabled).toBe(true);
   expect(mocks.closePlan).not.toHaveBeenCalled();
  });
@@ -90,7 +90,7 @@ describe('N69 owner-zone ritual view and command',()=>{
    .mockResolvedValue({items:[],total:0,nextCursor:null});
   await render('2026-11-08');
   const findClose=()=>[...host.querySelectorAll<HTMLButtonElement>('button')]
-   .find(b=>b.textContent?.trim()==='Close 2026-11-08');
+   .find(b=>b.textContent?.trim()==='Close Sun, Nov 8');
   expect(findClose()?.disabled).toBe(true);
   const dismiss=[...host.querySelectorAll<HTMLButtonElement>('button')]
    .find(b=>b.textContent?.trim()==='Dismiss');
@@ -112,4 +112,18 @@ describe('N69 owner-zone ritual view and command',()=>{
   });
  });
 
+});
+describe('N121 C7 Close the day without a day plan',()=>{
+ it('shows saved time, thoughts and tomorrow instead of dead-ending, and never offers a close',async()=>{
+  mocks.listPlans.mockResolvedValue({items:[],total:0,nextCursor:null});
+  mocks.listStudyEntries.mockResolvedValue([{id:'entry-1',intent:'Compactness',status:'saved',rating:3,
+   intervals:[{id:'i1',kind:'focus',start:'2026-11-07T22:00:00Z',end:'2026-11-07T22:50:00Z'}]}]);
+  await render('2026-11-08');
+  expect(host.textContent).not.toContain('No day plan exists');
+  expect(host.textContent).toContain('Compactness · 50 min · 3 · Solid');
+  expect(host.textContent).toContain('Start a plan for tomorrow');
+  expect(host.textContent).not.toContain('Pacific/Kiritimati');
+  expect([...host.querySelectorAll('button')].some(b=>b.textContent?.startsWith('Close '))).toBe(false);
+  expect(mocks.closePlan).not.toHaveBeenCalled();
+ });
 });

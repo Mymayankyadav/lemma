@@ -49,13 +49,18 @@ async function createTask(page:Page,title:string){
  await expect(modal).toBeHidden();
  await expect(page.locator('[data-v6-header] [role="status"]')).toContainText('Task saved');
 }
+// N121 B3/B7: the always-open Add form is gone; New time block opens the block dialog.
 async function createBlock(page:Page,title:string){
- const form=page.getByRole('region',{name:'Plan a calendar block'});
+ await page.getByText('Planning tools',{exact:true}).click();
+ await page.getByRole('button',{name:'New time block'}).click();
+ const form=page.getByRole('dialog',{name:'New time block'});
  await expect(form).toBeVisible();
- await form.getByRole('textbox',{name:'Title'}).fill(title);
- await form.locator('input[aria-label="Block start"]').fill('2026-11-06T16:00');
- await form.locator('input[aria-label="Block end"]').fill('2026-11-06T16:30');
- await form.getByRole('button',{name:'Add block'}).click();
+ await form.getByRole('textbox',{name:'Calendar block title'}).fill(title);
+ await form.getByLabel('Calendar block date').fill('2026-11-06');
+ await form.getByLabel('Calendar block start').fill('16:00');
+ await form.getByLabel('Calendar block end').fill('16:30');
+ await form.getByRole('button',{name:'Create block'}).click();
+ await expect(form).toBeHidden();
  await expect(page.getByText(title,{exact:true}).first()).toBeVisible();
 }
 

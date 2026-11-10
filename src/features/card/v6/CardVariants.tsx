@@ -128,7 +128,7 @@ export default function CardVariants({
     Edit note and preview math</button>}
    {onToggleStatus&&status!=='deleted'&&<button type="button" disabled={busy}
     onClick={onToggleStatus} className="min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold disabled:opacity-50">
-    {status==='suspended'?'Restore card':'Suspend card'}</button>}
+    {status==='suspended'?'Resume card':'Pause card'}</button>}
   </div>}
  </section>;
 }

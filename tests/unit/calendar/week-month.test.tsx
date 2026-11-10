@@ -43,7 +43,7 @@ async function render(path:string){
   if(flag.enabled) await vi.waitFor(()=>expect(host.textContent).not.toContain('Loading calendar'));
 }
 async function press(label:string){
-  const button=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()===label||b.getAttribute('aria-label')===label);
+  const button=[...host.querySelectorAll('button')].find(b=>b.textContent?.trim()===label||b.getAttribute('aria-label')?.startsWith(label));
   expect(button,'Missing button '+label).toBeDefined();
   await act(async()=>button!.click());
 }
@@ -118,7 +118,7 @@ describe('N26.1 seven-civil-day Week slice',()=>{
     await act(async()=>day.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
     expect(host.querySelector('[data-url]')?.textContent).toContain('view=week');
     await vi.waitFor(()=>expect(host.querySelectorAll('[data-week-day]')).toHaveLength(7));
-    await press('Open 2026-11-05 in Day view');
+    await press('Open Thu, Nov 5 in Day view');
     expect(host.querySelector('[data-url]')?.textContent).toContain('view=day');
     expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-11-05');
   });
@@ -180,13 +180,14 @@ describe('N26.2 DST-safe Calendar Month grid',()=>{
     expect(host.querySelectorAll('[data-month-day]')).toHaveLength(42);
     expect(host.querySelectorAll('[data-outside-month]')).toHaveLength(12);
     const target=host.querySelector('[data-month-day="2026-11-06"]');
-    expect(target?.textContent).toContain('60m');
-    expect(target?.textContent).toContain('3 blocks');
-    expect(target?.getAttribute('aria-label')).toBe('Open 2026-11-06 in Day view');
+    expect(target?.textContent).not.toContain('0m');
+    expect(target?.getAttribute('aria-label')).toContain('1 h logged');
+    expect(target?.getAttribute('aria-label')).toContain('3 blocks');
+    expect(target?.getAttribute('aria-label')).toContain('Open Fri, Nov 6 in Day view');
     const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
     expect(f.listStudyEntries).toHaveBeenCalledWith(monthBounds('2026-11-06',zone).range);
     expect(f.listCalendarBlocks).toHaveBeenCalledWith(monthBounds('2026-11-06',zone).range);
-    await press('Open 2026-10-27 in Day view');
+    await press('Open Tue, Oct 27 in Day view');
     expect(host.querySelector('[data-url]')?.textContent).toContain('view=day');
     expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-10-27');
   });
@@ -197,10 +198,10 @@ describe('N26.2 DST-safe Calendar Month grid',()=>{
     await act(async()=>week.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
     expect(host.querySelector('[data-url]')?.textContent).toContain('view=month');
     await vi.waitFor(()=>expect(host.querySelector('[aria-label="Calendar month"]')).not.toBeNull());
-    await press('Next dates');
+    await press('Next month');
     expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-02-28');
     await vi.waitFor(()=>expect(host.querySelector('[data-month-day="2026-02-28"]')).not.toBeNull());
-    await press('Previous dates');
+    await press('Previous month');
     expect(host.querySelector('[data-url]')?.textContent).toContain('date=2026-01-28');
   });
   it('distinguishes failed data from an actually loaded empty month',async()=>{

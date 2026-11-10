@@ -1,3 +1,4 @@
+import { plainCardText } from '../../proposals/v6/plain-card-text';
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
@@ -20,22 +21,34 @@ const hasFilters = (filters: CardFilters) => Boolean(filters.projectSlug || filt
 const relative = (due: string | null) => {
   if (!due) return 'New';
   const days = Math.ceil((Date.parse(due) - Date.now()) / 86_400_000);
-  return days <= 0 ? 'Due' : days === 1 ? 'in 1d' : 'in ' + days + 'd';
+  return days < 0 ? 'Overdue' : days === 0 ? 'Due today' : days === 1 ? 'Due tomorrow' : 'Due in ' + days + ' days';
 };
+export type CardSort = 'due' | 'newest' | 'path';
+/** N121 E3: a visible order. Due first puts overdue and due cards before later ones; new cards last. */
+export function sortCards(rows: CardRow[], sort: CardSort, pathTitle: (slug: string) => string): CardRow[] {
+  const copy = [...rows];
+  if (sort === 'newest') return copy.sort((a, b) => b.noteNo - a.noteNo);
+  if (sort === 'path') return copy.sort((a, b) => pathTitle(a.projectSlug).localeCompare(pathTitle(b.projectSlug)) || a.noteNo - b.noteNo);
+  const at = (row: CardRow) => row.due === null ? Number.POSITIVE_INFINITY : Date.parse(row.due);
+  return copy.sort((a, b) => at(a) - at(b) || a.noteNo - b.noteNo);
+}
 
-function CardItem({ row }: { row: CardRow }) {
+function CardItem({ row, path }: { row: CardRow; path: string }) {
   // N117 (mockup `18__Page`): a ruled list row with the subject glyph, serif front and a checkpoint chip.
-  return <Link data-card-row to={'/cards/' + row.noteNo}
+  // N121 E3: the quiet meta line (number, path, checkpoint, due) tells equal fronts apart.
+  return <Link data-card-row to={'/cards/' + row.noteNo} aria-label={plainCardText(row.front) + ' · N' + row.noteNo + ' · ' + path}
     className="flex min-w-0 items-center gap-4 border-b border-[var(--edge)] text-ink focus-visible:outline-2 focus-visible:outline-[var(--link)]">
     <span aria-hidden="true" className="w-8 shrink-0 text-center font-math text-[1.75rem] text-ink-2">{row.glyph}</span>
     <span className="min-w-0 flex-1">
-      <span data-card-front className="block min-w-0 break-words font-math text-[1.125rem] leading-snug">
+      <span data-card-front className="block min-w-0 max-w-full overflow-x-auto overflow-y-hidden break-words font-math text-[1.125rem] leading-snug">
         {canRenderPlainCardFront(row.front) ? row.front : <Tex source={row.front} />}
       </span>
-      <span className="mt-2 flex flex-wrap items-center gap-3 text-label text-ink-2">
-        <span className="rounded-[4px] border border-[var(--edge)] px-1.5 tabular-nums">{row.checkpointCode ?? 'No checkpoint'}</span>
-        <span>{row.status === 'suspended' ? 'Paused' : relative(row.due)}</span>
-        {row.openComments > 0 && <span>{row.openComments} open comments</span>}
+      <span data-card-meta className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-label text-ink-2">
+        <span className="tabular-nums">N{row.noteNo}</span><span aria-hidden="true">·</span>
+        <span className="min-w-0 break-words">{path}</span>
+        {row.checkpointCode && <><span aria-hidden="true">·</span><span className="rounded-[4px] border border-[var(--edge)] px-1.5 tabular-nums">{row.checkpointCode}</span></>}
+        <span aria-hidden="true">·</span><span>{row.status === 'suspended' ? 'Paused' : relative(row.due)}</span>
+        {row.openComments > 0 && <><span aria-hidden="true">·</span><span>{row.openComments} open comments</span></>}
       </span>
     </span>
   </Link>;
@@ -82,7 +95,11 @@ export default function V6Cards() {
     },
     staleTime: 30_000,
   });
-  const rows = useMemo(() => cards.data?.pages.flatMap(page => page.rows) ?? [], [cards.data]);
+  const [sort, setSort] = useState<CardSort>('due');
+  const pathTitle = (slug: string) => projects.data?.find(project => project.slug === slug)?.title ?? 'Unassigned path';
+  const rows = useMemo(() => sortCards(cards.data?.pages.flatMap(page => page.rows) ?? [], sort, pathTitle),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cards.data, sort, projects.data]);
   const visible = rows.slice(0, shown);
   const more = shown < rows.length || Boolean(cards.hasNextPage);
   const filtered = search.trim().length > 0 || hasFilters(filters);
@@ -121,12 +138,18 @@ export default function V6Cards() {
     </label>
     <div className="lemma-filter-summary">
       <button type="button" className={button} onClick={() => setShowFilters(true)}>Filters</button>
+      <label className="flex items-center gap-2 text-label text-ink-2">Sort
+        <select aria-label="Sort cards" value={sort} onChange={event => setSort(event.target.value as CardSort)}
+          className="min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-2 text-body text-ink">
+          <option value="due">Due first</option><option value="newest">Newest</option><option value="path">Path</option>
+        </select>
+      </label>
       {filters.projectSlug && <button type="button" className={button} onClick={() => apply({ ...filters, projectSlug: '', checkpointCode: '' })}>
-        Project: {projects.data?.find(project => project.slug === filters.projectSlug)?.title ?? filters.projectSlug} ×
+        Path: {projects.data?.find(project => project.slug === filters.projectSlug)?.title ?? 'Chosen path'} ×
       </button>}
       {filters.checkpointCode && <button type="button" className={button} onClick={() => apply({ ...filters, checkpointCode: '' })}>Checkpoint: {filters.checkpointCode} ×</button>}
       {filters.state && <button type="button" className={button} onClick={() => apply({ ...filters, state: '' })}>Scheduling: {['New', 'Learning', 'Review', 'Relearning'][Number(filters.state)]} ×</button>}
-      {filters.noteStatus && <button type="button" className={button} onClick={() => apply({ ...filters, noteStatus: '' })}>Status: {filters.noteStatus} ×</button>}
+      {filters.noteStatus && <button type="button" className={button} onClick={() => apply({ ...filters, noteStatus: '' })}>Status: {({active:'Active',suspended:'Paused',deleted:'Deleted'} as Record<string,string>)[filters.noteStatus] ?? 'Chosen'} ×</button>}
       {filters.hasOpenComments && <button type="button" className={button} onClick={() => apply({ ...filters, hasOpenComments: false })}>Has open comments ×</button>}
       {filtered && <button type="button" className={button} onClick={clear}>Clear all</button>}
     </div>
@@ -144,7 +167,7 @@ export default function V6Cards() {
           <h2 className="text-body font-semibold text-ink">{filtered ? 'No cards match these filters' : 'No cards yet'}</h2>
           {filtered && <button type="button" className={button} onClick={clear}>Clear filters</button>}
         </div> : <div role="list" aria-label="Card results" className="lemma-card-list">
-          {visible.map(row => <div role="listitem" key={row.noteNo}><CardItem row={row}/></div>)}
+          {visible.map(row => <div role="listitem" key={row.noteNo}><CardItem row={row} path={pathTitle(row.projectSlug)}/></div>)}
         </div>}
         {cards.isFetchNextPageError && <p role="alert" className="text-label text-ink-2">
           Could not load more cards. The shown cards are unchanged; try again.
@@ -153,8 +176,13 @@ export default function V6Cards() {
           onClick={() => { void showMore(); }}>{cards.isFetchingNextPage ? 'Loading more…' :
             cards.isFetchNextPageError ? 'Retry loading cards' : 'Load 20 more'}</button>}
       </>}
-    <Sheet open={creating} onClose={() => setCreating(false)} title="New card">
-      <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>
+    <Sheet open={creating} onClose={() => setCreating(false)} title="New card" footer={<>
+      <button type="button" className={button} onClick={() => setCreating(false)}>Cancel</button>
+      <button type="submit" form="v6-new-card" disabled={create.isPending}
+        className="min-h-11 rounded-[8px] bg-amber px-4 py-2 text-body font-semibold text-amber-ink disabled:opacity-50">
+        {create.isPending ? 'Creating…' : 'Create card'}</button>
+    </>}>
+      <Suspense fallback={<Skeleton h={180}/>}>{creating && <Editor creating formId="v6-new-card" busy={create.isPending} onSubmit={value => { void createCard(value); }}/>}</Suspense>
     </Sheet>
   </section>;
 }

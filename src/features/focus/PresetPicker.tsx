@@ -67,7 +67,7 @@ export default function PresetPicker({onPick,selectedPresetId=null,disabled=fals
  },[attempt]);
  const selected=items.find(x=>x.id===selectedPresetId);
  return <section aria-label="Focus activity presets" className="space-y-2">
-  <label className="block text-label font-semibold" htmlFor="v6-focus-activity">Activity
+  <label className="block text-label" htmlFor="v6-focus-activity">Activity
    <select id="v6-focus-activity" aria-label="Focus activity"
     className="mt-1 min-h-11 w-full rounded-ctl border border-edge bg-well px-3 text-body"
     value={selectedPresetId??''} disabled={disabled||loading||!!error}
@@ -75,7 +75,7 @@ export default function PresetPicker({onPick,selectedPresetId=null,disabled=fals
      const next=items.find(x=>x.id===event.target.value);
      onPick(next?focusPresetChoice(next):null);
     }}>
-    <option value="">No preset — use my intention</option>
+    <option value="">No preset</option>
     {items.map(preset=><option value={preset.id} key={preset.id}>
      {preset.label} · {preset.mode} · {preset.focusMinutes} min
     </option>)}
@@ -89,11 +89,10 @@ export default function PresetPicker({onPick,selectedPresetId=null,disabled=fals
   </div>:null}
   {!loading&&!error&&items.length===0?
    <p className="text-label text-ink-2">No active presets yet. Create one in Settings → Activities.</p>:null}
-  {selected?<p className="text-label text-ink-2">
-   {selected.mode} · {selected.focusMinutes} min focus · {selected.breakMinutes} min break
-   {selected.projectId?' · Project linked':''}
-   {selected.subjectId?' · Subject linked':''}
-   {selected.checkpointId?' · Checkpoint linked':''}
+  {/* N121 C3: the option already names the mode and length; only the break and links are added. */}
+  {selected&&(selected.breakMinutes||selected.projectId||selected.subjectId||selected.checkpointId)?<p className="text-caption text-ink-2">
+   {[selected.breakMinutes?selected.breakMinutes+' min breaks':'',selected.projectId?'Linked to a path':'',
+    !selected.projectId&&selected.subjectId?'Linked to a subject':'',selected.checkpointId?'and a checkpoint':''].filter(Boolean).join(' · ')}
   </p>:null}
  </section>;
 }

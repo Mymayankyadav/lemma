@@ -1,4 +1,5 @@
-import {useEffect, useId, useRef, useState, type FormEvent} from 'react';
+import {useId,useRef,useState,type FormEvent} from 'react';
+import Dialog from '../../ui/v6/Dialog';
 import {getTaskApi} from '../../data/tasks';
 import {useProjects, useSubjects} from '../../data/hooks';
 import type {TaskDue, TaskPriority, TaskRecord} from '../../data/tasks/contract';
@@ -55,7 +56,7 @@ function localDateTime(iso:string):string {
 export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
  onDismiss:()=>void;task?:TaskRecord;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void;
 }) {
-  const id=useId(),dialog=useRef<HTMLDialogElement>(null);
+  const id=useId();
   const notify=useToast();
   const subjects=useSubjects(),projects=useProjects();
   const busy=useRef(false);
@@ -69,13 +70,7 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
   const [subjectId,setSubjectId]=useState(task?.subjectId??'');
   const [projectId,setProjectId]=useState(task?.projectId??'');
   const [error,setError]=useState('');
-  useEffect(()=>{
-    const node=dialog.current;
-    if (!node) return;
-    if (typeof node.showModal==='function') node.showModal();
-    else node.setAttribute('open','');
-    return ()=>{if (node.open && typeof node.close==='function') node.close();};
-  },[]);
+
   async function submit(event:FormEvent<HTMLFormElement>){
     event.preventDefault();
     if (busy.current) return;
@@ -101,15 +96,21 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
       }else setError(e instanceof Error?e.message:'Could not save task. Try again.');
     } finally {busy.current=false;setSaving(false);}
   }
-  return <dialog ref={dialog} aria-labelledby={id} onCancel={e=>{e.preventDefault();if(!saving)onDismiss();}}
-    className="w-[calc(100%-2rem)] max-w-[440px] max-h-[90dvh] overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-xl backdrop:bg-black/50"
-    style={{paddingBottom:'max(1rem,env(safe-area-inset-bottom))'}}>
-    <h2 id={id} className="text-title-s font-semibold">{task?'Edit task':'New task'}</h2>
+  const titleError=error==='Enter a task title.'||error==='Task title must be 200 characters or fewer.';
+  return <Dialog title={task?'Edit task':'New task'} onClose={onDismiss} busy={saving} footer={<>
+    <button type="button" disabled={saving} className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-label font-semibold" onClick={onDismiss}>Cancel</button>
+    <button type="submit" form={id} disabled={saving} className="min-h-11 flex-1 rounded-ctl bg-amber px-3 text-label font-semibold text-amber-ink">
+      {saving?'Saving…':task?'Save changes':'Save task'}
+    </button>
+   </>}>
     <p className="mt-1 text-label text-ink-2">{task?'Update this task in your backlog.':'Add a task to your backlog.'}</p>
-    <form noValidate className="mt-4 flex flex-col gap-3" onSubmit={e=>{void submit(e);}}>
+    <form id={id} noValidate className="mt-4 flex flex-col gap-3" onSubmit={e=>{void submit(e);}}>
       <label className={label}>Title
-        <input aria-label="Task title" className={field} value={title} autoFocus
-          onChange={e=>setTitle(e.target.value)} maxLength={200}/>
+        <textarea aria-label="Task title" className={field+' min-h-11 resize-y py-2'} value={title} autoFocus rows={title.length>40?3:1}
+          aria-invalid={titleError||undefined} aria-describedby={titleError?id+'-title-error':undefined}
+          onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();e.currentTarget.form?.requestSubmit();}}}
+          onChange={e=>{setTitle(e.target.value.replace(/\n/g,' '));if(titleError)setError('');}} maxLength={200}/>
+        {titleError&&<span id={id+'-title-error'} role="alert" className="lemma-field-error">{error}</span>}
       </label>
       <div className="grid grid-cols-2 gap-3">
         <label className={label}>Estimate (min)
@@ -149,14 +150,8 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
           </select>
         </label>
       </div>
-      {error&&<p role="alert" className="text-label text-again">{error}</p>}
-      <div className="mt-2 flex gap-2">
-        <button type="button" disabled={saving} className="min-h-11 flex-1 rounded-ctl border border-edge px-3 text-label font-semibold"
-          onClick={onDismiss}>Cancel</button>
-        <button type="submit" disabled={saving} className="min-h-11 flex-1 rounded-ctl bg-amber px-3 text-label font-semibold text-amber-ink">
-          {saving?'Saving…':task?'Save changes':'Save task'}
-        </button>
-      </div>
+      {error&&!titleError&&<p role="alert" className="text-label text-again">{error}</p>}
+
     </form>
-  </dialog>;
+  </Dialog>;
 }

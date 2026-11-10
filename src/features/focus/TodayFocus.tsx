@@ -1,4 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
+import {getApi} from '../../data';
+import {formatDuration} from '../../lib/format';
 import {getStudyApi} from '../../data/study';
 import {getPresetApi} from '../../data/presets';
 import type {StudyEntryRecord,StudyRange,StudyTimerMode} from '../../data/study/contract';
@@ -13,8 +15,7 @@ import {isFlagOn} from '../../flags';
 import {CalendarDays,ChevronRight} from 'lucide-react';
 
 const FOCUS_CAP=25;
-/** The logged-time rail's scale (minutes); the mockup's default daily study intention. */
-const DAILY_INTENTION=240;
+import {focusStatus} from '../../lib/focus/status';
 function zoneNow(){return Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';}
 function civilDate(zone:string){
  const parts=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
@@ -52,6 +53,15 @@ export default function TodayFocus(){
  const [active,setActive]=useState<StudyEntryRecord|null>(null);
  const [focus,setFocus]=useState<FocusState>(idleFocus);
  const [logged,setLogged]=useState(0);
+ const [dailyGoal,setDailyGoal]=useState(0);
+ useEffect(()=>{
+  let alive=true;
+  try{void getApi().getSettings().then(settings=>{
+   const minutes=Number(settings.planning?.daily_minimum_minutes);
+   if(alive)setDailyGoal(Number.isFinite(minutes)&&minutes>0?Math.round(minutes):0);
+  }).catch(()=>{/* no goal: show the text only */});}catch{/* no goal */}
+  return()=>{alive=false};
+ },[]);
  const [intent,setIntent]=useState(''),[note,setNote]=useState('');
  const [chosenPreset,setChosenPreset]=useState<FocusPresetChoice|null>(null);
  const [mode,setMode]=useState<StudyTimerMode>('open');
@@ -196,7 +206,7 @@ export default function TodayFocus(){
   try{
    const finished=transitionFocus(focus,{type:'finish',at});
    setFocus(finished);
-   setEditedMinutes(String(Math.round(inProgressFocusMinutes(finished,at)*10)/10));
+   setEditedMinutes(String(Math.round(inProgressFocusMinutes(finished,at))));
    setNow(at);setError('');
   }catch(e){report(e);}
  }
@@ -248,6 +258,7 @@ export default function TodayFocus(){
  const remaining=remainingFocusMinutes(focus,now);
  const accessory=active!==null&&(phase==='running'||phase==='paused'||phase==='break');
  const paused=phase==='paused';
+ const statusText=focusStatus(phase,active?.phase);
  const context=useFocusContext(active);
  const sessionClock=clockText(active,focus,now);
  const dialogProps={open:opened,state:focus,now,note,editedMinutes,busy,error,
@@ -263,13 +274,13 @@ export default function TodayFocus(){
    <FocusDialog {...dialogProps}/>}
   {/* N111 (mockup `notebook-study-card`): one primary study action, then the logged-time row. */}
   <section aria-label="Current study action" className="notebook-study-card" data-primary-state={active?'focus':'start'}>
-   <span className="notebook-study-symbol" aria-hidden="true">{active?'τ':'∂'}</span>
+   {active&&context.glyph&&<span className="notebook-study-symbol" aria-hidden="true">{context.glyph}</span>}
    {!active&&<p className="notebook-study-meta notebook-eyebrow">YOUR NEXT STEP</p>}
    {/* #1312 (mockup "Return to focus"): the path or activity is the heading, the intention its description. */}
    <h2>{active?context.heading??'Your focus session':'Make time for focused study'}</h2>
    <p className="notebook-study-description">{active?active.intent:'Choose an intention, then start a focused session.'}</p>
    {active&&<div className="notebook-focus-status">
-    <span>{phase==='break'?'On a break':paused?'Paused':'In focus'}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
+    <span>{statusText}{active.phaseEndsAt?' · remaining':' · elapsed'}</span>
     <time aria-label="Session timer">{sessionClock}</time>
    </div>}
    {!active&&<div className="lemma-quick-task mb-4">
@@ -280,15 +291,15 @@ export default function TodayFocus(){
     {isFlagOn('v6Shell')&&<>
      <PresetPicker selectedPresetId={chosenPreset?.presetId??null}
       disabled={busy||loading} onPick={choice=>{setChosenPreset(choice);if(choice){setIntent(choice.intent);setMode(choice.mode);}else setMode('open');}}/>
-     <label>Timer mode
-      <select aria-label="Timer mode" value={chosenPreset?.mode??mode} disabled={busy||loading}
+     {/* N121 C3: an activity already carries its timer, so the mode is chosen only without one. */}
+     {!chosenPreset&&<label>Timer mode
+      <select aria-label="Timer mode" value={mode} disabled={busy||loading}
        onChange={e=>{setChosenPreset(null);setMode(e.target.value as StudyTimerMode);}}>
-       <option value="open">Open — no phase limit</option>
-       <option value="pomodoro">Pomodoro — 25/5 minute cycles</option>
-       <option value="flowtime">Flowtime — flexible focus</option>
+       <option value="open">Open</option>
+       <option value="pomodoro">Pomodoro · 25/5</option>
+       <option value="flowtime">Flowtime</option>
       </select>
-     </label>
-     {!chosenPreset&&mode!=='open'&&<p className="text-caption text-ink-2">Quick mode creates a reusable activity with this configuration.</p>}
+     </label>}
     </>}
    </div>}
    <button type="button" ref={heroTrigger} onClick={()=>{void start();}}
@@ -303,11 +314,13 @@ export default function TodayFocus(){
   <a href="#/insights?range=7" className="notebook-daily-progress">
    <CalendarDays size={20} aria-hidden="true"/>
    <span>
-    <strong><output aria-label="Logged today" className="tabular-nums">{Math.round(logged*10)/10} min</output> logged today</strong>
-    <span className="notebook-progress-rail" role="progressbar" aria-label="Daily study intention"
-     aria-valuemin={0} aria-valuemax={DAILY_INTENTION} aria-valuenow={Math.min(logged,DAILY_INTENTION)}>
-     <span style={{width:Math.min(100,logged/DAILY_INTENTION*100)+'%'}}/>
-    </span>
+    {/* N121 C5: the bar measures against a real goal (Settings › Planning daily minimum); none, no bar. */}
+    <strong><output aria-label="Logged today" className="tabular-nums">{formatDuration(Math.round(logged))}</output>
+     {dailyGoal?' of '+formatDuration(dailyGoal)+' today':' logged today'}</strong>
+    {dailyGoal>0&&<span className="notebook-progress-rail" role="progressbar" aria-label="Daily study goal"
+     aria-valuemin={0} aria-valuemax={dailyGoal} aria-valuenow={Math.min(Math.round(logged),dailyGoal)}>
+     <span style={{width:Math.min(100,logged/dailyGoal*100)+'%'}}/>
+    </span>}
     <small>See your study progress</small>
    </span>
    <ChevronRight size={19} aria-hidden="true"/>

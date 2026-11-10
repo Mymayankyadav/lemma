@@ -75,12 +75,13 @@ beforeEach(()=>{
  mockSettings();
 });
 afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.restoreAllMocks();vi.clearAllMocks()});
-async function render(){
- await act(async()=>root.render(<MemoryRouter initialEntries={['/settings']}>
+async function render(path='/settings'){
+ await act(async()=>root.render(<MemoryRouter initialEntries={[path]}>
   <V6Settings legacy={<p data-legacy>Original Settings fallback</p>}/>
  </MemoryRouter>));
  // N117: Settings opens on four grouped rows; Data & account opens on Account.
- await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Data & account')!.click();await Promise.resolve()});
+ // N121 F9: a group page lists only its sections; Reminders is reached by its deep link.
+ if(path==='/settings')await act(async()=>{[...host.querySelectorAll('button')].find(x=>x.getAttribute('aria-label')==='Data & account')!.click();await Promise.resolve()});
 }
 function button(label:string):HTMLButtonElement {
  const found=[...host.querySelectorAll('button')].find(x=>
@@ -122,14 +123,16 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   ]);
   const active=host.querySelector<HTMLButtonElement>('[role="tab"][aria-selected="true"]')!;
   await act(async()=>active.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',bubbles:true})));
-  expect(document.activeElement).toBe(button('Appearance'));
-  for(const name of ['Study defaults','Reminders','Subjects','Connector','Export','Account']){
+  expect(document.activeElement).toBe(button('Subjects'));
+  for(const name of ['Subjects','Export','Account']){
    await click(name);
    expect(host.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby')).toBe('v6-settings-tab-'+
-    name.toLowerCase().replace(' defaults',''));
+    name.toLowerCase());
    expect(button(name).getAttribute('aria-selected')).toBe('true');
   }
-  await click('Reminders');
+  await act(async()=>root.unmount());root=createRoot(host);host.replaceChildren();
+  await render('/settings?section=reminders');
+  expect(button('Reminders').getAttribute('aria-selected')).toBe('true');
   expect(host.querySelector('#reminder-mode')).not.toBeNull();
   expect(host.textContent).toContain('Asia/Kolkata');
   expect(host.querySelector('[data-legacy]')).toBeNull();
@@ -138,7 +141,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   expect(host.querySelector('label')?.className).toContain('min-h-11');
  });
  it('saves enabled and schedule changes through existing settings mutation without losing unknown fields',async()=>{
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   await toggle('Enable reminders');
   expect(update).toHaveBeenCalledWith({notify:expect.objectContaining({
    enabled:false,mode:'daily',futureKey:'retain me',backoff:{due:'tomorrow'},
@@ -150,7 +153,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   expect(checkbox('Enable reminders').checked).toBe(false);
  });
  it('preserves unrelated category keys and nested quiet/digest fields on partial writes',async()=>{
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   await toggle('Cards due');
   expect(update).toHaveBeenLastCalledWith({notify:expect.objectContaining({
    kinds:expect.objectContaining({due:false,deadline:true,tutor:true}),
@@ -165,7 +168,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   })});
  });
  it('autosaves valid local time edits on blur and keeps nonedited quiet hours',async()=>{
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   await blurValue('reminder-quiet-start','23:15');
   expect(update).toHaveBeenLastCalledWith({notify:expect.objectContaining({
    quiet:{start:'23:15',end:'06:30'},
@@ -178,7 +181,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   })});
  });
  it('rejects invalid time and count without issuing an invalid server mutation',async()=>{
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   await blurValue('reminder-max','99');
   expect(host.querySelector('[role="alert"]')?.textContent).toContain('1–50');
   expect(update).not.toHaveBeenCalled();
@@ -188,7 +191,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
  });
  it('rolls back failed writes and displays error feedback without falsely claiming Saved',async()=>{
   update.mockRejectedValueOnce(new Error('offline'));
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   await toggle('Enable reminders');
   expect(checkbox('Enable reminders').checked).toBe(true);
   expect(notify).toHaveBeenCalledWith("Couldn't save settings.",{tone:'danger'});
@@ -196,7 +199,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
  });
  it('reports unconfigured reminders as an empty state without claiming a schedule',async()=>{
   mockSettings({data:{...base,notify:null}});
-  await render();await click('Reminders');
+  await render('/settings?section=reminders');
   expect(host.querySelector('[role="status"]')?.textContent).toContain('No reminder preferences saved');
   expect(checkbox('Enable reminders').checked).toBe(false);
   expect(host.textContent).not.toContain('Next reminder at');
@@ -212,7 +215,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(function(this:HTMLAnchorElement){
    downloads.push(this.download);
   });
-  await render();await click('Export');
+  await render('/settings?section=export');
   expect(host.textContent).toContain('Download a backup');
   await click('Download a backup');
   expect(exportAll).toHaveBeenCalledTimes(1);
@@ -228,7 +231,7 @@ describe('N28.2.2 Reminders and Export Settings',()=>{
   Object.defineProperty(URL,'revokeObjectURL',{configurable:true,value:vi.fn()});
   vi.spyOn(HTMLAnchorElement.prototype,'click').mockImplementation(()=>undefined);
   exportAll.mockRejectedValueOnce(new Error('network offline'));
-  await render();await click('Export');await click('Download a backup');
+  await render('/settings?section=export');await click('Download a backup');
   expect(host.querySelector('[role="alert"]')?.textContent).toContain("Couldn't download the backup");
   expect(notify).toHaveBeenCalledWith("Couldn't download the backup.",{tone:'danger'});
   expect(create).not.toHaveBeenCalled();
