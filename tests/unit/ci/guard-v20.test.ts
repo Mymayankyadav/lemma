@@ -29,6 +29,16 @@ describe('v2.0 review policy',()=>{
   expect(r.why[0]).toContain('docs/v6/screens/')
   expect(reviewRequired([{filename:'docs/v6/screens/README.md'}]).required).toBe(false)
  })
+ it('requires v7 reference and capture review with their own baseline guidance',()=>{
+  const golden=reviewRequired([{filename:'docs/v7/golden/today-day.png'}])
+  expect(golden.required).toBe(true)
+  expect(golden.why[0]).toContain('Owner approval')
+  const capture=reviewRequired([{filename:'docs/v7/release-captures/today-day.png'}])
+  expect(capture.required).toBe(true)
+  expect(capture.why[0]).toContain('docs/v7/golden/')
+  expect(capture.why[0]).not.toContain('docs/v6/screens/')
+  expect(reviewRequired([{filename:'docs/v7/PLAN.md'}]).required).toBe(false)
+ })
  it('a PR that needs no review merges on Ready + green checks, with no approval',()=>{
   const ready=c('Ready · Agent: lemma-2','2026-11-06T02:00:00Z')
   expect(evaluateMerge(ctx({reviewRequired:false,comments:[ready]})).merge).toBe(true)

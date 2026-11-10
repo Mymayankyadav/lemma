@@ -20,6 +20,8 @@ export const FLAG_DEFAULTS = {
   notificationsPush: false,
   /** v6 navigation, screens and shared shell (default on since N102; `?flags=-v6Shell` shows the legacy app in dev/test/e2e builds). */
   v6Shell: true,
+  /** Constellation remains off until the Owner's release gates are met. */
+  v7Shell: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
@@ -62,4 +64,14 @@ function currentEnv(): FlagEnv {
 
 export function isFlagOn(name: FlagName): boolean {
   return resolveFlags(currentEnv())[name];
+}
+
+/** Select one visual shell without changing the independently resolved flags. */
+export type EffectiveShell = 'v7' | 'v6' | 'legacy';
+export function resolveEffectiveShell(flags: Pick<Record<FlagName, boolean>, 'v6Shell' | 'v7Shell'>): EffectiveShell {
+  return flags.v7Shell ? 'v7' : flags.v6Shell ? 'v6' : 'legacy';
+}
+
+export function currentEffectiveShell(): EffectiveShell {
+  return resolveEffectiveShell(resolveFlags(currentEnv()));
 }
