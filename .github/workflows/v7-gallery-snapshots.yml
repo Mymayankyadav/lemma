@@ -18,7 +18,11 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npm run build
+      - name: Build testable gallery with URL feature-flag overrides
+        env:
+          VITE_ALLOW_FLAG_OVERRIDES: '1'
+          VITE_FLAGS: '-v6Shell,-v7Shell'
+        run: npm run build
       - name: Capture Day and Night at 390 x 844
         shell: bash
         run: |
