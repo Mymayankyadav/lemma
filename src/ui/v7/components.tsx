@@ -51,7 +51,9 @@ export function Button({
       className={`v7-button v7-${variant} ${small ? "v7-small" : ""} ${destructive ? "v7-critical" : ""} ${className}`}
     >
       <span>{children}</span>
-      {loading && <LoaderCircle className="v7-spinner" aria-hidden="true" />}
+      <span className="v7-button-progress" aria-hidden="true">
+        {loading && <LoaderCircle className="v7-spinner" />}
+      </span>
     </button>
   );
 }
