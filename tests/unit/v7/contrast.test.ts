@@ -40,3 +40,17 @@ for (const [i, theme] of ["Day", "Night"].entries())
         `${ink} on ${bg}`,
       ).toBeGreaterThanOrEqual(4.5);
   });
+
+for (const [i, theme] of ["Day", "Night"].entries())
+  it(`${theme} interactive control edges are distinguishable from every form surface`, () => {
+    const block = css.split("[data-v7]")[i ? 2 : 1];
+    const tokens = Object.fromEntries(
+      [...block.matchAll(/--v7-([\\w-]+):\\s*(#[\\da-fA-F]{6}|#fff)\\s*;/g)].map(
+        (m) => [m[1], m[2] === "#fff" ? "#ffffff" : m[2]],
+      ),
+    );
+    for (const bg of ["bg", "bg-raised", "bg-overlay", "bg-inset"])
+      expect(ratio(tokens["control-border"], tokens[bg]), `${theme} edge on ${bg}`).toBeGreaterThanOrEqual(3);
+    expect(tokens["good-fill"]).not.toBe(tokens["subject-8"]);
+    expect(tokens["focus-ring"]).not.toBe(tokens["control-border"]);
+  });
