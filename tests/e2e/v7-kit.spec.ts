@@ -19,7 +19,8 @@ test("v7 gallery has isolated fonts and themes, nine sizes and five canonical ra
   const styles = await page.locator(".v7-kit").evaluate((root) => {
     const nodes = [root, ...root.querySelectorAll("*")].filter(
       (el) =>
-        el.getBoundingClientRect().width && el.getBoundingClientRect().height,
+        el.getBoundingClientRect().width && el.getBoundingClientRect().height &&
+        !(el instanceof HTMLInputElement && el.type === "radio"),
     );
     return {
       sizes: [...new Set(nodes.map((el) => getComputedStyle(el).fontSize))],
@@ -45,9 +46,11 @@ test("v7 gallery has isolated fonts and themes, nine sizes and five canonical ra
   ]);
   expect(
     styles.radii.every((r) =>
-      ["10px", "14px", "20px", "28px", "9999px"].includes(r),
+      ["4px", "10px", "14px", "20px", "28px", "9999px"].includes(r),
     ),
   ).toBe(true);
+  // The 4 px checkbox exception is intentional: a checkbox must not read as a radio.
+  await expect(page.getByRole("checkbox", { name: "Unavailable checkbox" })).toHaveCSS("border-top-left-radius", "4px");
   await page.getByRole("tab", { name: "Night", exact: true }).click();
   await expect(page.locator("html")).toHaveAttribute(
     "data-theme",
@@ -250,4 +253,39 @@ test("cold v6 visit loads no v7 fonts and can enter the gallery without a reload
   await expect(page.locator("#lemma-v7-fonts")).toHaveCount(1);
   await page.evaluate(() => document.fonts.ready);
   expect(requests.some((url) => url.endsWith(".woff2"))).toBe(true);
+});
+
+test("gallery demonstrates selected, filled, focus, pressed, disabled and semantic states", async ({ page }) => {
+  await page.goto(kit);
+  const selected = page.getByRole("tab", { name: "Overview", exact: true });
+  await expect(selected).toHaveAttribute("aria-selected", "true");
+  await expect(selected).toHaveCSS("background-color", "rgb(54, 65, 188)");
+  await expect(page.getByRole("button", { name: "50 min", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "25 min", exact: true }).click();
+  await expect(page.getByRole("button", { name: "25 min", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".v7-slider")).toHaveAttribute("style", /--v7-range-progress: 45%/);
+  await expect(page.locator(".v7-focus-example")).toHaveCSS("outline-width", "3px");
+  await expect(page.getByRole("button", { name: "Pressed state" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "Pressed state" }).click();
+  await expect(page.getByRole("button", { name: "Pressed state" })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("textbox", { name: "Read only" })).toHaveAttribute("readonly", "");
+  await expect(page.getByRole("textbox", { name: "Unavailable field" })).toBeDisabled();
+  await expect(page.getByRole("switch", { name: "Unavailable switch" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "25 min" })).toBeChecked();
+  await page.getByRole("radio", { name: "50 min" }).check();
+  await expect(page.getByRole("radio", { name: "50 min" })).toBeChecked();
+  await expect(page.getByRole("meter", { name: "Complete" })).toHaveAttribute("aria-valuetext", "Complete");
+  await expect(page.locator('.v7-meter-row[data-complete="true"] .v7-meter > span')).toHaveCSS("background-color", "rgb(8, 118, 67)");
+  await expect(page.locator(".v7-chip-ready svg")).toBeVisible();
+  await expect(page.locator(".v7-chip-mastery .v7-proof")).toHaveText("∎");
+});
+test("gallery keeps the open menu, undo toast and deletion confirmation discoverable", async ({ page }) => {
+  await page.goto(kit);
+  await expect(page.getByRole("menu", { name: "Open menu" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Toast example" })).toBeVisible();
+  await page.getByRole("button", { name: "Delete session", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "Delete this session?" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Keep session" }).click();
+  await expect(dialog).toBeHidden();
 });
