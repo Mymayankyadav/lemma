@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N122 Lemma v7 Constellation (Owner task, one PR)
+
+- Status: open
+- Assigned: owner-setup-v7
+- Needs: none
+- Done: Implement the complete Owner-approved v7 plan in `docs/v7/PLAN.md`, including every New feature, the gates and exceptions in `docs/v7/IMPLEMENTATION.md`, full validation, and Owner visual and device approval before activation.
+- Scope: One Owner-merged `rules:` PR for v7 frontend, tests, narrowly necessary CI and review configuration, and documentation. Preserve existing tests and assertions.
+- Not: backend, migrations, MCP, new dependencies, or deletion of v6 code and styles.
+
 Order used (priority run 2026-11-06 18:30 IST, all remaining v6 work): open PR work; blockers that unlock the most items (registries N36, versions N38, typed settings N39, capability registry N40); new record migrations and their app modules in parallel (D8); study command changes in sequence; V6-05 planner and rituals; V6-06 remaining learning screens; V6-07 MCP chain; Harden per area after its features (Owner: build fast, review in Harden); V6-08 acceptance; turning v6 on last. Earlier (12:30 IST): work already in a PR, then the v6 first study slice end to end (N20), then blockers that unlock the most items (task command layer N22, task adapters N23/N24), then independent lanes from V6-05 (tasks, Calendar) and V6-06 (learning screens), then MCP and live parity. Earlier order: the v6 first study slice (`docs/v6/`: Today → Focus → saved time → Calendar and Progress), split into lanes that can run at the same time, then notifications. Done and removed: N2–N5, N7–N10, N6.1, N6.2, N11.1–N11.3, N13, N14.1–N14.3, N16–N18, N20–N35 except N32.2.2, N21, N110–N117 (#818, #820, #821, #823, #840, #822, #850, #851, #872, #860, #882, #853, #887, #881, #888, #893, #903, #897, #905, #909, #910, #1309). An id in a Needs line that is no longer in this file is done.
 No item may list a protected path (`ci/protected.json`) in Scope. Files under `docs/v6/` are behaviour references cited by items, not instructions. v6 UI work stays behind the `v6Shell` flag: with the flag off, existing screens, tests and visual rules stay exactly as they are.
 
