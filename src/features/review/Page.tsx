@@ -24,6 +24,10 @@ import {useReviewSession} from '../review-run/store';
 import {useReminderRound} from './reminder-round';
 import {isFlagOn} from '../../flags';
 import ReviewV6 from './v6/ReviewV6';
+import {lazy,Suspense} from 'react';
+import {v7Screen} from '../../app/v7Kit';
+
+const ReviewHubV7=lazy(()=>import('./v7/ReviewHubV7'));
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 
@@ -241,5 +245,6 @@ function LegacyReviewPage(){
 
 /** The feature branch leaves the established Review and reminder path untouched. */
 export default function Page(){
+ if(v7Screen()==='review')return <Suspense fallback={<div role="status" aria-label="Review loading" className="min-h-dvh"/>}><ReviewHubV7/></Suspense>;
  return isFlagOn('v6Shell')?<ReviewV6/>:<LegacyReviewPage/>;
 }

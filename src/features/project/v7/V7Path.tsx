@@ -1,7 +1,10 @@
 import {lazy,Suspense,useMemo,useState} from 'react';
-import {Link,useParams,useSearchParams} from 'react-router';
-import {Copy,Layers,Pause,Play,Waypoints} from 'lucide-react';
-import {useCheckpoint,useHome,useProject,useSettings} from '../../../data/hooks';
+import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
+import {useQueryClient} from '@tanstack/react-query';
+import {getApi} from '../../../data';
+import {Archive,Copy,Layers,Pause,Play,Waypoints} from 'lucide-react';
+import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
+import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Button,Chip,Menu,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
@@ -57,10 +60,22 @@ function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
   </Link>
  </li>)}</ul>;
 }
+/** The path's own cards, first twelve by number; the library has the rest. */
+function PathCards({slug}:{slug:string}){
+ const cards=useSearchCards('',slug);
+ if(cards.isPending)return <Skeleton/>;
+ if(cards.error)return <p className="v7-path-cards-empty" role="alert">Could not load cards.</p>;
+ const rows=cards.data??[];
+ if(!rows.length)return <p className="v7-path-cards-empty">No cards on this path yet.</p>;
+ return <ul className="v7-path-cardlist" aria-label="Cards on this path">{rows.slice(0,12).map(card=><li key={card.noteNo}>
+  <Link to={'/cards/'+card.noteNo}><span className="v7-path-card-front"><MathText source={card.front}/></span>
+   <small>{card.checkpointCode?card.checkpointCode+' · ':''}{card.due?'due '+shortDate(card.due):'new'}</small></Link></li>)}
+  {rows.length>12&&<li className="v7-path-cards-empty">{rows.length-12} more in the card library.</li>}</ul>;
+}
 /** PLAN §6.9: the path as a constellation, with the primary action in a sticky bar. */
 export default function V7Path(){
  const {slug:raw}=useParams(),slug=raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
- const [params,setParams]=useSearchParams();
+ const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
  const [prompt,setPrompt]=useState(false),[switcher,setSwitcher]=useState(false);
  const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Map';
  const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
@@ -75,6 +90,17 @@ export default function V7Path(){
  const due=dueTotal(cps),cards=home.data?.projects.find(item=>item.id===project.id)?.cardsCount??0;
  const client=settings.data?.preferredChat??'claude',text=studyPrompt(project.title,current?.code,current?.title);
  const target=project.targetDate?shortDate(project.targetDate):'';
+ async function setStatus(status:'active'|'paused'|'archived',message:string){
+  const prior=project.status,apply=async(value:typeof status|typeof prior)=>{
+   await getApi().updateProject(project.id,{status:value as 'active'|'paused'|'archived'});
+   await Promise.all([query.refetch(),queryClient.invalidateQueries({queryKey:['home']}),queryClient.invalidateQueries({queryKey:['projects']})]);
+  };
+  try{
+   await apply(status);
+   notify(message,{tone:'success',action:{label:'Undo',onClick:()=>{void apply(prior).catch(()=>notify('Could not undo',{tone:'danger'}));}}});
+   if(status==='archived')navigate('/projects');
+  }catch{notify('Could not update this path',{tone:'danger'});}
+ }
  function setTab(label:string){
   const next=new URLSearchParams(params),value=label.split(' ')[0].toLowerCase();
   if(value==='map')next.delete('tab');else next.set('tab',value);setParams(next);
@@ -88,6 +114,10 @@ export default function V7Path(){
   <DetailHeader title={project.title} back="/projects" action={<Menu label="More" items={[
    {label:'Switch path',icon:<Layers aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<Waypoints aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
+   project.status==='paused'
+    ?{label:'Resume path',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
+    :{label:'Pause path',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},
+   {label:'Archive path',icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
   ]}/>}/>
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={320} animate={false}/></span>
@@ -110,10 +140,11 @@ export default function V7Path(){
     {cps.filter(cp=>cp.dueCards>0).map(cp=><li key={cp.id}><Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>{cp.code} · {cp.title}</span><small>{cp.dueCards} due</small></Link></li>)}
     {due===0&&<li className="v7-path-cards-empty">Nothing due on this path.</li>}
    </ul>}
+   {tab==='Cards'&&<PathCards slug={slug}/>}
   </section>
   <div className="v7-path-bar" role="group" aria-label="Path actions">
    <Button variant="primary" onClick={()=>setPrompt(true)}><Play aria-hidden="true"/>Continue with tutor</Button>
-   <Link className="v7-button v7-secondary" to="/review"><span>{due>0?'Review '+due:'Review'}</span></Link>
+   <Link className="v7-button v7-secondary" to={'/review?path='+encodeURIComponent(slug)}><span>{due>0?'Review '+due:'Review'}</span></Link>
   </div>
   <Sheet open={prompt} onClose={()=>setPrompt(false)} title="Continue with your tutor" eyebrow="Study prompt"
    footer={<Button variant="primary" onClick={copy}><Copy aria-hidden="true"/>Copy prompt</Button>}>

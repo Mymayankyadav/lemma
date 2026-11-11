@@ -101,6 +101,24 @@ Landed behind `v7Shell` (default off); v6 and legacy stay as the rollback. Routi
 
 Known gaps, none blocking the flag staying off:
 - Calendar: the quick-add sheet, block sheet and planner suggestions banner reuse the existing v6 sheets; their restyle and the dashed "Suggested" blocks wait for the Planner item. The overdue chip links to the Agenda triage rather than opening the overdue sheet.
-- Path: Sources reuses the v6 panel; Pause and Archive are not in the "More" menu because the project page has no write for them yet; "Review" opens the Review hub (the durable run cannot filter by path); the Cards tab lists per-checkpoint due counts because the card list has no URL filter.
-- Review cards link `/review/run?concept=`, which the v6 durable run ignores. The Capture sheet is a placeholder until Part 6.
+- Path: Sources reuses the v6 panel; (Part 6 added Pause/Resume and Archive to the "More" menu, a real card list in the Cards tab, and a path-scoped Review hub) the Cards tab lists per-checkpoint due counts because the card list has no URL filter.
+- Review cards link `/review/run?concept=`, which the v6 durable run ignores. (Capture is no longer a placeholder: see Part 6.)
 - Verification is by CI; there was no local Playwright or typecheck run.
+
+## Part 6 status (daily loop)
+
+Behind `v7Shell` (default off). `/review` is a v7 screen; `/review/done` is one only when it carries `?run=` (a saved durable run), so local reminder rounds keep their existing Done page.
+
+- **Capture** (§6.1 F, `src/app/v7/CaptureSheet.tsx`, `captureModel.ts`): one large field. It reads a date (today, tomorrow, weekday, "next mon", "9 Nov"), a time (16:00, 4pm), a length (90m, 1h30, 45 min) and `#path` out of the sentence as removable tokens; the type (Task, Time block, Card, Thought) follows from them (`::` makes a card) and can be set by hand. The footer button names the result ("Add block"). Long-press (350 ms) on the Capture button shows the four types first. Saves go through the existing task, calendar-block, card and thought APIs, each with an Undo toast. "More options" opens the full form on the relevant screen.
+- **Search** (§6.1 G, `SearchSheet.tsx`, `searchModel.ts`): Recent and Actions before typing; while typing, groups of at most four rows with "Show all", in the order Paths, Checkpoints, Cards, Concepts, Tasks, Settings, Actions, with up/down/Enter. Recent items are kept on this device only.
+- **Review hub** (§6.4 A, `src/features/review/v7/`): the hero count, a proportional subject bar (each segment is a labelled button that narrows the round to that subject), Start review or Resume, a "Customise this round" sheet (deck and checkpoint switches), Due each day, memory tiles (Recall, Reviews, Typical answer time as a median over 30 days) and deck rows with switches. `/review?path=<slug>` pre-selects one path, which is what Path's "Review N" now opens.
+- **Round complete** (§6.4 C, `src/features/review-done/v7/`): proof mark, three stat tiles, a 28 px grade bar with counts and a legend, "Next: N cards tomorrow", Done and "Review N more" (up to 10 more due cards, as a new durable run).
+- **Path** (Part 4 gaps closed): Pause/Resume and Archive in More (with Undo), a card list in the Cards tab, path-scoped review.
+
+Known gaps:
+- Due each day shows 7 days (the existing forecast RPC); the plan asks for 14. Widening needs an RPC change, so it is left for a data item.
+- The durable run stores no grades, so the Round complete grade bar and "recalled first try" are read from the reviews recorded between the run's start and end. Cards re-asked in the same round count each time. Cards and time use the run itself and the recorded durations.
+- Capture shows Undo only (the shared Toast supports one action), not "Open". "Start focus" in Search goes to Today.
+- Search checkpoints come from the first 12 paths only, to bound the requests.
+- Practice (§6.13) and the remaining Today/Focus states are not built; Calendar Week/Month/Agenda, the block sheet and quick-add restyle, planner suggestions, the overdue sheet, Tasks and Close the day are Part 7.
+- Verification is by CI plus pure-function unit tests run locally; there was no local Playwright, typecheck or device run.

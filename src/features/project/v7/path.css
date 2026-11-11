@@ -49,4 +49,8 @@
  :where(html[data-v7]) .v7-path-note {color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
  @keyframes v7-path-halo {0%,100% {transform:scale(.85);opacity:.12;} 50% {transform:scale(1.1);opacity:.28;}}
  @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-path-halo {animation:none;}}
+ :where(html[data-v7]) .v7-path-cardlist {list-style:none;margin:var(--v7-space-3) 0 0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-path-cardlist a {display:grid;gap:var(--v7-space-1);min-height:var(--v7-touch);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);text-decoration:none;}
+ :where(html[data-v7]) .v7-path-card-front {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font:400 var(--v7-size-3)/var(--v7-leading-3) var(--v7-serif);}
+ :where(html[data-v7]) .v7-path-cardlist small {color:var(--v7-role-text-secondary);font:400 var(--v7-size-1)/var(--v7-leading-1) var(--v7-sans);}
 }

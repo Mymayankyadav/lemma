@@ -1,13 +1,15 @@
-import {useState,type CSSProperties,type ReactNode} from 'react';
+import {lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
-import {CalendarDays,ChartColumn,CheckSquare,Clock3,House,Layers,MessageSquareText,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft,MoreHorizontal} from 'lucide-react';
+import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft,MoreHorizontal} from 'lucide-react';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
-import {Sheet} from '../../ui/v7/components';
 import {subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import './shell.css';
+
+const CaptureSheet=lazy(()=>import('./CaptureSheet'));
+const SearchSheet=lazy(()=>import('./SearchSheet'));
 
 /** PLAN §6.1: floating tab bar, session row, capture button and the three header kinds. */
 export const tabs=[
@@ -44,31 +46,32 @@ function SessionRow(){
  </div>;
 }
 
-function Capture({session}:{session:boolean}){
- const [open,setOpen]=useState(false),navigate=useNavigate();
- const go=(to:string)=>{setOpen(false);navigate(to);};
+const openSearch=()=>window.dispatchEvent(new CustomEvent('v7:search'));
+/** F. Capture: a tap opens the sheet (a block on Calendar, a thought during a session); a 350 ms press offers the four types. */
+function Capture(){
+ const [mode,setMode]=useState<'closed'|'sheet'|'picker'>('closed'),location=useLocation();
+ const timer=useRef<number|null>(null),long=useRef(false);
+ const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
+ const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
+ const onCalendar=location.pathname.startsWith('/calendar');
  return <>
-  <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog" onClick={()=>setOpen(true)}><Plus aria-hidden="true"/></button>
-  <Sheet open={open} onClose={()=>setOpen(false)} title="Add something" eyebrow="Capture">
-   <p className="v7-meta">Choose what to add. One field that recognises dates, times, lengths and paths arrives with the capture sheet in Part 6.</p>
-   <div className="v7-capture-types">
-    <button type="button" onClick={()=>go('/tasks')}><CheckSquare aria-hidden="true"/>Task</button>
-    <button type="button" onClick={()=>go('/calendar?new=block')}><Clock3 aria-hidden="true"/>Time block</button>
-    <button type="button" onClick={()=>go('/cards')}><Layers aria-hidden="true"/>Card</button>
-    <button type="button" disabled={!session} aria-describedby={session?undefined:'v7-capture-thought'} onClick={()=>go('/focus')}><MessageSquareText aria-hidden="true"/>Thought</button>
-   </div>
-   {!session&&<p id="v7-capture-thought" className="v7-disabled-reason">Unavailable · Thoughts are parked during a focus session.</p>}
-  </Sheet>
+  <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
+   onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
+   onClick={()=>{if(long.current){long.current=false;return;}setMode('sheet');}}
+   onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
+  <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode} open onClose={()=>setMode('closed')} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
  </>;
 }
 
 /** Wraps every v7 route except the kit. Immersive screens keep the navigation landmark, hidden until focused. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
- const location=useLocation(),home=useHome(),{entry}=useActiveFocus();
+ const location=useLocation(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false);
+ useEffect(()=>{const open=()=>setSearching(true);window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);},[]);
  const due=home.data?.due??0,active=Math.max(0,tabs.findIndex(tab=>tab.match(location.pathname)));
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
   {children}
-  {!immersive&&capture&&<Capture session={!!entry}/>}
+  {!immersive&&capture&&<Capture/>}
+  <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
   <div className="v7-dock">
    {!immersive&&<SessionRow/>}
    <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':active} as CSSProperties}>
@@ -88,7 +91,7 @@ export function HubHeader({title,date,pending=0,settings=false,children}:{title:
   <div className="v7-hub-row">
    {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true">ℓ</span>{date}</p>:<span/>}
    <nav aria-label="Page actions" className="v7-page-actions">
-    <Link to="/cards" aria-label="Search" title="Search"><Search aria-hidden="true"/></Link>
+    <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
     {settings&&<Link to="/settings" aria-label="Settings" title="Settings"><Settings aria-hidden="true"/></Link>}
    </nav>
@@ -103,7 +106,7 @@ export function DetailHeader({title,back,action}:{title:string;back?:string;acti
  return <header className="v7-detail-header">
   <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default')navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
   <p className="v7-detail-title" aria-hidden="true">{title}</p>
-  <nav aria-label="Page actions" className="v7-page-actions">{action??<Link to="/cards" aria-label="Search" title="Search"><Search aria-hidden="true"/></Link>}</nav>
+  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
  </header>;
 }
 /** C. Immersive header: leave on the left, progress in the centre, more on the right. */
