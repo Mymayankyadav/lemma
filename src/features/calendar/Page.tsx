@@ -6,7 +6,7 @@ import {civilDayLabel,civilMonthLabel,civilRangeLabel} from './views/labels';
 import {useToast} from '../../ui/Toast';
 import PlannerLaunch from '../planner/Sheet';
 import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from 'react';
-import { isV7Route } from '../../app/v7Kit';
+import { v7Screen } from '../../app/v7Kit';
 import { Navigate, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { isFlagOn } from '../../flags';
@@ -297,8 +297,7 @@ function V6Calendar() {
 
 /** The legacy route stays a redirect and does not mount any v6 data reads. */
 export default function CalendarPage() {
-  const [params] = useSearchParams();
-  if (isV7Route('/calendar', '?' + params.toString())) return <Suspense fallback={<div role="status" aria-label="Calendar loading" className="min-h-dvh"/>}><V7CalendarDay/></Suspense>;
+  if (v7Screen() === 'calendar-day') return <Suspense fallback={<div role="status" aria-label="Calendar loading" className="min-h-dvh"/>}><V7CalendarDay/></Suspense>;
   if (!isFlagOn('v6Shell')) return <Navigate to="/" replace />;
   return <V6Calendar />;
 }

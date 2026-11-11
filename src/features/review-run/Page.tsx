@@ -2,7 +2,7 @@ import './review.css';
 import {isFlagOn} from '../../flags';
 import ReviewRunV6 from './v6/ReviewRunV6';
 import {lazy,Suspense,useEffect,useMemo,useRef,useState} from 'react';
-import {isV7Route} from '../../app/v7Kit';
+import {v7Screen} from '../../app/v7Kit';
 import {useNavigate,useSearchParams} from 'react-router';
 import {AnimatePresence,motion,useAnimationControls,useMotionValue,useReducedMotion,useTransform} from 'motion/react';
 import {ArrowLeft,BookOpen,CircleCheck,CircleDashed,CircleHelp,MessageSquarePlus,Undo2,X,Check,Clock3} from 'lucide-react';
@@ -304,6 +304,6 @@ export default function Page(){
  // there is no explicit N62 run ID. A new v6 route without either resumes
  // the persisted run, and one with run= always uses the durable renderer.
  const legacy=!search.has('run')&&!!useReviewSession.getState().queue;
- if(isV7Route('/review/run')&&!legacy)return <Suspense fallback={<div role="status" aria-label="Review loading" className="min-h-dvh"/>}><ReviewRoundV7/></Suspense>;
+ if(v7Screen()==='review-run'&&!legacy)return <Suspense fallback={<div role="status" aria-label="Review loading" className="min-h-dvh"/>}><ReviewRoundV7/></Suspense>;
  return isFlagOn('v6Shell')&&!legacy?<ReviewRunV6/>:<LegacyReviewRunPage/>;
 }
