@@ -9,6 +9,8 @@ import {forceCollide,forceLink,forceManyBody,forceSimulation,forceX,forceY,type 
 export interface LayoutInput{
  ids:string[]; clusters:number[]; clusterCount:number; radii:number[];
  edges:[from:number,to:number,prereq:0|1][]; pins:([number,number]|null)[]; seed:string;
+ /** AT2: height ÷ width of the map's viewport. Portrait screens stack constellations vertically; 1 (or absent) keeps the ring. */
+ aspect?:number;
 }
 export interface LayoutResult{
  key:string; x:number[]; y:number[]; centres:[number,number][];
@@ -21,7 +23,7 @@ const TICKS=320;
 export function layoutKey(input:LayoutInput):string{
  let hash=2166136261;
  const feed=(text:string)=>{for(let i=0;i<text.length;i++)hash=Math.imul(hash^text.charCodeAt(i),16777619);};
- feed('v'+LAYOUT_VERSION+'|'+input.seed+'|'+input.clusterCount);
+ feed('v'+LAYOUT_VERSION+'|'+input.seed+'|'+input.clusterCount+(input.aspect&&Math.abs(input.aspect-1)>.05?'|a'+input.aspect.toFixed(2):''));
  for(let i=0;i<input.ids.length;i++){feed('|'+input.ids[i]+':'+input.clusters[i]+':'+input.radii[i].toFixed(2));const pin=input.pins[i];if(pin)feed('@'+pin[0]+','+pin[1]);}
  for(const [from,to,prereq] of input.edges)feed('|'+from+'>'+to+(prereq?'p':'r'));
  return (hash>>>0).toString(36)+'-'+input.ids.length;
@@ -42,8 +44,8 @@ export function layoutAtlas(input:LayoutInput):LayoutResult{
  // Constellations sit on a ring (one at the centre when there is only one).
  const centres:[number,number][]=Array.from({length:Math.max(input.clusterCount,1)},(_,i)=>{
   if(input.clusterCount<=1)return [0,0];
-  const angle=-Math.PI/2+i*2*Math.PI/input.clusterCount;
-  return [Math.cos(angle)*ring,Math.sin(angle)*ring];
+  const angle=-Math.PI/2+i*2*Math.PI/input.clusterCount,stretch=Math.min(2,Math.max(.5,input.aspect??1));
+  return [Math.cos(angle)*ring/stretch**.75,Math.sin(angle)*ring*stretch**.25];
  });
  const nodes:Node[]=input.ids.map((_,i)=>{
   const [cx,cy]=centres[input.clusters[i]]??[0,0],angle=random()*2*Math.PI,distance=Math.sqrt(random())*ring*.45;

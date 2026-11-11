@@ -95,11 +95,8 @@ export default function FocusV7(){
  const word=focusWord(entry),clock=focusClock(entry,now),eyebrow=focusEyebrow(entry),onBreak=word==='Break';
  const offset=clock.progress===null?0:CIRCUMFERENCE*(1-clock.progress),angle=-Math.PI/2+2*Math.PI*(clock.progress??0);
  return <main id="main-content" className={'v7-focus '+subjectClass(subject)} aria-label="Focus" data-word={word}>
-  <div className="v7-focus-emblem" aria-hidden="true" data-still={reduced||onBreak?'true':undefined}>
-   {onBreak?<span className="v7-focus-breath" data-still={reduced?'true':undefined}/>:<Emblem subject={subject} seed={entry.projectId??entry.id} size={520} animate={false}/>}
-  </div>
   <ImmersiveHeader leave={<Link className="v7-icon-button" to="/" aria-label="Minimise"><ChevronDown aria-hidden="true"/></Link>}
-   center={project?<span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{project.title}</span></span>:<span className="v7-meta">Focus</span>}
+   center={project?<span className="v7-focus-subject"><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}</span></span>:<span className="v7-meta">Focus</span>}
    more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-expanded={menu} onClick={()=>setMenu(open=>!open)}><MoreHorizontal aria-hidden="true"/></button>
     {menu&&<div className="v7-focus-menu" role="menu" aria-label="Timer details">
      {clock.endsAt&&<p className="v7-meta">This phase ends at {clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)}.</p>}
@@ -108,6 +105,10 @@ export default function FocusV7(){
     </div>}</div>}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>
   <section className="v7-focus-centre" aria-label="Timer">
+   {/* FO1/KC23: the emblem is centred on the timer, with the kit's Night hero glow; eyebrow, timer and intention are one block. */}
+   <div className="v7-focus-emblem" aria-hidden="true" data-still={reduced||onBreak?'true':undefined}>
+    {onBreak?<span className="v7-focus-breath" data-still={reduced?'true':undefined}/>:<Emblem subject={subject} seed={entry.projectId??entry.id} size={520} animate={false}/>}
+   </div>
    {clock.progress!==null?<div className="v7-focus-ring" data-word={word}>
     <svg viewBox={'0 0 '+RING+' '+RING} aria-hidden="true">
      <circle cx={RING/2} cy={RING/2} r={RADIUS} className="v7-focus-track"/>
@@ -128,7 +129,7 @@ export default function FocusV7(){
    <form className="v7-focus-thought" onSubmit={event=>{event.preventDefault();void park();}}>
     <label className="v7-sr-only" htmlFor="v7-focus-thought">Park a thought</label>
     <input id="v7-focus-thought" placeholder="Park a thought…" value={thought} onChange={event=>setThought(event.target.value)} enterKeyHint="done"/>
-    <button type="button" className="v7-focus-drift" onClick={()=>{void drifted();}} aria-label="Drifted: log a distraction"><Waves aria-hidden="true"/></button>
+    <button type="button" className="v7-focus-drift" onClick={()=>{void drifted();}} aria-label="Drifted: log a distraction"><Waves aria-hidden="true"/><span aria-hidden="true">Drifted</span></button>
    </form>
    <p className="v7-focus-noted" role="status">{noted?<><Check aria-hidden="true"/>{noted}</>:' '}</p>
    {!!error&&<p className="v7-alert" role="alert">{error}</p>}
@@ -136,7 +137,8 @@ export default function FocusV7(){
     <div><button type="button" className="v7-focus-control" disabled={busy||onBreak||entry.status==='paused'} onClick={()=>{void takeBreak();}} aria-label="Take a break"><Coffee aria-hidden="true"/></button><span>Break</span></div>
     <div><button type="button" className="v7-focus-control v7-focus-main" disabled={busy} onClick={()=>{void pause();}} aria-label={entry.status==='paused'?(onBreak?'Resume now':'Resume'):'Pause'}>
      {entry.status==='paused'?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>}</button><span>{entry.status==='paused'?(onBreak?'Resume now':'Resume'):'Pause'}</span></div>
-    <div><button type="button" className="v7-focus-control v7-focus-finish" disabled={busy} onClick={openFinish} aria-label="Finish"><Check aria-hidden="true"/></button><span>Finish</span></div>
+    {/* PA4/FO5: Finish stays secondary until the planned length is reached, so a running timer does not invite stopping early. */}
+    <div><button type="button" className={'v7-focus-control'+(clock.progress!==null&&clock.progress>=1?' v7-focus-finish':'')} disabled={busy} onClick={openFinish} aria-label="Finish"><Check aria-hidden="true"/></button><span>Finish</span></div>
    </div>
   </section>
   <Sheet open={finishing} onClose={()=>setFinishing(false)} title="Log this session" eyebrow={eyebrow}

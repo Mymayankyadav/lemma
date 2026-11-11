@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {Layers,Play,Route,Settings as SettingsIcon,CheckSquare,Sparkles,Target} from 'lucide-react';
+import {CalendarPlus,Layers,Play,Route,Settings as SettingsIcon,CheckSquare,Sparkles,Sun,Target,Timer} from 'lucide-react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
@@ -9,6 +9,8 @@ import {FastTex} from '../../ui/FastTex';
 import {search,type Matched,type SearchGroupName,type SearchItem} from './searchModel';
 
 const iconFor:Record<SearchGroupName,typeof Route>={Paths:Route,Checkpoints:Target,Cards:Layers,Concepts:Sparkles,Tasks:CheckSquare,Settings:SettingsIcon,Actions:Play};
+/** SE2: each action has its own icon (∎ for Close the day is drawn as text). */
+const actionIcon:Record<string,typeof Route|'qed'>={'action:focus':Timer,'action:review':Layers,'action:block':CalendarPlus,'action:close':'qed','action:day':Sun};
 const recentKey='lemma.v7.recent';
 const readRecent=():SearchItem[]=>{try{return (JSON.parse(localStorage.getItem(recentKey)??'[]') as SearchItem[]).slice(0,5);}catch{return [];}};
 const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
@@ -53,14 +55,15 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
  function close(){reset();onClose();}
  function openItem(item:SearchItem){writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});close();navigate(item.to);}
  const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=iconFor[item.group];
+  const special=item.group==='Actions'?actionIcon[item.id]:undefined;
   return <li key={item.id+index} role="presentation"><button type="button" role="option" id={'v7-search-'+index} aria-selected={index===active} data-active={index===active?'true':'false'} className="v7-search-row"
    onClick={()=>openItem(item)} onMouseEnter={()=>setActive(index)}>
-   <Icon aria-hidden="true"/>
+   {special==='qed'?<span className="v7-search-qed" aria-hidden="true">∎</span>:special?(()=>{const Special=special;return <Special aria-hidden="true"/>;})():<Icon aria-hidden="true"/>}
    <span>{hit?<>{hit.before}<mark>{hit.match}</mark><span data-rest="">{hit.after}</span></>:item.group==='Cards'?<FastTex source={item.title}/>:item.title}</span>
    {item.parent&&<small>{item.parent}</small>}
   </button></li>;};
  let cursor=0;
- return <Sheet open={open} onClose={close} title="Search" eyebrow="Search or jump to…">
+ return <Sheet open={open} onClose={close} title="Search" full hideTitle>
   <input data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
    aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>setQuery(event.target.value)}
    onKeyDown={event=>{
@@ -82,10 +85,10 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
 }
 function actions(due:number):SearchItem[]{
  return [
-  {id:'action:focus',group:'Actions',title:'Start focus',to:'/'},
+  {id:'action:focus',group:'Actions',title:'Quick focus',to:'/?quick=1'},
   {id:'action:review',group:'Actions',title:due>0?'Review '+due+' cards':'Review',to:'/review'},
   {id:'action:block',group:'Actions',title:'New time block',to:'/calendar?view=day&new=block'},
   {id:'action:close',group:'Actions',title:'Close the day',to:'/today/close'},
-  {id:'action:day',group:'Actions',title:'Switch to Day',to:'/calendar?view=day'},
+  {id:'action:day',group:'Actions',title:"Today's calendar",to:'/calendar?view=day'},
  ];
 }

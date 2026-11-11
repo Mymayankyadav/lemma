@@ -12,10 +12,10 @@ const CACHE_LIMIT=4;
 let worker:Worker|null=null,nextId=1;
 const pending=new Map<number,{resolve:(result:LayoutResult)=>void;reject:(error:Error)=>void}>();
 
-export function layoutInput(model:AtlasModel,seed='lemma-atlas'):LayoutInput{
+export function layoutInput(model:AtlasModel,seed='lemma-atlas',aspect?:number):LayoutInput{
  return {ids:model.stars.map(star=>star.id),clusters:model.stars.map(star=>star.cluster),clusterCount:Math.max(...model.stars.map(star=>star.cluster+1),0),
   radii:model.stars.map(star=>star.radius),edges:model.edges.map(edge=>[edge.from,edge.to,edge.kind==='prereq'?1:0]),
-  pins:model.stars.map(star=>star.pin?[star.pin[0],star.pin[1]]:null),seed};
+  pins:model.stars.map(star=>star.pin?[star.pin[0],star.pin[1]]:null),seed,...(aspect&&Math.abs(aspect-1)>.05?{aspect:Math.round(aspect*4)/4}:{})};
 }
 function remember(result:LayoutResult):LayoutResult{
  cache.delete(result.key);cache.set(result.key,result);

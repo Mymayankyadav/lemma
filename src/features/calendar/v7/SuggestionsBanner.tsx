@@ -2,7 +2,10 @@ import {useEffect,useRef,useState} from 'react';
 import {getDayPlanApi} from '../../../data/day-plans';
 import {getStudyApi} from '../../../data/study';
 import {getTaskApi} from '../../../data/tasks';
-import {Banner} from '../../../ui/v7/components';
+import {Button} from '../../../ui/v7/components';
+import {StatusIcon} from '../../../ui/v7/KitPrimitives';
+import {formatShortDate} from '../../../lib/format';
+import {dayKey} from '../model';
 import {useToast} from '../../../ui/Toast';
 import PlannerLaunch from '../../planner/Sheet';
 import {commitPlannerSelection} from '../../planner/commit';
@@ -45,8 +48,12 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
   finally{setBusy(false);}
  }
  return <>
-  {count>0&&<Banner tone="good" action={busy?'Adding…':'Add all'} onAction={()=>{void addAll();}}>
-   {suggestionLabel(count)} <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></Banner>}
-  {adjusting&&<PlannerLaunch date={date} zone={zone} autoOpen hideTrigger onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
+  {/* KC15/CD1: an info-tone banner in one 44 px row — a suggestion is not a success. "Adjust" stays an underlined link. */}
+  {count>0&&<div className="v7-cal-suggest v7-tone-info" role="region" aria-label="Suggested blocks">
+   <StatusIcon tone="info" size={16}/>
+   <p>{suggestionLabel(count)}{date===dayKey(new Date(),zone)?'':' for '+formatShortDate(date,{zone})} · <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></p>
+   <Button small variant="secondary" disabled={busy} onClick={()=>{void addAll();}}>{busy?'Adding…':'Add all'}</Button>
+  </div>}
+  {adjusting&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
  </>;
 }

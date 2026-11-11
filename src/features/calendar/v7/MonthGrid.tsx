@@ -4,7 +4,8 @@ import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/con
 import {monthDays} from '../model';
 import {dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
 import type {BlockLook} from './DayGrid';
-import {dotClasses,tintStep} from './viewModel';
+import {dotClasses,heatLegend,tintStep} from './viewModel';
+import {SubjectGlyph} from '../../../ui/v7/Subject';
 
 /** PLAN §6.5 Month: a tinted grid with subject dots and a flag for due items. No cell prints "0". */
 export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,lookOf,onPick}:{
@@ -27,11 +28,15 @@ export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,
      data-selected={day.day===date?'true':'false'} data-outside={!day.inMonth||undefined} aria-pressed={day.day===date}
      aria-label={long+(day.day===today?', today':'')+(parts.length?', '+parts.join(', '):'')} onClick={()=>onPick(day.day)}>
      <span>{Number(day.day.slice(-2))}</span>
-     <i aria-hidden="true">{dots.map(klass=><b key={klass} className={klass}/>)}</i>
+     <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
      {due>0&&<Flag className="v7-mo-flag" aria-hidden="true"/>}
     </button>;
    })}
   </div>
-  <p className="v7-mo-legend">Shading shows time logged · dots show planned study · <Flag aria-hidden="true"/> marks something due</p>
+  {/* KC6: the kit's five labelled swatches; glyphs, not dots, mark planned study (KC2). */}
+  <div className="v7-mo-legend" aria-label="Legend">
+   <span className="v7-mo-swatches">Logged {heatLegend.map((label,index)=><span key={label}><i data-tint={index} aria-hidden="true"/>{label}</span>)}</span>
+   <span>Glyphs mark planned study · <Flag aria-hidden="true"/> something due</span>
+  </div>
  </section>;
 }

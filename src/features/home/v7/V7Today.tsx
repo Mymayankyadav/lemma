@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
-import {Link,useNavigate} from 'react-router';
-import {Check,ChevronRight,Inbox,Layers,Pause,Play} from 'lucide-react';
+import {Link,useNavigate,useSearchParams} from 'react-router';
+import {Check,ChevronRight,Layers,Pause,Play} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {getStudyApi} from '../../../data/study';
@@ -13,13 +13,17 @@ import {loadActiveFocusPresets} from '../../focus/PresetPicker';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
+import {LiveChip,StatusBadge} from '../../../ui/v7/Status';
+import {overdueSummary} from '../../calendar/v7/overdue';
+import {readTasks} from '../../planner/readTasks';
+import {DEFAULT_PLANNING} from '../../planner/model';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
 import {needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
-import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripSegment,todayBriefing,todayGreeting,type HeroState} from './todayModel';
+import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripHours,stripSegment,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
 import './today.css';
 
 interface DayData{blocks:CalendarBlockRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
@@ -38,15 +42,17 @@ export default function V7Today(){
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
  const [presets,setPresets]=useState<PresetRecord[]>([]),[presetId,setPresetId]=useState<string|null>(null),[showAll,setShowAll]=useState(false);
  const reload=useCallback(()=>setVersion(value=>value+1),[]);
+ const [params,setParams]=useSearchParams();
+ useEffect(()=>{if(params.get('quick')!=='1')return;setQuick(true);const next=new URLSearchParams(params);next.delete('quick');setParams(next,{replace:true});},[params,setParams]);
  useEffect(()=>{if(!quick)return;let live=true;void loadActiveFocusPresets().then(rows=>{if(live)setPresets(rows);}).catch(()=>{});return()=>{live=false;};},[quick]);
  useEffect(()=>{
   let live=true;setError(false);
   const study=getStudyApi(),range=dayBounds(day,zone);
   const closed=import('../V6TodayPlan').then(module=>module.readTodayPlan(day,zone)).then(plan=>plan.plan?.status==='closed').catch(()=>false);
-  const dues=Promise.all([import('../../calendar/deadlines/load'),import('../../calendar/deadlines/OverdueBanner')])
-   .then(async([load,banner])=>{const all=await load.loadCalendarDues(),items=banner.overdueItems(all,zone);return {overdue:items.deadlines.length+items.topics.length,topics:all.topics as PracticeTopicRecord[]};})
+  const tasks=readTasks().catch(()=>[] as TaskRecord[]);
+  const dues=Promise.all([import('../../calendar/deadlines/load'),tasks])
+   .then(async([load,taskRows])=>{const all=await load.loadCalendarDues();return {overdue:overdueSummary({tasks:taskRows,dues:all},zone).total,topics:all.topics as PracticeTopicRecord[]};})
    .catch(()=>({overdue:0,topics:[] as PracticeTopicRecord[]}));
-  const tasks=getTaskApi().listTasks({status:['backlog','in_progress'],limit:50}).then(page=>page.items).catch(()=>[] as TaskRecord[]);
   const answered=getApi().getInsightData(7).then(insight=>insight.reviews.filter(review=>Date.parse(review.reviewedAt)>=Date.parse(range.start)&&Date.parse(review.reviewedAt)<Date.parse(range.end)).length).catch(()=>0);
   Promise.all([study.listCalendarBlocks(range),study.listStudyEntries(range),closed,dues,tasks,answered]).then(([blocks,entries,isClosed,dueInfo,taskRows,answeredCount])=>{
    if(!live)return;
@@ -66,7 +72,9 @@ export default function V7Today(){
  const ready=!!home.data&&!!data;
  const state:HeroState=heroState({session:!!entry,next,now,closed:!!data?.closed,hasPaths:projects.length>0});
  const word=entry?focusWord(entry):null;
- const focusGoal=Math.max(0,Number(settings.data?.planning?.daily_minimum_minutes)||0);
+ // TD5: the owner's daily focus minimum, or the deployed default (20 min) until it is changed in Settings.
+ const planning=settings.data?.planning??DEFAULT_PLANNING;
+ const focusGoal=Math.max(0,Number(planning.daily_minimum_minutes)||0);
  const logged=Math.round(data?.logged??0);
  const planned=blocks.filter(block=>block.kind==='study').reduce((sum,block)=>sum+Math.max(0,(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000),0);
  const heroLink=entry?.projectId??next?.projectId??null,hero=subjectOf(heroLink);
@@ -112,6 +120,9 @@ export default function V7Today(){
  }
  const clock=entry?focusClock(entry,Date.now()):null;
  const briefing=todayBriefing({session:word,nextIn:next&&state==='upcoming'?startsIn(next.startsAt,now):null,studyBlocksLeft:left,due,overdue:data?.overdue??0});
+ // PA10/TD6: the strip shows the owner's planning window (widened to fit the day's blocks and now), not 06:00–24:00.
+ const windowMinutes=stripWindow({start:planning.window_start,end:planning.window_end,
+  blocks:blocks.map(block=>[localMinute(block.startsAt,zone),localMinute(block.startsAt,zone)+(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000] as [number,number]),now:localMinute(date,zone)});
  const heroCopy:Record<HeroState,{chip:string;title:string;line:string}>={
   session:{chip:word??'Focus',title:entry?.intent??'',line:clock?(clock.mode==='remaining'?clock.label+' left':clock.label+' focused'):''},
   now:{chip:next?'Now · until '+clockTime(next.endsAt,zone):'',title:next?.title??'',line:next?clockTime(next.startsAt,zone)+'–'+clockTime(next.endsAt,zone)+' · '+minutesLabel((Date.parse(next.endsAt)-Date.parse(next.startsAt))/60_000):''},
@@ -122,20 +133,21 @@ export default function V7Today(){
  };
  const copy=heroCopy[state];
  const todayLabel=new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'long',day:'numeric',month:'long'}).format(date);
- const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone)).left;
+ const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone),windowMinutes).left;
  return <main id="main-content" className="v7-page v7-today" aria-label="Today">
-  <HubHeader title={todayGreeting(date,zone)} date={todayLabel} pending={pending} settings>
+  <HubHeader title={todayGreeting(date,zone)} date={todayLabel} settings display>
    <p className="v7-today-briefing">{ready?briefing:' '}</p>
   </HubHeader>
   {!ready?<div className="v7-today-skeleton" role="status" aria-label="Today loading">
    {error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
     <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>:<><span/><span/><span/></>}
   </div>:<>
-   <section className={'v7-today-hero '+subjectClass(hero.subject)} aria-label="Your next step" data-state={state}>
-    <div className="v7-today-hero-emblem" aria-hidden="true"><Emblem subject={hero.subject} seed={heroLink??'today'} size={250} animate={false}/></div>
+   <section className={'v7-today-hero v7-starfield '+subjectClass(hero.subject)} aria-label="Your next step" data-state={state}>
+    <div className="v7-today-hero-emblem" aria-hidden="true"><Emblem subject={hero.subject} seed={heroLink??'today'} size={164} animate={false}/></div>
     <div className="v7-today-hero-labels">
      {hero.subject!=='Other'&&(state==='session'||state==='now'||state==='upcoming')&&<SubjectChip subject={hero.subject} name={hero.name}/>}
-     <span className={'v7-badge '+(state==='closed'?'v7-proof-demonstrated':'v7-proof-progress')}>{copy.chip}</span>
+     {state==='upcoming'||state==='now'||state==='session'?<LiveChip>{copy.chip}</LiveChip>
+      :<span className={'v7-badge '+(state==='closed'?'v7-proof-demonstrated':'v7-tone-info')}>{copy.chip}</span>}
     </div>
     <h2 className="v7-today-hero-title">{copy.title}</h2>
     {state==='session'&&clock?<div className="v7-today-hero-clock">
@@ -151,6 +163,7 @@ export default function V7Today(){
      {state==='free'&&<><Link className="v7-button v7-primary" to="/calendar?view=day&plan=1"><span>Plan my day</span></Link>
       <Button onClick={()=>setQuick(true)}>Quick focus</Button></>}
      {state==='closed'&&<Link className="v7-button v7-secondary" to="/calendar?view=day&plan=tomorrow"><span>Plan tomorrow</span></Link>}
+     {state!=='free'&&state!=='session'&&state!=='first'&&<Button variant="ghost" className="v7-today-quick" onClick={()=>setQuick(true)}>Quick focus</Button>}
      {state==='first'&&<Link className="v7-button v7-primary" to="/projects/new"><span>Start a path</span></Link>}
     </div>
    </section>
@@ -162,38 +175,38 @@ export default function V7Today(){
    <Link to="/calendar?view=day" className="v7-card v7-today-strip-card" aria-label={'Today: '+minutesLabel(planned)+' planned, '+minutesLabel(logged)+' done. Open Calendar Day.'}>
     <span className="v7-card-heading"><h2>Today</h2><span>{minutesLabel(planned)} planned · {minutesLabel(logged)} done<ChevronRight aria-hidden="true"/></span></span>
     <span className="v7-today-strip" aria-hidden="true">
-     {blocks.map(block=>{const segment=stripSegment(localMinute(block.startsAt,zone),localMinute(block.startsAt,zone)+(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000);
+     {blocks.map(block=>{const segment=stripSegment(localMinute(block.startsAt,zone),localMinute(block.startsAt,zone)+(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000,windowMinutes);
       return <span key={block.id} data-kind={block.kind} data-past={Date.parse(block.endsAt)<=now||undefined}
        className={'v7-today-strip-block '+subjectClass(subjectOf(block.projectId).subject)} style={{left:segment.left+'%',width:segment.width+'%'} as CSSProperties}/>;})}
      <span className="v7-today-now" style={{left:nowLeft+'%'}}/>
     </span>
-    <span className="v7-today-hours" aria-hidden="true">{['06','09','12','15','18','21','24'].map(hour=><span key={hour}>{hour}</span>)}</span>
+    <span className="v7-today-hours" aria-hidden="true">{stripHours(windowMinutes).map(hour=><span key={hour}>{hour}</span>)}</span>
    </Link>
    {targets.length>0&&<section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
-     {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}</span>}
+     {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}{row.key==='reviews'&&row.max>row.value?' · '+(row.max-row.value)+' left':''}</span>}
      <span className="v7-today-target-track" role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
       <span style={{width:Math.min(100,row.value/row.max*100)+'%'}}/></span>
     </div>)}
    </section>}
    {(needs.total>0||pending>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
     <h2>Needs you</h2>
-    {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><span className="v7-badge v7-tone-warning">{row.count} overdue</span><span/>
-      <Link className="v7-button v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
+    {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><StatusBadge tone="warning">{row.count} overdue</StatusBadge><span/>
+      <Link className="v7-button v7-ghost v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
      :row.kind==='review'?<div key="review" className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong><small>about {Math.max(1,Math.round(row.count*0.4))} min</small></span>
       <Link className="v7-button v7-secondary v7-small" to="/review"><span>Review</span></Link></div>
-     :row.kind==='task'?<div key={row.task.id} className="v7-today-need"><input type="checkbox" className="v7-today-check" aria-label={'Complete '+row.task.title} disabled={busy} checked={false} onChange={()=>{void completeTask(row.task);}}/>
+     :row.kind==='task'?<div key={row.task.id} className="v7-today-need"><span className="v7-check-choice v7-today-check"><input type="checkbox" aria-label={'Complete '+row.task.title} disabled={busy} checked={false} onChange={()=>{void completeTask(row.task);}}/></span>
       <span><strong>{row.task.title}</strong><small>{row.task.priority==='high'?'High · ':row.task.priority==='low'?'Low · ':''}due today{row.task.estimateMinutes?' · '+minutesLabel(row.task.estimateMinutes):''}</small></span><span/></div>
      :<div key={row.topic.id} className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.topic.title}</strong><small>Practice due today</small></span>
       <Link className="v7-button v7-secondary v7-small" to={'/practice#topic-'+row.topic.id}><span>Practice</span></Link></div>)}
     {needs.hidden>0&&<Button variant="ghost" small onClick={()=>setShowAll(true)}>{'Show all ('+needs.total+')'}</Button>}
-    {pending>0&&<Link className="v7-today-need" to="/proposals"><Inbox aria-hidden="true"/><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}
+    {pending>0&&<Link className="v7-today-need" to="/proposals"><span className="v7-today-fan" aria-hidden="true"><i/><i/><i/></span><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}
    </section>}
    {projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
     <div className="v7-card-heading"><h2>Continue</h2><Link to="/projects">All paths<ChevronRight aria-hidden="true"/></Link></div>
     <div className="v7-today-tiles">{projects.slice(0,6).map(project=>{const subject=kitSubject(project.subject.name);
      return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)}>
-      <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={64} animate={false}/></span>
+      <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></span>
       <strong>{project.title}</strong><small>{project.current?'Now: '+project.current.title:'Explore the next checkpoint'}</small>
       <span className="v7-today-tile-meter" role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,project.total)} aria-valuenow={project.done}>
        <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>

@@ -158,13 +158,16 @@ export function Field({
   error,
   id,
   className = "",
+  hint,
+  optional = false,
   ...props
-}: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
+}: InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string; hint?: string; optional?: boolean }) {
   const auto = useId(),
     fieldId = id ?? auto;
   return (
     <div className="v7-field-group">
-      <label htmlFor={fieldId}>{label}</label>
+      {/* KC19: "Optional" is a Supporting-style suffix, not part of the label's words. */}
+      <label htmlFor={fieldId}>{label}{optional && <span className="v7-field-optional"> · Optional</span>}</label>
       <input
         {...props}
         id={fieldId}
@@ -172,9 +175,10 @@ export function Field({
         data-v7-autofocus={props.autoFocus || undefined}
         aria-invalid={!!error}
         aria-describedby={
-          error ? `${fieldId}-error` : props.readOnly ? `${fieldId}-readonly` : props["aria-describedby"]
+          error ? `${fieldId}-error` : props.readOnly ? `${fieldId}-readonly` : hint ? `${fieldId}-hint` : props["aria-describedby"]
         }
       />
+      {hint && !error && <p id={`${fieldId}-hint`} className="v7-field-hint">{hint}</p>}
       {props.readOnly && (
         <p id={`${fieldId}-readonly`} className="v7-readonly-note">
           Read only · Changes are unavailable here
@@ -196,6 +200,8 @@ export function Sheet({
   eyebrow,
   children,
   footer,
+  full = false,
+  hideTitle = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -203,6 +209,10 @@ export function Sheet({
   eyebrow?: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** Full height on phones (Search, §6.1 G). */
+  full?: boolean;
+  /** The body's first field is the header (SE3); the title stays for assistive technology. */
+  hideTitle?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     id = useId(),
@@ -225,7 +235,7 @@ export function Sheet({
   return (
     <dialog
       ref={ref}
-      className="v7-sheet"
+      className={`v7-sheet${full ? " v7-sheet-full" : ""}`}
       aria-labelledby={id}
       onCancel={(e) => {
         e.preventDefault();
@@ -248,7 +258,7 @@ export function Sheet({
       <header className="v7-sheet-header">
         <div>
           {eyebrow && <p className="v7-eyebrow">{eyebrow}</p>}
-          <h2 id={id} className="v7-headline">
+          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-headline"}>
             {title}
           </h2>
         </div>
@@ -268,6 +278,7 @@ export function Picker({
   onChange,
   disabled = false,
   disabledReason,
+  optional = false,
 }: {
   label: string;
   value: string;
@@ -275,6 +286,7 @@ export function Picker({
   onChange: (v: string) => void;
   disabled?: boolean;
   disabledReason?: string;
+  optional?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [desktop, setDesktop] = useState(false),
@@ -306,11 +318,11 @@ export function Picker({
   }
   return (
     <div className="v7-field-group v7-menu-anchor" ref={ref}>
-      <span id={id}>{label}</span>
+      <span id={id}>{label}{optional && <span className="v7-field-optional"> · Optional</span>}</span>
       <button
         type="button"
         disabled={disabled || !!disabledReason}
-        title={disabledReason ?? (disabled ? "Unavailable · Finish Checkpoint 3 first." : undefined)}
+        title={disabledReason}
         aria-label={`${label}: ${value}`}
         aria-haspopup={desktop ? "listbox" : "dialog"}
         aria-expanded={open}
@@ -320,7 +332,7 @@ export function Picker({
         {value}
         <ChevronDown aria-hidden="true" />
       </button>
-      {(disabled || disabledReason) && <p className="v7-disabled-reason">{disabledReason ?? "Unavailable · Finish Checkpoint 3 first."}</p>}
+      {disabledReason && <p className="v7-disabled-reason">{disabledReason}</p>}
       {desktop && open ? (
         <div
           className="v7-menu"
@@ -578,14 +590,18 @@ export function TimePicker({
         {typing ? (
           <Field
             label="Time"
-            type="time"
-            step={300}
-            value={value}
-            onChange={(e) =>
-              editing === "start"
-                ? onChange(e.target.value, end)
-                : onChange(start, e.target.value)
-            }
+            hint="24-hour time, for example 09:30"
+            inputMode="numeric"
+            autoComplete="off"
+            maxLength={5}
+            defaultValue={value}
+            onChange={(e) => {
+              // B7: a themed 24-hour text field, never the browser's native time control.
+              const typed = e.target.value.trim(), match = /^([01]?\d|2[0-3])[:.]?([0-5]\d)$/.exec(typed);
+              if (!match) return;
+              const next = match[1].padStart(2, "0") + ":" + match[2];
+              if (editing === "start") onChange(next, end); else onChange(start, next);
+            }}
           />
         ) : (
           <div
@@ -828,19 +844,20 @@ export function Meter({
   label,
   value,
   max = 100,
-  subject = 1,
+  subject,
 }: {
   label: string;
   value: number;
   max?: number;
+  /** A subject's mastery takes its colour; anything else is drawn in the neutral data colour (KC3/KC4). */
   subject?: number;
 }) {
   return (
-    <div className={`v7-meter-row v7-subject-${subject}`} data-complete={value >= max && max > 0}>
+    <div className={`v7-meter-row ${subject ? `v7-subject-${subject}` : "v7-meter-neutral"}`} data-complete={value >= max && max > 0}>
       <div className="v7-between">
         <span>{label}</span>
         <span className="v7-meta">
-          {value} / {max}
+          {value} of {max}
         </span>
       </div>
       <div

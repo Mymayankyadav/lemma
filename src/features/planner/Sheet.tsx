@@ -12,6 +12,7 @@ import {unplacedReasonText} from '../../lib/labels';
 import {formatDay,formatDuration,formatTimeRange} from '../../lib/format';
 import {localClockInstant,localWallParts} from '../time-log/local-time';
 import Dialog from '../../ui/v6/Dialog';
+import V7PlannerSheet from './V7PlannerSheet';
 
 type Move={date:string;start:string;end:string};
 const button='min-h-11 rounded-ctl border border-edge px-3 py-2 text-label font-semibold disabled:opacity-50';
@@ -27,24 +28,12 @@ function ownerDay(zone:string):string{
  const pick=(name:string)=>parts.find(x=>x.type===name)?.value??'';
  return pick('year')+'-'+pick('month')+'-'+pick('day');
 }
-export async function readTasks():Promise<TaskRecord[]>{
- const rows:TaskRecord[]=[];let cursor:string|null=null;
- const seen=new Set<string>();
- for(let i=0;i<10;i++){
-  const page=await getTaskApi().listTasks({
-   status:['backlog','in_progress'],limit:50,cursor});
-  if(page.items.length>50||!Number.isSafeInteger(page.total)||page.total<0)
-   throw new Error('Malformed owner task page');
-  rows.push(...page.items);
-  if(!page.nextCursor)return rows;
-  if(seen.has(page.nextCursor))
-   throw new Error('Repeated owner task cursor; refresh the planner');
-  seen.add(page.nextCursor);cursor=page.nextCursor;
- }
- throw new Error('Task list exceeds 500; narrow your task selection');
-}
-export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed}:{
+export {readTasks} from './readTasks';
+import {readTasks} from './readTasks';
+export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed,v7=false}:{
  date?:string;zone?:string;
+ /** v7 (Night critique B1): the same planner drawn as the kit's bottom sheet with kit controls only. */
+ v7?:boolean;
  /** v7: open the planner as soon as it mounts (Adjust on the suggestions banner, `?plan=1`). */
  autoOpen?:boolean;hideTrigger?:boolean;onClosed?:()=>void;
 }){
@@ -189,6 +178,10 @@ export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=fals
   }finally{if(commitEpoch.current===ownCommit)setBusy(false);}
  }
  const count=selection.items?.selected.length??0;
+ if(v7)return opened?<V7PlannerSheet anchor={anchor} zone={ownerZone} busy={busy} loading={loading} error={error} selectionError={selection.error}
+  preview={preview} tasks={tasks} selected={selected} overrides={overrides} unplaced={selection.items?.unplaced??[]} count={count} rangeDays={rangeDays}
+  onClose={close} onCommit={()=>void commit()} onToggle={(key,on)=>setSelected(old=>{const next=new Set(old);if(on)next.add(key);else next.delete(key);return next;})}
+  onMove={changeMove} onRange={days=>{++loadEpoch.current;setRangeDays(days);setPreview(null);setLoading(false);void load(days);}}/>:null;
  return <>
   {!hideTrigger&&<button type="button" className={button} onClick={show}>Plan study tasks</button>}
   {opened&&<Dialog title="Plan study tasks" eyebrow="PLAN YOUR DAY" busy={busy} onClose={close} footer={

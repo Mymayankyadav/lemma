@@ -19,3 +19,11 @@ export function SubjectMark({ subject, size = "glyph", seed = subject, broken = 
       <Emblem subject={subject} seed={seed} size={size === "tile" ? 48 : 164} animate={false} broken={broken} />}
   </span>;
 }
+/** KC2: the subject glyph for a `.v7-subject-N` class (week strip, month cells, week blocks, legends) — never a bare dot. */
+export function subjectFromClass(klass: string): Subject {
+  const index = Number(/v7-subject-(\d+)/.exec(klass)?.[1] ?? 0);
+  return index >= 1 && index <= subjects.length ? subjects[index - 1] : "Other";
+}
+export function SubjectGlyph({ klass }: { klass: string }) {
+  return <SubjectMark subject={subjectFromClass(klass)} />;
+}

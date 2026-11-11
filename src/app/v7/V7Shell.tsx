@@ -1,9 +1,9 @@
 import {lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
-import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft,MoreHorizontal} from 'lucide-react';
+import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
-import {subjectClass} from '../../ui/v7/Subject';
+import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import './shell.css';
@@ -36,7 +36,7 @@ function SessionRow(){
  };
  return <div className="v7-session-row" data-word={word}>
   <button type="button" className="v7-session-open" onClick={()=>navigate('/focus')} aria-label={'Open focus: '+entry.intent+', '+word+', '+clock.label+(clock.mode==='remaining'?' left':' focused')}>
-   <span className={'v7-session-dot '+subjectClass(subject)} aria-hidden="true"/>
+   <span className={'v7-session-dot '+subjectClass(subject)} aria-hidden="true"><SubjectMark subject={subject}/></span>
    <span className="v7-session-title">{entry.intent}</span>
    <span className="v7-session-word">{word}</span>
    <span className="v7-session-time">{clock.label}</span>
@@ -54,8 +54,16 @@ function Capture(){
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
+ // SH2/PA2: the button slides away while scrolling down, so it never covers row actions, and returns on scroll up.
+ const [hidden,setHidden]=useState(false);
+ useEffect(()=>{
+  let last=window.scrollY;
+  const onScroll=()=>{const y=window.scrollY,delta=y-last;if(Math.abs(delta)<6)return;setHidden(delta>0&&y>48);last=y;};
+  window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll);
+ },[]);
+ useEffect(()=>setHidden(false),[location.pathname]);
  return <>
-  <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
+  <button type="button" className="v7-capture" data-hidden={hidden&&mode==='closed'?'true':'false'} aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
@@ -85,18 +93,21 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  </div>;
 }
 
-/** A. Hub header: date (Today only) and page actions, then the hub title in Display. */
-export function HubHeader({title,date,pending=0,settings=false,children}:{title:string;date?:string;pending?:number;settings?:boolean;children?:ReactNode}){
- return <header className="v7-hub-header">
+/** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
+ *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
+ *  Settings only on Today (SH4). */
+export function HubHeader({title,date,settings=false,display=false,children}:{title:string;date?:string;settings?:boolean;display?:boolean;children?:ReactNode}){
+ const pending=useHome().data?.pendingProposals??0;
+ return <header className="v7-hub-header" data-display={display?'true':'false'}>
   <div className="v7-hub-row">
-   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true">ℓ</span>{date}</p>:<span/>}
+   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true">ℓ</span>{date}</p>:!display?<h1 className="v7-hub-title">{title}</h1>:<span/>}
    <nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
     {settings&&<Link to="/settings" aria-label="Settings" title="Settings"><Settings aria-hidden="true"/></Link>}
    </nav>
   </div>
-  <h1 className="v7-hub-title">{title}</h1>
+  {display&&<h1 className="v7-hub-title v7-display">{title}</h1>}
   {children}
  </header>;
 }
@@ -113,6 +124,7 @@ export function DetailHeader({title,back,action}:{title:string;back?:string;acti
 export function ImmersiveHeader({leave,center,more}:{leave:ReactNode;center:ReactNode;more?:ReactNode}){
  return <header className="v7-immersive-header">
   {leave}<div className="v7-immersive-center">{center}</div>
-  <nav aria-label="Page actions" className="v7-page-actions">{more??<button type="button" className="v7-icon-button" aria-label="More" disabled><MoreHorizontal aria-hidden="true"/></button>}</nav>
+  {/* SH3: no disabled, outlined "⋯" placeholder — a screen without a menu keeps an empty 44 px slot. */}
+  <nav aria-label="Page actions" className="v7-page-actions">{more??<span className="v7-icon-spacer" aria-hidden="true"/>}</nav>
  </header>;
 }

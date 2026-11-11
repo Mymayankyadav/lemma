@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import type {CalendarBlockRecord} from '../../../src/data/study/contract';
-import {agendaTimeColumn,dotClasses,loadRange,loggedCaption,parseView,showWeekGlyph,tintStep,viewLabel,WEEK_TITLE_MIN_WIDTH} from '../../../src/features/calendar/v7/viewModel';
+import {agendaTimeColumn,collapseEmptyRuns,dotClasses,heatLegend,loadRange,loggedCaption,parseView,showWeekGlyph,tintStep,viewLabel,WEEK_TITLE_MIN_WIDTH} from '../../../src/features/calendar/v7/viewModel';
 
 const block=(patch:Partial<CalendarBlockRecord>)=>({id:'b',title:'Reading',kind:'study',startsAt:'2026-11-11T09:00:00Z',endsAt:'2026-11-11T10:00:00Z',status:'planned',version:1,...patch}) as CalendarBlockRecord;
 
@@ -20,8 +20,13 @@ describe('v7 calendar views',()=>{
   expect(JSON.stringify(agenda)).not.toBe(JSON.stringify(week));
   expect(JSON.stringify(month)).not.toBe(JSON.stringify(week));
  });
- it('tints on five steps and leaves an empty day untinted',()=>{
-  expect([0,5,19,20,59,60,119,120,400].map(tintStep)).toEqual([0,1,1,2,2,3,3,4,4]);
+ it('tints on the kit heatmap steps (0, 1–15, 16–30, 31–60, 60+) and leaves an empty day untinted (KC6)',()=>{
+  expect([0,1,15,16,30,31,60,61,400].map(tintStep)).toEqual([0,1,1,2,2,3,3,4,4]);
+  expect(heatLegend).toEqual(['0','1–15','16–30','31–60','60+ min']);
+ });
+ it('collapses runs of empty Agenda days into one line (PA7)',()=>{
+  const days=['2026-11-09','2026-11-10','2026-11-11','2026-11-12','2026-11-13'].map((day,i)=>({day,empty:i>0&&i<4}));
+  expect(collapseEmptyRuns(days)).toEqual([{from:'2026-11-09',to:'2026-11-09',empty:false},{from:'2026-11-10',to:'2026-11-12',empty:true},{from:'2026-11-13',to:'2026-11-13',empty:false}]);
  });
  it('keeps at most three distinct study subjects as dots and skips busy or cancelled blocks',()=>{
   const klass=(b:CalendarBlockRecord)=>b.title;

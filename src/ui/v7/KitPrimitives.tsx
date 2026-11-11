@@ -76,19 +76,28 @@ export function FormField({ label, helper = "", optional = false, initial = "", 
 function timeMinutes(value:string){const [h,m]=value.split(":").map(Number);return h*60+m;}
 function toTime(value:number){const t=((value%1440)+1440)%1440;return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");}
 function validTime(value:string){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);}
-export function TimeRangeField(){
- const id=useId(),[start,setStart]=useState("09:00"),[end,setEnd]=useState("09:50"),[draftStart,setDraftStart]=useState(start),[draftEnd,setDraftEnd]=useState(end),[error,setError]=useState(""),[custom,setCustom]=useState(false);
+/** The kit's Time range field (§7.3): Start and End side by side with an en dash, 25 / 50 / 90 / Custom presets as filter
+ *  chips that move End, and a summary line ("50 min session · 09:00–09:50 · 24-hour time"). Controlled when `start`, `end` and
+ *  `onChange` are given; the gallery specimen keeps its own state. */
+export function TimeRange({start,end,onChange,legend="Time range",disabled=false}:{start:string;end:string;onChange:(start:string,end:string)=>void;legend?:string;disabled?:boolean}){
+ const id=useId(),[draftStart,setDraftStart]=useState(start),[draftEnd,setDraftEnd]=useState(end),[error,setError]=useState("");
  const duration=(timeMinutes(end)-timeMinutes(start)+1440)%1440;
- function updateEnd(value:string){setEnd(value);setDraftEnd(value);}
- function commitStart(){if(!validTime(draftStart)){setError("Enter a start time in 24-hour HH:MM format.");return;}setError("");setStart(draftStart);updateEnd(toTime(timeMinutes(draftStart)+duration));}
- function commitEnd(){if(!validTime(draftEnd)){setError("Enter an end time in 24-hour HH:MM format.");return;}setError("");setEnd(draftEnd);setCustom(![25,50,90].includes((timeMinutes(draftEnd)-timeMinutes(start)+1440)%1440));}
- return <fieldset className="v7-time-range"><legend>Time range</legend><div className="v7-time-pair">
+ const [custom,setCustom]=useState(()=>![25,50,90].includes(duration));
+ useEffect(()=>{setDraftStart(start);},[start]);
+ useEffect(()=>{setDraftEnd(end);},[end]);
+ function commitStart(){if(!validTime(draftStart)){setError("Enter a start time in 24-hour HH:MM format.");return;}setError("");onChange(draftStart,toTime(timeMinutes(draftStart)+duration));}
+ function commitEnd(){if(!validTime(draftEnd)){setError("Enter an end time in 24-hour HH:MM format.");return;}setError("");onChange(start,draftEnd);setCustom(![25,50,90].includes((timeMinutes(draftEnd)-timeMinutes(start)+1440)%1440));}
+ return <fieldset className="v7-time-range" disabled={disabled}><legend>{legend}</legend><div className="v7-time-pair">
   <label>Start<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftStart} placeholder="09:00" aria-describedby={id} aria-invalid={!!error&&!validTime(draftStart)||undefined} onChange={e=>setDraftStart(e.target.value)} onBlur={commitStart}/><Clock3 size={20} aria-hidden="true"/></span></label>
   <span className="v7-range-dash" aria-hidden="true">–</span>
   <label>End<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftEnd} placeholder="09:50" aria-describedby={id} aria-invalid={!!error&&!validTime(draftEnd)||undefined} onChange={e=>setDraftEnd(e.target.value)} onBlur={commitEnd}/><Clock3 size={20} aria-hidden="true"/></span></label>
- </div><div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);updateEnd(toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>
- {custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>updateEnd(toTime(timeMinutes(start)+n))}/>}
- <p id={id} className={error?"v7-field-error":"v7-field-hint"}>{error||`${duration} min session · ${start}–${end}${end<start?" · Ends the next day":""} · 24-hour time`}</p></fieldset>;
+ </div><div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);onChange(start,toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>
+ {custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>onChange(start,toTime(timeMinutes(start)+n))}/>}
+ <p id={id} className={error?"v7-field-error":"v7-field-hint"}>{error||`${duration} min session · ${start}–${end}${end<start?" · Ends the next day":""} · 24-hour time`}</p></fieldset>;
+}
+export function TimeRangeField(){
+ const [range,setRange]=useState({start:"09:00",end:"09:50"});
+ return <TimeRange start={range.start} end={range.end} onChange={(start,end)=>setRange({start,end})}/>;
 }
 export function RadioGroup({ disabledReason }: { disabledReason?: string }) {
   const [value, setValue] = useState("Review"), name = useId();
@@ -169,7 +178,7 @@ export function StatementCard({ kind = "Lemma", subject = "Topology", number = "
   </article>;
 }
 export function StatMeasure({ label, value, unit, change }: { label: string; value: string; unit: string; change?: string }) {
-  return <div className="v7-stat-measure"><p>{label}</p><strong>{value}<small> {unit}</small></strong><span>{change ?? "No change yesterday"}</span></div>;
+  return <div className="v7-stat-measure"><p>{label}</p><strong>{value}{unit&&<small> {unit}</small>}</strong><span>{change ?? "No change yesterday"}</span></div>;
 }
 export function FeedbackBanner({ tone = "warning", action, children, onAction }: { tone?: Tone; action?: string; children: ReactNode; onAction?: () => void }) {
   return <aside className={`v7-feedback-banner v7-tone-${tone}`}><StatusIcon tone={tone} /><div>{children}</div>{action && <button type="button" onClick={onAction}>{action}</button>}</aside>;

@@ -6,6 +6,8 @@ import {getTaskApi} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {Button,Chip,IconButton,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {StatusBadge} from '../../../ui/v7/Status';
+import {SubjectGlyph} from '../../../ui/v7/Subject';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
@@ -75,6 +77,7 @@ export default function TasksV7(){
   finally{setBusy(false);}
  }
  const visible=useMemo(()=>applyFilter(rows,filter,now,zone),[rows,filter,now,zone]);
+ // B3: the same predicate as the shared overdue count (open tasks past their due day or instant).
  const overdueCount=useMemo(()=>rows.filter(task=>isOverdue(task,now,zone)).length,[rows,now,zone]);
  const groups=useMemo(()=>groupTodo(visible,now,zone),[visible,now,zone]);
  const doing=visible.filter(task=>task.status==='in_progress'),done=visible.filter(task=>task.status==='completed'),cancelled=visible.filter(task=>task.status==='cancelled');
@@ -84,16 +87,18 @@ export default function TasksV7(){
   onSchedule={()=>navigate('/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
  return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
-  <HubHeader title="Calendar" settings/>
-  <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar">Schedule</Link><Link to="/tasks" aria-current="page">Tasks</Link></nav>
+  <HubHeader title="Calendar">
+   <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar">Schedule</Link><Link to="/tasks" aria-current="page">Tasks</Link></nav>
+  </HubHeader>
   <div className="v7-tk-bar">
    <Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>
-   {unscheduled&&segment==='To do'&&<Button variant="ghost" small onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
   </div>
   <div className="v7-tk-filters" role="group" aria-label="Filters">
    <Chip selected={!!filter.projectId} onClick={()=>setPicker(true)}>{filterTitle}</Chip>
    {(overdueCount>0||filter.overdueOnly)&&<Chip selected={filter.overdueOnly} onClick={()=>setFilter(old=>({...old,overdueOnly:!old.overdueOnly}))}>{'Overdue '+overdueCount}</Chip>}
    <Chip selected={filter.highOnly} onClick={()=>setFilter(old=>({...old,highOnly:!old.highOnly}))}>High priority</Chip>
+   {/* TK3/KC10: "Plan these" sits in the filter row, not alone and centred. */}
+   {unscheduled&&segment==='To do'&&<Button variant="ghost" small className="v7-tk-plan" onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
   </div>
   {!!message&&<p role="alert" className="v7-alert">{message}</p>}
   {phase==='loading'&&<><Skeleton/><Skeleton/></>}
@@ -156,12 +161,12 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
     <span aria-hidden="true">{done&&<Check/>}</span></button>
    <div className="v7-tk-body">
     <p className="v7-tk-title" data-closed={closed||undefined}>{task.title}</p>
+    {/* TK4: one fixed order — due, priority, estimate, subject — that wraps as one unit. KC1: overdue is a Badge with its icon;
+        KC2: the path carries its subject glyph, not a dot. */}
     <p className="v7-tk-chips">
-     {chip&&<span className="v7-tk-chip" data-tone={chip.tone}>{chip.text}</span>}
-     {done&&task.completedAt&&<span className="v7-tk-chip">{'Done '+dayWord(civilDay(task.completedAt,zone),now,zone)}</span>}
-     {task.priority==='high'&&!closed&&<span className="v7-tk-chip" data-tone="high">High priority</span>}
-     {estimate&&<span className="v7-tk-chip">{estimate}</span>}
-     {look&&<span className="v7-tk-chip v7-tk-path"><i aria-hidden="true"/>{look.title}</span>}
+     {chip&&(chip.tone==='overdue'?<StatusBadge tone="warning">{chip.text}</StatusBadge>:<span className="v7-tk-chip" data-tone={chip.tone}>{chip.text}</span>)}
+     <span className="v7-tk-meta">{[done&&task.completedAt?'Done '+dayWord(civilDay(task.completedAt,zone),now,zone):null,task.priority==='high'&&!closed?'High priority':null,estimate].filter(Boolean).join(' · ')}
+      {look&&<span className="v7-tk-path">{(done&&task.completedAt)||(task.priority==='high'&&!closed)||estimate?' · ':''}<SubjectGlyph klass={look.klass}/>{look.title}</span>}</span>
     </p>
    </div>
    <RowMenu label={'More actions for '+task.title} title={task.title} items={items}/>

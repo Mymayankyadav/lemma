@@ -4,7 +4,8 @@ import {getTaskApi} from '../../../data/tasks';
 import type {TaskRecord} from '../../../data/tasks/contract';
 import type {ProjectSummary,CheckpointView} from '../../../data/types';
 import Dialog from '../../../ui/v6/Dialog';
-import {Sheet} from '../../../ui/v7/components';
+import {Button,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
+import {TimeRange} from '../../../ui/v7/KitPrimitives';
 import {getStudyApi} from '../../../data/study';
 import type {
   CalendarBlockKind, CalendarBlockPatch, CalendarBlockRecord, CalendarBlockStatus,
@@ -102,13 +103,10 @@ export interface BlockSheetProps {
  date:string;zone:string;initialStart?:string;onClose:()=>void;onRefresh:()=>void;
 }
 type Frame=(props:{title:string;eyebrow:string;onClose:()=>void;busy:boolean;footer:ReactNode;children:ReactNode})=>ReactElement;
-const V7Frame:Frame=({title,eyebrow,onClose,footer,children})=><Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={footer}>{children}</Sheet>;
 const V6Frame:Frame=props=><Dialog {...props}/>;
 export default function BlockSheet({block,date,zone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes}:BlockSheetProps) {
- const Frame=v7?V7Frame:V6Frame;
- const look=v7?{field:'v7-field',action:'v7-button v7-secondary v7-small',primary:'v7-button v7-primary v7-small',danger:'v7-button v7-secondary v7-small v7-danger',
-  label:'v7-bs-label',error:'v7-alert',note:'v7-meta',seg:'v7-bs-seg',segOn:'v7-bs-on',segOff:'',confirm:'v7-bs-confirm'}
-  :{field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
+ const Frame=V6Frame;
+ const look={field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
   seg:'ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1',segOn:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold bg-raised-2 text-ink',segOff:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold text-ink-3',confirm:'rounded-ctl border border-edge p-3'};
  const busy=useRef(false);
  const requested=initialStart&&Number.isFinite(Date.parse(initialStart))&&/Z$|[+-]\d\d:\d\d$/.test(initialStart)
@@ -250,6 +248,46 @@ const day=start.slice(0,10);
  const otherZone=current?.timeZone&&current.timeZone!==zone&&new Intl.DateTimeFormat('en',{timeZone:current.timeZone,timeZoneName:'short'})
   .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value!==new Intl.DateTimeFormat('en',{timeZone:zone,timeZoneName:'short'})
   .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value;
+ if(v7){
+  // B7/BS1–BS4/KC14/KC19: the kit's Field, Segmented, Date field, Time range field (presets 25 / 50 / 90 / Custom) and Select
+  // (a sheet of radio rows on phones) — no native control. Eyebrow "TIME BLOCK", focus starts on the title, and the footer
+  // has the secondary on the left and the 48 px primary on the right.
+  const pathLabel=(id:string)=>id?projects.find(p=>p.id===id)?.title??'Previously linked path':'No path';
+  const cpLabel=(id:string)=>id?checkpoints.find(c=>c.id===id)?.title??'Previously linked checkpoint':'No checkpoint';
+  const taskLabel=(id:string)=>id?tasks.find(t=>t.id===id)?.title??'Previously linked task':'No task';
+  const pick=<T extends {id:string}>(rows:readonly T[],label:(id:string)=>string,value:string,none:string)=>{
+   const ids=['',...(value&&!rows.some(r=>r.id===value)?[value]:[]),...rows.map(r=>r.id)];
+   return {options:ids.map(id=>label(id)),idOf:(text:string)=>ids.find(id=>label(id)===text)??'',none};
+  };
+  const paths=pick(projects,pathLabel,projectId,'No path'),cps=pick(checkpoints,cpLabel,checkpointId,'No checkpoint'),tks=pick(tasks,taskLabel,taskId,'No task');
+  const statuses:Record<string,CalendarBlockStatus>={Planned:'planned',Done:'done',Cancelled:'cancelled'};
+  return <Sheet open onClose={onClose} title={current?'Edit time block':'New time block'} eyebrow="Time block" footer={<>
+    {current&&!confirmDelete&&<Button variant="ghost" destructive disabled={saving} onClick={()=>setConfirmDelete(true)}>Delete</Button>}
+    <Button variant="secondary" disabled={saving} onClick={onClose}>Cancel</Button>
+    <button type="submit" form="n121-block-form" className="v7-button v7-primary" disabled={saving}><span>{saving?'Saving…':current?'Save changes':'Create block'}</span></button>
+   </>}>
+   {otherZone&&<p className="v7-meta">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
+   <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="v7-bs">
+    <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>setTitle(event.target.value)}/>
+    <Segmented label="Calendar block type" options={['Study','Busy']} value={kind==='study'?'Study':'Busy'} onChange={value=>setKind(value==='Study'?'study':'busy')}/>
+    {/^\d{4}-\d\d-\d\d$/.test(day)&&<DatePicker label="Date" value={day} onChange={value=>setPart('day',value)}/>}
+    <TimeRange legend="Time" start={start.slice(11,16)} end={end.slice(11,16)} disabled={saving} onChange={(from,to)=>{
+     if(from!==start.slice(11,16)){setStart(day+'T'+from);const overnight=to<=from;setEnd((overnight?new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10):day)+'T'+to);}
+     else setPart('end',to);setError('');}}/>
+    <Picker optional label="Path" value={pathLabel(projectId)} options={paths.options} disabled={saving} onChange={text=>{setProjectId(paths.idOf(text));setCheckpointId('');}}/>
+    {projectId&&<Picker optional label="Checkpoint" value={cpLabel(checkpointId)} options={cps.options} disabled={saving} onChange={text=>setCheckpointId(cps.idOf(text))}/>}
+    <Picker optional label="Task" value={taskLabel(taskId)} options={tks.options} disabled={saving} onChange={text=>setTaskId(tks.idOf(text))}/>
+    {linksError&&<p role="status" className="v7-meta">{linksError}</p>}
+    {current&&<Picker label="Status" value={Object.keys(statuses).find(key=>statuses[key]===status)??'Planned'} options={Object.keys(statuses)} onChange={text=>setStatus(statuses[text]??'planned')}/>}
+    {error&&<p role="alert" className="v7-alert">{error}</p>}
+    {current&&confirmDelete&&<div className="v7-bs-confirm">
+     <p>Delete this block? You can restore it with Undo.</p>
+     <div className="v7-od-actions"><Button small disabled={saving} onClick={()=>setConfirmDelete(false)}>Keep block</Button>
+      <Button small destructive disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</Button></div>
+    </div>}
+   </form>
+  </Sheet>;
+ }
  return <Frame title={current?'Edit time block':'New time block'} eyebrow={eyebrow}
    onClose={onClose} busy={saving} footer={<>
     {current&&!confirmDelete&&<button type="button" className={look.danger+' mr-auto'} disabled={saving}

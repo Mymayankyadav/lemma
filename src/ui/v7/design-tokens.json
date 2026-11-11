@@ -1,6 +1,6 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Lemma Constellation UI Kit 1.0 \u2014 role colours are the only styling API; mode aliases come from this source.",
+  "$description": "Lemma Constellation UI Kit 1.0 — role colours are the only styling API; mode aliases come from this source.",
   "raw": {
     "day": {
       "surface.page": {
@@ -210,6 +210,10 @@
       "state.pressed": {
         "$type": "color",
         "$value": "#121B311F"
+      },
+      "viz.neutral": {
+        "$type": "color",
+        "$value": "#40495C"
       }
     },
     "night": {
@@ -420,6 +424,10 @@
       "state.pressed": {
         "$type": "color",
         "$value": "#FFFFFF1F"
+      },
+      "viz.neutral": {
+        "$type": "color",
+        "$value": "#B1B7C6"
       }
     }
   },
@@ -1764,82 +1772,36 @@
         "lemma.decorative": true,
         "lemma.contrastPairs": []
       }
+    },
+    "viz.neutral": {
+      "$type": "color",
+      "$value": "{raw.day.viz.neutral}",
+      "$description": "Single-series amounts and meters that are not about a subject (never indigo, never a subject colour).",
+      "$extensions": {
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "border.subtle"
+        ],
+        "lemma.modes": {
+          "night": "{raw.night.viz.neutral}"
+        },
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.neutral",
+            "background": "surface.raised",
+            "minimum": 3
+          },
+          {
+            "foreground": "viz.neutral",
+            "background": "border.subtle",
+            "minimum": 3
+          }
+        ]
+      }
     }
   },
-  "component": {
-    "button.primary.bg": {
-      "$type": "color",
-      "$value": "{role.action.bg}"
-    },
-    "button.primary.hover": {
-      "$type": "color",
-      "$value": "{role.action.hover}"
-    },
-    "button.primary.pressed": {
-      "$type": "color",
-      "$value": "{role.action.pressed}"
-    },
-    "button.secondary.bg": {
-      "$type": "color",
-      "$value": "{role.surface.muted}"
-    },
-    "button.secondary.fg": {
-      "$type": "color",
-      "$value": "{role.text.primary}"
-    },
-    "button.tertiary.fg": {
-      "$type": "color",
-      "$value": "{role.link.fg}"
-    },
-    "tag.bg": {
-      "$type": "color",
-      "$value": "{role.surface.muted}"
-    },
-    "badge.info.bg": {
-      "$type": "color",
-      "$value": "{role.surface.muted}"
-    },
-    "filter.selected.bg": {
-      "$type": "color",
-      "$value": "{role.selection.subtle}"
-    },
-    "filter.selected.fg": {
-      "$type": "color",
-      "$value": "{role.selection.fg}"
-    },
-    "field.bg": {
-      "$type": "color",
-      "$value": "{role.surface.sunken}"
-    },
-    "field.border": {
-      "$type": "color",
-      "$value": "{role.border.default}"
-    },
-    "segmented.bg": {
-      "$type": "color",
-      "$value": "{role.surface.muted}"
-    },
-    "segmented.thumb": {
-      "$type": "color",
-      "$value": "{role.surface.overlay}"
-    },
-    "toast.bg": {
-      "$type": "color",
-      "$value": "{role.surface.overlay}"
-    },
-    "sheet.bg": {
-      "$type": "color",
-      "$value": "{role.surface.overlay}"
-    },
-    "mastery.track": {
-      "$type": "color",
-      "$value": "{role.border.subtle}"
-    },
-    "chart.axis": {
-      "$type": "color",
-      "$value": "{role.border.default}"
-    }
-  },
+  "component": {},
   "$extensions": {
     "lemma.modes": [
       "day",
@@ -1870,77 +1832,45 @@
         "$type": "fontFamily",
         "$value": "\"Lemma v7 IBM Plex Mono\", monospace"
       },
-      "size-1": {
+      "type-caption": {
         "$type": "dimension",
         "$value": "0.75rem"
       },
-      "size-2": {
+      "type-supporting": {
         "$type": "dimension",
         "$value": "0.875rem"
       },
-      "size-3": {
+      "type-body": {
         "$type": "dimension",
         "$value": "1rem"
       },
-      "size-4": {
-        "$type": "dimension",
-        "$value": "1.125rem"
-      },
-      "size-5": {
-        "$type": "dimension",
-        "$value": "1.375rem"
-      },
-      "size-6": {
+      "type-numeric-md": {
         "$type": "dimension",
         "$value": "1.75rem"
       },
-      "size-7": {
-        "$type": "dimension",
-        "$value": "2.25rem"
-      },
-      "size-8": {
-        "$type": "dimension",
-        "$value": "3rem"
-      },
-      "size-9": {
+      "type-numeric-xl": {
         "$type": "dimension",
         "$value": "4rem"
       },
-      "leading-1": {
+      "leading-caption": {
         "$type": "dimension",
         "$value": "1rem"
       },
-      "leading-2": {
+      "leading-supporting": {
         "$type": "dimension",
         "$value": "1.25rem"
       },
-      "leading-3": {
+      "leading-body": {
         "$type": "dimension",
         "$value": "1.5rem"
       },
-      "leading-4": {
+      "leading-lead": {
         "$type": "dimension",
         "$value": "1.75rem"
       },
-      "leading-5": {
+      "leading-subhead": {
         "$type": "dimension",
         "$value": "1.875rem"
-      },
-      "leading-6": {
-        "$type": "dimension",
-        "$value": "2.125rem"
-      },
-      "leading-7": {
-        "$type": "dimension",
-        "$value": "2.5rem"
-      },
-      "leading-8": {
-        "$type": "dimension",
-        "$value": "3.25rem"
-      },
-      "leading-9": {
-        "$type": "dimension",
-        "$value": "4rem"
       },
       "type-display": {
         "$type": "dimension",
@@ -2082,25 +2012,9 @@
         "$type": "dimension",
         "$value": "6px"
       },
-      "subject-alpha": {
-        "$type": "string",
-        "$value": "12%"
-      },
-      "cover-alpha": {
-        "$type": "string",
-        "$value": "9%"
-      },
       "hero-alpha": {
         "$type": "string",
         "$value": "10%"
-      },
-      "meter-alpha": {
-        "$type": "string",
-        "$value": "22%"
-      },
-      "hero-stop": {
-        "$type": "string",
-        "$value": "62%"
       },
       "menu-layer": {
         "$type": "number",
@@ -2145,14 +2059,6 @@
       "reading": {
         "$type": "string",
         "$value": "68ch"
-      },
-      "art": {
-        "$type": "dimension",
-        "$value": "120px"
-      },
-      "blur": {
-        "$type": "dimension",
-        "$value": "22px"
       },
       "regular": {
         "$type": "number",
@@ -2340,95 +2246,55 @@
         "$value": "{foundation.raw.mono}",
         "$description": "Shared mono foundation."
       },
-      "size-1": {
+      "type-caption": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-1}",
-        "$description": "Shared size 1 foundation."
+        "$value": "{foundation.raw.type-caption}",
+        "$description": "Caption role, 12 px."
       },
-      "size-2": {
+      "type-supporting": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-2}",
-        "$description": "Shared size 2 foundation."
+        "$value": "{foundation.raw.type-supporting}",
+        "$description": "Supporting role, 14 px."
       },
-      "size-3": {
+      "type-body": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-3}",
-        "$description": "Shared size 3 foundation."
+        "$value": "{foundation.raw.type-body}",
+        "$description": "Body role, 16 px."
       },
-      "size-4": {
+      "type-numeric-md": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-4}",
-        "$description": "Shared size 4 foundation."
+        "$value": "{foundation.raw.type-numeric-md}",
+        "$description": "Numeric md role, 28 px."
       },
-      "size-5": {
+      "type-numeric-xl": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-5}",
-        "$description": "Shared size 5 foundation."
+        "$value": "{foundation.raw.type-numeric-xl}",
+        "$description": "Numeric xl role, 64 px."
       },
-      "size-6": {
+      "leading-caption": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-6}",
-        "$description": "Shared size 6 foundation."
+        "$value": "{foundation.raw.leading-caption}",
+        "$description": "Line height for Caption."
       },
-      "size-7": {
+      "leading-supporting": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-7}",
-        "$description": "Shared size 7 foundation."
+        "$value": "{foundation.raw.leading-supporting}",
+        "$description": "Line height for Supporting."
       },
-      "size-8": {
+      "leading-body": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-8}",
-        "$description": "Shared size 8 foundation."
+        "$value": "{foundation.raw.leading-body}",
+        "$description": "Line height for Body."
       },
-      "size-9": {
+      "leading-lead": {
         "$type": "dimension",
-        "$value": "{foundation.raw.size-9}",
-        "$description": "Shared size 9 foundation."
+        "$value": "{foundation.raw.leading-lead}",
+        "$description": "Line height for Lead."
       },
-      "leading-1": {
+      "leading-subhead": {
         "$type": "dimension",
-        "$value": "{foundation.raw.leading-1}",
-        "$description": "Shared leading 1 foundation."
-      },
-      "leading-2": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-2}",
-        "$description": "Shared leading 2 foundation."
-      },
-      "leading-3": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-3}",
-        "$description": "Shared leading 3 foundation."
-      },
-      "leading-4": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-4}",
-        "$description": "Shared leading 4 foundation."
-      },
-      "leading-5": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-5}",
-        "$description": "Shared leading 5 foundation."
-      },
-      "leading-6": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-6}",
-        "$description": "Shared leading 6 foundation."
-      },
-      "leading-7": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-7}",
-        "$description": "Shared leading 7 foundation."
-      },
-      "leading-8": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-8}",
-        "$description": "Shared leading 8 foundation."
-      },
-      "leading-9": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.leading-9}",
-        "$description": "Shared leading 9 foundation."
+        "$value": "{foundation.raw.leading-subhead}",
+        "$description": "Line height for Subhead."
       },
       "type-display": {
         "$type": "dimension",
@@ -2641,30 +2507,10 @@
         "$value": "{foundation.raw.meter}",
         "$description": "Shared meter foundation."
       },
-      "subject-alpha": {
-        "$type": "string",
-        "$value": "{foundation.raw.subject-alpha}",
-        "$description": "Shared subject alpha foundation."
-      },
-      "cover-alpha": {
-        "$type": "string",
-        "$value": "{foundation.raw.cover-alpha}",
-        "$description": "Shared cover alpha foundation."
-      },
       "hero-alpha": {
         "$type": "string",
         "$value": "{foundation.raw.hero-alpha}",
         "$description": "Shared hero alpha foundation."
-      },
-      "meter-alpha": {
-        "$type": "string",
-        "$value": "{foundation.raw.meter-alpha}",
-        "$description": "Shared meter alpha foundation."
-      },
-      "hero-stop": {
-        "$type": "string",
-        "$value": "{foundation.raw.hero-stop}",
-        "$description": "Shared hero stop foundation."
       },
       "menu-layer": {
         "$type": "number",
@@ -2720,16 +2566,6 @@
         "$type": "string",
         "$value": "{foundation.raw.reading}",
         "$description": "Shared reading foundation."
-      },
-      "art": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.art}",
-        "$description": "Shared art foundation."
-      },
-      "blur": {
-        "$type": "dimension",
-        "$value": "{foundation.raw.blur}",
-        "$description": "Shared blur foundation."
       },
       "regular": {
         "$type": "number",

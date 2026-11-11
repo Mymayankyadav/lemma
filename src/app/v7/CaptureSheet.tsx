@@ -7,7 +7,7 @@ import {getStudyApi} from '../../data/study';
 import {getTaskApi} from '../../data/tasks';
 import {getThoughtApi} from '../../data/parked-thoughts';
 import {calendarRange} from '../../features/calendar/model';
-import {Button,Sheet} from '../../ui/v7/components';
+import {Button,Segmented,Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import {useActiveFocus} from './focus';
 import {addLabel,captureKinds,defaultStart,kindLabel,parseCapture,type CaptureKind} from './captureModel';
@@ -62,18 +62,19 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   close();if(target)navigate(target);
  }
  return <Sheet open={open} onClose={close} title="Capture" eyebrow="Add something"
-  footer={<><Button variant="ghost" onClick={more} disabled={kind==='thought'}>More options</Button>
+  footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'}>More options</Button>
+   {reason&&<p id="v7-capture-reason" className="v7-disabled-reason v7-footer-reason">Unavailable · {reason}</p>}
    <Button variant="primary" disabled={!!reason||busy} aria-describedby={reason?'v7-capture-reason':undefined} onClick={()=>{void save();}}>{addLabel[kind]}</Button></>}>
   {picker&&!text&&<div className="v7-capture-types" role="group" aria-label="Choose a type">{captureKinds.map(item=>{const Icon=icons[item];
    return <button key={item} type="button" aria-pressed={chosen===item} onClick={()=>setChosen(item)}><Icon aria-hidden="true"/>{kindLabel[item]}</button>;})}</div>}
   <textarea data-v7-autofocus="true" className="v7-capture-field" rows={3} maxLength={500} aria-label="What do you want to add?" placeholder="What do you want to add?"
    value={text} onChange={event=>{setText(event.target.value);}}
    onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void save();}}}/>
+  {!text&&<p className="v7-capture-hint">Try: Rudin ch 4 tomorrow 4pm 90m #real</p>}
   {parse.tokens.length>0&&<ul className="v7-capture-tokens" aria-label="Recognised">{parse.tokens.map(token=><li key={token.id}>
    <button type="button" aria-label={'Remove '+token.label} onClick={()=>setIgnored(new Set([...ignored,token.id]))}><span>{token.label}</span><X aria-hidden="true"/></button></li>)}</ul>}
-  <div className="v7-capture-kinds" role="radiogroup" aria-label="Type">{captureKinds.map(item=>{const Icon=icons[item];
-   return <button key={item} type="button" role="radio" aria-checked={kind===item} className="v7-filter-chip" onClick={()=>setChosen(item)}><Icon aria-hidden="true"/>{kindLabel[item]}</button>;})}</div>
-  {reason&&<p id="v7-capture-reason" className="v7-disabled-reason">Unavailable · {reason}</p>}
+  <div className="v7-capture-kinds"><Segmented label="Type" options={captureKinds.map(item=>kindLabel[item])} value={kindLabel[kind]}
+   onChange={label=>{const next=captureKinds.find(item=>kindLabel[item]===label);if(next)setChosen(next);}}/></div>
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
  </Sheet>;
 }

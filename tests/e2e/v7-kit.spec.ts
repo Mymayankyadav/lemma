@@ -12,7 +12,8 @@ test("the new v7 gallery shows Day and Night together, and four contrast modes",
  await expect(pair).toHaveCount(2);
  await expect(pair.nth(0)).toHaveAttribute("data-theme","graph");
  await expect(pair.nth(1)).toHaveAttribute("data-theme","graph-night");
- await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(50);
+ // 51 with the neutral data colour viz.neutral (Night critique KA4).
+ await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(51);
  await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(17);
  await page.getByRole("checkbox",{name:"High contrast comparison"}).check();
  await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");

@@ -22,7 +22,7 @@ export interface AtlasModel{
  counts:{concepts:number;connections:number;demonstrated:number};
 }
 
-export const stateLabel:Record<StarState,string>={demonstrated:'Demonstrated',in_progress:'In progress',up_next:'Up next',not_started:'Not started',revisit:'Needs a recheck'};
+export const stateLabel:Record<StarState,string>={demonstrated:'Demonstrated',in_progress:'In progress',up_next:'Up next',not_started:'Conjecture · not started',revisit:'Review due'};
 
 /** Subject names map onto the kit's eight hues; "Linear algebra" is "Algebra" (one name per subject). */
 export function kitSubject(name:string):Subject{

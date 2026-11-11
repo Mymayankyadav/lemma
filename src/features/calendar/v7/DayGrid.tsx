@@ -19,6 +19,8 @@ type Props={
  onSwipe:(direction:1|-1)=>void;
  /** Planner suggestions drawn as outlined, non-interactive blocks until they are added. */
  suggested?:readonly SuggestedBlock[];
+ /** QA4: the block quick-add is drafting, drawn on the grid and scrolled to sit just above the sheet. */
+ draft?:{start:string;minutes:number}|null;
 };
 export interface SuggestedBlock{id:string;title:string;start:string;end:string}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
@@ -30,7 +32,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[]}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null}:Props){
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -52,6 +54,17 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[date,zone]);
  useEffect(()=>()=>{if(drag.current?.timer)window.clearTimeout(drag.current.timer);},[]);
+ const draftTop=draft?(Date.parse(draft.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60:null;
+ useEffect(()=>{
+  const node=scroll.current;if(!node||draftTop===null)return;
+  const timer=window.setTimeout(()=>{
+   node.scrollTop=Math.max(0,draftTop-HOUR_PX/4);
+   const sheet=document.querySelector<HTMLElement>('dialog[open].v7-sheet'),limit=sheet?sheet.getBoundingClientRect().top:innerHeight*.5;
+   const box=node.querySelector<HTMLElement>('[data-kind="draft"]')?.getBoundingClientRect();
+   if(box&&box.bottom>limit-8)window.scrollBy({top:box.bottom-limit+16});
+  },60);
+  return()=>window.clearTimeout(timer);
+ },[draftTop]);
  function createAt(event:MouseEvent<HTMLDivElement>){
   if(event.target!==event.currentTarget||busy||suppress.current)return;
   const bounds=event.currentTarget.getBoundingClientRect();
@@ -161,7 +174,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" role="img"
       aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
       style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
-      <small className="v7-eyebrow">Suggested</small><strong>{item.title}</strong></div>)}
+      <div><span className="v7-cal-suggested-line"><span className="v7-badge v7-tone-info v7-cal-suggested-badge">Suggested</span><strong>{item.title}</strong></span></div></div>)}
+     {draft&&draftTop!==null&&<div className="v7-cal-block v7-cal-suggested" data-kind="draft" role="img" aria-label={'New block at '+clock(draft.start)}
+      style={{top:draftTop,height:Math.max(15,draft.minutes*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
+      <div><strong>New block · {clock(draft.start)}</strong></div></div>}
     </div>
    </div>
   </div>

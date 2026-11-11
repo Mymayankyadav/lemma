@@ -7,6 +7,7 @@ import {dayCapacity} from '../model';
 import {weekCells} from './dayModel';
 import type {BlockLook} from './DayGrid';
 import {loggedCaption,showWeekGlyph} from './viewModel';
+import {SubjectGlyph} from '../../../ui/v7/Subject';
 
 export const WEEK_HOUR_PX=48;
 const MINUTE=60_000;
@@ -62,7 +63,7 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
        const style:CSSProperties={top,height:shown,left:'calc('+item.lane/item.lanes*100+'% + 1px)',width:'calc('+100/item.lanes+'% - 2px)'};
        const spoken=label+', '+(kind==='busy'?'Busy':kind==='logged'?'Logged study':kind==='done'?'Completed study':'Planned study')+(look.path?', '+look.path:'')+', '+time;
        const past=Date.parse(item.end)<now&&now>=Date.parse(range.start)&&now<Date.parse(range.end);
-       const inner=<>{showWeekGlyph(shown)&&kind!=='busy'&&<span className="v7-wk-glyph" aria-hidden="true"/>}<span className="v7-wk-title" aria-hidden="true">{label}</span></>;
+       const inner=<>{showWeekGlyph(shown)&&kind!=='busy'&&<span className="v7-wk-glyph" aria-hidden="true"><SubjectGlyph klass={look.subjectClass}/></span>}<span className="v7-wk-title" aria-hidden="true">{label}</span></>;
        return block?<button key={item.id} type="button" data-calendar-block={block.id} data-kind={kind} data-past={past?'true':'false'} aria-label={spoken+'. Enter for details.'}
         className={'v7-wk-block '+look.subjectClass} style={style} onClick={()=>onEdit(block)}>{inner}</button>
        :<div key={item.id} role="img" aria-label={spoken} data-kind={kind} className={'v7-wk-block '+look.subjectClass} style={style}>{inner}</div>;

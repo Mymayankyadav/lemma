@@ -79,7 +79,8 @@ test("Path More menu pauses a path and its Cards tab lists cards; Review N opens
 test("Practice shows a card per topic and records practice from a sheet",async({page})=>{
  await page.goto(at("/practice"));
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
- await expect(page.getByRole("heading",{level:1,name:"Practice"})).toBeVisible();
+ // Night critique PR1: Practice is a Review hub tab, rendered inside the hub header.
+ await expect(page.getByRole("navigation",{name:"Review sections"}).getByRole("link",{name:"Practice"})).toHaveAttribute("aria-current","page");
  await expect(page.getByRole("navigation",{name:"Main navigation"}).getByRole("link",{name:/Review/})).toHaveAttribute("aria-current","page");
  const first=page.getByRole("list",{name:"Practice topics"}).getByRole("listitem").first();
  if(await first.count()===0)return;
@@ -149,7 +150,10 @@ test("Calendar Month tints days, offers Open day, and never prints a zero",async
 test("Calendar Agenda lists days with headings and switches back to Day",async({page})=>{
  await page.goto(at("/calendar?view=agenda"));
  await expect(page.getByRole("heading",{name:/^Today/})).toBeVisible();
- expect(await page.locator(".v7-ag-heading").count()).toBe(14);
+ // Night critique PA7: 14 days, with runs of empty days collapsed into one line, so never two empty sections in a row.
+ const sections=await page.locator(".v7-ag-day").evaluateAll(nodes=>nodes.map(node=>!!node.querySelector(".v7-ag-empty")));
+ expect(sections.length).toBeGreaterThan(1);expect(sections.length).toBeLessThanOrEqual(14);
+ expect(sections.some((empty,index)=>empty&&sections[index+1])).toBe(false);
  await page.getByRole("radio",{name:"Day"}).click();
  await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
 });
@@ -157,7 +161,7 @@ test("Calendar Agenda lists days with headings and switches back to Day",async({
 // Part 7d: quick-add, suggestions banner, overdue sheet.
 test("Calendar quick-add takes a title and a length, and More options opens the full block sheet",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
- await page.getByRole("button",{name:"New time block"}).click();
+ await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
  const sheet=page.getByRole("dialog",{name:"New block"});
  await expect(sheet).toBeVisible();
  await expect(sheet.getByRole("textbox",{name:"Title"})).toBeFocused();

@@ -1,4 +1,4 @@
-/** N121 — v6-only human formatting. Keep legacy text formatters untouched. */
+/** N121 — v6 human formatting, plus the v7 short/long date, clock and time-left helpers at the end. Keep legacy text formatters untouched. */
 export type FormatOptions={zone?:string;now?:Date|string;clock24h?:boolean};
 const aliases:Record<string,string>={
  'Asia/Calcutta':'Asia/Kolkata','Asia/Saigon':'Asia/Ho_Chi_Minh',
@@ -64,4 +64,43 @@ export function formatZone(zone:string):string{
  const canonical=canonicalZone(zone),when=new Date();
  return new Intl.DateTimeFormat('en-US',{timeZone:canonical,timeZoneName:'short'}).formatToParts(when)
   .find(x=>x.type==='timeZoneName')?.value??canonical;
+}
+
+/* v7 (Night critique v2, B2/B7): one short date style, one long date style and one clock, everywhere on v7 screens.
+   Short "Wed 11 Nov" (the year only when it is not the current one), long "Wednesday 11 November", clock "09:30" (24-hour
+   unless the owner chose 12-hour, then "9:30 am"). */
+const civilUtc=(day:string)=>{const [y,m,d]=day.split('-').map(Number);return new Date(Date.UTC(y,m-1,d,12));};
+function dayParts(day:string,long:boolean):string{
+ const at=civilUtc(day),f=(o:Intl.DateTimeFormatOptions)=>new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',...o}).format(at);
+ return long?`${f({weekday:'long'})} ${Number(day.slice(8,10))} ${f({month:'long'})}`:`${f({weekday:'short'})} ${Number(day.slice(8,10))} ${f({month:'short'})}`;
+}
+export function formatShortDate(value:string|Date,options:FormatOptions={}):string{
+ const zone=canonicalZone(options.zone??ownerZone()),day=asDay(value,zone),year=day.slice(0,4);
+ const thisYear=civil(new Date(options.now??Date.now()),zone).slice(0,4);
+ return dayParts(day,false)+(year===thisYear?'':' '+year);
+}
+export function formatLongDate(value:string|Date,options:FormatOptions={}):string{
+ const zone=canonicalZone(options.zone??ownerZone());
+ return dayParts(asDay(value,zone),true);
+}
+export function formatClock(instant:string|Date,options:FormatOptions={}):string{
+ const zone=canonicalZone(options.zone??ownerZone());
+ if(options.clock24h===false)return formatTime(instant,{...options,clock24h:false});
+ return new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(instant));
+}
+/** "Due in 45 min", "Due in 3 h", "Due today · 17:00", "Due tomorrow", "Due in 4 days", "Due Sat 21 Nov", or "Overdue · Mon".
+ *  B2: computed from the full due date and time, never from the effort still left. */
+export function formatTimeLeft(due:{kind:'date';date:string}|{kind:'instant';at:string},options:FormatOptions={}):string{
+ const zone=canonicalZone(options.zone??ownerZone()),now=new Date(options.now??Date.now()),today=civil(now,zone);
+ const day=due.kind==='date'?due.date:civil(new Date(due.at),zone),days=dayDifference(day,today);
+ if(due.kind==='instant'){
+  const minutes=Math.round((Date.parse(due.at)-now.getTime())/60000);
+  if(minutes<0)return 'Overdue · '+(days===0?formatClock(due.at,options):formatShortDate(day,{...options,zone}));
+  if(minutes<60)return `Due in ${Math.max(1,minutes)} min`;
+  if(days===0)return minutes<180?`Due in ${Math.round(minutes/60)} h`:'Due today · '+formatClock(due.at,options);
+ }else if(days<0)return 'Overdue · '+formatShortDate(day,{...options,zone});
+ if(days===0)return 'Due today';
+ if(days===1)return 'Due tomorrow';
+ if(days<=6)return `Due in ${days} days`;
+ return 'Due '+formatShortDate(day,{...options,zone});
 }

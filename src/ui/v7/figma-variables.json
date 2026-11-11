@@ -531,6 +531,16 @@
           }
         },
         {
+          "name": "viz/neutral",
+          "type": "COLOR",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#40495C",
+            "night-hc": "#B1B7C6"
+          }
+        },
+        {
           "name": "foundation/sans",
           "type": "fontFamily",
           "value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
@@ -551,94 +561,54 @@
           "value": "\"Lemma v7 IBM Plex Mono\", monospace"
         },
         {
-          "name": "foundation/size-1",
+          "name": "foundation/type-caption",
           "type": "dimension",
           "value": "0.75rem"
         },
         {
-          "name": "foundation/size-2",
+          "name": "foundation/type-supporting",
           "type": "dimension",
           "value": "0.875rem"
         },
         {
-          "name": "foundation/size-3",
+          "name": "foundation/type-body",
           "type": "dimension",
           "value": "1rem"
         },
         {
-          "name": "foundation/size-4",
-          "type": "dimension",
-          "value": "1.125rem"
-        },
-        {
-          "name": "foundation/size-5",
-          "type": "dimension",
-          "value": "1.375rem"
-        },
-        {
-          "name": "foundation/size-6",
+          "name": "foundation/type-numeric-md",
           "type": "dimension",
           "value": "1.75rem"
         },
         {
-          "name": "foundation/size-7",
-          "type": "dimension",
-          "value": "2.25rem"
-        },
-        {
-          "name": "foundation/size-8",
-          "type": "dimension",
-          "value": "3rem"
-        },
-        {
-          "name": "foundation/size-9",
+          "name": "foundation/type-numeric-xl",
           "type": "dimension",
           "value": "4rem"
         },
         {
-          "name": "foundation/leading-1",
+          "name": "foundation/leading-caption",
           "type": "dimension",
           "value": "1rem"
         },
         {
-          "name": "foundation/leading-2",
+          "name": "foundation/leading-supporting",
           "type": "dimension",
           "value": "1.25rem"
         },
         {
-          "name": "foundation/leading-3",
+          "name": "foundation/leading-body",
           "type": "dimension",
           "value": "1.5rem"
         },
         {
-          "name": "foundation/leading-4",
+          "name": "foundation/leading-lead",
           "type": "dimension",
           "value": "1.75rem"
         },
         {
-          "name": "foundation/leading-5",
+          "name": "foundation/leading-subhead",
           "type": "dimension",
           "value": "1.875rem"
-        },
-        {
-          "name": "foundation/leading-6",
-          "type": "dimension",
-          "value": "2.125rem"
-        },
-        {
-          "name": "foundation/leading-7",
-          "type": "dimension",
-          "value": "2.5rem"
-        },
-        {
-          "name": "foundation/leading-8",
-          "type": "dimension",
-          "value": "3.25rem"
-        },
-        {
-          "name": "foundation/leading-9",
-          "type": "dimension",
-          "value": "4rem"
         },
         {
           "name": "foundation/type-display",
@@ -816,29 +786,9 @@
           "value": "6px"
         },
         {
-          "name": "foundation/subject-alpha",
-          "type": "string",
-          "value": "12%"
-        },
-        {
-          "name": "foundation/cover-alpha",
-          "type": "string",
-          "value": "9%"
-        },
-        {
           "name": "foundation/hero-alpha",
           "type": "string",
           "value": "10%"
-        },
-        {
-          "name": "foundation/meter-alpha",
-          "type": "string",
-          "value": "22%"
-        },
-        {
-          "name": "foundation/hero-stop",
-          "type": "string",
-          "value": "62%"
         },
         {
           "name": "foundation/menu-layer",
@@ -894,16 +844,6 @@
           "name": "foundation/reading",
           "type": "string",
           "value": "68ch"
-        },
-        {
-          "name": "foundation/art",
-          "type": "dimension",
-          "value": "120px"
-        },
-        {
-          "name": "foundation/blur",
-          "type": "dimension",
-          "value": "22px"
         },
         {
           "name": "foundation/regular",
@@ -1728,6 +1668,17 @@
           }
         },
         {
+          "name": "viz/neutral",
+          "type": "COLOR",
+          "description": "Single-series amounts and meters that are not about a subject (never indigo, never a subject colour).",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#40495C",
+            "night-hc": "#B1B7C6"
+          }
+        },
+        {
           "name": "foundation/sans",
           "type": "fontFamily",
           "alias": "{foundation.raw.sans}",
@@ -1752,112 +1703,64 @@
           "description": "Shared mono foundation."
         },
         {
-          "name": "foundation/size-1",
+          "name": "foundation/type-caption",
           "type": "dimension",
-          "alias": "{foundation.raw.size-1}",
-          "description": "Shared size 1 foundation."
+          "alias": "{foundation.raw.type-caption}",
+          "description": "Caption role, 12 px."
         },
         {
-          "name": "foundation/size-2",
+          "name": "foundation/type-supporting",
           "type": "dimension",
-          "alias": "{foundation.raw.size-2}",
-          "description": "Shared size 2 foundation."
+          "alias": "{foundation.raw.type-supporting}",
+          "description": "Supporting role, 14 px."
         },
         {
-          "name": "foundation/size-3",
+          "name": "foundation/type-body",
           "type": "dimension",
-          "alias": "{foundation.raw.size-3}",
-          "description": "Shared size 3 foundation."
+          "alias": "{foundation.raw.type-body}",
+          "description": "Body role, 16 px."
         },
         {
-          "name": "foundation/size-4",
+          "name": "foundation/type-numeric-md",
           "type": "dimension",
-          "alias": "{foundation.raw.size-4}",
-          "description": "Shared size 4 foundation."
+          "alias": "{foundation.raw.type-numeric-md}",
+          "description": "Numeric md role, 28 px."
         },
         {
-          "name": "foundation/size-5",
+          "name": "foundation/type-numeric-xl",
           "type": "dimension",
-          "alias": "{foundation.raw.size-5}",
-          "description": "Shared size 5 foundation."
+          "alias": "{foundation.raw.type-numeric-xl}",
+          "description": "Numeric xl role, 64 px."
         },
         {
-          "name": "foundation/size-6",
+          "name": "foundation/leading-caption",
           "type": "dimension",
-          "alias": "{foundation.raw.size-6}",
-          "description": "Shared size 6 foundation."
+          "alias": "{foundation.raw.leading-caption}",
+          "description": "Line height for Caption."
         },
         {
-          "name": "foundation/size-7",
+          "name": "foundation/leading-supporting",
           "type": "dimension",
-          "alias": "{foundation.raw.size-7}",
-          "description": "Shared size 7 foundation."
+          "alias": "{foundation.raw.leading-supporting}",
+          "description": "Line height for Supporting."
         },
         {
-          "name": "foundation/size-8",
+          "name": "foundation/leading-body",
           "type": "dimension",
-          "alias": "{foundation.raw.size-8}",
-          "description": "Shared size 8 foundation."
+          "alias": "{foundation.raw.leading-body}",
+          "description": "Line height for Body."
         },
         {
-          "name": "foundation/size-9",
+          "name": "foundation/leading-lead",
           "type": "dimension",
-          "alias": "{foundation.raw.size-9}",
-          "description": "Shared size 9 foundation."
+          "alias": "{foundation.raw.leading-lead}",
+          "description": "Line height for Lead."
         },
         {
-          "name": "foundation/leading-1",
+          "name": "foundation/leading-subhead",
           "type": "dimension",
-          "alias": "{foundation.raw.leading-1}",
-          "description": "Shared leading 1 foundation."
-        },
-        {
-          "name": "foundation/leading-2",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-2}",
-          "description": "Shared leading 2 foundation."
-        },
-        {
-          "name": "foundation/leading-3",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-3}",
-          "description": "Shared leading 3 foundation."
-        },
-        {
-          "name": "foundation/leading-4",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-4}",
-          "description": "Shared leading 4 foundation."
-        },
-        {
-          "name": "foundation/leading-5",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-5}",
-          "description": "Shared leading 5 foundation."
-        },
-        {
-          "name": "foundation/leading-6",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-6}",
-          "description": "Shared leading 6 foundation."
-        },
-        {
-          "name": "foundation/leading-7",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-7}",
-          "description": "Shared leading 7 foundation."
-        },
-        {
-          "name": "foundation/leading-8",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-8}",
-          "description": "Shared leading 8 foundation."
-        },
-        {
-          "name": "foundation/leading-9",
-          "type": "dimension",
-          "alias": "{foundation.raw.leading-9}",
-          "description": "Shared leading 9 foundation."
+          "alias": "{foundation.raw.leading-subhead}",
+          "description": "Line height for Subhead."
         },
         {
           "name": "foundation/type-display",
@@ -2070,34 +1973,10 @@
           "description": "Shared meter foundation."
         },
         {
-          "name": "foundation/subject-alpha",
-          "type": "string",
-          "alias": "{foundation.raw.subject-alpha}",
-          "description": "Shared subject alpha foundation."
-        },
-        {
-          "name": "foundation/cover-alpha",
-          "type": "string",
-          "alias": "{foundation.raw.cover-alpha}",
-          "description": "Shared cover alpha foundation."
-        },
-        {
           "name": "foundation/hero-alpha",
           "type": "string",
           "alias": "{foundation.raw.hero-alpha}",
           "description": "Shared hero alpha foundation."
-        },
-        {
-          "name": "foundation/meter-alpha",
-          "type": "string",
-          "alias": "{foundation.raw.meter-alpha}",
-          "description": "Shared meter alpha foundation."
-        },
-        {
-          "name": "foundation/hero-stop",
-          "type": "string",
-          "alias": "{foundation.raw.hero-stop}",
-          "description": "Shared hero stop foundation."
         },
         {
           "name": "foundation/menu-layer",
@@ -2164,18 +2043,6 @@
           "type": "string",
           "alias": "{foundation.raw.reading}",
           "description": "Shared reading foundation."
-        },
-        {
-          "name": "foundation/art",
-          "type": "dimension",
-          "alias": "{foundation.raw.art}",
-          "description": "Shared art foundation."
-        },
-        {
-          "name": "foundation/blur",
-          "type": "dimension",
-          "alias": "{foundation.raw.blur}",
-          "description": "Shared blur foundation."
         },
         {
           "name": "foundation/regular",
@@ -2447,98 +2314,7 @@
     },
     {
       "name": "Component",
-      "variables": [
-        {
-          "name": "button/primary/bg",
-          "type": "COLOR",
-          "alias": "{role.action.bg}"
-        },
-        {
-          "name": "button/primary/hover",
-          "type": "COLOR",
-          "alias": "{role.action.hover}"
-        },
-        {
-          "name": "button/primary/pressed",
-          "type": "COLOR",
-          "alias": "{role.action.pressed}"
-        },
-        {
-          "name": "button/secondary/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.muted}"
-        },
-        {
-          "name": "button/secondary/fg",
-          "type": "COLOR",
-          "alias": "{role.text.primary}"
-        },
-        {
-          "name": "button/tertiary/fg",
-          "type": "COLOR",
-          "alias": "{role.link.fg}"
-        },
-        {
-          "name": "tag/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.muted}"
-        },
-        {
-          "name": "badge/info/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.muted}"
-        },
-        {
-          "name": "filter/selected/bg",
-          "type": "COLOR",
-          "alias": "{role.selection.subtle}"
-        },
-        {
-          "name": "filter/selected/fg",
-          "type": "COLOR",
-          "alias": "{role.selection.fg}"
-        },
-        {
-          "name": "field/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.sunken}"
-        },
-        {
-          "name": "field/border",
-          "type": "COLOR",
-          "alias": "{role.border.default}"
-        },
-        {
-          "name": "segmented/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.muted}"
-        },
-        {
-          "name": "segmented/thumb",
-          "type": "COLOR",
-          "alias": "{role.surface.overlay}"
-        },
-        {
-          "name": "toast/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.overlay}"
-        },
-        {
-          "name": "sheet/bg",
-          "type": "COLOR",
-          "alias": "{role.surface.overlay}"
-        },
-        {
-          "name": "mastery/track",
-          "type": "COLOR",
-          "alias": "{role.border.subtle}"
-        },
-        {
-          "name": "chart/axis",
-          "type": "COLOR",
-          "alias": "{role.border.default}"
-        }
-      ]
+      "variables": []
     }
   ]
 }

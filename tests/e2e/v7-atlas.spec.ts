@@ -100,6 +100,6 @@ test("reduced motion jumps instead of flying, and the legend explains every mark
  await expect(sky(page)).toHaveAttribute("data-zoom","1.40");
  await page.getByRole("button",{name:"Legend"}).click();
  const legend=page.getByRole("list",{name:"Star states"});
- for(const label of ["Demonstrated","In progress","Up next","Needs a recheck","Not started","Needs (prerequisite)","Related"])
+ for(const label of ["Demonstrated","In progress","Up next","Review due","Conjecture · not started","Needs (prerequisite)","Related"])
   await expect(legend.getByText(label,{exact:true})).toBeVisible();
 });

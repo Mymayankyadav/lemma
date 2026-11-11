@@ -2,7 +2,7 @@
 @layer v7-components {
 :where(html[data-v7]) .v7-emblem {display:block;max-width:100%;height:auto;overflow:visible;color:var(--v7-subject,var(--v7-role-text-secondary));}
 :where(html[data-v7]) .v7-emblem-ink {opacity:1;filter:none;}
-:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-emblem-hero .v7-emblem-ink {filter:drop-shadow(0 0 var(--v7-helper-gap) color-mix(in srgb,currentColor 30%,transparent));}
+:where(html[data-v7][data-theme="graph-night"]) .v7-emblem-hero .v7-emblem-ink,:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-emblem-hero .v7-emblem-ink {filter:drop-shadow(0 0 var(--v7-helper-gap) color-mix(in srgb,currentColor 30%,transparent));}
 :where(html[data-v7]) .v7-emblem-draw path {stroke-dasharray:1;stroke-dashoffset:0;animation:v7-emblem-draw var(--v7-scenic) var(--v7-ease-out) both;}
 @keyframes v7-emblem-draw {from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
 @media(prefers-reduced-motion:reduce){:where(html[data-v7]) .v7-emblem,:where(html[data-v7]) .v7-emblem path {animation:none;stroke-dasharray:none;}}

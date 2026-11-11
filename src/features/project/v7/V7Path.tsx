@@ -28,7 +28,7 @@ const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6
 function NodeMark({state}:{state:NodeState}){
  const size=nodeSize[state];
  return <svg className="v7-path-node" data-state={state} width={size} height={size} viewBox="0 0 20 20" aria-hidden="true">
-  {state==='demonstrated'&&<path d={star} className="v7-path-gold"/>}
+  {state==='demonstrated'&&<path d={star} className="v7-path-demonstrated"/>}
   {state==='current'&&<><circle cx="10" cy="10" r="8" className="v7-path-halo"/><circle cx="10" cy="10" r="6.5" className="v7-path-ring"/><circle cx="10" cy="10" r="2.6" className="v7-path-core"/></>}
   {state==='proposed'&&<circle cx="10" cy="10" r="7" className="v7-path-dashed"/>}
   {state==='up_next'&&<circle cx="10" cy="10" r="6.5" className="v7-path-hollow"/>}

@@ -38,7 +38,9 @@ const byDue=(zone:string)=>(a:TaskRecord,b:TaskRecord)=>{
 export interface TaskGroup{key:Bucket|'all';label:string;items:TaskRecord[]}
 /** To do: Overdue, Today, This week, Later, No date. Empty groups are left out; overdue always leads. */
 export function groupTodo(tasks:readonly TaskRecord[],now:Date,zone:string):TaskGroup[]{
- const mine=tasks.filter(task=>task.status==='backlog');
+ // B3/TK1: an overdue task stays in the Overdue group even once started, so the group heading, the Overdue filter and the
+ // shared overdue count (Today, Calendar) agree.
+ const mine=tasks.filter(task=>task.status==='backlog'||(task.status==='in_progress'&&isOverdue(task,now,zone)));
  return bucketOrder.flatMap(key=>{
   const items=mine.filter(task=>bucketOf(task,now,zone)===key).sort(key==='none'?(a,b)=>a.position-b.position||a.id.localeCompare(b.id):byDue(zone));
   return items.length?[{key,label:bucketLabels[key],items}]:[];

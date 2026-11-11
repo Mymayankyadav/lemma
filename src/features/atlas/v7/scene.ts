@@ -40,10 +40,13 @@ export function drawStarMark(ctx:CanvasRenderingContext2D,state:StarState,cx:num
  case 'up_next':
   starPath(ctx,cx,cy,r*1.35,r*.6);ctx.strokeStyle=palette.text;ctx.lineWidth=1.25;ctx.stroke();break;
  case 'revisit':
-  ctx.beginPath();ctx.arc(cx,cy,r+1,0,Math.PI*2);ctx.strokeStyle=palette.warning;ctx.lineWidth=2;ctx.stroke();
-  ctx.beginPath();ctx.arc(cx,cy,Math.max(1.5,r*.4),0,Math.PI*2);ctx.fillStyle=colour;ctx.fill();break;
+  {const radius=Math.max(3.5,r),start=-Math.PI*.35,end=start+Math.PI*1.65;
+   ctx.beginPath();ctx.arc(cx,cy,radius,start,end);ctx.strokeStyle=palette.warning;ctx.lineWidth=1.75;ctx.lineCap='round';ctx.stroke();
+   const hx=cx+Math.cos(end)*radius,hy=cy+Math.sin(end)*radius,tx=-Math.sin(end),ty=Math.cos(end),head=Math.max(2.5,radius*.55);
+   ctx.beginPath();ctx.moveTo(hx+tx*head,hy+ty*head);ctx.lineTo(hx,hy);ctx.lineTo(hx+(Math.cos(end)*head),hy+(Math.sin(end)*head));ctx.stroke();ctx.lineCap='butt';}
+  break;
  default:
-  ctx.beginPath();ctx.arc(cx,cy,Math.max(2,r*.6),0,Math.PI*2);ctx.fillStyle=palette.mark;ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,Math.max(3,r*.7),0,Math.PI*2);ctx.strokeStyle=palette.mark;ctx.lineWidth=1;ctx.stroke();
  }
 }
 
@@ -64,7 +67,7 @@ export class AtlasScene{
   if(!ctx)throw new Error('Canvas 2D is unavailable');
   this.ctx=ctx as Ctx;
   const random=seeded(7);
-  this.dust=Array.from({length:DUST},()=>[random(),random(),.5+random(),.15+random()*.35]);
+  this.dust=Array.from({length:DUST},()=>[random(),random(),.4+random()*.35,.1+random()*.2]);
   // Each constellation's reach (for its tint) and its two or three largest stars (labelled when far).
   this.extent=layout.centres.map(()=>0);
   const byCluster=new Map<number,number[]>();
@@ -90,10 +93,28 @@ export class AtlasScene{
  toWorld(sx:number,sy:number):[number,number]{const [cx,cy]=this.centre();return [(sx-cx)/this.camera.k+this.camera.x,(sy-cy)/this.camera.k+this.camera.y];}
  /** Camera that frames every star. */
  fitCamera():Camera{
-  const {minX,minY,maxX,maxY}=this.layout.bounds,pad=56;
-  const w=Math.max(1,this.width-this.insets.left-this.insets.right-pad*2),h=Math.max(1,this.height-this.insets.top-this.insets.bottom-pad*2);
-  const k=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,Math.min(w/Math.max(1,maxX-minX),h/Math.max(1,maxY-minY))));
-  return {x:(minX+maxX)/2,y:(minY+maxY)/2,k};
+  // AT2: fit every star, its first-view label and every constellation name inside the viewport with 24 px of padding.
+  // Labels are drawn in screen pixels, so the fit searches for the largest zoom whose screen extent fits.
+  const pad=24,availW=Math.max(1,this.width-this.insets.left-this.insets.right-pad*2),availH=Math.max(1,this.height-this.insets.top-this.insets.bottom-pad*2);
+  const {model,layout}=this;
+  const extent=(k:number)=>{
+   let left=Infinity,right=-Infinity,top=Infinity,bottom=-Infinity;
+   model.stars.forEach((star,i)=>{
+    const x=layout.x[i]*k,y=layout.y[i]*k,r=star.radius*1.6+2,label=this.topLabels.has(i)?Math.min(32,star.label.length)*6.6+8:0;
+    left=Math.min(left,x-r);right=Math.max(right,x+r+label);top=Math.min(top,y-r);bottom=Math.max(bottom,y+r);
+   });
+   layout.centres.forEach(([cx,cy],cluster)=>{
+    const info=model.clusters.find(entry=>entry.index===cluster);if(!info)return;
+    const w=info.name.length*9.6/2,x=cx*k,y=(cy-(this.extent[cluster]??0)-18)*k;
+    left=Math.min(left,x-w);right=Math.max(right,x+w);top=Math.min(top,y-10);
+   });
+   if(!Number.isFinite(left)){left=right=top=bottom=0;}
+   return {left,right,top,bottom};
+  };
+  let lo=MIN_ZOOM,hi=MAX_ZOOM;
+  for(let n=0;n<24;n++){const k=(lo+hi)/2,e=extent(k);if(e.right-e.left<=availW&&e.bottom-e.top<=availH)lo=k;else hi=k;}
+  const k=lo,e=extent(k);
+  return {x:(e.left+e.right)/2/k,y:(e.top+e.bottom)/2/k,k};
  }
  /** Camera centred on one star, close enough to read its neighbourhood. */
  focusCamera(index:number,k=Math.max(this.camera.k,1.4)):Camera{return {x:this.layout.x[index],y:this.layout.y[index],k:Math.min(MAX_ZOOM,k)};}
@@ -157,7 +178,7 @@ export class AtlasScene{
    ctx.setLineDash(edge.kind==='related'?[2,3]:[]);
    const tx=ex-ux*endGap,ty=ey-uy*endGap;
    ctx.beginPath();ctx.moveTo(sx+ux*startGap,sy+uy*startGap);ctx.lineTo(tx,ty);ctx.stroke();
-   if(edge.kind==='prereq'){
+   if(edge.kind==='prereq'&&(active||camera.k>=NEAR_ZOOM)){
     ctx.setLineDash([]);const head=active?6:5;
     ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-ux*head-uy*head*.55,ty-uy*head+ux*head*.55);ctx.lineTo(tx-ux*head+uy*head*.55,ty-uy*head-ux*head*.55);ctx.closePath();
     ctx.fillStyle=ctx.strokeStyle;ctx.fill();
@@ -186,7 +207,7 @@ export class AtlasScene{
   const {ctx,palette,camera}=this;
   if(palette.night){
    ctx.fillStyle=palette.dust;
-   for(const [u,v,r,a] of this.dust){ctx.globalAlpha=a;ctx.beginPath();ctx.arc(u*this.width,v*this.height,r*.75,0,Math.PI*2);ctx.fill();}
+   for(const [u,v,r,a] of this.dust){ctx.globalAlpha=a;ctx.beginPath();ctx.arc(u*this.width,v*this.height,r,0,Math.PI*2);ctx.fill();}
    ctx.globalAlpha=1;return;
   }
   const step=GRID*camera.k;
@@ -215,14 +236,19 @@ export class AtlasScene{
  }
  private drawLabels(visible:number[],scale:number){
   const {ctx,model,layout,palette,camera}=this,placed:[number,number,number,number][]=[];
-  const fits=(x:number,y:number,w:number,h:number)=>!placed.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py);
+  const stars=visible.map(i=>{const [x,y]=this.toScreen(layout.x[i],layout.y[i]),r=model.stars[i].radius*1.6*scale+2;return [x-r,y-r,r*2,r*2] as [number,number,number,number];});
+  const fits=(x:number,y:number,w:number,h:number)=>x>=4&&x+w<=this.width-4&&!placed.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py)
+   &&!stars.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py);
   ctx.textBaseline='middle';ctx.textAlign='left';
   const label=(i:number,size:number,weight:number,colour:string,force=false)=>{
    const star=model.stars[i],[sx,sy]=this.toScreen(layout.x[i],layout.y[i]),text=star.label.length>32?star.label.slice(0,31)+'…':star.label;
    ctx.font=weight+' '+size+'px '+palette.sans;
-   const w=ctx.measureText(text).width,x=sx+star.radius*1.6*scale+6,y=sy-size/2-1;
-   if(!force&&!fits(x,y,w,size+2))return;
-   placed.push([x-2,y-1,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,sy);
+   const w=ctx.measureText(text).width,gap=star.radius*1.6*scale+6;
+   // Try right, left, above and below the star before giving up on a label.
+   const spots:[number,number,CanvasTextAlign][]=[[sx+gap,sy,'left'],[sx-gap-w,sy,'left'],[sx-w/2,sy-gap-size/2,'left'],[sx-w/2,sy+gap+size/2,'left']];
+   const spot=spots.find(([x,y])=>fits(x,y-size/2-1,w,size+2))??(force?spots[0]:null);
+   if(!spot)return;
+   const [x,y]=spot;placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,y);
   };
   if(this.selected!==null&&visible.includes(this.selected))label(this.selected,16,600,palette.text,true);
   // Constellation names in wide capitals, above each cluster.

@@ -37,8 +37,9 @@ export function StarMark({state,subjectClassName}:{state:StarState;subjectClassN
   {state==='demonstrated'&&<path d={star} className="v7-atlas-mark-fill"/>}
   {state==='in_progress'&&<><circle cx="10" cy="10" r="6.5" className="v7-atlas-mark-ring"/><path d="M10 4.5a5.5 5.5 0 0 0 0 11z" className="v7-atlas-mark-fill"/></>}
   {state==='up_next'&&<path d={star} className="v7-atlas-mark-outline"/>}
-  {state==='revisit'&&<><circle cx="10" cy="10" r="7" className="v7-atlas-mark-warning"/><circle cx="10" cy="10" r="2.6" className="v7-atlas-mark-fill"/></>}
-  {state==='not_started'&&<circle cx="10" cy="10" r="3" className="v7-atlas-mark-dim"/>}
+  {/* KC18: review due is ↻ in the warning colour; a conjecture (not started) is a hollow ○ with a border.default edge. */}
+  {state==='revisit'&&<><path d="M15.8 7.2A6.4 6.4 0 1 0 16.2 12" className="v7-atlas-mark-warning"/><path d="M16.6 3.6v3.9h-3.9" className="v7-atlas-mark-warning"/></>}
+  {state==='not_started'&&<circle cx="10" cy="10" r="4.5" className="v7-atlas-mark-hollow"/>}
  </svg>;
 }
 function StateChip({state}:{state:StarState}){
@@ -120,7 +121,8 @@ export default function AtlasV7(){
  const map=useRef<AtlasMapHandle>(null),searchInput=useRef<HTMLInputElement>(null);
  useEffect(()=>{
   if(!model)return;let live=true;setLayoutError(false);
-  computeLayout(layoutInput(model)).then(next=>{if(live)setLayout(next);},()=>{if(live)setLayoutError(true);});
+  // AT2: lay the constellations out for the screen's shape (portrait phones stack them), so the first view fills the screen.
+  computeLayout(layoutInput(model,'lemma-atlas',typeof innerWidth==='number'&&innerWidth>0?Math.min(2,innerHeight/innerWidth):1)).then(next=>{if(live)setLayout(next);},()=>{if(live)setLayoutError(true);});
   return ()=>{live=false;};
  },[model]);
  // Deep links: ?id=<concept id>, or the legacy ?focus=<slug>.

@@ -37,7 +37,7 @@ function Section({number,title,description,children}:{number:string;title:string
 }
 function Compare({children,high=false,density="comfortable"}:{children:(theme:Theme)=>ReactNode;high?:boolean;density?:string}){
  return <div className="v7-split" aria-label="Day and Night side-by-side comparison">
-  {modes.map(theme=><div key={theme} data-v7="" data-theme={theme} data-contrast={high?"high":undefined} data-density={density} className="v7-split-panel">
+  {modes.map(theme=><div key={theme} data-v7="" data-theme={theme} data-contrast={high?"high":undefined} data-v7-density={density} className="v7-split-panel">
    <div className="v7-panel-label"><span>{name(theme)}</span><span>{high?"High contrast":"Standard"}</span></div>
    <div className="v7-panel-content">{children(theme)}</div>
   </div>)}
@@ -277,7 +277,7 @@ export default function V7Page(){
  });
  const [high,setHigh]=useState(false),[density,setDensity]=useState("comfortable");
  useEffect(()=>{document.documentElement.dataset.theme=theme==="Night"?"graph-night":"graph";},[theme]);
- useEffect(()=>{const root=document.documentElement;root.dataset.contrast=high?"high":"standard";root.dataset.density=density;return()=>{delete root.dataset.contrast;delete root.dataset.density;};},[high,density]);
+ useEffect(()=>{const root=document.documentElement;root.dataset.contrast=high?"high":"standard";root.dataset.v7Density=density;return()=>{delete root.dataset.contrast;delete root.dataset.v7Density;};},[high,density]);
  return <main className="v7-kit" id="main-content">
   <header className="v7-kit-header">
    <div className="v7-between"><p className="v7-eyebrow">Lemma · Constellation</p><span className="v7-kit-version">UI Kit / 1.0.2</span></div>

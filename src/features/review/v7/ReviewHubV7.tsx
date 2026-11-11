@@ -7,7 +7,9 @@ import type {DeckNode,QueueFilter} from '../../../data/types';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {Button,Sheet,Switch} from '../../../ui/v7/components';
 import {Chart} from '../../../ui/v7/Chart';
-import {subjectClass,type Subject} from '../../../ui/v7/Subject';
+import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
+import {StatMeasure} from '../../../ui/v7/KitPrimitives';
+import {ChevronRight} from 'lucide-react';
 import {kitSubject} from '../../atlas/v7/model';
 import {resumeRun,type DurableRun} from '../../review-run/v6/adapter';
 import {useReviewEstimate} from '../v6/estimate';
@@ -64,8 +66,10 @@ export default function ReviewHubV7(){
  const count=result.batch.length,totalDue=result.allDue;
  const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):'Nothing selected for this round';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
-  <HubHeader title="Review" settings/>
-  <nav className="v7-rv-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Review</Link><Link to="/cards">Cards</Link><Link to="/practice">Practice</Link></nav>
+  <HubHeader title="Review">
+   {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
+   <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
+  </HubHeader>
   {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
   {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Could not load your review decks.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
@@ -73,22 +77,26 @@ export default function ReviewHubV7(){
    <section className="v7-rv-hero" aria-label="Review counts">
     <p className="v7-rv-figure"><strong aria-label="Cards in this round">{count}</strong><span>{count===1?'card':'cards'} today</span></p>
     <p className="v7-rv-note">{note}{totalDue>count?' · '+(totalDue-count).toLocaleString()+' more due later':''}</p>
-    {segments.length>0&&<div className="v7-rv-subjects" role="group" aria-label="Subjects in this round">
-     {segments.map(segment=><button key={segment.subject} type="button" className={'v7-rv-subject '+subjectClass(segment.subject)}
-      style={{flexGrow:segment.due}} aria-pressed={current===segment.subject}
-      onClick={()=>setSelected(current===segment.subject?selectionFor(nodes,subjectOf,null):selectionFor(nodes,subjectOf,segment.subject))}>
-      <span>{segment.subject}</span><small>{segment.due}</small></button>)}
+    {/* B5: a 6 px meter split into subject segments with 2 px page-colour gaps, then a wrapping legend of glyph, subject and
+        count. Nothing is cut at 320 px, and the parts add up to the hero number. Each legend item narrows the round. */}
+    {segments.length>0&&<div className="v7-rv-split">
+     <div className="v7-rv-split-bar" aria-hidden="true">{segments.map(segment=><span key={segment.subject} className={subjectClass(segment.subject)} style={{flexGrow:segment.due}}/>)}</div>
+     <div className="v7-rv-split-legend" role="group" aria-label="Subjects in this round">
+      {segments.map(segment=><button key={segment.subject} type="button" className={'v7-rv-subject '+subjectClass(segment.subject)} aria-pressed={current===segment.subject}
+       onClick={()=>setSelected(current===segment.subject?selectionFor(nodes,subjectOf,null):selectionFor(nodes,subjectOf,segment.subject))}>
+       <SubjectMark subject={segment.subject}/><span>{segment.subject}</span><strong>{segment.due}</strong></button>)}
+     </div>
     </div>}
     {issue&&<p role="alert" className="v7-rv-note">{issue}</p>}
     {active?<Button variant="primary" onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
      {'Resume · '+Math.min(active.progress.total,active.progress.position+1)+' of '+active.progress.total}</Button>
     :<Button variant="primary" aria-label={'Start '+count+' cards'} disabled={count===0} loading={busy} onClick={()=>{void start(result.batch,[...enabled]);}}>Start review</Button>}
-    <Button variant="ghost" onClick={()=>setSheet(true)} disabled={nodes.length===0}>Customise this round</Button>
+    <Button variant="ghost" className="v7-rv-customise" onClick={()=>setSheet(true)} disabled={nodes.length===0}>Customise this round</Button>
    </section>
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
    <div className="v7-rv-section">
-    {bars.length>0?<Chart title="Due each day" kind="bars" data={bars.map(bar=>({label:bar.label,values:[bar.due]}))}
+    {bars.length>0?<Chart compact title="Due each day" kind="bars" data={bars.map(bar=>({label:bar.label,values:[bar.due]}))}
      series={[{label:'Due'}]} format={value=>String(Math.round(value))}
      summary={'Cards due over the next '+bars.length+' days: '+bars.reduce((sum,bar)=>sum+bar.due,0).toLocaleString()+' in all.'}/>
      :<p className="v7-rv-note">{forecast.isError?'Could not load the forecast.':'Loading the forecast…'}</p>}
@@ -96,9 +104,10 @@ export default function ReviewHubV7(){
    <section className="v7-rv-section" aria-label="Memory, last 30 days">
     <h2 className="v7-headline">Memory · 30 days</h2>
     <div className="v7-rv-tiles">
-     <div className="v7-stat"><p className="v7-meta">Recall</p><p className="v7-figure-m">{memory.recallPct===null?'–':memory.recallPct+'%'}</p></div>
-     <div className="v7-stat"><p className="v7-meta">Reviews</p><p className="v7-figure-m">{memory.reviews.toLocaleString()}</p></div>
-     <div className="v7-stat"><p className="v7-meta">Typical answer</p><p className="v7-figure-m">{memory.typicalSeconds===null?'–':memory.typicalSeconds+' s'}</p></div>
+     {/* KC9: the kit's Stat tile — Numeric lg values, units at 60% in text.secondary after a no-break space, a reserved change row. */}
+     <StatMeasure label="Recall" value={memory.recallPct===null?'–':String(memory.recallPct)} unit={memory.recallPct===null?'':'%'} change="Last 30 days"/>
+     <StatMeasure label="Reviews" value={memory.reviews.toLocaleString()} unit="" change="Last 30 days"/>
+     <StatMeasure label="Typical answer" value={memory.typicalSeconds===null?'–':String(memory.typicalSeconds)} unit={memory.typicalSeconds===null?'':'s'} change="Median"/>
     </div>
    </section>
    {nodes.length>0&&<section className="v7-rv-section" aria-label="Review deck selection">
@@ -106,14 +115,15 @@ export default function ReviewHubV7(){
     <ul className="v7-rv-decks">
      {nodes.map(node=>{
       const subject=subjectOf(slugOf(node.key));
+      // KC21: a 64 px row with a 40 px leading tile on the subject tint showing the subject glyph.
       return <li key={node.key} className={subjectClass(subject)}>
-       <span className="v7-rv-dot" aria-hidden="true"/>
+       <span className="v7-rv-tile" aria-hidden="true"><SubjectMark subject={subject}/></span>
        <Switch label={node.label+' · '+Math.max(node.due,node.children.reduce((sum,child)=>sum+child.due,0))+' due'}
         checked={keysFor(node).every(key=>enabled.has(key))} onChange={value=>toggleProject(node,value)}/>
       </li>;
      })}
     </ul>
-    <Link className="v7-rv-link" to="/settings?section=study">Daily review limit: {Math.max(0,quota)}</Link>
+    <Link className="v7-rv-limit" to="/settings?section=study"><span>Daily limit</span><span className="v7-meta">{Math.max(0,quota)}</span><ChevronRight aria-hidden="true"/></Link>
    </section>}
   </>}
   <Sheet open={sheet} onClose={()=>setSheet(false)} title="Customise this round" eyebrow={count+' cards · '+note}

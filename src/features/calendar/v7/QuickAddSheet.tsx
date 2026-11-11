@@ -2,7 +2,10 @@ import {useEffect,useState} from 'react';
 import {getStudyApi} from '../../../data/study';
 import {getTaskApi} from '../../../data/tasks';
 import type {ProjectSummary} from '../../../data/types';
-import {Button,Chip,Field,Sheet,Switch} from '../../../ui/v7/components';
+import {Button,Chip,Field,Segmented,Sheet} from '../../../ui/v7/components';
+import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
+import {kitSubject} from '../../atlas/v7/model';
+import {formatClock,formatShortDate} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {DEFAULT_LENGTH,QUICK_LENGTHS,quickInput,quickStart,startLabel} from './quickAddModel';
 
@@ -38,7 +41,7 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
   }catch(problem){setError((problem as Error).message||'Could not save the block. Try again.');}
   finally{setBusy(false);}
  }
- return <Sheet open={open} onClose={onClose} title="New block" eyebrow={startLabel(startsAt,zone)} footer={<>
+ return <Sheet open={open} onClose={onClose} title="New block" eyebrow={formatShortDate(startsAt,{zone})+' · '+formatClock(startsAt,{zone})+'–'+formatClock(new Date(Date.parse(startsAt)+minutes*60_000),{zone})} footer={<>
    <Button variant="ghost" onClick={()=>onMore(startsAt,{title:title.trim(),taskId,minutes})}>More options</Button>
    <Button variant="primary" loading={busy} onClick={()=>{void save();}}>Add block</Button></>}>
   <form className="v7-qa" onSubmit={event=>{event.preventDefault();void save();}}>
@@ -47,9 +50,13 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
     {QUICK_LENGTHS.map(length=><Chip key={length} selected={minutes===length} onClick={()=>setMinutes(length)}>{length} min</Chip>)}
     {!(QUICK_LENGTHS as readonly number[]).includes(minutes)&&<Chip selected onClick={()=>{}}>{minutes} min</Chip>}
    </div>
-   <Switch label="Study block (off for Busy)" checked={study} onChange={setStudy}/>
+   {/* QA2: a form that is submitted later uses a segmented control, not a switch. */}
+   <Segmented label="Block type" options={['Study','Busy']} value={study?'Study':'Busy'} onChange={value=>setStudy(value==='Study')}/>
+   {/* QA1/KC2: the path chips carry their subject glyph in the subject colour. */}
    {study&&projects.length>0&&<div className="v7-qa-row" role="group" aria-label="Path">
-    {projects.slice(0,4).map(project=><Chip key={project.id} selected={projectId===project.id} onClick={()=>setProjectId(projectId===project.id?'':project.id)}>{project.title}</Chip>)}
+    {projects.slice(0,4).map(project=>{const subject=kitSubject(project.subject.name);
+     return <button key={project.id} type="button" className={'v7-filter-chip '+subjectClass(subject)} aria-pressed={projectId===project.id}
+      onClick={()=>setProjectId(projectId===project.id?'':project.id)}><SubjectMark subject={subject}/>{project.title}</button>;})}
    </div>}
   </form>
  </Sheet>;

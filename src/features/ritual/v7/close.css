@@ -1,26 +1,31 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.7 Close the day: an immersive three-step flow. Role tokens only. */
 @layer v7-components {
- :where(html[data-v7]) .v7-cd {min-height:100dvh;display:grid;grid-template-rows:auto 1fr;gap:var(--v7-space-4);align-content:start;padding:0 var(--v7-page-margin) var(--v7-space-8);max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-cd {min-height:100dvh;display:grid;grid-template-rows:auto 1fr;gap:var(--v7-space-4);align-content:start;padding:0 var(--v7-page-margin) calc(var(--v7-button) + var(--v7-space-12));max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-cd > header {margin-inline:calc(var(--v7-page-margin) * -1);}
  :where(html[data-v7]) .v7-cd-dots {list-style:none;margin:0;padding:0;display:flex;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-cd-dots li {width:8px;height:8px;border-radius:var(--v7-round);background:var(--v7-role-border-default);}
- :where(html[data-v7]) .v7-cd-dots [data-state="now"] {background:var(--v7-role-selection-fg);}
+:where(html[data-v7]) .v7-cd-dots [data-state="now"] {background:var(--v7-role-action-bg);}
  :where(html[data-v7]) .v7-cd-dots [data-state="done"] {background:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cd-step {display:grid;gap:var(--v7-space-4);align-content:start;}
- :where(html[data-v7]) .v7-cd-figure {margin:0;font:600 var(--v7-size-9)/1 var(--v7-sans);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+:where(html[data-v7]) .v7-cd-figure {margin:0;font:600 var(--v7-type-numeric-xl)/1 var(--v7-sans);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+ :where(html[data-v7]) .v7-cd-figure small {font-size:60%;font-weight:500;color:var(--v7-role-text-secondary);letter-spacing:0;}
  :where(html[data-v7]) .v7-cd-meters {display:grid;gap:var(--v7-space-3);padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
  :where(html[data-v7]) .v7-cd-sessions,:where(html[data-v7]) .v7-cd-ends {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-cd-sessions li {display:flex;justify-content:space-between;gap:var(--v7-space-3);padding:var(--v7-space-2) 0;border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  :where(html[data-v7]) .v7-cd-ends li {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
- :where(html[data-v7]) .v7-cd-title {margin:0;font:600 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);overflow-wrap:anywhere;}
- :where(html[data-v7]) .v7-cd-pair {display:flex;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-cd-clear {display:flex;align-items:center;gap:var(--v7-space-3);margin:0;color:var(--v7-role-text-secondary);font:500 var(--v7-size-4)/var(--v7-leading-4) var(--v7-sans);}
- :where(html[data-v7]) .v7-cd-hero {display:grid;gap:var(--v7-space-2);justify-items:start;padding:var(--v7-space-5);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:28px;background:var(--v7-role-surface-raised);}
- :where(html[data-v7]) .v7-cd-field {display:grid;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
- :where(html[data-v7]) .v7-cd-field :is(input,select) {min-height:var(--v7-touch);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:400 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);}
- :where(html[data-v7]) .v7-cd-actions {display:flex;justify-content:space-between;gap:var(--v7-space-3);}
- :where(html[data-v7]) .v7-cd-actions > :only-child {margin-left:auto;}
+ :where(html[data-v7]) .v7-cd-title {margin:0;font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;}
+:where(html[data-v7]) .v7-cd-pair {display:flex;align-items:center;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-cd-pair > .v7-button:first-child {min-width:128px;}
+ :where(html[data-v7]) .v7-cd-pair > .v7-button.v7-ghost {margin-inline-start:0;}
+ :where(html[data-v7]) .v7-cd-row-actions {display:flex;}
+ :where(html[data-v7]) .v7-cd-clear {display:flex;align-items:center;gap:var(--v7-space-3);margin:0;color:var(--v7-role-text-secondary);font:500 var(--v7-type-lead)/var(--v7-leading-lead) var(--v7-sans);}
+:where(html[data-v7]) .v7-cd-hero {display:grid;gap:var(--v7-space-2);justify-items:start;padding:var(--v7-space-5);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-cd-field {display:grid;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+:where(html[data-v7]) .v7-cd-field input {min-height:var(--v7-field);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+:where(html[data-v7]) .v7-cd-footer {position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);padding:var(--v7-space-3) var(--v7-page-margin) max(var(--v7-space-3),env(safe-area-inset-bottom));border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);background:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-cd-footer > .v7-button {min-height:var(--v7-button);min-width:120px;}
+
  :where(html[data-v7]) .v7-cd-closed {place-content:center;justify-items:center;text-align:center;grid-template-rows:auto auto auto auto;}
- :where(html[data-v7]) .v7-cd-closed .v7-qed {font-size:var(--v7-size-9);color:var(--v7-role-status-warning);}
+ :where(html[data-v7]) .v7-cd-closed .v7-qed {font-size:var(--v7-type-numeric-xl);color:var(--v7-role-status-warning);}
 }

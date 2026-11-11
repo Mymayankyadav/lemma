@@ -16,8 +16,12 @@
  :where(html[data-v7]) .v7-button > span {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-primary {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
  :where(html[data-v7]) .v7-ghost {background:transparent;color:var(--v7-role-link-fg);}
+ /* KC10: a tertiary action leading a row or footer pulls back by its padding, so its label lines up with the column edge. */
+ :where(html[data-v7]) .v7-button.v7-ghost:first-child {margin-inline-start:calc(-1 * var(--v7-space-4));}
+ :where(html[data-v7]) .v7-button.v7-ghost.v7-small:first-child {margin-inline-start:calc(-1 * var(--v7-space-3));}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-footer-reason {order:3;flex-basis:100%;margin:0;text-align:right;}
  :where(html[data-v7]) .v7-danger {background:transparent;color:var(--v7-role-status-danger);}
- :where(html[data-v7]) .v7-button.v7-small {min-height:var(--v7-touch);font-size:var(--v7-size-2);padding-inline:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-button.v7-small {min-height:var(--v7-touch);font-size:var(--v7-type-supporting);padding-inline:var(--v7-space-3);}
  :where(html[data-v7]) .v7-button svg {width:var(--v7-space-5);height:var(--v7-space-5);}
  :where(html[data-v7]) .v7-icon-button {display:inline-flex;align-items:center;justify-content:center;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-icon-button svg {width:var(--v7-space-5);height:var(--v7-space-5);}
@@ -26,19 +30,23 @@
  :where(html[data-v7]) .v7-hidden-label {visibility:hidden;}
  :where(html[data-v7]) .v7-proof {font-family:var(--v7-glyph);}
  :where(html[data-v7]) .v7-segmented {display:flex;gap:var(--v7-space-1);padding:var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);}
- :where(html[data-v7]) .v7-segmented button {flex:1;min-width:0;min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);font-size:var(--v7-size-2);font-weight:600;}
- :where(html[data-v7]) .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1);}
+ :where(html[data-v7]) .v7-segmented button {flex:1;min-width:0;min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);font-size:var(--v7-type-supporting);font-weight:600;}
+ :where(html[data-v7]) .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);border-color:var(--v7-role-border-default);font-weight:600;box-shadow:var(--v7-shadow-1);}
+ /* K1/KA1: in Night the thumb is lighter than the track (kit plan §7.4), in the app and not only inside the kit page. */
+ :where(html[data-v7][data-theme="graph-night"]) .v7-segmented [aria-checked="true"],:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-muted-hover);}
  :where(html[data-v7]) .v7-tabs {display:flex;gap:var(--v7-space-4);overflow:auto;}
  :where(html[data-v7]) .v7-tabs button {min-height:var(--v7-touch);padding:var(--v7-space-2);border:0;border-bottom:var(--v7-ring) solid transparent;background:transparent;color:var(--v7-role-text-secondary);font-weight:600;}
  :where(html[data-v7]) .v7-tabs [aria-selected="true"] {border-bottom-color:var(--v7-role-action-bg);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-field-group {display:grid;gap:var(--v7-space-2);min-width:0;}
- :where(html[data-v7]) .v7-field-group > :is(label,span) {font-size:var(--v7-size-2);font-weight:600;}
+ :where(html[data-v7]) .v7-field-group > :is(label,span) {font-size:var(--v7-type-supporting);font-weight:600;}
  :where(html[data-v7]) .v7-field {width:100%;min-width:0;min-height:var(--v7-field);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-field-optional {color:var(--v7-role-text-secondary);font-weight:400;}
+ :where(html[data-v7]) .v7-field-group > .v7-field-hint {font-size:var(--v7-type-supporting);font-weight:400;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-field::placeholder {color:var(--v7-role-text-tertiary);opacity:1;}
  :where(html[data-v7]) .v7-field[readonly] {border:0;background:transparent;color:var(--v7-role-text-primary);padding-inline:0;}
- :where(html[data-v7]) .v7-readonly-note {color:var(--v7-role-text-secondary);font-size:var(--v7-size-1);}
+ :where(html[data-v7]) .v7-readonly-note {color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);}
  :where(html[data-v7]) .v7-field[aria-invalid="true"] {border-color:var(--v7-role-status-danger);}
- :where(html[data-v7]) .v7-error {display:flex;gap:var(--v7-space-2);color:var(--v7-role-status-danger);font-size:var(--v7-size-2);}
+ :where(html[data-v7]) .v7-error {display:flex;gap:var(--v7-space-2);color:var(--v7-role-status-danger);font-size:var(--v7-type-supporting);}
  :where(html[data-v7]) .v7-picker {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);text-align:left;}
  :where(html[data-v7]) .v7-picker svg {width:var(--v7-space-5);height:var(--v7-space-5);}
  :where(html[data-v7]) .v7-menu-anchor {position:relative;}
@@ -52,20 +60,32 @@
  :where(html[data-v7]) .v7-sheet-header {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);padding:var(--v7-space-4) var(--v7-space-5);}
  :where(html[data-v7]) .v7-sheet-body {display:grid;gap:var(--v7-space-4);padding:var(--v7-space-2) var(--v7-space-5) var(--v7-space-6);overflow:auto;overscroll-behavior:contain;min-height:0;}
  :where(html[data-v7]) .v7-sheet-footer {padding:var(--v7-space-4) var(--v7-space-5);padding-bottom:max(var(--v7-space-4),env(safe-area-inset-bottom));border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ /* SE1: Search is a full-height sheet on phones. */
+ @media(max-width:699px){:where(html[data-v7]) .v7-sheet.v7-sheet-full {height:calc(100dvh - max(env(safe-area-inset-top),var(--v7-space-3)));max-height:none;}}
+ :where(html[data-v7]) .v7-sheet .v7-sr-only {position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
+ /* PA6: sheet and step-flow footers — secondary or tertiary on the left, the primary on the right, both 48 px, fixed to the bottom. */
+ :where(html[data-v7]) .v7-sheet-footer {display:flex;align-items:center;gap:var(--v7-space-3);flex-wrap:wrap;}
+ :where(html[data-v7]) .v7-sheet-footer > :is(.v7-button,a.v7-button) {min-height:var(--v7-button);}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-primary {margin-left:auto;}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-primary:only-child {flex:1;}
  :where(html[data-v7]) .v7-radio-row {display:flex;gap:var(--v7-space-3);align-items:center;min-height:var(--v7-touch);}
  :where(html[data-v7]) .v7-stepper {display:inline-flex;align-items:center;gap:var(--v7-space-3);background:var(--v7-role-surface-muted);border-radius:var(--v7-radius-2);}
  :where(html[data-v7]) .v7-stepper output {min-width:var(--v7-space-6);text-align:center;font-variant-numeric:tabular-nums;}
- :where(html[data-v7]) .v7-toast {position:fixed;bottom:var(--v7-space-6);left:var(--v7-space-5);right:var(--v7-space-5);z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin:auto;display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font-size:var(--v7-size-2);}
+ :where(html[data-v7]) .v7-toast {position:fixed;bottom:var(--v7-space-6);left:var(--v7-space-5);right:var(--v7-space-5);z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin:auto;display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font-size:var(--v7-type-supporting);}
  :where(html[data-v7]) .v7-toast > span {flex:1;}
  :where(html[data-v7]) .v7-toast-preview {position:static;width:100%;max-width:none;margin:0;}
  :where(html[data-v7]) .v7-skeleton {display:grid;gap:var(--v7-space-3);visibility:hidden;animation:v7-show 0s var(--v7-skeleton-delay) forwards;}
  :where(html[data-v7]) .v7-skeleton span {height:var(--v7-space-5);border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);}
  :where(html[data-v7]) .v7-skeleton span:first-child {width:60%;height:var(--v7-space-8);}
- :where(html[data-v7]) :is(.v7-stack,.v7-meter-row) {display:grid;gap:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-stack {display:grid;gap:var(--v7-space-4);}
+ /* CL3: the kit's mastery layout — label row above the bar, 8 px apart; rows 16 px apart. */
+ :where(html[data-v7]) .v7-meter-row {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-meter-row + .v7-meter-row {margin-top:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-meter-neutral {--v7-subject:var(--v7-role-viz-neutral);}
  :where(html[data-v7]) .v7-wrap {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);align-items:center;}
  :where(html[data-v7]) .v7-between {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);}
  :where(html[data-v7]) .v7-columns {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v7-space-3);}
- :where(html[data-v7]) .v7-control-label {font-size:var(--v7-size-2);font-weight:600;}
+ :where(html[data-v7]) .v7-control-label {font-size:var(--v7-type-supporting);font-weight:600;}
  :where(html[data-v7]) .v7-label {font-weight:600;}
  :where(html[data-v7]) .v7-card, :where(html[data-v7]) .v7-hero {padding:var(--v7-space-5);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-meter {height:var(--v7-meter);background:var(--v7-role-border-subtle);border-radius:var(--v7-round);}
@@ -73,7 +93,7 @@
  :where(html[data-v7]) .v7-list-row {display:flex;align-items:center;gap:var(--v7-space-3);min-height:var(--v7-row);}
  :where(html[data-v7]) .v7-grow {flex:1;min-width:0;}
  :where(html[data-v7]) .v7-stat {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-4);background:var(--v7-role-surface-raised);border-radius:var(--v7-radius-3);}
- :where(html[data-v7]) .v7-stat-change {min-height:var(--v7-leading-2);font-size:var(--v7-size-1);color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-stat-change {min-height:var(--v7-leading-supporting);font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}
  @media(min-width:700px){:where(html[data-v7]) .v7-sheet {inset:0;margin:auto;width:var(--v7-dialog-max);max-width:calc(100% - var(--v7-space-10));height:fit-content;border-radius:var(--v7-radius-4);}:where(html[data-v7]) .v7-grabber {display:none;}}
  @keyframes v7-spin {to{transform:rotate(360deg)}}
  @keyframes v7-show {to{visibility:visible}}
@@ -88,5 +108,5 @@
  :where(html[data-v7]) .v7-time-wheel button {width:100%;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-time-wheel [aria-selected="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-lead {display:grid;place-items:center;flex:none;width:var(--v7-space-10);height:var(--v7-space-10);border-radius:var(--v7-radius-2);background:var(--v7-subject-subtle);color:var(--v7-subject);font-family:var(--v7-glyph);}
- :where(html[data-v7]) .v7-figure-m {font:600 var(--v7-size-6)/var(--v7-leading-4) var(--v7-sans);}
+ :where(html[data-v7]) .v7-figure-m {font:600 var(--v7-type-numeric-md)/var(--v7-leading-lead) var(--v7-sans);}
 }

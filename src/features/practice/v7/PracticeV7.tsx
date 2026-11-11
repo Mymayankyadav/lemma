@@ -1,11 +1,15 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Link} from 'react-router';
-import {useSettings} from '../../../data/hooks';
+import {useHome,useSettings} from '../../../data/hooks';
 import {getPracticeTopicApi} from '../../../data/practice-topics';
 import type {PracticeCadence,PracticeEventRecord,PracticeRating,PracticeTopicRecord} from '../../../data/practice-topics/contract';
-import {DetailHeader} from '../../../app/v7/V7Shell';
+import {HubHeader} from '../../../app/v7/V7Shell';
+import {StatusBadge} from '../../../ui/v7/Status';
+import {Tag} from '../../../ui/v7/KitPrimitives';
+import {kitSubject} from '../../atlas/v7/model';
+import {ChevronRight} from 'lucide-react';
 import {Button,Segmented,Sheet} from '../../../ui/v7/components';
-import {formatDay,ownerZone} from '../../../lib/format';
+import {formatShortDate as formatDay,ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {clock} from '../../review/v7/reviewModel';
 import {loadAllPracticeEvents,loadAllPracticeTopics,parsePracticeCadence} from '../Page';
@@ -17,7 +21,9 @@ const kinds=['Every few days','Depends on my rating'] as const;
 
 /** PLAN §6.13 Practice: one card per topic, a small Practice button, and a sheet to record how it went. */
 export default function PracticeV7(){
- const settings=useSettings(),notify=useToast();
+ const settings=useSettings(),notify=useToast(),home=useHome();
+ // PR4/KC2: a topic shows its subject as a Tag (glyph plus name).
+ const subjectName=(id:string|null)=>id?home.data?.projects.find(project=>project.subject.id===id)?.subject.name??null:null;
  const zone=ownerZone(settings.data);
  const today=useMemo(()=>new Intl.DateTimeFormat('en-CA',{timeZone:zone}).format(new Date()),[zone]);
  const [items,setItems]=useState<PracticeTopicRecord[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
@@ -31,6 +37,7 @@ export default function PracticeV7(){
   return()=>{live=false;};
  },[reload]);
  const active=items.filter(item=>item.archivedAt===null),archived=items.filter(item=>item.archivedAt!==null);
+ const mostOverdue=active.filter(item=>item.nextDueDate!==null&&item.nextDueDate<today).sort((a,b)=>a.nextDueDate!.localeCompare(b.nextDueDate!))[0]?.id??null;
  const change=useCallback(async(work:()=>Promise<unknown>,message:string)=>{
   if(busy)return false;
   setBusy(true);setError('');
@@ -39,25 +46,28 @@ export default function PracticeV7(){
   finally{setBusy(false);}
  },[busy,notify]);
  return <main id="main-content" className="v7-page v7-pr" aria-label="Practice">
-  <DetailHeader title="Practice" back="/review"/>
-  <h1 className="v7-hub-title">Practice</h1>
-  <nav className="v7-pr-tabs" aria-label="Review sections"><Link to="/cards">Cards</Link><Link to="/practice" aria-current="page">Practice</Link></nav>
-  <p className="v7-pr-note">Practise a topic and rate how it went; the rating sets when it comes back. Cards are reviewed in <Link to="/review">Review</Link>.</p>
+  {/* PR1: Practice is a Review hub tab, so it renders inside the hub header (no Back, no second title). */}
+  <HubHeader title="Review">
+   <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review">Due</Link><Link to="/practice" aria-current="page">Practice</Link></nav>
+  </HubHeader>
   {loading&&<p role="status" className="v7-pr-note">Loading practice topics…</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
-  {!loading&&!active.length&&!error&&<p className="v7-pr-note">No active practice topics yet. Ask your tutor to add one.</p>}
+  {/* PR3: the explanation is a first-run tip, shown only before there is anything to practise. */}
+  {!loading&&!active.length&&!error&&<p className="v7-pr-note">No active practice topics yet. Ask your tutor to add one. Practise a topic and rate how it went; the rating sets when it comes back.</p>}
   <ul className="v7-pr-list" aria-label="Practice topics">{active.map(topic=>{
-   const chip=dueChip(topic.nextDueDate,today);
+   const chip=dueChip(topic.nextDueDate,today),subject=subjectName(topic.subjectId);
+   // PR2: one primary per view — only the most overdue topic carries it; the rest are 44 px secondaries.
    return <li key={topic.id} className="v7-pr-card">
     <h2 className="v7-headline">{topic.title}</h2>
-    <p className="v7-pr-chip" data-tone={chip.tone}>{chip.label}</p>
+    <p className="v7-pr-badges">{subject&&<Tag subject={kitSubject(subject)}/>}
+     <StatusBadge tone={chip.tone==='overdue'?'warning':'info'}>{chip.label}</StatusBadge></p>
     <p className="v7-pr-meta">{cadenceText(topic.cadence)} · {lastText(topic.lastPracticedAt,today)}</p>
     <div className="v7-pr-actions">
-     <Button variant="primary" small aria-label={'Practice '+topic.title} disabled={busy} onClick={()=>setRecording(topic)}>Practice</Button>
+     <Button variant={topic.id===mostOverdue?'primary':'secondary'} small aria-label={'Practice '+topic.title} disabled={busy} onClick={()=>setRecording(topic)}>Practice</Button>
      <Button variant="ghost" small aria-label={'Manage '+topic.title} onClick={()=>setManaging(topic)}>Manage</Button>
     </div>
    </li>;})}</ul>
-  {archived.length>0&&<details className="v7-pr-archived"><summary>Archived topics ({archived.length})</summary>
+  {archived.length>0&&<details className="v7-pr-archived"><summary><span>Archived topics ({archived.length})</span><ChevronRight aria-hidden="true"/></summary>
    <ul aria-label="Archived practice topics">{archived.map(topic=><li key={topic.id}><span>{topic.title}</span>
     <Button variant="ghost" small aria-label={'Restore '+topic.title} disabled={busy}
      onClick={()=>{void change(()=>getPracticeTopicApi().restoreTopic(topic.id,topic.version),'Topic restored');}}>Restore</Button></li>)}</ul></details>}

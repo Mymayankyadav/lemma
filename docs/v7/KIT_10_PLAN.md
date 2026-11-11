@@ -47,6 +47,8 @@ A complete, implementable plan for rebuilding the Day and Night kit as one syste
 | Role | Meaning, shared by both themes | `surface.page`, `text.secondary`, `border.default`, `action.bg`, `status.danger.fg` | Every role token has a Day value and a Night value |
 | Component | Only where a component must differ | `button.primary.bg`, `chip.filter.selected.bg` | Must point to a role token, never a raw value |
 
+> **Amended 11 Nov 2026 (Night critique v2, K2/KA2):** no component reads a component-tier token, so the tier is not generated. Components read role tokens directly; `scripts/v7/check-kit.mjs` fails if a component token is defined without being wired, if `tokens.css` defines anything outside the role, foundation and effect sets, or if app code reads a retired alias (`--v7-glass`, `--v7-blur`, `--v7-hero-stop`, `--v7-ink*`, `--v7-wash*`, `--v7-subject-1…8`, `--v7-size-*`, …). A component token is added back only together with the component that reads it.
+
 ### Naming convention
 `category.role.variant.state`, for example `action.bg.hover`, `status.warning.subtle`, `text.on-action`.
 
@@ -140,7 +142,7 @@ Eight hues spaced 40° apart, avoiding the indigo band (h 255–295). Lightness 
 | Subject | Hue | Day solid (vs page) | Day subtle | Night solid (vs page) | Night subtle |
 |---|---|---|---|---|---|
 | Analysis | 220 | `#00789C` (4.6) | `#D9F4FD` | `#17A9CB` (6.8) | `#082831` |
-| Topology | 180 | `#009F89` (3.1) | `#DAF6EF` | `#52D7C1` (10.7) | `#082A25` |
+| Topology | 180 | `#009C85` (3.1; amended from `#009F89`, K3) | `#DAF6EF` | `#52D7C1` (10.7) | `#082A25` |
 | Logic | 140 | `#417934` (4.8) | `#E4F4E1` | `#74A968` (6.9) | `#192916` |
 | Number theory | 100 | `#978722` (3.3) | `#F3EFD9` | `#CEC06A` (10.3) | `#28240C` |
 | Algebra | 60 | `#9D5300` (5.3) | `#FEEADB` | `#CE8545` (6.4) | `#321F0F` |
@@ -255,9 +257,11 @@ The section gap is fixed, which removes the ~190px gap under "Open menu" in Nigh
 ### 5.3 Control sizes
 | Size | Height | Horizontal padding | Radius | Use |
 |---|---|---|---|---|
-| sm | 32 | 12 | 8 | Dense toolbars, filter chips. The touch area is padded out to 44 |
-| md | 40 | 16 | 12 | Default on desktop |
-| lg | 48 | 20 | 12 | Default on mobile, primary actions |
+| Filter chip | 32 | 12 | full | Filter chips only. The touch area is padded out to 44 |
+| Small button | 44 | 12 | 12 | Actions inside cards and rows on phones |
+| Button | 48 (40 from 700 px) | 16 | 12 | Default: primaries, sheet footers and step flows |
+
+> **Amended 11 Nov 2026 (K3):** this table now matches the CSS (`--v7-button` 48 → 40 from 700 px, small 44, `--v7-small` 32 for filter chips). The type scale is the role scale only (Display 44, Title 32, Headline 26, Subhead 20, Lead 19, Reading 17, Body 16, Supporting 14, Caption 12, Numeric 64 / 40 / 28); the legacy `size-1…9` steps (18, 22, 36 and 48 px) are removed. In Night the segmented thumb is `surface.muted.hover`, applied in the app and not only inside the kit page (K1).
 
 The minimum touch target is 44×44 everywhere, including the "…" overflow button and the stepper's −/+ buttons.
 

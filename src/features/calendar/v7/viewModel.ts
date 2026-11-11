@@ -13,9 +13,12 @@ export function loadRange(view:CalendarView,date:string,zone:string,firstDay:num
  if(view==='agenda')return calendarRange(date,zone,14);
  return calendarRange(weekStartDay(date,firstDay),zone,7);
 }
-/** Five-step tint for logged minutes; 0 means no tint at all (never printed as "0"). */
+/** KC6: the kit's heatmap steps — 0, 1–15, 16–30, 31–60 and 60+ min — on the Starlight (Night) and Ink (Day) ramps.
+ *  0 means an outlined, unfilled cell (never printed as "0"). */
+export const heatLegend=['0','1–15','16–30','31–60','60+ min'] as const;
 export function tintStep(minutes:number):0|1|2|3|4{
- return minutes<=0?0:minutes<20?1:minutes<60?2:minutes<120?3:4;
+ const m=Math.round(minutes);
+ return m<=0?0:m<=15?1:m<=30?2:m<=60?3:4;
 }
 export const MAX_DOTS=3;
 /** Up to three distinct subject classes for a day's planned study, in order of first appearance. */
@@ -39,6 +42,16 @@ export function loggedCaption(minutes:number):string{
 export const WEEK_TITLE_MIN_WIDTH=600;
 export const weekGlyphMinHeight=28;
 export const showWeekGlyph=(heightPx:number)=>heightPx>=weekGlyphMinHeight;
+/** PA7/CA4: runs of empty days in Agenda become one line ("Thu 12 – Sat 14 Nov · Nothing planned · Add"). */
+export function collapseEmptyRuns(days:readonly {day:string;empty:boolean}[]):{from:string;to:string;empty:boolean}[]{
+ const out:{from:string;to:string;empty:boolean}[]=[];
+ for(const item of days){
+  const last=out[out.length-1];
+  if(item.empty&&last?.empty)last.to=item.day;
+  else out.push({from:item.day,to:item.day,empty:item.empty});
+ }
+ return out;
+}
 /** Rows for an empty-day line in Agenda. */
 export const nothingPlanned='Nothing planned';
 export function agendaTimeColumn(startsAt:string,endsAt:string,clock:(instant:string)=>string):string{
