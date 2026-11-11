@@ -1,0 +1,32 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.6 Tasks. One card per group, rows inside, no boxes inside boxes. Role tokens only. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-tk {display:grid;gap:var(--v7-space-3);align-content:start;}
+ :where(html[data-v7]) .v7-tk-bar {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-tk-filters {display:flex;gap:var(--v7-space-2);overflow-x:auto;padding-bottom:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-tk-filters > * {flex:none;}
+ :where(html[data-v7]) .v7-tk-card {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-tk-card h2 {margin:0;}
+ :where(html[data-v7]) .v7-tk-card ul {list-style:none;margin:0;padding:0;display:grid;}
+ :where(html[data-v7]) .v7-tk-row {display:grid;border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);overflow:hidden;}
+ :where(html[data-v7]) .v7-tk-row:first-child {border-top:0;}
+ :where(html[data-v7]) .v7-tk-main {display:flex;align-items:flex-start;gap:var(--v7-space-2);min-height:64px;padding:var(--v7-space-2) 0;touch-action:pan-y;transition:transform var(--v7-fast) var(--v7-ease-out);}
+ :where(html[data-v7]) .v7-tk-check {flex:none;width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:0;background:transparent;}
+ :where(html[data-v7]) .v7-tk-check > span {width:24px;height:24px;display:grid;place-items:center;border:2px solid var(--v7-role-border-default);border-radius:var(--v7-radius-1);color:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-tk-check[aria-checked="true"] > span {background:var(--v7-role-selection-fg);border-color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-tk-check svg {width:16px;height:16px;}
+ :where(html[data-v7]) .v7-tk-body {flex:1;min-width:0;display:grid;gap:var(--v7-space-1);padding-top:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-tk-title {margin:0;font:600 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+ :where(html[data-v7]) .v7-tk-title[data-closed] {color:var(--v7-role-text-secondary);text-decoration:line-through;}
+ :where(html[data-v7]) .v7-tk-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-1) var(--v7-space-2);margin:0;color:var(--v7-role-text-secondary);font:500 var(--v7-size-1)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-tk-chip[data-tone="overdue"] {padding:0 var(--v7-space-2);border-radius:var(--v7-round);background:var(--v7-role-status-warning-subtle);color:var(--v7-role-status-warning);font-weight:600;}
+ :where(html[data-v7]) .v7-tk-chip[data-tone="today"] {color:var(--v7-role-selection-fg);font-weight:600;}
+ :where(html[data-v7]) .v7-tk-chip[data-tone="high"] {color:var(--v7-role-text-primary);font-weight:600;}
+ :where(html[data-v7]) .v7-tk-path {display:inline-flex;align-items:center;gap:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-tk-path i {width:8px;height:8px;border-radius:var(--v7-round);background:var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-tk-reveal {display:flex;gap:var(--v7-space-2);padding:0 0 var(--v7-space-2) var(--v7-touch);}
+ :where(html[data-v7]) .v7-tk-empty {margin:0;color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-tk-more {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-tk-cancelled summary {min-height:var(--v7-touch);display:flex;align-items:center;color:var(--v7-role-text-secondary);font:600 var(--v7-size-2)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-tk-picker {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+}

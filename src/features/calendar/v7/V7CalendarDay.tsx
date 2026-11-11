@@ -105,6 +105,7 @@ export default function V7CalendarDay(){
  };
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view="day">
   <HubHeader title="Calendar" settings/>
+  <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   <div className="v7-cal-dateRow">
    <h2 className="v7-cal-month" aria-live="polite">{monthWord}</h2>
    <span className="v7-cal-dateActions">

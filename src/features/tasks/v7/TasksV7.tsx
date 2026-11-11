@@ -1,0 +1,187 @@
+import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent,type ReactNode} from 'react';
+import {Link,useNavigate} from 'react-router';
+import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,MoreHorizontal,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
+import {useHome,useSettings} from '../../../data/hooks';
+import {getTaskApi} from '../../../data/tasks';
+import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
+import {HubHeader} from '../../../app/v7/V7Shell';
+import {Button,Chip,IconButton,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {subjectClass} from '../../../ui/v7/Subject';
+import {ownerZone} from '../../../lib/format';
+import {useToast} from '../../../ui/Toast';
+import {kitSubject} from '../../atlas/v7/model';
+import TaskSheet from '../TaskSheet';
+import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
+import './tasks.css';
+
+const PAGE=50;
+const statuses:TaskRecord['status'][]=['backlog','in_progress','completed','cancelled'];
+const merge=(old:TaskRecord[],next:readonly TaskRecord[])=>{
+ const map=new Map(old.map(task=>[task.id,task]));
+ for(const task of next)map.set(task.id,task);
+ return [...map.values()].sort((a,b)=>statuses.indexOf(a.status)-statuses.indexOf(b.status)||a.position-b.position||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
+};
+
+/** PLAN §6.6: tasks as To do / Doing / Done, one card per group, rows with chips, swipe right to complete. */
+export default function TasksV7(){
+ const navigate=useNavigate(),notify=useToast(),home=useHome(),settings=useSettings();
+ const zone=ownerZone(settings.data);
+ const [rows,setRows]=useState<TaskRecord[]>([]),[total,setTotal]=useState(0),[cursor,setCursor]=useState<string|null>(null);
+ const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[busy,setBusy]=useState(false);
+ const [segment,setSegment]=useState<Segment>('To do'),[filter,setFilter]=useState<TaskFilter>(noFilter),[picker,setPicker]=useState(false);
+ const [editing,setEditing]=useState<TaskRecord|null>(null),[now,setNow]=useState(()=>new Date());
+ const epoch=useRef(0);
+ useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60_000);return()=>window.clearInterval(timer);},[]);
+ useEffect(()=>{
+  let live=true;const mine=++epoch.current;setPhase('loading');
+  void getTaskApi().listTasks({limit:PAGE,status:statuses}).then(page=>{
+   if(!live||epoch.current!==mine)return;
+   setRows(merge([],page.items));setTotal(page.total);setCursor(page.nextCursor);setPhase('ready');
+  }).catch(error=>{if(!live||epoch.current!==mine)return;setMessage(error instanceof Error?error.message:'Could not load tasks.');setPhase('error');});
+  return()=>{live=false;};
+ },[reload]);
+ useEffect(()=>{const again=()=>setReload(value=>value+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
+ const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system),[home.data]);
+ const look=useMemo(()=>new Map(projects.map(project=>[project.id,{title:project.title,klass:subjectClass(kitSubject(project.subject.name))}])),[projects]);
+ const put=useCallback((record:TaskRecord)=>setRows(old=>merge(old,[record])),[]);
+ const change=useCallback(async(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>{
+  if(busy)return;
+  setBusy(true);setMessage('');
+  const api=getTaskApi();
+  try{
+   const receipt=await api.updateTask(task.id,task.version,patch);
+   put(receipt.record);
+   if(done)notify(done.message,{tone:'success',action:{label:'Undo',onClick:()=>{
+    void api.updateTask(receipt.record.id,receipt.record.version,done.undo).then(back=>put(back.record)).catch(()=>{setReload(value=>value+1);});
+   }}});
+  }catch(error){
+   const value=error as {code?:string;message?:string};
+   if(value?.code==='conflict'||/conflict|version|stale/i.test(value?.message??'')){setMessage('Task changed elsewhere. The latest version was loaded.');setReload(count=>count+1);}
+   else setMessage(value?.message??'Could not update this task.');
+  }finally{setBusy(false);}
+ },[busy,notify,put]);
+ async function remove(task:TaskRecord){
+  if(busy)return;
+  setBusy(true);
+  try{await getTaskApi().deleteTask(task.id,task.version);setRows(old=>old.filter(item=>item.id!==task.id));setTotal(count=>Math.max(0,count-1));notify('Task deleted',{tone:'success'});}
+  catch(error){setMessage(error instanceof Error?error.message:'Could not delete this task.');}
+  finally{setBusy(false);}
+ }
+ async function more(){
+  if(!cursor||busy)return;
+  setBusy(true);
+  try{const page=await getTaskApi().listTasks({limit:PAGE,status:statuses,cursor});setRows(old=>merge(old,page.items));setCursor(page.nextCursor);setTotal(page.total);}
+  catch(error){setMessage(error instanceof Error?error.message:'Could not load more tasks.');}
+  finally{setBusy(false);}
+ }
+ const visible=useMemo(()=>applyFilter(rows,filter,now,zone),[rows,filter,now,zone]);
+ const overdueCount=useMemo(()=>rows.filter(task=>isOverdue(task,now,zone)).length,[rows,now,zone]);
+ const groups=useMemo(()=>groupTodo(visible,now,zone),[visible,now,zone]);
+ const doing=visible.filter(task=>task.status==='in_progress'),done=visible.filter(task=>task.status==='completed'),cancelled=visible.filter(task=>task.status==='cancelled');
+ const unscheduled=rows.some(task=>task.status==='backlog'&&task.due.kind==='none');
+ const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
+  onChange={change} onEdit={setEditing} onDelete={remove}
+  onSchedule={()=>navigate('/calendar?view=day&new=block&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
+ const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
+ return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
+  <HubHeader title="Calendar" settings/>
+  <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar">Schedule</Link><Link to="/tasks" aria-current="page">Tasks</Link></nav>
+  <div className="v7-tk-bar">
+   <Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>
+   {unscheduled&&segment==='To do'&&<Button variant="ghost" small onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
+  </div>
+  <div className="v7-tk-filters" role="group" aria-label="Filters">
+   <Chip selected={!!filter.projectId} onClick={()=>setPicker(true)}>{filterTitle}</Chip>
+   {(overdueCount>0||filter.overdueOnly)&&<Chip selected={filter.overdueOnly} onClick={()=>setFilter(old=>({...old,overdueOnly:!old.overdueOnly}))}>{'Overdue '+overdueCount}</Chip>}
+   <Chip selected={filter.highOnly} onClick={()=>setFilter(old=>({...old,highOnly:!old.highOnly}))}>High priority</Chip>
+  </div>
+  {!!message&&<p role="alert" className="v7-alert">{message}</p>}
+  {phase==='loading'&&<><Skeleton/><Skeleton/></>}
+  {phase==='error'&&<div role="alert" className="v7-tk-empty"><p>{message||'Could not load tasks.'}</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {phase==='ready'&&<>
+   {segment==='To do'&&(groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>
+     <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2><ul>{group.items.map(task=>rowFor(task,group.items))}</ul></section>)
+     :<p className="v7-tk-empty">{total===0?'No tasks yet. Use Capture to add one.':'Nothing to do here.'}</p>)}
+   {segment==='Doing'&&(doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<p className="v7-tk-empty">Nothing in progress. Move a task here from its menu.</p>)}
+   {segment==='Done'&&<>
+    {done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<p className="v7-tk-empty">Nothing completed yet.</p>}
+    {cancelled.length>0&&<details className="v7-tk-cancelled"><summary>Cancelled ({cancelled.length})</summary><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></details>}
+   </>}
+   {cursor&&<div className="v7-tk-more"><span>{rows.length} of {total} tasks shown</span><Button variant="secondary" small loading={busy} onClick={()=>{void more();}}>Load more</Button></div>}
+  </>}
+  <Sheet open={picker} onClose={()=>setPicker(false)} title="Filter by path" footer={<Button variant="primary" onClick={()=>setPicker(false)}>Done</Button>}>
+   <div className="v7-tk-picker" role="radiogroup" aria-label="Path">
+    <button type="button" role="radio" aria-checked={!filter.projectId} className="v7-filter-chip" onClick={()=>setFilter(old=>({...old,projectId:null}))}>All paths</button>
+    {projects.map(project=><button key={project.id} type="button" role="radio" aria-checked={filter.projectId===project.id} className="v7-filter-chip" onClick={()=>setFilter(old=>({...old,projectId:project.id}))}>{project.title}</button>)}
+   </div>
+  </Sheet>
+  {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={()=>setEditing(null)} onSaved={put}
+   onConflict={()=>{setMessage('Task changed elsewhere. The latest version was loaded.');setReload(value=>value+1);setEditing(null);}}/>}
+ </main>;
+}
+
+interface RowProps{task:TaskRecord;list:readonly TaskRecord[];now:Date;zone:string;busy:boolean;look:{title:string;klass:string}|null;
+ onChange:(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>Promise<void>;onEdit:(task:TaskRecord)=>void;onDelete:(task:TaskRecord)=>Promise<void>;onSchedule:()=>void}
+function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule}:RowProps){
+ const done=task.status==='completed',closed=done||task.status==='cancelled',chip=closed?null:dueChip(task,now,zone),estimate=estimateText(task.estimateMinutes);
+ const [dx,setDx]=useState(0),[revealed,setRevealed]=useState(false),start=useRef<{x:number;y:number}|null>(null);
+ const index=list.findIndex(item=>item.id===task.id);
+ const complete=()=>{void onChange(task,{status:'completed'},{message:'Task completed',undo:{status:task.status}});};
+ const reopen=()=>{void onChange(task,{status:'backlog'},{message:'Task reopened',undo:{status:task.status}});};
+ const down=(event:ReactPointerEvent<HTMLDivElement>)=>{if(closed||(event.target as HTMLElement).closest('button,a,[role=menu]'))return;start.current={x:event.clientX,y:event.clientY};};
+ const move=(event:ReactPointerEvent<HTMLDivElement>)=>{const origin=start.current;if(!origin)return;const x=event.clientX-origin.x,y=event.clientY-origin.y;if(Math.abs(x)>8&&Math.abs(x)>Math.abs(y))setDx(Math.max(-140,Math.min(140,x)));};
+ const up=(event:ReactPointerEvent<HTMLDivElement>)=>{
+  const origin=start.current;start.current=null;if(!origin)return;
+  const intent=swipeIntent(event.clientX-origin.x,event.clientY-origin.y);
+  setDx(0);
+  if(intent==='complete')complete();else if(intent==='reveal')setRevealed(value=>!value);
+ };
+ const swap=(up:boolean)=>{const other=list[index+(up?-1:1)];if(!other)return;
+  const position=up?Math.min(task.position,other.position)-1:Math.max(task.position,other.position)+1;void onChange(task,{position});};
+ const items=[
+  ...(!closed?[{label:'Schedule',icon:<CalendarPlus aria-hidden="true"/>,onClick:onSchedule}]:[]),
+  {label:'Edit',icon:<Pencil aria-hidden="true"/>,onClick:()=>onEdit(task)},
+  ...(task.status==='backlog'?[{label:'Move to Doing',icon:<Play aria-hidden="true"/>,onClick:()=>{void onChange(task,{status:'in_progress'});}}]:[]),
+  ...(task.status==='in_progress'?[{label:'Move to To do',icon:<RotateCcw aria-hidden="true"/>,onClick:()=>{void onChange(task,{status:'backlog'});}}]:[]),
+  ...(!closed&&index>0?[{label:'Move up',icon:<ChevronUp aria-hidden="true"/>,onClick:()=>swap(true)}]:[]),
+  ...(!closed&&index>=0&&index<list.length-1?[{label:'Move down',icon:<ChevronDown aria-hidden="true"/>,onClick:()=>swap(false)}]:[]),
+  ...(!closed?[{label:'Cancel task',icon:<Ban aria-hidden="true"/>,onClick:()=>{void onChange(task,{status:'cancelled'},{message:'Task cancelled',undo:{status:task.status}});}}]:[]),
+  ...(task.status==='cancelled'?[{label:'Reopen',icon:<RotateCcw aria-hidden="true"/>,onClick:reopen}]:[]),
+  {label:'Delete task',icon:<Trash2 aria-hidden="true"/>,onClick:()=>{void onDelete(task);}},
+ ];
+ return <li className={'v7-tk-row '+(look?.klass??'')} data-state={task.status} data-revealed={revealed||undefined}>
+  <div className="v7-tk-main" style={{transform:dx?'translateX('+dx+'px)':undefined}} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{start.current=null;setDx(0);}}>
+   <button type="button" role="checkbox" aria-checked={done} className="v7-tk-check" disabled={busy||task.status==='cancelled'}
+    aria-label={(done?'Reopen ':'Complete ')+task.title} onClick={()=>{if(done)reopen();else complete();}}>
+    <span aria-hidden="true">{done&&<Check/>}</span></button>
+   <div className="v7-tk-body">
+    <p className="v7-tk-title" data-closed={closed||undefined}>{task.title}</p>
+    <p className="v7-tk-chips">
+     {chip&&<span className="v7-tk-chip" data-tone={chip.tone}>{chip.text}</span>}
+     {done&&task.completedAt&&<span className="v7-tk-chip">{'Done '+dayWord(civilDay(task.completedAt,zone),now,zone)}</span>}
+     {task.priority==='high'&&!closed&&<span className="v7-tk-chip" data-tone="high">High priority</span>}
+     {estimate&&<span className="v7-tk-chip">{estimate}</span>}
+     {look&&<span className="v7-tk-chip v7-tk-path"><i aria-hidden="true"/>{look.title}</span>}
+    </p>
+   </div>
+   <RowMenu label={'More actions for '+task.title} title={task.title} items={items}/>
+  </div>
+  {revealed&&!closed&&<div className="v7-tk-reveal" role="group" aria-label={'Quick actions for '+task.title}>
+   <Button small onClick={onSchedule}>Schedule</Button><Button small onClick={()=>onEdit(task)}>Edit</Button>
+   <Button small destructive onClick={()=>{void onDelete(task);}}>Delete</Button></div>}
+ </li>;
+}
+
+/** The per-row ⋯: an icon button that opens the row's actions in a sheet. It is also the keyboard route to reorder. */
+function RowMenu({label,title,items}:{label:string;title:string;items:{label:string;icon:ReactNode;onClick:()=>void}[]}){
+ const [open,setOpen]=useState(false);
+ return <>
+  <IconButton label={label} aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
+  {open&&<Sheet open onClose={()=>setOpen(false)} title={title}>
+   <div className="v7-menu-content" role="menu" aria-label={label}>
+    {items.map(item=><button key={item.label} type="button" role="menuitem" className={/delete/i.test(item.label)?'v7-menu-danger':undefined}
+     onClick={()=>{setOpen(false);item.onClick();}}>{item.icon}{item.label}</button>)}
+   </div>
+  </Sheet>}
+ </>;
+}

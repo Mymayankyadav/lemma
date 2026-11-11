@@ -90,3 +90,24 @@ test("Practice shows a card per topic and records practice from a sheet",async({
  await sheet.getByRole("button",{name:"Save"}).click();
  await expect(page.getByRole("dialog")).toBeHidden();
 });
+
+// Part 7a: Tasks.
+test("Tasks groups To do into cards and completing a task offers Undo",async({page})=>{
+ await page.goto(at("/tasks"));
+ await expect(page.locator("html")).toHaveAttribute("data-v7","");
+ await expect(page.getByRole("navigation",{name:"Calendar sections"}).getByRole("link",{name:"Tasks"})).toHaveAttribute("aria-current","page");
+ await expect(page.getByRole("radiogroup",{name:"Task status"})).toBeVisible();
+ await expect(page.getByRole("group",{name:"Filters"})).toBeVisible();
+ const box=page.locator(".v7-tk-card").first();
+ if(await box.count()===0)return;
+ await expect(box.locator(".v7-tk-card")).toHaveCount(0);
+ await box.getByRole("checkbox").first().click();
+ await expect(page.getByRole("button",{name:"Undo"})).toBeVisible();
+});
+test("Tasks segments switch between To do, Doing and Done",async({page})=>{
+ await page.goto(at("/tasks"));
+ await page.getByRole("radio",{name:"Doing"}).click();
+ await expect(page.getByRole("radio",{name:"Doing"})).toHaveAttribute("aria-checked","true");
+ await page.getByRole("radio",{name:"Done"}).click();
+ await expect(page.getByRole("radio",{name:"Done"})).toHaveAttribute("aria-checked","true");
+});
