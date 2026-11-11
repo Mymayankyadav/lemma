@@ -3,6 +3,8 @@
 @layer v7-components {
  :where(html[data-v7]) .v7-cal {display:grid;gap:var(--v7-space-3);align-content:start;}
  :where(html[data-v7]) .v7-cal-dateRow {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-cal-dateActions {display:flex;align-items:center;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-cal-dateActions svg {width:16px;height:16px;}
  :where(html[data-v7]) .v7-cal-month {font:600 var(--v7-size-4)/var(--v7-leading-4) var(--v7-sans);}
  /* Week strip: 36 px circles; the selected day is an accent fill, today has an accent ring. */
  :where(html[data-v7]) .v7-cal-strip {display:grid;grid-template-columns:var(--v7-touch) repeat(7,minmax(0,1fr)) var(--v7-touch);align-items:center;gap:2px;}
@@ -48,8 +50,4 @@
  :where(html[data-v7]) .v7-cal-check {position:absolute;top:var(--v7-space-1);right:var(--v7-space-1);width:14px;height:14px;color:var(--v7-role-status-success);}
  :where(html[data-v7]) .v7-cal-link {position:absolute;right:var(--v7-space-1);bottom:var(--v7-space-1);width:12px;height:12px;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cal-block [data-grid-resize] {position:absolute;inset-inline:0;bottom:0;height:10px;cursor:ns-resize;touch-action:none;}
- :where(html[data-v7]) .v7-cal-add {position:fixed;right:var(--v7-page-margin);bottom:calc(var(--v7-dock-height) + var(--v7-space-4));z-index:8;width:56px;height:56px;display:grid;place-items:center;border:0;border-radius:var(--v7-round);
-  background:var(--v7-role-selection-fg);color:var(--v7-role-surface-page);box-shadow:var(--v7-shadow-2);}
- :where(html[data-v7]) .v7-cal-add:disabled {opacity:.5;}
- :where(html[data-v7]) .v7-cal-add svg {width:24px;height:24px;}
 }

@@ -48,7 +48,7 @@ describe('v7 Path map model',()=>{
  const cps=[cp('CP1','done',{demonstratedAt:'2026-11-02'}),cp('CP2','done'),cp('CP3','now',{currentStep:3,stepsTotal:4,dueCards:4}),cp('CP4','proposed'),cp('CP5','next',{dueCards:2}),cp('CP6','locked')];
  it('maps every checkpoint state to one of the five nodes, with a size each',()=>{
   expect(cps.map(item=>nodeStateOf(item.ui))).toEqual(['demonstrated','demonstrated','current','proposed','up_next','locked']);
-  expect(nodeStateOf('revisit')).toBe('up_next');
+  expect(nodeStateOf('revisit')).toBe('demonstrated');
   expect(nodeSize).toEqual({demonstrated:20,current:28,proposed:20,up_next:16,locked:8});
  });
  it('gives every node a text label as well as its mark',()=>{
@@ -58,12 +58,14 @@ describe('v7 Path map model',()=>{
   expect(nodeText(cps,3).label).toBe('Proposed');
   expect(nodeText(cps,4).detail).toBe('Up next');
   expect(nodeText(cps,5).detail).toBe('Needs Title CP5');
-  expect(nodeText([cp('CP1','revisit',{recheckDue:'2026-11-20'})],0).detail).toBe('Revisit · due 20 Nov');
+  expect(nodeText([cp('CP1','revisit',{demonstratedAt:'2026-11-02',recheckDue:'2026-11-20'})],0).detail).toBe('Demonstrated 2 Nov · recheck due 20 Nov');
+  expect(nodeText([cp('CP1','revisit')],0).detail).toBe('Demonstrated · recheck due');
  });
  it('ends the solid line at the current node and falls back sensibly',()=>{
   expect(lineEnd(cps)).toBe(2);
   expect(lineEnd([cp('CP1','done'),cp('CP2','next'),cp('CP3','locked')])).toBe(1);
   expect(lineEnd([cp('CP1','done'),cp('CP2','done')])).toBe(1);
+  expect(lineEnd([cp('CP1','revisit'),cp('CP2','next')])).toBe(1);
   expect(lineEnd([])).toBe(0);
  });
  it('counts stages, due cards and the node a locked checkpoint waits for',()=>{

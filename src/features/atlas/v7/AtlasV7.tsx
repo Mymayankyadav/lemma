@@ -44,7 +44,7 @@ export function StarMark({state,subjectClassName}:{state:StarState;subjectClassN
 function StateChip({state}:{state:StarState}){
  const tone=state==='demonstrated'?'demonstrated':state==='revisit'?'review':state==='in_progress'?'progress':'conjecture';
  const symbol={demonstrated:'∎',in_progress:'◐',up_next:'☆',revisit:'↻',not_started:'○'}[state];
- return <span className={'v7-badge v7-proof-'+tone}><span className="v7-proof-symbol" aria-hidden="true">{symbol}</span>{stateLabel[state]}</span>;
+ return <span className={'v7-badge v7-proof-'+tone}><span className="v7-proof-symbol" aria-hidden="true">{symbol}</span><span>{stateLabel[state]}</span></span>;
 }
 function SubjectTag({model,index}:{model:AtlasModel;index:number}){
  const cluster=model.clusters.find(entry=>entry.index===model.stars[index].cluster);

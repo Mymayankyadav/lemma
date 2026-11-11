@@ -107,7 +107,11 @@ export default function V7CalendarDay(){
   <HubHeader title="Calendar" settings/>
   <div className="v7-cal-dateRow">
    <h2 className="v7-cal-month" aria-live="polite">{monthWord}</h2>
-   {!isToday&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>go('date',today)}><span>Today</span></button>}
+   <span className="v7-cal-dateActions">
+    {!isToday&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>go('date',today)}><span>Today</span></button>}
+    <button type="button" className="v7-button v7-small" aria-label="New time block" disabled={phase!=='ready'}
+     onClick={event=>{opener.current=event.currentTarget;sheetParams();}}><Plus aria-hidden="true"/><span>New block</span></button>
+   </span>
   </div>
   <nav className="v7-cal-strip" aria-label="Week">
    <button type="button" className="v7-icon-button" aria-label="Previous week" onClick={()=>go('date',shiftDay(date,-7))}>‹</button>
@@ -135,8 +139,6 @@ export default function V7CalendarDay(){
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p>}
   </>}
-  <button type="button" className="v7-cal-add" aria-label="New time block" disabled={phase!=='ready'}
-   onClick={event=>{opener.current=event.currentTarget;sheetParams();}}><Plus aria-hidden="true"/></button>
   <BlockSheetActions showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
  </main>;
 }
