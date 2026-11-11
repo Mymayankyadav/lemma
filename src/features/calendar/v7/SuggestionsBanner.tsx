@@ -9,10 +9,13 @@ import {commitPlannerSelection} from '../../planner/commit';
 import {selectPlannerPlacements} from '../../planner/selection';
 import {loadSuggestions,type Suggestions} from './suggestions';
 import {suggestionLabel} from './quickAddModel';
+import type {SuggestedBlock} from './DayGrid';
 
 /** PLAN §6.6: the planner's one-day preview as a banner. Add all commits it atomically; Adjust opens the planner. */
-export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPlannerClosed}:{
+export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPlannerClosed,onSuggest}:{
  date:string;zone:string;openPlanner:boolean;onChanged:()=>void;onPlannerClosed:()=>void;
+ /** Where the suggestions would land, so the grid can draw them. */
+ onSuggest?:(items:SuggestedBlock[])=>void;
 }){
  const notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(openPlanner),[busy,setBusy]=useState(false);
  const operation=useRef<string|null>(null);
@@ -23,6 +26,11 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
  },[date,zone]);
  useEffect(()=>{if(openPlanner)setAdjusting(true);},[openPlanner]);
  const count=data?.result.placements.length??0;
+ useEffect(()=>{
+  onSuggest?.((data?.result.placements??[]).map(place=>({id:place.taskId+':'+place.part,start:place.start,end:place.end,title:data!.tasks.find(task=>task.id===place.taskId)?.title??'Study task'})));
+  return()=>onSuggest?.([]);
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[data]);
  async function addAll(){
   if(!data||busy||!count)return;
   setBusy(true);

@@ -1,9 +1,10 @@
-import {useEffect,useRef, useState, type FormEvent} from 'react';
+import {useEffect,useRef, useState, type FormEvent, type ReactElement, type ReactNode} from 'react';
 import {getApi} from '../../../data';
 import {getTaskApi} from '../../../data/tasks';
 import type {TaskRecord} from '../../../data/tasks/contract';
 import type {ProjectSummary,CheckpointView} from '../../../data/types';
 import Dialog from '../../../ui/v6/Dialog';
+import {Sheet} from '../../../ui/v7/components';
 import {getStudyApi} from '../../../data/study';
 import type {
   CalendarBlockKind, CalendarBlockPatch, CalendarBlockRecord, CalendarBlockStatus,
@@ -87,28 +88,45 @@ function oneHourLater(wall:string):string{
  const nextDay=plus>=1440?new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10):day;
  return nextDay+'T'+String(Math.floor(plus%1440/60)).padStart(2,'0')+':'+String(plus%60).padStart(2,'0');
 }
+/** The end for a new block: the requested whole minutes after the start, else an hour. */
+function endAfter(start:string,zone:string,minutes?:number):string{
+ const first=minutes&&minutes>=5&&minutes<=600?instantInZone(start,zone):null;
+ return first?zonedInput(new Date(Date.parse(first)+minutes!*60000).toISOString(),zone):oneHourLater(start);
+}
 export interface BlockSheetProps {
+ /** v7 shell: the same form, drawn with the kit's sheet and controls. */
+ v7?:boolean;
+ /** Hand-over from quick-add: keep the typed title, the linked task and the chosen length. */
+ initialTitle?:string;initialTaskId?:string;initialMinutes?:number;
  block:CalendarBlockRecord|null;
  date:string;zone:string;initialStart?:string;onClose:()=>void;onRefresh:()=>void;
 }
-export default function BlockSheet({block,date,zone,initialStart,onClose,onRefresh}:BlockSheetProps) {
+type Frame=(props:{title:string;eyebrow:string;onClose:()=>void;busy:boolean;footer:ReactNode;children:ReactNode})=>ReactElement;
+const V7Frame:Frame=({title,eyebrow,onClose,footer,children})=><Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={footer}>{children}</Sheet>;
+const V6Frame:Frame=props=><Dialog {...props}/>;
+export default function BlockSheet({block,date,zone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes}:BlockSheetProps) {
+ const Frame=v7?V7Frame:V6Frame;
+ const look=v7?{field:'v7-field',action:'v7-button v7-secondary v7-small',primary:'v7-button v7-primary v7-small',danger:'v7-button v7-secondary v7-small v7-danger',
+  label:'v7-bs-label',error:'v7-alert',note:'v7-meta',seg:'v7-bs-seg',segOn:'v7-bs-on',segOff:'',confirm:'v7-bs-confirm'}
+  :{field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
+  seg:'ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1',segOn:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold bg-raised-2 text-ink',segOff:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold text-ink-3',confirm:'rounded-ctl border border-edge p-3'};
  const busy=useRef(false);
  const requested=initialStart&&Number.isFinite(Date.parse(initialStart))&&/Z$|[+-]\d\d:\d\d$/.test(initialStart)
   ?zonedInput(initialStart,zone):null;
  const proposed=requested??suggestedBlockStart(date,zone);
  const notify=useToast();
  const [current,setCurrent]=useState(block);
- const [title,setTitle]=useState(block?.title??'');
+ const [title,setTitle]=useState(block?.title??initialTitle??'');
  const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??'study');
  const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
- const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):oneHourLater(proposed));
+ const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):endAfter(proposed,zone,initialMinutes));
  const [status,setStatus]=useState<CalendarBlockStatus>(block?.status??'planned');
  const [projects,setProjects]=useState<ProjectSummary[]>([]);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [checkpoints,setCheckpoints]=useState<CheckpointView[]>([]);
  const [projectId,setProjectId]=useState(block?.projectId??'');
  const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
- const [taskId,setTaskId]=useState(block?.taskId??'');
+ const [taskId,setTaskId]=useState(block?.taskId??initialTaskId??'');
  const [linksError,setLinksError]=useState('');
  useEffect(()=>{
   let active=true;
@@ -232,91 +250,91 @@ const day=start.slice(0,10);
  const otherZone=current?.timeZone&&current.timeZone!==zone&&new Intl.DateTimeFormat('en',{timeZone:current.timeZone,timeZoneName:'short'})
   .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value!==new Intl.DateTimeFormat('en',{timeZone:zone,timeZoneName:'short'})
   .formatToParts(new Date()).find(x=>x.type==='timeZoneName')?.value;
- return <Dialog title={current?'Edit time block':'New time block'} eyebrow={eyebrow}
+ return <Frame title={current?'Edit time block':'New time block'} eyebrow={eyebrow}
    onClose={onClose} busy={saving} footer={<>
-    {current&&!confirmDelete&&<button type="button" className={action+' lemma-destructive mr-auto'} disabled={saving}
+    {current&&!confirmDelete&&<button type="button" className={look.danger+' mr-auto'} disabled={saving}
       onClick={()=>setConfirmDelete(true)}>Delete block</button>}
-    <button type="button" className={action} disabled={saving} onClick={onClose}>Cancel</button>
-    <button type="submit" form="n121-block-form" className={action+' bg-amber text-amber-ink'} disabled={saving}>
+    <button type="button" className={look.action} disabled={saving} onClick={onClose}>Cancel</button>
+    <button type="submit" form="n121-block-form" className={look.primary} disabled={saving}>
       {saving?'Saving…':current?'Save changes':'Create block'}
     </button>
    </>}>
-   {otherZone&&<p className="text-label text-ink-2">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
+   {otherZone&&<p className={look.note}>Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
    <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="flex flex-col gap-3">
-    <label className="text-label">Title
-     <input aria-label="Calendar block title" className={field} placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title}
+    <label className={look.label}>Title
+     <input aria-label="Calendar block title" className={look.field} placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title}
        onChange={event=>setTitle(event.target.value)}/>
     </label>
-    <div role="radiogroup" aria-label="Calendar block type" className="ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1">
+    <div role="radiogroup" aria-label="Calendar block type" className={look.seg}>
      {(['study','busy'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={kind===value}
       onClick={()=>setKind(value)}
-      className={'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold '+(kind===value?'bg-raised-2 text-ink':'text-ink-3')}>
+      className={kind===value?look.segOn:look.segOff}>
       {value==='study'?'Study':'Busy'}</button>)}
     </div>
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-     <label className="text-label">Date
-      <input aria-label="Calendar block date" type="date" className={field}
+     <label className={look.label}>Date
+      <input aria-label="Calendar block date" type="date" className={look.field}
         value={day} onChange={event=>setPart('day',event.target.value)}/>
      </label>
-     <label className="text-label">Start
-      <input aria-label="Calendar block start" type="time" className={field}
+     <label className={look.label}>Start
+      <input aria-label="Calendar block start" type="time" className={look.field}
         value={start.slice(11,16)} onChange={event=>setPart('start',event.target.value)}/>
      </label>
-     <label className="text-label">End
-      <input aria-label="Calendar block end" type="time" className={field}
+     <label className={look.label}>End
+      <input aria-label="Calendar block end" type="time" className={look.field}
         value={end.slice(11,16)} onChange={event=>setPart('end',event.target.value)}/>
      </label>
     </div>
     <div role="group" aria-label="Block duration" className="flex flex-wrap items-center gap-2 text-label">
      <span className="mr-1 text-ink-2">Length</span>
-     {[25,50,90].map(minutes=><button key={minutes} type="button" className={action}
+     {[25,50,90].map(minutes=><button key={minutes} type="button" className={look.action}
       disabled={saving} onClick={()=>{
        const first=instantInZone(start,zone);
        if(first){setEnd(zonedInput(new Date(Date.parse(first)+minutes*60000).toISOString(),zone));setError('')}
        else setError('Choose a valid start time first.');
       }}>{minutes} min</button>)}
     </div>
-    <label className="text-label">Path (optional)
-     <select aria-label="Block path" className={field} value={projectId} disabled={saving}
+    <label className={look.label}>Path (optional)
+     <select aria-label="Block path" className={look.field} value={projectId} disabled={saving}
        onChange={event=>{setProjectId(event.target.value);setCheckpointId('')}}>
       <option value="">No path</option>
       {projectId&&!projects.some(p=>p.id===projectId)&&<option value={projectId}>Previously linked path</option>}
       {projects.map(project=><option key={project.id} value={project.id}>{project.title}</option>)}
      </select>
     </label>
-    {projectId&&<label className="text-label">Checkpoint (optional)
-      <select aria-label="Block checkpoint" className={field} value={checkpointId} disabled={saving}
+    {projectId&&<label className={look.label}>Checkpoint (optional)
+      <select aria-label="Block checkpoint" className={look.field} value={checkpointId} disabled={saving}
        onChange={event=>setCheckpointId(event.target.value)}>
        <option value="">No checkpoint</option>
        {checkpointId&&!checkpoints.some(c=>c.id===checkpointId)&&<option value={checkpointId}>Previously linked checkpoint</option>}
        {checkpoints.map(cp=><option key={cp.id} value={cp.id}>{cp.title}</option>)}
       </select>
     </label>}
-    <label className="text-label">Task (optional)
-     <select aria-label="Block task" className={field} value={taskId} disabled={saving}
+    <label className={look.label}>Task (optional)
+     <select aria-label="Block task" className={look.field} value={taskId} disabled={saving}
       onChange={event=>setTaskId(event.target.value)}>
       <option value="">No task</option>
       {taskId&&!tasks.some(t=>t.id===taskId)&&<option value={taskId}>Previously linked task</option>}
       {tasks.map(task=><option key={task.id} value={task.id}>{task.title}</option>)}
      </select>
     </label>
-    {linksError&&<p role="status" className="text-caption text-ink-2">{linksError}</p>}
-    {current&&<label className="text-label">Status
-     <select aria-label="Calendar block status" className={field} value={status}
+    {linksError&&<p role="status" className={look.note}>{linksError}</p>}
+    {current&&<label className={look.label}>Status
+     <select aria-label="Calendar block status" className={look.field} value={status}
        onChange={event=>setStatus(event.target.value as CalendarBlockStatus)}>
        <option value="planned">Planned</option><option value="done">Done</option>
        <option value="cancelled">Cancelled</option>
      </select>
     </label>}
-    {error&&<p role="alert" className="text-label text-again">{error}</p>}
+    {error&&<p role="alert" className={look.error}>{error}</p>}
 
-    {current&&confirmDelete&&<div className="rounded-ctl border border-edge p-3">
+    {current&&confirmDelete&&<div className={look.confirm}>
       <p className="text-label">Delete this block? You can restore it with Undo.</p>
       <div className="mt-2 flex gap-2">
-       <button type="button" className={action} disabled={saving} onClick={()=>setConfirmDelete(false)}>Keep block</button>
-       <button type="button" className={action+' lemma-destructive'} disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</button>
+       <button type="button" className={look.action} disabled={saving} onClick={()=>setConfirmDelete(false)}>Keep block</button>
+       <button type="button" className={look.danger} disabled={saving} onClick={()=>{void remove();}}>Confirm delete block</button>
       </div>
     </div>}
    </form>
- </Dialog>;
+ </Frame>;
 }

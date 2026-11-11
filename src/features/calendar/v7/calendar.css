@@ -125,4 +125,16 @@
  :where(html[data-v7]) .v7-od-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-link-button {border:0;background:transparent;padding:0 var(--v7-space-1);min-height:var(--v7-touch);color:var(--v7-role-selection-fg);font-family:var(--v7-sans);font-size:inherit;font-weight:600;text-decoration:underline;}
  :where(html[data-v7]) .v7-cal-overdue {border:0;min-height:var(--v7-touch);cursor:pointer;}
+ /* The block sheet in v7: the existing form with the kit's controls. */
+ :where(html[data-v7]) .v7-bs-label {display:grid;gap:var(--v7-space-2);font:600 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-bs-seg {display:flex;gap:var(--v7-space-1);padding:var(--v7-space-1);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);}
+ :where(html[data-v7]) .v7-bs-seg > button {flex:1;min-height:var(--v7-touch);border:0;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);font:600 var(--v7-size-2)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-bs-seg > button.v7-bs-on {background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);box-shadow:inset 0 0 0 var(--v7-hairline) var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-bs-confirm {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);}
+ /* Suggested blocks: outlined and hatched, never interactive, until they are added. */
+ :where(html[data-v7]) .v7-cal-suggested {pointer-events:none;z-index:0;display:grid;align-content:start;gap:2px;padding:2px var(--v7-space-2);overflow:hidden;border-radius:var(--v7-radius-1);
+  background-color:color-mix(in oklab,var(--v7-role-selection-fg) 8%,var(--v7-role-surface-page));
+  background-image:linear-gradient(135deg,color-mix(in oklab,var(--v7-role-selection-fg) 18%,transparent) 25%,transparent 25% 50%,color-mix(in oklab,var(--v7-role-selection-fg) 18%,transparent) 50% 75%,transparent 75%);background-size:10px 10px;
+  box-shadow:inset 0 0 0 2px var(--v7-role-selection-fg);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-cal-suggested small {font:600 10px/1 var(--v7-sans);letter-spacing:.08em;color:var(--v7-role-selection-fg);text-transform:uppercase;}
 }

@@ -17,7 +17,10 @@ type Props={
  /** Dropping a lifted block on a day in the week strip moves it there. */
  onDropDay:(block:CalendarBlockRecord,day:string,delta:number)=>void;
  onSwipe:(direction:1|-1)=>void;
+ /** Planner suggestions drawn as outlined, non-interactive blocks until they are added. */
+ suggested?:readonly SuggestedBlock[];
 };
+export interface SuggestedBlock{id:string;title:string;start:string;end:string}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
 export function layoutKind(height:number):'full'|'line'|'title'{return height>=45?'full':height>=30?'line':'title';}
 export function quarterHour(elapsedMinutes:number,wholeMinutes:number):number{
@@ -27,7 +30,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[]}:Props){
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -139,6 +142,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    :<div aria-label={label+', Logged study'}>{body}</div>}
   </div>;
  }
+ const ghosts=suggested.filter(item=>Date.parse(item.start)>=from&&Date.parse(item.end)<=until&&Date.parse(item.start)>=from+first*MINUTE);
  return <section className="v7-cal-grid" aria-label="Day calendar" data-day-minutes={whole}>
   <div ref={scroll} role="region" aria-label="Day time grid" tabIndex={0} className="v7-cal-scroll"
    onTouchStart={event=>{const t=event.touches[0];swipe.current={x:t.clientX,y:t.clientY};}}
@@ -154,6 +158,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ticks.map(minute=><i key={minute} aria-hidden="true" style={{top:(minute-first)*HOUR_PX/60}}/>)}
      {sameDay&&nowY>=0&&nowY<=height&&<b className="v7-cal-now" data-calendar-now="" aria-hidden="true" style={{top:nowY}}/>}
      {items.map(card)}
+     {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" role="img"
+      aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
+      style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
+      <small className="v7-eyebrow">Suggested</small><strong>{item.title}</strong></div>)}
     </div>
    </div>
   </div>

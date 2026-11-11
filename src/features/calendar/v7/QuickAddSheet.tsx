@@ -9,7 +9,7 @@ import {DEFAULT_LENGTH,QUICK_LENGTHS,quickInput,quickStart,startLabel} from './q
 /** Tap an empty slot, type a title, pick a length. Everything else lives under More options. */
 export default function QuickAddSheet({open,date,zone,start,taskId,length,projects,onClose,onSaved,onMore}:{
  open:boolean;date:string;zone:string;start:string|null;taskId:string|null;length:number|null;projects:readonly ProjectSummary[];
- onClose:()=>void;onSaved:()=>void;onMore:(startsAt:string)=>void;
+ onClose:()=>void;onSaved:()=>void;onMore:(startsAt:string,carry:{title:string;taskId:string|null;minutes:number})=>void;
 }){
  const notify=useToast();
  const [title,setTitle]=useState(''),[minutes,setMinutes]=useState<number>(length??DEFAULT_LENGTH),[study,setStudy]=useState(true);
@@ -39,7 +39,7 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
   finally{setBusy(false);}
  }
  return <Sheet open={open} onClose={onClose} title="New block" eyebrow={startLabel(startsAt,zone)} footer={<>
-   <Button variant="ghost" onClick={()=>onMore(startsAt)}>More options</Button>
+   <Button variant="ghost" onClick={()=>onMore(startsAt,{title:title.trim(),taskId,minutes})}>More options</Button>
    <Button variant="primary" loading={busy} onClick={()=>{void save();}}>Add block</Button></>}>
   <form className="v7-qa" onSubmit={event=>{event.preventDefault();void save();}}>
    <Field label="Title" value={title} autoFocus maxLength={200} error={error||undefined} onChange={event=>setTitle(event.target.value)}/>

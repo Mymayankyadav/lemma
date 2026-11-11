@@ -211,3 +211,16 @@ test("Today Needs you completes a due task with Undo, and every section stays un
  await box.click();
  await expect(page.getByRole("button",{name:"Undo"})).toBeVisible();
 });
+
+// Part 7f: block sheet in the kit, and quick-add hand-over.
+test("Quick-add More options keeps the title and length in the full block sheet",async({page})=>{
+ await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1"));
+ const sheet=page.getByRole("dialog",{name:"New block"});
+ await sheet.getByRole("textbox",{name:"Title"}).fill("Compactness drill");
+ await sheet.getByRole("button",{name:"25 min"}).click();
+ await sheet.getByRole("button",{name:"More options"}).click();
+ const full=page.getByRole("dialog",{name:"New time block"});
+ await expect(full).toBeVisible();
+ await expect(full.getByRole("textbox",{name:"Calendar block title"})).toHaveValue("Compactness drill");
+ await expect(full.locator(".v7-field").first()).toBeVisible();
+});

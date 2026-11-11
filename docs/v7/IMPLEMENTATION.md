@@ -137,9 +137,8 @@ All behind `v7Shell` (default off).
 
 ### Gaps (not done)
 
-- The full block sheet (More options, Edit) and the planner Adjust dialog are still the v6 dialogs; they are not restyled.
-- Suggested blocks are not drawn on the grid as dashed SUGGESTED blocks; the banner only counts them.
-- Quick-add More options does not carry the `task` link into the full sheet.
+- The planner Adjust dialog is still the v6 dialog; it is not restyled.
+- Suggested blocks on the grid are outlined and hatched rather than dashed, because the design gate bans dashed borders.
 - Tasks: no drag reorder. Week: no drag between days. Close the day: a day with no plan has no close record; "Tomorrow" shifts a block by 24 h, which is off by an hour across a DST change.
 - Overdue still counts deadlines and practice topics only, not tasks (tasks show their own Overdue group on the Tasks screen), so the Today count and the Calendar sheet agree.
 - Close the day is offered from 17:00 in the owner's zone; there is no day-end setting to read yet.
@@ -155,3 +154,9 @@ Pure models have unit tests (`tests/unit/v7/{tasks,close-day,calendar-views,quic
 - **Close the day** card from 17:00 until the day is closed. **Details** (`?block=`) opens the block sheet and **Plan tomorrow** (`?plan=tomorrow`) opens the planner on the next day.
 - **Quick focus** start sheet lists Open plus the owner's presets (for example "Pomodoro · 25 / 5 × 4"); a chosen preset is sent as `presetId` so the server captures its configuration. Focus running, break, paused and finish were already built in Part 4.
 - Rows from `needsModel.ts` have unit tests in `tests/unit/v7/today-needs.test.ts`.
+
+### Part 7 follow-up: block sheet and suggestions on the grid
+
+- The block sheet (New and Edit, also More options) now draws in the kit's sheet and controls under `v7Shell`; the form logic is unchanged and shared with v6 (`BlockSheet` takes a `v7` prop, v6 output is untouched).
+- Quick-add hands its title, task link and length to the full sheet (`title`, `task`, `len` params).
+- Day draws the planner's suggestions as labelled "Suggested" blocks, not clickable, until Add all or Adjust.
