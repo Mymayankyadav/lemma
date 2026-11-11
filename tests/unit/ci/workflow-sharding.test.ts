@@ -25,14 +25,22 @@ describe('FIX #573 full-suite CI sharding contract',()=>{
   expect(e2e).toContain('fail-fast: false')
   expect(e2e).toContain('npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests')
   expect(e2e).toContain('node scripts/v7/install-chromium.mjs')
-  // The wrapper retains Playwright host validation and its pinned browser.
+  // The wrapper installs Playwright's pinned browser without apt first, proves it launches, and only then touches apt, bounded.
+  // (`--with-deps` runs `apt-get update` up front; on a runner with unreachable mirrors that hung, kept the apt lock and failed
+  // every job before the browser was downloaded.)
   const installer=readFileSync(resolve(process.cwd(),'scripts/v7/install-chromium.mjs'),'utf8')
-  expect(installer).toContain("run(['playwright','install','--with-deps','chromium'],180_000)")
-  expect(installer).toContain("run(['playwright','install-deps','chromium'])")
+  expect(installer).not.toContain('--with-deps')
+  const download=installer.indexOf("npx(['playwright','install','chromium'])")
+  const firstLaunch=installer.indexOf('if(await launches())process.exit(0);')
+  const deps=installer.indexOf("npx(['playwright','install-deps','chromium'])")
+  expect(download).toBeGreaterThan(0)
+  expect(firstLaunch).toBeGreaterThan(download)
+  expect(deps).toBeGreaterThan(firstLaunch)
+  expect(installer).toContain("process.kill(-child.pid,'SIGKILL')")
   expect(installer).toContain("join(packageRoot,'browsers.json')")
   expect(installer).toContain('storage.googleapis.com/chrome-for-testing-public/${descriptor.browserVersion}')
   expect(installer).toContain("throw Error('Downloaded Chromium version does not match the lockfile')")
-  expect(installer).toContain("throw Error('Playwright browser installation is incomplete')")
+  expect(installer).toContain("throw Error('Chromium cannot launch after installation')")
   expect(e2e).not.toMatch(/--grep(?:-invert)?\b|--ignore-snapshots|--only-changed|--max-failures/)
  })
  it('fails closed if any shard is absent and validates all screenshot envelopes',()=>{

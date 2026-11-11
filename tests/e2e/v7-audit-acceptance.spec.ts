@@ -162,19 +162,22 @@ test('PA11 Tasks: dragging saves order across reload and the menu moves it back'
  }
  await page.reload();
  const group=page.getByRole('region',{name:'No date',exact:true}),rows=group.locator('.v7-tk-row');
- const first=rows.filter({hasText:'Audit reorder A'}),second=rows.filter({hasText:'Audit reorder B'});
- const firstId=await first.getAttribute('data-task-id'),secondId=await second.getAttribute('data-task-id');
- await first.getByRole('button',{name:'Reorder Audit reorder A',exact:true}).dragTo(second);
+ const pair=async()=>{
+  await expect(rows.filter({hasText:'Audit reorder A'})).toBeVisible();await expect(rows.filter({hasText:'Audit reorder B'})).toBeVisible();
+  const order=await rows.evaluateAll(nodes=>nodes.map(node=>node.textContent??''));
+  return order.map(text=>/Audit reorder ([AB])/.exec(text)?.[1]).filter(Boolean) as string[];
+ };
+ // New tasks arrive newest-first, so the starting order is whatever the data says; the test only relies on it changing.
+ const start=await pair(),upper=start[0],lower=start[1];
+ expect([upper,lower].sort()).toEqual(['A','B']);
+ const row=(letter:string)=>rows.filter({hasText:'Audit reorder '+letter});
+ await row(lower).getByRole('button',{name:'Reorder Audit reorder '+lower,exact:true}).dragTo(row(upper));
  await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
- await expect(first).toBeVisible();await expect(second).toBeVisible();
- const order=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
- expect(order.indexOf(secondId)).toBeLessThan(order.indexOf(firstId));
- await first.getByRole('button',{name:'More actions for Audit reorder A'}).click();
- await page.getByRole('menuitem',{name:'Move up',exact:true}).click();
+ expect(await pair()).toEqual([lower,upper]);
+ await row(lower).getByRole('button',{name:'More actions for Audit reorder '+lower}).click();
+ await page.getByRole('menuitem',{name:'Move down',exact:true}).click();
  await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
- await expect(first).toBeVisible();await expect(second).toBeVisible();
- const back=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
- expect(back.indexOf(firstId)).toBeLessThan(back.indexOf(secondId));
+ expect(await pair()).toEqual([upper,lower]);
 });
