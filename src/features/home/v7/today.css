@@ -85,3 +85,13 @@
  :where(html[data-v7]) .v7-today-fan i:nth-child(2) {transform:rotate(-4deg);}
  :where(html[data-v7]) .v7-today-fan i:nth-child(3) {transform:rotate(8deg) translateX(3px);background:var(--v7-role-surface-muted);}
 }
+@layer v7-components {
+ :where(html[data-v7]) .v7-today-desktop-grid {display:grid;gap:var(--v7-space-4);min-width:0;}
+ @media(min-width:1100px) {
+  :where(html[data-v7]) .v7-today {grid-template-columns:repeat(12,minmax(0,1fr));column-gap:var(--v7-space-6);}
+  :where(html[data-v7]) .v7-today > * {grid-column:1 / span 7;}
+  :where(html[data-v7]) .v7-today > .v7-hub-header {grid-column:1 / -1;}
+  :where(html[data-v7]) .v7-today > .v7-today-desktop-grid {grid-column:8 / -1;grid-row:2 / span 6;position:sticky;top:var(--v7-space-4);align-self:start;}
+  :where(html[data-v7]) .v7-today-desktop-grid .v7-cal-scroll {max-height:calc(100dvh - 200px);}
+ }
+}

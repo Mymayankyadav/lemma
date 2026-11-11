@@ -123,7 +123,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/v7/install-chromium.mjs
       - name: Smoke flows (projects, project, session, proposals, insights, settings)
         run: npm run e2e -- $(node -p "require('./ci/test-map.json').smoke.join(' ')")
       - uses: actions/upload-artifact@v4
@@ -160,7 +160,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/v7/install-chromium.mjs
       - name: Affected e2e specs (shard)
         env:
           FILES: ${{ needs.changes.outputs.e2e }}

@@ -4,6 +4,9 @@ on:
     paths:
       - '.github/workflows/v7-gallery-snapshots.yml'
       - 'src/ui/v7/**'
+      - 'src/app/v7/**'
+      - 'src/features/**/v7/**'
+      - 'tests/e2e/v7-*.ts'
       - 'src/features/kit/V7Page.tsx'
       - 'scripts/v7/**'
   workflow_dispatch:
@@ -22,7 +25,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/v7/install-chromium.mjs
       - name: Build gallery with URL feature-flag overrides
         env:
           VITE_ALLOW_FLAG_OVERRIDES: '1'
@@ -138,6 +141,8 @@ jobs:
             await writeFile(`${output}/manifest.json`, JSON.stringify({ commit: process.env.CAPTURE_SHA, files }, null, 2));
           } finally { await browser.close(); }
           NODE
+      - name: Capture audit screens in four modes and responsive layouts
+        run: node --experimental-strip-types scripts/v7/capture-audit.mjs
       - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4

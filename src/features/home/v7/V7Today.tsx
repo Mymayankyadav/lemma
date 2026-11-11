@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronRight,Layers,Pause,Play} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -20,19 +20,22 @@ import {DEFAULT_PLANNING} from '../../planner/model';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
 import {needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
 import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripHours,stripSegment,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
 import './today.css';
 
-interface DayData{blocks:CalendarBlockRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
+const DesktopDayGrid=lazy(()=>import('../../calendar/v7/DayGrid'));
+interface DayData{blocks:CalendarBlockRecord[];entries:StudyEntryRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
 function SubjectChip({subject,name}:{subject:Subject;name:string}){
  return <span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{name}</span></span>;
 }
 /** PLAN §6.2: Today decides what to do now, in one glance. */
 export default function V7Today(){
  const home=useHome(),settings=useSettings(),navigate=useNavigate(),notify=useToast();
+ const desktop=useMinWidth(1100);
  const {entry,refresh:refreshFocus}=useActiveFocus();
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
@@ -58,7 +61,7 @@ export default function V7Today(){
    if(!live)return;
    const saved=entries.filter(item=>item.status==='saved').map(item=>({id:item.id,status:'saved' as const,subjectId:item.subjectId,
     intervals:item.intervals.filter(interval=>interval.end!==null).map(interval=>({start:interval.start,end:interval.end!,kind:interval.kind}))}));
-   setData({blocks:blocks.filter(block=>block.status!=='cancelled'),logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount});
+   setData({blocks:blocks.filter(block=>block.status!=='cancelled'),entries,logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount});
   },()=>{if(live)setError(true);});
   return ()=>{live=false;};
  },[day,zone,version]);
@@ -217,6 +220,15 @@ export default function V7Today(){
     <Link className="v7-button v7-secondary" to="/today/close"><span>Close the day</span></Link></section>}
    </>}
   </>}
+  {desktop&&data&&<aside className="v7-today-desktop-grid" aria-label="Today's calendar">
+   <div className="v7-card-heading"><h2 className="v7-headline">Today</h2><Link to="/calendar?view=day">Open calendar</Link></div>
+   <Suspense fallback={<p role="status">Loading today's grid…</p>}><DesktopDayGrid date={day} zone={zone} clock={instant=>clockTime(instant,zone)} entries={data.entries} blocks={data.blocks} now={now} busy={busy}
+    lookOf={block=>({subjectClass:subjectClass(subjectOf(block.projectId).subject),path:projectOf(block.projectId)?.title??''})}
+    onCreate={startsAt=>navigate('/calendar?view=day&date='+day+'&quick=1&start='+encodeURIComponent(startsAt))}
+    onEdit={block=>navigate('/calendar?view=day&date='+day+'&block='+encodeURIComponent(block.id))}
+    onAdjust={(block,patch)=>{void act(()=>getStudyApi().updateCalendarBlock(block.id,block.version,patch));}}
+    onDropDay={()=>{}} onSwipe={()=>navigate('/calendar?view=day&date='+day)}/></Suspense>
+  </aside>}
   <Sheet open={quick} onClose={()=>setQuick(false)} title="Start a focus session" eyebrow="Quick focus"
    footer={<Button variant="primary" disabled={busy||!!entry} onClick={()=>{void startQuick();}}>Start focus</Button>}>
    {entry&&<p role="status" className="v7-disabled-reason">Unavailable · Finish or resume your running session first.</p>}

@@ -6,6 +6,8 @@ import {getStudyApi} from '../../data/study';
 import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
+import {Button,Sheet} from '../../ui/v7/components';
+import {useMinWidth} from './useMinWidth';
 import './shell.css';
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
@@ -51,6 +53,7 @@ const openSearch=()=>window.dispatchEvent(new CustomEvent('v7:search'));
 function Capture(){
  const [mode,setMode]=useState<'closed'|'sheet'|'picker'>('closed'),location=useLocation();
  const timer=useRef<number|null>(null),long=useRef(false);
+ useEffect(()=>{const open=()=>setMode('sheet');window.addEventListener('v7:capture',open);return()=>window.removeEventListener('v7:capture',open);},[]);
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
@@ -75,13 +78,28 @@ function Capture(){
 
 /** Wraps every v7 route except the kit. Immersive screens keep the navigation landmark, hidden until focused. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
- const location=useLocation(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false);
+ const location=useLocation(),navigate=useNavigate(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false),[shortcuts,setShortcuts]=useState(false);
+ const wide=useMinWidth(700);
  useEffect(()=>{const open=()=>setSearching(true);window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);},[]);
  const due=home.data?.due??0,active=Math.max(0,tabs.findIndex(tab=>tab.match(location.pathname)));
+ useEffect(()=>{
+  if(!wide)return;
+  const keys=(event:KeyboardEvent)=>{
+   if(event.target instanceof HTMLElement&&event.target.closest('input,textarea,select,[contenteditable],dialog'))return;
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setSearching(true);return;}
+   if(event.ctrlKey||event.metaKey||event.altKey)return;
+   if(event.key==='?'){event.preventDefault();setShortcuts(true);}
+   else if(!immersive&&/^[1-5]$/.test(event.key)){event.preventDefault();navigate(tabs[Number(event.key)-1].to);}
+   else if(!immersive&&event.key.toLowerCase()==='n'&&capture){event.preventDefault();window.dispatchEvent(new Event('v7:capture'));}
+   else if(!immersive&&event.key.toLowerCase()==='f'){event.preventDefault();navigate(entry?'/focus':'/?quick=1');}
+  };
+  window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
+ },[wide,immersive,capture,navigate,entry]);
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
   {children}
   <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
   <div className="v7-dock">
+   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home">ℓ <span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
    <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':active} as CSSProperties}>
@@ -93,7 +111,14 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    </nav>
    {!immersive&&capture&&<Capture/>}
    </div>
+   <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
+    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to}>{label}</Link>)}
+   </nav>
+   <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
   </div>
+  <Sheet open={shortcuts} onClose={()=>setShortcuts(false)} title="Keyboard shortcuts" footer={<Button variant="primary" onClick={()=>setShortcuts(false)}>Done</Button>}>
+   <dl className="v7-shortcuts">{[['⌘ / Ctrl K','Search'],['N','Capture'],['1–5','Switch destinations'],['F','Start or return to focus'],['Space','Pause focus / reveal answer'],['1–4','Grade an answer'],['U','Undo last answer'],['Esc','Close the top layer'],['?','Show shortcuts']].map(([key,label])=><div key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl>
+  </Sheet>
  </div>;
 }
 

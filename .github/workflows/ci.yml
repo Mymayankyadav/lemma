@@ -61,7 +61,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: node scripts/v7/install-chromium.mjs
       - run: npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests
       - uses: actions/upload-artifact@v4
         if: always()

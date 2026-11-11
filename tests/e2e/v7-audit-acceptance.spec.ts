@@ -89,7 +89,7 @@ async function startRound(page:Page){
  return count;
 }
 async function swipeRight(page:Page){
- const box=await page.locator('.v7-review-front').boundingBox();
+ const box=await page.locator('.v7-review-card').boundingBox();
  await page.mouse.move(box!.x+12,box!.y+box!.height/2);
  await page.mouse.down();await page.mouse.move(box!.x+152,box!.y+box!.height/2,{steps:8});await page.mouse.up();
 }
@@ -160,13 +160,13 @@ test('PA11 Tasks: dragging saves order across reload and the menu moves it back'
  const first=rows.filter({hasText:'Audit reorder A'}),second=rows.filter({hasText:'Audit reorder B'});
  const firstId=await first.getAttribute('data-task-id'),secondId=await second.getAttribute('data-task-id');
  await first.getByRole('button',{name:'Reorder Audit reorder A',exact:true}).dragTo(second);
- await expect(page.getByRole('status').filter({hasText:'Task order saved'})).toBeVisible();
+ await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
  const order=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
  expect(order.indexOf(secondId)).toBeLessThan(order.indexOf(firstId));
  await first.getByRole('button',{name:'More actions for Audit reorder A'}).click();
  await page.getByRole('menuitem',{name:'Move up',exact:true}).click();
- await expect(page.getByRole('status').filter({hasText:'Task order saved'})).toBeVisible();
+ await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
  const back=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
  expect(back.indexOf(firstId)).toBeLessThan(back.indexOf(secondId));

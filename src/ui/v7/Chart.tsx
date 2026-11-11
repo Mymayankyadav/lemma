@@ -85,7 +85,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
               const radius = kind === "stacked" && j !== row.values.length - 1 ? 0 : Math.min(4, w / 2, heightY / 2);
               return <path key={j} d={`M${x} ${topY + heightY}V${topY + radius}Q${x} ${topY} ${x + radius} ${topY}H${x + w - radius}Q${x + w} ${topY} ${x + w} ${topY + radius}V${topY + heightY}Z`} fill={color(j)} />;
             })}
-            {(kind !== "line" || index === data.length - 1) && <text x={point(index)} y={Math.max(16, y(kind === "stacked" ? accumulated : Math.max(...row.values, 0)) - 8)} textAnchor="middle" className="v7-chart-data-label">{format(kind === "stacked" ? accumulated : Math.max(...row.values, 0))}</text>}
+            {(kind === 'line'?index===data.length-1:data.length<=7) && <text x={point(index)} y={Math.max(16, y(kind === "stacked" ? accumulated : Math.max(...row.values, 0)) - 8)} textAnchor="middle" className="v7-chart-data-label">{format(kind === "stacked" ? accumulated : Math.max(...row.values, 0))}</text>}
             <rect x={point(index) - group / 2} y={top} width={group} height={plotHeight} fill="transparent" />
             <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.tickLabel??row.label}</text>
           </g>;

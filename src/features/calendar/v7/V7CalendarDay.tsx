@@ -5,6 +5,7 @@ import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {Segmented} from '../../../ui/v7/components';
 import {SubjectGlyph,subjectClass} from '../../../ui/v7/Subject';
 import {StatusBadge} from '../../../ui/v7/Status';
@@ -36,7 +37,8 @@ export default function V7CalendarDay(){
  const [params,setParams]=useSearchParams();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const firstDay=settings.data?.weekStart??1,clock24h=settings.data?.clock24h??true;
- const raw=params.get('date'),today=dayKey(new Date(),zone),date=validDayKey(raw)?raw:today,view=parseView(params.get('view'));
+ const desktop=useMinWidth(1100);
+ const raw=params.get('date'),today=dayKey(new Date(),zone),date=validDayKey(raw)?raw:today,view=parseView(params.get('view')??(desktop?'week':'day'));
  const [entries,setEntries]=useState<StudyEntryRecord[]>([]),[blocks,setBlocks]=useState<CalendarBlockRecord[]>([]);
  const [dues,setDues]=useState<CalendarDues>(emptyCalendarDues);
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState('');
@@ -143,6 +145,16 @@ export default function V7CalendarDay(){
   <HubHeader title="Calendar">
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>
+  {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
+   <h2 className="v7-headline">{monthWord}</h2>
+   <div className="v7-mini-month" role="group" aria-label="Choose a date">
+    {Array.from({length:42},(_,index)=>shiftDay(weekStartDay(date.slice(0,8)+'01',firstDay),index)).map(day=><button key={day} type="button" aria-pressed={day===date} aria-current={day===today?'date':undefined}
+     data-outside={day.slice(0,7)!==date.slice(0,7)||undefined} aria-label={formatShortDate(day,{zone})} onClick={()=>go('date',day)}>{Number(day.slice(8))}</button>)}
+   </div>
+   <h3 className="v7-subhead">{formatShortDate(date,{zone})}</h3>
+   {phase==='loading'?<p role="status" className="v7-meta">Loading due items…</p>:dueToday.length?<ul className="v7-mini-dues">{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul>:<p className="v7-meta">Nothing due on this day.</p>}
+   {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
+  </aside>}
   {/* B4/CD2: one line at 320–390 px — the month label between chevrons, a Today pill only when away. New blocks come from the
       Capture button or a tap on the grid, so there is no "+ New block" in the top third. */}
   <div className="v7-cal-dateRow">
