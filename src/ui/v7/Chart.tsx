@@ -26,7 +26,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   const maximum = percentage ? 100 : ([1, 2, 2.5, 5, 10].find(value => value * scale >= observed) ?? 10) * scale;
   const total = data.reduce((value, row) => value + sum(row.values), 0);
   const peak = data.reduce((best, row, index) => sum(row.values) > sum(data[best].values) ? index : best, 0);
-  const summary = suppliedSummary ?? (!data.length ? "There are no values in this range yet." : percentage ?
+  const summary = suppliedSummary ?? (!data.length ? "No data in this range yet." : percentage ?
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
     `You studied ${format(total)} in this range, most on ${data[peak].label}.`);
   const width = 360, height = 224, left = 54, bottom = 180, top = 36, plotHeight = bottom - top;
@@ -38,11 +38,11 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
-    <ul className="v7-chart-legend">{series.map((seriesItem, index) => {
+    {!!data.length && <ul className="v7-chart-legend">{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
-    })}</ul>
-    {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> :
+    })}</ul>}
+    {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} role="group" aria-label={title}>
         {[0, .5, 1].map(value => <g key={value}><line x1={left} x2={width - 16} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
         {target !== undefined && target >= 0 && target <= maximum && <g><line x1={left} x2={width - 16} y1={y(target)} y2={y(target)} className="v7-chart-target" /><text x={width - 16} y={y(target) - 6} textAnchor="end" className="v7-chart-data-label">Goal {format(target)}</text></g>}
@@ -66,7 +66,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
             <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.label}</text>
           </g>;
         })}
-      </svg>}
+      </svg> : null}
     {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
   </section>;
 }
