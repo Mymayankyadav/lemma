@@ -38,6 +38,7 @@ jobs:
           node --input-type=module <<'NODE'
           import { chromium } from '@playwright/test';
           import { mkdir, writeFile } from 'node:fs/promises';
+          import { exportKitHtml } from './scripts/v7/export-kit-html.mjs';
           const output = 'artifacts/v7-gallery';
           await mkdir(output, { recursive: true });
           const browser = await chromium.launch();
@@ -98,6 +99,38 @@ jobs:
             for (const [title, name] of [['Components and states', 'components-expanded'], ['Patterns', 'patterns'], ['Data visualisation', 'charts'], ['Icons and mathematical emblems', 'emblems']]) {
               await hdCapture('hd-' + name + '-day-night', hd.getByRole('region', { name: title, exact: true }));
             }
+
+            const offline = await browser.newPage({ viewport: { width:390, height:844 }, reducedMotion:'reduce' });
+            await offline.goto(url, { waitUntil:'networkidle' });
+            await offline.evaluate(() => document.fonts.ready);
+            const portable = await offline.evaluate(async () => {
+              let fontCss = '';
+              for (const sheet of document.styleSheets) {
+                if (!sheet.href || !sheet.href.includes('/fonts/v7/')) continue;
+                let source = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+                const urls = [...source.matchAll(/url\(([^)]+)\)/g)];
+                for (const match of urls) {
+                  const resource = match[1].trim().replace(/^['"]|['"]$/g, '');
+                  if (resource.startsWith('data:')) continue;
+                  const response = await fetch(new URL(resource, sheet.href));
+                  if (!response.ok) throw new Error('Could not embed kit font');
+                  // Read bytes separately so the generated document never depends on the preview server.
+                  const blob = await response.blob();
+                  const embedded = await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(blob);});
+                  source = source.replace(match[0], 'url("' + embedded + '")');
+                }
+                fontCss += source + '\n';
+              }
+              const main = document.querySelector('.v7-kit').cloneNode(true);
+              const originals = document.querySelectorAll('.v7-kit input');
+              main.querySelectorAll('input').forEach((input,index)=>{const original=originals[index];input.setAttribute('value',original.value);if(original.checked)input.setAttribute('checked','');else input.removeAttribute('checked');});
+              main.querySelectorAll('details').forEach(item=>{item.open=true;});
+              const ids=['principles','colours','emblems','controls','patterns','charts','changelog'];
+              main.querySelectorAll('.v7-system-section').forEach((item,index)=>{item.id='kit-'+ids[index];});
+              return { fontCss, snapshot:main.outerHTML };
+            });
+            await exportKitHtml({ output:output+'/lemma-ui-kit.html', ...portable, commit:process.env.CAPTURE_SHA });
+            files.push('lemma-ui-kit.html');
             await writeFile(`${output}/manifest.json`, JSON.stringify({ commit: process.env.CAPTURE_SHA, files }, null, 2));
           } finally { await browser.close(); }
           NODE
