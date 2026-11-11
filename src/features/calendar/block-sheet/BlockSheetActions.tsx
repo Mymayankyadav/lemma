@@ -21,7 +21,12 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
  const handled=useRef<string|null>(null);
  useEffect(()=>{
   const key=(params.get('new')??'')+'|'+(params.get('edit')??'')+'|'+(params.get('start')??'');
-  if(key==='||'){handled.current=null;return;}
+  if(params.get('new')!=='block'&&!params.get('edit')){
+   // Query navigation reuses Calendar. Release the URL-opened sheet before
+   // quick-add can open its own modal.
+   if(handled.current!==null)setSelected(undefined);
+   handled.current=null;return;
+  }
   if(!ready||handled.current===key)return;
   if(params.get('new')==='block'){handled.current=key;setSelected(null);return;}
   const id=params.get('edit');

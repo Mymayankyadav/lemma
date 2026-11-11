@@ -177,3 +177,23 @@ The static kit checker passes all four token modes, CVD separation, aliases and 
 Local full unit baseline after the initial closure fixes: 374 files / 2,089 tests passed. Typecheck, repository lint, static kit check, production build and PWA checks passed. Browser attempts failed before page execution because the command sandbox disallows Chromium’s Unix socket; the shared browser could not reach the isolated localhost. PR CI is the browser execution authority for this pass.
 
 Desktop layouts/captures (Part 11), 200% text, real-device and screen-reader checks, performance budget/measurements, final changed-candidate review and independent full-PR review remain separate acceptance. The PR is not Ready and `v7Shell` remains off.
+
+## Continuation from deee0fcc · 11 Nov 2026
+
+The local production-build reproduction completed with **35 passes and 7 failures** in `v7-night-critique`, `v7-audit-acceptance` and `v7-responsive`. Those failures were investigated before further feature work:
+
+| Failure | Finding and correction | Verification status |
+|---|---|---|
+| Focus Pause / state agreement | The frozen audit clock never elapsed time between starting and closing a study interval. The test now advances that clock before Pause and Break, preserving the positive-duration API contract and all state/ring assertions. | Corrected run pending CI |
+| Block-title / quick-add case | Title focus passed; navigating from the full block form to quick-add retained the old URL-opened modal. `BlockSheetActions` now releases it when the URL request disappears. The test additionally requires exactly one open dialog. | Corrected run pending CI |
+| Unplanned closure | The second `goto` targeted the same hash, preserving completion state and its return timer. The test now performs the actual reload named in its acceptance criterion and still requires the saved aim and disabled closed-day action. | Corrected run pending CI |
+| Task ordering | The post-reload synchronous row read ran before tasks loaded (both IDs had index −1). The test now waits for both persisted rows before asserting their order, in both directions. | Corrected run pending CI |
+| Today at 1280, Day and Night | The lazy-loaded DayGrid had no calendar stylesheet on a cold Today entry; its unstyled gutter created 1661 px document width. DayGrid now imports its own stylesheet. No overflow assertion or layout threshold changed. | Corrected run pending CI |
+| Desktop keys | Search opened and focused correctly, but the test requested a textbox instead of the existing accessible combobox. The locator now uses the actual role. | Corrected run pending CI |
+| CI unit contract | At deee0fcc, PR-gate unit tests had 2066 passes / 1 failure: the sharding contract still required the former inline install command. It now requires the wrapper and its standard host validation, pinned metadata, official endpoint and fail-closed checks; shard/no-filter assertions remain. | Corrected run pending CI |
+
+The exact official fallback was executed locally and installed both browser binaries at Playwright revision 1243, Chrome for Testing **153.0.8010.12**. The initial CI install jobs remained in progress for more than twelve minutes; the wrapper now bounds each standard download attempt at three minutes before fallback/failure. The gallery workflow also explicitly exercises `--official-fallback` after host setup. No browser, test, retry count, assertion threshold or test coverage was relaxed.
+
+The local execution environment disconnected after reproduction and before the corrected runs finished. Its incomplete full-unit run is not a pass. Current-head CI is required to establish the corrected results. The capture workflow now also runs after evidence-record changes, so its manifest can identify the final source commit. It writes candidates to artifacts, preserving `docs/v7/golden/` unchanged.
+
+**Still open:** corrected browser and complete regression evidence; final-commit captures and their visual review; separate Owner desktop approval; the remaining Part 11 layouts/keys; 200% text, physical devices and assistive technology; performance and final release gates. Do not infer closure of these items from source corrections. `v7Shell` stays off; no Ready or merge.

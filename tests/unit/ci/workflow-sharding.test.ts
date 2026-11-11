@@ -24,7 +24,15 @@ describe('FIX #573 full-suite CI sharding contract',()=>{
   expect(e2e).toContain('shard: [1, 2, 3, 4]')
   expect(e2e).toContain('fail-fast: false')
   expect(e2e).toContain('npm run e2e -- --shard=${{ matrix.shard }}/4 --pass-with-no-tests')
-  expect(e2e).toContain('npx playwright install --with-deps chromium')
+  expect(e2e).toContain('node scripts/v7/install-chromium.mjs')
+  // The wrapper retains Playwright host validation and its pinned browser.
+  const installer=readFileSync(resolve(process.cwd(),'scripts/v7/install-chromium.mjs'),'utf8')
+  expect(installer).toContain("run(['playwright','install','--with-deps','chromium'],180_000)")
+  expect(installer).toContain("run(['playwright','install-deps','chromium'])")
+  expect(installer).toContain("join(packageRoot,'browsers.json')")
+  expect(installer).toContain('storage.googleapis.com/chrome-for-testing-public/${descriptor.browserVersion}')
+  expect(installer).toContain("throw Error('Downloaded Chromium version does not match the lockfile')")
+  expect(installer).toContain("throw Error('Playwright browser installation is incomplete')")
   expect(e2e).not.toMatch(/--grep(?:-invert)?\b|--ignore-snapshots|--only-changed|--max-failures/)
  })
  it('fails closed if any shard is absent and validates all screenshot envelopes',()=>{

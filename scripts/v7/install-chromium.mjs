@@ -6,9 +6,9 @@ import {readFileSync,mkdtempSync,mkdirSync,writeFileSync,rmSync} from 'node:fs';
 import {dirname,join,resolve} from 'node:path';
 import {homedir,tmpdir} from 'node:os';
 const require=createRequire(import.meta.url);
-const run=args=>spawnSync('npx',args,{stdio:'inherit',env:process.env}).status;
+const run=(args,timeout)=>spawnSync('npx',args,{stdio:'inherit',env:process.env,timeout}).status;
 const fallbackOnly=process.argv.includes('--official-fallback');
-if(!fallbackOnly&&run(['playwright','install','--with-deps','chromium'])===0)process.exit(0);
+if(!fallbackOnly&&run(['playwright','install','--with-deps','chromium'],180_000)===0)process.exit(0);
 if(process.platform!=='linux'||process.arch!=='x64')throw Error('The official fallback supports the Linux x64 CI runner only.');
 // Install host dependencies even when the normal installer failed before them.
 if(!fallbackOnly&&run(['playwright','install-deps','chromium'])!==0)throw Error('Chromium host dependencies could not be installed.');
@@ -50,4 +50,4 @@ with zipfile.ZipFile(archive) as z:
 }finally{rmSync(temporary,{recursive:true,force:true});}
 // Let Playwright finish its own FFmpeg and host validation against the exact
 // installed browser. A failure here still fails CI; no test is skipped.
-if(!fallbackOnly&&run(['playwright','install','chromium'])!==0)throw Error('Playwright browser installation is incomplete');
+if(!fallbackOnly&&run(['playwright','install','chromium'],180_000)!==0)throw Error('Playwright browser installation is incomplete');

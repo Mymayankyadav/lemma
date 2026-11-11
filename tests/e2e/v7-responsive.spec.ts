@@ -31,7 +31,7 @@ test('Desktop default Calendar is Week; N, Ctrl K, destination keys and shortcut
  await expect(page.getByRole('radio',{name:'Week',exact:true})).toHaveAttribute('aria-checked','true');
  await page.keyboard.press('n');await expect(page.getByRole('dialog',{name:'Capture',exact:true})).toBeVisible();
  await page.keyboard.press('Escape');await page.keyboard.press('Control+k');
- await expect(page.getByRole('textbox',{name:/Search/})).toBeFocused();
+ await expect(page.getByRole('combobox',{name:'Search',exact:true})).toBeFocused();
  await page.keyboard.press('Escape');await page.keyboard.press('1');
  await expect(page.getByRole('main',{name:'Today'})).toBeVisible();
  await page.keyboard.press('?');await expect(page.getByRole('dialog',{name:'Keyboard shortcuts'})).toBeVisible();

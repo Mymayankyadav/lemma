@@ -68,6 +68,8 @@ test('PA11: Focus state agrees with Today/session row, reload retains the ring, 
  await page.getByRole('textbox',{name:'Park a thought',exact:true}).press('Enter');
  await expect(page.getByRole('textbox',{name:'Park a thought',exact:true})).toHaveValue('');
  await expect(page).toHaveURL(/#\/focus/);
+ // The fixed audit clock must elapse time before closing a stored interval.
+ await page.clock.setFixedTime(new Date(NOW.getTime()+60_000));
  await page.getByRole('button',{name:'Pause',exact:true}).click();
  await expect(page.locator('.v7-focus')).toHaveAttribute('data-word','Paused');
  await page.getByRole('link',{name:'Minimise'}).click();
@@ -75,6 +77,8 @@ test('PA11: Focus state agrees with Today/session row, reload retains the ring, 
  await expect(page.locator('.v7-today-hero .v7-live-chip')).toContainText('Paused');
  await page.getByRole('link',{name:'Return to focus'}).click();
  await page.getByRole('button',{name:'Resume',exact:true}).click();
+ await expect(page.locator('.v7-focus')).toHaveAttribute('data-word','Focus');
+ await page.clock.setFixedTime(new Date(NOW.getTime()+120_000));
  await page.getByRole('button',{name:'Take a break',exact:true}).click();
  await expect(page.locator('.v7-focus')).toHaveAttribute('data-word','Break');
  await expect(page.locator('.v7-focus-breath')).toHaveAttribute('data-still','true');
@@ -120,6 +124,7 @@ test('BS2/QA4: title receives focus and the quick-add draft is above the sheet',
  await openScene(page,shot('calendar-block-sheet'),'dark',{width:390,height:844});
  await expect(page.getByRole('dialog').getByRole('textbox',{name:'Calendar block title',exact:true})).toBeFocused();
  await openScene(page,shot('calendar-quick-add'),'dark',{width:390,height:844});
+ await expect(page.getByRole('dialog')).toHaveCount(1);
  const draft=await page.locator('[data-kind="draft"]').boundingBox(),sheet=await page.getByRole('dialog').boundingBox();
  expect(draft!.y+draft!.height).toBeLessThanOrEqual(sheet!.y-4);
  expect(draft!.y+draft!.height).toBeGreaterThan(0);
@@ -131,7 +136,7 @@ test('PA11 Close the day: an unplanned day saves its aim and stays closed after 
  await page.getByRole('textbox',{name:'Aim for tomorrow'}).fill('Understand compactness');
  await page.getByRole('button',{name:'Close the day',exact:true}).click();
  await expect(page.getByRole('heading',{name:'Day closed',exact:true})).toBeVisible();
- await page.goto(at('/today/close?date=2026-11-08'));
+ await page.reload();
  await page.getByRole('button',{name:'Next',exact:true}).click();await page.getByRole('button',{name:'Next',exact:true}).click();
  await expect(page.getByRole('textbox',{name:'Aim for tomorrow'})).toHaveValue('Understand compactness');
  await expect(page.getByRole('button',{name:'Day already closed'})).toBeDisabled();
@@ -162,12 +167,14 @@ test('PA11 Tasks: dragging saves order across reload and the menu moves it back'
  await first.getByRole('button',{name:'Reorder Audit reorder A',exact:true}).dragTo(second);
  await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
+ await expect(first).toBeVisible();await expect(second).toBeVisible();
  const order=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
  expect(order.indexOf(secondId)).toBeLessThan(order.indexOf(firstId));
  await first.getByRole('button',{name:'More actions for Audit reorder A'}).click();
  await page.getByRole('menuitem',{name:'Move up',exact:true}).click();
  await expect(page.getByText('Task order saved',{exact:true})).toBeVisible();
  await page.reload();
+ await expect(first).toBeVisible();await expect(second).toBeVisible();
  const back=await rows.evaluateAll(nodes=>nodes.map(node=>node.getAttribute('data-task-id')));
  expect(back.indexOf(firstId)).toBeLessThan(back.indexOf(secondId));
 });

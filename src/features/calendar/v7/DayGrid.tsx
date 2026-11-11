@@ -6,6 +6,9 @@ import {StatusBadge} from '../../../ui/v7/Status';
 import {calendarRange} from '../model';
 import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinutes,type GridItem} from '../grid/layout';
 
+// This grid is also lazy-loaded by Today; it owns its presentation at either entry.
+import './calendar.css';
+
 export const HOUR_PX=64;
 const MINUTE=60_000;
 export interface BlockLook{subjectClass:string;path:string;}
