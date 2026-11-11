@@ -3,7 +3,7 @@ import { isFlagOn } from "../flags";
  * Screens rebuilt for v7 so far. Every other route keeps the v6/legacy shell until it is
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
-export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review-run";
+export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review-run" | "calendar-day" | "path";
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
@@ -16,6 +16,12 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (path === "/" || path === "") return "today";
   if (path === "/focus") return "focus";
   if (path === "/review/run") return "review-run";
+  if (path === "/calendar") {
+    // Day is the v7 default; Week, Month and Agenda keep the v6 views until their own parts.
+    const view = new URLSearchParams(search).get("view");
+    return !view || view === "day" ? "calendar-day" : null;
+  }
+  if (/^\/p\/[^/]+$/.test(path)) return "path";
   return null;
 }
 export function v7Screen(path?: string, search?: string): V7Screen | null {

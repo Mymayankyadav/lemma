@@ -24,8 +24,10 @@ import {useToast} from '../../ui/Toast';
 import {GoalOverview,Stages} from './PathsView';
 import {isFlagOn} from '../../flags';
 import V6Project from './v6/V6Project';
+import {isV7Route} from '../../app/v7Kit';
 // PDF ingestion and transcription are only needed on the Sources tab.
 // Keep the cold Path route free of that module while retaining the complete UI.
+const V7Path=lazy(()=>import('./v7/V7Path'));
 const SourcesPanel=lazy(()=>import('./SourcesPanel').then(module=>({default:module.SourcesPanel})));
 const ProjectSwitcher=lazy(()=>import('./ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
 
@@ -121,7 +123,11 @@ function PlanHistory({slug}:{slug:string}){
 }
 
 /** The flag-off project page remains an isolated, unchanged component. */
-export default function Page(){return isFlagOn('v6Shell')?<V6Project/>:<LegacyProject/>;}
+export default function Page(){
+ const {slug}=useParams();
+ if(isV7Route('/p/'+(slug??'')))return <Suspense fallback={<div role="status" aria-label="Path loading" className="min-h-dvh"/>}><V7Path/></Suspense>;
+ return isFlagOn('v6Shell')?<V6Project/>:<LegacyProject/>;
+}
 
 function LegacyProject(){
  const {slug:rawSlug}=useParams(),slug=rawSlug??'';

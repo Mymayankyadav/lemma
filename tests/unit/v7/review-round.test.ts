@@ -14,7 +14,10 @@ describe('v7 review round',()=>{
  it('routes only migrated screens',()=>{
   expect(v7ScreenFor('/')).toBe('today');
   expect(v7ScreenFor('/review/run')).toBe('review-run');
-  expect(v7ScreenFor('/calendar')).toBeNull();
-  expect(v7ScreenFor('/p/abc')).toBeNull();
+  expect(v7ScreenFor('/calendar')).toBe('calendar-day');
+  expect(v7ScreenFor('/calendar','?view=day')).toBe('calendar-day');
+  expect(v7ScreenFor('/calendar','?view=week')).toBeNull();
+  expect(v7ScreenFor('/p/abc')).toBe('path');
+  expect(v7ScreenFor('/p/abc/cp/CP3')).toBeNull();
  });
 });

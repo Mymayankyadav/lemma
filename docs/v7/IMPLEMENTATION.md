@@ -92,6 +92,15 @@ Seed checks (unit and browser): 82 stars, 3 constellations, 9 demonstrated; "com
 
 ## Part 4 status
 
-Landed behind `v7Shell` (default off): v7 shell (`src/app/v7/`), Today, Focus, and the review round (swipe: right Good, left Again, up Easy; grade buttons are the accessible path). Routing lives in `src/app/v7Kit.ts`.
+Landed behind `v7Shell` (default off); v6 and legacy stay as the rollback. Routing lives in `src/app/v7Kit.ts`.
 
-Not yet built: Calendar Day and Path (with the constellation map). Those routes stay on v6 until a follow-up; `v7ScreenFor` returns null for them. Known gaps: review cards link `/review/run?concept=` which the v6 durable run does not filter yet; the Capture sheet is a placeholder until Part 6. Verification is CI only; no local Playwright run.
+- **Shell** (`src/app/v7/`): hub, detail and immersive headers, tab bar, session row, Capture sheet.
+- **Today** (§6.2), **Focus** (§6.3), **Review round** (§6.4: swipe right Good, left Again, up Easy; the four grade buttons are the accessible path).
+- **Calendar Day** (§6.5, `src/features/calendar/v7/`): week strip with subject dots, all-day lane (overdue and due items), a 64 px/hour grid with study, busy (hatched), logged and done blocks, side-by-side overlaps, a now-line with time pill, taps on the quarter hour, press-and-hold drag in 15-minute steps with a tick per step, drop on the strip to move to another day, Alt+arrow keyboard move and resize, Undo toast. Week, Month and Agenda keep the v6 views (`view=week|month|agenda`).
+- **Path** (§6.9, `src/features/project/v7/`): emblem header, meter, target chip, Map / Sessions / Sources / Cards tabs, the constellation map with five node states (each with a text label), a line solid to the current node and dotted after it, and a sticky action bar with the study-prompt sheet.
+
+Known gaps, none blocking the flag staying off:
+- Calendar: the quick-add sheet, block sheet and planner suggestions banner reuse the existing v6 sheets; their restyle and the dashed "Suggested" blocks wait for the Planner item. The overdue chip links to the Agenda triage rather than opening the overdue sheet.
+- Path: Sources reuses the v6 panel; Pause and Archive are not in the "More" menu because the project page has no write for them yet; "Review" opens the Review hub (the durable run cannot filter by path); the Cards tab lists per-checkpoint due counts because the card list has no URL filter.
+- Review cards link `/review/run?concept=`, which the v6 durable run ignores. The Capture sheet is a placeholder until Part 6.
+- Verification is by CI; there was no local Playwright or typecheck run.

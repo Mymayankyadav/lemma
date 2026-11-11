@@ -5,7 +5,8 @@ import AgendaView,{BlockLines} from './views/AgendaView';
 import {civilDayLabel,civilMonthLabel,civilRangeLabel} from './views/labels';
 import {useToast} from '../../ui/Toast';
 import PlannerLaunch from '../planner/Sheet';
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { isV7Route } from '../../app/v7Kit';
 import { Navigate, useSearchParams } from 'react-router';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { isFlagOn } from '../../flags';
@@ -21,6 +22,7 @@ import {DueDayItems,dueForDay,emptyCalendarDues,type CalendarDues} from './deadl
 import {loadCalendarDues} from './deadlines/load';
 import { calendarRange, dayCapacity, dayKey, monthBounds, shiftDay, shiftMonth, validDayKey, weekStartDay } from './model';
 
+const V7CalendarDay = lazy(() => import('./v7/V7CalendarDay'));
 const actionClass = 'min-h-11 rounded-[8px] border border-[var(--control-edge)] bg-[var(--paper)] px-3 text-label text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 const arrowClass = 'flex size-11 items-center justify-center rounded-[8px] text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)]';
 type View = 'agenda' | 'day' | 'week' | 'month';
@@ -295,6 +297,8 @@ function V6Calendar() {
 
 /** The legacy route stays a redirect and does not mount any v6 data reads. */
 export default function CalendarPage() {
+  const [params] = useSearchParams();
+  if (isV7Route('/calendar', '?' + params.toString())) return <Suspense fallback={<div role="status" aria-label="Calendar loading" className="min-h-dvh"/>}><V7CalendarDay/></Suspense>;
   if (!isFlagOn('v6Shell')) return <Navigate to="/" replace />;
   return <V6Calendar />;
 }
