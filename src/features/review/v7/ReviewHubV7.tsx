@@ -120,6 +120,8 @@ export default function ReviewHubV7(){
        <span className="v7-rv-tile" aria-hidden="true"><SubjectMark subject={subject}/></span>
        <Switch label={node.label+' · '+Math.max(node.due,node.children.reduce((sum,child)=>sum+child.due,0))+' due'}
         checked={keysFor(node).every(key=>enabled.has(key))} onChange={value=>toggleProject(node,value)}/>
+       {/* KC21: a chevron wherever the row leads somewhere — here, to the checkpoints that feed this deck. */}
+       {node.children.some(child=>child.due>0)&&<button type="button" className="v7-rv-chevron" aria-label={'Checkpoints in '+node.label} onClick={()=>setSheet(true)}><ChevronRight aria-hidden="true"/></button>}
       </li>;
      })}
     </ul>

@@ -23,8 +23,8 @@ describe('v7 Calendar Day model',()=>{
  it('names the move in the toast',()=>{
   expect(movedLabel('2026-11-11T16:00:00.000Z','2026-11-11T17:30:00.000Z',instant=>instant.slice(11,16))).toBe('Moved to 16:00–17:30');
  });
- it('shows a full block at 45 min or more, a line at 30 min, a title only below that',()=>{
-  expect(layoutKind(48)).toBe('full');expect(layoutKind(45)).toBe('full');
+ it('shows a full block from 60 px (about an hour), a line from 30 px, and a title alone below that',()=>{
+  expect(layoutKind(64)).toBe('full');expect(layoutKind(60)).toBe('full');expect(layoutKind(53)).toBe('line');
   expect(layoutKind(32)).toBe('line');expect(layoutKind(30)).toBe('line');
   expect(layoutKind(29)).toBe('title');expect(layoutKind(16)).toBe('title');
  });

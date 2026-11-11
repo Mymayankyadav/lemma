@@ -12,6 +12,7 @@ import {
 import tokens from "../../ui/v7/design-tokens.json";
 import "../../ui/v7/kit-system.css";
 import "../../ui/v7/kit-page.css";
+import ShellPanel from "./ShellPanel";
 
 type Theme = "graph" | "graph-night";
 const modes:Theme[]=["graph","graph-night"];
@@ -22,7 +23,7 @@ function lum(hex:string){const rgb=hex.slice(1).match(/.{2}/g)!.map(x=>parseInt(
 function contrast(a:string,b:string){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
 /** Page order is the navigation order (audit polish: the nav must follow the page). */
 const kitSections=[["01","Principles","principles"],["02","Tokens and typography","colours"],["03","Icons and mathematical emblems","emblems"],
- ["04","Components and states","controls"],["05","Patterns","patterns"],["06","Data visualisation","charts"],["07","Changelog","changelog"]] as const;
+ ["04","Components and states","controls"],["05","Patterns","patterns"],["06","Data visualisation","charts"],["07","App shell","shell"],["08","Changelog","changelog"]] as const;
 const sectionId=(title:string)=>"kit-"+(kitSections.find(([,name])=>name===title)?.[2]??title.toLowerCase().replace(/[^a-z]+/g,"-"));
 /** A fold-out list wraps on phones instead of truncating; buttons scroll so the hash router keeps #/kit. */
 function KitNav(){
@@ -324,9 +325,14 @@ export default function V7Page(){
   <Section number="06" title="Data visualisation" description="Subject-coded marks, round axes, ink/starlight heatmaps, keyboard details and a data table for each chart.">
     <Compare high={high} density={density}>{()=> <ChartsPanel/>}</Compare>
   </Section>
-  <Section number="07" title="Changelog" description="Versioned guidance for implementing this system consistently across Lemma.">
-    <div className="v7-change-card"><span className="v7-kit-version">1.0.2 · Constellation</span>
-      <h3 className="v7-subhead">Notebook and Observatory</h3>
+  <Section number="07" title="App shell" description="The tab bar, hub header, week strip, time-grid block, timer, grade dock, map stars, search row and cover size that the screens share (Night critique v2, KA5–KA8).">
+    <Compare high={high} density={density}>{()=> <ShellPanel/>}</Compare>
+  </Section>
+  <Section number="08" title="Changelog" description="Versioned guidance for implementing this system consistently across Lemma.">
+    <div className="v7-change-card"><span className="v7-kit-version">1.1.0 · Constellation</span>
+      <h3 className="v7-subhead">Shell components, one neutral data colour</h3>
+      <p>Adds the App shell section (tab bar, Capture, hub header, week strip, time-grid and suggested blocks, day strip, live chip, timer, grade dock, map stars, search row and the 96 px cover size), the <code>viz.neutral</code> role, a solid tab bar and headers, and the Night segmented thumb, hero glow and star field in the app. Removes the legacy aliases and the unread component tier.</p>
+      <h3 className="v7-subhead">1.0.2 · Notebook and Observatory</h3>
       <p>Resolved pressed-action contrast, edged neutral segments, tab hover contrast, completion-marker placement, disabled Select semantics and truthful token pairings. Replaced legacy styles with cascade layers and refined documentation, heatmaps and phone navigation.</p>
       <p className="v7-meta">The v7 feature flag remains off until the Owner approves the gallery, six golden screens, responsive layouts and device accessibility checks.</p>
     </div>

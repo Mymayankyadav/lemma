@@ -8,6 +8,7 @@ import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Button,Chip,Menu,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {chatLink,studyPrompt} from '../../../lib/chat';
@@ -43,7 +44,7 @@ function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];ind
    <strong>{cp.title}</strong>
    <small>{text.detail}</small>
   </Link>
-  {text.state==='proposed'&&<Link className="v7-badge v7-tone-info" to="/proposals">Proposed</Link>}
+  {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals">Proposed</StatusBadge>}
   {current&&<Link className="v7-button v7-secondary v7-small" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>Continue</span></Link>}
   <span className="v7-sr-only">{text.label}</span>
  </li>;
@@ -120,12 +121,12 @@ export default function V7Path(){
    {label:'Archive path',icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
   ]}/>}/>
   <header className="v7-path-head">
-   <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={320} animate={false}/></span>
+   <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={164} animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
    <p className="v7-path-goal">{project.goal?.trim()||'Your tutor fills this in.'}</p>
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
-   <div className="v7-path-chips">{target&&<Chip>{'Target '+target}</Chip>}{project.status==='paused'&&<Chip><Pause aria-hidden="true"/>Paused</Chip>}</div>
+   <div className="v7-path-chips">{target&&<StatusBadge tone="info">{'Target '+target}</StatusBadge>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
   </header>
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
@@ -143,7 +144,7 @@ export default function V7Path(){
    {tab==='Cards'&&<PathCards slug={slug}/>}
   </section>
   <div className="v7-path-bar" role="group" aria-label="Path actions">
-   <Button variant="primary" onClick={()=>setPrompt(true)}><Play aria-hidden="true"/>Continue with tutor</Button>
+   <Button variant="primary" onClick={()=>setPrompt(true)}>Continue with tutor</Button>
    <Link className="v7-button v7-secondary" to={'/review?path='+encodeURIComponent(slug)}><span>{due>0?'Review '+due:'Review'}</span></Link>
   </div>
   <Sheet open={prompt} onClose={()=>setPrompt(false)} title="Continue with your tutor" eyebrow="Study prompt"

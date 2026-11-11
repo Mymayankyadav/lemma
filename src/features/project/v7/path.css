@@ -3,7 +3,8 @@
 @layer v7-components {
  :where(html[data-v7]) .v7-path {display:grid;gap:var(--v7-space-4);align-content:start;}
  :where(html[data-v7]) .v7-path-head {position:relative;display:grid;gap:var(--v7-space-2);padding-top:var(--v7-space-4);isolation:isolate;overflow:hidden;}
- :where(html[data-v7]) .v7-path-emblem {position:absolute;z-index:-1;top:-72px;right:-120px;width:320px;height:320px;opacity:.8;color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;}
+ /* KC11: the emblem is ornament — 164 px, bottom-right at 10%, cropped by the header, never behind the title. */
+ :where(html[data-v7]) .v7-path-emblem {position:absolute;z-index:-1;bottom:calc(-1 * var(--v7-space-6));right:calc(-1 * var(--v7-space-8));width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;}
  :where(html[data-v7]) .v7-path-goal {max-width:34ch;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
  :where(html[data-v7]) .v7-path-meter {display:flex;align-items:center;gap:var(--v7-space-3);font:600 var(--v7-type-supporting)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-path-meter > [role="meter"] {flex:1;max-width:240px;height:6px;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);overflow:hidden;}
@@ -44,8 +45,8 @@
  :where(html[data-v7]) .v7-path-cards-empty {color:var(--v7-role-text-secondary);}
  /* Sticky glass bar above the tab bar. */
  :where(html[data-v7]) .v7-path-bar {position:fixed;left:var(--v7-page-margin);right:var(--v7-page-margin);bottom:calc(var(--v7-dock-height) + var(--v7-space-2));z-index:9;max-width:calc(var(--v7-space-20) * 8 - var(--v7-page-margin) * 2);margin-inline:auto;display:grid;grid-template-columns:1fr auto;gap:var(--v7-space-2);
-  padding:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:20px;background:color-mix(in oklab,var(--v7-role-surface-raised) 86%,transparent);backdrop-filter:blur(16px);box-shadow:var(--v7-shadow-2);}
- :where(html[data-v7]) .v7-path-bar .v7-button {min-height:48px;text-decoration:none;}
+  padding:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:20px;background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-path-bar .v7-button {min-height:var(--v7-button);text-decoration:none;white-space:nowrap;}
  :where(html[data-v7]) .v7-path-prompt {padding:var(--v7-space-3);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;}
  :where(html[data-v7]) .v7-path-note {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  @keyframes v7-path-halo {0%,100% {transform:scale(.85);opacity:.12;} 50% {transform:scale(1.1);opacity:.28;}}

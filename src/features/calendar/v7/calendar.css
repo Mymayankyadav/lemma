@@ -1,7 +1,7 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.5 Calendar Day. Role tokens only; subject colour arrives through .v7-subject-N. */
 @layer v7-components {
-:where(html[data-v7]) .v7-cal {display:grid;gap:6px;align-content:start;}
+:where(html[data-v7]) .v7-cal {--v7-gap:6px;display:grid;gap:var(--v7-gap);align-content:start;}
 :where(html[data-v7]) .v7-cal-dateRow {display:flex;align-items:center;gap:var(--v7-space-1);min-width:0;}
 :where(html[data-v7]) .v7-cal-today {margin-left:auto;flex:none;}
  :where(html[data-v7]) .v7-cal-dateActions svg {width:16px;height:16px;}

@@ -35,7 +35,7 @@
  /* K1/KA1: in Night the thumb is lighter than the track (kit plan §7.4), in the app and not only inside the kit page. */
  :where(html[data-v7][data-theme="graph-night"]) .v7-segmented [aria-checked="true"],:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-muted-hover);}
  :where(html[data-v7]) .v7-tabs {display:flex;gap:var(--v7-space-4);overflow:auto;}
- :where(html[data-v7]) .v7-tabs button {min-height:var(--v7-touch);padding:var(--v7-space-2);border:0;border-bottom:var(--v7-ring) solid transparent;background:transparent;color:var(--v7-role-text-secondary);font-weight:600;}
+ :where(html[data-v7]) .v7-tabs button {display:grid;align-content:start;justify-items:center;min-height:var(--v7-touch);padding:var(--v7-space-2);border:0;border-bottom:var(--v7-ring) solid transparent;background:transparent;color:var(--v7-role-text-secondary);font-weight:600;}
  :where(html[data-v7]) .v7-tabs [aria-selected="true"] {border-bottom-color:var(--v7-role-action-bg);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-field-group {display:grid;gap:var(--v7-space-2);min-width:0;}
  :where(html[data-v7]) .v7-field-group > :is(label,span) {font-size:var(--v7-type-supporting);font-weight:600;}

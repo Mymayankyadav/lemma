@@ -1,7 +1,7 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.6 Tasks. One card per group, rows inside, no boxes inside boxes. Role tokens only. */
 @layer v7-components {
-:where(html[data-v7]) .v7-tk {display:grid;gap:var(--v7-space-4);align-content:start;}
+:where(html[data-v7]) .v7-tk {--v7-gap:var(--v7-space-4);display:grid;gap:var(--v7-gap);align-content:start;}
  :where(html[data-v7]) .v7-tk-bar {display:grid;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-tk-filters {display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-2);padding-bottom:var(--v7-space-1);}
  :where(html[data-v7]) .v7-tk-filters > .v7-tk-plan {margin-left:auto;margin-inline-start:auto;}
