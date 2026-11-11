@@ -8,7 +8,7 @@ import {isFlagOn} from '../flags';
 import {setV6Root} from './v6Root';
 import {loadShellFonts} from './shellFonts';
 import {setShellRoot} from './shellRoot';
-import {isV7Kit} from './v7Kit';
+import {isV7Route} from './v7Kit';
 import '../ui/v6/tokens.css';
 import '../ui/v6/mockup.css';
 import '../ui/v6/mockup-bindings.css';
@@ -20,7 +20,7 @@ import './v6-atlas-shell.css';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
- const v7=isV7Kit(location.pathname),v6=isFlagOn('v6Shell')&&!v7;
+ const v7=isV7Route(location.pathname),v6=isFlagOn('v6Shell')&&!v7;
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';

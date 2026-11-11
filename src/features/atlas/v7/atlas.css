@@ -1,0 +1,85 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* v7 Atlas (PLAN §6.12). Role tokens only: Day and Night differ in token values, never in structure. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-atlas {position:relative;min-height:100dvh;color:var(--v7-role-text-primary);background:var(--v7-role-surface-page);font:400 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas[data-view="map"] {height:100dvh;overflow:hidden;background:var(--v7-role-surface-sunken);}
+ :where(html[data-v7]) .v7-atlas-bar {position:absolute;inset:0 0 auto;z-index:3;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:var(--v7-space-2);
+  padding:max(env(safe-area-inset-top),var(--v7-space-2)) var(--v7-space-2) var(--v7-space-2);
+  background:color-mix(in oklab,var(--v7-glass) 84%,transparent);backdrop-filter:blur(var(--v7-blur));-webkit-backdrop-filter:blur(var(--v7-blur));
+  border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-bar {position:sticky;top:0;}
+ :where(html[data-v7]) .v7-atlas-title {font:500 var(--v7-type-subhead)/1.3 var(--v7-serif);min-width:0;}
+ :where(html[data-v7]) .v7-atlas-bar .v7-segmented {min-width:calc(var(--v7-space-16) * 2);}
+ :where(html[data-v7]) .v7-atlas-state {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-4);min-height:100dvh;padding:var(--v7-space-16) var(--v7-page-margin);text-align:center;color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-atlas-meta {color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas-eyebrow {margin:0 0 var(--v7-space-1);color:var(--v7-role-text-secondary);font:600 var(--v7-size-1)/var(--v7-leading-1) var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;}
+
+ /* The sky: canvas fills the screen under the glass bar. */
+ :where(html[data-v7]) .v7-atlas-map {position:absolute;inset:0;}
+ :where(html[data-v7]) .v7-atlas-sky {position:absolute;inset:0;}
+ :where(html[data-v7]) .v7-atlas-sky canvas {display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+ :where(html[data-v7]) .v7-atlas-sky canvas:active {cursor:grabbing;}
+ :where(html[data-v7]) .v7-atlas-legend {position:absolute;left:var(--v7-space-4);bottom:calc(env(safe-area-inset-bottom) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);justify-items:start;}
+ :where(html[data-v7]) .v7-atlas[data-sheet="peek"] :is(.v7-atlas-legend,.v7-atlas-controls) {bottom:calc(env(safe-area-inset-bottom) + var(--v7-space-4) + 180px);}
+ :where(html[data-v7]) .v7-atlas-chip {min-height:var(--v7-touch);padding-inline:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);
+  background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);font:600 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
+ :where(html[data-v7]) .v7-atlas-legend ul {order:-1;list-style:none;margin:0;padding:var(--v7-space-3);display:grid;gap:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);
+  border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas-legend li {display:flex;align-items:center;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-controls {position:absolute;right:var(--v7-space-4);bottom:calc(env(safe-area-inset-bottom) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-controls .v7-icon-button {background:var(--v7-role-surface-overlay);border-color:var(--v7-role-border-default);border-radius:var(--v7-round);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1);}
+ /* Phones recentre only; desktops also get zoom buttons. */
+ @media (max-width:1023px) {:where(html[data-v7]) .v7-atlas-controls .v7-icon-button:not(:last-child) {display:none;}}
+
+ /* Star marks (SVG twins of the canvas marks). */
+ :where(html[data-v7]) .v7-atlas-mark {width:var(--v7-space-5);height:var(--v7-space-5);flex:none;overflow:visible;}
+ :where(html[data-v7]) .v7-atlas-mark-fill {fill:var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-atlas-mark-ring {fill:none;stroke:var(--v7-subject,var(--v7-role-text-secondary));stroke-width:1.5;}
+ :where(html[data-v7]) .v7-atlas-mark-outline {fill:none;stroke:var(--v7-role-text-primary);stroke-width:1.25;stroke-linejoin:round;}
+ :where(html[data-v7]) .v7-atlas-mark-warning {fill:none;stroke:var(--v7-role-status-warning);stroke-width:2;}
+ :where(html[data-v7]) .v7-atlas-mark-dim {fill:var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-atlas-mark-link {fill:none;stroke:var(--v7-role-border-default);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+ :where(html[data-v7]) .v7-atlas-mark-dotted {stroke-dasharray:2 3;}
+
+ /* Search */
+ :where(html[data-v7]) .v7-atlas-search {position:absolute;inset:calc(max(env(safe-area-inset-top),var(--v7-space-2)) + var(--v7-touch) + var(--v7-space-3)) var(--v7-space-2) auto;z-index:4;
+  max-height:min(60dvh,calc(100dvh - var(--v7-space-16) * 2));overflow:auto;padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);
+  background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-search {position:sticky;top:calc(var(--v7-touch) + var(--v7-space-4));margin:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-search-field {display:flex;align-items:center;gap:var(--v7-space-2);min-height:var(--v7-field);padding-inline:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);
+  border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-atlas-search-field input {flex:1;min-width:0;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-text-primary);font:400 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas-search-field input::placeholder {color:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-atlas-search-field input:focus {outline:none;}
+ :where(html[data-v7]) .v7-atlas-search-field:focus-within {outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);outline-offset:var(--v7-focus-gap);}
+ :where(html[data-v7]) .v7-atlas-search > .v7-atlas-meta {margin-top:var(--v7-space-2);}
+ :where(html[data-v7]) :is(.v7-atlas-search,.v7-atlas-list,.v7-atlas-neighbours) ul {list-style:none;margin:0;padding:0;}
+ :where(html[data-v7]) :is(.v7-atlas-search,.v7-atlas-list,.v7-atlas-neighbours) li > button {width:100%;min-height:var(--v7-touch);display:flex;align-items:center;gap:var(--v7-space-3);
+  padding:var(--v7-space-2);border:0;border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);background:transparent;color:var(--v7-role-text-primary);text-align:left;}
+ :where(html[data-v7]) :is(.v7-atlas-search,.v7-atlas-list,.v7-atlas-neighbours) li > button svg:last-child:not(.v7-atlas-mark) {width:var(--v7-space-4);height:var(--v7-space-4);color:var(--v7-role-text-tertiary);flex:none;}
+ :where(html[data-v7]) .v7-atlas-row-name {flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600;}
+ :where(html[data-v7]) .v7-atlas-row-text {flex:1;min-width:0;display:grid;gap:var(--v7-space-1);}
+
+ /* List view: the accessible way through the Atlas. */
+ :where(html[data-v7]) .v7-atlas-list {display:grid;gap:var(--v7-space-4);max-width:calc(var(--v7-space-20) * 9);margin-inline:auto;padding:var(--v7-space-4) var(--v7-page-margin) calc(var(--v7-space-20) * 3);}
+ :where(html[data-v7]) .v7-atlas-list li > button {min-height:var(--v7-row);}
+ :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] .v7-atlas-meta {color:var(--v7-role-selection-fg);}
+
+ /* The concept sheet peeks 180 px up from the bottom and pulls up to show neighbours and actions. */
+ :where(html[data-v7]) .v7-atlas-sheet {position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;gap:var(--v7-space-3);max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;
+  min-height:180px;max-height:var(--v7-sheet-max);overflow:auto;padding:0 var(--v7-space-4) calc(env(safe-area-inset-bottom) + var(--v7-space-4));
+  border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-bottom:0;border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;
+  background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);transition:transform var(--v7-fast) var(--v7-ease-out);}
+ :where(html[data-v7]) .v7-atlas-sheet:not([data-expanded="true"]) {max-height:180px;overflow:hidden;}
+ :where(html[data-v7]) .v7-atlas-handle {justify-self:center;display:grid;place-items:center;width:calc(var(--v7-touch) * 2);min-height:var(--v7-space-6);border:0;background:transparent;touch-action:none;}
+ :where(html[data-v7]) .v7-atlas-handle span {width:calc(var(--v7-space-10));height:var(--v7-space-1);border-radius:var(--v7-round);background:var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-atlas-sheet-head {display:flex;align-items:flex-start;justify-content:space-between;gap:var(--v7-space-2);margin-top:calc(var(--v7-space-2) * -1);}
+ :where(html[data-v7]) .v7-atlas-sheet-title {font:450 var(--v7-type-headline)/1.2 var(--v7-serif);letter-spacing:-.005em;min-width:0;overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-atlas-sheet-meta {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-counts {color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-atlas-actions,:where(html[data-v7]) .v7-atlas-more-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas-actions > a {text-decoration:none;}
+ :where(html[data-v7]) .v7-atlas-sheet-more {display:grid;gap:var(--v7-space-4);padding-top:var(--v7-space-2);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-atlas-sheet {transition:none;}}
+}

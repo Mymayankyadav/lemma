@@ -197,7 +197,7 @@ it("shows radio choices and a non-expiring toast preview", async () => {
   );
   expect(host.querySelectorAll('input[type="radio"]')).toHaveLength(2);
   expect(host.querySelector(".v7-toast-preview")?.getAttribute("role")).toBe("group");
-  expect(host.querySelector(".v7-banner.v7-critical svg")).not.toBeNull();
+  expect(host.querySelector(".v7-feedback-banner.v7-tone-danger svg")).not.toBeNull();
   await act(async () => vi.advanceTimersByTime(7000));
   expect(close).not.toHaveBeenCalled();
 });

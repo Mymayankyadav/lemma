@@ -20,8 +20,19 @@ const selectedTokens=Object.keys(tokens.role).filter(key=>!key.startsWith("state
 const tokenSource=tokens as unknown as {raw:Record<string,Record<string,{$value:string}>>;role:Record<string,{$description:string;$extensions:{"lemma.contrastWith":string[];"lemma.decorative"?:boolean;"lemma.contrastPairs":{foreground:string;background:string;minimum:number;kind:string}[]}}>};
 function lum(hex:string){const rgb=hex.slice(1).match(/.{2}/g)!.map(x=>parseInt(x,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}
 function contrast(a:string,b:string){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
+/** Page order is the navigation order (audit polish: the nav must follow the page). */
+const kitSections=[["01","Principles","principles"],["02","Tokens and typography","colours"],["03","Icons and mathematical emblems","emblems"],
+ ["04","Components and states","controls"],["05","Patterns","patterns"],["06","Data visualisation","charts"],["07","Changelog","changelog"]] as const;
+const sectionId=(title:string)=>"kit-"+(kitSections.find(([,name])=>name===title)?.[2]??title.toLowerCase().replace(/[^a-z]+/g,"-"));
+/** A fold-out list wraps on phones instead of truncating; buttons scroll so the hash router keeps #/kit. */
+function KitNav(){
+  return <details className="v7-kit-nav"><summary>Jump to a section</summary><ol>{kitSections.map(([number,title])=><li key={number}>
+    <button type="button" onClick={event=>{const target=document.getElementById(sectionId(title));event.currentTarget.closest("details")?.removeAttribute("open");
+      if(!target)return;const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;target.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});target.focus({preventScroll:true});}}>
+      <span className="v7-kit-nav-number">{number}</span>{title}</button></li>)}</ol></details>;
+}
 function Section({number,title,description,children}:{number:string;title:string;description:string;children:ReactNode}){
-  return <section className="v7-system-section" aria-label={title}><header><p className="v7-eyebrow">{number} / Constellation UI</p>
+  return <section className="v7-system-section" aria-label={title} id={sectionId(title)} tabIndex={-1}><header><p className="v7-eyebrow">{number} / Constellation UI</p>
     <h2 className="v7-headline">{title}</h2><p>{description}</p></header>{children}</section>;
 }
 function Compare({children,high=false,density="comfortable"}:{children:(theme:Theme)=>ReactNode;high?:boolean;density?:string}){
@@ -279,6 +290,7 @@ export default function V7Page(){
    <label className="v7-check-choice"><input type="checkbox" checked={high} onChange={e=>setHigh(e.target.checked)}/>High contrast comparison</label>
    <UI.Picker label="Density" value={density==="compact"?"Compact":"Comfortable"} options={["Comfortable","Compact"]} onChange={value=>setDensity(value.toLowerCase())}/>
    <p className="v7-meta">Day and Night are shown together throughout the kit. Only role-token values change between them.</p>
+   <KitNav/>
   </header>
   <Section number="01" title="Principles" description="Six constraints guide every decision, from layout to the completion of a proof.">
     <div className="v7-principles">{[

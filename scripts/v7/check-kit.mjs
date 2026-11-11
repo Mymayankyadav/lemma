@@ -67,11 +67,11 @@ for(const [role,v] of Object.entries(doc.role)){
 }
 for(const [name,v] of Object.entries(doc.component))
  assert(/^\{role\.[a-z0-9.-]+\}$/.test(v.$value)&&!!doc.role[v.$value.slice(6,-1)],"component "+name+" bypasses a role token");
-for(const filename of ["src/ui/v7/KitPrimitives.tsx","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/components.css","src/ui/v7/states.css"]){
+for(const filename of ["src/ui/v7/KitPrimitives.tsx","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/components.css","src/ui/v7/states.css","src/features/atlas/v7/atlas.css","src/features/atlas/v7/AtlasV7.tsx","src/features/atlas/v7/scene.ts"]){
  const source=readFileSync(filename,"utf8");
  assert(!/#[0-9a-f]{3,8}\b/i.test(source),filename+" contains a raw colour");
 }
-for(const filename of ["src/ui/v7/components.css","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/states.css"]){
+for(const filename of ["src/ui/v7/components.css","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/states.css","src/features/atlas/v7/atlas.css"]){
  const source=readFileSync(filename,"utf8");
  assert(!source.includes("html[data-v7][data-v7]"),filename+" repeats the scope selector");
  assert(!/--v7-(serious|critical|gold)\b|v7-chip-gold|repeating-linear-gradient|border-style:\s*dashed/.test(source),filename+" contains a retired style");
