@@ -28,7 +28,7 @@ export default function RoundCompleteV7(){
    .catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Could not restore results');});
   return()=>{live=false;};
  },[id]);
- const insights=useQuery({queryKey:['insights','round',id],queryFn:()=>getApi().getInsightData(2),enabled:!!run,staleTime:0});
+ const insights=useQuery({queryKey:['insights','round',id],queryFn:()=>getApi().getInsightData(7),enabled:!!run,staleTime:0});
  const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:0});
  const decks=useDeckTree(),cards=useReviewItems(allFilter);
  const {start,busy,issue}=useStartRound();
