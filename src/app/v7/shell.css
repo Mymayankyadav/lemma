@@ -160,7 +160,7 @@
   :where(html[data-v7]) .v7-rail-head button {display:flex;align-items:center;flex-wrap:wrap;gap:var(--v7-space-2);min-height:44px;padding:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-secondary);text-align:left;}
   :where(html[data-v7]) .v7-rail-head button svg {width:18px;height:18px;}
   :where(html[data-v7]) .v7-rail-head kbd {font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
-  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab {display:flex;gap:var(--v7-space-3);padding-inline:var(--v7-space-3);font-size:var(--v7-type-supporting);}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab {display:flex;align-items:center;justify-content:flex-start;gap:var(--v7-space-3);padding-inline:var(--v7-space-3);font-size:var(--v7-type-supporting);}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab > span:last-child {position:static;clip-path:none;width:auto;height:auto;overflow:visible;}
   :where(html[data-v7]) .v7-rail-library {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-4);}
   :where(html[data-v7]) .v7-rail-library a {min-height:40px;display:flex;align-items:center;color:var(--v7-role-text-secondary);text-decoration:none;font-size:var(--v7-type-supporting);}

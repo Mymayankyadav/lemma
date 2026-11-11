@@ -95,10 +95,10 @@ export default function PathsV7(){
      <p>{all.length===0?'No paths yet. Start one and your tutor will plan it with you.':query.trim()?'No paths match “'+query.trim()+'”.':'No '+filterWord[filter].toLowerCase()+' paths.'}</p>
      {query.trim()&&<Button onClick={()=>setQuery('')}>Clear search</Button>}
     </div>
-   :groups.map(group=><section key={group.key} className="v7-paths-group" aria-label={group.subject+' paths'}>
+   :<div className="v7-paths-groups">{groups.map(group=><section key={group.key} className="v7-paths-group" aria-label={group.subject+' paths'}>
      {group.heading&&<h2 className={'v7-eyebrow v7-paths-heading '+subjectClass(kitSubject(group.subject))}><SubjectMark subject={kitSubject(group.subject)}/>{group.subject}</h2>}
      <ul className="v7-paths-list">{group.items.map(project=><PathCard key={project.id} project={project} due={due.get(project.slug)??0} pinnedCount={pinned}/>)}</ul>
-    </section>)}
+    </section>)}</div>}
    {shown.length<visible.length&&<Button className="v7-paths-moreButton" onClick={()=>setLimit(value=>value+PAGE)}>Show {Math.min(PAGE,visible.length-shown.length)} more</Button>}
   </>}
   <Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>

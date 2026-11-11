@@ -301,3 +301,23 @@ Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
 
 - Unit: `tests/unit/v7/insight-edges.test.ts` (9 tests: columns add up to the hero for daily and weekly columns at 7, 30 and 90 days; the previous period; the almanac's whole weeks; insight sentences; goal wording with no raw dates or zone names; every Settings row's current value; old section links; the chosen subject colour overriding the name match; routes). Full unit suite 377 files / 2,121 tests passed.
 - Browser: `tests/e2e/v7-insight-edges.spec.ts` (8 tests) passed three times in a row; the design lint on nine new scenes (36 runs); 365 existing tests across settings, time log, progress and sign-in; and all 196 v7 browser tests. `tests/e2e/v7-kit.spec.ts` now uses `/review/done` without a run as its example of an unmigrated route, because `/projects` is migrated.
+
+## Parts 11–12 status (sizes, keys, hardening)
+
+Done in this pass, behind `v7Shell` (default off):
+
+- **Layouts (PLAN §5.3) for the Part 8–10 screens** (`src/app/v7/responsive.css`): from 700 px, sticky action bars sit in the content column clear of the rail; Paths cards in two columns. From 1100 px: Paths in a three-column grid (a subject with one path joins the grid; a subject with several takes its own row), Progress with the hero, tiles, almanac and first chart full width and the other charts two abreast, a table-like Cards list, the Inbox queue on the left with the decision on the right (choosing a queue item brings it to the top), Settings at 720 px.
+- **Rail fixes**: tab labels are centred on their icons; a route outside the five destinations (Inbox, Settings) highlights none of them, and the Library group marks the current one.
+- **Q3 at 200% text**: hub tabs wrap instead of pushing the page sideways; chart labels stay inside their card (the table view has every value). `tests/e2e/v7-harden.spec.ts` loads sixteen Part 8–10 screens at 390 px with 200% root text and finds no sideways scroll.
+- **Rollback**: the same spec loads sixteen routes that v7 owns with `v7Shell` off and finds the v6 shell and no v7 markup on each.
+- **Golden check**: fresh 390 × 844 captures match the approved Atlas, Focus and Path images pixel for pixel. Today and Calendar Day differ only in the tab-bar strip (Capture beside the tab bar, the Owner's later decision, `d93f4a7`) and the review round only in the card header (`deee0fc`); both predate Parts 8–12.
+
+### The 350 KB budget: an Owner decision
+
+Today's first load on the example workspace is **578 KB** transferred (411 KB scripts, 111 KB fonts, 54 KB styles). The main script chunk (223 KB) holds React and, eagerly, the Paths and Atlas pages, the v6/legacy Today with its planner and day plans, and the demo adapter. Three unit tests deliberately pin Paths, Atlas and the v6 Today as eager imports so that v6's cold-start budget (FIX #632, the Atlas warm-up) holds (`tests/unit/app/routes-lazy.test.ts`, `tests/unit/projects/atlas-module-warmup.test.ts`, `tests/unit/home/atlas-route-prefetch.test.ts`). Splitting them for v7 would weaken those v6 guards, which the rules forbid without the Owner. Options: (a) split them in the switch PR, when v6 becomes the rollback rather than the default, and retire those guards there; (b) keep v6's guards and accept a higher v7 budget until v6 is deleted (L6). Recommendation: (a). The fonts (111 KB, already Latin subsets of four faces) are the next largest item.
+
+### Still open
+
+- The Path desktop layout (map on 5 of 12 columns with the selected checkpoint on 7) and the Cards preview pane are not built; both screens use the single column on desktop.
+- The almanac stays at 26 weeks on desktop (the plan asks for a year).
+- The Owner's tablet and desktop visual approval, physical-device, hardware-keyboard and screen-reader checks, the switch PR and the independent review (Part 13).

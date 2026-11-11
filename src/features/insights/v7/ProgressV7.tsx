@@ -100,6 +100,7 @@ export default function ProgressV7(){
  function set(key:'range'|'tab',value:string){const next=new URLSearchParams(params);if(key==='tab'&&value==='overview')next.delete('tab');else next.set(key,value);setParams(next);}
  const chip=summary&&before?changeChip(summary.minutes,before.minutes,range):null;
  const total=summary?.minutes??0;
+ const tick=(day:string)=>formatShortDate(day,{zone}).split(' ').slice(1).join(' ');
  const columnLabel=(column:{from:string;to:string})=>column.from===column.to?formatShortDate(column.from,{zone}):formatShortDate(column.from,{zone})+' – '+formatShortDate(column.to,{zone});
  const hero=<section className="v7-progress-hero" aria-label="Focused time">
   <p className="v7-progress-figure">{formatDuration(total)}</p>
@@ -128,14 +129,14 @@ export default function ProgressV7(){
    {insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')}).map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
   </>}
   {status==='ready'&&tab==='learning'&&(learn?<>
-   <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
-   <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
+   <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
+   <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
     series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:gradeColors[index]}))}/>
    <section className="v7-chart" aria-label="When you said"><h3 className="v7-headline">When you said</h3>
     {learn.calibration.map(row=><Meter key={row.confidence} label={confidenceWord[row.confidence]+(row.total?' · '+row.total+' answers':' · no answers')} value={row.rate==null?0:Math.round(row.rate*100)} max={100}/>)}
     {learn.calibrationMessage&&<p className="v7-meta">{learn.calibrationMessage}</p>}
    </section>
-   <Chart title="Checkpoints demonstrated" kind="bars" data={groups.map(days=>({label:columnLabel({from:days[0],to:days[days.length-1]}),values:[checkpoints.filter(event=>{const day=civilDay(new Date(event.at),zone);return day>=days[0]&&day<=days[days.length-1];}).length]}))} series={[{label:'Demonstrated'}]}/>
+   <Chart title="Checkpoints demonstrated" kind="bars" data={groups.map(days=>({label:columnLabel({from:days[0],to:days[days.length-1]}),tickLabel:tick(days[0]),values:[checkpoints.filter(event=>{const day=civilDay(new Date(event.at),zone);return day>=days[0]&&day<=days[days.length-1];}).length]}))} series={[{label:'Demonstrated'}]}/>
    <StatTile label="Tutor sessions" value={formatDuration(learn.minutes)+' in tutor sessions'}/>
   </>:<Skeleton/>)}
   {status==='ready'&&summary&&tab==='time'&&<>

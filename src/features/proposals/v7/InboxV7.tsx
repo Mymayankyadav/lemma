@@ -18,6 +18,7 @@ import {firstProposalFrontLine} from '../frontPreview';
 import {planReviewNodes} from '../../plan-proposal/nodes';
 import {changeRows,groupBySession,isCardProposal,isPlanProposal,mergeOrder,miniWindow,sameSession,skipFirst,swipeIntent,swipeStyle,type ChangeIcon,type Decision} from './inboxModel';
 import {useInboxDecisions} from './useInboxDecisions';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
 import '../../project/v7/learning.css';
 import './inbox.css';
 
@@ -104,6 +105,7 @@ export default function InboxV7(){
  const onUndo=useCallback((ids:string[])=>setOrder(previous=>[...ids,...previous.filter(id=>!ids.includes(id))]),[]);
  const onSettled=useCallback(()=>{void query.refetch();},[query]);
  const {held,decide}=useInboxDecisions({onUndo,onSettled});
+ const desk=useMinWidth(1100);
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const all=useMemo(()=>(query.data??[]).filter(p=>!held.has(p.id)),[query.data,held]);
  const cards=useMemo(()=>all.filter(isCardProposal),[all]),plans=useMemo(()=>all.filter(isPlanProposal),[all]);
@@ -140,7 +142,11 @@ export default function InboxV7(){
   <section id="v7-inbox-panel" role="tabpanel" aria-label={tab==='plan'?'Plans':'Cards'} className="v7-inbox-panel">
    {query.isPending&&<Skeleton/>}
    {query.isError&&<div role="alert" className="v7-inbox-empty"><p>Could not load proposals.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}
-   {query.isSuccess&&tab==='cards'&&!list&&(top?<>
+   {query.isSuccess&&tab==='cards'&&!list&&(top?<div className={desk?'v7-inbox-desk':'v7-inbox-panel'}>
+    {desk&&<ol className="v7-inbox-queue" aria-label="Queue">{queue.map(p=><li key={p.id}><button type="button" aria-current={p.id===top.id?'true':undefined}
+     onClick={()=>setOrder(previous=>[p.id,...mergeOrder(previous,cards.map(item=>item.id)).filter(id=>id!==p.id)])}>
+     <span><MathText source={firstProposalFrontLine(faces(p).front)} cloze={isCloze(p)?{ord:1,revealed:true}:undefined}/></span><small>{titleOf(p.projectSlug)+(p.sessionNumber!==null?' · Session '+p.sessionNumber:'')}</small></button></li>)}</ol>}
+    <div className="v7-inbox-panel">
     <div className="v7-inbox-stack" data-count={Math.min(3,queue.length)}>
      {queue.slice(1,3).reverse().map((p,index,rest)=><div key={p.id} className="v7-inbox-peek" data-depth={rest.length-index} aria-hidden="true"/>)}
      <TopCard key={top.id} proposal={top} project={bySlug.get(top.projectSlug)} onDecide={action=>act(action)} onSkip={skip} haptics={haptics}/>
@@ -153,7 +159,7 @@ export default function InboxV7(){
     </div>
     {peers.length>1&&<Button variant="ghost" className="v7-inbox-all" onClick={()=>setBatch(peers)}>{'Approve all '+peers.length+' from Session '+top.sessionNumber}</Button>}
     <p className="v7-sr-only">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
-   </>:<div className="v7-inbox-empty v7-inbox-zero"><span className="v7-proof" aria-hidden="true">∎</span><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><span className="v7-proof" aria-hidden="true">∎</span><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
    {query.isSuccess&&tab==='cards'&&list&&(queue.length?<>
     {groupBySession(queue,titleOf).map(group=><section key={group.key} className="v7-inbox-group" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2>

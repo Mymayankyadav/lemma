@@ -12,6 +12,7 @@ import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
+import './responsive.css';
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
 const SearchSheet=lazy(()=>import('./SearchSheet'));
@@ -94,7 +95,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   if(needsWelcome(settings.data.ui,home.data.projects.filter(project=>!project.system).length))navigate('/welcome',{replace:true});
  },[location.pathname,settings.data,home.data,navigate]);
  useEffect(()=>{const open=()=>setSearching(true);window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);},[]);
- const due=home.data?.due??0,active=Math.max(0,tabs.findIndex(tab=>tab.match(location.pathname)));
+ // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
+ const due=home.data?.due??0,active=tabs.findIndex(tab=>tab.match(location.pathname));
  useEffect(()=>{
   if(!wide)return;
   const keys=(event:KeyboardEvent)=>{
@@ -115,8 +117,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home">ℓ <span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
-   <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':active} as CSSProperties}>
-    <span className="v7-tab-pill" aria-hidden="true"/>
+   <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
+    {active>=0&&<span className="v7-tab-pill" aria-hidden="true"/>}
     {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} className="v7-tab" aria-current={index===active?'page':undefined}>
      <span className="v7-tab-icon"><Icon aria-hidden="true"/>{label==='Review'&&due>0&&<span className="v7-tab-pip" aria-label={due+' cards due'}>{due>99?'99+':due}</span>}</span>
      <span>{label}</span>
@@ -125,7 +127,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    {!immersive&&capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
-    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to}>{label}</Link>)}
+    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
    <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
   </div>
