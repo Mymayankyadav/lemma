@@ -16,7 +16,8 @@ import type {LayoutResult} from './layout';
 import {alphabetical,atlasSummary,buildAtlasModel,checkpointName,searchStars,starCounts,stateLabel,type AtlasModel,type StarState} from './model';
 import './atlas.css';
 
-const PAGE=200,PEEK=180;
+/** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
+const PAGE=200,PEEK=180,DOCK=92;
 const legendOrder:StarState[]=['demonstrated','in_progress','up_next','revisit','not_started'];
 
 const motionQuery='(prefers-reduced-motion: reduce)';
@@ -185,7 +186,7 @@ export default function AtlasV7(){
   {view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced}
-     insets={{top:72,right:0,bottom:selectedStar?PEEK+16:0,left:0}} onSelect={index=>select(index)}/>
+     insets={{top:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
       <Button onClick={()=>update({view:'list'})}>Show the list</Button></div>
     :<p role="status" className="v7-atlas-state">Arranging the sky…</p>}

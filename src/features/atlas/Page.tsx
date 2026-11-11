@@ -385,7 +385,7 @@ function LegacyAtlasPage(){
 export default function Page(){
  const location=useLocation();
  // v7 owns /atlas (map and list) when its flag is on; the v6 and legacy screens stay for rollback.
- if(isV7Route(location.pathname))return <Suspense fallback={<p role="status" className="p-4">Loading the Atlas…</p>}><AtlasV7/></Suspense>;
+ if(isV7Route(location.pathname,location.search))return <Suspense fallback={<p role="status" className="p-4">Loading the Atlas…</p>}><AtlasV7/></Suspense>;
  return isFlagOn('v6Shell')&&new URLSearchParams(location.search).get('view')!=='map'
   ?<AtlasV6/>:<LegacyAtlasPage/>;
 }

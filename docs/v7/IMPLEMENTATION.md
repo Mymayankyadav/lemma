@@ -89,3 +89,9 @@ The v7 Atlas (§6.12) replaces `/atlas` when `v7Shell` is on; v6 and legacy Atla
 - **Search and list:** name search, prefix matches first; choosing a result flies there in 700 ms (a jump with reduced motion). List view is the accessible path; the canvas is `aria-hidden` and the map announces "82 concepts, 26 connections, 9 demonstrated". Map and List share the `?id=` selection.
 
 Seed checks (unit and browser): 82 stars, 3 constellations, 9 demonstrated; "comp" finds 7; Compactness reads "Checkpoint 4 · 9 cards due · 6 neighbours" (the plan's "3 neighbours" was illustrative; the seed has 6); Open checkpoint goes to `/p/real-analysis/cp/CP4`. The heavy profile (600 concepts, 1,500 links) lays out deterministically in the worker; the 50 fps panning target is a Part 12 performance-probe measurement, not a blocking test. Known follow-ups: Review cards links `/review/run?concept=`, which the current v6 review run does not filter by (the Part 4 review round should); the Pin, Edit and Preview dialogs are the v6 components until those screens are rebuilt.
+
+## Part 4 status
+
+Landed behind `v7Shell` (default off): v7 shell (`src/app/v7/`), Today, Focus, and the review round (swipe: right Good, left Again, up Easy; grade buttons are the accessible path). Routing lives in `src/app/v7Kit.ts`.
+
+Not yet built: Calendar Day and Path (with the constellation map). Those routes stay on v6 until a follow-up; `v7ScreenFor` returns null for them. Known gaps: review cards link `/review/run?concept=` which the v6 durable run does not filter yet; the Capture sheet is a placeholder until Part 6. Verification is CI only; no local Playwright run.

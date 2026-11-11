@@ -1,0 +1,40 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.4 B: review round. The dock never moves; long cards scroll inside themselves. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-review {--v7-review-dock:calc(64px + var(--v7-space-4) * 2 + env(safe-area-inset-bottom));min-height:100dvh;height:100dvh;display:grid;grid-template-rows:auto auto auto 1fr;gap:var(--v7-space-2);
+  padding:0 var(--v7-page-margin) var(--v7-review-dock);background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);overflow:hidden;}
+ :where(html[data-v7]) .v7-review-state {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-3);text-align:center;}
+ :where(html[data-v7]) .v7-review-count {font:600 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-review-progress {list-style:none;margin:0;padding:0;display:flex;gap:2px;height:4px;}
+ :where(html[data-v7]) .v7-review-progress li {flex:1;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-review-progress [data-grade="answered"] {background:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-review-progress [data-grade="stale"] {background:var(--v7-role-border-default);}
+ :where(html[data-v7]) :is(.v7-review-progress li,.v7-review-grades button)[data-grade="again"] {--v7-grade:var(--v7-role-status-danger);}
+ :where(html[data-v7]) :is(.v7-review-progress li,.v7-review-grades button)[data-grade="hard"] {--v7-grade:var(--v7-role-status-warning);}
+ :where(html[data-v7]) :is(.v7-review-progress li,.v7-review-grades button)[data-grade="good"] {--v7-grade:var(--v7-role-status-success);}
+ :where(html[data-v7]) :is(.v7-review-progress li,.v7-review-grades button)[data-grade="easy"] {--v7-grade:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-review-progress li[data-grade]:not([data-grade="answered"],[data-grade="stale"]) {background:var(--v7-grade);}
+ :where(html[data-v7]) .v7-review-message {color:var(--v7-role-text-secondary);font:500 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-review-stage {min-height:0;display:grid;align-content:center;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-review-card {position:relative;min-height:0;max-height:100%;overflow:auto;display:grid;align-content:start;gap:var(--v7-space-4);padding:var(--v7-space-6);
+  border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:28px;background:var(--v7-role-surface-raised);box-shadow:var(--v7-shadow-2);touch-action:pan-y;transition:transform var(--v7-fast) var(--v7-ease-out);}
+ :where(html[data-v7]) .v7-review-card[data-swipe] {transition:none;}
+ :where(html[data-v7]) .v7-review-card-meta {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-review-front {font:400 var(--v7-size-5)/1.45 var(--v7-serif);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-review-back {display:grid;gap:var(--v7-space-2);padding-top:var(--v7-space-4);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);font:400 var(--v7-size-4)/1.5 var(--v7-serif);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-review-source {display:flex;flex-wrap:wrap;justify-content:space-between;gap:var(--v7-space-2);font-family:var(--v7-sans);}
+ :where(html[data-v7]) .v7-review-confidence {display:grid;gap:var(--v7-space-2);font:500 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-review-confidence [role="radiogroup"] {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-review-confidence [aria-checked="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);border-color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-review-swipe-label {position:absolute;top:var(--v7-space-3);left:50%;transform:translateX(-50%);padding:var(--v7-space-1) var(--v7-space-3);border-radius:var(--v7-round);background:var(--v7-role-surface-overlay);
+  color:var(--v7-role-text-primary);font:600 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
+ :where(html[data-v7]) .v7-review-hint {text-align:center;color:var(--v7-role-text-secondary);font:400 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ /* The dock sits 16 px above the bottom safe area, on every card length. */
+ :where(html[data-v7]) .v7-review-dock {position:fixed;left:var(--v7-page-margin);right:var(--v7-page-margin);bottom:calc(var(--v7-space-4) + env(safe-area-inset-bottom));z-index:10;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;display:grid;}
+ :where(html[data-v7]) .v7-review-dock > .v7-button {min-height:56px;width:100%;}
+ :where(html[data-v7]) .v7-review-grades {display:grid;grid-template-columns:repeat(4,1fr);gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-review-grades button {min-height:64px;min-width:0;display:grid;justify-items:center;align-content:center;gap:2px;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-top:3px solid var(--v7-grade);
+  border-radius:14px;background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-size-2)/var(--v7-leading-2) var(--v7-sans);}
+ :where(html[data-v7]) .v7-review-grades small {color:var(--v7-role-text-secondary);font:500 var(--v7-size-1)/var(--v7-leading-1) var(--v7-sans);font-variant-numeric:tabular-nums;}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-review-card {transition:none;}}
+}

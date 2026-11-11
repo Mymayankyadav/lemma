@@ -1,4 +1,4 @@
-import {useLayoutEffect} from 'react';
+import {lazy,Suspense,useLayoutEffect} from 'react';
 import {useOutlet,useLocation,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
@@ -8,7 +8,9 @@ import {isFlagOn} from '../flags';
 import {setV6Root} from './v6Root';
 import {loadShellFonts} from './shellFonts';
 import {setShellRoot} from './shellRoot';
-import {isV7Route} from './v7Kit';
+import {v7Screen} from './v7Kit';
+// Lazy, so flag-off builds never load the v7 shell or its styles on first paint.
+const V7Shell=lazy(()=>import('./v7/V7Shell'));
 import '../ui/v6/tokens.css';
 import '../ui/v6/mockup.css';
 import '../ui/v6/mockup-bindings.css';
@@ -20,12 +22,13 @@ import './v6-atlas-shell.css';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
- const v7=isV7Route(location.pathname),v6=isFlagOn('v6Shell')&&!v7;
+ const screen=v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
- if(v7)return <>{outlet}</>;
+ if(screen==='kit')return <>{outlet}</>;
+ if(v7)return <Suspense fallback={null}><V7Shell immersive={screen==='focus'||screen==='review-run'} capture={screen!=='atlas'}>{outlet}</V7Shell></Suspense>;
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&!v6&&<DemoChip floating/>}
  <main id="main-content" className={fullBleed?(v6?'v6-atlas-shell relative flex h-dvh w-full flex-col overflow-hidden pb-[calc(var(--tab)+env(safe-area-inset-bottom))] [&>div]:min-h-0 [&>div]:flex-1 [&>div>main]:!h-full':'relative min-h-dvh w-full overflow-hidden'):'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(inboxActions?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+112px)]':showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>

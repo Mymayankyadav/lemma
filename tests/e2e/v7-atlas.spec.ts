@@ -45,9 +45,10 @@ test("searching comp lists 7 concepts; Compactness opens its sheet and Open chec
  await expect(sky(page)).toHaveAttribute("data-selected","concept-compactness");
  // The camera flies to the chosen star and stays within the zoom range.
  await expect(sky(page)).toHaveAttribute("data-zoom",/^(1\.[4-9]\d|[2-4]\.\d\d)$/);
- const box=await sheet.boundingBox(),viewport=page.viewportSize()!;
- expect(box!.y+box!.height).toBeGreaterThanOrEqual(viewport.height-1);
- expect(viewport.height-box!.y).toBeLessThanOrEqual(200);
+ // The sheet peeks 180 px, above the floating tab bar.
+ const box=(await sheet.boundingBox())!,dock=(await page.getByRole("navigation",{name:"Main navigation"}).boundingBox())!;
+ expect(box.height).toBeLessThanOrEqual(181);
+ expect(box.y+box.height).toBeLessThanOrEqual(dock.y+1);
  await sheet.getByRole("button",{name:"Show neighbours and actions"}).click();
  await expect(sheet.getByRole("heading",{name:"Needs · 4"})).toBeVisible();
  await expect(sheet.getByRole("heading",{name:"Opens up · 2"})).toBeVisible();
