@@ -79,6 +79,25 @@ jobs:
             await shot('desktop-state-matrices', controls.locator('.v7-split'));
             await page.getByRole('checkbox', { name: 'High contrast comparison', exact: true }).check();
             await shot('desktop-high-contrast-charts', page.getByRole('region', { name: 'Data visualisation', exact: true }));
+
+            // HD review captures: every component reference is expanded, and charts stay in the same full-page image.
+            const hd = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
+            await hd.goto(url, { waitUntil: 'networkidle' });
+            await hd.evaluate(() => document.fonts.ready);
+            await hd.locator('details').evaluateAll(items => items.forEach(item => { item.open = true; }));
+            // Use the available desktop width for the expanded documentation board.
+            await hd.addStyleTag({ content: '.v7-kit { --v7-content: 1760px; }' });
+            await hd.mouse.move(0, 0);
+            const hdCapture = async (name, locator) => {
+              const path = `${output}/${name}.png`;
+              if (locator) await locator.screenshot({ path, animations: 'disabled' });
+              else await hd.screenshot({ path, fullPage: true, animations: 'disabled' });
+              files.push(name + '.png');
+            };
+            await hdCapture('hd-full-kit-expanded-day-night');
+            for (const [title, name] of [['Components and states', 'components-expanded'], ['Patterns', 'patterns'], ['Data visualisation', 'charts'], ['Icons and mathematical emblems', 'emblems']]) {
+              await hdCapture('hd-' + name + '-day-night', hd.getByRole('region', { name: title, exact: true }));
+            }
             await writeFile(`${output}/manifest.json`, JSON.stringify({ commit: process.env.CAPTURE_SHA, files }, null, 2));
           } finally { await browser.close(); }
           NODE
