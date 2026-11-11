@@ -80,7 +80,7 @@ test("Practice shows a card per topic and records practice from a sheet",async({
  await page.goto(at("/practice"));
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
  await expect(page.getByRole("heading",{level:1,name:"Practice"})).toBeVisible();
- await expect(page.getByRole("navigation",{name:"Main navigation"}).getByRole("link",{name:/^Review/})).toHaveAttribute("aria-current","page");
+ await expect(page.getByRole("navigation",{name:"Main navigation"}).getByRole("link",{name:/Review/})).toHaveAttribute("aria-current","page");
  const first=page.getByRole("list",{name:"Practice topics"}).getByRole("listitem").first();
  if(await first.count()===0)return;
  await first.getByRole("button",{name:/^Practice /}).click();
