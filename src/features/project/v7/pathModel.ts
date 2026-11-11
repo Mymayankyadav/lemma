@@ -7,11 +7,13 @@ export const nodeStateOf=(ui:CheckpointUi):NodeState=>
 /** Node diameters in px: star-dot 20, current ring 28, proposed 20, up next 16, locked 8. */
 export const nodeSize:Readonly<Record<NodeState,number>>={demonstrated:20,current:28,proposed:20,up_next:16,locked:8};
 export const nodeWord:Readonly<Record<NodeState,string>>={demonstrated:'Demonstrated',current:'In progress',proposed:'Proposed',up_next:'Up next',locked:'Locked'};
-/** "2 Nov" from an ISO date or instant; empty when the date is missing or invalid. */
+const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'] as const;
+/** "2 Nov" from an ISO date or instant (day first, whatever the browser locale); empty when missing or invalid. */
 export function shortDate(iso:string|null|undefined):string{
  if(!iso)return '';
- const at=new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso)?iso+'T12:00:00Z':iso);
- return Number.isFinite(at.getTime())?new Intl.DateTimeFormat('en',{day:'numeric',month:'short',timeZone:/^\d{4}-\d{2}-\d{2}$/.test(iso)?'UTC':undefined}).format(at):'';
+ const plain=/^\d{4}-\d{2}-\d{2}$/.test(iso),at=new Date(plain?iso+'T12:00:00Z':iso);
+ if(!Number.isFinite(at.getTime()))return '';
+ return plain?at.getUTCDate()+' '+months[at.getUTCMonth()]:at.getDate()+' '+months[at.getMonth()];
 }
 /** The nearest earlier checkpoint that is not yet demonstrated: what a locked node is waiting for. */
 export function waitingFor(checkpoints:readonly CheckpointView[],index:number):string|null{
