@@ -1,0 +1,25 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.13 Log. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-log {display:grid;gap:var(--v7-space-4);align-content:start;}
+ :where(html[data-v7]) .v7-log-week {display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-log-strip {display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
+ :where(html[data-v7]) .v7-log-day {display:grid;justify-items:center;gap:2px;min-height:56px;padding:var(--v7-space-1) 0;border-radius:var(--v7-radius-2);color:var(--v7-role-text-primary);text-decoration:none;font:600 var(--v7-type-body)/1.1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-log-day small {color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-log-day[data-today] span {box-shadow:0 0 0 1.5px var(--v7-role-text-primary);border-radius:var(--v7-round);padding:0 6px;}
+ :where(html[data-v7]) .v7-log-day i {width:6px;height:6px;border-radius:var(--v7-round);background:var(--v7-role-viz-neutral);}
+ :where(html[data-v7]) .v7-log-summary {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);font:600 var(--v7-type-supporting)/1.2 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-log-actions {display:flex;align-items:center;gap:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-log-group {display:grid;gap:var(--v7-space-2);scroll-margin-top:96px;}
+ :where(html[data-v7]) .v7-log-group ul {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-log-row {display:grid;grid-template-columns:4px minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-3);padding:var(--v7-space-2) var(--v7-space-2) var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-log-row[data-voided] {opacity:.7;}
+ :where(html[data-v7]) .v7-log-bar {align-self:stretch;width:4px;border-radius:var(--v7-round);background:var(--v7-subject,var(--v7-role-viz-neutral));}
+ :where(html[data-v7]) .v7-log-body {display:grid;gap:2px;min-width:0;}
+ :where(html[data-v7]) .v7-log-body strong {font:600 var(--v7-type-body)/1.3 var(--v7-sans);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-log-body small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-log-dots {display:flex;gap:3px;}
+ :where(html[data-v7]) .v7-log-dots i {width:6px;height:6px;border-radius:var(--v7-round);border:1px solid var(--v7-role-border-strong);}
+ :where(html[data-v7]) .v7-log-dots i[data-on] {background:var(--v7-role-text-secondary);border-color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-log-add {display:grid;gap:var(--v7-space-4);}
+}

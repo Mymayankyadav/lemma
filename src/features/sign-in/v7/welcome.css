@@ -1,0 +1,22 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.15 Sign-in and first run. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-signin {position:relative;display:grid;place-items:center;min-height:100dvh;padding:var(--v7-space-6) var(--v7-page-margin);overflow:hidden;isolation:isolate;text-align:center;}
+ :where(html[data-v7]) .v7-signin-rose {position:absolute;z-index:-1;top:50%;left:50%;width:min(110vw,520px);transform:translate(-50%,-58%);opacity:.22;color:var(--v7-role-subject-geometry);pointer-events:none;}
+ :where(html[data-v7]) .v7-signin-rose svg {width:100%;height:auto;}
+ :where(html[data-v7]) .v7-signin-content {display:grid;justify-items:center;gap:var(--v7-space-3);width:min(100%,360px);}
+ :where(html[data-v7]) .v7-signin-mark {font:italic 400 3.5rem/1 var(--v7-serif);}
+ :where(html[data-v7]) .v7-signin-content h1 {margin:0;}
+ :where(html[data-v7]) .v7-signin-tag {margin:0 0 var(--v7-space-6);color:var(--v7-role-text-secondary);font:italic 400 1.125rem/1.4 var(--v7-serif);}
+ :where(html[data-v7]) .v7-signin-actions {display:grid;gap:var(--v7-space-2);width:100%;}
+ :where(html[data-v7]) .v7-signin-actions .v7-button {width:100%;text-decoration:none;}
+ :where(html[data-v7]) .v7-welcome {display:grid;gap:var(--v7-space-5,20px);align-content:start;width:min(100%,560px);min-height:100dvh;margin-inline:auto;padding:var(--v7-space-8) var(--v7-page-margin) var(--v7-space-8);}
+ :where(html[data-v7]) .v7-welcome-head {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-welcome-dots {display:flex;gap:var(--v7-space-1);margin:0;padding:0;list-style:none;}
+ :where(html[data-v7]) .v7-welcome-dots li {width:32px;height:4px;border-radius:var(--v7-round);background:var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-welcome-dots li[data-done] {background:var(--v7-role-action-bg);}
+ :where(html[data-v7]) .v7-welcome-body {display:grid;gap:var(--v7-space-4);justify-items:stretch;}
+ :where(html[data-v7]) .v7-welcome-body > .v7-button {text-decoration:none;}
+ :where(html[data-v7]) .v7-welcome-list {margin:0;padding-left:var(--v7-space-5);display:grid;gap:var(--v7-space-2);color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-welcome-foot {display:flex;justify-content:space-between;gap:var(--v7-space-2);}
+}

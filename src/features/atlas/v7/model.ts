@@ -24,9 +24,22 @@ export interface AtlasModel{
 
 export const stateLabel:Record<StarState,string>={demonstrated:'Demonstrated',in_progress:'In progress',up_next:'Up next',not_started:'Conjecture · not started',revisit:'Review due'};
 
-/** Subject names map onto the kit's eight hues; "Linear algebra" is "Algebra" (one name per subject). */
+/** OD6 / PLAN §6.14: colours the owner chose in Settings › Subjects, by subject name. A change bumps the version so the v7
+ *  shell can redraw every screen in the new colour (calendar, covers, charts). */
+let chosen=new Map<string,Subject>(),chosenVersion=0;
+const chosenListeners=new Set<()=>void>();
+export function setChosenSubjects(next:ReadonlyMap<string,Subject>){
+ const normal=new Map([...next].map(([name,subject])=>[name.trim().toLowerCase(),subject] as const));
+ if(normal.size===chosen.size&&[...normal].every(([name,subject])=>chosen.get(name)===subject))return;
+ chosen=normal;chosenVersion++;for(const listener of chosenListeners)listener();
+}
+export const subscribeChosenSubjects=(listener:()=>void)=>{chosenListeners.add(listener);return()=>{chosenListeners.delete(listener);};};
+export const chosenSubjectsVersion=()=>chosenVersion;
+/** Subject names map onto the kit's eight hues; "Linear algebra" is "Algebra" (one name per subject), unless the owner chose. */
 export function kitSubject(name:string):Subject{
  const lower=name.trim().toLowerCase();
+ const picked=chosen.get(lower);
+ if(picked)return picked;
  const exact=subjects.find(subject=>subject.toLowerCase()===lower);
  if(exact)return exact;
  const partial=subjects.find(subject=>lower.includes(subject.toLowerCase()));

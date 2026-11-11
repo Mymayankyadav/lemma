@@ -11,7 +11,7 @@
  :where(html[data-v7]) .v7-inbox-peek[data-depth="2"] {transform:translateY(-16px) scale(.92);opacity:.3;}
  :where(html[data-v7]) .v7-inbox-card {position:relative;z-index:1;display:grid;gap:var(--v7-space-3);align-content:start;min-height:min(46vh,420px);max-height:52vh;overflow:auto;padding:var(--v7-space-5);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:28px;background:var(--v7-role-surface-raised);box-shadow:var(--v7-shadow-3);touch-action:pan-y;user-select:none;transition:transform var(--v7-fast);}
  :where(html[data-v7]) .v7-inbox-card[style*="translate"] {transition:none;}
- :where(html[data-v7]) .v7-inbox-wash {position:absolute;inset:0;z-index:2;display:grid;place-items:center;border-radius:inherit;pointer-events:none;opacity:var(--v7-wash,0);}
+ :where(html[data-v7]) .v7-inbox-wash {position:absolute;inset:0;z-index:2;display:grid;place-items:center;border-radius:inherit;pointer-events:none;opacity:var(--inbox-wash,0);}
  :where(html[data-v7]) .v7-inbox-wash[data-word="Approve"] {background:var(--v7-role-status-success-subtle);color:var(--v7-role-status-success);}
  :where(html[data-v7]) .v7-inbox-wash[data-word="Reject"] {background:var(--v7-role-status-danger-subtle);color:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-inbox-wash span {font:700 var(--v7-type-headline)/1 var(--v7-sans);}

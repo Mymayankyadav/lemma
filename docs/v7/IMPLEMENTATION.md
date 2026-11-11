@@ -277,3 +277,27 @@ Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
 
 - Unit: `tests/unit/v7/inbox.test.ts` (8 tests: swipe thresholds and flicks, tilt and wash, stable queue order and skipping, the "Approve all" set, list grouping, change rows, the mini-map window, routes). The v6 draft-editor unit tests (21) pass with the shared hook.
 - Browser: `tests/e2e/v7-inbox.spec.ts` (8 tests: five decisions by swipe, by buttons and by keys; spring-back and skip; button placement in the bottom 40%; Undo within 6 s and the decision sticking after it; the batch sheet; the plan card and detail; the list view), run twice; the design lint on four new scenes in Day and Night at 390 and 320 px (16 runs); and 72 existing proposal, plan-review and draft-editor tests.
+
+## Part 10 status (insight and edges: PLAN §6.13–6.16)
+
+Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
+
+- **Progress** (`/insights`, `src/features/insights/v7/`): hub tabs Overview · Learning · Time · Log and one range control (Today, 7, 30, 90 days) above everything it affects. Overview: the focused time in Figure XL with "focused in the last n days", a change chip against the same number of days before, a focus-by-day (weekly at 30 and 90 days) chart, Reviews, Recall and Checkpoints tiles, a 26-week study almanac in one hue, time by subject as stacked columns in subject colours with a legend, and up to two rule-based insight sentences. Learning: recall over time with the target line, reviews by day stacked in the grade colours, "When you said" meters, checkpoints demonstrated per column, and the tutor-session time tile. Time: the hero, daily (weekly at 90 days) columns, subject bars, goal cards ("This week · All subjects", "40 min of 10 h", a meter with an even-pace tick, "9 h 20 min to go · 7 days left", Edit) and past goals. Every chart has a tap tooltip and "Show as table" (the kit chart components). Each column is its own exact partition of the saved time, so the columns add up to the hero.
+- **Time log** (`/log`): the week strip as navigator, entries grouped by day with a 4 px subject bar, title, "22:00–22:35 · 35 min", the path and up to five rating dots; Edit, Split and Void in each row's ⋯ (Void confirms in a sheet that names the entry and offers Undo); Add time in a v7 sheet; Export CSV under ⋯.
+- **Settings** (`/settings`): grouped index rows with an icon tile, the title, the current value and a chevron. Appearance: Auto/Day/Night cards with fixed mini previews (the theme changes at once) and switches for Reduce effects, Haptics and the phase chime. Subjects: a row per subject with its colour, opening a sheet with a live preview, the eight colour-and-emblem choices (taken ones marked) and the glyph. Tutor shows the connector address with Show, Copy and New address. Old `?section=` links open the page that holds that section. Delete account is last, in its own card with a critical heading.
+- **Sign-in** (`/sign-in`): a full-height page with a slowly drawn emblem behind the ℓ mark, "Lemma" in Display and "A geometer's notebook"; one primary (Continue with Google) and a visible "Explore the example workspace". No tab bar.
+- **First run** (`/welcome`): Connect your tutor (address, Copy, three steps), Start your first path (name and Create, or Use the example) and Your day (daily minimum, day end, reminders). Every step can be skipped; it ends on Today. A new owner with no paths who has neither finished nor skipped it is sent there once from Today; the example workspace never is.
+- **States** (§6.16): v7 screens use the kit skeleton (shown only after its delay token), an inline error with Retry, the kit toast with Undo for reversible actions and a confirmation sheet that names the thing for destructive ones.
+
+### Gaps (not done)
+
+- Study and review, Planning, Reminders, Export and Delete account keep their existing forms (mapped onto v7 surfaces), including some native selects; they are not yet rebuilt with v7 fields and are left out of the design lint. Appearance, Subjects, the Tutor address and the index are v7.
+- The emblem kind follows the colour choice (each of the eight colours has its own emblem family); it is not chosen separately.
+- Log rows open the existing entry editor (a v6 dialog) for Edit and Split; swiping a row is not implemented, the ⋯ menu is.
+- Progress "Today" reads the 7-day insight data limited to one day; live accounts that receive server aggregates show the aggregate's figures for the learning tiles.
+- The almanac is 26 weeks at every width (a year on desktop is part of Part 11).
+
+### Verification
+
+- Unit: `tests/unit/v7/insight-edges.test.ts` (9 tests: columns add up to the hero for daily and weekly columns at 7, 30 and 90 days; the previous period; the almanac's whole weeks; insight sentences; goal wording with no raw dates or zone names; every Settings row's current value; old section links; the chosen subject colour overriding the name match; routes). Full unit suite 377 files / 2,121 tests passed.
+- Browser: `tests/e2e/v7-insight-edges.spec.ts` (8 tests) passed three times in a row; the design lint on nine new scenes (36 runs); 365 existing tests across settings, time log, progress and sign-in; and all 196 v7 browser tests. `tests/e2e/v7-kit.spec.ts` now uses `/review/done` without a run as its example of an unmigrated route, because `/projects` is migrated.

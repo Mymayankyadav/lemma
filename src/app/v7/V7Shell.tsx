@@ -1,4 +1,4 @@
-import {lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
+import {Fragment,lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {useHome} from '../../data/hooks';
@@ -8,6 +8,9 @@ import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import {Button,Sheet} from '../../ui/v7/components';
 import {useMinWidth} from './useMinWidth';
+import {useSubjectColours} from './subjectColours';
+import {useSettings} from '../../data/hooks';
+import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
@@ -82,6 +85,14 @@ function Capture(){
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false),[shortcuts,setShortcuts]=useState(false);
  const wide=useMinWidth(700);
+ // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
+ const colours=useSubjectColours();
+ // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
+ const settings=useSettings();
+ useEffect(()=>{
+  if(location.pathname!=='/'||!settings.data||!home.data)return;
+  if(needsWelcome(settings.data.ui,home.data.projects.filter(project=>!project.system).length))navigate('/welcome',{replace:true});
+ },[location.pathname,settings.data,home.data,navigate]);
  useEffect(()=>{const open=()=>setSearching(true);window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);},[]);
  const due=home.data?.due??0,active=Math.max(0,tabs.findIndex(tab=>tab.match(location.pathname)));
  useEffect(()=>{
@@ -98,7 +109,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
  },[wide,immersive,capture,navigate,entry]);
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
-  {children}
+  <Fragment key={colours}>{children}</Fragment>
   <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
   <div className="v7-dock">
    <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home">ℓ <span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>

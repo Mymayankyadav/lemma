@@ -20,8 +20,8 @@ describe('v7 review round',()=>{
   expect(v7ScreenFor('/calendar','?view=month')).toBe('calendar');
   expect(v7ScreenFor('/calendar','?view=agenda')).toBe('calendar');
   expect(v7ScreenFor('/p/abc')).toBe('path');
-  // Part 8: the learning screens are migrated; Settings is not yet (Part 10).
+  // Part 8: the learning screens are migrated. A route no screen owns stays unmigrated.
   expect(v7ScreenFor('/p/abc/cp/CP3')).toBe('checkpoint');
-  expect(v7ScreenFor('/settings')).toBeNull();
+  expect(v7ScreenFor('/no-such-screen')).toBeNull();
  });
 });

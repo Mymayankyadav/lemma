@@ -1,7 +1,8 @@
 import {isFlagOn} from '../../flags';
 import V6Settings from './v6/Page';
 import {SectionHeading} from '../../ui/SectionHeading';
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
+import { v7Screen } from "../../app/v7Kit";
 import {
   Bot,
   BookOpen,
@@ -612,6 +613,9 @@ function LegacySettingsPage() {
 }
 
 /** N28: the existing Settings implementation remains untouched when v6Shell is off. */
+const SettingsV7 = lazy(() => import('./v7/SettingsV7'));
 export default function Page(){
+  // v7 Settings (PLAN §6.14) behind v7Shell; v6 and legacy stay for rollback.
+  if (v7Screen() === 'settings') return <Suspense fallback={<div role="status" aria-label="Settings loading" className="min-h-dvh"/>}><SettingsV7/></Suspense>;
   return isFlagOn('v6Shell') ? <V6Settings legacy={<LegacySettingsPage/>}/> : <LegacySettingsPage/>;
 }

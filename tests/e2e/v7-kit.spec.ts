@@ -87,8 +87,9 @@ test("320px and 200% text remain readable without horizontal overflow",async({pa
 test("v7 flag isolation keeps the v6 shell available",async({page})=>{
  await page.goto(kit);
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
- // Today is a v7 screen now; a route that has not been migrated keeps the v6 shell.
- await page.evaluate(()=>{location.hash="#/projects";});
+ // Today is a v7 screen now; a route that has not been migrated keeps the v6 shell. After Parts 8–10 the only one left
+ // is a local review round's results (/review/done without a durable ?run=).
+ await page.evaluate(()=>{location.hash="#/review/done";});
  await expect(page.locator("html")).toHaveAttribute("data-v6","");
  await page.evaluate(()=>{location.hash="#/kit";});
  await expect(page.locator("html")).toHaveAttribute("data-v7","");

@@ -52,6 +52,16 @@ export const shots:Shot[]=[
  {name:"inbox-list",hash:"/proposals?view=list"},
  {name:"inbox-plans",hash:"/proposals?tab=plan"},
  {name:"plan-proposal",hash:"/proposals?tab=plan",frames:2,prepare:async page=>{await page.getByRole("link",{name:"Compare whole plan"}).first().click();await page.waitForURL(/#\/proposals\/[^?]+$/).catch(()=>{});}},
+ // Part 10: insight and edges (PLAN §6.13–6.15). Hosted v6 settings forms are excluded until rebuilt.
+ {name:"progress",hash:"/insights",frames:3},
+ {name:"progress-learning",hash:"/insights?tab=learning",frames:3},
+ {name:"progress-time",hash:"/insights?tab=time",frames:2},
+ {name:"time-log",hash:"/log"},
+ {name:"settings",hash:"/settings"},
+ {name:"settings-appearance",hash:"/settings?section=appearance"},
+ {name:"settings-subjects",hash:"/settings?section=subjects"},
+ {name:"sign-in",hash:"/sign-in"},
+ {name:"welcome",hash:"/welcome"},
 ];
 
 /** Load a scene the way a person would: fixed clock, colour scheme, reduced motion, then its own preparation. */

@@ -45,7 +45,7 @@ function TopCard({proposal,project,onDecide,onSkip,haptics}:{proposal:Proposal;p
   else if(intent)onDecide(intent);
  };
  return <article ref={ref} className={'v7-inbox-card '+subjectClass(subject)} aria-label={'Proposed card · '+face.kind+' · '+(project?.title??proposal.projectSlug)} data-proposal={proposal.id} data-word={style.word??undefined}
-  style={{transform:drag.dx||drag.dy?`translate(${drag.dx}px,${drag.dy}px) rotate(${style.rotate}deg)`:undefined,['--v7-wash' as string]:String(style.wash)}}
+  style={{transform:drag.dx||drag.dy?`translate(${drag.dx}px,${drag.dy}px) rotate(${style.rotate}deg)`:undefined,['--inbox-wash' as string]:String(style.wash)}}
   onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{start.current=null;setDrag({dx:0,dy:0});}}
   onClickCapture={event=>{if(dragged.current){event.preventDefault();event.stopPropagation();dragged.current=false;}}}>
   {style.word&&<span className="v7-inbox-wash" data-word={style.word} aria-hidden="true"><span>{style.word}</span></span>}

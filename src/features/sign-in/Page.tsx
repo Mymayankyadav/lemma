@@ -1,10 +1,18 @@
+import { lazy, Suspense } from "react";
+import { v7Screen } from "../../app/v7Kit";
 import { Link, useLocation } from "react-router";
 import { isFlagOn } from "../../flags";
 import { useSignIn } from "../../data/hooks";
 import { getMode } from "../../data/mode";
 import { Button } from "../../ui/Button";
 import { useToast } from "../../ui/Toast";
+const SignInV7 = lazy(() => import("./v7/SignInV7"));
 export default function Page() {
+  // v7 Sign-in (PLAN §6.15) behind v7Shell; the existing page stays for rollback.
+  if (v7Screen() === "sign-in") return <Suspense fallback={null}><SignInV7/></Suspense>;
+  return <LegacySignIn/>;
+}
+function LegacySignIn() {
   const signIn = useSignIn(),
     location = useLocation(),
     notify = useToast();
