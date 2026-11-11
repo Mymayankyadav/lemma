@@ -1,5 +1,6 @@
 // N69 v6 ritual uses existing owner-only APIs; it cannot close future dates.
-import {useEffect,useState} from 'react';
+import {lazy,Suspense,useEffect,useState} from 'react';
+import {v7Screen} from '../../app/v7Kit';
 import {Link,useSearchParams} from 'react-router';
 import type {CalendarBlockRecord} from '../../data/study/contract';
 import {formatDuration,formatTimeRange} from '../../lib/format';
@@ -14,7 +15,11 @@ import {useSettings} from '../../data/hooks';
 import {civilPlanDate} from '../../data/day-plans/model';
 import {canCloseOwnerDay,normalizeCarryOverChoices,ownerCivilDate,savedFocusTouchesOwnerDay} from './model';
 const control='min-h-11 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-label font-semibold disabled:opacity-50';
+const CloseDayV7=lazy(()=>import('./v7/CloseDayV7'));
 export default function Page(){
+ return v7Screen()==='close-day'?<Suspense fallback={<div role="status" aria-label="Close the day loading" className="min-h-dvh"/>}><CloseDayV7/></Suspense>:<LegacyRitualPage/>;
+}
+function LegacyRitualPage(){
  const [params]=useSearchParams();
  const settings=useSettings();
  // The authenticated account timezone, not the travelling device, owns today.

@@ -93,4 +93,5 @@
  :where(html[data-v7]) .v7-hub-tabs {display:flex;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-hub-tabs a {min-height:var(--v7-touch);display:inline-flex;align-items:center;padding:0 var(--v7-space-4);border-radius:var(--v7-round);color:var(--v7-role-text-secondary);font:600 var(--v7-size-2)/1 var(--v7-sans);text-decoration:none;}
  :where(html[data-v7]) .v7-hub-tabs [aria-current="page"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-sr-only {position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;}
 }

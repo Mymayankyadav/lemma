@@ -111,3 +111,20 @@ test("Tasks segments switch between To do, Doing and Done",async({page})=>{
  await page.getByRole("radio",{name:"Done"}).click();
  await expect(page.getByRole("radio",{name:"Done"})).toHaveAttribute("aria-checked","true");
 });
+
+// Part 7b: Close the day.
+test("Close the day walks three steps: Today, Loose ends, Tomorrow",async({page})=>{
+ await page.goto(at("/today/close"));
+ await expect(page.locator("html")).toHaveAttribute("data-v7","");
+ const dots=page.getByRole("list",{name:/Step 1 of 3/});
+ await expect(dots).toBeVisible();
+ await expect(page.getByRole("region",{name:"Today"})).toBeVisible();
+ await page.getByRole("button",{name:"Next"}).click();
+ await expect(page.getByRole("region",{name:"Loose ends"})).toBeVisible();
+ await page.getByRole("button",{name:"Next"}).click();
+ await expect(page.getByRole("region",{name:"Tomorrow"})).toBeVisible();
+ await expect(page.getByRole("textbox",{name:"Aim for tomorrow"})).toBeVisible();
+ await expect(page.getByRole("button",{name:/^(Close the day|Finish|Day already closed)$/})).toBeVisible();
+ await page.getByRole("button",{name:"Back"}).click();
+ await expect(page.getByRole("region",{name:"Loose ends"})).toBeVisible();
+});

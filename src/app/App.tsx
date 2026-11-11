@@ -27,7 +27,7 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
- ...(isFlagOn('v6Shell')?[{path:'/today/close',
+ ...(isFlagOn('v6Shell')||isFlagOn('v7Shell')?[{path:'/today/close',
   element:<Suspense fallback={<RouteFallback/>}><DayRitual/></Suspense>,
   errorElement:<RouteError/>}, {path:'/log',
   element:<Suspense fallback={<RouteFallback/>}><TimeLog/></Suspense>,
