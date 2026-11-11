@@ -764,7 +764,7 @@ export function Stepper({
   function hold(direction:number){stop();repeated.current=false;delay.current=setTimeout(()=>{repeated.current=true;step(direction);repeat.current=setInterval(()=>step(direction),120);},400);}
   useEffect(()=>stop,[]);
   return (
-    <div className="v7-stepper" role="group" aria-label={label} onKeyDown={event=>{if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft","Home","End"].includes(event.key)){event.preventDefault();if(event.key==="Home")onChange(min);else if(event.key==="End")onChange(max);else step(event.key==="ArrowUp"||event.key==="ArrowRight"?1:-1);}}>
+    <div className="v7-stepper" role="group" aria-label={label} onKeyDown={event=>{if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft","Home","End"].includes(event.key)){event.preventDefault();if(event.key==="Home")onChange(min);else if(event.key==="End")onChange(max);else step(event.key==="ArrowUp"||event.key==="ArrowRight"?1:-1);}}}>
       <IconButton
         label={`Decrease ${label}`}
         disabled={value <= min}
