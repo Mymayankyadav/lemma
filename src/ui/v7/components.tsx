@@ -23,6 +23,7 @@ import {
   CircleX,
   TriangleAlert,
 } from "lucide-react";
+import { SubjectMark, subjects, subjectClass, type Subject } from "./Subject";
 import "./components.css";
 export function Button({
   variant = "secondary",
@@ -40,7 +41,7 @@ export function Button({
 }) {
   return (
     <button
-      type="button"
+        type="button"
       {...props}
       disabled={props.disabled || loading}
       aria-busy={loading || undefined}
@@ -48,7 +49,7 @@ export function Button({
         props["aria-label"] ??
         (loading && typeof children === "string" ? children : undefined)
       }
-      className={`v7-button v7-${variant} ${small ? "v7-small" : ""} ${destructive ? "v7-critical" : ""} ${className}`}
+      className={`v7-button v7-${variant} ${small ? "v7-small" : ""} ${destructive ? "v7-danger" : ""} ${className}`}
     >
       <span>{children}</span>
       <span className="v7-button-progress" aria-hidden="true">
@@ -64,7 +65,7 @@ export function IconButton({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return (
     <button
-      type="button"
+        type="button"
       {...props}
       aria-label={label}
       title={props.title ?? label}
@@ -87,34 +88,12 @@ export function Chip({
   selected?: boolean;
   onClick?: () => void;
 }) {
-  const content = (
-    <>
-      {kind === "subject" && (
-        <span className={`v7-dot v7-subject-${subject}`} aria-hidden="true" />
-      )}
-      {kind === "status" && <Check aria-hidden="true" />}
-      {kind === "ready" && <CircleDot aria-hidden="true" />}
-      {kind === "mastery" && <span className="v7-proof" aria-hidden="true">∎</span>}
-      {children}
-    </>
-  );
-  return onClick ? (
-    <button
-      type="button"
-      className="v7-chip v7-filter"
-      aria-pressed={!!selected}
-      onClick={onClick}
-    >
-      {content}
-    </button>
-  ) : (
-    <span
-      className={`v7-chip v7-chip-${kind} ${kind === "subject" ? `v7-subject-${subject}` : ""}`}
-    >
-      {content}
-    </span>
-  );
+  const name:Subject=subjects[Math.max(0,Math.min(subjects.length-1,subject-1))] ?? "Other";
+  const content=<>{kind==="subject"&&<SubjectMark subject={name}/>} {kind==="status"&&<CircleCheck aria-hidden="true"/>}{kind==="ready"&&<CircleDot aria-hidden="true"/>}{kind==="mastery"&&<span className="v7-proof" aria-hidden="true">∎</span>}{onClick&&selected&&<Check aria-hidden="true"/>}{children}</>;
+  return onClick?<button type="button" className="v7-filter-chip" aria-pressed={!!selected} onClick={onClick}>{content}</button>:
+   <span className={kind==="subject"?"v7-tag "+subjectClass(name):"v7-badge "+(kind==="gold"?"v7-tone-warning":kind==="mastery"||kind==="status"?"v7-tone-success":"v7-tone-info")}>{content}</span>;
 }
+
 export function Segmented({
   label,
   options,
@@ -132,30 +111,33 @@ export function Segmented({
   disabled?: boolean;
   panelId?: string;
 }) {
+  const tabSemantics=tabs&&!!panelId;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   return (
     <div
       className={tabs ? "v7-tabs" : "v7-segmented"}
-      role="tablist"
+      role={tabSemantics ? "tablist" : "radiogroup"}
       aria-label={label}
     >
       {options.map((option, index) => (
         <button
+        type="button"
           key={option}
           ref={(el) => {
             refs.current[index] = el;
           }}
-          type="button"
           disabled={disabled}
-          role="tab"
-          aria-controls={panelId}
-          aria-selected={option === value}
+          role={tabSemantics ? "tab" : "radio"}
+          id={tabSemantics ? `${panelId}-tab-${index}` : undefined}
+          aria-controls={tabSemantics ? panelId : undefined}
+          aria-selected={tabSemantics ? option === value : undefined}
+          aria-checked={tabSemantics ? undefined : option === value}
           tabIndex={option === value ? 0 : -1}
           onClick={() => onChange(option)}
           onKeyDown={(e) => {
             let i = index;
-            if (e.key === "ArrowRight") i = (index + 1) % options.length;
-            else if (e.key === "ArrowLeft")
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") i = (index + 1) % options.length;
+            else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
               i = (index + options.length - 1) % options.length;
             else if (e.key === "Home") i = 0;
             else if (e.key === "End") i = options.length - 1;
@@ -285,12 +267,14 @@ export function Picker({
   options,
   onChange,
   disabled = false,
+  disabledReason,
 }: {
   label: string;
   value: string;
   options: string[];
   onChange: (v: string) => void;
   disabled?: boolean;
+  disabledReason?: string;
 }) {
   const [open, setOpen] = useState(false),
     [desktop, setDesktop] = useState(false),
@@ -324,7 +308,9 @@ export function Picker({
     <div className="v7-field-group v7-menu-anchor" ref={ref}>
       <span id={id}>{label}</span>
       <button
-        disabled={disabled}
+        type="button"
+        disabled={disabled || !!disabledReason}
+        title={disabledReason ?? (disabled ? "Unavailable · Finish Checkpoint 3 first." : undefined)}
         aria-label={`${label}: ${value}`}
         aria-haspopup={desktop ? "listbox" : "dialog"}
         aria-expanded={open}
@@ -334,6 +320,7 @@ export function Picker({
         {value}
         <ChevronDown aria-hidden="true" />
       </button>
+      {(disabled || disabledReason) && <p className="v7-disabled-reason">{disabledReason ?? "Unavailable · Finish Checkpoint 3 first."}</p>}
       {desktop && open ? (
         <div
           className="v7-menu"
@@ -360,6 +347,7 @@ export function Picker({
         >
           {options.map((option) => (
             <button
+        type="button"
               role="option"
               aria-selected={value === option}
               key={option}
@@ -428,6 +416,7 @@ export function DatePicker({
     <div className="v7-field-group">
       <span>{label}</span>
       <button
+        type="button"
         className="v7-field v7-picker"
         aria-label={`${label}: ${value}`}
         aria-haspopup="dialog"
@@ -488,6 +477,7 @@ export function DatePicker({
             const date = new Date(month.getFullYear(), month.getMonth(), i + 1);
             return (
               <button
+        type="button"
                 key={i}
                 autoFocus={dateString(date) === dateString(selected)}
                 aria-label={date.toLocaleDateString(undefined, {
@@ -618,6 +608,7 @@ export function TimePicker({
               const time = `${String(Math.floor(i / 12)).padStart(2, "0")}:${String((i % 12) * 5).padStart(2, "0")}`;
               return (
                 <button
+        type="button"
                   role="option"
                   id={`${timeId}-${time}`}
                   aria-selected={time === value}
@@ -657,7 +648,7 @@ export function Checkbox({
   mixed?: boolean;
 }) {
   return (
-    <label className="v7-check-label">
+    <label className="v7-check-choice">
       <input
         type="checkbox"
         checked={checked}
@@ -704,7 +695,7 @@ export function Switch({
   disabled?: boolean;
 }) {
   return (
-    <label className="v7-switch-label">
+    <label className="v7-switch-choice">
       <span>{label}</span>
       <input
         type="checkbox"
@@ -713,6 +704,7 @@ export function Switch({
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
       />
+      <span className="v7-switch-visual" aria-hidden="true"><span>{checked?<Check/>:<Minus/>}</span></span>
     </label>
   );
 }
@@ -732,7 +724,7 @@ export function Slider({
   const id = useId();
   const progress = max > min ? Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100)) : 0;
   return (
-    <div className="v7-field-group">
+    <div className="v7-range-slider">
       <label htmlFor={id}>
         {label}{" "}
         <output className="v7-value" htmlFor={id}>
@@ -742,7 +734,7 @@ export function Slider({
       <input
         id={id}
         className="v7-slider"
-        style={{ "--v7-range-progress": `${progress}%` } as CSSProperties}
+        style={{ "--v7-range-progress": `${progress}%`, "--v7-slider-position": `${progress}%` } as CSSProperties}
         type="range"
         min={min}
         max={max}
@@ -772,7 +764,7 @@ export function Stepper({
   function hold(direction:number){stop();repeated.current=false;delay.current=setTimeout(()=>{repeated.current=true;step(direction);repeat.current=setInterval(()=>step(direction),120);},400);}
   useEffect(()=>stop,[]);
   return (
-    <div className="v7-stepper" role="group" aria-label={label}>
+    <div className="v7-stepper" role="group" aria-label={label} onKeyDown={event=>{if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft","Home","End"].includes(event.key)){event.preventDefault();if(event.key==="Home")onChange(min);else if(event.key==="End")onChange(max);else step(event.key==="ArrowUp"||event.key==="ArrowRight"?1:-1);}}>
       <IconButton
         label={`Decrease ${label}`}
         disabled={value <= min}
@@ -781,7 +773,7 @@ export function Stepper({
       >
         <Minus />
       </IconButton>
-      <output aria-live="polite">{value}</output>
+      <output aria-label={label+" value"} aria-live="polite" aria-atomic="true">{value}</output>
       <IconButton
         label={`Increase ${label}`}
         disabled={value >= max}
@@ -1021,7 +1013,7 @@ export function Banner({
   tone?: "warning" | "critical" | "good";
 }) {
   return (
-    <aside className={`v7-banner v7-${tone}`}>
+    <aside className={`v7-feedback-banner v7-tone-${tone === "critical" ? "danger" : tone === "good" ? "success" : "warning"}`}>
       {tone === "warning" ? <TriangleAlert aria-hidden="true" /> :
         tone === "critical" ? <CircleX aria-hidden="true" /> :
         <CircleCheck aria-hidden="true" />}
@@ -1051,10 +1043,8 @@ export function EmptyState({
   onAction: () => void;
 }) {
   return (
-    <div className="v7-empty">
-      <svg className="v7-empty-art" viewBox="0 0 120 120" aria-hidden="true">
-        <path d="M20 90h80M30 80V35h60v45M40 25h40M45 45h30M45 55h20M45 65h25" />
-      </svg>
+    <div className="v7-empty-emblem">
+      <SubjectMark subject="Analysis" size="hero"/>
       <p>{children}</p>
       <Button onClick={onAction}>{action}</Button>
     </div>

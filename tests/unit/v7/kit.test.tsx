@@ -15,7 +15,7 @@ describe("Constellation UI kit",()=>{
  it("joins time-range presets into one accessible control",async()=>{
   const h=host();
   try{await act(async()=>h.root.render(<TimeRangeField/>));
-   expect(h.mount.querySelectorAll('input[type="time"]')).toHaveLength(2);
+   expect(h.mount.querySelectorAll('.v7-time-input input')).toHaveLength(2);
    const chips=h.mount.querySelectorAll('.v7-preset-wrap button');
    expect(chips[1].getAttribute("aria-pressed")).toBe("true");
    await act(async()=>chips[0].click());
@@ -42,3 +42,4 @@ describe("Constellation UI kit",()=>{
   }finally{await h.dispose();}
  });
 });
+

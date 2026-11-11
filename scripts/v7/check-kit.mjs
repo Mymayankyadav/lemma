@@ -48,6 +48,7 @@ for(const mode of modes){
   pair("subject."+name,"subject."+name+"-subtle",3);
  }
  for(const idx of [1,2,3,4])pair("viz.heat"+idx,"surface.page",3);
+ for(const role of Object.values(doc.role))for(const declared of role.$extensions?.["lemma.contrastPairs"]??[])pair(declared.foreground,declared.background,declared.minimum);
  const colors=subjectNames.map(s=>get(mode,"subject."+s));
  const status=["success","warning","danger"].map(s=>get(mode,"status."+s));
  for(const [label,palette] of [["subject",colors],["status",status]]){
@@ -66,9 +67,15 @@ for(const [role,v] of Object.entries(doc.role)){
 }
 for(const [name,v] of Object.entries(doc.component))
  assert(/^\{role\.[a-z0-9.-]+\}$/.test(v.$value)&&!!doc.role[v.$value.slice(6,-1)],"component "+name+" bypasses a role token");
-for(const filename of ["src/ui/v7/KitPrimitives.tsx","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css"]){
+for(const filename of ["src/ui/v7/KitPrimitives.tsx","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/components.css","src/ui/v7/states.css"]){
  const source=readFileSync(filename,"utf8");
  assert(!/#[0-9a-f]{3,8}\b/i.test(source),filename+" contains a raw colour");
+}
+for(const filename of ["src/ui/v7/components.css","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/states.css"]){
+ const source=readFileSync(filename,"utf8");
+ assert(!source.includes("html[data-v7][data-v7]"),filename+" repeats the scope selector");
+ assert(!/--v7-(serious|critical|gold)\b|v7-chip-gold|repeating-linear-gradient|border-style:\s*dashed/.test(source),filename+" contains a retired style");
+ assert(source.includes("@layer"),filename+" lacks a cascade layer");
 }
 const generated=spawnSync(process.execPath,["scripts/v7/generate-tokens.mjs","--check"],{encoding:"utf8"});
 assert(generated.status===0,"generated tokens/Figma manifest are stale: "+generated.stderr);

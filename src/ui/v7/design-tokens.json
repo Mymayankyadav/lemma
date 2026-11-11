@@ -434,7 +434,15 @@
           "day-hc": "{raw.day.surface.page}",
           "night-hc": "{raw.night.surface.page}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "surface.sunken": {
@@ -447,7 +455,15 @@
           "day-hc": "{raw.day.surface.sunken}",
           "night-hc": "{raw.night.surface.sunken}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "surface.raised": {
@@ -460,7 +476,15 @@
           "day-hc": "{raw.day.surface.raised}",
           "night-hc": "{raw.night.surface.raised}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "surface.overlay": {
@@ -473,7 +497,15 @@
           "day-hc": "{raw.day.surface.overlay}",
           "night-hc": "{raw.night.surface.overlay}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "surface.muted": {
@@ -486,7 +518,15 @@
           "day-hc": "{raw.day.surface.muted}",
           "night-hc": "{raw.night.surface.muted}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "surface.muted-hover": {
@@ -499,7 +539,15 @@
           "day-hc": "{raw.day.surface.muted-hover}",
           "night-hc": "{raw.night.surface.muted-hover}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "border.subtle": {
@@ -512,7 +560,9 @@
           "day-hc": "{raw.day.border.subtle}",
           "night-hc": "{raw.night.border.subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
       }
     },
     "border.default": {
@@ -530,6 +580,38 @@
           "surface.raised",
           "surface.sunken",
           "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "border.default",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.sunken",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.raised",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.overlay",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.muted",
+            "minimum": 3,
+            "kind": "control"
+          }
         ]
       }
     },
@@ -543,7 +625,39 @@
           "day-hc": "{raw.day.border.strong}",
           "night-hc": "{raw.night.border.strong}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "border.strong",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.sunken",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.raised",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.overlay",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.muted",
+            "minimum": 3,
+            "kind": "control"
+          }
+        ]
       }
     },
     "text.primary": {
@@ -561,6 +675,38 @@
           "surface.raised",
           "surface.sunken",
           "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
         ]
       }
     },
@@ -579,6 +725,38 @@
           "surface.raised",
           "surface.sunken",
           "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.secondary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
         ]
       }
     },
@@ -597,6 +775,38 @@
           "surface.raised",
           "surface.sunken",
           "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
         ]
       }
     },
@@ -610,7 +820,15 @@
           "day-hc": "{raw.day.text.disabled}",
           "night-hc": "{raw.night.text.disabled}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.disabled",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "disabled (advisory)"
+          }
+        ]
       }
     },
     "text.on-action": {
@@ -623,7 +841,27 @@
           "day-hc": "{raw.day.text.on-action}",
           "night-hc": "{raw.night.text.on-action}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.bg",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.on-action",
+            "background": "action.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.on-action",
+            "background": "action.pressed",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "action.bg": {
@@ -636,7 +874,15 @@
           "day-hc": "{raw.day.action.bg}",
           "night-hc": "{raw.night.action.bg}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.bg",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "action.hover": {
@@ -649,7 +895,15 @@
           "day-hc": "{raw.day.action.hover}",
           "night-hc": "{raw.night.action.hover}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "action.pressed": {
@@ -662,7 +916,15 @@
           "day-hc": "{raw.day.action.pressed}",
           "night-hc": "{raw.night.action.pressed}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.pressed",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "selection.subtle": {
@@ -675,7 +937,15 @@
           "day-hc": "{raw.day.selection.subtle}",
           "night-hc": "{raw.night.selection.subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "selection.hover": {
@@ -688,7 +958,15 @@
           "day-hc": "{raw.day.selection.hover}",
           "night-hc": "{raw.night.selection.hover}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "selection.fg": {
@@ -701,7 +979,15 @@
           "day-hc": "{raw.day.selection.fg}",
           "night-hc": "{raw.night.selection.fg}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "focus.ring": {
@@ -719,6 +1005,14 @@
           "surface.raised",
           "surface.sunken",
           "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "focus.ring",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          }
         ]
       }
     },
@@ -732,7 +1026,15 @@
           "day-hc": "{raw.day.link.fg}",
           "night-hc": "{raw.night.link.fg}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "link.fg",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.success": {
@@ -745,7 +1047,21 @@
           "day-hc": "{raw.day.status.success}",
           "night-hc": "{raw.night.status.success}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.success",
+            "background": "status.success-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.success",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.success-subtle": {
@@ -758,7 +1074,15 @@
           "day-hc": "{raw.day.status.success-subtle}",
           "night-hc": "{raw.night.status.success-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.success",
+            "background": "status.success-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.warning": {
@@ -771,7 +1095,21 @@
           "day-hc": "{raw.day.status.warning}",
           "night-hc": "{raw.night.status.warning}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.warning",
+            "background": "status.warning-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.warning",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.warning-subtle": {
@@ -784,7 +1122,15 @@
           "day-hc": "{raw.day.status.warning-subtle}",
           "night-hc": "{raw.night.status.warning-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.warning",
+            "background": "status.warning-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.danger": {
@@ -797,7 +1143,21 @@
           "day-hc": "{raw.day.status.danger}",
           "night-hc": "{raw.night.status.danger}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.danger",
+            "background": "status.danger-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.danger",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.danger-subtle": {
@@ -810,7 +1170,15 @@
           "day-hc": "{raw.day.status.danger-subtle}",
           "night-hc": "{raw.night.status.danger-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.danger",
+            "background": "status.danger-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.danger-solid": {
@@ -823,7 +1191,15 @@
           "day-hc": "{raw.day.status.danger-solid}",
           "night-hc": "{raw.night.status.danger-solid}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "status.danger-solid",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "status.danger-hover": {
@@ -836,7 +1212,15 @@
           "day-hc": "{raw.day.status.danger-hover}",
           "night-hc": "{raw.night.status.danger-hover}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "status.danger-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
       }
     },
     "subject.analysis": {
@@ -849,7 +1233,21 @@
           "day-hc": "{raw.day.subject.analysis}",
           "night-hc": "{raw.night.subject.analysis}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.analysis",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.analysis",
+            "background": "subject.analysis-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.analysis-subtle": {
@@ -862,7 +1260,21 @@
           "day-hc": "{raw.day.subject.analysis-subtle}",
           "night-hc": "{raw.night.subject.analysis-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.analysis-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.analysis",
+            "background": "subject.analysis-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.topology": {
@@ -875,7 +1287,21 @@
           "day-hc": "{raw.day.subject.topology}",
           "night-hc": "{raw.night.subject.topology}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.topology",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.topology",
+            "background": "subject.topology-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.topology-subtle": {
@@ -888,7 +1314,21 @@
           "day-hc": "{raw.day.subject.topology-subtle}",
           "night-hc": "{raw.night.subject.topology-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.topology-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.topology",
+            "background": "subject.topology-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.logic": {
@@ -901,7 +1341,21 @@
           "day-hc": "{raw.day.subject.logic}",
           "night-hc": "{raw.night.subject.logic}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.logic",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.logic",
+            "background": "subject.logic-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.logic-subtle": {
@@ -914,7 +1368,21 @@
           "day-hc": "{raw.day.subject.logic-subtle}",
           "night-hc": "{raw.night.subject.logic-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.logic-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.logic",
+            "background": "subject.logic-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.number-theory": {
@@ -927,7 +1395,21 @@
           "day-hc": "{raw.day.subject.number-theory}",
           "night-hc": "{raw.night.subject.number-theory}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.number-theory",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.number-theory",
+            "background": "subject.number-theory-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.number-theory-subtle": {
@@ -940,7 +1422,21 @@
           "day-hc": "{raw.day.subject.number-theory-subtle}",
           "night-hc": "{raw.night.subject.number-theory-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.number-theory-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.number-theory",
+            "background": "subject.number-theory-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.algebra": {
@@ -953,7 +1449,21 @@
           "day-hc": "{raw.day.subject.algebra}",
           "night-hc": "{raw.night.subject.algebra}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.algebra",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.algebra",
+            "background": "subject.algebra-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.algebra-subtle": {
@@ -966,7 +1476,21 @@
           "day-hc": "{raw.day.subject.algebra-subtle}",
           "night-hc": "{raw.night.subject.algebra-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.algebra-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.algebra",
+            "background": "subject.algebra-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.combinatorics": {
@@ -979,7 +1503,21 @@
           "day-hc": "{raw.day.subject.combinatorics}",
           "night-hc": "{raw.night.subject.combinatorics}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.combinatorics",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.combinatorics",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.combinatorics-subtle": {
@@ -992,7 +1530,21 @@
           "day-hc": "{raw.day.subject.combinatorics-subtle}",
           "night-hc": "{raw.night.subject.combinatorics-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.combinatorics",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.geometry": {
@@ -1005,7 +1557,21 @@
           "day-hc": "{raw.day.subject.geometry}",
           "night-hc": "{raw.night.subject.geometry}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.geometry",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.geometry",
+            "background": "subject.geometry-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.geometry-subtle": {
@@ -1018,7 +1584,21 @@
           "day-hc": "{raw.day.subject.geometry-subtle}",
           "night-hc": "{raw.night.subject.geometry-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.geometry-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.geometry",
+            "background": "subject.geometry-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.probability": {
@@ -1031,7 +1611,21 @@
           "day-hc": "{raw.day.subject.probability}",
           "night-hc": "{raw.night.subject.probability}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.probability",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.probability",
+            "background": "subject.probability-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "subject.probability-subtle": {
@@ -1044,7 +1638,21 @@
           "day-hc": "{raw.day.subject.probability-subtle}",
           "night-hc": "{raw.night.subject.probability-subtle}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.probability-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.probability",
+            "background": "subject.probability-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
       }
     },
     "viz.heat1": {
@@ -1057,7 +1665,15 @@
           "day-hc": "{raw.day.viz.heat1}",
           "night-hc": "{raw.night.viz.heat1}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat1",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
       }
     },
     "viz.heat2": {
@@ -1070,7 +1686,15 @@
           "day-hc": "{raw.day.viz.heat2}",
           "night-hc": "{raw.night.viz.heat2}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat2",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
       }
     },
     "viz.heat3": {
@@ -1083,7 +1707,15 @@
           "day-hc": "{raw.day.viz.heat3}",
           "night-hc": "{raw.night.viz.heat3}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat3",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
       }
     },
     "viz.heat4": {
@@ -1096,7 +1728,15 @@
           "day-hc": "{raw.day.viz.heat4}",
           "night-hc": "{raw.night.viz.heat4}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat4",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
       }
     },
     "state.hover": {
@@ -1107,7 +1747,9 @@
         "lemma.modes": {
           "night": "{raw.night.state.hover}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
       }
     },
     "state.pressed": {
@@ -1118,7 +1760,9 @@
         "lemma.modes": {
           "night": "{raw.night.state.pressed}"
         },
-        "lemma.contrastWith": []
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
       }
     }
   },
@@ -2303,6 +2947,20 @@
         "$type": "dimension",
         "$value": "{foundation.raw.texture-star}",
         "$description": "Shared texture star foundation."
+      }
+    },
+    "effects": {
+      "day": {
+        "backdrop": "rgb(18 27 49 / 40%)",
+        "shadow-1": "0 1px 2px rgb(18 27 49 / 6%)",
+        "shadow-2": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+        "shadow-3": "0 24px 64px rgb(18 27 49 / 18%)"
+      },
+      "night": {
+        "backdrop": "rgb(0 0 0 / 60%)",
+        "shadow-1": "inset 0 1px rgb(255 255 255 / 5%)",
+        "shadow-2": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
+        "shadow-3": "0 24px 64px rgb(0 0 0 / 60%)"
       }
     }
   }

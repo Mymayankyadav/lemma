@@ -38,6 +38,7 @@ jobs:
           node --input-type=module <<'NODE'
           import { chromium } from '@playwright/test';
           import { mkdir, writeFile } from 'node:fs/promises';
+          import { auditRenderedKit } from './scripts/v7/audit-rendered-kit.mjs';
           import { exportKitHtml } from './scripts/v7/export-kit-html.mjs';
           const output = 'artifacts/v7-gallery';
           await mkdir(output, { recursive: true });
@@ -54,19 +55,23 @@ jobs:
             await page.getByRole('heading', { name: 'A little more clarity.' }).waitFor();
             await page.evaluate(() => document.fonts.ready);
             async function shot(name, locator) {
+              await page.mouse.move(0,0);
               const path = `${output}/${name}.png`;
               if (locator) await locator.screenshot({ path }); else await page.screenshot({ path });
               files.push(name + '.png');
             }
             for (const theme of ['Day', 'Night']) {
-              await page.getByRole('tab', { name: theme, exact: true }).click();
+              await page.getByRole('radio', { name: theme, exact: true }).click();
               await page.locator(`html[data-theme="${theme === 'Day' ? 'graph' : 'graph-night'}"]`).waitFor();
               await page.evaluate(() => window.scrollTo(0, 0));
               await shot(`${theme.toLowerCase()}-mobile-390`);
             }
             await page.setViewportSize({ width: 1440, height: 1000 });
-            await page.getByRole('tab', { name: 'Day', exact: true }).click();
+            await page.getByRole('radio', { name: 'Day', exact: true }).click();
             await page.evaluate(() => window.scrollTo(0, 0));
+            const audit=await auditRenderedKit(page);
+            await writeFile(`${output}/rendered-audit.json`,JSON.stringify(audit,null,2));
+            await page.evaluate(()=>window.scrollTo(0,0));
             await shot('desktop-overview-1440');
             for (const [title, name] of [['Icons and mathematical emblems', 'emblems'], ['Components and states', 'components'], ['Patterns', 'patterns'], ['Data visualisation', 'charts']]) {
               await shot(`desktop-${name}-day-night`, page.getByRole('region', { name: title, exact: true }));
@@ -124,7 +129,6 @@ jobs:
               const main = document.querySelector('.v7-kit').cloneNode(true);
               const originals = document.querySelectorAll('.v7-kit input');
               main.querySelectorAll('input').forEach((input,index)=>{const original=originals[index];input.setAttribute('value',original.value);if(original.checked)input.setAttribute('checked','');else input.removeAttribute('checked');});
-              main.querySelectorAll('details').forEach(item=>{item.open=true;});
               const ids=['principles','colours','emblems','controls','patterns','charts','changelog'];
               main.querySelectorAll('.v7-system-section').forEach((item,index)=>{item.id='kit-'+ids[index];});
               return { fontCss, snapshot:main.outerHTML };

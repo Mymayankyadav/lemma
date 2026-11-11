@@ -17,9 +17,9 @@ type Theme = "graph" | "graph-night";
 const modes:Theme[]=["graph","graph-night"];
 const name=(theme:Theme)=>theme==="graph"?"Day · paper":"Night · observatory";
 const selectedTokens=Object.keys(tokens.role).filter(key=>!key.startsWith("state."));
-const tokenSource=tokens as unknown as {raw:Record<string,Record<string,{$value:string}>>;role:Record<string,{$description:string;$extensions:{"lemma.contrastWith":string[]}}>};
+const tokenSource=tokens as unknown as {raw:Record<string,Record<string,{$value:string}>>;role:Record<string,{$description:string;$extensions:{"lemma.contrastWith":string[];"lemma.decorative"?:boolean;"lemma.contrastPairs":{foreground:string;background:string;minimum:number;kind:string}[]}}>};
 function lum(hex:string){const rgb=hex.slice(1).match(/.{2}/g)!.map(x=>parseInt(x,16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;}
-function contrast(a:string,b:string){const x=lum(a),y=lum(b);return ((Math.max(x,y)+.05)/(Math.min(x,y)+.05)).toFixed(1);}
+function contrast(a:string,b:string){const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);}
 function Section({number,title,description,children}:{number:string;title:string;description:string;children:ReactNode}){
   return <section className="v7-system-section" aria-label={title}><header><p className="v7-eyebrow">{number} / Constellation UI</p>
     <h2 className="v7-headline">{title}</h2><p>{description}</p></header>{children}</section>;
@@ -37,15 +37,11 @@ function TokenPalette({theme,high=false}:{theme:Theme;high?:boolean}){
  const data=tokenSource.raw[theme==="graph"?"day":"night"];
  const resolve=(key:string)=>data[high&&["text.secondary","text.tertiary"].includes(key)?"text.primary":high&&key==="border.default"?"border.strong":key].$value;
  return <div className="v7-token-grid">{selectedTokens.map(key=>{
-  const pair=key==="action.bg"||key==="action.hover"||key==="action.pressed"||key==="status.danger-solid"||key==="status.danger-hover"?"text.on-action":
-    key.startsWith("surface.")||key.endsWith("subtle")||key.endsWith("muted-hover")?"text.primary":
-    key.startsWith("status.")?key+"-subtle":key==="selection.fg"?"selection.subtle":"surface.page";
-  const intended=tokenSource.role[key].$extensions["lemma.contrastWith"];
-  const pairs=intended.length?intended:[pair];
+  const metadata=tokenSource.role[key].$extensions;
   return <div className="v7-token-card" key={key}>
     <span className="v7-token-swatch" style={{"--token-color":"var(--v7-role-"+key.replaceAll(".","-")+")"} as CSSProperties}/>
     <div className="v7-token-caption"><b>{key}</b><span>{resolve(key)}</span>
-      {pairs.map(bg=><span key={bg}>Contrast {contrast(resolve(key),resolve(bg))}:1 · {bg}</span>)}
+      {metadata["lemma.decorative"]?<span>Decorative · no contrast minimum</span>:metadata["lemma.contrastPairs"].map(pair=>{const ratio=contrast(resolve(pair.foreground),resolve(pair.background));return <span key={pair.foreground+pair.background} data-contrast-result={ratio>=pair.minimum?"pass":"fail"}>{ratio>=pair.minimum?"Pass":"Fail"} · {ratio.toFixed(2)}:1 / {pair.minimum}:1 · {pair.kind}<br/>{pair.foreground} on {pair.background}</span>;})}
     </div>
   </div>;
  })}</div>;
@@ -117,8 +113,8 @@ function ComponentsPanel(){
   </div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Tag · Badge · Filter</h3>
    <div className="v7-demo-row"><Tag subject="Analysis"/><Tag subject="Algebra"/><Tag subject="Topology"/></div>
-   <div className="v7-demo-row"><Badge>Info · Saved locally</Badge><Badge tone="success">Success · On track</Badge>
-    <Badge tone="warning">Warning · Review due</Badge><Badge tone="danger">Danger · Could not save</Badge></div>
+   <div className="v7-demo-row"><Badge>Saved on this device</Badge><Badge tone="success">On track</Badge>
+    <Badge tone="warning">Review due</Badge><Badge tone="danger">Could not save</Badge></div>
    <div className="v7-demo-row"><FilterChip selected={filter} onChange={setFilter}>Due today</FilterChip>
     <FilterChip selected={all} onChange={setAll}>All cards</FilterChip></div>
    <DemoNote>Do: a mathematical glyph identifies a subject, a filled icon identifies status, and a selected check identifies a filter. Don't use one pill for all three jobs.</DemoNote>
@@ -137,9 +133,9 @@ function ComponentsPanel(){
     <SwitchChoice/><SwitchChoice disabledReason="Unavailable · Enable reminders in settings."/>
     <RangeSlider label="Study length" value={duration} onChange={setDuration} min={5} max={90} unit="min"/>
     <UI.Segmented panelId={progressId} label="Progress views" value={selection} options={["Overview","Learning","Time"]} onChange={setSelection}/>
-    <div id={progressId} role="tabpanel" aria-label={selection} className="v7-meta">{selection==="Overview"?"All activity in one place.":selection==="Learning"?"Ideas demonstrated over time.":"Hours focused on mathematics."}</div>
+    <div id={progressId} role="region" aria-label={selection} className="v7-meta">{selection==="Overview"?"All activity in one place.":selection==="Learning"?"Ideas demonstrated over time.":"Hours focused on mathematics."}</div>
     <UI.Segmented panelId={libraryId} tabs label="Library views" value={tab} options={["Cards","Practice","Atlas"]} onChange={setTab}/>
-    <div id={libraryId} role="tabpanel" aria-label={tab} className="v7-meta">{tab==="Cards"?"Cards ready to revisit.":tab==="Practice"?"Practice at your pace.":"Explore mathematical connections."}</div>
+    <div id={libraryId} role="tabpanel" aria-labelledby={`${libraryId}-tab-${["Cards","Practice","Atlas"].indexOf(tab)}`} className="v7-meta">{tab==="Cards"?"Cards ready to revisit.":tab==="Practice"?"Practice at your pace.":"Explore mathematical connections."}</div>
     <div className="v7-kit-action-row"><span className="v7-control-label">Daily sessions</span>
       <StepperExample/></div>
   </div>
@@ -157,19 +153,28 @@ function ComponentsPanel(){
 }
 type SpecimenState="Rest"|"Hover"|"Pressed"|"Selected"|"Focus-visible"|"Disabled"|"Read-only"|"Loading"|"Invalid";
 const specimenStates:SpecimenState[]=["Rest","Hover","Pressed","Selected","Focus-visible","Disabled","Read-only","Loading","Invalid"];
+const componentGuidance:Record<string,[string,string,string,string]>={
+ "Primary button":["Leading icon → verb label → saving feedback.","Reserve the filled action for the next step.","Applying neutral overlays to a filled action.","Enter or Space activates; busy and disabled states are announced."],
+ "Secondary button":["Neutral surface → optional icon → verb label.","Offer an alternative to the primary action.","Using primary fill for a secondary choice.","Enter or Space activates; unavailable actions include a reason."],
+ "Tertiary button":["Text action with a generous invisible touch target.","Align the label with nearby content.","Using a trailing arrow for an action that does not navigate.","Enter or Space activates; the label names the destination or action."],
+ "Destructive button":["Destructive verb → confirmation when permanent.","Name the consequence before confirming.","Combining confirmation and Undo for the same operation.","Enter or Space activates; confirmation traps focus and Escape cancels."],
+ "Toggle button":["Check indicator → persistent selection label.","Keep the same label when pinned or unpinned.","Using action fill to indicate an on/off choice.","Enter or Space toggles; aria-pressed announces the state."],
+ "Filter chip":["Selected check → filter label → outlined pill.","Allow independent filters to be combined.","Making a non-interactive status badge look selectable.","Enter or Space toggles; aria-pressed announces selection."],
+ "Text field":["Label → editable value → helper or linked error.","Validate on blur; keep read-only values selectable.","Giving disabled or read-only values editable field chrome.","Tab focuses; type to edit, select and copy read-only values. Errors are linked by aria-describedby."],
+ "Radio":["Round boundary → selected dot → option label.","Use one uniquely named group for one choice.","Sharing radio names between separate theme specimens.","Arrow keys choose within the group; Space selects. The checked state is announced."],
+ "Checkbox":["Square boundary → check or mixed bar → label.","Use mixed only when some child options are selected.","Drawing a checkbox as a round radio.","Space toggles; checked and mixed states are announced."],
+ "Switch":["Label → track → thumb with on/off mark.","Apply the setting immediately when toggled.","Using a switch to submit a form or navigate.","Space toggles; role=switch and checked expose its state."],
+ "Slider":["Label and value → track → thumb → limits and ticks.","Show units in both visual and announced values.","Hiding the minimum, maximum or step size.","Arrows change by 5; Page Up/Down by 15; Home/End reach bounds."],
+ "Stepper":["Decrease → live value → increase.","Disable the button at its bound and support press-and-hold.","Allowing changes beyond the stated minimum and maximum.","Arrow Up/Right increases; Down/Left decreases; Home/End reach bounds. The named value is announced."],
+ "Segmented control":["Neutral track → edged raised radio choice.","Use two to four choices for an in-page view.","Calling a theme or view setting a tab panel.","Arrow keys move and select; Space selects. The radio group announces the checked choice."],
+ "Tabs":["Tab label → selected underline → associated panel.","Use tabs only when they control a content panel.","Using tab roles for unrelated settings.","Arrows move and activate; Home/End reach first/last. aria-controls links the panel."],
+ "Select":["Field label → value → chevron → option list.","Use the same disabled treatment as text fields.","Leaving the trigger as a form-submit button.","Enter or Space opens; arrows move; Escape closes and returns focus. Selection is announced."]
+};
 function StateMatrix(){
- const families=["Primary button","Secondary button","Tertiary button","Destructive button","Toggle button","Filter chip","Text field","Radio","Checkbox","Switch","Slider","Stepper","Segmented control","Tabs","Select"];
  return <div className="v7-matrix"><h3 className="v7-subhead">Component state reference</h3>
-  <p className="v7-meta">Open a component to compare its applicable states. These are visual references; the specimens above accept input.</p>
-  {families.map(kind=><details key={kind}><summary>{kind}</summary>
-    <div className="v7-doc-pair"><p><b>Anatomy</b> · {kind==="Text field"?"Label → control → helper or error.":kind==="Select"?"Label → value → chevron → options.":kind.includes("button")?"Optional leading icon → verb label → state feedback.":"Label → control → state indicator."}</p>
-      <p><b>Do</b> · {kind==="Filter chip"?"Use checks for selected filters.":kind==="Text field"?"Keep labels above values and explain unavailable fields.":"Keep one meaning and one label in every state."}</p>
-      <p><b>Avoid</b> · {kind==="Filter chip"?"Using a status badge as a tappable filter.":"Relying on colour alone or changing anatomy between themes."}</p>
-      <p><b>Keyboard</b> · {kind==="Text field"?"Tab to focus; select and copy read-only values. Errors are linked to the field.":kind==="Slider"?"Arrows ±5; Page Up/Down ±15; Home/End to bounds.":kind==="Radio"||kind==="Segmented control"||kind==="Tabs"?"Arrows move within the group. The selected item is announced.":"Tab to focus; Space or Enter to activate. The state is announced."}</p>
-    </div>
-    <div className="v7-state-grid">{specimenStates.map(state=><div key={state} className={"v7-state-cell "+(state==="Hover"?"v7-force-hover":state==="Pressed"?"v7-force-press":state==="Focus-visible"?"v7-force-focus":"")}>
-      <small>{state}</small><div inert aria-hidden="true"><StatePreview kind={kind} state={state}/></div>
-    </div>)}</div>
+  <p className="v7-meta">Open the component you want to inspect. Each reference contains its applicable states and interaction rules.</p>
+  {Object.entries(componentGuidance).map(([kind,[anatomy,use,avoid,keyboard]])=><details key={kind}><summary>{kind}</summary><div className="v7-doc-pair"><p><b>Anatomy</b> · {anatomy}</p><p><b>Use</b> · {use}</p><p><b>Avoid</b> · {avoid}</p><p><b>Keyboard and screen reader</b> · {keyboard}</p></div>
+    <div className="v7-state-grid">{specimenStates.map(state=><div key={state} className={"v7-state-cell "+(state==="Hover"?"v7-force-hover":state==="Pressed"?"v7-force-press":state==="Focus-visible"?"v7-force-focus":"")}><small>{state}</small><div inert aria-hidden="true"><StatePreview kind={kind} state={state}/></div></div>)}</div>
   </details>)}
  </div>;
 }
@@ -186,7 +191,7 @@ function StatePreview({kind,state}:{kind:string;state:SpecimenState}){
  if(kind==="Switch")return <label className="v7-switch-choice"><span>Reminders</span><input type="checkbox" role="switch" checked={selected} readOnly disabled={!!reason}/><span className="v7-switch-visual"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true"><path d={selected?"m5 10 3 3 7-7":"M5 10h10"}/></svg></span></span></label>;
  if(kind==="Slider")return <RangeSlider label="Duration" value={45} min={5} max={90} unit="min" onChange={()=>{}} disabledReason={reason}/>;
  if(kind==="Stepper")return <UI.Stepper label="Sessions" value={reason?0:3} min={0} max={reason?0:5} onChange={()=>{}}/>;
- if(kind==="Select")return <><UI.Picker label="Subject" value="Analysis" options={["Analysis","Algebra"]} onChange={()=>{}} disabled={!!reason}/>{reason&&<span className="v7-disabled-reason">{reason}</span>}</>;
+ if(kind==="Select")return <><UI.Picker label="Subject" value="Analysis" options={["Analysis","Algebra"]} onChange={()=>{}} disabledReason={reason} disabled={!!reason}/></>;
  return <UI.Segmented tabs={kind==="Tabs"} label={kind} value={selected?"Cards":"Atlas"} options={["Cards","Atlas"]} onChange={()=>{}} disabled={!!reason}/>;
 }
 function StepperExample(){const [value,setValue]=useState(3);return <UI.Stepper label="Daily sessions" value={value} onChange={setValue} min={0} max={5}/>;}
@@ -207,7 +212,7 @@ function PatternPanel(){
     <DemoNote>∎ means the end of a demonstrated proof. A star fills only after its checkpoint is demonstrated. Reduced motion shows the final state immediately.</DemoNote>
   </div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Statement cards</h3>
-   <StatementCard kind="Theorem" demonstrated/><StatementCard kind="Definition"/><StatementCard kind="Lemma" demonstrated/><StatementCard kind="Example"/><StatementCard kind="Exercise" number="4.3"/><StatementCard kind="Proof" demonstrated/>
+   {(["Theorem","Definition","Lemma","Example","Exercise","Proof"] as const).map((kind,index)=><StatementCard key={kind} kind={kind} number={`4.${index+1}`} demonstrated={["Theorem","Lemma","Proof"].includes(kind)}/>)}
   </div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Paths and rows</h3><PathRow subject="Analysis" title="Continuity and limits"/><PathRow subject="Topology" title="Compact spaces" demonstrated/></div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Measures</h3>
@@ -217,8 +222,8 @@ function PatternPanel(){
     <MasteryBar subject="Topology" value={100}/><MasteryBar subject="Probability" value={0}/>
   </div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Feedback and decisions</h3>
-    <FeedbackBanner tone="info" action="Retry now" onAction={()=>setRetry(true)}>{retry?"Info · Connection restored. Changes are saved.":"Offline · Changes are saved on this device. Retrying the sync in 10 s."}</FeedbackBanner>
-    <FeedbackBanner tone="danger" action="Retry now" onAction={()=>setRetry(true)}>Danger · Couldn't save. Check your connection, then retry.</FeedbackBanner>
+    <FeedbackBanner tone="info" action="Retry now" onAction={()=>setRetry(true)}>{retry?"Connection restored. Changes are saved.":"Offline · Changes are saved on this device. Retrying the sync in 10 s."}</FeedbackBanner>
+    <FeedbackBanner tone="danger" action="Retry now" onAction={()=>setRetry(true)}>Couldn't save. Check your connection, then retry.</FeedbackBanner>
     <div className="v7-demo-row"><button className="v7-demo-trigger" type="button" onClick={()=>setToast(!toast)}>
       {toast?"Dismiss toast":"Show undo toast"}</button>
       <button className="v7-demo-trigger" type="button" onClick={()=>setSheet(true)}>Open delete confirmation</button></div>
@@ -237,6 +242,9 @@ function PatternPanel(){
  </>;
 }
 function ChartsPanel(){
+ const today=new Date(),end=Date.UTC(today.getFullYear(),today.getMonth(),today.getDate());
+ const weekday=(new Date(end).getUTCDay()+6)%7,start=end-(13*7+weekday)*86400000;
+ const activity=Array.from({length:Math.floor((end-start)/86400000)+1},(_,index)=>({date:new Date(start+index*86400000).toISOString().slice(0,10),value:[0,6,22,45,75][index%5]}));
  return <div className="v7-compare-group">
   <div className="v7-viz-card"><Chart title="Study time" kind="stacked" data={[
     {label:"Mon",values:[2,1]},{label:"Tue",values:[3,2]},{label:"Wed",values:[1,2]}]}
@@ -244,9 +252,7 @@ function ChartsPanel(){
   <div className="v7-viz-card"><Chart title="Recall" kind="line" area data={[
     {label:"Mon",values:[72]},{label:"Tue",values:[86]},{label:"Wed",values:[91]}]}
     series={[{label:"Recall",color:"var(--v7-role-viz-heat4)"}]} format={n=>Math.round(n)+"%"}/></div>
-  <div className="v7-viz-card"><Heatmap title="Activity" data={Array.from({length:28},(_,i)=>({
-    date:new Date(Date.UTC(2026,9,5+i)).toISOString().slice(0,10),
-    value:[0,6,22,45,75][i%5]}))} format={n=>n+" min"}/></div>
+  <div className="v7-viz-card"><Heatmap title="Activity" data={activity} format={n=>n+" min"}/></div>
   <div className="v7-viz-card"><HorizontalBars title="Time by subject" data={[
     {label:"Analysis",value:6,color:"var(--v7-role-subject-analysis)"},
     {label:"Algebra",value:4,color:"var(--v7-role-subject-algebra)"},
@@ -263,7 +269,7 @@ export default function V7Page(){
  useEffect(()=>{const root=document.documentElement;root.dataset.contrast=high?"high":"standard";root.dataset.density=density;return()=>{delete root.dataset.contrast;delete root.dataset.density;};},[high,density]);
  return <main className="v7-kit" id="main-content">
   <header className="v7-kit-header">
-   <div className="v7-between"><p className="v7-eyebrow">Lemma · Constellation</p><span className="v7-kit-version">UI Kit / 1.0.1</span></div>
+   <div className="v7-between"><p className="v7-eyebrow">Lemma · Constellation</p><span className="v7-kit-version">UI Kit / 1.0.2</span></div>
    <h1 className="v7-display">A little more clarity.</h1>
    <p className="v7-intro">Notebook by day. Observatory by night. One mathematical language for everything you learn.</p>
    <UI.Segmented label="Theme" options={["Day","Night"]} value={theme}
@@ -271,7 +277,7 @@ export default function V7Page(){
       try {localStorage.setItem("lemma.v7Kit.theme",t);}catch{ /* storage is optional */ }
      }}/> 
    <label className="v7-check-choice"><input type="checkbox" checked={high} onChange={e=>setHigh(e.target.checked)}/>High contrast comparison</label>
-   <label className="v7-density-label">Density<select value={density} onChange={event=>setDensity(event.target.value)}><option value="comfortable">Comfortable</option><option value="compact">Compact</option></select></label>
+   <UI.Picker label="Density" value={density==="compact"?"Compact":"Comfortable"} options={["Comfortable","Compact"]} onChange={value=>setDensity(value.toLowerCase())}/>
    <p className="v7-meta">Day and Night are shown together throughout the kit. Only role-token values change between them.</p>
   </header>
   <Section number="01" title="Principles" description="Six constraints guide every decision, from layout to the completion of a proof.">
@@ -286,8 +292,9 @@ export default function V7Page(){
       <h3 className="v7-subhead">Role colours · live contrast</h3><TokenPalette theme={theme} high={high}/>
       <h3 className="v7-subhead">Type roles</h3><TypeSpecimen/>
       <h3 className="v7-subhead">Space · shape · elevation</h3>
-      <div className="v7-token-measures">{[4,8,12,16,20,24,32,40,48,64,80].map(value=><span key={value}>{value} px</span>)}</div>
-      <div className="v7-demo-row"><Tag subject="Analysis"/><Badge>Badge 8 px</Badge><div className="v7-surface-sample">Raised · 16 px</div></div>
+      <div className="v7-token-measures">{[1,2,3,4,5,6,8,10,12,16,20].map(step=><div key={step}><i style={{width:`var(--v7-space-${step})`}}/><span>{step*4} px</span></div>)}</div>
+      <div className="v7-foundation-examples">{[["xs","xs"],["sm","1"],["md","2"],["lg","3"],["xl","4"]].map(([label,key])=><div key={label}><i className="v7-radius-example" style={{borderRadius:`var(--v7-radius-${key})`}}/><span>radius.{label}</span></div>)}</div>
+      <div className="v7-foundation-examples">{[1,2,3].map(level=><div key={level}><i className="v7-elevation-example" style={{boxShadow:`var(--v7-shadow-${level})`}}/><span>Elevation {level}</span></div>)}</div>
       <p className="v7-meta">Motion: 80 · 120 · 200 · 320 · 600 · 900 ms. Reduced motion removes travel and shimmer.</p>
       <div className="v7-demo-row">{[["xs",80],["sm",120],["md",200],["lg",320],["xl",600],["emblem",900]].map(([role,ms])=><button key={role} type="button" className="v7-demo-trigger" style={{"--v7-motion-duration":ms+"ms"} as CSSProperties} onClick={event=>{const target=event.currentTarget;target.classList.remove("v7-motion-play");requestAnimationFrame(()=>requestAnimationFrame(()=>target.classList.add("v7-motion-play")));}}>Play {role} · {ms} ms</button>)}</div>
     </>}</Compare>
@@ -297,7 +304,7 @@ export default function V7Page(){
   </Section>
   <Section number="04" title="Components and states" description="One interaction model: rest, hover, pressed, selected, focus, disabled, read-only, loading and invalid.">
     <Compare high={high} density={density}>{()=> <ComponentsPanel/>}</Compare>
-    <DemoNote>Keyboard: Tab to move; arrows within radios and tabs; Space or Enter to activate; Escape to close menus and sheets. Read-only values are selectable. All controls have accessible names.</DemoNote>
+    <DemoNote>Keyboard: Tab to move; arrows within radios and tabs; Space to toggle checkboxes and switches; Enter or Space to activate buttons; Escape to close menus and sheets. Read-only values are selectable. All controls have accessible names.</DemoNote>
   </Section>
   <Section number="05" title="Patterns" description="Single-step heroes, proof-first cards, Constellation progress and feedback that explains the next move.">
     <Compare high={high} density={density}>{()=> <PatternPanel/>}</Compare>
@@ -306,9 +313,9 @@ export default function V7Page(){
     <Compare high={high} density={density}>{()=> <ChartsPanel/>}</Compare>
   </Section>
   <Section number="07" title="Changelog" description="Versioned guidance for implementing this system consistently across Lemma.">
-    <div className="v7-change-card"><span className="v7-kit-version">1.0.1 · Constellation</span>
+    <div className="v7-change-card"><span className="v7-kit-version">1.0.2 · Constellation</span>
       <h3 className="v7-subhead">Notebook and Observatory</h3>
-      <p>Corrected the shared style cascade, subject glyphs and generated tiles, loading widths, independent theme controls, statement variants, checkpoint completion, and full-width data graphics. Foundations and all three variable tiers now export from the token source.</p>
+      <p>Resolved pressed-action contrast, edged neutral segments, tab hover contrast, completion-marker placement, disabled Select semantics and truthful token pairings. Replaced legacy styles with cascade layers and refined documentation, heatmaps and phone navigation.</p>
       <p className="v7-meta">The v7 feature flag remains off until the Owner approves the gallery, six golden screens, responsive layouts and device accessibility checks.</p>
     </div>
   </Section>

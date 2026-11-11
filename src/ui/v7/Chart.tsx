@@ -94,7 +94,8 @@ export function Heatmap({ title, data, format = String }: { title: string; data:
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
     {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
-      <div className="v7-heatmap-frame" style={style}>
+      <div className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
+        <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>
         <div className="v7-heatmap-days" aria-hidden="true">{["M", "T", "W", "T", "F", "S", "S"].map((day, index) => <span key={index}>{day}</span>)}</div>
         <div className="v7-heatmap" role="group" aria-label={title}>
           {Array.from({ length: offset }, (_, index) => <span key={`pad-${index}`} aria-hidden="true" />)}
@@ -103,7 +104,8 @@ export function Heatmap({ title, data, format = String }: { title: string; data:
             style={{ "--v7-heat-color": item.value <= 0 ? "transparent" : `var(--v7-role-viz-heat${item.value <= 15 ? 1 : item.value <= 30 ? 2 : item.value <= 60 ? 3 : 4})` } as CSSProperties}
             onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onKeyDown={event => { movePoint(event, index, data.length, 7); }}><span aria-hidden="true" /></button>)}
         </div>
-      </div>
+      </div></div>
+      <p className="v7-caption">{weeks} weeks · Scroll horizontally on narrow screens. Today has an outlined cell.</p>
       <div className="v7-heat-swatches" aria-label="Heatmap legend">{["0", "1–15", "16–30", "31–60", "60+ min"].map((label, index) => <span key={label}><i style={{ background: index === 0 ? "transparent" : `var(--v7-role-viz-heat${index})` }} aria-hidden="true" />{label}</span>)}</div>
     </>}
     {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {displayHeatmapDate(data[selected].date)}</p>}

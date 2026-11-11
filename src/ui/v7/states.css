@@ -1,0 +1,39 @@
+@layer v7-states {
+ /* Filled actions never receive neutral state overlays. These colours are the audited tokens. */
+ :where(html[data-v7]) :is(.v7-state-button,.v7-button,.v7-toggle-button,.v7-filter-chip):not(:disabled):active {transform:scale(var(--v7-pressed));}
+ :where(html[data-v7]) :is(.v7-state-button,.v7-button,.v7-toggle-button,.v7-filter-chip):not(:disabled):not(.v7-action-primary,.v7-primary,.v7-action-confirm):active,
+ :where(html[data-v7]) .v7-force-press :is(.v7-state-button,.v7-button,.v7-toggle-button,.v7-filter-chip):not(.v7-action-primary,.v7-primary,.v7-action-confirm) {background-image:linear-gradient(var(--v7-role-state-pressed),var(--v7-role-state-pressed));}
+ :where(html[data-v7]) :is(.v7-action-primary,.v7-primary):not(:disabled):active,
+ :where(html[data-v7]) .v7-force-press :is(.v7-action-primary,.v7-primary) {background:var(--v7-role-action-pressed);color:var(--v7-role-text-on-action);}
+ :where(html[data-v7]) :is(.v7-action-confirm):not(:disabled):active {background:var(--v7-role-status-danger-hover);}
+ :where(html[data-v7]) .v7-force-press :is(.v7-state-button,.v7-button,.v7-toggle-button,.v7-filter-chip) {transform:scale(var(--v7-pressed));}
+ :where(html[data-v7]) .v7-force-focus :is(button,input),
+ :where(html[data-v7]) :is(button,input,select,[tabindex]):focus-visible {outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);outline-offset:var(--v7-focus-gap);}
+ :where(html[data-v7]) .v7-segmented [aria-checked="true"] {border:var(--v7-hairline) solid var(--v7-role-border-default);font-weight:700;color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-tabs button {color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-tabs [aria-selected="true"] {color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) :is(.v7-field,.v7-picker):disabled,
+ :where(html[data-v7]) :is(.v7-button,.v7-state-button,.v7-toggle-button,.v7-filter-chip,.v7-icon-button):disabled:not([aria-busy="true"]) {background:transparent;background-image:none;border:var(--v7-hairline) solid var(--v7-role-border-subtle);box-shadow:none;color:var(--v7-role-text-disabled);opacity:1;}
+ :where(html[data-v7]) .v7-field-group:has(.v7-picker:disabled) > span {color:var(--v7-role-text-disabled);}
+ :where(html[data-v7]) .v7-force-hover :is(input,.v7-switch-visual,.v7-segmented,.v7-tabs) {background-color:var(--v7-role-surface-muted-hover);}
+ :where(html[data-v7]) .v7-force-hover :is(.v7-state-button,.v7-button,.v7-filter-chip,.v7-toggle-button):not(.v7-action-primary,.v7-primary,.v7-action-confirm) {background-image:linear-gradient(var(--v7-role-state-hover),var(--v7-role-state-hover));}
+ :where(html[data-v7]) .v7-force-hover :is(.v7-action-primary,.v7-primary) {background:var(--v7-role-action-hover);}
+ @media(hover:hover) {
+  :where(html[data-v7]) :is(.v7-state-button,.v7-button,.v7-filter-chip,.v7-toggle-button,.v7-icon-button,.v7-path-row):not(:disabled):not(.v7-action-primary,.v7-primary,.v7-action-confirm):hover {background-image:linear-gradient(var(--v7-role-state-hover),var(--v7-role-state-hover));}
+  :where(html[data-v7]) :is(.v7-action-primary,.v7-primary):not(:disabled):hover {background:var(--v7-role-action-hover);}
+  :where(html[data-v7]) .v7-action-confirm:not(:disabled):hover {background:var(--v7-role-status-danger-hover);}
+  :where(html[data-v7]) .v7-tabs button:hover {color:var(--v7-role-text-secondary);}
+  /* A held press wins even while the pointer remains over the button. */
+  :where(html[data-v7]) :is(.v7-action-primary,.v7-primary):not(:disabled):hover:active {background:var(--v7-role-action-pressed);}
+ }
+}
+@layer v7-accessibility {
+ :where(html[data-v7]) .v7-emblem-broken path {stroke-dasharray:.38 .16 .46;stroke-dashoffset:0;animation:none;}
+ @media(forced-colors:active){:where(html[data-v7]) .v7-segmented [aria-checked="true"] {border-color:Highlight;color:Highlight;}:where(html[data-v7]) :is(.v7-field,.v7-picker):disabled {border-color:GrayText;color:GrayText;}}
+}
+
+@layer v7-states {
+ :where(html[data-v7]) .v7-check-choice input:disabled::after {border-color:var(--v7-role-text-disabled);}
+ :where(html[data-v7]) .v7-check-choice input:disabled:indeterminate::after {background:var(--v7-role-text-disabled);}
+ :where(html[data-v7]) .v7-radio-choice input:disabled:checked::after {background:var(--v7-role-text-disabled);}
+}

@@ -76,7 +76,7 @@ it("moves a segmented choice with arrows and keeps only one tab stop", async () 
     ),
   );
   expect(document.activeElement).toBe(buttons[1]);
-  expect(buttons[1].getAttribute("aria-selected")).toBe("true");
+  expect(buttons[1].getAttribute("aria-checked")).toBe("true");
   expect(buttons[0].tabIndex).toBe(-1);
 });
 it("opens a native modal, cancels on Escape and returns focus after closing", async () => {
@@ -157,9 +157,9 @@ it("separates ready, completed and mastery indicators from subject identity", as
       </>,
     ),
   );
-  expect(host.querySelector(".v7-chip-ready svg")).not.toBeNull();
-  expect(host.querySelector(".v7-chip-status svg")).not.toBeNull();
-  expect(host.querySelector(".v7-chip-mastery .v7-proof")?.textContent).toBe("∎");
+  expect(host.querySelector(".v7-badge.v7-tone-info svg")).not.toBeNull();
+  expect(host.querySelector(".v7-badge.v7-tone-success svg")).not.toBeNull();
+  expect(host.querySelector(".v7-badge .v7-proof")?.textContent).toBe("∎");
   expect(host.querySelector('[role="meter"][aria-label="Complete"]')?.getAttribute("aria-valuetext")).toBe("Complete");
   expect(host.querySelector(".v7-meter-row[data-complete=true]")).not.toBeNull();
   expect(host.querySelector(".v7-meter-row[data-complete=false]")).not.toBeNull();

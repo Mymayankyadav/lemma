@@ -4,26 +4,8 @@ import { Emblem } from "./Emblem";
 import { Toast } from "./components";
 import { haptic } from "./haptics";
 
-export const subjects = ["Analysis", "Algebra", "Topology", "Number theory", "Geometry", "Logic", "Probability", "Combinatorics"] as const;
-export type Subject = typeof subjects[number] | "Other";
-export const subjectClass = (subject: Subject) => "v7-subject-" + (subjects.indexOf(subject as typeof subjects[number]) + 1);
-const glyphs: Record<Subject, string> = {
-  Analysis: "M2 10C5 2 7 2 10 10S15 18 18 10M2 6C7 6 7 14 12 14S16 6 18 6",
-  Algebra: "M3 16L7 3M8 17L12 4M2 11L17 14",
-  Topology: "M10 3C1 3 1 17 10 17S19 3 10 3ZM4 6C16 0 16 20 4 14",
-  "Number theory": "M10 2A8 8 0 1 0 10 18A8 8 0 1 0 10 2ZM3 13L16 6M4 5L15 16",
-  Geometry: "M3 15L10 3L17 15ZM3 15A8 8 0 0 1 17 15M3 15A8 8 0 0 0 17 15",
-  Logic: "M10 2L3 7V13L10 18L17 13V7ZM3 7L10 11L17 7M10 11V18",
-  Probability: "M2 16C6 16 6 4 10 4S14 16 18 16M3 18H17",
-  Combinatorics: "M10 2L2 17H18ZM6 10H14M6 10L10 17L14 10",
-  Other: "M10 10C-2 0 22 0 10 10C20-2 20 22 10 10C22 20-2 20 10 10C0 22 0-2 10 10",
-};
-export function SubjectMark({ subject, size = "glyph", seed = subject }: { subject: Subject; size?: "glyph" | "tile" | "hero"; seed?: string }) {
-  return <span className={`v7-subject-mark ${subjectClass(subject)} v7-mark-${size}`} aria-hidden="true">
-    {size === "glyph" ? <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d={glyphs[subject]} /></svg> :
-      <Emblem subject={subject} seed={seed} size={size === "tile" ? 48 : 164} animate={false} />}
-  </span>;
-}
+import { SubjectMark, subjectClass, type Subject } from "./Subject";
+export { subjects, SubjectMark, subjectClass, type Subject } from "./Subject";
 export function Tag({ subject }: { subject: Subject }) {
   return <span className={`v7-tag ${subjectClass(subject)}`}><SubjectMark subject={subject} /><span>{subject}</span></span>;
 }
@@ -91,26 +73,22 @@ export function FormField({ label, helper = "", optional = false, initial = "", 
       (helper || disabledReason) && <p id={id + "-helper"} className="v7-field-hint">{disabledReason ?? helper}</p>}
   </div>;
 }
-function timeMinutes(v: string) { const [h, m] = v.split(":").map(Number); return h * 60 + m; }
-function toTime(v: number) { const t = ((v % 1440) + 1440) % 1440; return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); }
-export function TimeRangeField() {
-  const [start, setStart] = useState("09:00"), [end, setEnd] = useState("09:50"), [custom, setCustom] = useState(false);
-  const duration = (timeMinutes(end) - timeMinutes(start) + 1440) % 1440;
-  const selected = [25, 50, 90].includes(duration) ? duration : 0;
-  const setPreset = (n: number) => { setCustom(false); setEnd(toTime(timeMinutes(start) + n)); };
-  return <fieldset className="v7-time-range"><legend>Time range</legend>
-    <div className="v7-time-pair">
-      <label>Start<span className="v7-time-input"><input type="time" value={start} step={300} required onChange={e => { const next = e.target.value; if (!next) return; setStart(next); setEnd(toTime(timeMinutes(next) + duration)); }} /><Clock3 size={20} aria-hidden="true" /></span></label>
-      <span className="v7-range-dash" aria-hidden="true">–</span>
-      <label>End<span className="v7-time-input"><input type="time" value={end} step={300} required onChange={e => { if (e.target.value) { setEnd(e.target.value); setCustom(![25, 50, 90].includes((timeMinutes(e.target.value) - timeMinutes(start) + 1440) % 1440)); } }} /><Clock3 size={20} aria-hidden="true" /></span></label>
-    </div>
-    <div className="v7-preset-wrap" role="group" aria-label="Session duration presets">
-      {[25, 50, 90].map(n => <FilterChip key={n} selected={!custom && selected === n} onChange={() => setPreset(n)}>{n} min</FilterChip>)}
-      <FilterChip selected={custom} onChange={() => setCustom(true)}>Custom</FilterChip>
-    </div>
-    {custom && <RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n => setEnd(toTime(timeMinutes(start) + n))} />}
-    <p className="v7-field-hint">{duration} min session · {start}–{end}{end < start ? " · Ends the next day" : ""}</p>
-  </fieldset>;
+function timeMinutes(value:string){const [h,m]=value.split(":").map(Number);return h*60+m;}
+function toTime(value:number){const t=((value%1440)+1440)%1440;return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");}
+function validTime(value:string){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);}
+export function TimeRangeField(){
+ const id=useId(),[start,setStart]=useState("09:00"),[end,setEnd]=useState("09:50"),[draftStart,setDraftStart]=useState(start),[draftEnd,setDraftEnd]=useState(end),[error,setError]=useState(""),[custom,setCustom]=useState(false);
+ const duration=(timeMinutes(end)-timeMinutes(start)+1440)%1440;
+ function updateEnd(value:string){setEnd(value);setDraftEnd(value);}
+ function commitStart(){if(!validTime(draftStart)){setError("Enter a start time in 24-hour HH:MM format.");return;}setError("");setStart(draftStart);updateEnd(toTime(timeMinutes(draftStart)+duration));}
+ function commitEnd(){if(!validTime(draftEnd)){setError("Enter an end time in 24-hour HH:MM format.");return;}setError("");setEnd(draftEnd);setCustom(![25,50,90].includes((timeMinutes(draftEnd)-timeMinutes(start)+1440)%1440));}
+ return <fieldset className="v7-time-range"><legend>Time range</legend><div className="v7-time-pair">
+  <label>Start<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftStart} placeholder="09:00" aria-describedby={id} aria-invalid={!!error&&!validTime(draftStart)||undefined} onChange={e=>setDraftStart(e.target.value)} onBlur={commitStart}/><Clock3 size={20} aria-hidden="true"/></span></label>
+  <span className="v7-range-dash" aria-hidden="true">–</span>
+  <label>End<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftEnd} placeholder="09:50" aria-describedby={id} aria-invalid={!!error&&!validTime(draftEnd)||undefined} onChange={e=>setDraftEnd(e.target.value)} onBlur={commitEnd}/><Clock3 size={20} aria-hidden="true"/></span></label>
+ </div><div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);updateEnd(toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>
+ {custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>updateEnd(toTime(timeMinutes(start)+n))}/>}
+ <p id={id} className={error?"v7-field-error":"v7-field-hint"}>{error||`${duration} min session · ${start}–${end}${end<start?" · Ends the next day":""} · 24-hour time`}</p></fieldset>;
 }
 export function RadioGroup({ disabledReason }: { disabledReason?: string }) {
   const [value, setValue] = useState("Review"), name = useId();
@@ -154,8 +132,8 @@ export function MasteryBar({ subject, value, total = 100 }: { subject: Subject; 
   return <div className={`v7-mastery ${subjectClass(subject)}`}>
     <div className="v7-mastery-caption"><span><SubjectMark subject={subject} />{subject}</span><span>{pct === 0 ? "Not started" : current + " of " + safeTotal}</span></div>
     <div className="v7-mastery-track" role="progressbar" aria-label={subject + " mastery"} aria-valuenow={current} aria-valuemin={0} aria-valuemax={safeTotal} aria-valuetext={pct >= 100 ? "Demonstrated" : current + " of " + safeTotal}>
-      <span style={{ width: pct + "%" }} />{pct >= 100 && <b aria-hidden="true">∎</b>}
-    </div>{pct >= 100 && <ProofBadge state="demonstrated" />}
+      <span style={{ width: pct + "%" }} />
+    </div>{pct >= 100 && <span className="v7-mastery-complete"><b className="v7-mastery-end" aria-hidden="true">∎</b><ProofBadge state="demonstrated" /></span>}
   </div>;
 }
 export function ConstellationProgress({ subject = "Analysis", demonstrated = false }: { subject?: Subject; demonstrated?: boolean }) {
@@ -203,7 +181,7 @@ export function EmptyEmblem({ subject = "Analysis" }: { subject?: Subject }) {
   return <div className="v7-empty-emblem"><SubjectMark subject={subject} size="hero" /><h3 className="v7-subhead">Your next idea belongs here.</h3><p>Add a path in {subject} to begin exploring a new idea.</p><StateButton>Add a path</StateButton></div>;
 }
 export function ErrorEmblem({ subject = "Analysis" }: { subject?: Subject }) {
-  return <div className="v7-empty-emblem v7-broken-emblem"><SubjectMark subject={subject} size="hero" /><h3 className="v7-subhead">This {subject} path could not load.</h3><p>Check your connection, then retry.</p><StateButton>Retry</StateButton></div>;
+  return <div className="v7-empty-emblem v7-broken-emblem"><SubjectMark subject={subject} size="hero" broken /><h3 className="v7-subhead">This {subject} path could not load.</h3><p>Check your connection, then retry.</p><StateButton>Retry</StateButton></div>;
 }
 /** One event owns the full completion sequence; no unrelated gallery state is updated. */
 export function CompletionPattern() {

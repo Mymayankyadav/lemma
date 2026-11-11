@@ -1109,6 +1109,46 @@
           "name": "foundation/texture-star",
           "type": "dimension",
           "value": "1.5px"
+        },
+        {
+          "name": "effects/backdrop",
+          "type": "STRING",
+          "modes": {
+            "day": "rgb(18 27 49 / 40%)",
+            "night": "rgb(0 0 0 / 60%)",
+            "day-hc": "rgb(18 27 49 / 40%)",
+            "night-hc": "rgb(0 0 0 / 60%)"
+          }
+        },
+        {
+          "name": "effects/shadow-1",
+          "type": "STRING",
+          "modes": {
+            "day": "0 1px 2px rgb(18 27 49 / 6%)",
+            "night": "inset 0 1px rgb(255 255 255 / 5%)",
+            "day-hc": "0 1px 2px rgb(18 27 49 / 6%)",
+            "night-hc": "inset 0 1px rgb(255 255 255 / 5%)"
+          }
+        },
+        {
+          "name": "effects/shadow-2",
+          "type": "STRING",
+          "modes": {
+            "day": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "night": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
+            "day-hc": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "night-hc": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)"
+          }
+        },
+        {
+          "name": "effects/shadow-3",
+          "type": "STRING",
+          "modes": {
+            "day": "0 24px 64px rgb(18 27 49 / 18%)",
+            "night": "0 24px 64px rgb(0 0 0 / 60%)",
+            "day-hc": "0 24px 64px rgb(18 27 49 / 18%)",
+            "night-hc": "0 24px 64px rgb(0 0 0 / 60%)"
+          }
         }
       ]
     },
@@ -2382,6 +2422,26 @@
           "type": "dimension",
           "alias": "{foundation.raw.texture-star}",
           "description": "Shared texture star foundation."
+        },
+        {
+          "name": "effects/backdrop",
+          "type": "STRING",
+          "alias": "{foundation.effects.backdrop}"
+        },
+        {
+          "name": "effects/shadow-1",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-1}"
+        },
+        {
+          "name": "effects/shadow-2",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-2}"
+        },
+        {
+          "name": "effects/shadow-3",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-3}"
         }
       ]
     },

@@ -18,7 +18,7 @@ test("the new v7 gallery shows Day and Night together, and four contrast modes",
  await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");
  await expect(pair.nth(1)).toHaveAttribute("data-contrast","high");
  await page.getByRole("checkbox",{name:"High contrast comparison"}).uncheck();
- await page.getByRole("tab",{name:"Night",exact:true}).click();
+ await page.getByRole("radio",{name:"Night",exact:true}).click();
  await expect(page.locator("html")).toHaveAttribute("data-theme","graph-night");
 });
 test("nine subject constructions and three levels appear in each mode",async({page})=>{
@@ -42,7 +42,7 @@ test("time range, form states and controls are usable with keyboard",async({page
  await expect(controls.getByRole("button",{name:"50 min",exact:true})).toHaveAttribute("aria-pressed","true");
  await controls.getByRole("button",{name:"25 min",exact:true}).click();
  await expect(controls.getByRole("button",{name:"25 min",exact:true})).toHaveAttribute("aria-pressed","true");
- await expect(controls.locator('input[type="time"]').nth(1)).toHaveValue("09:25");
+ await expect(controls.locator('.v7-time-input input').nth(1)).toHaveValue("09:25");
  await expect(controls.getByRole("textbox",{name:"Pinned theorem",exact:true})).toHaveAttribute("readonly","");
  await expect(controls.getByRole("switch",{name:/Session reminders/}).nth(1)).toBeDisabled();
  const menu=controls.getByRole("button",{name:"Open menu"});
