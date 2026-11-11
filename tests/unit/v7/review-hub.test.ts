@@ -2,6 +2,7 @@ import {describe,expect,it} from 'vitest';
 import type {DeckNode,InsightData} from '../../../src/data/types';
 import type {Subject} from '../../../src/ui/v7/Subject';
 import {activeSubject,selectionForSlug,clock,forecastBars,memoryStats,roundSummary,selectionFor,subjectSegments} from '../../../src/features/review/v7/reviewModel';
+import {cadenceText,dueChip,lastText} from '../../../src/features/practice/v7/practiceModel';
 import {v7ScreenFor} from '../../../src/app/v7Kit';
 
 const node=(slug:string,due:number,children:{code:string;due:number}[]=[]):DeckNode=>({key:'project:'+slug,label:slug,glyph:'sigma' as never,level:0,due,
@@ -48,5 +49,23 @@ describe('v7 review hub model',()=>{
   expect(v7ScreenFor('/review')).toBe('review');
   expect(v7ScreenFor('/review/done','?run=abc')).toBe('review-done');
   expect(v7ScreenFor('/review/done')).toBeNull();
+  expect(v7ScreenFor('/practice')).toBe('practice');
+ });
+});
+
+describe('v7 practice labels',()=>{
+ it('words the due chip by day distance',()=>{
+  expect(dueChip(null,'2026-11-11')).toEqual({label:'Not scheduled',tone:'none'});
+  expect(dueChip('2026-11-11','2026-11-11')).toEqual({label:'Due today',tone:'today'});
+  expect(dueChip('2026-11-10','2026-11-11')).toEqual({label:'Overdue · 1 day',tone:'overdue'});
+  expect(dueChip('2026-11-08','2026-11-11')).toEqual({label:'Overdue · 3 days',tone:'overdue'});
+  expect(dueChip('2026-11-14','2026-11-11')).toEqual({label:'In 3 days',tone:'upcoming'});
+ });
+ it('says the cadence and last practice in words',()=>{
+  expect(cadenceText({kind:'fixed_days',days:3})).toBe('Every 3 days');
+  expect(cadenceText({kind:'after_rating',daysByRating:[1,2,3,4]})).toBe('Adapts to your rating');
+  expect(lastText(null,'2026-11-11')).toBe('Not practised yet');
+  expect(lastText('2026-11-10T09:00:00Z','2026-11-11')).toBe('Last practised yesterday');
+  expect(lastText('2026-11-01T09:00:00Z','2026-11-11')).toBe('Last practised 10 days ago');
  });
 });

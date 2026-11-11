@@ -113,6 +113,7 @@ Behind `v7Shell` (default off). `/review` is a v7 screen; `/review/done` is one 
 - **Search** (§6.1 G, `SearchSheet.tsx`, `searchModel.ts`): Recent and Actions before typing; while typing, groups of at most four rows with "Show all", in the order Paths, Checkpoints, Cards, Concepts, Tasks, Settings, Actions, with up/down/Enter. Recent items are kept on this device only.
 - **Review hub** (§6.4 A, `src/features/review/v7/`): the hero count, a proportional subject bar (each segment is a labelled button that narrows the round to that subject), Start review or Resume, a "Customise this round" sheet (deck and checkpoint switches), Due each day, memory tiles (Recall, Reviews, Typical answer time as a median over 30 days) and deck rows with switches. `/review?path=<slug>` pre-selects one path, which is what Path's "Review N" now opens.
 - **Round complete** (§6.4 C, `src/features/review-done/v7/`): proof mark, three stat tiles, a 28 px grade bar with counts and a legend, "Next: N cards tomorrow", Done and "Review N more" (up to 10 more due cards, as a new durable run).
+- **Practice** (§6.13, `src/features/practice/v7/`): one card per topic (title, due chip, cadence in words, last practised), a small Practice button opening a sheet with the four named ratings, notes, an optional timer and Save; Manage holds cadence, history with Void, and Archive; archived topics sit under a disclosure. It reuses the existing practice-topic API and loaders. `/practice` highlights the Review tab, and the hub has Review / Cards / Practice links.
 - **Path** (Part 4 gaps closed): Pause/Resume and Archive in More (with Undo), a card list in the Cards tab, path-scoped review.
 
 Known gaps:
@@ -120,5 +121,5 @@ Known gaps:
 - The durable run stores no grades, so the Round complete grade bar and "recalled first try" are read from the reviews recorded between the run's start and end. Cards re-asked in the same round count each time. Cards and time use the run itself and the recorded durations.
 - Capture shows Undo only (the shared Toast supports one action), not "Open". "Start focus" in Search goes to Today.
 - Search checkpoints come from the first 12 paths only, to bound the requests.
-- Practice (§6.13) and the remaining Today/Focus states are not built; Calendar Week/Month/Agenda, the block sheet and quick-add restyle, planner suggestions, the overdue sheet, Tasks and Close the day are Part 7.
+- The remaining Today/Focus states are not built; Calendar Week/Month/Agenda, the block sheet and quick-add restyle, planner suggestions, the overdue sheet, Tasks and Close the day are Part 7.
 - Verification is by CI plus pure-function unit tests run locally; there was no local Playwright, typecheck or device run.

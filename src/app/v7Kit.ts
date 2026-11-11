@@ -3,7 +3,7 @@ import { isFlagOn } from "../flags";
  * Screens rebuilt for v7 so far. Every other route keeps the v6/legacy shell until it is
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
-export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "calendar-day" | "path";
+export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "calendar-day" | "path";
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
@@ -16,6 +16,7 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (path === "/" || path === "") return "today";
   if (path === "/focus") return "focus";
   if (path === "/review") return "review";
+  if (path === "/practice") return "practice";
   if (path === "/review/run") return "review-run";
   // Only durable runs have a v7 results screen; a local round keeps its existing Done page.
   if (path === "/review/done") return new URLSearchParams(search).has("run") ? "review-done" : null;

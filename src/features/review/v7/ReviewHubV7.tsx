@@ -65,6 +65,7 @@ export default function ReviewHubV7(){
  const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):'Nothing selected for this round';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
   <HubHeader title="Review" settings/>
+  <nav className="v7-rv-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Review</Link><Link to="/cards">Cards</Link><Link to="/practice">Practice</Link></nav>
   {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
   {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Could not load your review decks.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}

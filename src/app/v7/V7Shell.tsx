@@ -15,7 +15,7 @@ const SearchSheet=lazy(()=>import('./SearchSheet'));
 export const tabs=[
  {to:'/',label:'Today',Icon:House,match:(path:string)=>path==='/'},
  {to:'/projects',label:'Paths',Icon:Route,match:(path:string)=>path.startsWith('/projects')||path.startsWith('/p/')||path==='/atlas'},
- {to:'/review',label:'Review',Icon:Layers,match:(path:string)=>path.startsWith('/review')||path.startsWith('/cards')},
+ {to:'/review',label:'Review',Icon:Layers,match:(path:string)=>path.startsWith('/review')||path.startsWith('/cards')||path.startsWith('/practice')},
  {to:'/calendar',label:'Calendar',Icon:CalendarDays,match:(path:string)=>path.startsWith('/calendar')||path.startsWith('/tasks')},
  {to:'/insights',label:'Progress',Icon:ChartColumn,match:(path:string)=>path.startsWith('/insights')||path.startsWith('/log')},
 ] as const;
