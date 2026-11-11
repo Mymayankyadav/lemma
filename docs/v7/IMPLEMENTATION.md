@@ -123,3 +123,26 @@ Known gaps:
 - Search checkpoints come from the first 12 paths only, to bound the requests.
 - The remaining Today/Focus states are not built; Calendar Week/Month/Agenda, the block sheet and quick-add restyle, planner suggestions, the overdue sheet, Tasks and Close the day are Part 7.
 - Verification is by CI plus pure-function unit tests run locally; there was no local Playwright, typecheck or device run.
+
+## Part 7 status (plan, P3: Calendar, Tasks, Close the day)
+
+All behind `v7Shell` (default off).
+
+- **Tasks** (`/tasks`): To do / Doing / Done; To do grouped Overdue, Today, This week, Later, No date; swipe right completes, swipe left reveals Schedule / Edit / Delete; per-row More sheet; Load more. Model in `features/tasks/v7/tasksModel.ts`.
+- **Close the day** (`/today/close`): immersive three steps (Today, Loose ends, Tomorrow). Blocks and tasks go to tomorrow or are dropped; thoughts become tasks or are dismissed; the tomorrow aim is stored in the ritual record; closing uses the existing `closePlan`. Model in `features/ritual/v7/closeModel.ts`.
+- **Calendar** (`/calendar`): one page, `V7CalendarDay`, hosts Day, Week, Month and Agenda through `?view=`. Week has a 48 px hour grid with the strip as its header; Month tints on five steps with up to three subject dots, a due flag and an Open day list; Agenda covers 14 days with sticky day headings and "Nothing planned · Add". View helpers are in `features/calendar/v7/viewModel.ts`.
+- **Quick-add** (`?quick=1`, also the New block button and tapping an empty slot): title, 25/50/90 min chips, Study/Busy switch, up to four path chips, and More options (opens the existing full block sheet). Tasks > Schedule links here with `task` and `len`; the title is prefilled from the task and the block is linked to it.
+- **Suggestions banner** (Day, today or later): "N suggested blocks" from the existing planner preview (read-only). Add all commits through `commitPlannerSelection` with one Undo; Adjust, and `?plan=1` from Tasks > Plan these, open the v6 planner dialog (`PlannerLaunch` gained `autoOpen`, `hideTrigger`, `onClosed`).
+- **Overdue sheet**: the "N overdue" chip opens a v7 sheet with Done, Reschedule and Hide until tomorrow, using the same deadline writes as the v6 banner.
+
+### Gaps (not done)
+
+- The full block sheet (More options, Edit) and the planner Adjust dialog are still the v6 dialogs; they are not restyled.
+- Suggested blocks are not drawn on the grid as dashed SUGGESTED blocks; the banner only counts them.
+- Quick-add More options does not carry the `task` link into the full sheet.
+- Tasks: no drag reorder. Week: no drag between days. Close the day: a day with no plan has no close record; "Tomorrow" shifts a block by 24 h, which is off by an hour across a DST change.
+- Still not built: the remaining Today and Focus states (start sheet, break, paused, finish).
+
+### Verification
+
+Pure models have unit tests (`tests/unit/v7/{tasks,close-day,calendar-views,quick-add}.test.ts`) and e2e specs in `tests/e2e/v7-part6.spec.ts`. Locally only the design gate, syntax checks and the pure unit tests were run (no installs, no Playwright, no device). CI is the real runner; nothing here has been seen on a phone.

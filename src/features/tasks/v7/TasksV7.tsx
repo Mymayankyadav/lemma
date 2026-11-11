@@ -81,7 +81,7 @@ export default function TasksV7(){
  const unscheduled=rows.some(task=>task.status==='backlog'&&task.due.kind==='none');
  const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
   onChange={change} onEdit={setEditing} onDelete={remove}
-  onSchedule={()=>navigate('/calendar?view=day&new=block&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
+  onSchedule={()=>navigate('/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
  return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
   <HubHeader title="Calendar" settings/>

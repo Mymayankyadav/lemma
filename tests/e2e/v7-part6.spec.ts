@@ -153,3 +153,29 @@ test("Calendar Agenda lists days with headings and switches back to Day",async({
  await page.getByRole("radio",{name:"Day"}).click();
  await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
 });
+
+// Part 7d: quick-add, suggestions banner, overdue sheet.
+test("Calendar quick-add takes a title and a length, and More options opens the full block sheet",async({page})=>{
+ await page.goto(at("/calendar?view=day&date=2026-11-11"));
+ await page.getByRole("button",{name:"New time block"}).click();
+ const sheet=page.getByRole("dialog",{name:"New block"});
+ await expect(sheet).toBeVisible();
+ await expect(sheet.getByRole("textbox",{name:"Title"})).toBeFocused();
+ await sheet.getByRole("button",{name:"90 min"}).click();
+ await expect(sheet.getByRole("button",{name:"90 min"})).toHaveAttribute("aria-pressed","true");
+ await sheet.getByRole("button",{name:"Add block"}).click();
+ await expect(sheet.getByText("Give the block a title.")).toBeVisible();
+ await sheet.getByRole("button",{name:"More options"}).click();
+ await expect(page).toHaveURL(/new=block/);
+ await expect(page.getByRole("dialog",{name:/block/i}).first()).toBeVisible();
+});
+test("Calendar quick-add opens from a Tasks Schedule link and carries the length",async({page})=>{
+ await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1&len=25"));
+ await expect(page.getByRole("dialog",{name:"New block"}).getByRole("button",{name:"25 min"})).toHaveAttribute("aria-pressed","true");
+ await page.keyboard.press("Escape");
+ await expect(page).not.toHaveURL(/quick=1/);
+});
+test("Calendar plan=1 opens the planner on the day view",async({page})=>{
+ await page.goto(at("/calendar?view=day&plan=1"));
+ await expect(page.getByRole("dialog",{name:"Plan study tasks"})).toBeVisible();
+});

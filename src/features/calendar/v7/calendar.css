@@ -114,4 +114,15 @@
  :where(html[data-v7]) .v7-ag-body {display:grid;gap:2px;min-width:0;}
  :where(html[data-v7]) .v7-ag-body strong {font:600 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-ag-body small {color:var(--v7-role-text-secondary);font:400 var(--v7-size-1)/var(--v7-leading-1) var(--v7-sans);}
+ /* Quick-add, overdue sheet and the suggestions banner. */
+ :where(html[data-v7]) .v7-qa {display:grid;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-qa-row {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-od {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-od li {display:grid;gap:var(--v7-space-2);padding-top:var(--v7-space-3);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-od li:first-child {border-top:0;padding-top:0;}
+ :where(html[data-v7]) .v7-od p {margin:0;display:grid;gap:2px;}
+ :where(html[data-v7]) .v7-od small {color:var(--v7-role-text-secondary);font:400 var(--v7-size-1)/var(--v7-leading-1) var(--v7-sans);}
+ :where(html[data-v7]) .v7-od-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-link-button {border:0;background:transparent;padding:0 var(--v7-space-1);min-height:var(--v7-touch);color:var(--v7-role-selection-fg);font-family:var(--v7-sans);font-size:inherit;font-weight:600;text-decoration:underline;}
+ :where(html[data-v7]) .v7-cal-overdue {border:0;min-height:var(--v7-touch);cursor:pointer;}
 }

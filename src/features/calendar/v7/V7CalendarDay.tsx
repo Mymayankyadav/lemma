@@ -20,6 +20,10 @@ import DayGrid,{type BlockLook} from './DayGrid';
 import WeekGrid from './WeekGrid';
 import MonthGrid from './MonthGrid';
 import AgendaList from './AgendaList';
+import QuickAddSheet from './QuickAddSheet';
+import OverdueSheetV7 from './OverdueSheetV7';
+import SuggestionsBanner from './SuggestionsBanner';
+import {lengthFromParam} from './quickAddModel';
 import {dotClasses,loadRange,parseView,viewLabel} from './viewModel';
 import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
 import './calendar.css';
@@ -37,7 +41,8 @@ export default function V7CalendarDay(){
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState('');
  const [reload,setReload]=useState(0),[saving,setSaving]=useState(false),[actionError,setActionError]=useState('');
  const [now,setNow]=useState(()=>Date.now());
- const opener=useRef<HTMLElement|null>(null);
+ const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
+ const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),30_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
@@ -76,8 +81,16 @@ export default function V7CalendarDay(){
   const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);
   if(edit){next.set('edit',edit);next.delete('new');next.delete('start');}
   else{next.set('new','block');next.delete('edit');if(startsAt)next.set('start',startsAt);else next.delete('start');}
+  next.delete('quick');next.delete('task');next.delete('len');
   setParams(next);
  }
+ /** Quick-add is the default way to make a block; More options hands over to the full sheet. */
+ function quickParams(startsAt?:string){
+  const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set('quick','1');next.delete('new');next.delete('edit');
+  if(startsAt)next.set('start',startsAt);else next.delete('start');
+  setParams(next);
+ }
+ function closeQuick(){const next=new URLSearchParams(params);['quick','task','len','start'].forEach(key=>next.delete(key));setParams(next,{replace:true});restoreFocus();}
  const restoreFocus=()=>{const target=opener.current;opener.current=null;if(target?.isConnected)target.focus();};
  async function adjust(block:CalendarBlockRecord,patch:Pick<CalendarBlockPatch,'startsAt'|'endsAt'>){
   if(saving)return;
@@ -116,7 +129,7 @@ export default function V7CalendarDay(){
      <button type="button" className="v7-icon-button" aria-label={'Next '+unit} onClick={()=>go('date',step(1))}>›</button></>}
     {!isToday&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>go('date',today)}><span>Today</span></button>}
     <button type="button" className="v7-button v7-small" aria-label="New time block" disabled={phase!=='ready'}
-     onClick={event=>{opener.current=event.currentTarget;sheetParams();}}><Plus aria-hidden="true"/><span>New block</span></button>
+     onClick={event=>{opener.current=event.currentTarget;quickParams();}}><Plus aria-hidden="true"/><span>New block</span></button>
    </span>
   </div>
   {(view==='day'||view==='agenda')&&<nav className="v7-cal-strip" aria-label="Week">
@@ -131,7 +144,7 @@ export default function V7CalendarDay(){
   </nav>}
   <Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/>
   {phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
-   {overdueCount>0&&<Link className="v7-badge v7-tone-warning" to="/calendar?view=agenda">{overdueCount} overdue</Link>}
+   {overdueCount>0&&<button type="button" className="v7-badge v7-tone-warning v7-cal-overdue" onClick={()=>setOverdueOpen(true)}>{overdueCount} overdue</button>}
    {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<Flag aria-hidden="true"/>:<Target aria-hidden="true"/>}{item.value.title}</span>)}
   </div>}
   {capacity&&view==='day'&&<p className="v7-cal-capacity" aria-label="Day capacity">Logged <strong>{formatDuration(capacity.logged)}</strong>
@@ -144,13 +157,18 @@ export default function V7CalendarDay(){
    onPick={day=>go('date',day)} onOpen={openDay} onEdit={block=>sheetParams(undefined,block.id)}/>}
   {phase==='ready'&&view==='agenda'&&<AgendaList date={date} today={today} zone={zone} clock={clock} clock24h={clock24h} entries={entries} blocks={blocks} dues={dues} projects={projects}
    lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onAdd={day=>{
-    const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('new','block');next.delete('edit');next.delete('start');setParams(next);}}/>}
+    const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
+  {phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen}
+   onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
   {phase==='ready'&&view==='day'&&<>
    <DayGrid date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
-    onCreate={startsAt=>sheetParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
+    onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p>}
   </>}
+  <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
+   onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={startsAt=>sheetParams(startsAt)}/>
+  <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>
   <BlockSheetActions showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
  </main>;
 }

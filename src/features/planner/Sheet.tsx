@@ -27,7 +27,7 @@ function ownerDay(zone:string):string{
  const pick=(name:string)=>parts.find(x=>x.type===name)?.value??'';
  return pick('year')+'-'+pick('month')+'-'+pick('day');
 }
-async function readTasks():Promise<TaskRecord[]>{
+export async function readTasks():Promise<TaskRecord[]>{
  const rows:TaskRecord[]=[];let cursor:string|null=null;
  const seen=new Set<string>();
  for(let i=0;i<10;i++){
@@ -43,7 +43,11 @@ async function readTasks():Promise<TaskRecord[]>{
  }
  throw new Error('Task list exceeds 500; narrow your task selection');
 }
-export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
+export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed}:{
+ date?:string;zone?:string;
+ /** v7: open the planner as soon as it mounts (Adjust on the suggestions banner, `?plan=1`). */
+ autoOpen?:boolean;hideTrigger?:boolean;onClosed?:()=>void;
+}){
  const notify=useToast();
  const loadEpoch=useRef(0);
  const commitEpoch=useRef(0);
@@ -122,7 +126,14 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  function close(){
   ++loadEpoch.current;
   setOpened(false);setLoading(false);setPreview(null);
+  onClosed?.();
  }
+ const autoOpened=useRef(false);
+ useEffect(()=>{
+  if(!autoOpen||autoOpened.current)return;
+  autoOpened.current=true;show();
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[autoOpen]);
  /** N121 B8: Date, Start and End in the owner zone; moving the start keeps the allotted length. */
  function changeMove(key:string,part:'date'|'start'|'end',value:string,original:Move){
   setOverrides(previous=>{
@@ -179,7 +190,7 @@ export default function PlannerLaunch({date,zone}:{date?:string;zone?:string}){
  }
  const count=selection.items?.selected.length??0;
  return <>
-  <button type="button" className={button} onClick={show}>Plan study tasks</button>
+  {!hideTrigger&&<button type="button" className={button} onClick={show}>Plan study tasks</button>}
   {opened&&<Dialog title="Plan study tasks" eyebrow="PLAN YOUR DAY" busy={busy} onClose={close} footer={
    <button type="button" className={button+' w-full bg-amber text-amber-ink'}
     disabled={busy||loading||!!selection.error||!count}
