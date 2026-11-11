@@ -1,6 +1,6 @@
 {
   "$schema": "https://design-tokens.github.io/community-group/format/",
-  "$description": "Lemma Constellation UI Kit 1.0 — role colours are the only styling API; mode aliases come from this source.",
+  "$description": "Lemma Constellation UI Kit 1.0 \u2014 role colours are the only styling API; mode aliases come from this source.",
   "raw": {
     "day": {
       "surface.page": {
@@ -202,6 +202,14 @@
       "viz.heat4": {
         "$type": "color",
         "$value": "#172448"
+      },
+      "state.hover": {
+        "$type": "color",
+        "$value": "#121B310F"
+      },
+      "state.pressed": {
+        "$type": "color",
+        "$value": "#121B311F"
       }
     },
     "night": {
@@ -404,6 +412,14 @@
       "viz.heat4": {
         "$type": "color",
         "$value": "#FCEABE"
+      },
+      "state.hover": {
+        "$type": "color",
+        "$value": "#FFFFFF0F"
+      },
+      "state.pressed": {
+        "$type": "color",
+        "$value": "#FFFFFF1F"
       }
     }
   },
@@ -1082,6 +1098,28 @@
         },
         "lemma.contrastWith": []
       }
+    },
+    "state.hover": {
+      "$type": "color",
+      "$value": "{raw.day.state.hover}",
+      "$description": "Pointer state overlay; never a subject or status.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.hover}"
+        },
+        "lemma.contrastWith": []
+      }
+    },
+    "state.pressed": {
+      "$type": "color",
+      "$value": "{raw.day.state.pressed}",
+      "$description": "Pointer state overlay; never a subject or status.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.pressed}"
+        },
+        "lemma.contrastWith": []
+      }
     }
   },
   "component": {
@@ -1169,5 +1207,1103 @@
       "comfortable",
       "compact"
     ]
+  },
+  "foundation": {
+    "raw": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
+      },
+      "serif": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 Newsreader\", \"Lemma v7 Serif fallback\", serif"
+      },
+      "glyph": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 STIX Two Math\", \"Lemma v7 STIX Two Text\", serif"
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 IBM Plex Mono\", monospace"
+      },
+      "size-1": {
+        "$type": "dimension",
+        "$value": "0.75rem"
+      },
+      "size-2": {
+        "$type": "dimension",
+        "$value": "0.875rem"
+      },
+      "size-3": {
+        "$type": "dimension",
+        "$value": "1rem"
+      },
+      "size-4": {
+        "$type": "dimension",
+        "$value": "1.125rem"
+      },
+      "size-5": {
+        "$type": "dimension",
+        "$value": "1.375rem"
+      },
+      "size-6": {
+        "$type": "dimension",
+        "$value": "1.75rem"
+      },
+      "size-7": {
+        "$type": "dimension",
+        "$value": "2.25rem"
+      },
+      "size-8": {
+        "$type": "dimension",
+        "$value": "3rem"
+      },
+      "size-9": {
+        "$type": "dimension",
+        "$value": "4rem"
+      },
+      "leading-1": {
+        "$type": "dimension",
+        "$value": "1rem"
+      },
+      "leading-2": {
+        "$type": "dimension",
+        "$value": "1.25rem"
+      },
+      "leading-3": {
+        "$type": "dimension",
+        "$value": "1.5rem"
+      },
+      "leading-4": {
+        "$type": "dimension",
+        "$value": "1.75rem"
+      },
+      "leading-5": {
+        "$type": "dimension",
+        "$value": "1.875rem"
+      },
+      "leading-6": {
+        "$type": "dimension",
+        "$value": "2.125rem"
+      },
+      "leading-7": {
+        "$type": "dimension",
+        "$value": "2.5rem"
+      },
+      "leading-8": {
+        "$type": "dimension",
+        "$value": "3.25rem"
+      },
+      "leading-9": {
+        "$type": "dimension",
+        "$value": "4rem"
+      },
+      "type-display": {
+        "$type": "dimension",
+        "$value": "2.75rem"
+      },
+      "type-title": {
+        "$type": "dimension",
+        "$value": "2rem"
+      },
+      "type-headline": {
+        "$type": "dimension",
+        "$value": "1.625rem"
+      },
+      "type-subhead": {
+        "$type": "dimension",
+        "$value": "1.25rem"
+      },
+      "type-lead": {
+        "$type": "dimension",
+        "$value": "1.1875rem"
+      },
+      "type-reading": {
+        "$type": "dimension",
+        "$value": "1.0625rem"
+      },
+      "space-1": {
+        "$type": "dimension",
+        "$value": "4px"
+      },
+      "space-2": {
+        "$type": "dimension",
+        "$value": "8px"
+      },
+      "space-3": {
+        "$type": "dimension",
+        "$value": "12px"
+      },
+      "space-4": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "space-5": {
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "space-6": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "space-8": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "space-10": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "space-12": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "space-14": {
+        "$type": "dimension",
+        "$value": "56px"
+      },
+      "space-16": {
+        "$type": "dimension",
+        "$value": "64px"
+      },
+      "space-20": {
+        "$type": "dimension",
+        "$value": "80px"
+      },
+      "radius-1": {
+        "$type": "dimension",
+        "$value": "8px"
+      },
+      "radius-2": {
+        "$type": "dimension",
+        "$value": "12px"
+      },
+      "radius-3": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "radius-4": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "radius-xs": {
+        "$type": "dimension",
+        "$value": "4px"
+      },
+      "round": {
+        "$type": "dimension",
+        "$value": "9999px"
+      },
+      "touch": {
+        "$type": "dimension",
+        "$value": "44px"
+      },
+      "button": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "small": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "field": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "chip": {
+        "$type": "dimension",
+        "$value": "28px"
+      },
+      "segment": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "row": {
+        "$type": "dimension",
+        "$value": "64px"
+      },
+      "check": {
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "switch-width": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "switch-height": {
+        "$type": "dimension",
+        "$value": "28px"
+      },
+      "meter": {
+        "$type": "dimension",
+        "$value": "6px"
+      },
+      "subject-alpha": {
+        "$type": "string",
+        "$value": "12%"
+      },
+      "cover-alpha": {
+        "$type": "string",
+        "$value": "9%"
+      },
+      "hero-alpha": {
+        "$type": "string",
+        "$value": "10%"
+      },
+      "meter-alpha": {
+        "$type": "string",
+        "$value": "22%"
+      },
+      "hero-stop": {
+        "$type": "string",
+        "$value": "62%"
+      },
+      "menu-layer": {
+        "$type": "number",
+        "$value": "10"
+      },
+      "toast-layer": {
+        "$type": "number",
+        "$value": "30"
+      },
+      "hairline": {
+        "$type": "dimension",
+        "$value": "1px"
+      },
+      "ring": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "focus-width": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "menu-width": {
+        "$type": "dimension",
+        "$value": "280px"
+      },
+      "dialog-min": {
+        "$type": "dimension",
+        "$value": "480px"
+      },
+      "dialog-max": {
+        "$type": "dimension",
+        "$value": "560px"
+      },
+      "content": {
+        "$type": "dimension",
+        "$value": "1120px"
+      },
+      "sheet-max": {
+        "$type": "string",
+        "$value": "85dvh"
+      },
+      "reading": {
+        "$type": "string",
+        "$value": "68ch"
+      },
+      "art": {
+        "$type": "dimension",
+        "$value": "120px"
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "22px"
+      },
+      "regular": {
+        "$type": "number",
+        "$value": "400"
+      },
+      "medium": {
+        "$type": "number",
+        "$value": "500"
+      },
+      "semibold": {
+        "$type": "number",
+        "$value": "600"
+      },
+      "display-tracking": {
+        "$type": "string",
+        "$value": "-.015em"
+      },
+      "eyebrow-tracking": {
+        "$type": "string",
+        "$value": ".08em"
+      },
+      "instant": {
+        "$type": "duration",
+        "$value": "80ms"
+      },
+      "fast": {
+        "$type": "duration",
+        "$value": "120ms"
+      },
+      "base": {
+        "$type": "duration",
+        "$value": "200ms"
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "320ms"
+      },
+      "scenic": {
+        "$type": "duration",
+        "$value": "900ms"
+      },
+      "ease-standard": {
+        "$type": "string",
+        "$value": "cubic-bezier(.2,0,0,1)"
+      },
+      "ease-out": {
+        "$type": "string",
+        "$value": "cubic-bezier(0,0,0,1)"
+      },
+      "ease-in": {
+        "$type": "string",
+        "$value": "cubic-bezier(.3,0,1,1)"
+      },
+      "snappy-stiffness": {
+        "$type": "number",
+        "$value": "520"
+      },
+      "snappy-damping": {
+        "$type": "number",
+        "$value": "38"
+      },
+      "gentle-stiffness": {
+        "$type": "number",
+        "$value": "260"
+      },
+      "gentle-damping": {
+        "$type": "number",
+        "$value": "28"
+      },
+      "lively-stiffness": {
+        "$type": "number",
+        "$value": "400"
+      },
+      "lively-damping": {
+        "$type": "number",
+        "$value": "22"
+      },
+      "skeleton": {
+        "$type": "duration",
+        "$value": "1.6s"
+      },
+      "skeleton-delay": {
+        "$type": "duration",
+        "$value": "300ms"
+      },
+      "pressed": {
+        "$type": "number",
+        "$value": ".98"
+      },
+      "disabled": {
+        "$type": "number",
+        "$value": ".4"
+      },
+      "focus-gap": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "helper-gap": {
+        "$type": "dimension",
+        "$value": "6px"
+      },
+      "icon-stroke": {
+        "$type": "dimension",
+        "$value": "1.5px"
+      },
+      "mixed-width": {
+        "$type": "dimension",
+        "$value": "10px"
+      },
+      "switch-thumb": {
+        "$type": "dimension",
+        "$value": "22px"
+      },
+      "emblem-hero": {
+        "$type": "dimension",
+        "$value": "164px"
+      },
+      "state-column": {
+        "$type": "dimension",
+        "$value": "160px"
+      },
+      "principle-column": {
+        "$type": "dimension",
+        "$value": "220px"
+      },
+      "page-margin": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "section-gap": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "numeric-lg": {
+        "$type": "dimension",
+        "$value": "2.5rem"
+      },
+      "star-height": {
+        "$type": "dimension",
+        "$value": "54px"
+      },
+      "long": {
+        "$type": "duration",
+        "$value": "600ms"
+      },
+      "completion": {
+        "$type": "duration",
+        "$value": "300ms"
+      },
+      "pulse": {
+        "$type": "duration",
+        "$value": "2s"
+      },
+      "toast-max": {
+        "$type": "dimension",
+        "$value": "400px"
+      },
+      "grid-line": {
+        "$type": "dimension",
+        "$value": "1px"
+      },
+      "texture-star": {
+        "$type": "dimension",
+        "$value": "1.5px"
+      }
+    },
+    "role": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.sans}",
+        "$description": "Shared sans foundation."
+      },
+      "serif": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.serif}",
+        "$description": "Shared serif foundation."
+      },
+      "glyph": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.glyph}",
+        "$description": "Shared glyph foundation."
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.mono}",
+        "$description": "Shared mono foundation."
+      },
+      "size-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-1}",
+        "$description": "Shared size 1 foundation."
+      },
+      "size-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-2}",
+        "$description": "Shared size 2 foundation."
+      },
+      "size-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-3}",
+        "$description": "Shared size 3 foundation."
+      },
+      "size-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-4}",
+        "$description": "Shared size 4 foundation."
+      },
+      "size-5": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-5}",
+        "$description": "Shared size 5 foundation."
+      },
+      "size-6": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-6}",
+        "$description": "Shared size 6 foundation."
+      },
+      "size-7": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-7}",
+        "$description": "Shared size 7 foundation."
+      },
+      "size-8": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-8}",
+        "$description": "Shared size 8 foundation."
+      },
+      "size-9": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.size-9}",
+        "$description": "Shared size 9 foundation."
+      },
+      "leading-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-1}",
+        "$description": "Shared leading 1 foundation."
+      },
+      "leading-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-2}",
+        "$description": "Shared leading 2 foundation."
+      },
+      "leading-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-3}",
+        "$description": "Shared leading 3 foundation."
+      },
+      "leading-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-4}",
+        "$description": "Shared leading 4 foundation."
+      },
+      "leading-5": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-5}",
+        "$description": "Shared leading 5 foundation."
+      },
+      "leading-6": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-6}",
+        "$description": "Shared leading 6 foundation."
+      },
+      "leading-7": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-7}",
+        "$description": "Shared leading 7 foundation."
+      },
+      "leading-8": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-8}",
+        "$description": "Shared leading 8 foundation."
+      },
+      "leading-9": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-9}",
+        "$description": "Shared leading 9 foundation."
+      },
+      "type-display": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-display}",
+        "$description": "Shared type display foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "3.5rem",
+            "desktop": "3.5rem"
+          }
+        }
+      },
+      "type-title": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-title}",
+        "$description": "Shared type title foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "2.5rem",
+            "desktop": "2.5rem"
+          }
+        }
+      },
+      "type-headline": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-headline}",
+        "$description": "Shared type headline foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "1.875rem",
+            "desktop": "1.875rem"
+          }
+        }
+      },
+      "type-subhead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-subhead}",
+        "$description": "Shared type subhead foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "1.375rem",
+            "desktop": "1.375rem"
+          }
+        }
+      },
+      "type-lead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-lead}",
+        "$description": "Shared type lead foundation."
+      },
+      "type-reading": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-reading}",
+        "$description": "Shared type reading foundation."
+      },
+      "space-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-1}",
+        "$description": "Shared space 1 foundation."
+      },
+      "space-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-2}",
+        "$description": "Shared space 2 foundation."
+      },
+      "space-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-3}",
+        "$description": "Shared space 3 foundation."
+      },
+      "space-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-4}",
+        "$description": "Shared space 4 foundation."
+      },
+      "space-5": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-5}",
+        "$description": "Shared space 5 foundation."
+      },
+      "space-6": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-6}",
+        "$description": "Shared space 6 foundation."
+      },
+      "space-8": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-8}",
+        "$description": "Shared space 8 foundation."
+      },
+      "space-10": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-10}",
+        "$description": "Shared space 10 foundation."
+      },
+      "space-12": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-12}",
+        "$description": "Shared space 12 foundation."
+      },
+      "space-14": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-14}",
+        "$description": "Shared space 14 foundation."
+      },
+      "space-16": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-16}",
+        "$description": "Shared space 16 foundation."
+      },
+      "space-20": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-20}",
+        "$description": "Shared space 20 foundation."
+      },
+      "radius-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-1}",
+        "$description": "Shared radius 1 foundation."
+      },
+      "radius-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-2}",
+        "$description": "Shared radius 2 foundation."
+      },
+      "radius-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-3}",
+        "$description": "Shared radius 3 foundation."
+      },
+      "radius-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-4}",
+        "$description": "Shared radius 4 foundation."
+      },
+      "radius-xs": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-xs}",
+        "$description": "Shared radius xs foundation."
+      },
+      "round": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.round}",
+        "$description": "Shared round foundation."
+      },
+      "touch": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.touch}",
+        "$description": "Shared touch foundation."
+      },
+      "button": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.button}",
+        "$description": "Shared button foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "40px",
+            "desktop": "40px"
+          }
+        }
+      },
+      "small": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.small}",
+        "$description": "Shared small foundation."
+      },
+      "field": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.field}",
+        "$description": "Shared field foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "40px",
+            "desktop": "40px"
+          }
+        }
+      },
+      "chip": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.chip}",
+        "$description": "Shared chip foundation."
+      },
+      "segment": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.segment}",
+        "$description": "Shared segment foundation."
+      },
+      "row": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.row}",
+        "$description": "Shared row foundation."
+      },
+      "check": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.check}",
+        "$description": "Shared check foundation."
+      },
+      "switch-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-width}",
+        "$description": "Shared switch width foundation."
+      },
+      "switch-height": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-height}",
+        "$description": "Shared switch height foundation."
+      },
+      "meter": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.meter}",
+        "$description": "Shared meter foundation."
+      },
+      "subject-alpha": {
+        "$type": "string",
+        "$value": "{foundation.raw.subject-alpha}",
+        "$description": "Shared subject alpha foundation."
+      },
+      "cover-alpha": {
+        "$type": "string",
+        "$value": "{foundation.raw.cover-alpha}",
+        "$description": "Shared cover alpha foundation."
+      },
+      "hero-alpha": {
+        "$type": "string",
+        "$value": "{foundation.raw.hero-alpha}",
+        "$description": "Shared hero alpha foundation."
+      },
+      "meter-alpha": {
+        "$type": "string",
+        "$value": "{foundation.raw.meter-alpha}",
+        "$description": "Shared meter alpha foundation."
+      },
+      "hero-stop": {
+        "$type": "string",
+        "$value": "{foundation.raw.hero-stop}",
+        "$description": "Shared hero stop foundation."
+      },
+      "menu-layer": {
+        "$type": "number",
+        "$value": "{foundation.raw.menu-layer}",
+        "$description": "Shared menu layer foundation."
+      },
+      "toast-layer": {
+        "$type": "number",
+        "$value": "{foundation.raw.toast-layer}",
+        "$description": "Shared toast layer foundation."
+      },
+      "hairline": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.hairline}",
+        "$description": "Shared hairline foundation."
+      },
+      "ring": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.ring}",
+        "$description": "Shared ring foundation."
+      },
+      "focus-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.focus-width}",
+        "$description": "Shared focus width foundation."
+      },
+      "menu-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.menu-width}",
+        "$description": "Shared menu width foundation."
+      },
+      "dialog-min": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.dialog-min}",
+        "$description": "Shared dialog min foundation."
+      },
+      "dialog-max": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.dialog-max}",
+        "$description": "Shared dialog max foundation."
+      },
+      "content": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.content}",
+        "$description": "Shared content foundation."
+      },
+      "sheet-max": {
+        "$type": "string",
+        "$value": "{foundation.raw.sheet-max}",
+        "$description": "Shared sheet max foundation."
+      },
+      "reading": {
+        "$type": "string",
+        "$value": "{foundation.raw.reading}",
+        "$description": "Shared reading foundation."
+      },
+      "art": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.art}",
+        "$description": "Shared art foundation."
+      },
+      "blur": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.blur}",
+        "$description": "Shared blur foundation."
+      },
+      "regular": {
+        "$type": "number",
+        "$value": "{foundation.raw.regular}",
+        "$description": "Shared regular foundation."
+      },
+      "medium": {
+        "$type": "number",
+        "$value": "{foundation.raw.medium}",
+        "$description": "Shared medium foundation."
+      },
+      "semibold": {
+        "$type": "number",
+        "$value": "{foundation.raw.semibold}",
+        "$description": "Shared semibold foundation."
+      },
+      "display-tracking": {
+        "$type": "string",
+        "$value": "{foundation.raw.display-tracking}",
+        "$description": "Shared display tracking foundation."
+      },
+      "eyebrow-tracking": {
+        "$type": "string",
+        "$value": "{foundation.raw.eyebrow-tracking}",
+        "$description": "Shared eyebrow tracking foundation."
+      },
+      "instant": {
+        "$type": "duration",
+        "$value": "{foundation.raw.instant}",
+        "$description": "Shared instant foundation."
+      },
+      "fast": {
+        "$type": "duration",
+        "$value": "{foundation.raw.fast}",
+        "$description": "Shared fast foundation."
+      },
+      "base": {
+        "$type": "duration",
+        "$value": "{foundation.raw.base}",
+        "$description": "Shared base foundation."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "{foundation.raw.slow}",
+        "$description": "Shared slow foundation."
+      },
+      "scenic": {
+        "$type": "duration",
+        "$value": "{foundation.raw.scenic}",
+        "$description": "Shared scenic foundation."
+      },
+      "ease-standard": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-standard}",
+        "$description": "Shared ease standard foundation."
+      },
+      "ease-out": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-out}",
+        "$description": "Shared ease out foundation."
+      },
+      "ease-in": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-in}",
+        "$description": "Shared ease in foundation."
+      },
+      "snappy-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.snappy-stiffness}",
+        "$description": "Shared snappy stiffness foundation."
+      },
+      "snappy-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.snappy-damping}",
+        "$description": "Shared snappy damping foundation."
+      },
+      "gentle-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.gentle-stiffness}",
+        "$description": "Shared gentle stiffness foundation."
+      },
+      "gentle-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.gentle-damping}",
+        "$description": "Shared gentle damping foundation."
+      },
+      "lively-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.lively-stiffness}",
+        "$description": "Shared lively stiffness foundation."
+      },
+      "lively-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.lively-damping}",
+        "$description": "Shared lively damping foundation."
+      },
+      "skeleton": {
+        "$type": "duration",
+        "$value": "{foundation.raw.skeleton}",
+        "$description": "Shared skeleton foundation."
+      },
+      "skeleton-delay": {
+        "$type": "duration",
+        "$value": "{foundation.raw.skeleton-delay}",
+        "$description": "Shared skeleton delay foundation."
+      },
+      "pressed": {
+        "$type": "number",
+        "$value": "{foundation.raw.pressed}",
+        "$description": "Shared pressed foundation."
+      },
+      "disabled": {
+        "$type": "number",
+        "$value": "{foundation.raw.disabled}",
+        "$description": "Shared disabled foundation."
+      },
+      "focus-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.focus-gap}",
+        "$description": "Shared focus gap foundation."
+      },
+      "helper-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.helper-gap}",
+        "$description": "Shared helper gap foundation."
+      },
+      "icon-stroke": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.icon-stroke}",
+        "$description": "Shared icon stroke foundation."
+      },
+      "mixed-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.mixed-width}",
+        "$description": "Shared mixed width foundation."
+      },
+      "switch-thumb": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-thumb}",
+        "$description": "Shared switch thumb foundation."
+      },
+      "emblem-hero": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.emblem-hero}",
+        "$description": "Shared emblem hero foundation."
+      },
+      "state-column": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.state-column}",
+        "$description": "Shared state column foundation."
+      },
+      "principle-column": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.principle-column}",
+        "$description": "Shared principle column foundation."
+      },
+      "page-margin": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.page-margin}",
+        "$description": "Shared page margin foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "32px",
+            "desktop": "48px"
+          }
+        }
+      },
+      "section-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.section-gap}",
+        "$description": "Shared section gap foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "64px",
+            "desktop": "80px"
+          }
+        }
+      },
+      "numeric-lg": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.numeric-lg}",
+        "$description": "Shared numeric lg foundation."
+      },
+      "star-height": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.star-height}",
+        "$description": "Shared star height foundation."
+      },
+      "long": {
+        "$type": "duration",
+        "$value": "{foundation.raw.long}",
+        "$description": "Shared long foundation."
+      },
+      "completion": {
+        "$type": "duration",
+        "$value": "{foundation.raw.completion}",
+        "$description": "Shared completion foundation."
+      },
+      "pulse": {
+        "$type": "duration",
+        "$value": "{foundation.raw.pulse}",
+        "$description": "Shared pulse foundation."
+      },
+      "toast-max": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.toast-max}",
+        "$description": "Shared toast max foundation."
+      },
+      "grid-line": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.grid-line}",
+        "$description": "Shared grid line foundation."
+      },
+      "texture-star": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.texture-star}",
+        "$description": "Shared texture star foundation."
+      }
+    }
   }
 }

@@ -23,11 +23,11 @@ export function emblemStrokes(subject:string,seed:string,kind:EmblemKind=emblemK
  const h=emblemHash(seed),random=seeded(h),strokes:EmblemStroke[]=[];
  const add=(d:string,opacity=.8,width=1)=>strokes.push({d,opacity,width});
  if(kind==="partial-sums"){
-  for(const [i,n] of [1,3,5,9,17,33].entries()){
+  for(const [i,n] of [1,3,5,7,9,11,13].entries()){
    const pts:[number,number][]=[];
    for(let j=0;j<=160;j++){const x=-2*Math.PI+j*4*Math.PI/160;let y=0;for(let k=1;k<=n;k+=2)y+=Math.sin(k*x)/k;
     pts.push([j*1.25,100-45*4/Math.PI*y]);}
-   add(path(pts),.28+i*.14,i===5?1.4:.65);
+   add(path(pts),.28+i*.12,i===6?1.4:.65);
   }
  }else if(kind==="mapped-plane"){
   const theta=(h%9-4)*.015,rot=(x:number,y:number):[number,number]=>[x*Math.cos(theta)-y*Math.sin(theta),x*Math.sin(theta)+y*Math.cos(theta)];
@@ -37,9 +37,11 @@ export function emblemStrokes(subject:string,seed:string,kind:EmblemKind=emblemK
    const va=rot(1.15*a[0]+.55*a[1],.25*a[0]+.9*a[1]),vb=rot(1.15*b[0]+.55*b[1],.25*b[0]+.9*b[1]);
    add(path([[100+va[0],100+va[1]],[100+vb[0],100+vb[1]]]),.75,.7);
   }
-  const disc=Math.sqrt((1.15-.9)**2+4*.55*.25);
-  for(const eigen of [(1.15+.9+disc)/2,(1.15+.9-disc)/2]){
-   const angle=Math.atan2(eigen-1.15,.55);add(path([[100-100*Math.cos(angle),100-100*Math.sin(angle)],[100+100*Math.cos(angle),100+100*Math.sin(angle)]]),1,1.8);
+  const a=1.15*Math.cos(theta)-.25*Math.sin(theta), b=.55*Math.cos(theta)-.9*Math.sin(theta);
+  const c=1.15*Math.sin(theta)+.25*Math.cos(theta), d=.55*Math.sin(theta)+.9*Math.cos(theta);
+  const disc=Math.sqrt((a-d)**2+4*b*c);
+  for(const eigen of [(a+d+disc)/2,(a+d-disc)/2]){
+   const angle=Math.atan2(eigen-a,b);add(path([[100-100*Math.cos(angle),100-100*Math.sin(angle)],[100+100*Math.cos(angle),100+100*Math.sin(angle)]]),1,1.8);
   }
  }else if(kind==="torus-knot"){
   const pairs:[[number,number],[number,number],[number,number]]=[[2,3],[2,5],[3,4]], [p,q]=pairs[h%pairs.length];
@@ -91,3 +93,4 @@ export function emblemStrokes(subject:string,seed:string,kind:EmblemKind=emblemK
  cache.set(key,strokes);
  return strokes;
 }
+

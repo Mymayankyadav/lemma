@@ -15,8 +15,8 @@ describe('v7 mathematical emblems',()=>{
  it('is deterministic, bounded, and produces distinct identities',()=>{
   const paths=emblemStrokes('Analysis','path-a');
   expect(emblemStrokes('Analysis','path-a')).toEqual(paths);
-  expect(paths).toHaveLength(6);
-  expect(paths[5].width).toBe(1.4);
+  expect(paths).toHaveLength(7);
+  expect(paths[6].width).toBe(1.4);
   expect(emblemHash('path-a')).not.toBe(emblemHash('path-b'));
   for(const subject of ['Analysis','Algebra','Topology','Number theory','Geometry','Logic','Probability','Combinatorics','Other']){
    const result=emblemStrokes(subject,'seed');
@@ -26,3 +26,4 @@ describe('v7 mathematical emblems',()=>{
   }
  });
 });
+

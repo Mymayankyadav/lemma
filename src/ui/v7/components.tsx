@@ -67,6 +67,7 @@ export function IconButton({
       type="button"
       {...props}
       aria-label={label}
+      title={props.title ?? label}
       className="v7-icon-button"
     >
       {children}
@@ -120,12 +121,16 @@ export function Segmented({
   value,
   onChange,
   tabs = false,
+  disabled = false,
+  panelId,
 }: {
   label: string;
   options: string[];
   value: string;
   onChange: (value: string) => void;
   tabs?: boolean;
+  disabled?: boolean;
+  panelId?: string;
 }) {
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
   return (
@@ -140,7 +145,10 @@ export function Segmented({
           ref={(el) => {
             refs.current[index] = el;
           }}
+          type="button"
+          disabled={disabled}
           role="tab"
+          aria-controls={panelId}
           aria-selected={option === value}
           tabIndex={option === value ? 0 : -1}
           onClick={() => onChange(option)}
@@ -757,12 +765,19 @@ export function Stepper({
   min?: number;
   max?: number;
 }) {
+  const delay=useRef<ReturnType<typeof setTimeout>|null>(null),repeat=useRef<ReturnType<typeof setInterval>|null>(null),repeated=useRef(false);
+  const latest=useRef({value,onChange,min,max});latest.current={value,onChange,min,max};
+  function stop(){if(delay.current)clearTimeout(delay.current);if(repeat.current)clearInterval(repeat.current);delay.current=null;repeat.current=null;}
+  function step(direction:number){const state=latest.current,next=Math.max(state.min,Math.min(state.max,state.value+direction));if(next!==state.value)state.onChange(next);else stop();}
+  function hold(direction:number){stop();repeated.current=false;delay.current=setTimeout(()=>{repeated.current=true;step(direction);repeat.current=setInterval(()=>step(direction),120);},400);}
+  useEffect(()=>stop,[]);
   return (
     <div className="v7-stepper" role="group" aria-label={label}>
       <IconButton
         label={`Decrease ${label}`}
         disabled={value <= min}
-        onClick={() => onChange(value - 1)}
+        onPointerDown={()=>hold(-1)} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} onBlur={stop}
+        onClick={()=>{if(!repeated.current)step(-1);repeated.current=false;}}
       >
         <Minus />
       </IconButton>
@@ -770,7 +785,8 @@ export function Stepper({
       <IconButton
         label={`Increase ${label}`}
         disabled={value >= max}
-        onClick={() => onChange(value + 1)}
+        onPointerDown={()=>hold(1)} onPointerUp={stop} onPointerCancel={stop} onPointerLeave={stop} onBlur={stop}
+        onClick={()=>{if(!repeated.current)step(1);repeated.current=false;}}
       >
         <Plus />
       </IconButton>
@@ -880,8 +896,15 @@ export function Menu({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen),
+    [desktop, setDesktop] = useState(true),
     interacted = useRef(false),
     ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const media = matchMedia("(min-width:700px)");
+    const update = () => setDesktop(media.matches);
+    update();media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
   useEffect(() => {
     if (!open) return;
     if (interacted.current) ref.current?.querySelector<HTMLButtonElement>("[role=menuitem]")?.focus();
@@ -891,11 +914,23 @@ export function Menu({
     document.addEventListener("click", outside);
     return () => document.removeEventListener("click", outside);
   }, [open]);
+  const menu = <div className={desktop ? "v7-menu" : "v7-menu-content"} role="menu" aria-label={label}
+    onKeyDown={event => {
+      const buttons=Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button"));
+      const index=buttons.indexOf(document.activeElement as HTMLButtonElement);
+      if(event.key==="Escape"){event.preventDefault();setOpen(false);ref.current?.querySelector("button")?.focus();}
+      else if(["ArrowDown","ArrowUp","Home","End"].includes(event.key)){
+        event.preventDefault();const next=event.key==="Home"?0:event.key==="End"?buttons.length-1:(index+(event.key==="ArrowDown"?1:buttons.length-1))%buttons.length;buttons[next]?.focus();
+      }else if(event.key.length===1&&/[a-z0-9]/i.test(event.key)){event.preventDefault();buttons.find(button=>button.textContent?.trim().toLowerCase().startsWith(event.key.toLowerCase()))?.focus();}
+    }}>
+    {items.map(item=><button type="button" role="menuitem" className={/delete|remove/i.test(item.label)?"v7-menu-danger":undefined} key={item.label} onClick={()=>{setOpen(false);ref.current?.querySelector("button")?.focus();item.onClick();}}>{item.icon}{item.label}</button>)}
+  </div>;
   return (
     <div className="v7-menu-anchor" ref={ref}>
       <Button
         aria-haspopup="menu"
         aria-expanded={open}
+        onKeyDown={event=>{if(event.key==="ArrowDown"||event.key==="ArrowUp"){event.preventDefault();interacted.current=true;setOpen(true);}}}
         onClick={() => {
           interacted.current = true;
           setOpen(!open);
@@ -903,49 +938,7 @@ export function Menu({
       >
         {label}<ChevronDown aria-hidden="true" />
       </Button>
-      {open && (
-        <div
-          className="v7-menu"
-          role="menu"
-          aria-label={label}
-          onKeyDown={(e) => {
-            const buttons = Array.from(
-                e.currentTarget.querySelectorAll<HTMLButtonElement>("button"),
-              ),
-              index = buttons.indexOf(
-                document.activeElement as HTMLButtonElement,
-              );
-            if (e.key === "Escape") {
-              setOpen(false);
-              ref.current?.querySelector("button")?.focus();
-            } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              buttons[
-                (index + (e.key === "ArrowDown" ? 1 : buttons.length - 1)) %
-                  buttons.length
-              ].focus();
-            } else if (e.key.length === 1 && /[a-z0-9]/i.test(e.key)) {
-              buttons.find(button => button.textContent?.trim().toLowerCase().startsWith(e.key.toLowerCase()))?.focus();
-            }
-          }}
-        >
-          {items.map((item) => (
-            <button
-              role="menuitem"
-              className={/delete|remove/i.test(item.label) ? "v7-menu-danger" : undefined}
-              key={item.label}
-              onClick={() => {
-                item.onClick();
-                setOpen(false);
-                ref.current?.querySelector("button")?.focus();
-              }}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {open && (desktop ? menu : <Sheet open={open} onClose={()=>setOpen(false)} title={label}>{menu}</Sheet>)}
     </div>
   );
 }
@@ -967,13 +960,17 @@ export function Toast({
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remaining = useRef(action?.toLowerCase() === "undo" ? 8000 : 6000);
   const started = useRef(0);
-  function pause() {
+  const paused=useRef({pointer:false,focus:false});
+  function pause(reason:"pointer"|"focus") {
+    paused.current[reason]=true;
+    if (!timer.current) return;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     remaining.current = Math.max(0, remaining.current - (Date.now() - started.current));
   }
-  function resume() {
-    if (preview || timer.current) return;
+  function resume(reason?:"pointer"|"focus") {
+    if(reason)paused.current[reason]=false;
+    if (paused.current.pointer || paused.current.focus || preview || timer.current) return;
     started.current = Date.now();
     timer.current = setTimeout(() => close.current(), remaining.current);
   }
@@ -989,10 +986,10 @@ export function Toast({
       role={preview ? "group" : "status"}
       aria-label={preview ? "Toast example" : undefined}
       aria-live={preview ? undefined : "polite"}
-      onMouseEnter={pause}
-      onMouseLeave={resume}
-      onFocusCapture={pause}
-      onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resume(); }}
+      onMouseEnter={()=>pause("pointer")}
+      onMouseLeave={()=>resume("pointer")}
+      onFocusCapture={()=>pause("focus")}
+      onBlurCapture={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) resume("focus"); }}
       onPointerDown={(e) => {
         start.current = e.clientX;
       }}
@@ -1063,3 +1060,4 @@ export function EmptyState({
     </div>
   );
 }
+

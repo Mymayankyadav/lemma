@@ -1,11 +1,11 @@
 name: V7 Constellation gallery snapshots
 on:
-  push:
-    branches: ['owner-setup-v7/constellation']
+  pull_request:
     paths:
       - '.github/workflows/v7-gallery-snapshots.yml'
       - 'src/ui/v7/**'
       - 'src/features/kit/V7Page.tsx'
+      - 'scripts/v7/**'
   workflow_dispatch:
 permissions:
   contents: read
@@ -15,46 +15,78 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - name: Build testable gallery with URL feature-flag overrides
+      - name: Build gallery with URL feature-flag overrides
         env:
           VITE_ALLOW_FLAG_OVERRIDES: '1'
           VITE_FLAGS: '-v6Shell,-v7Shell'
         run: npm run build
-      - name: Capture Day and Night at 390 x 844
+      - name: Capture mobile, desktop and component details
         shell: bash
+        env:
+          CAPTURE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
           (npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/v7-preview.log 2>&1 &)
-          sleep 3
           node --input-type=module <<'NODE'
           import { chromium } from '@playwright/test';
+          import { mkdir, writeFile } from 'node:fs/promises';
+          const output = 'artifacts/v7-gallery';
+          await mkdir(output, { recursive: true });
           const browser = await chromium.launch();
+          const files = [];
           try {
-            const page = await browser.newPage({ viewport: {width:390,height:844}, deviceScaleFactor: 1, reducedMotion: 'reduce' });
-            await page.goto('http://127.0.0.1:4173/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit', {waitUntil:'networkidle'});
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+            const url = 'http://127.0.0.1:4173/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit';
+            // Preview startup is observed here, rather than relying on a fixed sleep.
+            for (let attempt = 0; ; attempt++) {
+              try { await page.goto(url, { waitUntil: 'networkidle' }); break; }
+              catch (error) { if (attempt >= 20) throw error; await new Promise(resolve => setTimeout(resolve, 500)); }
+            }
             await page.getByRole('heading', { name: 'A little more clarity.' }).waitFor();
             await page.evaluate(() => document.fonts.ready);
-            await page.screenshot({path:'docs/v7/kit-v7-1-0-day-390x844.png'});
-            await page.screenshot({path:'docs/v7/kit-v7-1-0-day-full.png', fullPage:true});
-            await page.getByRole('tab', {name:'Night',exact:true}).click();
-            await page.locator('html[data-theme="graph-night"]').waitFor();
-            await page.evaluate(() => document.fonts.ready);
-            await page.screenshot({path:'docs/v7/kit-v7-1-0-night-390x844.png'});
-            await page.screenshot({path:'docs/v7/kit-v7-1-0-night-full.png', fullPage:true});
-          } finally {
-            await browser.close();
-          }
+            async function shot(name, locator) {
+              const path = `${output}/${name}.png`;
+              if (locator) await locator.screenshot({ path }); else await page.screenshot({ path });
+              files.push(name + '.png');
+            }
+            for (const theme of ['Day', 'Night']) {
+              await page.getByRole('tab', { name: theme, exact: true }).click();
+              await page.locator(`html[data-theme="${theme === 'Day' ? 'graph' : 'graph-night'}"]`).waitFor();
+              await page.evaluate(() => window.scrollTo(0, 0));
+              await shot(`${theme.toLowerCase()}-mobile-390`);
+            }
+            await page.setViewportSize({ width: 1440, height: 1000 });
+            await page.getByRole('tab', { name: 'Day', exact: true }).click();
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await shot('desktop-overview-1440');
+            for (const [title, name] of [['Icons and mathematical emblems', 'emblems'], ['Components and states', 'components'], ['Patterns', 'patterns'], ['Data visualisation', 'charts']]) {
+              await shot(`desktop-${name}-day-night`, page.getByRole('region', { name: title, exact: true }));
+            }
+            const controls = page.getByRole('region', { name: 'Components and states', exact: true });
+            for (const title of ['Primary button', 'Text field', 'Switch']) {
+              for (const panel of await controls.locator('.v7-split-panel').all()) {
+                await panel.locator('summary').filter({ hasText: new RegExp(`^${title}$`) }).click();
+              }
+            }
+            await shot('desktop-state-matrices', controls.locator('.v7-split'));
+            await page.getByRole('checkbox', { name: 'High contrast comparison', exact: true }).check();
+            await shot('desktop-high-contrast-charts', page.getByRole('region', { name: 'Data visualisation', exact: true }));
+            await writeFile(`${output}/manifest.json`, JSON.stringify({ commit: process.env.CAPTURE_SHA, files }, null, 2));
+          } finally { await browser.close(); }
           NODE
       - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v7-constellation-kit-1-0-gallery
-          path: docs/v7/kit-v7-1-0-*.png
+          name: v7-constellation-kit-gallery
+          path: artifacts/v7-gallery/
           if-no-files-found: error
           retention-days: 14

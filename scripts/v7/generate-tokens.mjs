@@ -23,13 +23,33 @@ const generate=function generate(document){
   }
   css+=`}\n`;
  }
- css+=`[data-v7] {\n  --v7-sans: "Lemma v7 Instrument Sans", "Lemma v7 Sans fallback", sans-serif;\n  --v7-serif: "Lemma v7 Newsreader", "Lemma v7 Serif fallback", serif;\n  --v7-glyph: "Lemma v7 STIX Two Math", "Lemma v7 STIX Two Text", serif;\n  --v7-mono: "Lemma v7 IBM Plex Mono", monospace;\n  --v7-size-1:12px; --v7-size-2:14px; --v7-size-3:16px; --v7-size-4:18px; --v7-size-5:22px; --v7-size-6:28px; --v7-size-7:36px; --v7-size-8:48px; --v7-size-9:64px;\n  --v7-leading-1:16px; --v7-leading-2:20px; --v7-leading-3:24px; --v7-leading-4:28px; --v7-leading-5:30px; --v7-leading-6:34px; --v7-leading-7:40px; --v7-leading-8:52px; --v7-leading-9:64px;\n  --v7-type-display:44px; --v7-type-title:32px; --v7-type-headline:26px; --v7-type-subhead:20px; --v7-type-lead:19px; --v7-type-reading:17px;\n  --v7-space-1:4px;--v7-space-2:8px;--v7-space-3:12px;--v7-space-4:16px;--v7-space-5:20px;--v7-space-6:24px;--v7-space-8:32px;--v7-space-10:40px;--v7-space-12:48px;--v7-space-14:56px;--v7-space-16:64px;--v7-space-20:80px;\n  --v7-radius-1:8px; --v7-radius-2:12px; --v7-radius-3:16px; --v7-radius-4:24px; --v7-radius-xs:4px; --v7-round:9999px;\n  --v7-touch:44px;--v7-button:48px;--v7-small:32px;--v7-field:48px;--v7-chip:28px;--v7-segment:40px;--v7-row:64px;--v7-check:20px;--v7-switch-width:48px;--v7-switch-height:28px;--v7-meter:6px;\n  --v7-subject-alpha:12%;--v7-cover-alpha:9%;--v7-hero-alpha:10%;--v7-meter-alpha:22%;--v7-hero-stop:62%;\n  --v7-menu-layer:10;--v7-toast-layer:30;--v7-hairline:1px;--v7-ring:2px;--v7-focus-width:2px;--v7-menu-width:280px;--v7-dialog-min:480px;--v7-dialog-max:560px;--v7-content:1120px;--v7-sheet-max:85dvh;--v7-reading:68ch;--v7-art:120px;--v7-blur:22px;\n  --v7-regular:400;--v7-medium:500;--v7-semibold:600;--v7-display-tracking:-.015em;--v7-eyebrow-tracking:.08em;\n  --v7-instant:80ms;--v7-fast:120ms;--v7-base:200ms;--v7-slow:320ms;--v7-scenic:900ms;--v7-ease-standard:cubic-bezier(.2,0,0,1);--v7-ease-out:cubic-bezier(0,0,0,1);--v7-ease-in:cubic-bezier(.3,0,1,1);\n  --v7-snappy-stiffness:520;--v7-snappy-damping:38;--v7-gentle-stiffness:260;--v7-gentle-damping:28;--v7-lively-stiffness:400;--v7-lively-damping:22;--v7-skeleton:1.6s;--v7-skeleton-delay:300ms;--v7-pressed:.98;--v7-disabled:.4;\n  color:var(--v7-role-text-primary); background:var(--v7-role-surface-page);font:400 16px/24px var(--v7-sans);\n}\n[data-v7][data-theme="graph"] {color-scheme:light;}[data-v7][data-theme="graph-night"] {color-scheme:dark;}\n`;
- css+=`@media(min-width:700px){[data-v7]{--v7-type-display:56px;--v7-type-title:40px;--v7-type-headline:30px;--v7-type-subhead:22px;--v7-button:40px;--v7-field:40px;}}\n[data-v7][data-density="compact"]{--v7-button:40px;--v7-field:40px;--v7-row:56px;}\n[data-v7][data-contrast="high"]{--v7-focus-width:3px;--v7-line-strong:var(--v7-role-border-strong);}\n`;
- const figma={name:"Lemma v7 Constellation / Figma variable interchange",modes,mapping:{},variables:[]};
- for(const [k,v] of Object.entries(document.role)){figma.variables.push({name:`role/${k.replaceAll(".","/")}`,type:"COLOR",description:v.$description,modes:Object.fromEntries(modes.map(m=>[m,hc(k,m)]))});}
+ const foundations=document.foundation;
+ css+="[data-v7] {\n";
+ for(const [key,role] of Object.entries(foundations.role)) {
+  const name=role.$value.slice("{foundation.raw.".length,-1);
+  css+=`  --v7-${key}: ${foundations.raw[name].$value};\n`;
+ }
+ css+=`  color:var(--v7-role-text-primary);background:var(--v7-role-surface-page);font:400 var(--v7-size-3)/var(--v7-leading-3) var(--v7-sans);font-variant-numeric:tabular-nums lining-nums;\n}\n[data-v7][data-theme="graph"]{color-scheme:light;}[data-v7][data-theme="graph-night"]{color-scheme:dark;}\n`;
+ for(const [viewport,width] of [["tablet",700],["desktop",1100]]) {
+  css+=`@media(min-width:${width}px){[data-v7]{\n`;
+  for(const [key,role] of Object.entries(foundations.role)) {
+   const value=role.$extensions?.["lemma.viewport"]?.[viewport];
+   if(value)css+=`  --v7-${key}: ${value};\n`;
+  }
+  css+="}}\n";
+ }
+ css+=`[data-v7][data-density="compact"]{--v7-button:40px;--v7-field:40px;--v7-row:56px;}\n[data-v7][data-contrast="high"]{--v7-focus-width:3px;--v7-line-strong:var(--v7-role-border-strong);}\n`;
+ const figma={name:"Lemma v7 Constellation / Figma variable interchange",modes,collections:[]};
+ const rawVariables=keys.map(key=>({name:key.replaceAll(".","/"),type:"COLOR",modes:Object.fromEntries(modes.map(mode=>[mode,document.raw[mode.startsWith("night")?"night":"day"][key].$value]))}));
+ const roles=Object.entries(document.role).map(([key,value])=>({name:key.replaceAll(".","/"),type:"COLOR",description:value.$description,modes:Object.fromEntries(modes.map(mode=>[mode,hc(key,mode)]))}));
+ const components=Object.entries(document.component).map(([key,value])=>({name:key.replaceAll(".","/"),type:"COLOR",alias:value.$value}));
+ figma.collections.push({name:"Raw",variables:rawVariables},{name:"Role",variables:roles},{name:"Component",variables:components});
+ for(const [key,value] of Object.entries(document.foundation.raw))figma.collections[0].variables.push({name:"foundation/"+key,type:value.$type,value:value.$value});
+ for(const [key,value] of Object.entries(document.foundation.role))figma.collections[1].variables.push({name:"foundation/"+key,type:value.$type,alias:value.$value,description:value.$description});
  return {css,figma:JSON.stringify(figma,null,2)+"\n"};
 };
 const source=JSON.parse(readFileSync('src/ui/v7/design-tokens.json','utf8'));
 const result=generate(source);
 const outputs=[['src/ui/v7/tokens.css',result.css],['src/ui/v7/figma-variables.json',result.figma]];
 if(process.argv.includes('--check')){let bad=false;for(const [path,value] of outputs){if(readFileSync(path,'utf8')!==value){console.error(path+' is out of date');bad=true;}}if(bad)process.exit(1);}else for(const [path,value] of outputs)writeFileSync(path,value);
+

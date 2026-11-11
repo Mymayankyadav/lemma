@@ -12,8 +12,8 @@ test("the new v7 gallery shows Day and Night together, and four contrast modes",
  await expect(pair).toHaveCount(2);
  await expect(pair.nth(0)).toHaveAttribute("data-theme","graph");
  await expect(pair.nth(1)).toHaveAttribute("data-theme","graph-night");
- await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(23);
- await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(11);
+ await expect(pair.nth(0).locator(".v7-token-card")).toHaveCount(50);
+ await expect(pair.nth(0).locator(".v7-type-card")).toHaveCount(17);
  await page.getByRole("checkbox",{name:"High contrast comparison"}).check();
  await expect(pair.nth(0)).toHaveAttribute("data-contrast","high");
  await expect(pair.nth(1)).toHaveAttribute("data-contrast","high");
@@ -43,7 +43,7 @@ test("time range, form states and controls are usable with keyboard",async({page
  await controls.getByRole("button",{name:"25 min",exact:true}).click();
  await expect(controls.getByRole("button",{name:"25 min",exact:true})).toHaveAttribute("aria-pressed","true");
  await expect(controls.locator('input[type="time"]').nth(1)).toHaveValue("09:25");
- await expect(controls.locator(".v7-form-field.v7-is-readonly input")).toHaveAttribute("readonly","");
+ await expect(controls.getByRole("textbox",{name:"Pinned theorem",exact:true})).toHaveAttribute("readonly","");
  await expect(controls.getByRole("switch",{name:/Session reminders/}).nth(1)).toBeDisabled();
  const menu=controls.getByRole("button",{name:"Open menu"});
  await menu.click();await expect(controls.getByRole("menu")).toBeVisible();
@@ -91,3 +91,4 @@ test("v7 flag isolation keeps the v6 shell available",async({page})=>{
  await page.evaluate(()=>{location.hash="#/kit";});
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
 });
+
