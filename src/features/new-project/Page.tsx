@@ -1,21 +1,22 @@
 import {lazy,Suspense,useCallback,useEffect,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {AlertTriangle,Check,Copy,FileText,Plus,Trash2} from 'lucide-react';
-import {useAddSource,useCreateProjectDraft} from '../../data/hooks';
-import type {IngestProgress,Project} from '../../data/types';
 import {planPrompt} from '../../lib/chat';
-import {isSourceFile} from '../../pdf/validate';
+import {bytes,useNewPath} from './useNewPath';
 import {Screen} from '../../ui/Screen';
 import {Sheet} from '../../ui/Sheet';
 import {Button} from '../../ui/Button';
 import {Rail} from '../../ui/Rail';
 import {useToast} from '../../ui/Toast';
 import {isFlagOn} from '../../flags';
+import {v7Screen} from '../../app/v7Kit';
 
 // The KaTeX preview is only needed after the owner types maths. Do not
 // evaluate its renderer on an empty cold New project form.
 const MathPreview=lazy(()=>import('../../ui/MathPreview').then(module=>({default:module.MathPreview})));
 const ProjectsPage=lazy(()=>import('../projects/Page'));
+// v7: the Paths hub opens its own New path sheet over the list (PLAN §6.8).
+const PathsV7=lazy(()=>import('../projects/v7/PathsV7'));
 
 function BackdropFallback(){
  return <Screen tabBar className="gap-4"><header className="flex min-h-11 items-center">
@@ -23,21 +24,14 @@ function BackdropFallback(){
  </header></Screen>;
 }
 
-type UploadState='queued'|'reading'|'uploading'|'saving'|'ready'|'failed';
-type QueueItem={id:number;file:File|null;name:string;size:number;status:UploadState;progress:IngestProgress|null;error:string|null;sha256:string|null};
-const MAX_PDF_BYTES=50*1024*1024;
-const validPdf=(file:File)=>isSourceFile(file)&&file.size>0&&file.size<=MAX_PDF_BYTES;
-const bytes=(size:number)=>size>=1048576?(size/1048576).toFixed(1)+' MB':Math.ceil(size/1024)+' KB';
-async function fingerprint(file:File):Promise<string>{
- const digest=await crypto.subtle.digest('SHA-256',await file.arrayBuffer());
- return Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('');
-}
-
 export default function Page(){
- const navigate=useNavigate(),notify=useToast(),create=useCreateProjectDraft(),addSource=useAddSource();
- const [name,setName]=useState(''),[items,setItems]=useState<QueueItem[]>([]),[error,setError]=useState<string|null>(null),
-  [saving,setSaving]=useState(false),[created,setCreated]=useState<Project|null>(null);
- const input=useRef<HTMLInputElement>(null),nextId=useRef(0);
+ if(v7Screen()==='paths')return <Suspense fallback={<div role="status" aria-label="Paths loading" className="min-h-dvh"/>}><PathsV7/></Suspense>;
+ return <LegacyNewPath/>;
+}
+function LegacyNewPath(){
+ const navigate=useNavigate(),notify=useToast();
+ const {name,setName,items,error,saving,created,remaining,enqueue,remove,submit:run}=useNewPath();
+ const input=useRef<HTMLInputElement>(null);
  const [loadBackdrop,setLoadBackdrop]=useState(false);
  // The real Paths page is part of the existing sheet contract (and visible
  // behind it). Hydrate it only after the first modal paint, never in the
@@ -49,63 +43,18 @@ export default function Page(){
   return ()=>window.clearTimeout(id);
  },[]);
  const close=useCallback(()=>navigate('/projects'),[navigate]);
- function enqueue(files:FileList|File[]){
-  const incoming=Array.from(files),accepted:QueueItem[]=[],invalid:string[]=[];
-  for(const file of incoming){
-   if(!validPdf(file)){invalid.push(file.name);continue}
-   accepted.push({id:++nextId.current,file,name:file.name,size:file.size,status:'queued',progress:null,error:null,sha256:null});
-  }
-  setItems(previous=>[...previous,...accepted]);
-  setError(invalid.length?'Sources must be PDF, .tex or .md files, nonempty and at most 50 MB: '+invalid.join(', '):null);
- }
- function patch(id:number,change:Partial<QueueItem>){
-  setItems(previous=>previous.map(item=>item.id===id?{...item,...change}:item));
- }
  async function submit(event:React.FormEvent){
   event.preventDefault();
-  if(saving||!name.trim())return;
-  setSaving(true);setError(null);
-  let project=created;
-  try{
-   if(!project){
-    project=await create.mutateAsync({title:name.trim()});
-    setCreated(project);
-   }
-   const hashes=new Set(items.filter(item=>item.status==='ready'&&item.sha256).map(item=>item.sha256));
-   let failed=false;
-   for(const item of items){
-    if(item.status==='ready')continue;
-    try{
-     const file=item.file;
-     if(!file)throw new Error('File no longer available. Remove and reselect it.');
-     patch(item.id,{status:'reading',error:null});
-     const hash=await fingerprint(file);
-     if(hashes.has(hash)){
-      patch(item.id,{status:'failed',error:'Already added',sha256:hash});failed=true;continue;
-     }
-     await addSource.mutateAsync({projectId:project.id,file,onProgress:progress=>{
-      patch(item.id,{progress,status:progress.phase==='done'?'saving':progress.phase==='failed'?'failed':progress.phase});
-     }});
-     hashes.add(hash);
-     // Keep only display metadata and the digest; release the uploaded Blob reference.
-     patch(item.id,{status:'ready',file:null,sha256:hash,error:null});
-    }catch(cause){
-     patch(item.id,{status:'failed',error:cause instanceof Error?cause.message:'Upload failed'});
-     failed=true;
-    }
-   }
-   if(failed){
-    notify('Project saved. Retry or remove failed files to continue.',{tone:'danger'});
-    return;
-   }
-   notify((isFlagOn('v6Shell')?'Path created. ':'Project created. ')+'Tell your tutor: '+planPrompt(project.title),{tone:'success'});
-   navigate('/p/'+project.slug+'?tab=sources');
-  }catch(cause){
-   setError(cause instanceof Error?cause.message:'Could not create project');
+  const result=await run();
+  if(result.kind==='partial'){
+   notify('Project saved. Retry or remove failed files to continue.',{tone:'danger'});
+  }else if(result.kind==='created'){
+   notify((isFlagOn('v6Shell')?'Path created. ':'Project created. ')+'Tell your tutor: '+planPrompt(result.project.title),{tone:'success'});
+   navigate('/p/'+result.project.slug+'?tab=sources');
+  }else if(result.kind==='failed'){
    notify(isFlagOn('v6Shell')?'Could not save your path':'Could not save your project',{tone:'danger'});
-  }finally{setSaving(false)}
+  }
  }
- const remaining=items.filter(item=>item.status!=='ready').length;
  return <>
   {/* Preserve the actual inert Paths background after the modal's first paint.
       A permanent placeholder breaks the existing sheet/layout contract. */}
@@ -154,7 +103,7 @@ export default function Page(){
         {item.error&&<p role="alert" className="text-label text-again">{item.error}</p>}
        </div>
        {item.status==='ready'?<Check size={18} className="text-easy"/>:
-        !saving&&<button type="button" aria-label={'Remove '+item.name} onClick={()=>setItems(previous=>previous.filter(x=>x.id!==item.id))}
+        !saving&&<button type="button" aria-label={'Remove '+item.name} onClick={()=>remove(item.id)}
          className="flex size-11 shrink-0 items-center justify-center text-ink-3"><Trash2 size={17}/></button>}
       </li>)}
      </ul>

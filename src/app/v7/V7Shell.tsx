@@ -16,8 +16,8 @@ const SearchSheet=lazy(()=>import('./SearchSheet'));
 /** PLAN §6.1: floating tab bar, session row, capture button and the three header kinds. */
 export const tabs=[
  {to:'/',label:'Today',Icon:House,match:(path:string)=>path==='/'},
- {to:'/projects',label:'Paths',Icon:Route,match:(path:string)=>path.startsWith('/projects')||path.startsWith('/p/')||path==='/atlas'},
- {to:'/review',label:'Review',Icon:Layers,match:(path:string)=>path.startsWith('/review')||path.startsWith('/cards')||path.startsWith('/practice')},
+ {to:'/projects',label:'Paths',Icon:Route,match:(path:string)=>path.startsWith('/projects')||path.startsWith('/p/')||path.startsWith('/s/')||path==='/atlas'||path.startsWith('/cards')},
+ {to:'/review',label:'Review',Icon:Layers,match:(path:string)=>path.startsWith('/review')||path.startsWith('/practice')},
  {to:'/calendar',label:'Calendar',Icon:CalendarDays,match:(path:string)=>path.startsWith('/calendar')||path.startsWith('/tasks')},
  {to:'/insights',label:'Progress',Icon:ChartColumn,match:(path:string)=>path.startsWith('/insights')||path.startsWith('/log')},
 ] as const;
@@ -57,6 +57,8 @@ function Capture(){
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
+ // On the card library Capture writes a new card (PLAN §6.11).
+ const onCards=location.pathname==='/cards';
  // PA2: the button slides away on scroll down. Its dock slot stays reserved;
  // keyboard focus always reveals it again.
  const [hidden,setHidden]=useState(false);
@@ -70,7 +72,7 @@ function Capture(){
   <button type="button" className="v7-capture" data-hidden={hidden&&mode==='closed'?'true':'false'} aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onFocus={()=>setHidden(false)}
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
-   onClick={()=>{if(long.current){long.current=false;return;}setMode('sheet');}}
+   onClick={()=>{if(long.current){long.current=false;return;}if(onCards){window.dispatchEvent(new Event('v7:new-card'));return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
   <Suspense fallback={null}>{mode!=='closed'&&<CaptureSheet key={mode} open onClose={()=>setMode('closed')} picker={mode==='picker'} initialKind={onCalendar&&mode==='sheet'?'block':null}/>}</Suspense>
  </>;

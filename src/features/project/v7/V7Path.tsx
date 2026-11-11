@@ -11,7 +11,7 @@ import {Button,Chip,Menu,Segmented,Sheet,Skeleton} from '../../../ui/v7/componen
 import {StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {subjectClass} from '../../../ui/v7/Subject';
-import {chatLink,studyPrompt} from '../../../lib/chat';
+import {chatLink,planPrompt,studyPrompt} from '../../../lib/chat';
 import {formatMinutes} from '../../../lib/text';
 import {groupCheckpointStages} from '../../../ui/timeline/progress';
 import {useToast} from '../../../ui/Toast';
@@ -128,6 +128,11 @@ export default function V7Path(){
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
    <div className="v7-path-chips">{target&&<StatusBadge tone="info">{'Target '+target}</StatusBadge>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
   </header>
+  {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
+   <p className="v7-eyebrow">Tell your tutor</p>
+   <p>Ask your tutor to read the sources and plan this path with you.</p>
+   <Button variant="primary" onClick={()=>{void navigator.clipboard?.writeText(planPrompt(project.title)).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy prompt</Button>
+  </section>}
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>

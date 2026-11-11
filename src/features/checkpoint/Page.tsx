@@ -1,5 +1,7 @@
 import {Tex} from '../../ui/Tex';
 import {isFlagOn} from '../../flags';
+import {lazy,Suspense} from 'react';
+import {v7Screen} from '../../app/v7Kit';
 import V6Checkpoint from './v6/V6Checkpoint';
 import {useNavigate,useParams} from 'react-router';
 import {BookOpen,Check,ChevronRight,Circle,Clock3,HelpCircle,Layers,MessageCircle,RotateCcw,Target} from 'lucide-react';
@@ -20,7 +22,12 @@ import {useToast} from '../../ui/Toast';
 const statusTitles:Record<CheckpointView['ui'],string>={
  done:'Demonstrated',revisit:'Re-check due',now:'In progress',next:'Up next',locked:'Locked',proposed:'Proposed',
 };
-export default function Page(){return isFlagOn('v6Shell')?<V6Checkpoint/>:<LegacyPage/>;}
+const CheckpointV7=lazy(()=>import('./v7/CheckpointV7'));
+export default function Page(){
+ // v7 Checkpoint (PLAN §6.9) behind v7Shell; v6 and legacy stay for rollback.
+ if(v7Screen()==='checkpoint')return <Suspense fallback={<div role="status" aria-label="Checkpoint loading" className="min-h-dvh"/>}><CheckpointV7/></Suspense>;
+ return isFlagOn('v6Shell')?<V6Checkpoint/>:<LegacyPage/>;
+}
 function LegacyPage(){
  const {slug:slugParam,code:codeParam}=useParams(),slug=slugParam??'',code=codeParam??'';
  const navigate=useNavigate(),query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),insight=useInsightData(30),notify=useToast();

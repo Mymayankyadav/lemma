@@ -1,5 +1,5 @@
 import {SectionHeading} from '../../ui/SectionHeading';
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronDown,ChevronRight,MoreHorizontal,Plus,Search,Waypoints,X} from 'lucide-react';
@@ -18,6 +18,7 @@ import {FastTex as Tex} from '../../ui/FastTex';
 import {countPinnedProjects} from './pinnedCount';
 import {isFlagOn} from '../../flags';
 import V6Paths from './v6/V6Paths';
+import {v7Screen} from '../../app/v7Kit';
 
 type Filter='active'|'paused'|'done'|'archived';
 const filters:Filter[]=['active','paused','done'];
@@ -114,7 +115,12 @@ function ProjectGroup({name,glyph,items,total,collapsed,onToggle,pinnedCount}:{n
 }
 
 /** Keep the flag wrapper above the legacy implementation: cold-route prefetch source checks inspect this section. */
-export default function Page(){return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;}
+const PathsV7=lazy(()=>import('./v7/PathsV7'));
+export default function Page(){
+ // v7 Paths hub (PLAN §6.8) behind v7Shell; v6 and legacy stay for rollback.
+ if(v7Screen()==='paths')return <Suspense fallback={<div role="status" aria-label="Paths loading" className="min-h-dvh"/>}><PathsV7/></Suspense>;
+ return isFlagOn('v6Shell')?<V6Paths/>:<LegacyPaths/>;
+}
 
 function LegacyPaths(){
  const queryClient=useQueryClient();

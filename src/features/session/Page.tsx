@@ -1,7 +1,8 @@
 import {Tex} from '../../ui/Tex';
 import {isFlagOn} from '../../flags';
+import {v7Screen} from '../../app/v7Kit';
 import V6Session from './v6/V6Session';
-import {useCallback,useState} from 'react';
+import {lazy,Suspense,useCallback,useState} from 'react';
 import {Link,useParams,useSearchParams} from 'react-router';
 import {BookOpen,Calendar,CheckCircle,Clock,Copy,History,MessageCircle,MoreHorizontal,Target,TriangleAlert,XCircle,Lightbulb,BookMarked,Sparkles,Bot,Check,ArrowRight} from 'lucide-react';
 import {motion,useReducedMotion} from 'motion/react';
@@ -35,7 +36,12 @@ function ReasoningEvent({event,index}:{event:SessionEvent;index:number}){
    {event.outcome&&<Chip size={28} tone={event.outcome==='demonstrated'?'success':event.outcome==='failed'?'danger':'amber'}>{event.outcome}</Chip>}
   </div></motion.li>;
 }
-export default function Page(){return isFlagOn('v6Shell')?<V6Session/>:<LegacyPage/>;}
+const SessionV7=lazy(()=>import('./v7/SessionV7'));
+export default function Page(){
+ // v7 Session (PLAN §6.9) behind v7Shell; v6 and legacy stay for rollback.
+ if(v7Screen()==='session')return <Suspense fallback={<div role="status" aria-label="Session loading" className="min-h-dvh"/>}><SessionV7/></Suspense>;
+ return isFlagOn('v6Shell')?<V6Session/>:<LegacyPage/>;
+}
 function LegacyPage(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings();
  const [params]=useSearchParams(),viewCards=params.get('cards')==='1';

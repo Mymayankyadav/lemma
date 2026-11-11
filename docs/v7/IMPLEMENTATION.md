@@ -233,3 +233,27 @@ The Owner accepted C5's retrospective order waiver, the additive frontend foreca
 Validation at this point: typecheck, repository lint, the four-mode static kit check and a production build/PWA check pass. All 374 unit files / 2,089 tests passed locally after the initial fixes; later narrow edits are checked separately before push. The 22 new browser acceptance cases are enumerated successfully. Local Chromium launch is blocked by the command sandbox's Unix-socket policy; the shared browser cannot reach that isolated localhost. Browser execution must be verified by PR CI; neither attempt is reported as a passing browser run. The approved baseline and its earlier CI evidence remain historical.
 
 Still separate: real responsive layouts and fresh 1280 captures (Part 11), physical-device/screen-reader testing, performance measurements/default activation, final visual review of changed candidates, and the independent complete-PR review. No Ready or activation is implied.
+
+## Part 8 status (learning: PLAN §6.8, §6.9 Checkpoint and Session, §6.11)
+
+Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
+
+- **Paths hub** (`/projects`, `src/features/projects/v7/`): hub tabs Paths · Cards · Atlas, search over title, subject, current checkpoint and source titles, Active/Paused/Done/Archived chips with counts, path cards (96 × 108 emblem cover on the subject tint, "Now: … · step n of m", an 8 px subject meter, the schedule chip only when there is a forecast, a "n due" link that starts that path's review), subject headings only for two or more paths, pinned-then-recent order, a ⋯ sheet with Pin, Pause/Resume, Mark done and Archive (each with Undo), and a solid-edge "Start a new path" card.
+- **New path** (`/projects/new`): a sheet over the hub with Name, a dashed Sources drop zone ("Add a PDF, .tex or .md · 50 MB each"), file rows with size and remove, the tutor note and a primary "Create path". The new path opens with a "Tell your tutor" card and "Copy prompt" (`?new=1`).
+- **Checkpoint**: eyebrow, title and state/stage chips; the statement card with a 3 px inset rule and "What counts"; a 56 px-row stepper (done, current with "Next", later); prerequisites with their state and the source; the recheck card; evidence grouped by session; "n cards · Review"; a sticky bar with "Work on this with your tutor" and ⋯ holding Demonstrate and Defer with their one-line explanations.
+- **Session**: the goal as the title with duration, tutor, date-time and goal chips; the summary card; things to revisit; the timeline with times; the session's cards; "Start another session" in a sticky bar.
+- **Cards** (Paths › Cards): search, Path/State/Checkpoint pickers, Has comments, a Due first/Newest sort, a count line, 72 px rows (glyph tile, front on two lines, "N49 · CP9 · due today", an accent dot when due today, a pause icon when paused), infinite scroll with "Load more" as the keyboard path. Capture opens the editor.
+- **Card detail**: the card as in a review; Next review, Stability and Recall now; a recall chart replayed through the owner's scheduler (0–100% axis, 50% hairline, labelled target line, first/latest dates, grade-coloured dots with 44 px tap targets, legend); history with formatter dates, grade, confidence and the next interval; notes for the tutor; Edit card and Pause in a sticky bar; Pause/Delete in ⋯ with a delete confirmation.
+- **Editor**: a full-height sheet, Write · Preview (side by side from 700 px), Front and Back in the serif, a key row with up to eight of the owner's macros then common symbols, Path, Checkpoint, Type and Kind pickers, and the primary in the sheet footer.
+
+### Gaps (not done)
+
+- The Cards sort offers Due first and Newest. "Hardest" needs card difficulty, which the library rows do not carry; adding it means changing the search read, which this PR does not do.
+- "Due" in the Cards filter is a time test on the loaded pages (the search read has no due filter), so the count line says "50+" while more pages exist.
+- The Atlas keeps its own immersive bar; it is reached from the Paths and Cards hub tabs but does not show them itself, so the approved Atlas golden is unchanged.
+- The editor keeps the note's tags as they are; tag editing stays in the legacy editor.
+
+### Verification
+
+- Unit: `tests/unit/v7/learning.test.ts` (15 tests: Paths filters, order, search, grouping, due per path; Cards filters, due-today in the owner zone, meta line, sort; editor keys; evidence grouping; the recall replay; routes). Full unit suite 375 files / 2,104 tests passed.
+- Browser: `tests/e2e/v7-learning.spec.ts` (8 tests covering each "Done when" item of §6.8, §6.9 and §6.11), the rendered design lint on the seven new scenes in Day and Night at 390 and 320 px (28 runs), and 115 existing tests across Paths, New project, routes, LaTeX, the v6 N121 audits, the Night critique, audit acceptance and responsive specs all passed against a production build.

@@ -1,0 +1,43 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.8 Paths. Path cards: 20 px corners, 12 px padding, a 96 × 108 subject-tint cover on the left. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-paths {display:grid;gap:var(--v7-space-4);align-content:start;}
+ :where(html[data-v7]) .v7-paths-search {display:block;}
+ :where(html[data-v7]) .v7-paths-filters {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-paths-group {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-paths-heading {display:flex;align-items:center;gap:var(--v7-space-2);padding-top:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-paths-list {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-paths-card {display:grid;grid-template-columns:96px minmax(0,1fr);gap:var(--v7-space-3);padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:20px;background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-paths-cover {width:96px;height:108px;display:grid;place-items:center;border-radius:14px;background:var(--v7-subject-subtle,var(--v7-role-surface-muted));color:var(--v7-subject,var(--v7-role-text-secondary));overflow:hidden;}
+ :where(html[data-v7]) .v7-paths-body {display:grid;gap:var(--v7-space-1);min-width:0;align-content:start;}
+ :where(html[data-v7]) .v7-paths-title-row {display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:var(--v7-space-1);margin-right:calc(-1 * var(--v7-space-2));margin-top:calc(-1 * var(--v7-space-1));}
+ :where(html[data-v7]) .v7-paths-title {display:block;padding-top:var(--v7-space-2);color:var(--v7-role-text-primary);font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);text-decoration:none;overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-paths-title::after {content:"";position:absolute;inset:0;}
+ :where(html[data-v7]) .v7-paths-card {position:relative;}
+ :where(html[data-v7]) .v7-paths-card :is(.v7-icon-button,.v7-paths-due,.v7-badge-action) {position:relative;z-index:1;}
+ :where(html[data-v7]) .v7-paths-subject {display:flex;align-items:center;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-paths-now {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ :where(html[data-v7]) .v7-paths-meter {display:flex;align-items:center;gap:var(--v7-space-2);margin-top:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-paths-meter > [role="meter"] {flex:1;height:8px;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);overflow:hidden;}
+ :where(html[data-v7]) .v7-paths-meter > [role="meter"] > span {display:block;height:100%;border-radius:inherit;background:var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-paths-meter small {color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;white-space:nowrap;}
+ :where(html[data-v7]) .v7-paths-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);margin-top:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-paths-chips:empty {display:none;}
+ :where(html[data-v7]) .v7-paths-due {position:relative;display:inline-flex;align-items:center;min-height:24px;padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-1);color:var(--v7-role-text-primary);font:600 var(--v7-type-caption)/1 var(--v7-sans);text-decoration:none;font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-paths-due::after {content:"";position:absolute;inset:-10px -4px;}
+ :where(html[data-v7]) .v7-paths-empty {display:grid;gap:var(--v7-space-3);justify-items:start;color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-paths-moreButton {justify-self:center;}
+ /* "Start a new path": a solid-edge card (dashed edges are reserved for drop zones). */
+ :where(html[data-v7]) .v7-paths-new {display:flex;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:64px;border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:20px;color:var(--v7-role-text-primary);font:600 var(--v7-type-body)/1 var(--v7-sans);text-decoration:none;}
+ :where(html[data-v7]) .v7-paths-new svg {width:20px;height:20px;}
+ /* New path sheet. */
+ :where(html[data-v7]) .v7-newpath {display:grid;gap:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-newpath-drop {display:flex;align-items:center;justify-content:center;gap:var(--v7-space-2);width:100%;min-height:96px;border:var(--v7-hairline) dashed var(--v7-role-border-strong,var(--v7-role-border-default));border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1.3 var(--v7-sans);cursor:pointer;}
+ :where(html[data-v7]) .v7-newpath-drop svg {width:20px;height:20px;flex:none;}
+ :where(html[data-v7]) .v7-newpath-files {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-newpath-files li {display:grid;grid-template-columns:20px minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-3);min-height:var(--v7-touch);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-newpath-files li > svg {width:20px;height:20px;color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-newpath-files strong {display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 var(--v7-type-supporting)/1.3 var(--v7-sans);}
+ :where(html[data-v7]) .v7-newpath-files small,:where(html[data-v7]) .v7-newpath-note {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-newpath-note {font-size:var(--v7-type-supporting);line-height:var(--v7-leading-supporting);}
+}

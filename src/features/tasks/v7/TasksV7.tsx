@@ -1,12 +1,13 @@
-import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent,type ReactNode} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
-import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,MoreHorizontal,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
+import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getTaskApi} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
-import {Button,Chip,IconButton,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
 import {StatusBadge} from '../../../ui/v7/Status';
+import {RowMenu} from '../../../ui/v7/RowMenu';
 import {SubjectGlyph} from '../../../ui/v7/Subject';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {ownerZone} from '../../../lib/format';
@@ -200,16 +201,3 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
  </li>;
 }
 
-/** The per-row ⋯: an icon button that opens the row's actions in a sheet. It is also the keyboard route to reorder. */
-function RowMenu({label,title,items}:{label:string;title:string;items:{label:string;icon:ReactNode;onClick:()=>void}[]}){
- const [open,setOpen]=useState(false);
- return <>
-  <IconButton label={label} aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
-  {open&&<Sheet open onClose={()=>setOpen(false)} title={title}>
-   <div className="v7-menu-content" role="menu" aria-label={label}>
-    {items.map(item=><button key={item.label} type="button" role="menuitem" className={/delete/i.test(item.label)?'v7-menu-danger':undefined}
-     onClick={()=>{setOpen(false);item.onClick();}}>{item.icon}{item.label}</button>)}
-   </div>
-  </Sheet>}
- </>;
-}

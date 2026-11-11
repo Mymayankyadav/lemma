@@ -3,7 +3,7 @@ import { isFlagOn } from "../flags";
  * Screens rebuilt for v7 so far. Every other route keeps the v6/legacy shell until it is
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
-export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path";
+export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path" | "paths" | "checkpoint" | "session" | "cards" | "card" | "inbox" | "plan-proposal";
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
@@ -25,6 +25,11 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   // Day, Week, Month and Agenda are all v7; an unknown view falls back to Day.
   if (path === "/calendar") return "calendar";
   if (/^\/p\/[^/]+$/.test(path)) return "path";
+  if (path === "/projects" || path === "/projects/new") return "paths";
+  if (/^\/p\/[^/]+\/cp\/[^/]+$/.test(path)) return "checkpoint";
+  if (/^\/s\/[^/]+\/[^/]+$/.test(path)) return "session";
+  if (path === "/cards") return "cards";
+  if (/^\/cards\/[^/]+$/.test(path)) return "card";
   return null;
 }
 export function v7Screen(path?: string, search?: string): V7Screen | null {

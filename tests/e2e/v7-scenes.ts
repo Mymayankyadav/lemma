@@ -39,6 +39,14 @@ export const shots:Shot[]=[
  {name:"atlas",hash:"/atlas",prepare:async page=>{await page.locator(".v7-atlas-sky[data-layout]").waitFor({timeout:5000});await page.waitForTimeout(800);}},
  {name:"capture-sheet",hash:"/",prepare:async page=>{await page.getByRole("button",{name:"Capture",exact:true}).click();}},
  {name:"search-sheet",hash:"/",prepare:async page=>{await page.getByRole("button",{name:/Search/}).first().click();}},
+ // Part 8: learning screens (PLAN §6.8, §6.9, §6.11).
+ {name:"paths",hash:"/projects"},
+ {name:"new-path",hash:"/projects/new"},
+ {name:"checkpoint",hash:"/p/real-analysis/cp/CP4",frames:2},
+ {name:"session",hash:"/s/real-analysis/7",frames:2},
+ {name:"cards",hash:"/cards"},
+ {name:"card",hash:"/cards/1",frames:2},
+ {name:"card-editor",hash:"/cards?new=1"},
 ];
 
 /** Load a scene the way a person would: fixed clock, colour scheme, reduced motion, then its own preparation. */

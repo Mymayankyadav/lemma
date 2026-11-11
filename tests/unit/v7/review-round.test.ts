@@ -20,6 +20,8 @@ describe('v7 review round',()=>{
   expect(v7ScreenFor('/calendar','?view=month')).toBe('calendar');
   expect(v7ScreenFor('/calendar','?view=agenda')).toBe('calendar');
   expect(v7ScreenFor('/p/abc')).toBe('path');
-  expect(v7ScreenFor('/p/abc/cp/CP3')).toBeNull();
+  // Part 8: the learning screens are migrated; Settings is not yet (Part 10).
+  expect(v7ScreenFor('/p/abc/cp/CP3')).toBe('checkpoint');
+  expect(v7ScreenFor('/settings')).toBeNull();
  });
 });

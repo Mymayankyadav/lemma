@@ -49,6 +49,7 @@
  :where(html[data-v7]) .v7-path-bar .v7-button {min-height:var(--v7-button);text-decoration:none;white-space:nowrap;}
  :where(html[data-v7]) .v7-path-prompt {padding:var(--v7-space-3);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;}
  :where(html[data-v7]) .v7-path-note {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-path-tell {display:grid;gap:var(--v7-space-2);justify-items:start;padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
  @keyframes v7-path-halo {0%,100% {transform:scale(.85);opacity:.12;} 50% {transform:scale(1.1);opacity:.28;}}
  @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-path-halo {animation:none;}}
  :where(html[data-v7]) .v7-path-cardlist {list-style:none;margin:var(--v7-space-3) 0 0;padding:0;display:grid;gap:var(--v7-space-2);}
