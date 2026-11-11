@@ -2,7 +2,7 @@ import {test,expect,type Page} from "@playwright/test";
 // Review captures of the v7 screens at phone size, Day and Night. These assert only that a screen
 // rendered; the PNGs land in test-results/screens/v7 (uploaded as the "screens" artifact) for a human to judge.
 const at=(hash:string)=>"/lemma/?demo=1&flags=v7Shell,v6Shell#"+hash;
-test.use({viewport:{width:390,height:844},deviceScaleFactor:2});
+test.use({viewport:{width:390,height:844},deviceScaleFactor:1});
 
 type Shot={name:string;hash:string;prepare?:(page:Page)=>Promise<void>;full?:boolean};
 const open=async(page:Page,name:string)=>{
@@ -45,7 +45,10 @@ for(const scheme of ["light","dark"] as const){
    try{await shot.prepare?.(page);}catch{/* an unavailable optional control must not hide the screen */}
    await page.waitForTimeout(700);
    await page.evaluate(()=>document.fonts.ready);
-   await page.screenshot({path:`test-results/screens/v7/${shot.name}-${scheme==="light"?"day":"night"}.png`,fullPage:!!shot.full,animations:"disabled"});
+   const label=shot.name+"-"+(scheme==="light"?"day":"night");
+   const png=await page.screenshot({path:`test-results/screens/v7/${label}.png`,fullPage:!!shot.full,animations:"disabled"});
+   // The PR gate only keeps the JUnit XML, so the PNG also travels in the test's stdout for review.
+   process.stdout.write("V7SHOT "+label+" "+png.toString("base64")+"\n");
   });
  }
 }
