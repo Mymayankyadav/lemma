@@ -86,12 +86,12 @@ export default function ReviewHubV7(){
    </section>
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
-   <section className="v7-rv-section" aria-label="Due each day">
+   <div className="v7-rv-section">
     {bars.length>0?<Chart title="Due each day" kind="bars" data={bars.map(bar=>({label:bar.label,values:[bar.due]}))}
      series={[{label:'Due'}]} format={value=>String(Math.round(value))}
      summary={'Cards due over the next '+bars.length+' days: '+bars.reduce((sum,bar)=>sum+bar.due,0).toLocaleString()+' in all.'}/>
      :<p className="v7-rv-note">{forecast.isError?'Could not load the forecast.':'Loading the forecast…'}</p>}
-   </section>
+   </div>
    <section className="v7-rv-section" aria-label="Memory, last 30 days">
     <h2 className="v7-headline">Memory · 30 days</h2>
     <div className="v7-rv-tiles">
