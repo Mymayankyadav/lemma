@@ -29,10 +29,10 @@ describe('v7 tasks model',()=>{
   expect(isOverdue(task({status:'completed',due:{kind:'date',date:'2026-11-01'}}),now,zone)).toBe(false);
   expect(isOverdue(task({status:'cancelled',due:{kind:'date',date:'2026-11-01'}}),now,zone)).toBe(false);
  });
- it('groups To do with Overdue first, skips empty groups and only lists backlog',()=>{
+ it('groups To do with Overdue first, skips empty groups and uses saved manual order within groups',()=>{
   const groups=groupTodo([task({due:{kind:'date',date:'2026-11-20'}}),task({due:{kind:'date',date:'2026-11-09'}}),task({status:'in_progress'}),task({due:{kind:'date',date:'2026-11-08'}})],now,zone);
   expect(groups.map(group=>group.key)).toEqual(['overdue','later']);
-  expect(groups[0].items.map(item=>item.due.kind==='date'?item.due.date:'')).toEqual(['2026-11-08','2026-11-09']);
+  expect(groups[0].items.map(item=>item.due.kind==='date'?item.due.date:'')).toEqual(['2026-11-09','2026-11-08']);
  });
  it('filters by path, high priority and overdue together',()=>{
   const items=[task({projectId:'a',priority:'high',due:{kind:'date',date:'2026-11-01'}}),task({projectId:'a'}),task({projectId:'b',priority:'high'})];

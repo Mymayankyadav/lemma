@@ -54,7 +54,8 @@ function Capture(){
  const down=()=>{long.current=false;timer.current=window.setTimeout(()=>{long.current=true;setMode('picker');},350);};
  const up=()=>{if(timer.current)window.clearTimeout(timer.current);timer.current=null;};
  const onCalendar=location.pathname.startsWith('/calendar');
- // SH2/PA2: the button slides away while scrolling down, so it never covers row actions, and returns on scroll up.
+ // PA2: the button slides away on scroll down. Its dock slot stays reserved;
+ // keyboard focus always reveals it again.
  const [hidden,setHidden]=useState(false);
  useEffect(()=>{
   let last=window.scrollY;
@@ -64,6 +65,7 @@ function Capture(){
  useEffect(()=>setHidden(false),[location.pathname]);
  return <>
   <button type="button" className="v7-capture" data-hidden={hidden&&mode==='closed'?'true':'false'} aria-label="Capture" title="Capture" aria-haspopup="dialog"
+   onFocus={()=>setHidden(false)}
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>
@@ -78,10 +80,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const due=home.data?.due??0,active=Math.max(0,tabs.findIndex(tab=>tab.match(location.pathname)));
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
   {children}
-  {!immersive&&capture&&<Capture/>}
   <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
   <div className="v7-dock">
    {!immersive&&<SessionRow/>}
+   <div className="v7-dock-row">
    <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':active} as CSSProperties}>
     <span className="v7-tab-pill" aria-hidden="true"/>
     {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} className="v7-tab" aria-current={index===active?'page':undefined}>
@@ -89,6 +91,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
      <span>{label}</span>
     </Link>)}
    </nav>
+   {!immersive&&capture&&<Capture/>}
+   </div>
   </div>
  </div>;
 }

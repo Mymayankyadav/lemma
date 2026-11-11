@@ -21,10 +21,12 @@ test("B3 · Today, Calendar and Tasks show the same overdue count",async({page})
  await expect(page.getByRole("button",{name:today+" overdue. Triage"})).toBeVisible();
  await page.goto(at("/tasks"));
  await page.waitForLoadState("networkidle");
+ await expect(page.getByRole("link",{name:today+" overdue. Triage"})).toBeVisible();
  const tasks=Number((await page.getByRole("button",{name:/^Overdue \d+$/}).textContent())!.match(/\d+/)![0]);
  const group=page.getByRole("region",{name:"Overdue"});
  await expect(group.getByRole("heading")).toHaveText("Overdue · "+tasks);
- // Today's number is tasks, deadlines and practice topics together; the Tasks screen shows the task part of it.
+ // The global triage number is identical on all three screens. The task-only
+ // filter and group both count the task subset of that same summary.
  expect(tasks).toBeLessThanOrEqual(today);
 });
 

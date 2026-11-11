@@ -1,5 +1,4 @@
 import {useEffect,useState} from 'react';
-import {getTaskApi} from '../../../data/tasks';
 import type {TaskRecord} from '../../../data/tasks/contract';
 import {readTasks} from '../../planner/readTasks';
 import {deadlineDay,type CalendarDues} from '../deadlines/DueDayItems';
@@ -19,7 +18,7 @@ export function overdueSummary(input:{tasks:readonly Pick<TaskRecord,'status'|'d
  return {tasks,deadlines,topics,total:tasks+deadlines+topics};
 }
 export async function loadOverdueSummary(zone:string,now:Date=new Date()):Promise<OverdueSummary>{
- const [dues,tasks]=await Promise.all([loadCalendarDues(),readTasks().catch(()=>getTaskApi().listTasks({status:['backlog','in_progress'],limit:50}).then(page=>page.items))]);
+ const [dues,tasks]=await Promise.all([loadCalendarDues(),readTasks()]);
  return overdueSummary({tasks,dues},zone,now);
 }
 export function useOverdueSummary(zone:string,version:unknown=0):OverdueSummary{

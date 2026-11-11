@@ -14,7 +14,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {resumeRun,type DurableRun} from '../../review-run/v6/adapter';
 import {useReviewEstimate} from '../v6/estimate';
 import {defaultSelection,reviewBatch} from '../v6/selection';
-import {activeSubject,forecastBars,memoryStats,selectionFor,selectionForSlug,slugOf,subjectSegments} from './reviewModel';
+import {activeSubject,subjectForecast,memoryStats,selectionFor,selectionForSlug,slugOf} from './reviewModel';
 import {useStartRound} from './useStartRound';
 import './review-hub.css';
 
@@ -26,7 +26,7 @@ const keysFor=(node:DeckNode)=>[node.key,...node.children.filter(child=>child.du
 export default function ReviewHubV7(){
  const navigate=useNavigate(),[params]=useSearchParams(),pathSlug=params.get('path');
  const decks=useDeckTree(),cards=useReviewItems(allFilter),settings=useSettings(),home=useHome(),insights=useInsightData(30);
- const forecast=useQuery({queryKey:['review-forecast'],queryFn:()=>getApi().getReviewForecast(),staleTime:60_000});
+ const forecast=useQuery({queryKey:['path-review-forecast'],queryFn:()=>getApi().getPathReviewForecast(),staleTime:60_000});
  const [active,setActive]=useState<DurableRun|null>(null),[selected,setSelected]=useState<Set<string>|null>(null),[sheet,setSheet]=useState(false);
  const {start,busy,issue}=useStartRound();
  useEffect(()=>{
@@ -45,11 +45,15 @@ export default function ReviewHubV7(){
  },[selected,nodes,pathSlug]);
  const quota=settings.data?.reviewsPerDay??0;
  const result=useMemo(()=>reviewBatch(nodes,cards.data??[],enabled,quota),[nodes,cards.data,enabled,quota]);
- const segments=useMemo(()=>subjectSegments(nodes,subjectOf),[nodes,subjectOf]);
+ const segments=useMemo(()=>{
+  const counts=new Map<Subject,number>();
+  for(const card of result.batch){const subject=subjectOf(card.projectSlug);counts.set(subject,(counts.get(subject)??0)+1);}
+  return [...counts].map(([subject,due])=>({subject,due})).sort((a,b)=>b.due-a.due||a.subject.localeCompare(b.subject));
+ },[result.batch,subjectOf]);
  const current=useMemo(()=>activeSubject(nodes,subjectOf,enabled),[nodes,subjectOf,enabled]);
  const minutes=useReviewEstimate(result.batch.length);
  const memory=useMemo(()=>memoryStats(insights.data?.reviews??[]),[insights.data]);
- const bars=useMemo(()=>forecastBars(forecast.data??[]),[forecast.data]);
+ const outlook=useMemo(()=>subjectForecast(forecast.data??[]),[forecast.data]);
  const loading=decks.isPending||cards.isPending||settings.isPending;
  const failed=!!(decks.error||cards.error||settings.error);
  function toggleProject(node:DeckNode,value:boolean){
@@ -96,10 +100,11 @@ export default function ReviewHubV7(){
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
    <div className="v7-rv-section">
-    {bars.length>0?<Chart compact title="Due each day" kind="bars" data={bars.map(bar=>({label:bar.label,values:[bar.due]}))}
-     series={[{label:'Due'}]} format={value=>String(Math.round(value))}
-     summary={'Cards due over the next '+bars.length+' days: '+bars.reduce((sum,bar)=>sum+bar.due,0).toLocaleString()+' in all.'}/>
-     :<p className="v7-rv-note">{forecast.isError?'Could not load the forecast.':'Loading the forecast…'}</p>}
+    {forecast.isError?<div role="alert"><p className="v7-rv-note">Could not load the forecast.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
+     :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
+      series={outlook.series} format={value=>String(Math.round(value))}
+      summary={'Cards due over the next 14 days: '+(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' in all. Stacked by subject; includes overdue cards today.'}/>
+     :<p role="status" className="v7-rv-note">Loading the forecast…</p>}
    </div>
    <section className="v7-rv-section" aria-label="Memory, last 30 days">
     <h2 className="v7-headline">Memory · 30 days</h2>

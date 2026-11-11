@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent,type ReactNode} from 'react';
 import {Link,useNavigate} from 'react-router';
-import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,MoreHorizontal,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
+import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,MoreHorizontal,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getTaskApi} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
@@ -12,8 +12,9 @@ import {subjectClass} from '../../../ui/v7/Subject';
 import {ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
+import {useOverdueSummary} from '../../calendar/v7/overdue';
 import TaskSheet from '../TaskSheet';
-import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
+import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,reorderedTasks,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
 import './tasks.css';
 
 const PAGE=50;
@@ -32,6 +33,7 @@ export default function TasksV7(){
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[busy,setBusy]=useState(false);
  const [segment,setSegment]=useState<Segment>('To do'),[filter,setFilter]=useState<TaskFilter>(noFilter),[picker,setPicker]=useState(false);
  const [editing,setEditing]=useState<TaskRecord|null>(null),[now,setNow]=useState(()=>new Date());
+ const overdue=useOverdueSummary(zone,rows);
  const epoch=useRef(0);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
@@ -76,6 +78,20 @@ export default function TasksV7(){
   catch(error){setMessage(error instanceof Error?error.message:'Could not load more tasks.');}
   finally{setBusy(false);}
  }
+ async function reorder(list:readonly TaskRecord[],from:string,to:string){
+  if(busy||from===to||!list.some(task=>task.id===to))return;
+  const next=reorderedTasks(list,from,to);setBusy(true);setMessage('');
+  try{
+   // Integer positions are part of the existing versioned Task API. Renumber
+   // the visible group so equal or adjacent old positions cannot defeat a move.
+   for(const [index,task] of next.entries()){
+    const position=(index+1)*1024;
+    if(task.position!==position)put((await getTaskApi().updateTask(task.id,task.version,{position})).record);
+   }
+   notify('Task order saved',{tone:'success'});
+  }catch(error){setMessage(error instanceof Error?error.message:'Could not save the task order.');setReload(value=>value+1);}
+  finally{setBusy(false);}
+ }
  const visible=useMemo(()=>applyFilter(rows,filter,now,zone),[rows,filter,now,zone]);
  // B3: the same predicate as the shared overdue count (open tasks past their due day or instant).
  const overdueCount=useMemo(()=>rows.filter(task=>isOverdue(task,now,zone)).length,[rows,now,zone]);
@@ -83,13 +99,16 @@ export default function TasksV7(){
  const doing=visible.filter(task=>task.status==='in_progress'),done=visible.filter(task=>task.status==='completed'),cancelled=visible.filter(task=>task.status==='cancelled');
  const unscheduled=rows.some(task=>task.status==='backlog'&&task.due.kind==='none');
  const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
-  onChange={change} onEdit={setEditing} onDelete={remove}
+  onChange={change} onEdit={setEditing} onDelete={remove} onReorder={reorder}
   onSchedule={()=>navigate('/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
  return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
   <HubHeader title="Calendar">
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar">Schedule</Link><Link to="/tasks" aria-current="page">Tasks</Link></nav>
   </HubHeader>
+  {overdue.total>0&&<Link className="v7-tk-overdue" to="/calendar?view=day&overdue=1" aria-label={overdue.total+' overdue. Triage'}>
+   <StatusBadge tone="warning">{overdue.total} overdue</StatusBadge><span className="v7-meta">Tasks, deadlines and practice · Triage</span>
+  </Link>}
   <div className="v7-tk-bar">
    <Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>
   </div>
@@ -126,8 +145,9 @@ export default function TasksV7(){
 }
 
 interface RowProps{task:TaskRecord;list:readonly TaskRecord[];now:Date;zone:string;busy:boolean;look:{title:string;klass:string}|null;
- onChange:(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>Promise<void>;onEdit:(task:TaskRecord)=>void;onDelete:(task:TaskRecord)=>Promise<void>;onSchedule:()=>void}
-function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule}:RowProps){
+ onChange:(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>Promise<void>;onEdit:(task:TaskRecord)=>void;onDelete:(task:TaskRecord)=>Promise<void>;onSchedule:()=>void;
+ onReorder:(list:readonly TaskRecord[],from:string,to:string)=>Promise<void>}
+function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule,onReorder}:RowProps){
  const done=task.status==='completed',closed=done||task.status==='cancelled',chip=closed?null:dueChip(task,now,zone),estimate=estimateText(task.estimateMinutes);
  const [dx,setDx]=useState(0),[revealed,setRevealed]=useState(false),start=useRef<{x:number;y:number}|null>(null);
  const index=list.findIndex(item=>item.id===task.id);
@@ -141,8 +161,7 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
   setDx(0);
   if(intent==='complete')complete();else if(intent==='reveal')setRevealed(value=>!value);
  };
- const swap=(up:boolean)=>{const other=list[index+(up?-1:1)];if(!other)return;
-  const position=up?Math.min(task.position,other.position)-1:Math.max(task.position,other.position)+1;void onChange(task,{position});};
+ const swap=(up:boolean)=>{const other=list[index+(up?-1:1)];if(other)void onReorder(list,task.id,other.id);};
  const items=[
   ...(!closed?[{label:'Schedule',icon:<CalendarPlus aria-hidden="true"/>,onClick:onSchedule}]:[]),
   {label:'Edit',icon:<Pencil aria-hidden="true"/>,onClick:()=>onEdit(task)},
@@ -154,7 +173,7 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
   ...(task.status==='cancelled'?[{label:'Reopen',icon:<RotateCcw aria-hidden="true"/>,onClick:reopen}]:[]),
   {label:'Delete task',icon:<Trash2 aria-hidden="true"/>,onClick:()=>{void onDelete(task);}},
  ];
- return <li className={'v7-tk-row '+(look?.klass??'')} data-state={task.status} data-revealed={revealed||undefined}>
+ return <li className={'v7-tk-row '+(look?.klass??'')} data-task-id={task.id} data-state={task.status} data-revealed={revealed||undefined}>
   <div className="v7-tk-main" style={{transform:dx?'translateX('+dx+'px)':undefined}} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{start.current=null;setDx(0);}}>
    <button type="button" role="checkbox" aria-checked={done} className="v7-tk-check" disabled={busy||task.status==='cancelled'}
     aria-label={(done?'Reopen ':'Complete ')+task.title} onClick={()=>{if(done)reopen();else complete();}}>
@@ -169,6 +188,10 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
       {look&&<span className="v7-tk-path">{(done&&task.completedAt)||(task.priority==='high'&&!closed)||estimate?' · ':''}<SubjectGlyph klass={look.klass}/>{look.title}</span>}</span>
     </p>
    </div>
+   {!closed&&list.length>1&&<button type="button" className="v7-tk-reorder" disabled={busy} aria-label={'Reorder '+task.title} title="Drag to reorder; Up/Down also move this task"
+    onPointerDown={event=>{event.currentTarget.setPointerCapture(event.pointerId);}}
+    onPointerUp={event=>{const target=document.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('[data-task-id]')?.dataset.taskId;if(target)void onReorder(list,task.id,target);}}
+    onKeyDown={event=>{if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();swap(event.key==='ArrowUp');}}}><GripVertical aria-hidden="true"/></button>}
    <RowMenu label={'More actions for '+task.title} title={task.title} items={items}/>
   </div>
   {revealed&&!closed&&<div className="v7-tk-reveal" role="group" aria-label={'Quick actions for '+task.title}>

@@ -17,9 +17,9 @@ import {formatClock,formatDuration,formatShortDate,ownerZone} from '../../../lib
 import {useToast} from '../../../ui/Toast';
 import {calendarRange} from '../../calendar/model';
 import {loadAllPracticeTopics} from '../../practice/Page';
-import {canCloseOwnerDay,normalizeCarryOverChoices,ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
+import {ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
 import {civilDay} from '../../tasks/v7/tasksModel';
-import {STEPS,blockTomorrow,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
+import {STEPS,blockTomorrow,closeDayRecord,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
 import './close.css';
 
 interface DayData{plan:DayPlanRecord|null;tasks:TaskRecord[];thoughts:ParkedThought[];saved:StudyEntryRecord[];blocks:CalendarBlockRecord[];
@@ -90,7 +90,7 @@ export default function CloseDayV7(){
  const tomorrowDate=nextDay(date),study=getStudyApi();
  const settle=(end:LooseEnd,choice:'tomorrow'|'drop'|'task'|'dismiss')=>act(async()=>{
   if(end.kind==='block'){
-   if(choice==='tomorrow')await study.updateCalendarBlock(end.block.id,end.block.version,blockTomorrow(end.block));
+   if(choice==='tomorrow')await study.updateCalendarBlock(end.block.id,end.block.version,blockTomorrow(end.block,tz));
    else await study.updateCalendarBlock(end.block.id,end.block.version,{status:'cancelled'});
   }else if(end.kind==='task'){
    await getTaskApi().updateTask(end.task.id,end.task.version,{due:choice==='tomorrow'?{kind:'date',date:tomorrowDate}:{kind:'none'}});
@@ -99,7 +99,7 @@ export default function CloseDayV7(){
  });
  const moveAll=()=>act(async()=>{
   for(const end of ends){
-   if(end.kind==='block')await study.updateCalendarBlock(end.block.id,end.block.version,blockTomorrow(end.block));
+   if(end.kind==='block')await study.updateCalendarBlock(end.block.id,end.block.version,blockTomorrow(end.block,tz));
    else if(end.kind==='task')await getTaskApi().updateTask(end.task.id,end.task.version,{due:{kind:'date',date:tomorrowDate}});
   }
  });
@@ -107,18 +107,11 @@ export default function CloseDayV7(){
   if(!data||busy)return;
   setBusy(true);setError('');
   try{
-   let plan=data.plan;
-   if(plan&&plan.status!=='closed'){
-    if(!canCloseOwnerDay(date,new Date(),tz))throw new Error('You can close a day once it has started.');
-    if(plan.status==='previewed')plan=(await getDayPlanApi().commitPlan(plan.id,plan.version)).record;
-    if(plan.status!=='committed')throw new Error('Confirm the day plan before closing.');
-    const choice=normalizeCarryOverChoices(data.tasks.map(task=>task.id),new Set(),first);
-    await getDayPlanApi().closePlan(plan.id,plan.version,{...plan.ritual,...choice,tomorrowAim:aim.trim()||null});
-   }
+   await closeDayRecord(getDayPlanApi(),{plan:data.plan,date,zone:tz,aim,first,taskIds:data.tasks.map(task=>task.id)},plan=>setData(previous=>previous?{...previous,plan}:previous));
    setClosed(true);
    const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
    timer.current=window.setTimeout(()=>navigate('/'),reduced?400:1600);
-  }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');}
+  }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
   finally{setBusy(false);}
  }
  const dayName=invalid?'':formatShortDate(date,{zone});

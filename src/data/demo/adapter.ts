@@ -1,3 +1,4 @@
+import {pathForecast} from '../path-review-forecast';
 import type {
   LemmaApi,
   SettingsPatch,
@@ -213,6 +214,18 @@ export class DemoAdapter implements LemmaApi {
     // Home, DeckTree and the seven-day forecast share one exact due-card pass.
     // Return a copy so a consumer cannot mutate the cached daily buckets.
     return this.dueSnapshot().forecastDays.map(day=>({...day}));
+  }
+  async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
+    const forecast=pathForecast(this.store.settings,this.now());
+    const projects=new Map(this.store.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>[p.id,p]));
+    const subjects=new Map(this.store.subjects.map(s=>[s.id,s.name]));
+    for(const note of this.store.notes){
+      const project=projects.get(note.projectId);
+      if(!project||note.note.status!=='active')continue;
+      const path={slug:project.slug,subject:subjects.get(project.subjectId)??'Other'};
+      for(const card of note.cards)forecast.add(card.state,path);
+    }
+    return forecast.result();
   }
   private store: DemoStore;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;

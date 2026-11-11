@@ -42,9 +42,16 @@ export function groupTodo(tasks:readonly TaskRecord[],now:Date,zone:string):Task
  // shared overdue count (Today, Calendar) agree.
  const mine=tasks.filter(task=>task.status==='backlog'||(task.status==='in_progress'&&isOverdue(task,now,zone)));
  return bucketOrder.flatMap(key=>{
-  const items=mine.filter(task=>bucketOf(task,now,zone)===key).sort(key==='none'?(a,b)=>a.position-b.position||a.id.localeCompare(b.id):byDue(zone));
+  const items=mine.filter(task=>bucketOf(task,now,zone)===key).sort((a,b)=>a.position-b.position||byDue(zone)(a,b));
   return items.length?[{key,label:bucketLabels[key],items}]:[];
  });
+}
+/** A drag and the row menu use the same persisted order within a due group. */
+export function reorderedTasks(list:readonly TaskRecord[],from:string,to:string):TaskRecord[]{
+ const source=list.findIndex(task=>task.id===from),target=list.findIndex(task=>task.id===to);
+ if(source<0||target<0||source===target)return [...list];
+ const next=[...list],removed=next.splice(source,1)[0];next.splice(target,0,removed);
+ return next;
 }
 export interface TaskFilter{projectId:string|null;overdueOnly:boolean;highOnly:boolean}
 export const noFilter:TaskFilter={projectId:null,overdueOnly:false,highOnly:false};

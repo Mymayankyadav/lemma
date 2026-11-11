@@ -2,6 +2,9 @@ import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/con
 import type {TaskRecord} from '../../../data/tasks/contract';
 import type {ParkedThought} from '../../../data/parked-thoughts';
 import {civilDay,dueDay} from '../../tasks/v7/tasksModel';
+import {localClockInstant,localWallParts} from '../../time-log/local-time';
+import type {DayPlanApi,DayPlanRecord} from '../../../data/day-plans';
+import {canCloseOwnerDay,normalizeCarryOverChoices} from '../model';
 
 /** PLAN §6.7. Pure pieces of the three-step Close the day flow. */
 export const STEPS=['Today','Loose ends','Tomorrow'] as const;
@@ -41,9 +44,25 @@ export function nextDay(day:string):string{
  const [y,m,d]=day.split('-').map(Number);
  return new Date(Date.UTC(y,m-1,d+1)).toISOString().slice(0,10);
 }
-/** A block's instants a whole day later. Wall-clock changes at a DST border are left to the study API's zone handling. */
-export function blockTomorrow(block:Pick<CalendarBlockRecord,'startsAt'|'endsAt'>):{startsAt:string;endsAt:string}{
- const shift=(instant:string)=>new Date(Date.parse(instant)+86_400_000).toISOString();
+/** Preserve owner-local wall times across 23/25-hour days. Reject a DST gap. */
+export function blockTomorrow(block:Pick<CalendarBlockRecord,'startsAt'|'endsAt'>,zone='UTC'):{startsAt:string;endsAt:string}{
+ const shift=(instant:string)=>{const wall=localWallParts(instant,zone),next=localClockInstant(nextDay(wall.day),wall.clock,zone);if(!next)throw Error('That local time does not exist tomorrow. Choose another time in Calendar.');return next;};
  return {startsAt:shift(block.startsAt),endsAt:shift(block.endsAt)};
 }
 export const closeable=(status:string|undefined)=>status==='committed'||status==='previewed';
+
+/** Close an unplanned day through the same durable lifecycle as a planned day.
+ * A ritual-only draft is recoverable after any interrupted request; ordinary
+ * drafts still require explicit plan confirmation. */
+export async function closeDayRecord(api:DayPlanApi,input:{plan:DayPlanRecord|null;date:string;zone:string;aim:string;first:string;taskIds:string[]},onProgress:(plan:DayPlanRecord)=>void=()=>{}){
+ if(!canCloseOwnerDay(input.date,new Date(),input.zone))throw Error('You can close a day once it has started.');
+ let plan=input.plan;
+ if(!plan)plan=(await api.createPlan({planDate:input.date,timeZone:input.zone,ritual:{v7RitualOnly:true}})).record;
+ onProgress(plan);
+ if(plan.status==='closed')return plan;
+ if(plan.status==='draft'&&plan.ritual.v7RitualOnly===true){plan=(await api.previewPlan(plan.id,plan.version,[],{sources:[]})).record;onProgress(plan);}
+ if(plan.status==='previewed'){plan=(await api.commitPlan(plan.id,plan.version)).record;onProgress(plan);}
+ if(plan.status!=='committed')throw Error('Confirm the day plan before closing.');
+ const choice=normalizeCarryOverChoices(input.taskIds,new Set(),input.first);
+ return (await api.closePlan(plan.id,plan.version,{...plan.ritual,...choice,tomorrowAim:input.aim.trim()||null},{tomorrowFirstTaskId:choice.tomorrowFirstTaskId})).record;
+}

@@ -127,7 +127,7 @@ export default function V7Today(){
   session:{chip:word??'Focus',title:entry?.intent??'',line:clock?(clock.mode==='remaining'?clock.label+' left':clock.label+' focused'):''},
   now:{chip:next?'Now · until '+clockTime(next.endsAt,zone):'',title:next?.title??'',line:next?clockTime(next.startsAt,zone)+'–'+clockTime(next.endsAt,zone)+' · '+minutesLabel((Date.parse(next.endsAt)-Date.parse(next.startsAt))/60_000):''},
   upcoming:{chip:next?startsIn(next.startsAt,now):'',title:next?.title??'',line:next?clockTime(next.startsAt,zone)+'–'+clockTime(next.endsAt,zone)+' · '+minutesLabel((Date.parse(next.endsAt)-Date.parse(next.startsAt))/60_000):''},
-  closed:{chip:'Day closed ∎',title:minutesLabel(logged)+' studied today',line:'Rest well. Tomorrow starts from your plan.'},
+  closed:{chip:'Day closed',title:minutesLabel(logged)+' studied today',line:'Rest well. Tomorrow starts from your plan.'},
   free:{chip:'Free '+(localMinute(date,zone)>=1020?'evening':localMinute(date,zone)>=720?'afternoon':'morning'),title:'Nothing planned for the rest of today',line:'A little room to think is a good thing.'},
   first:{chip:'First path',title:'Start your first path',line:'A path gives your ideas a place to grow.'},
  };
@@ -147,7 +147,7 @@ export default function V7Today(){
     <div className="v7-today-hero-labels">
      {hero.subject!=='Other'&&(state==='session'||state==='now'||state==='upcoming')&&<SubjectChip subject={hero.subject} name={hero.name}/>}
      {state==='upcoming'||state==='now'||state==='session'?<LiveChip>{copy.chip}</LiveChip>
-      :<span className={'v7-badge '+(state==='closed'?'v7-proof-demonstrated':'v7-tone-info')}>{copy.chip}</span>}
+      :state==='closed'?<span className="v7-badge v7-proof-demonstrated"><span className="v7-proof-symbol" aria-hidden="true">∎</span>{copy.chip}</span>:<StatusBadge tone="info">{copy.chip}</StatusBadge>}
     </div>
     <h2 className="v7-today-hero-title">{copy.title}</h2>
     {state==='session'&&clock?<div className="v7-today-hero-clock">
@@ -163,7 +163,7 @@ export default function V7Today(){
      {state==='free'&&<><Link className="v7-button v7-primary" to="/calendar?view=day&plan=1"><span>Plan my day</span></Link>
       <Button onClick={()=>setQuick(true)}>Quick focus</Button></>}
      {state==='closed'&&<Link className="v7-button v7-secondary" to="/calendar?view=day&plan=tomorrow"><span>Plan tomorrow</span></Link>}
-     {state!=='free'&&state!=='session'&&state!=='first'&&<Button variant="ghost" className="v7-today-quick" onClick={()=>setQuick(true)}>Quick focus</Button>}
+     {state!=='free'&&<Button variant="ghost" className="v7-today-quick" onClick={()=>setQuick(true)}>Quick focus</Button>}
      {state==='first'&&<Link className="v7-button v7-primary" to="/projects/new"><span>Start a path</span></Link>}
     </div>
    </section>
@@ -218,7 +218,8 @@ export default function V7Today(){
    </>}
   </>}
   <Sheet open={quick} onClose={()=>setQuick(false)} title="Start a focus session" eyebrow="Quick focus"
-   footer={<Button variant="primary" disabled={busy} onClick={()=>{void startQuick();}}>Start focus</Button>}>
+   footer={<Button variant="primary" disabled={busy||!!entry} onClick={()=>{void startQuick();}}>Start focus</Button>}>
+   {entry&&<p role="status" className="v7-disabled-reason">Unavailable · Finish or resume your running session first.</p>}
    <label className="v7-today-field">Intention<input data-v7-autofocus="true" maxLength={200} placeholder="What will you understand?" value={intention} onChange={event=>setIntention(event.target.value)}/></label>
    <div className="v7-today-presets" role="radiogroup" aria-label="Session style">
     {[{id:null as string|null,line:'Open',label:'No timer, count up'},...presets.map(preset=>({id:preset.id as string|null,line:presetLine(preset),label:preset.label}))].map(card=>

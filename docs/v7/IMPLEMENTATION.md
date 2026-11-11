@@ -163,7 +163,7 @@ Pure models have unit tests (`tests/unit/v7/{tasks,close-day,calendar-views,quic
 
 ## Night critique v2 (11 Nov 2026): fix pass
 
-The Owner's critique of the Night build is stored as `docs/v7/NIGHT_CRITIQUE_v2.md`. Where it and `PLAN.md` disagree, the critique (and the kit it points to) wins; `PLAN.md` stays a verbatim copy, and the plan amendments it asks for (PA0–PA11) are recorded here as in force. Everything stays behind `v7Shell` (off by default).
+The Owner's critique of the Night build is stored as `docs/v7/NIGHT_CRITIQUE_v2.md`. Where it and `PLAN.md` disagree, the critique (and the kit it points to) wins; `PLAN.md` now includes the PA0–PA11 amendments in place; the unchanged original is retained in git history. Everything stays behind `v7Shell` (off by default).
 
 **Step 0 · captures.** `tests/e2e/v7-screens.spec.ts` now freezes the clock at Mon 9 Nov 2026, 13:43 IST (en-IN, Asia/Kolkata) on the demo seed (C1), captures long screens as viewport-sized frames while scrolling (C2), adds the review round and the Path map in Day and Night and Today and Calendar at 1280 × 800 (C3), and captures the Quick focus sheet, which every hero state now offers (C4, PA3). **C5 is an Owner decision:** P2 and P3 screens exist ahead of the golden-six gate; freeze them or waive the gate order in writing.
 
@@ -193,7 +193,7 @@ The Owner's critique of the Night build is stored as `docs/v7/NIGHT_CRITIQUE_v2.
 - KC21: a deck with checkpoints has a chevron that opens the checkpoint switches. CD1: hub titles sit in a sticky solid bar and shrink from Title 32 to Subhead 20 after 24 px of scrolling.
 - Found while preparing the golden candidates: the Path emblem is now a 164 px, 10% ornament at the bottom-right instead of an 80% scribble behind the title; a 50-minute Calendar block shows two lines instead of clipping three; Focus's Pause keeps a visible edge in Day; the review card is centred between the progress bar and the button; Tabs without a count line up with tabs that have one; a gold star on the Path map became a subject-filled star.
 
-**Still open (needs an Owner decision or a data change, not more UI work):**
+**Open at the end of that pass (superseded by the closure pass below):**
 - C5: P2 and P3 screens exist ahead of the golden-six gate. Freeze them or waive the gate order in writing.
 - KC4: "Due each day" is a single neutral series because the forecast RPC returns one total per day. Stacking by subject needs an additive read (cards due per day per path), which the accepted constraints exclude until you approve it.
 - 1280 × 800: the phone layout in a wide window. The side rail and two-column layouts of PLAN §5.3 are Part 11, so Today and Calendar at 1280 cannot be approved as final yet.
@@ -216,3 +216,20 @@ This is the Owner's visual approval, not a claim that the complete P1 acceptance
 
 Code inspection at the approved source commit also confirms that "Due each day" still shows seven days; the fourteen-day Review forecast permitted by the accepted constraints remains unfinished. Preserve Today's existing seven-day RPC.
 
+
+
+## Audit closure pass · 11 Nov 2026
+
+Owner instruction: "Follow your recommendation and start working. First make sure everything in the audit is addressed."
+
+The Owner accepted C5's retrospective order waiver, the additive frontend forecast read and Capture's reserved placement alongside the five-link tab bar. This supersedes those open decision bullets above. The exact earlier phone goldens remain unchanged; new captures remain candidates.
+
+- KC4/RV2: `getPathReviewForecast` reads fourteen study days by path, counting every scheduled sibling before quotas. Live mode uses explicit owner filters, RLS, stable 500-row keyset pages and only scheduling/path metadata; demo mode matches the filtering and day-bucket semantics. Today's seven-day `home_review_outlook` RPC is unchanged. The chart stacks by subject, uses direct glyph labels for up to three series, retains an equivalent fourteen-row table and keyboard inspection, and shows a retryable error rather than partial counts.
+- SH2/PA2: Capture now has a reserved dock slot outside the five-link navigation landmark. It retains tap/long-press behaviour, hides on scroll down, returns on scroll up or keyboard focus, and disables its transition under reduced motion.
+- B3: Tasks now exposes the same overall triage count as Today and Calendar, with its task-only filter/group remaining the task subset. The browser regression now asserts equality on all three screens, rather than merely allowing Tasks to be smaller. An overdue read no longer falls back to a partial first page.
+- PA0–PA11: the governing plan is amended in place. The kit replaces its former Section 4; breakpoints, type/radius roles, stars, suggestions and acceptance lists are reconciled. The traceability and itemized acceptance record is `AUDIT_CLOSURE.md`.
+- Further acceptance gaps found: Quick focus is available in every hero state; a running session gives a truthful disabled reason instead of starting another. The review bar counts the actual selected/quota-limited batch; review tags name subjects, while paths and sources are metadata. A first swipe reveals the card and a second grades it, allowing a whole swipe-only round. A no-plan day is now closed through a recoverable, empty day-plan lifecycle, preserving tomorrow's aim and first-task field. Moving blocks to tomorrow preserves local wall times across DST. Tasks support drag/keyboard/menu reordering with versioned persisted positions; overdue remains the first group.
+
+Validation at this point: typecheck, repository lint, the four-mode static kit check and a production build/PWA check pass. All 374 unit files / 2,089 tests passed locally after the initial fixes; later narrow edits are checked separately before push. The 22 new browser acceptance cases are enumerated successfully. Local Chromium launch is blocked by the command sandbox's Unix-socket policy; the shared browser cannot reach that isolated localhost. Browser execution must be verified by PR CI; neither attempt is reported as a passing browser run. The approved baseline and its earlier CI evidence remain historical.
+
+Still separate: real responsive layouts and fresh 1280 captures (Part 11), physical-device/screen-reader testing, performance measurements/default activation, final visual review of changed candidates, and the independent complete-PR review. No Ready or activation is implied.

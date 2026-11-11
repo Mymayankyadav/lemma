@@ -121,10 +121,10 @@ export default function ReviewRoundV7(){
   };
   window.addEventListener('keydown',handler);return ()=>window.removeEventListener('keydown',handler);
  },[]);
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if(!revealed||busy||(event.target as HTMLElement).closest('a,button'))return;dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{if(!dragStart.current)return;setDrag({dx:event.clientX-dragStart.current.x,dy:event.clientY-dragStart.current.y});};
- const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating)void grade(rating);};
- const swiping=drag?swipeGrade(drag.dx,drag.dy,48):null;
+ const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){if(!revealed)setRevealed(true);else void grade(rating);}};
+ const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><p role="status" className="v7-review-state">Restoring your review…</p></main>;
  if(!run)return <main id="main-content" className="v7-review" aria-label="Review round">
@@ -151,7 +151,7 @@ export default function ReviewRoundV7(){
     <article className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{dragStart.current=null;setDrag(null);}}
      style={drag?{transform:`translate(${drag.dx}px,${Math.min(0,drag.dy)}px) rotate(${Math.max(-6,Math.min(6,drag.dx/24))}deg)`} as CSSProperties:undefined} data-swipe={swiping?gradeNames[swiping-1].toLowerCase():undefined}>
      <div className="v7-review-card-meta">
-      {project&&<span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</span></span>}
+      {project&&<><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</span></>}
       <p className="v7-eyebrow">{noteKindText(card.kind)}</p>
      </div>
      <div className="v7-review-front"><MathText source={faces.front} variant="card" interactiveMath/></div>
@@ -159,7 +159,7 @@ export default function ReviewRoundV7(){
       <div role="radiogroup" aria-label="How sure are you?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
        className="v7-filter-chip" onClick={()=>setConfidence(confidence===value?null:value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}</div></div>
      :<div className="v7-review-back"><p className="v7-eyebrow">Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
-      <p className="v7-review-source">{card.sourceShort&&<span className="v7-badge v7-proof-conjecture">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
+      <p className="v7-review-source">{card.sourceShort&&<span className="v7-meta">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
        {confidence&&<span className="v7-meta">You: {confidence[0].toUpperCase()+confidence.slice(1)}</span>}</p></div>}
      {swiping&&choices&&<p className="v7-review-swipe-label" aria-hidden="true">{gradeNames[swiping-1]} · {formatInterval(choices[swiping].delay/86_400_000)}</p>}
     </article>

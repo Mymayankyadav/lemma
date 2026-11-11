@@ -4,7 +4,7 @@ import { formatDay } from "../../lib/format";
 import { SubjectMark, subjects, type Subject } from "./KitPrimitives";
 import "./chart.css";
 
-export interface ChartDatum { label: string; values: number[] }
+export interface ChartDatum { label: string; tickLabel?: string; values: number[] }
 export interface ChartSeries { label: string; color?: string; subject?: Subject }
 export interface ChartProps { title: string; data: ChartDatum[]; series: ChartSeries[]; kind?: "line" | "bars" | "stacked" | "heatmap"; area?: boolean; target?: number; format?: (value: number) => string; summary?: string; compact?: boolean }
 const finite = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0;
@@ -33,27 +33,42 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
     `You studied ${format(total)} in this range, most on ${data[peak].label}.`);
   const width = 360, height = compact ? 150 : 224, left = 40, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
-  const group = (width - left - 24) / Math.max(1, data.length), bar = group * .5;
+  const direct=series.length>1&&series.length<=3;
+  const plotRight=width-(direct?102:24);
+  const group = (plotRight - left) / Math.max(1, data.length), bar = group * .5;
   const point = (index: number) => left + group * (index + .5);
   const y = (value: number) => bottom - Math.min(maximum, finite(value)) / maximum * plotHeight;
   // KC3/KC4: subject colour means a subject. A series that is not a subject takes the neutral data colour, never indigo.
   const color = (index: number) => {
     const item = series[index], subject = item?.subject ?? subjectFor(item?.label ?? "");
     if (item?.color) return item.color;
-    if (subject && subject !== "Other") return `var(--v7-role-subject-${subject.toLowerCase().replace(" ", "-")})`;
+    if (subject === 'Other') return 'var(--v7-role-viz-neutral)';
+    if (subject) return `var(--v7-role-subject-${subject.toLowerCase().replace(" ", "-")})`;
     return series.length === 1 ? "var(--v7-role-viz-neutral)" : `var(--v7-role-subject-${["analysis", "algebra", "topology", "number-theory", "geometry", "logic", "probability", "combinatorics"][index % 8]})`;
   };
   const selectedRow = selected === null ? null : data[selected];
+  const labels=direct?series.map((item,j)=>{
+    let index=data.length-1;
+    while(index>0&&finite(data[index].values[j]??0)===0)index--;
+    const row=data[index];
+    const middle=kind==='stacked'&&row?sum(row.values.slice(0,j))+finite(row.values[j]??0)/2:row?.values[j]??0;
+    return {item,j,index:Math.max(0,index),actual:y(middle),labelY:y(middle)};
+  }).sort((a,b)=>a.actual-b.actual):[];
+  labels.forEach((label,i)=>{label.labelY=Math.max(top+10,label.actual,i?labels[i-1].labelY+24:top+10);});
+  if(labels.length&&labels[labels.length-1].labelY>bottom-8){
+    labels[labels.length-1].labelY=bottom-8;
+    for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
+  }
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
-    {!!data.length && series.length > 1 && <ul className="v7-chart-legend">{series.map((seriesItem, index) => {
+    {!!data.length && series.length > 3 && <ul className="v7-chart-legend">{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
     })}</ul>}
     {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} role="group" aria-label={title}>
-        {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={width - 16} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
+        {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
         {target !== undefined && target >= 0 && target <= maximum && <g><line x1={left} x2={width - 16} y1={y(target)} y2={y(target)} className="v7-chart-target" /><text x={width - 16} y={y(target) - 6} textAnchor="end" className="v7-chart-data-label">Goal {format(target)}</text></g>}
         {kind === "line" && area && !!data.length && series.map((item, index) => <polygon key={item.label} fill={color(index)} opacity=".08" points={`${point(0)},${bottom} ${data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} ${point(data.length - 1)},${bottom}`} />)}
         {kind === "line" && series.map((item, index) => <polyline key={item.label} fill="none" stroke={color(index)} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} />)}
@@ -72,9 +87,13 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
             })}
             {(kind !== "line" || index === data.length - 1) && <text x={point(index)} y={Math.max(16, y(kind === "stacked" ? accumulated : Math.max(...row.values, 0)) - 8)} textAnchor="middle" className="v7-chart-data-label">{format(kind === "stacked" ? accumulated : Math.max(...row.values, 0))}</text>}
             <rect x={point(index) - group / 2} y={top} width={group} height={plotHeight} fill="transparent" />
-            <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.label}</text>
+            <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.tickLabel??row.label}</text>
           </g>;
         })}
+        {labels.map(({item,j,index,actual,labelY})=><g key={item.label} aria-hidden="true">
+          <path d={`M${point(index)+bar/2} ${actual}L${plotRight+4} ${labelY}H${plotRight+8}`} fill="none" stroke={color(j)} strokeWidth="1"/>
+          <foreignObject x={plotRight+10} y={labelY-10} width={92} height={22}><span className="v7-chart-direct-label">{(item.subject??subjectFor(item.label))&&<SubjectMark subject={(item.subject??subjectFor(item.label))!}/>}<span>{item.label}</span></span></foreignObject>
+        </g>)}
       </svg> : null}
     {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
   </section>;

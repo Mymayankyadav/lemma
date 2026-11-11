@@ -137,9 +137,9 @@ Each goal has a measured starting point, a target, and a way to check it. "Desig
 
 | ID | Goal | Today | v7 target | Checked by |
 |---|---|---|---|---|
-| L1 | Each subject has one colour, used everywhere the subject appears | No subject colours; one hue app-wide | 8 validated subject colours (§4.1). With the audit seed, at least 3 hue families are visible in the first viewport of Today, Calendar Day and Paths, and the Progress overview shows every subject's colour in its "Time by subject" chart. | Design lint |
-| L2 | A real type hierarchy | 18 sizes; 1.7% of text at 26 px or more | Exactly 9 sizes. Every hub screen has one element at 36 px or larger. | Design lint |
-| L3 | A shape and depth system | 12 radii; 270 outlined boxes nested up to 3 deep; no elevation | 5 radii (chart marks excepted), 3 elevation levels, and no bordered box inside another bordered box | Design lint |
+| L1 | Each subject has one colour, used everywhere the subject appears | No subject colours; one hue app-wide | The kit's eight validated subject colours and slot order (§4). With the audit seed, at least 3 hue families are visible in the first viewport of Today, Calendar Day and Paths, and the Progress overview shows every subject's colour in its "Time by subject" chart. | Design lint |
+| L2 | A real type hierarchy | 18 sizes; 1.7% of text at 26 px or more | The kit's role scale only: Today uses Display 44; other hub titles use Title 32. | Design lint |
+| L3 | A shape and depth system | 12 radii; 270 outlined boxes nested up to 3 deep; no elevation | The kit's six radii, three elevation levels, and no bordered box inside another bordered box | Design lint |
 | L4 | One component set | Up to 20 button styles on one screen | At most 6 computed button styles on any screen | Design lint |
 | L5 | Imagery made of mathematics | 0 illustrations; charts on 2 screens | An emblem for every path. A data graphic on Today, Review, Calendar, Paths, Path, Progress, Card and Atlas. An illustration on every empty state. | Checklist and screenshots |
 | L6 | One styling source | 133 KB of v6 override CSS and 3 token files | Every v7 style reads from one token file. `mockup.css` and `mockup-bindings.css` are deleted at the switch. | Search test; files gone |
@@ -171,236 +171,24 @@ Each goal has a measured starting point, a target, and a way to check it. "Desig
 | Q1 | First load on the throttled phone profile | First paint 2.6 to 2.7 s; largest paint 3.6 to 4.1 s; blocking 0.8 to 1.3 s; 480 to 610 KB | First paint within 1.8 s; largest paint within 2.5 s; blocking within 300 ms; Today's first load within 350 KB | Performance probe, reported on every PR; the byte budget blocks |
 | Q2 | Smooth motion | Not measured | No frame longer than 50 ms during the 8 signature transitions at 4× CPU slowdown | Long-frame probe |
 | Q3 | Accessibility | Passes the repo's own audit matrix | WCAG 2.2 AA: verified token contrast (§4.1), 44 px targets, full keyboard use, screen-reader names, 200% text, reduced motion, and no meaning carried by colour alone | The release-audit matrix run on v7, plus a checklist |
-| Q4 | Every screen size | A phone layout, stretched | Real layouts from 600 px and from 1024 px (§5.3) | Screenshots at 390, 768 and 1280 px |
+| Q4 | Every screen size | A phone layout, stretched | Real layouts from 700 px and from 1100 px (§5.3) | Screenshots at 390, 768 and 1280 px |
 | Q5 | Safety | 1,964 unit and 1,154 end-to-end tests | All pass with the flag off. v7 adds journeys, design lint and screenshot baselines. The switch is one reversible flag. | CI |
 
 ---
 
 ## 4. Design system
 
-One token file is the only source of colour, type, spacing, shape, depth and motion values. Components never contain a raw value. The values below are the proposal; the colour values were computed and contrast-checked, so they can be used as they are.
+**Amended 11 Nov 2026 (PA0).** The Constellation kit in `KIT_10_PLAN.md`, the generated `src/ui/v7/tokens.css`, and the live `/kit` gallery govern colour, type roles, spacing, shape, elevation, component anatomy, motion and the state model. `NIGHT_CRITIQUE_v2.md` records the corrections. The former palette, sky, glass, gradients and legacy size aliases are superseded.
 
-### 4.1 Colour
-
-**Surfaces, text and accent**
-
-| Role | Token | Night | Day | Used for |
-|---|---|---|---|---|
-| Page background | `bg` | `#0A1023` | `#F8F5F0` | The app canvas |
-| Raised surface | `bg-raised` | `#12192F` | `#FFFDFA` | Cards |
-| Overlay surface | `bg-overlay` | `#1B233D` | `#FFFFFF` | Sheets, menus, toasts, the selected segment |
-| Inset surface | `bg-inset` | `#060919` | `#F1EDE6` | Text fields, tracks, the Focus and Atlas backgrounds |
-| Primary text | `ink` | `#F1F3F9` | `#141C32` | Titles, body |
-| Secondary text | `ink-2` | `#B7BECC` | `#454D61` | Supporting text |
-| Tertiary text | `ink-3` | `#8A92A5` | `#676E81` | Captions, axis labels, placeholders |
-| Accent | `accent` | `#A4B1FE` | `#3947BA` | Links, active icons, focus rings |
-| Accent fill | `accent-fill` | `#4D57DC` | `#3641BC` | Primary buttons and the selected day, with white text |
-| Accent fill, highlight | `accent-fill-hi` | `#6165E8` | `#4B4DCF` | Top of the primary-button gradient |
-| Gold | `gold` | `#F1C45E` | `#986603` | Demonstrated checkpoints and concepts only |
-| Hairline | `line` | `rgba(164,177,254,.12)` | `rgba(20,28,50,.10)` | Separators inside cards |
-| Strong line | `line-strong` | `rgba(164,177,254,.26)` | `rgba(20,28,50,.22)` | Field and secondary-button outlines |
-| Wash | `wash`, `wash-strong` | Accent at 7% and 14% | Accent at 5% and 10% | Chips, pressed and selected rows, secondary buttons |
-| Glass | `glass` | `rgba(14,20,40,.72)` with a 22 px blur | `rgba(255,253,250,.8)` with a 22 px blur | The tab bar and sticky headers |
-
-**Status** (reserved for state, always with an icon and a word)
-
-| State | Mark colour, both themes | Text, Night | Text, Day |
-|---|---|---|---|
-| Good | `#0CA30C` | `#66DA85` | `#00682A` |
-| Warning | `#FAB219` | `#FAC053` | `#945A00` |
-| Serious | `#EC835A` | `#FE9B61` | `#AB4400` |
-| Critical | `#D03B3B` | `#FF8785` | `#B32228` |
-
-Review grades map onto these: Again is critical, Hard is serious, Good is good, Easy is the accent.
-
-**Subject colours** (eight slots in a fixed order)
-
-| Slot | Name | Night | Day |
-|---|---|---|---|
-| 1 | Blue | `#3987E5` | `#2A78D6` |
-| 2 | Orange | `#D95926` | `#EB6834` |
-| 3 | Aqua | `#199E70` | `#1BAF7A` |
-| 4 | Yellow | `#C98500` | `#EDA100` |
-| 5 | Magenta | `#D55181` | `#E87BA4` |
-| 6 | Green | `#008300` | `#008300` |
-| 7 | Violet | `#9085E9` | `#6250D6` |
-| 8 | Red | `#E66767` | `#E34948` |
-
-Rules for subject colour:
-
-1. Subjects take slots in the order they were created and keep them for good. A ninth subject uses a neutral "Other" treatment (`ink-3` plus its glyph) until the owner reassigns colours in Settings.
-2. A subject colour never appears alone. It always comes with the subject's glyph (∫, λ, τ and so on) or its name.
-3. Text is never set in a subject colour. The colour goes on marks: a dot, a bar, a tinted fill, the emblem.
-4. Tints: block and chip fills are the subject colour at 18% over the surface in Night and 12% in Day. Cover tiles use 16% and 9%. The hero gradient starts at 30% (Night) or 13% (Day) in the top-left corner and fades to `bg-raised` by 62% of the card.
-5. Magnitude (the heatmap, the review forecast) uses one hue: the accent in five steps from `wash` to `accent-fill`. More is brighter in Night and darker in Day.
-
-**Contrast, verified** (WCAG ratio; 4.5 is the pass mark for text)
-
-| Pair | Night | Day |
-|---|---|---|
-| `ink` on `bg` / `bg-raised` | 17.0 / 15.7 | 15.6 / 16.7 |
-| `ink-2` on `bg` / `bg-raised` | 10.1 / 9.3 | 7.8 / 8.3 |
-| `ink-3` on `bg` / `bg-raised` / `bg-overlay` | 6.1 / 5.6 / 5.0 | 4.7 / 5.0 / 5.1 |
-| `accent` on `bg` / `bg-raised` | 9.3 / 8.5 | 6.9 / 7.4 |
-| `gold` on `bg-raised` | 10.6 | 4.9 |
-| White on `accent-fill` / `accent-fill-hi` | 5.7 / 4.6 | 8.0 / 6.4 |
-| Status text on `bg-raised` (good, warning, serious, critical) | 9.9, 10.6, 8.4, 7.5 | 6.9, 5.6, 5.8, 6.5 |
-
-**Subject palette, verified.** I ran the eight colours through a colour-blindness-aware palette check against the v7 surfaces in both themes. All eight sit in the usable lightness range and are saturated enough to read as colours. Neighbours in the fixed order stay distinguishable under simulated red-green colour blindness (worst pair 8.4 in Night and 9.1 in Day, against a target of 8) and under normal vision (19.3 and 19.6, against a floor of 15). All eight reach 3:1 against the Night surfaces. In Day, aqua, yellow and magenta fall below 3:1 against paper. The check covers neighbours in the fixed order only; on the calendar any two subjects can sit side by side, and no eight-colour set stays distinguishable for every pair. Both points are why rule 2 above is mandatory.
-
-### 4.2 Type
-
-The four families the app already loads stay: Newsreader for display and reading, Instrument Sans for the interface and for numbers, STIX Two Text for glyphs (KaTeX keeps rendering formulas), IBM Plex Mono only for code-like text such as the connector address.
-
-**Nine sizes** (size / line height): 12/16, 14/20, 16/24, 18/28, 22/30, 28/34, 36/40, 48/52, 64/64.
-
-| Role | Face and weight | Size | Used for |
-|---|---|---|---|
-| Display | Newsreader 500, tracking −1.5% | 36/40 | Hub titles, the greeting |
-| Title | Newsreader 500 | 28/34 | Detail titles, hero-card titles |
-| Headline | Newsreader 500 | 22/30 | Card titles, sheet titles |
-| Reading L | Newsreader 400 | 22/30 | The front of a card |
-| Reading | Newsreader 400 (italic for statements) | 18/28 | The back of a card, checkpoint statements |
-| Body | Instrument Sans 400 (600 for row titles) | 16/24 | Default text |
-| Body S | Instrument Sans 400 | 14/20 | Meta lines, secondary text |
-| Label | Instrument Sans 600 | 14/20 (16 on 48 px buttons) | Buttons, field labels, section headers |
-| Caption | Instrument Sans 500 (600 for tab labels) | 12/16 | Captions, axis labels, tab labels |
-| Eyebrow | Instrument Sans 600, capitals, tracking +9% | 12/16 | Small markers above titles |
-| Figure XL | Instrument Sans 600 | 64/64 | The one hero number of a view; the focus timer |
-| Figure L | Instrument Sans 600 | 48/52 | Second-level big numbers |
-| Figure M | Instrument Sans 600 | 28/34 | Stat-tile values |
-
-Rules:
-
-- Big numbers use the interface sans, not the serif. Standalone numbers use proportional digits; digits that change in place (timers) or line up in columns use tabular digits.
-- Nothing is smaller than 12 px, and running text is never smaller than 14 px.
-- Reading text wraps at about 68 characters. Formulas render at 1.05 times the surrounding size.
-- Fonts are served by the app itself (decision OD5 in §7.2). Today they come from a render-blocking request to Google Fonts. v7 ships the font files, preloads the two used above the fold (Newsreader 500 and Instrument Sans) and uses size-matched fallbacks so text does not jump when they arrive.
-
-### 4.3 Space, shape and depth
-
-- **Spacing** in 4-point steps: 4, 8, 12, 16, 20, 24, 32, 40, 56. Screen gutter 20. Card padding 16 (hero cards 20). 24 between sections, 12 between rows in a group. Every touch target is at least 44 × 44.
-- **Five radii:** 10 (small buttons, small tiles), 14 (buttons, fields, segmented controls, menus, toasts), 20 (cards and tiles), 28 (hero cards, sheets, the review card), and fully round (pills, round buttons). Chart marks follow their own rule in §4.8.
-- **Three elevation levels:**
-
-| Level | Used for | Night | Day |
-|---|---|---|---|
-| 1 | Cards | A 1 px inner highlight along the top edge (white at 5%) and a `line` ring | A 1 to 2 px soft shadow at 6% and a `line` ring |
-| 2 | Hero cards, the capture button | Inner highlight at 6% and a shadow 18 px down, 40 px blur, pulled in 20 px, black at 85% | A shadow 14 px down, 32 px blur, pulled in 16 px, ink at 22% |
-| 3 | Sheets, the tab bar, menus, toasts | A shadow 28 px down, 64 px blur, pulled in 24 px, black at 90%, and a `line-strong` ring | A shadow 28 px down, 56 px blur, pulled in 24 px, ink at 30% |
-
-- **Outlines are not structure.** A card is separated from the page by its surface colour and its elevation. Rows inside a card are separated by a hairline that starts 16 px in from the left. A bordered box never sits inside another bordered box.
-- **The sky.** Hub screens (Today, Paths, Review, Calendar, Progress) share one decorative layer: two soft radial glows at the top of the page, 420 px tall. One is the accent, at the top-left, mixed at 34%. The other is the violet subject colour, at the top-right, mixed at 20%. Both fade to nothing. In Day the layer is drawn at 55% strength. Detail screens have no sky, which keeps the two levels visibly different.
-
-### 4.4 Icons, glyphs and marks
-
-- **Icons:** lucide, 22 px with a 1.75 stroke (20 px in dense rows, 24 px in the capture button).
-- **Subject glyph:** one italic character in STIX Two Text (∫ for Analysis, λ for Linear Algebra, τ for Topology, and so on, as today), shown in a 40 px tile with 12 px corners, tinted with the subject colour.
-- **The ℓ mark:** a 36 px tile with 11 px corners, on Today only.
-- **The proof mark ∎:** a small filled square with 2 px corners. It appears at endings: a review round completed, a session logged, a day closed, a checkpoint demonstrated (in gold).
-- **Star states,** used for checkpoints on a path and concepts in the Atlas:
-
-| State | Mark |
-|---|---|
-| Demonstrated | Gold filled star-dot with a soft glow (no glow in Day) |
-| In progress | Ring in the subject colour with a filled centre; a slow halo pulse on the current one |
-| Up next | Hollow ring in `ink-2` |
-| Locked or not started | Small dim dot in `ink-3` |
-| Needs a recheck | Ring in the warning colour that pulses once every 4 s |
-| Proposed by the tutor, not yet approved | Dashed ring in the subject colour |
-
-### 4.5 Emblems
-
-Every path gets a piece of cover art drawn from real mathematics. It is generated from the path's subject and a seed taken from the path's id, so the same path always gets the same emblem and no two paths in a subject look alike.
-
-| Kind | What is drawn | For subjects whose name contains |
-|---|---|---|
-| Partial sums | Six partial sums of the Fourier series of a square wave, S_N(x) = (4/π) Σ sin(kx)/k over odd k ≤ N, for N = 1, 3, 5, 9, 17, 33, across two periods. Later sums are heavier and more opaque (28% rising to 98%); the last is 1.4 units thick. | analysis, calculus, measure |
-| Mapped plane | A square grid and its image under a 2 × 2 matrix with real eigenvalues (default rows 1.15, 0.55 and 0.25, 0.9), clipped to a circle. The original grid is at 22%, the image at 75%, and the two eigen-directions are 1.6-unit lines through the centre. | linear, matrix |
-| Torus knot | A (p, q) torus knot, x = (R + r cos qt) cos pt and y = (R + r cos qt) sin pt, drawn as five parallel strands with r from 20 to 33 so that it reads as a ribbon. The seed picks (p, q) from (2,3), (3,4), (2,5), (3,5). | topology, geometry, manifold |
-| Multiplication circle | 150 points on a circle with a chord from point i to point m·i mod 150. The seed picks m from 2, 3, 4, 5, 7 (m = 2 gives a cardioid). | algebra, group, ring, number |
-| Rose | The curve r = cos(kθ), with k from 5/3, 7/4, 8/5, 7/2 by seed. | anything else |
-
-- **Drawing:** a 200-unit square canvas, strokes between 0.45 and 1.6 units, no fills. In Night the stroke is a gradient from the subject colour to the same colour mixed 55% with white, with a 6 px glow of the subject colour underneath. In Day it is the plain subject colour at 85% opacity, with no glow.
-- **Sizes:** 96 px on list covers, 250 px bleeding off the top-right corner of a hero card, 320 px in the Path header, and 520 px behind the Focus timer at 12 to 18% opacity.
-- **Motion:** an emblem draws itself once when it first appears (700 ms). It rotates only on the Focus screen, one turn in 240 s. It never animates in a list.
-- **Cost and access:** each emblem is one static vector drawing, generated once and cached, under 40 KB. Emblems are decoration: hidden from screen readers and never the only carrier of meaning. The owner can change a path's kind in Settings.
-
-### 4.6 Motion, haptics and sound
-
-**Tokens.** Durations: instant 90 ms, fast 160 ms, base 240 ms, slow 400 ms, scenic 700 ms. Easing curves: standard (0.2, 0, 0, 1), out (0.16, 1, 0.3, 1), in (0.4, 0, 1, 1). Springs for the `motion` library: snappy (stiffness 520, damping 38), gentle (260, 28), lively (400, 22).
-
-**The eight signature transitions**
-
-| # | Name | What happens | Timing |
-|---|---|---|---|
-| T1 | Change tab | The content fades and rises 8 px. The pill behind the active tab slides to the new tab. | Fast; snappy spring |
-| T2 | Open a detail | The tapped card's cover and title grow into the detail screen's header. Uses the browser's View Transitions where available and the current slide elsewhere. | Base |
-| T3 | Sheet | Rises from the bottom, follows the finger while dragged, and closes past 30% travel or on a fast flick. The backdrop fades. | Gentle spring; fast |
-| T4 | Start focus | The hero card grows to fill the screen, then the timer ring draws from empty to its current position. | Slow, then scenic |
-| T5 | Reveal and grade | The answer section opens. On a grade the card leaves in the swipe direction while the next one rises from the stack, and one segment of the progress bar fills. | Base |
-| T6 | Completion | The proof mark ∎ draws its outline, fills, and settles with a slight overshoot. When a checkpoint is demonstrated its star ignites and the path line advances to it. | Slow; lively spring; scenic |
-| T7 | Drag a block | The block lifts (2% larger, level 3 shadow), snaps every 15 minutes, and a time label follows it. It settles on release. | Instant; snappy spring |
-| T8 | Numbers | Hero figures count, and meters fill, from their previous value to the new one. | Slow |
-
-Rules: with the system's reduced-motion setting on, every transition becomes a cross-fade of at most 160 ms, with no rotation, drawing-on or counting. Nothing loops except the Focus ring and emblem, the halo on a current node and the now-line. Nothing animates on scroll. At most six list items stagger in, 30 ms apart. Input is never blocked while something animates.
-
-**Haptics** (where the device supports vibration; one switch in Settings turns them off)
-
-| Event | Pattern |
-|---|---|
-| Grade a card | One 8 ms tick; two ticks for Again |
-| Check a task; approve or reject a proposal | One 8 ms tick |
-| A dragged block snaps to a new 15-minute step | 5 ms |
-| A sheet crosses its dismiss threshold | 5 ms |
-| A focus phase ends, a session is logged, a round completes, a checkpoint is demonstrated, the day is closed | 12 ms, 40 ms pause, 20 ms |
-| A destructive confirmation appears | 20 ms, 60 ms pause, 20 ms |
-
-**Sound** is off by default. The only sound is an optional soft chime when a focus phase ends.
-
-### 4.7 Components
-
-| Component | Specification |
-|---|---|
-| Button | Three variants. Primary: accent gradient, white text, accent glow. Secondary: `wash-strong` fill, `line-strong` ring, `ink` text. Ghost: `accent` text, no fill. Two sizes: 48 px (radius 14, 16/600) and 36 px (radius 10, 14/600). Round icon button: 44 px. One primary per view. Destructive actions are a secondary or ghost button with critical text, never a red fill, and they confirm in a sheet. Pressed: 98% scale for 90 ms. Disabled: 40% opacity. Loading: a spinner replaces the label and the width stays fixed. |
-| Chip | A 28 px pill, 12/600. Kinds: neutral, subject (dot and name), status (icon and word), gold, and "live" (time until something). Filter chips are 36 px and have a selected state. |
-| Segmented control | A 40 px track with 14 px corners in `wash-strong`. The selected segment is the overlay surface at level 1 and slides to the new choice. Two to four segments, 14/600. |
-| Hub tabs | Text tabs 44 px tall with a 2 px accent underline that slides. Used for the sub-destinations in §5.1. |
-| Field | 52 px, radius 14, `bg-inset` fill, `line-strong` ring, label above. Focus: a 2 px accent ring. Error: a 2 px critical ring and, directly below the field, an icon and a sentence. |
-| Picker row | Looks like a field with a value and a chevron. Opens a sheet of 52 px radio rows on phones and a menu on desktop. Replaces every native select. |
-| Date picker | A month grid in a sheet, with shortcuts: Today, Tomorrow, Next Monday. |
-| Time picker | Two large time buttons (start and end) that open a wheel in 5-minute steps, plus duration chips: 25, 50, 90 min, Custom. "Type a time" switches to the native input. |
-| Checkbox, switch, slider, stepper | Checkbox: 24 px with 8 px corners inside a 44 px target. Switch: 52 × 32. Slider: with a value bubble. Stepper: minus, value, plus. |
-| Card | Raised surface, radius 20, level 1, padding 16. Never nested. |
-| Hero card | Radius 28, level 2, padding 20, subject-tinted gradient, emblem off the top-right corner. One per screen. |
-| List row | At least 64 px tall: a 40 px lead tile (icon or glyph), a title at 16/600, a meta line at 14 in `ink-3`, and a trailing chevron, button or value. |
-| Meter and meter list | An 8 px fully rounded track in the fill colour at 22%, with the fill on top. A meter list has one row per ratio: label, bar, value. |
-| Stat tile | Label (14, `ink-2`), value (Figure M), and optionally a change chip and a sparkline. |
-| Sheet | Top corners 28 px, a grabber, a header (eyebrow, title, Close), a scrolling body and a fixed footer holding the primary action. From 700 px wide it becomes a centred dialog 480 to 560 px wide. |
-| Menu | Radius 14, overlay surface, level 3, 44 px rows with icons. |
-| Toast | 52 px, radius 14, overlay surface, level 3: a sentence and one action (usually Undo). Stays 6 s, sits above the tab bar, and can be swiped away. |
-| Banner | An inline card with a status icon, one sentence and one action. Used for the overdue summary, offline and errors. |
-| Skeleton | Grey shapes that match the final layout with a 1.2 s shimmer. Shown only if loading takes longer than 300 ms. |
-| Empty state | A 120 px emblem or line drawing, one sentence, one action. |
-
-The tab bar, session row and capture button are specified in §6.1; the calendar block, time grid and week strip in §6.5; the path node in §6.9.
-
-### 4.8 Data graphics
-
-1. **Pick the form by the job.** One number: a hero figure or a stat tile. One ratio against a target: a meter. Several ratios: a meter list. Change over time: columns or a line. One whole split into parts: a segmented bar. A grid of amounts: a heatmap. No pies, donuts or gauges, and never two scales on one chart.
-2. **Colour by the job.** Subject colours for subjects only. One hue (the accent ramp) for amounts. Status colours for state. Grey for context.
-3. **Marks.** Columns and bars are at most 24 px thick, rounded 4 px at the data end and square at the baseline. Lines are 2 px with round joins. End dots are at least 8 px with a 2 px ring in the surface colour. Touching segments are separated by a 2 px gap in the surface colour, not by outlines. Grid lines and axes are solid hairlines. Area fills are at 10% opacity. Heatmap cells have 3 px corners.
-4. **Labels.** A legend whenever there are two or more series. Only the latest and the highest value are labelled directly. Axis and legend text is `ink-2` or `ink-3`, never a series colour.
-5. **One hero figure per view,** in the interface sans.
-6. **Every chart answers a tap or hover** with a tooltip that puts the value first, and the same values are available as text through a "Show as table" switch or the list under the chart.
-7. **Night and Day each use their own steps** of the same palette (§4.1). Nothing is inverted automatically.
-8. **One range control per screen,** above everything it affects.
-
-### 4.9 Words and formats
-
-- Dates, times, durations and time zones come only from `src/lib/format.ts`; labels for statuses and kinds come from `src/lib/labels.ts`. The one leftover (review history dates on Card detail) moves to the same formatter.
-- Sentence case everywhere. Buttons start with a verb. No internal terms. A checkpoint is "Checkpoint 4" the first time it appears on a screen; the short code "CP4" is allowed only in dense chips.
-- The tone encourages and never scolds. Late work reads "7 overdue · Triage", not an alarm. When someone is behind, the app offers a smaller next step.
+- Use role tokens only. Day, Night and their high-contrast variants share component anatomy.
+- Type uses Display 44, Title 32, Headline 26 and the kit's remaining roles; numerals use the Numeric roles. Phone page margin is 16 px.
+- Radii are 4, 8, 12, 16, 24 and round. Buttons are 48 px on phones, 44 px small and 40 px on desktop.
+- Subject colours identify Analysis, Algebra, Topology, Number theory, Geometry, Logic, Probability and Combinatorics, always with their glyph. Demonstrated stars are filled in the subject colour; completion uses the success proof badge.
+- Surfaces are solid. The hero is `surface.raised`, with a 164 px emblem at the bottom-right at 10% opacity and a sparse Night star field. Hero emblems alone receive the Night glow.
+- Charts and non-subject meters use `viz.neutral`; subject charts use the subject colours. Heatmaps use the Ink (Day) and Starlight (Night) ramps. Indigo is reserved for actions, selection and focus.
+- Dashed borders belong only to drop zones. Suggestions and proposed checkpoints use a solid edge, subject tint/inner rule and an explicit label or mark.
+- The live kit's App shell section defines the headers, dock, Capture, strips, grid blocks, timer, review dock, map states and search rows. Screen-specific layout and behaviour remain in Parts 5–7.
+- Motion and haptic helpers live in `src/ui/v7/motion.ts` and `haptics.ts`. Every moving pattern respects reduced motion; haptics respect the owner's setting.
 
 ---
 
@@ -432,9 +220,9 @@ The five tabs stay: **Today, Paths, Review, Calendar, Progress.** (The release a
 
 | Width | Layout |
 |---|---|
-| Under 600 px (phones) | One column, the floating tab bar, bottom sheets. Everything in Part 6 describes this size first. |
-| 600 to 1023 px (tablets, small windows) | The tab bar becomes a 72 px icon rail on the left with the capture button at its top. Content is one column up to 720 px wide; card lists (Paths, stat tiles, "Continue") become two columns. Sheets become centred dialogs from 700 px. |
-| 1024 px and up (desktop) | A 248 px side rail: the ℓ mark and "Lemma"; a search field showing its shortcut; the five destinations; a "Library" group (Inbox with its count, Cards, Atlas, Tasks, Practice, Time log); and at the bottom the running session (when there is one) and Settings. Content is up to 1,200 px wide with the layouts below. |
+| Under 700 px (phones) | One column, the floating tab bar, bottom sheets. Everything in Part 6 describes this size first. |
+| 700 to 1099 px (tablets, small windows) | The tab bar becomes a 72 px icon rail on the left with the capture button at its top. Content is one column up to 720 px wide; card lists (Paths, stat tiles, "Continue") become two columns. Sheets become centred dialogs from 700 px. |
+| 1100 px and up (desktop) | A 248 px side rail: the ℓ mark and "Lemma"; a search field showing its shortcut; the five destinations; a "Library" group (Inbox with its count, Cards, Atlas, Tasks, Practice, Time log); and at the bottom the running session (when there is one) and Settings. Content is up to 1,200 px wide with the layouts below. |
 
 | Screen | Desktop layout |
 |---|---|
@@ -617,7 +405,7 @@ Sections with nothing to show are left out instead of being shown empty. The her
 
 **Done when**
 - At 390 × 844 the hero card and its primary button are fully visible without scrolling, and that button is the only accent-filled control in the first viewport.
-- With the seed, the day strip shows two subject colours (blue for Real Analysis, orange for Linear Algebra) beside the accent, and the briefing reads as in the sketch.
+- With the seed, the day strip shows two subject colours (Analysis cyan for Real Analysis, Algebra tan for Linear Algebra) beside the accent, and the briefing reads as in the sketch.
 - Each of the five hero states renders from real data, and each has a test.
 - Starting the next block takes one tap from a cold open.
 - Under the heavy-data profile, Today stays below 1,500 elements.
@@ -827,7 +615,7 @@ With nothing due, the hero reads "All caught up" with the proof mark, the next d
 - **Logged session:** the subject tint at 34% with a check icon and "40 min logged".
 - **Planned block marked done:** a check icon, with the title in `ink-2`.
 - **Overlap:** the blocks share the width side by side with a 2 px gap.
-- **Suggestion:** a 1.5 px dashed outline in the subject colour, an 8% tint, the eyebrow "SUGGESTED", the task title and its length. A tap opens a small sheet: "Add to calendar" (primary), "Change time", "Dismiss".
+- **Suggestion:** a solid 1 px `border.default` edge, a low-strength subject tint, an inner subject rule and a "Suggested" info badge, then the task title and length. A tap opens a small sheet: "Add to calendar" (primary), "Change time", "Dismiss".
 - **Links:** a small target icon when the block is linked to a checkpoint, a small checkbox icon when it is linked to a task.
 
 **Interactions**
@@ -863,10 +651,11 @@ With nothing due, the hero reads "All caught up" with the proof mark, the next d
 - Footer: a ghost "Delete" in critical text on the left, which confirms in place, and a primary "Save" on the right.
 
 **Planner** [Rearrange]
-- "Plan my day" (from Today's hero or the suggestions banner) no longer opens a form. Its suggestions appear on the grid as dashed blocks, with the banner's "Add all".
+- "Plan my day" (from Today's hero or the suggestions banner) no longer opens a form. Its suggestions appear on the grid as solid-edge labelled blocks, with the banner's "Add all".
 - "Adjust" opens the existing list, restyled: one row per suggestion with a checkbox, the task, the proposed time and "Change time". "Not placed" items follow, with their reasons as sentences.
 
 **Done when**
+- At 390 × 844 the Day grid starts above 45% of the viewport and shows at least four hours above the dock.
 - At 390 px every block of 30 minutes or more shows a readable title in Day, and Week shows either a full word or no text at all (never a fragment).
 - With the seed, Wednesday 11 Nov shows three subjects in three colours, and each block also names its path.
 - Tap a slot, type a title, Save: three interactions create a 30-minute study block at the tapped quarter hour.
@@ -904,7 +693,7 @@ With nothing due, the hero reads "All caught up" with the proof mark, the next d
 2. **Loose ends.** One row per unfinished planned block ("Card review · 22:00–22:30"), per task due today that is still open, and per parked thought. Each row has two small buttons: "Tomorrow" and "Drop" for blocks and tasks, "Make a task" and "Dismiss" for thoughts. A ghost "Move all to tomorrow" sits above the list. With nothing open the step reads "Nothing left open" beside the proof mark.
 3. **Tomorrow.** Tomorrow's first block (or the planner's first suggestion) as a small hero card, and an "Aim for tomorrow" field. Primary: "Close the day".
 
-Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today, whose hero card moves to its "day closed" state.
+Closing plays the success proof mark with "Day closed" and returns to Today, whose hero card moves to its "day closed" state.
 
 **Done when**
 - All three steps work without a day plan.
@@ -958,7 +747,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
   - Then a row of chips: a schedule chip only when the app has a forecast ("On track" in the good style, "4 days behind" in the warning style), and a neutral due chip ("14 due") that starts a review of that path.
 - **Subject headings** (glyph and name as an Eyebrow) appear only when a subject has two or more paths.
 - **Order:** pinned first, then most recently studied. Press and hold, or "⋯", offers Pin, Pause and Archive.
-- **Last item:** a dashed card, "Start a new path".
+- **Last item:** a solid-edge card, "Start a new path".
 - The word is "path" everywhere. "Project" no longer appears in the interface.
 
 **New path** [Restyle] (a sheet over the list, as today)
@@ -989,7 +778,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 | [ Map ]  Sessions 8  Sources 4  Cards|   tabs
 |                                      |
 |  FOUNDATIONS . 3 of 3                |   stage label (Eyebrow)
-|   *--- Metric spaces                 |   gold star: demonstrated
+|   *--- Metric spaces                 |   subject-filled star: demonstrated
 |   |                                  |
 |   *--- Open and closed sets          |
 |   |                                  |
@@ -999,7 +788,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 |  (O)-- Compactness                   |   current: ring with a halo
 |   :    Step 3 of 4: Use a finite     |
 |   :    subcover        [ Continue ]  |
-|  ( )-- Finite subcover lemma         |   proposed: dashed ring
+|  ( )-- Finite subcover lemma         |   proposed: solid outlined ring
 |   :                      (Proposed)  |
 |   o--- Continuity            Up next |   hollow ring
 |   .--- Limits of functions   Locked  |   dim dot
@@ -1021,9 +810,9 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 
 | State | Node | Text |
 |---|---|---|
-| Demonstrated | 20 px gold star-dot | Title in `ink-2`; "Demonstrated 2 Nov" in Caption |
+| Demonstrated | 20 px subject-filled star | Title in `ink-2`; "Demonstrated 2 Nov" in Caption |
 | Current | 28 px ring in the subject colour with a slow halo | Title in `ink` at 16/600; "Step 3 of 4: Use a finite subcover"; a small secondary "Continue" |
-| Proposed by the tutor | 20 px dashed ring | Title; a "Proposed" chip that opens the proposal |
+| Proposed by the tutor | 20 px solid outlined ring | Title; a "Proposed" chip that opens the proposal |
 | Up next | 16 px hollow ring | Title in `ink-2`; "Up next" |
 | Locked | 8 px dim dot | Title in `ink-3`; "Needs Continuity" |
 
@@ -1101,7 +890,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 **Plans tab** [Rearrange]. One card per plan proposal:
 - A 56 px cover thumbnail, the path name, and "Plan change · from Session 7".
 - **What changes:** one row per change with an icon: plus for an addition ("Add Finite subcover lemma after Compactness"), a link for a new prerequisite ("Continuity now needs Finite subcover lemma"), a pencil for a change, a minus for a removal.
-- **A mini path map** of five nodes that shows the change in place: the new node as a dashed ring between its neighbours.
+- **A mini path map** of five nodes that shows the change in place: the new node as a solid outlined ring between its neighbours.
 - **Why:** the tutor's reason in Body S.
 - A secondary "Reject", a primary "Approve", and a ghost "Compare whole plan".
 
@@ -1162,7 +951,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 | (<) Atlas          [ Map | List ] (S)|   glass bar over the map
 |     .        .            .      .   |
 |        A N A L Y S I S               |   cluster label, wide caps
-|   .      *-----*  Heine-Borel        |   * demonstrated (gold)
+|   .      *-----*  Heine-Borel        |   * demonstrated (subject-filled)
 |     *---/       \                    |
 |   Open sets     (O) Compactness      |   selected: ring and label
 |          \      /   \                |
@@ -1185,7 +974,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 [New presentation of existing data]
 
 - **The sky.** The map fills the screen under a glass header (Back, "Atlas", a Map or List switch, Search). The background is `bg-inset`. In Night it carries about 120 still dust points at 15 to 50% opacity. In Day it is ivory with the faint graph-paper grid the repo already has.
-- **Stars.** Each concept is a star. Its size (6 to 14 px) follows the number of cards linked to it. Its mark follows the star states in §4.4: gold for demonstrated, a ring in the subject colour for in progress, hollow for up next, dim for not started, a warning ring for "needs a recheck".
+- **Stars.** Each concept is a star. Its size (6 to 14 px) follows the number of cards linked to it. Its mark follows the star states in §4.4: subject-filled stars for demonstrated, a ring in the subject colour for in progress, hollow for up next, dim for not started, a warning ring for "needs a recheck".
 - **Constellations.** Concepts group by field. Each cluster has a soft patch of its subject colour behind it (10% in Night, 6% in Day) and its name in wide capitals (Eyebrow).
 - **Links.** A prerequisite is a solid hairline with a small arrowhead at the concept that depends on it. A looser relation is a dotted hairline.
 - **Layout.** Positions come from a force layout that is seeded, so the map looks the same every time. It is computed off the main thread and cached until the data changes. Concepts the owner has pinned keep their positions.
@@ -1198,7 +987,7 @@ Closing plays the proof mark in gold (T6) with "Day closed" and returns to Today
 - **Reduced motion:** no flying and no pulsing. The map jumps.
 
 **Done when**
-- With the seed the map shows 82 stars in three tinted clusters, 9 of them gold.
+- With the seed the map shows 82 stars in three tinted clusters, 9 demonstrated with subject-filled stars.
 - Selecting "Compactness" opens the sheet with the right counts, and "Open checkpoint" goes to Checkpoint 4.
 - Searching "comp" lists 7 concepts, and choosing one centres it.
 - Switching between Map and List keeps the selection.
@@ -1532,3 +1321,25 @@ P2 to P5 do not depend on each other and can run in parallel once P1 is approved
 | Proof mark | The small square ∎ that mathematicians put at the end of a proof |
 | Design lint | The automated check that reads computed styles and enforces the limits in Part 3 |
 | Golden screens | The six screens built first and approved by the Owner as the visual reference |
+
+
+## Audit amendments · 11 Nov 2026
+
+The original sketches illustrate hierarchy; the kit and these amendments govern conflicting details.
+
+| ID | Binding amendment |
+|---|---|
+| PA0 | Section 4 is replaced by the kit pointer above; colour, type, radii, 16 px phone margin, 700/1100 breakpoints, subject-filled demonstrated stars and Ink/Starlight heatmaps follow the kit. |
+| PA1 | Review's first tab is Due; Cards names the library under Paths. |
+| PA2 / SH2 | Capture occupies a reserved slot alongside the five-link tab bar, outside the navigation landmark. It may hide on scroll down and returns on scroll up or keyboard focus. It never overlays row actions. |
+| PA3 | Quick focus is available in every Today hero state. |
+| PA4 | Focus Finish stays secondary until the planned length is reached. |
+| PA5 | Calendar Day opens above 45% of the viewport and exposes at least four hours above the dock. |
+| PA6 | Sheet and step-flow footers are fixed at the bottom: secondary/tertiary left, primary right, 48 px on phones. |
+| PA7 | Agenda collapses consecutive empty days into one line. |
+| PA8 | Close the day leads with the best real figure when focus is zero. |
+| PA9 | Atlas dust is at most 1.5 px and 30% opacity; concept states use the kit's proof marks. |
+| PA10 | Today's day strip shows the planning window, widened for actual blocks and now. |
+| PA11 | Static and rendered lint cover role colours, button heights, visible native controls, subject glyphs, status icons, indigo on data and text clipped below four characters. Every applicable screen Done-when item needs named evidence. |
+
+**Owner decisions, 11 Nov 2026:** The six phone golden screens are visually approved. Following the recommendations, the Owner waived the retrospective P2/P3 gate order (C5), approved the additive frontend read for a subject-stacked fourteen-day Review forecast while preserving Today's RPC, and approved Capture's reserved dock placement. Desktop remains Part 11 with fresh captures and separate visual acceptance. All other acceptance and release gates remain.

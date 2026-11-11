@@ -85,6 +85,8 @@ export interface LemmaApi {
  getHome(): Promise<HomeSummary>
  /** Count scheduled active cards by study day, today through six days ahead. */
  getReviewForecast(): Promise<{day: string; due: number}[]>
+ /** Review hub only: fourteen study days split by path, without changing Today's RPC. */
+ getPathReviewForecast(): Promise<import('./path-review-forecast').PathReviewForecastDay[]>
  /** List subjects in position order. */
  listSubjects(): Promise<Subject[]>
  /** Create a subject. */

@@ -1,6 +1,8 @@
 import type {DeckNode,InsightData,Rating} from '../../../data/types';
 import {median} from '../../../lib/insights';
 import type {Subject} from '../../../ui/v7/Subject';
+import type {PathReviewForecastDay} from '../../../data/path-review-forecast';
+import {kitSubject} from '../../atlas/v7/model';
 
 /** PLAN §6.4 A/C. Pure helpers for the Review hub and Round complete, kept apart from React so they can be unit-tested. */
 export type SubjectOf=(slug:string)=>Subject;
@@ -46,7 +48,7 @@ export function activeSubject(nodes:readonly DeckNode[],subjectOf:SubjectOf,enab
 }
 
 export interface ForecastBar{label:string;due:number}
-/** 7 days from the existing RPC; PLAN asks for 14, a known gap until the RPC is widened. */
+/** Labels for the legacy seven-day Today forecast. */
 export function forecastBars(days:readonly {day:string;due:number}[],zone='UTC'):ForecastBar[]{
  return days.map((entry,index)=>{
   if(index===0)return {label:'Today',due:Math.max(0,entry.due)};
@@ -54,6 +56,25 @@ export function forecastBars(days:readonly {day:string;due:number}[],zone='UTC')
   const label=Number.isNaN(date.getTime())?entry.day:new Intl.DateTimeFormat('en',{weekday:'short',timeZone:'UTC'}).format(date);
   return {label,due:Math.max(0,entry.due)};
  });
+}
+
+/** Merge paths into the kit's subject identities; preserve the full total,
+ * including unassigned subjects, without imposing today's review quota. */
+export function subjectForecast(days:readonly PathReviewForecastDay[]){
+ const totals=new Map<Subject,number>();
+ for(const day of days)for(const path of day.paths){
+  const subject=kitSubject(path.subject);
+  totals.set(subject,(totals.get(subject)??0)+path.due);
+ }
+ const subjects=[...totals].filter(([,due])=>due>0).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])).map(([subject])=>subject);
+ const series=subjects.map(subject=>({label:subject,subject}));
+ const data=days.map((day,index)=>({
+  label:index===0?'Today':new Intl.DateTimeFormat('en-GB',{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(day.day+'T12:00:00Z')),
+  tickLabel:index===0?'Today':index%2===0||index===days.length-1?String(Number(day.day.slice(8))):'',
+  values:subjects.map(subject=>day.paths.filter(path=>kitSubject(path.subject)===subject).reduce((sum,path)=>sum+path.due,0)),
+ }));
+ // A clear forecast with no scheduled cards still draws fourteen empty buckets.
+ return {series:series.length?series:[{label:'Due',subject:'Other' as const}],data:data.map(row=>({...row,values:row.values.length?row.values:[0]}))};
 }
 
 export interface MemoryStats{recallPct:number|null;reviews:number;typicalSeconds:number|null}
