@@ -297,7 +297,7 @@ function V6Calendar() {
 
 /** The legacy route stays a redirect and does not mount any v6 data reads. */
 export default function CalendarPage() {
-  if (v7Screen() === 'calendar-day') return <Suspense fallback={<div role="status" aria-label="Calendar loading" className="min-h-dvh"/>}><V7CalendarDay/></Suspense>;
+  if (v7Screen() === 'calendar') return <Suspense fallback={<div role="status" aria-label="Calendar loading" className="min-h-dvh"/>}><V7CalendarDay/></Suspense>;
   if (!isFlagOn('v6Shell')) return <Navigate to="/" replace />;
   return <V6Calendar />;
 }

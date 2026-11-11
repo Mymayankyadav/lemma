@@ -128,3 +128,28 @@ test("Close the day walks three steps: Today, Loose ends, Tomorrow",async({page}
  await page.getByRole("button",{name:"Back"}).click();
  await expect(page.getByRole("region",{name:"Loose ends"})).toBeVisible();
 });
+
+// Part 7c: Calendar Week, Month, Agenda.
+test("Calendar Week shows a seven-day grid with the strip as its header",async({page})=>{
+ await page.goto(at("/calendar?view=week"));
+ await expect(page.getByRole("radio",{name:"Week"})).toHaveAttribute("aria-checked","true");
+ await expect(page.getByRole("region",{name:"Week time grid"})).toBeVisible();
+ await expect(page.locator("[data-strip-day]")).toHaveCount(7);
+ await expect(page.getByRole("button",{name:"Next week"})).toBeVisible();
+});
+test("Calendar Month tints days, offers Open day, and never prints a zero",async({page})=>{
+ await page.goto(at("/calendar?view=month"));
+ await expect(page.getByRole("group",{name:"Month date grid"})).toBeVisible();
+ expect(await page.locator("[data-month-day]").count()).toBeGreaterThanOrEqual(28);
+ await expect(page.getByText(/\b0 blocks\b/)).toHaveCount(0);
+ await expect(page.getByRole("button",{name:"Open day"})).toBeVisible();
+ await page.getByRole("button",{name:"Open day"}).click();
+ await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
+});
+test("Calendar Agenda lists days with headings and switches back to Day",async({page})=>{
+ await page.goto(at("/calendar?view=agenda"));
+ await expect(page.getByRole("heading",{name:/^Today/})).toBeVisible();
+ expect(await page.locator(".v7-ag-heading").count()).toBe(14);
+ await page.getByRole("radio",{name:"Day"}).click();
+ await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
+});

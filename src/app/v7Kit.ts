@@ -3,7 +3,7 @@ import { isFlagOn } from "../flags";
  * Screens rebuilt for v7 so far. Every other route keeps the v6/legacy shell until it is
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
-export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar-day" | "path";
+export type V7Screen = "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path";
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
@@ -22,11 +22,8 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (path === "/review/run") return "review-run";
   // Only durable runs have a v7 results screen; a local round keeps its existing Done page.
   if (path === "/review/done") return new URLSearchParams(search).has("run") ? "review-done" : null;
-  if (path === "/calendar") {
-    // Day is the v7 default; Week, Month and Agenda keep the v6 views until their own parts.
-    const view = new URLSearchParams(search).get("view");
-    return !view || view === "day" ? "calendar-day" : null;
-  }
+  // Day, Week, Month and Agenda are all v7; an unknown view falls back to Day.
+  if (path === "/calendar") return "calendar";
   if (/^\/p\/[^/]+$/.test(path)) return "path";
   return null;
 }
