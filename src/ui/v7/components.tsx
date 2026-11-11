@@ -657,7 +657,8 @@ export function Checkbox({
   disabled = false,
   mixed = false,
 }: {
-  label: string;
+  /** Usually text; a row may pass rendered maths. */
+  label: ReactNode;
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;

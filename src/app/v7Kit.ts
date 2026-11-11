@@ -30,6 +30,8 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (/^\/s\/[^/]+\/[^/]+$/.test(path)) return "session";
   if (path === "/cards") return "cards";
   if (/^\/cards\/[^/]+$/.test(path)) return "card";
+  if (path === "/proposals") return "inbox";
+  if (/^\/proposals\/[^/]+$/.test(path)) return "plan-proposal";
   return null;
 }
 export function v7Screen(path?: string, search?: string): V7Screen | null {

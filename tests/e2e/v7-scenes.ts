@@ -47,6 +47,11 @@ export const shots:Shot[]=[
  {name:"cards",hash:"/cards"},
  {name:"card",hash:"/cards/1",frames:2},
  {name:"card-editor",hash:"/cards?new=1"},
+ // Part 9: Inbox and plan proposal (PLAN §6.10).
+ {name:"inbox",hash:"/proposals"},
+ {name:"inbox-list",hash:"/proposals?view=list"},
+ {name:"inbox-plans",hash:"/proposals?tab=plan"},
+ {name:"plan-proposal",hash:"/proposals?tab=plan",frames:2,prepare:async page=>{await page.getByRole("link",{name:"Compare whole plan"}).first().click();await page.waitForURL(/#\/proposals\/[^?]+$/).catch(()=>{});}},
 ];
 
 /** Load a scene the way a person would: fixed clock, colour scheme, reduced motion, then its own preparation. */

@@ -1,7 +1,8 @@
 import {isFlagOn} from '../../flags';
 import PlanProposalV6 from './v6/PlanProposalV6';
 import {MathPreview} from '../../ui/MathPreview';
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { v7Screen } from "../../app/v7Kit";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   Bot,
@@ -552,4 +553,9 @@ function LegacyPlanProposal() {
 }
 
 /** Flag-off route remains the unchanged legacy approval workflow. */
-export default function Page(){return isFlagOn('v6Shell')?<PlanProposalV6/>:<LegacyPlanProposal/>;}
+const PlanProposalV7=lazy(()=>import('./v7/PlanProposalV7'));
+export default function Page(){
+ // v7 Plan proposal (PLAN §6.10) behind v7Shell; v6 and legacy stay for rollback.
+ if(v7Screen()==='plan-proposal')return <Suspense fallback={<div role="status" aria-label="Proposal loading" className="min-h-dvh"/>}><PlanProposalV7/></Suspense>;
+ return isFlagOn('v6Shell')?<PlanProposalV6/>:<LegacyPlanProposal/>;
+}

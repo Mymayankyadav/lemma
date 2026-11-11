@@ -257,3 +257,23 @@ Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
 
 - Unit: `tests/unit/v7/learning.test.ts` (15 tests: Paths filters, order, search, grouping, due per path; Cards filters, due-today in the owner zone, meta line, sort; editor keys; evidence grouping; the recall replay; routes). Full unit suite 375 files / 2,104 tests passed.
 - Browser: `tests/e2e/v7-learning.spec.ts` (8 tests covering each "Done when" item of §6.8, §6.9 and §6.11), the rendered design lint on the seven new scenes in Day and Night at 390 and 320 px (28 runs), and 115 existing tests across Paths, New project, routes, LaTeX, the v6 N121 audits, the Night critique, audit acceptance and responsive specs all passed against a production build.
+
+## Part 9 status (Inbox and Plan proposal: PLAN §6.10)
+
+Built behind `v7Shell` (default off); v6 and legacy screens stay for rollback.
+
+- **Cards tab, triage stack** (`/proposals`, `src/features/proposals/v7/`): the top card in the review-card design (subject tag, path and session, kind eyebrow, front, hairline, back, "Why this card?" with the tutor's reason and the stored citations); two cards peek behind it at 60% and 30%. Reject (56 px, danger ring), Edit (48 px) and Approve (64 px, action fill) sit under the stack with captions, all in the bottom 40% of the screen. Swipe right approves and left rejects at 35% of the width or on a flick; up skips to the end; a shorter drag springs back. The card tilts up to 6° with a growing good or danger wash and the word. Keys: A or → approves, R or ← rejects, E edits, ↑ skips. Every decision waits 6 s with Undo before it is sent (the v6 contract: a new decision, leaving or closing sends the waiting one). "Approve all n from Session s" confirms in a sheet listing the cards. Edit opens the card editor with "Save and approve". Empty: ∎, "Inbox zero".
+- **List view** (the header icon, `?view=list`): grouped by path and session, maths rendered, checkboxes and a sticky Reject n / Approve n bar, with the same 6 s Undo.
+- **Plans tab**: one card per proposal with a 56 px emblem, the path and "Plan change · from Session n", "What changes" rows with plus, link, unlink, pencil, minus or arrow icons, a five-node mini map with the change as a dashed ring in place, "Why", and Reject, Approve and "Compare whole plan".
+- **Plan proposal** (`/proposals/:id`): "What changes" first with the change summary, why, the whole plan drawn as the §6.9 path map with Added and Changed badges (before and after side by side from 900 px), sources, the draft editor under "Edit before approving (advanced)", and Approve / Reject in a sticky bar. A decision here is sent at once and returns to the path or the Plans tab, as on v6.
+
+### Gaps (not done)
+
+- The Plan proposal detail decides immediately (as v6 does) rather than with the 6 s Undo; the Plans tab in the Inbox does use the Undo window.
+- The draft editor keeps its JSON text field; a structured editor is not in the plan.
+- The main tab bar has no Inbox destination, so on `/proposals` it falls back to Today, as on every route outside the five destinations.
+
+### Verification
+
+- Unit: `tests/unit/v7/inbox.test.ts` (8 tests: swipe thresholds and flicks, tilt and wash, stable queue order and skipping, the "Approve all" set, list grouping, change rows, the mini-map window, routes). The v6 draft-editor unit tests (21) pass with the shared hook.
+- Browser: `tests/e2e/v7-inbox.spec.ts` (8 tests: five decisions by swipe, by buttons and by keys; spring-back and skip; button placement in the bottom 40%; Undo within 6 s and the decision sticking after it; the batch sheet; the plan card and detail; the list view), run twice; the design lint on four new scenes in Day and Night at 390 and 320 px (16 runs); and 72 existing proposal, plan-review and draft-editor tests.

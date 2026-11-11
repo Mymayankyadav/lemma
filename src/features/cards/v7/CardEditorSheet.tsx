@@ -24,7 +24,9 @@ function CheckpointPicker({slug,value,onChange}:{slug:string;value:string;onChan
 /** PLAN §6.11 Editor: a full-height sheet, Write · Preview (side by side on desktop), Front and Back in Reading, a key row
  *  with the owner's macros and common symbols, pickers for Path, Checkpoint, Type and Kind, and the primary in the footer
  *  (the sheet footer stays above the keyboard). */
-export function CardEditorSheet({open,onClose,initial,busy,onSubmit}:{open:boolean;onClose:()=>void;initial?:CardDetail['note'];busy:boolean;onSubmit:(value:EditorValue)=>void}){
+export function CardEditorSheet({open,onClose,initial,busy,onSubmit,submitLabel,lockPath=false}:{open:boolean;onClose:()=>void;initial?:CardDetail['note'];busy:boolean;onSubmit:(value:EditorValue)=>void;
+ /** The Inbox edits a proposal before approving it: "Save and approve", with the path fixed. */
+ submitLabel?:string;lockPath?:boolean}){
  const projects=useProjects(),settings=useSettings(),wide=useMinWidth(700);
  const [front,setFront]=useState(initial?.front??''),[back,setBack]=useState(initial?.back??'');
  const [type,setType]=useState<NoteType>(initial?.type??'basic'),[kind,setKind]=useState<NoteKind>(initial?.kind??'other');
@@ -33,7 +35,7 @@ export function CardEditorSheet({open,onClose,initial,busy,onSubmit}:{open:boole
  const target=useRef<'front'|'back'>('front'),frontRef=useRef<HTMLTextAreaElement>(null),backRef=useRef<HTMLTextAreaElement>(null);
  const paths=useMemo(()=>(projects.data??[]).filter(row=>!row.system&&row.status!=='archived'),[projects.data]);
  const keys=useMemo(()=>[...macroKeys(settings.data?.macros??''),...symbolKeys],[settings.data?.macros]);
- const creating=!initial,pathTitle=paths.find(row=>row.slug===slug)?.title??'';
+ const creating=!initial&&!lockPath,pathTitle=paths.find(row=>row.slug===slug)?.title??'';
  function key(text:string){
   const field=target.current==='front'?frontRef.current:backRef.current;
   const value=target.current==='front'?front:back,set=target.current==='front'?setFront:setBack;
@@ -59,8 +61,8 @@ export function CardEditorSheet({open,onClose,initial,busy,onSubmit}:{open:boole
   <hr/>
   <div className="v7-editor-back">{back.trim()?<MathText source={back}/>:<span className="v7-meta">The back appears here.</span>}</div>
  </div>;
- return <Sheet open={open} onClose={onClose} full title={creating?'New card':'Edit card'}
-  footer={<Button variant="primary" loading={busy} onClick={submit}>{creating?'Create card':'Save changes'}</Button>}>
+ return <Sheet open={open} onClose={onClose} full title={lockPath?'Edit proposed card':creating?'New card':'Edit card'}
+  footer={<Button variant="primary" loading={busy} onClick={submit}>{submitLabel??(creating?'Create card':'Save changes')}</Button>}>
   <div className="v7-editor">
    {!wide&&<Segmented label="Editor view" options={['Write','Preview']} value={mode} onChange={value=>setMode(value as 'Write'|'Preview')}/>}
    {wide?<div className="v7-editor-split">{write}{preview}</div>:mode==='Write'?write:preview}
