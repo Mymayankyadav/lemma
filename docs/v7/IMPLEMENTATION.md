@@ -202,3 +202,17 @@ The Owner's critique of the Night build is stored as `docs/v7/NIGHT_CRITIQUE_v2.
 **Golden candidates** are in `docs/v7/golden-candidates/` (captured by `V7_GOLDEN=1 npx playwright test tests/e2e/v7-golden.spec.ts`, composed by `scripts/v7/compose-golden.py`). They move to `docs/v7/golden/` only when you approve them.
 
 **Verification (this environment):** typecheck, repository lint and `scripts/v7/check-kit.mjs` pass; all 371 unit files (2,077 tests) pass, including the new `tests/unit/v7/night-critique.test.tsx`; the v7 browser specs (`v7-design-lint`, `v7-night-critique`, `v7-part4`, `v7-part6`, `v7-atlas`, `v7-kit`, `v7-step3`, `v7-screens`, 46 captures) and the v6 planner and calendar specs (`v6-g7-fixes`, `v6-harden-planning`, `v6-n121-audit`, `v6-n121-grid`, `v6-rollback`) pass against a production build. Deliberately updated tests: `v7-kit` counts 51 token cards (viz.neutral); `v7-part4` and `v7-part6` open quick-add from a tap on the grid (no "+ New block"), find Practice as a Review tab, and check that Agenda never shows two empty sections in a row; `v7-atlas` reads the kit state names "Review due" and "Conjecture · not started"; `calendar-views` uses the kit heat steps. No device run.
+
+
+## Owner golden-screen approval · 11 Nov 2026
+
+The Owner wrote: "I approve the screenshots of golden screens."
+
+This records visual approval of the six phone golden screens (Today, Focus, Calendar Day, Atlas, review round and Path map), in Day and Night at 390 × 844. The twelve screen PNGs and six side-by-side comparison PNGs in `docs/v7/golden/` are byte-identical copies of the candidates on commit `d35496a4d47a5b8607d0e17567cb575fd907f862`. The source candidates remain available; future captures continue to go to `golden-candidates/` for review rather than overwriting approved references.
+
+The 1280 × 800 Today and Calendar captures remain candidates, because they still show the phone layout in a wide window. They are not accepted as final desktop layouts by this record.
+
+This is the Owner's visual approval, not a claim that the complete P1 acceptance checklist or every screen's "Done when" list has been verified. C5's retrospective gate-order decision, KC4's subject-stacked forecast/additional read, the Capture button's resting overlap and Part 11 responsive approval remain open. Gallery approval, Part 12 performance/accessibility/device evidence, final activation and independent final review also remain separate gates. `v7Shell` stays off, and this PR stays not Ready.
+
+Code inspection at the approved source commit also confirms that "Due each day" still shows seven days; the fourteen-day Review forecast permitted by the accepted constraints remains unfinished. Preserve Today's existing seven-day RPC.
+
