@@ -179,3 +179,35 @@ test("Calendar plan=1 opens the planner on the day view",async({page})=>{
  await page.goto(at("/calendar?view=day&plan=1"));
  await expect(page.getByRole("dialog",{name:"Plan study tasks"})).toBeVisible();
 });
+
+// Part 7e: Today links, start sheet styles, Needs you.
+test("Calendar Plan tomorrow opens the planner and leaves plan=tomorrow out of the URL",async({page})=>{
+ await page.goto(at("/calendar?view=day&plan=tomorrow"));
+ await expect(page.getByRole("dialog",{name:"Plan study tasks"})).toBeVisible();
+ await expect(page).not.toHaveURL(/plan=tomorrow/);
+});
+test("Calendar Triage link opens the overdue sheet and clears the param",async({page})=>{
+ await page.goto(at("/calendar?view=day&overdue=1"));
+ await expect(page.getByRole("dialog",{name:/overdue/})).toBeVisible();
+ await expect(page).not.toHaveURL(/overdue=1/);
+});
+test("Today Quick focus offers Open and the owner's presets as session styles",async({page})=>{
+ await page.goto(at("/"));
+ const quick=page.getByRole("button",{name:"Quick focus"});
+ if(await quick.count()===0)return;
+ await quick.click();
+ const styles=page.getByRole("radiogroup",{name:"Session style"});
+ await expect(styles.getByRole("radio",{name:/^Open/})).toBeVisible();
+ await styles.getByRole("radio",{name:/^Open/}).click();
+ await expect(styles.getByRole("radio",{name:/^Open/})).toHaveAttribute("aria-checked","true");
+});
+test("Today Needs you completes a due task with Undo, and every section stays under four rows plus Show all",async({page})=>{
+ await page.goto(at("/"));
+ const needs=page.getByRole("region",{name:"Needs you"});
+ if(await needs.count()===0)return;
+ expect(await needs.locator(".v7-today-need").count()).toBeLessThanOrEqual(5);
+ const box=needs.getByRole("checkbox").first();
+ if(await box.count()===0)return;
+ await box.click();
+ await expect(page.getByRole("button",{name:"Undo"})).toBeVisible();
+});

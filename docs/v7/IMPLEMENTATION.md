@@ -141,8 +141,17 @@ All behind `v7Shell` (default off).
 - Suggested blocks are not drawn on the grid as dashed SUGGESTED blocks; the banner only counts them.
 - Quick-add More options does not carry the `task` link into the full sheet.
 - Tasks: no drag reorder. Week: no drag between days. Close the day: a day with no plan has no close record; "Tomorrow" shifts a block by 24 h, which is off by an hour across a DST change.
-- Still not built: the remaining Today and Focus states (start sheet, break, paused, finish).
+- Overdue still counts deadlines and practice topics only, not tasks (tasks show their own Overdue group on the Tasks screen), so the Today count and the Calendar sheet agree.
+- Close the day is offered from 17:00 in the owner's zone; there is no day-end setting to read yet.
 
 ### Verification
 
 Pure models have unit tests (`tests/unit/v7/{tasks,close-day,calendar-views,quick-add}.test.ts`) and e2e specs in `tests/e2e/v7-part6.spec.ts`. Locally only the design gate, syntax checks and the pure unit tests were run (no installs, no Playwright, no device). CI is the real runner; nothing here has been seen on a phone.
+
+### Part 7 follow-up: Today and the start sheet
+
+- **Targets** now has Focus, Reviews (answered today against answered plus due) and Practice (practised today against practised plus due), each hidden at a zero target. A met row shows Done.
+- **Needs you** shows at most four rows (overdue, cards due, tasks due today with a checkbox and Undo, practice due) with "Show all (n)". Triage opens `/calendar?view=day&overdue=1`, which opens the overdue sheet.
+- **Close the day** card from 17:00 until the day is closed. **Details** (`?block=`) opens the block sheet and **Plan tomorrow** (`?plan=tomorrow`) opens the planner on the next day.
+- **Quick focus** start sheet lists Open plus the owner's presets (for example "Pomodoro · 25 / 5 × 4"); a chosen preset is sent as `presetId` so the server captures its configuration. Focus running, break, paused and finish were already built in Part 4.
+- Rows from `needsModel.ts` have unit tests in `tests/unit/v7/today-needs.test.ts`.

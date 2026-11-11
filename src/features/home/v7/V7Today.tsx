@@ -2,7 +2,14 @@ import {useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {Check,ChevronRight,Inbox,Layers,Pause,Play} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
+import {getApi} from '../../../data';
 import {getStudyApi} from '../../../data/study';
+import {getTaskApi} from '../../../data/tasks';
+import type {TaskRecord} from '../../../data/tasks/contract';
+import type {PracticeTopicRecord} from '../../../data/practice-topics/contract';
+import type {PresetRecord} from '../../../data/presets/contract';
+import {useToast} from '../../../ui/Toast';
+import {loadActiveFocusPresets} from '../../focus/PresetPicker';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
@@ -11,16 +18,17 @@ import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
+import {needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
 import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripSegment,todayBriefing,todayGreeting,type HeroState} from './todayModel';
 import './today.css';
 
-interface DayData{blocks:CalendarBlockRecord[];logged:number;closed:boolean;overdue:number}
+interface DayData{blocks:CalendarBlockRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
 function SubjectChip({subject,name}:{subject:Subject;name:string}){
  return <span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{name}</span></span>;
 }
 /** PLAN §6.2: Today decides what to do now, in one glance. */
 export default function V7Today(){
- const home=useHome(),settings=useSettings(),navigate=useNavigate();
+ const home=useHome(),settings=useSettings(),navigate=useNavigate(),notify=useToast();
  const {entry,refresh:refreshFocus}=useActiveFocus();
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
@@ -28,18 +36,23 @@ export default function V7Today(){
  const [data,setData]=useState<DayData|null>(null),[error,setError]=useState(false),[version,setVersion]=useState(0);
  const [busy,setBusy]=useState(false),[actionError,setActionError]=useState(''),[quick,setQuick]=useState(false);
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
+ const [presets,setPresets]=useState<PresetRecord[]>([]),[presetId,setPresetId]=useState<string|null>(null),[showAll,setShowAll]=useState(false);
  const reload=useCallback(()=>setVersion(value=>value+1),[]);
+ useEffect(()=>{if(!quick)return;let live=true;void loadActiveFocusPresets().then(rows=>{if(live)setPresets(rows);}).catch(()=>{});return()=>{live=false;};},[quick]);
  useEffect(()=>{
   let live=true;setError(false);
   const study=getStudyApi(),range=dayBounds(day,zone);
   const closed=import('../V6TodayPlan').then(module=>module.readTodayPlan(day,zone)).then(plan=>plan.plan?.status==='closed').catch(()=>false);
-  const overdue=Promise.all([import('../../calendar/deadlines/load'),import('../../calendar/deadlines/OverdueBanner')])
-   .then(async([load,banner])=>{const items=banner.overdueItems(await load.loadCalendarDues(),zone);return items.deadlines.length+items.topics.length;}).catch(()=>0);
-  Promise.all([study.listCalendarBlocks(range),study.listStudyEntries(range),closed,overdue]).then(([blocks,entries,isClosed,overdueCount])=>{
+  const dues=Promise.all([import('../../calendar/deadlines/load'),import('../../calendar/deadlines/OverdueBanner')])
+   .then(async([load,banner])=>{const all=await load.loadCalendarDues(),items=banner.overdueItems(all,zone);return {overdue:items.deadlines.length+items.topics.length,topics:all.topics as PracticeTopicRecord[]};})
+   .catch(()=>({overdue:0,topics:[] as PracticeTopicRecord[]}));
+  const tasks=getTaskApi().listTasks({status:['backlog','in_progress'],limit:50}).then(page=>page.items).catch(()=>[] as TaskRecord[]);
+  const answered=getApi().getInsightData(7).then(insight=>insight.reviews.filter(review=>Date.parse(review.reviewedAt)>=Date.parse(range.start)&&Date.parse(review.reviewedAt)<Date.parse(range.end)).length).catch(()=>0);
+  Promise.all([study.listCalendarBlocks(range),study.listStudyEntries(range),closed,dues,tasks,answered]).then(([blocks,entries,isClosed,dueInfo,taskRows,answeredCount])=>{
    if(!live)return;
    const saved=entries.filter(item=>item.status==='saved').map(item=>({id:item.id,status:'saved' as const,subjectId:item.subjectId,
     intervals:item.intervals.filter(interval=>interval.end!==null).map(interval=>({start:interval.start,end:interval.end!,kind:interval.kind}))}));
-   setData({blocks:blocks.filter(block=>block.status!=='cancelled'),logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:overdueCount});
+   setData({blocks:blocks.filter(block=>block.status!=='cancelled'),logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount});
   },()=>{if(live)setError(true);});
   return ()=>{live=false;};
  },[day,zone,version]);
@@ -77,13 +90,26 @@ export default function V7Today(){
   const study=getStudyApi();
   if(await study.activeStudyEntry())throw Error('A focus session is already running.');
   const project=projectOf(pathId);
-  await study.startStudyEntry({source:'timer',intent:intention.trim()||'Focused study',projectId:project?.id??null,subjectId:project?.subject.id??null});
- },()=>{setQuick(false);setIntention('');navigate('/focus');});
+  const preset=presets.find(item=>item.id===presetId);
+  await study.startStudyEntry({source:'timer',intent:intention.trim()||preset?.label||'Focused study',projectId:project?.id??preset?.projectId??null,subjectId:project?.subject.id??preset?.subjectId??null,...(preset?{presetId:preset.id}:{})});
+ },()=>{setQuick(false);setIntention('');setPresetId(null);navigate('/focus');});
  const toggle=(active:StudyEntryRecord)=>act(async()=>{
   const study=getStudyApi(),fresh=await study.activeStudyEntry();
   if(!fresh||fresh.id!==active.id)throw Error('The session changed on another device.');
   if(fresh.status==='paused')await study.resumeStudyEntry(fresh.id,fresh.version);else await study.pauseStudyEntry(fresh.id,fresh.version);
  });
+ const needTasks=useMemo(()=>tasksDueToday(data?.tasks??[],day,zone),[data?.tasks,day,zone]);
+ const practice=useMemo(()=>practiceToday(data?.topics??[],day,zone),[data?.topics,day,zone]);
+ const targets=targetRows({focus:logged,focusGoal,answered:data?.answered??0,reviewsDue:due,practiceDone:practice.done,practiceDue:practice.due.length});
+ const needs=needsRows({due,tasks:needTasks,topics:practice.due,overdue:data?.overdue??0},4,showAll);
+ const hourNow=Math.floor(localMinute(date,zone)/60);
+ async function completeTask(task:TaskRecord){
+  if(busy)return;setBusy(true);
+  try{
+   const receipt=await getTaskApi().updateTask(task.id,task.version,{status:'completed'});reload();
+   notify('Task completed',{tone:'success',action:{label:'Undo',onClick:()=>{void getTaskApi().updateTask(task.id,receipt.record.version,{status:task.status}).then(reload).catch(()=>notify('Could not undo that',{tone:'danger'}));}}});
+  }catch{notify('Could not complete that task. Try again.',{tone:'danger'});reload();}finally{setBusy(false);}
+ }
  const clock=entry?focusClock(entry,Date.now()):null;
  const briefing=todayBriefing({session:word,nextIn:next&&state==='upcoming'?startsIn(next.startsAt,now):null,studyBlocksLeft:left,due,overdue:data?.overdue??0});
  const heroCopy:Record<HeroState,{chip:string;title:string;line:string}>={
@@ -143,19 +169,24 @@ export default function V7Today(){
     </span>
     <span className="v7-today-hours" aria-hidden="true">{['06','09','12','15','18','21','24'].map(hour=><span key={hour}>{hour}</span>)}</span>
    </Link>
-   {focusGoal>0&&<section className="v7-card" aria-label="Targets">
-    <div className="v7-today-target"><span>Focus</span>
-     {logged>=focusGoal?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{logged} of {focusGoal} min</span>}
-     <span className="v7-today-target-track" role="meter" aria-label="Focus" aria-valuemin={0} aria-valuemax={focusGoal} aria-valuenow={Math.min(logged,focusGoal)}>
-      <span style={{width:Math.min(100,logged/focusGoal*100)+'%'}}/></span>
-    </div>
+   {targets.length>0&&<section className="v7-card" aria-label="Targets">
+    {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
+     {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}</span>}
+     <span className="v7-today-target-track" role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
+      <span style={{width:Math.min(100,row.value/row.max*100)+'%'}}/></span>
+    </div>)}
    </section>}
-   {(due>0||pending>0||(data?.overdue??0)>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
+   {(needs.total>0||pending>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
     <h2>Needs you</h2>
-    {due>0&&<div className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{due} {due===1?'card':'cards'} due</strong><small>about {Math.max(1,Math.round(due*0.4))} min</small></span>
-     <Link className="v7-button v7-secondary v7-small" to="/review"><span>Review</span></Link></div>}
-    {(data?.overdue??0)>0&&<div className="v7-today-need"><span className="v7-badge v7-tone-warning">{data?.overdue} overdue</span><span/>
-     <Link className="v7-button v7-small" to="/calendar?view=agenda"><span>Triage</span></Link></div>}
+    {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><span className="v7-badge v7-tone-warning">{row.count} overdue</span><span/>
+      <Link className="v7-button v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
+     :row.kind==='review'?<div key="review" className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong><small>about {Math.max(1,Math.round(row.count*0.4))} min</small></span>
+      <Link className="v7-button v7-secondary v7-small" to="/review"><span>Review</span></Link></div>
+     :row.kind==='task'?<div key={row.task.id} className="v7-today-need"><input type="checkbox" className="v7-today-check" aria-label={'Complete '+row.task.title} disabled={busy} checked={false} onChange={()=>{void completeTask(row.task);}}/>
+      <span><strong>{row.task.title}</strong><small>{row.task.priority==='high'?'High · ':row.task.priority==='low'?'Low · ':''}due today{row.task.estimateMinutes?' · '+minutesLabel(row.task.estimateMinutes):''}</small></span><span/></div>
+     :<div key={row.topic.id} className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.topic.title}</strong><small>Practice due today</small></span>
+      <Link className="v7-button v7-secondary v7-small" to={'/practice#topic-'+row.topic.id}><span>Practice</span></Link></div>)}
+    {needs.hidden>0&&<Button variant="ghost" small onClick={()=>setShowAll(true)}>{'Show all ('+needs.total+')'}</Button>}
     {pending>0&&<Link className="v7-today-need" to="/proposals"><Inbox aria-hidden="true"/><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}
    </section>}
    {projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
@@ -168,11 +199,19 @@ export default function V7Today(){
        <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>
      </Link>;})}</div>
    </section>}
+   {offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
+    <span><strong>{minutesLabel(logged)} studied today</strong><small>Look back and set up tomorrow.</small></span>
+    <Link className="v7-button v7-secondary" to="/today/close"><span>Close the day</span></Link></section>}
    </>}
   </>}
   <Sheet open={quick} onClose={()=>setQuick(false)} title="Start a focus session" eyebrow="Quick focus"
    footer={<Button variant="primary" disabled={busy} onClick={()=>{void startQuick();}}>Start focus</Button>}>
    <label className="v7-today-field">Intention<input data-v7-autofocus="true" maxLength={200} placeholder="What will you understand?" value={intention} onChange={event=>setIntention(event.target.value)}/></label>
+   <div className="v7-today-presets" role="radiogroup" aria-label="Session style">
+    {[{id:null as string|null,line:'Open',label:'No timer, count up'},...presets.map(preset=>({id:preset.id as string|null,line:presetLine(preset),label:preset.label}))].map(card=>
+     <button key={card.id??'open'} type="button" role="radio" aria-checked={presetId===card.id} className="v7-today-preset" onClick={()=>setPresetId(card.id)}>
+      <strong>{card.line}</strong><small>{card.label}</small></button>)}
+   </div>
    {projects.length>0&&<div className="v7-today-path-chips" role="radiogroup" aria-label="Path">
     {projects.map(project=><button key={project.id} type="button" role="radio" aria-checked={pathId===project.id} className="v7-filter-chip"
      onClick={()=>setPathId(pathId===project.id?null:project.id)}><SubjectMark subject={kitSubject(project.subject.name)}/>{project.title}</button>)}

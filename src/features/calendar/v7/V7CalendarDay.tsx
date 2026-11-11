@@ -91,6 +91,17 @@ export default function V7CalendarDay(){
   setParams(next);
  }
  function closeQuick(){const next=new URLSearchParams(params);['quick','task','len','start'].forEach(key=>next.delete(key));setParams(next,{replace:true});restoreFocus();}
+ // Today's links: Triage opens the overdue sheet, Details opens a block, Plan tomorrow plans the next day.
+ useEffect(()=>{
+  const overdueLink=params.get('overdue')==='1',blockLink=params.get('block'),tomorrow=params.get('plan')==='tomorrow';
+  if(!overdueLink&&!blockLink&&!tomorrow)return;
+  const next=new URLSearchParams(params);
+  if(overdueLink){setOverdueOpen(true);next.delete('overdue');}
+  if(blockLink){next.set('edit',blockLink);next.delete('block');}
+  if(tomorrow){next.set('plan','1');next.set('view','day');next.set('date',shiftDay(today,1));}
+  setParams(next,{replace:true});
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[params]);
  const restoreFocus=()=>{const target=opener.current;opener.current=null;if(target?.isConnected)target.focus();};
  async function adjust(block:CalendarBlockRecord,patch:Pick<CalendarBlockPatch,'startsAt'|'endsAt'>){
   if(saving)return;
