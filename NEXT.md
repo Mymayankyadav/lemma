@@ -18,6 +18,15 @@ Tests: `tests/unit/android/bridge.test.ts`, `tests/unit/v7/n125-owner-report.tes
 Scope: `src/platform/**`, `src/ui/v7/**`, `src/app/v7/**`, `src/features/settings/v7/**`, `src/features/calendar/block-sheet/BlockSheet.tsx`, tests, `docs/current/N125.md`.
 Not: server changes, new dependencies, flag defaults.
 
+## N128 Redraw the A2 illustrations cleaner and symmetric (Owner task)
+
+Owner task: "The icons you showed are bad and too weird. Retry maybe something clean less weird" … "These seems alright go ahead. Little more symmetric."
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-assets
+Done = the eight A2 empty-state illustrations redrawn as one familiar object per state on a soft round backdrop, centred, with one line weight, one accent and the badges at the same corner; recorded in `docs/current/N128.md`.
+Tests: `tests/unit/v7/illustrations.test.tsx`, existing suites unchanged.
+Scope: `src/ui/v7/Illustration.tsx`, `src/ui/v7/illustration.css`, tests, `docs/current/N128.md`.
+Not: where the illustrations appear (unchanged from N127), new dependencies.
+
 ## N127 A2 Empty-state illustrations (Owner task, one PR)
 
 Owner task: "You draw them and go with A"
