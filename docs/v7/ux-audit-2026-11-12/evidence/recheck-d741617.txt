@@ -1,0 +1,22 @@
+V01 axis clip {"clipLeft":16,"svgLeft":16,"labels":[["0 min",33],["10 min",28],["20 min",26],["30 min",26],["40 min",26]],"clipped":0}
+V02 day strip {"hours":[["08",2.2],["11",26.1],["14",50],["17",73.9],["20",97.8]],"block":"left: 50%; width: 5.95238%;","now":"left: 40.8333%;"}
+V41 hero emblem / header mark {"mark":true,"heroEmblem":true}
+V14 dock slot {"dock":[12,378],"tabs":[13,325],"captureOpacity":"0"}
+V03 numbers {"todayPractice":"0 of 1","closePractice":"0 of 2","todayEstimate":"9","reviewEstimate":"10"}
+V04 double tick {"svgTicks":0,"before":true}
+V13 calendar chrome {"gridTop":378,"dockTop":766,"share":46}
+V15 heat numerals [["7",2.93],["9",8.95],["11",2.93]]
+V16 almanac {"scrollLeft":0,"scrollWidth":704,"clientWidth":358,"todayLeft":692,"cells":182}
+V17 button order / V18 codes {"order":[["Approve",25],["Reject",255]],"codes":["CP1","CP2","CP3","CP4"],"sCodes":["S6","S7"]}
+V18 checkpoint bar title ["CP4","Checkpoint 4 · Real Analysis","Compactness","In progress"]
+V24 quick focus names ["Open","Pomodoro · 25 / 5 × 4","Flowtime","Open","Real Analysis","Linear Algebra","Topology","Start focus","Done"]
+V32 unknown route {"h1":"Good afternoon"}
+V31 tasks first task {"firstTaskTop":391,"text":"Calendar 6 Schedule Tasks 3 overdue Tasks, deadlines and practice · Triage To do Doing Done All paths Overdue 2 High priority Plan these OVERDUE · 2 Work on eig"}
+V34 copy: zone {"zone":"Times are in Calcutta time."}
+V05 badge / V10 settings {"reviewRow":[["23",36,58],["Review",54,101]],"settingsTop":792,"vh":800}
+V06 pill {"pill":[183,409],"railRight":null}
+V07 overflow {"scrollWidth":1311,"innerWidth":1280}
+V08 chart text [{"w":936,"textPx":38},{"w":460,"textPx":19}]
+V09 review card width 1184
+V11 dock labels at 130% {"labs":[["Lemma",0,0],["Search",0,0],["Today",25,70],["Paths",80,122],["23",159,185],["Calendar",181,248],["Progress",234,300],["Inbox · 6",0,0],["Cards",0,0],["Atlas",0,0],["Tasks",0,0],["Practice",0,0],["Time log",0,0],["Settings",0,0]],"overlaps":3}
+V11 hour gutter at 130% [["06:00",10],["07:00",10],["08:00",10]]

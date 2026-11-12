@@ -23,8 +23,10 @@ import {HubHeader} from '../../../app/v7/V7Shell';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
-import {needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
-import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripHours,stripSegment,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
+import {practiceProgress} from '../../practice/progress';
+import {useReviewEstimate} from '../../review/v6/estimate';
+import {QUICK_NO_TIMER,needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
+import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripSegment,stripTicks,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
 import './today.css';
 
 const DesktopDayGrid=lazy(()=>import('../../calendar/v7/DayGrid'));
@@ -73,6 +75,8 @@ export default function V7Today(){
  const left=blocks.filter(block=>block.kind==='study'&&block.status==='planned'&&Date.parse(block.endsAt)>now).length;
  const due=home.data?.due??0,pending=home.data?.pendingProposals??0;
  const ready=!!home.data&&!!data;
+ // V03: the same estimate the Review hub prints ("About n min at your pace"); asked for after first paint.
+ const reviewMinutes=useReviewEstimate(due,ready);
  const state:HeroState=heroState({session:!!entry,next,now,closed:!!data?.closed,hasPaths:projects.length>0});
  const word=entry?focusWord(entry):null;
  // TD5: the owner's daily focus minimum, or the deployed default (20 min) until it is changed in Settings.
@@ -111,7 +115,9 @@ export default function V7Today(){
  });
  const needTasks=useMemo(()=>tasksDueToday(data?.tasks??[],day,zone),[data?.tasks,day,zone]);
  const practice=useMemo(()=>practiceToday(data?.topics??[],day,zone),[data?.topics,day,zone]);
- const targets=targetRows({focus:logged,focusGoal,answered:data?.answered??0,reviewsDue:due,practiceDone:practice.done,practiceDue:practice.due.length});
+ // V03: the Practice target counts as Close the day does (overdue topics are still owed today).
+ const owed=useMemo(()=>practiceProgress(data?.topics??[],day,zone),[data?.topics,day,zone]);
+ const targets=targetRows({focus:logged,focusGoal,answered:data?.answered??0,reviewsDue:due,practiceDone:owed.done,practiceDue:owed.due});
  const needs=needsRows({due,tasks:needTasks,topics:practice.due,overdue:data?.overdue??0},4,showAll);
  const hourNow=Math.floor(localMinute(date,zone)/60);
  async function completeTask(task:TaskRecord){
@@ -183,7 +189,7 @@ export default function V7Today(){
        className={'v7-today-strip-block '+subjectClass(subjectOf(block.projectId).subject)} style={{left:segment.left+'%',width:segment.width+'%'} as CSSProperties}/>;})}
      <span className="v7-today-now" style={{left:nowLeft+'%'}}/>
     </span>
-    <span className="v7-today-hours" aria-hidden="true">{stripHours(windowMinutes).map(hour=><span key={hour}>{hour}</span>)}</span>
+    <span className="v7-today-hours" aria-hidden="true">{stripTicks(windowMinutes).map(tick=><span key={tick.label} style={{left:tick.left+'%'}}>{tick.label}</span>)}</span>
    </Link>
    {targets.length>0&&<section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
@@ -196,7 +202,7 @@ export default function V7Today(){
     <h2>Needs you</h2>
     {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><StatusBadge tone="warning">{row.count} overdue</StatusBadge><span/>
       <Link className="v7-button v7-ghost v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
-     :row.kind==='review'?<div key="review" className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong><small>about {Math.max(1,Math.round(row.count*0.4))} min</small></span>
+     :row.kind==='review'?<div key="review" className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong>{reviewMinutes!==null&&reviewMinutes>0&&<small>about {reviewMinutes} min</small>}</span>
       <Link className="v7-button v7-secondary v7-small" to="/review"><span>Review</span></Link></div>
      :row.kind==='task'?<div key={row.task.id} className="v7-today-need"><span className="v7-check-choice v7-today-check"><input type="checkbox" aria-label={'Complete '+row.task.title} disabled={busy} checked={false} onChange={()=>{void completeTask(row.task);}}/></span>
       <span><strong>{row.task.title}</strong><small>{row.task.priority==='high'?'High · ':row.task.priority==='low'?'Low · ':''}due today{row.task.estimateMinutes?' · '+minutesLabel(row.task.estimateMinutes):''}</small></span><span/></div>
@@ -234,7 +240,7 @@ export default function V7Today(){
    {entry&&<p role="status" className="v7-disabled-reason">Unavailable · Finish or resume your running session first.</p>}
    <label className="v7-today-field">Intention<input data-v7-autofocus="true" maxLength={200} placeholder="What will you understand?" value={intention} onChange={event=>setIntention(event.target.value)}/></label>
    <div className="v7-today-presets" role="radiogroup" aria-label="Session style">
-    {[{id:null as string|null,line:'Open',label:'No timer, count up'},...presets.map(preset=>({id:preset.id as string|null,line:presetLine(preset),label:preset.label}))].map(card=>
+    {[{id:null as string|null,line:QUICK_NO_TIMER.line,label:QUICK_NO_TIMER.label},...presets.map(preset=>({id:preset.id as string|null,line:presetLine(preset),label:preset.label}))].map(card=>
      <button key={card.id??'open'} type="button" role="radio" aria-checked={presetId===card.id} className="v7-today-preset" onClick={()=>setPresetId(card.id)}>
       <strong>{card.line}</strong><small>{card.label}</small></button>)}
    </div>

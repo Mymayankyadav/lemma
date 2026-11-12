@@ -52,6 +52,13 @@ const art: Record<IllustrationName, string> = {
 
 export const ILLUSTRATIONS = Object.keys(art) as IllustrationName[];
 
+/** N130 (LT1): only the soft round backdrop, exactly as every drawing and frame 1 of every animation start. A Lottie
+ *  moment shows this while its player loads, so the finished picture is never shown, erased and drawn again. */
+export function IllustrationBackdrop({width = 160}: {width?: number}) {
+  return <svg className="v7-il" data-illustration-backdrop="" viewBox="0 0 240 180" width={width} height={Math.round(width * 3 / 4)}
+    aria-hidden="true" focusable="false"><circle className="bg" cx="120" cy="90" r="66" /></svg>;
+}
+
 /** One illustration, 240 × 180 units, sized by `width` (default 160 px). */
 export function Illustration({name, width = 160, className}: {name: IllustrationName; width?: number; className?: string}) {
   return <svg className={'v7-il' + (className ? ' ' + className : '')} data-illustration={name} viewBox="0 0 240 180"

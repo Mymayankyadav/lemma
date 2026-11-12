@@ -1,0 +1,155 @@
+[
+ {
+  "name": "paths",
+  "bbox": [
+   75,
+   45,
+   166,
+   130
+  ],
+  "w": 92,
+  "h": 85,
+  "dx": 0,
+  "dy": -3,
+  "ink": 3,
+  "accent": 2,
+  "muted": 0,
+  "bytes": 310
+ },
+ {
+  "name": "calendar",
+  "bbox": [
+   81,
+   47,
+   167,
+   135
+  ],
+  "w": 87,
+  "h": 89,
+  "dx": 4,
+  "dy": 1,
+  "ink": 2,
+  "accent": 1,
+  "muted": 1,
+  "bytes": 378
+ },
+ {
+  "name": "review",
+  "bbox": [
+   81,
+   52,
+   167,
+   127
+  ],
+  "w": 87,
+  "h": 75,
+  "dx": 4,
+  "dy": 0,
+  "ink": 1,
+  "accent": 1,
+  "muted": 2,
+  "bytes": 380
+ },
+ {
+  "name": "inbox",
+  "bbox": [
+   79,
+   61,
+   169,
+   127
+  ],
+  "w": 91,
+  "h": 67,
+  "dx": 4,
+  "dy": 4,
+  "ink": 2,
+  "accent": 1,
+  "muted": 0,
+  "bytes": 301
+ },
+ {
+  "name": "cards",
+  "bbox": [
+   84,
+   54,
+   155,
+   125
+  ],
+  "w": 72,
+  "h": 72,
+  "dx": -1,
+  "dy": -1,
+  "ink": 1,
+  "accent": 1,
+  "muted": 1,
+  "bytes": 202
+ },
+ {
+  "name": "atlas",
+  "bbox": [
+   73,
+   51,
+   168,
+   130
+  ],
+  "w": 95,
+  "h": 79,
+  "dx": 0,
+  "dy": 0,
+  "ink": 2,
+  "accent": 1,
+  "muted": 0,
+  "bytes": 427
+ },
+ {
+  "name": "progress",
+  "bbox": [
+   85,
+   55,
+   156,
+   126
+  ],
+  "w": 71,
+  "h": 71,
+  "dx": 0,
+  "dy": 0,
+  "ink": 1,
+  "accent": 2,
+  "muted": 1,
+  "bytes": 277
+ },
+ {
+  "name": "tasks",
+  "bbox": [
+   85,
+   47,
+   163,
+   137
+  ],
+  "w": 79,
+  "h": 91,
+  "dx": 4,
+  "dy": 2,
+  "ink": 2,
+  "accent": 1,
+  "muted": 1,
+  "bytes": 365
+ },
+ {
+  "name": "closed",
+  "bbox": [
+   85,
+   57,
+   148,
+   139
+  ],
+  "w": 63,
+  "h": 83,
+  "dx": -4,
+  "dy": 8,
+  "ink": 1,
+  "accent": 3,
+  "muted": 0,
+  "bytes": 517
+ }
+]

@@ -15,5 +15,8 @@
 :where(html[data-v7]) .v7-il .page {fill:var(--v7-role-surface-raised);}
 :where(html[data-v7]) .v7-lottie {display:block;max-width:100%;}
 :where(html[data-v7]) .v7-lottie :is(svg,canvas):not([hidden]) {display:block;width:100%;height:auto;aspect-ratio:4/3;}
+/* N130 (LT1): when the player misses its window the still fades in over the backdrop instead of popping in. */
+:where(html[data-v7]) .v7-lottie[data-lottie-late] .v7-il {animation:v7-lottie-still-in 200ms cubic-bezier(.16,1,.3,1) both;}
+@keyframes v7-lottie-still-in {from {opacity:0;}}
 @media(forced-colors:active){:where(html[data-v7]) .v7-il :is(.i,.m,.g,.a) {stroke:CanvasText;opacity:1;}:where(html[data-v7]) .v7-il .f {fill:CanvasText;}}
 }

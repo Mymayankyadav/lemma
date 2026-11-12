@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N130 v7 UX audit r3: the tracking checklist and the first fixes (Owner task)
+
+Owner task: "Start working on it maybe create a branch and checklist to Collaborate and track completed task."
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = the v7 UX audit and plan r3 (12 Nov 2026, on `d741617`) is in `docs/v7/ux-audit-2026-11-12/` with `CHECKLIST.md` tracking every finding, phase item, Owner decision (E1–E23) and device check; and the first slice that needs no Owner decision is fixed, each with a regression test: U0 V02 (Today strip hours placed by value), V03 (one practice count for Today and Close the day; one review estimate for Today and Review), V17 (Reject left, Approve right), V24 (no two Quick focus options called "Open"); G2 P4 (LT4, LT5, LT6) and P5 (LT1, LT2, LT10); recorded in `docs/current/N130.md`.
+Tests: `tests/unit/v7/n130-truth.test.ts`, `tests/unit/v7/n130-lottie.test.tsx`, `tests/e2e/v7-n130-truth.spec.ts`, existing suites unchanged.
+Scope: `docs/v7/ux-audit-2026-11-12/**`, `src/features/home/v7/**`, `src/features/ritual/v7/CloseDayV7.tsx`, `src/features/practice/progress.ts`, `src/features/plan-proposal/v7/PlanProposalV7.tsx`, `src/features/project/v7/learning.css`, `src/ui/v7/{LottieMoment.tsx,Illustration.tsx,illustration.css,lottie/**}`, `scripts/lottie/build.mjs`, tests, `docs/current/N130.md`.
+Not: anything that waits for an Owner decision (E1–E23: LT3, LT7, P1, P2's Round complete, P6, P7, AN1, U2's touch, landscape and text size), server changes, new dependencies, flag defaults.
+
 ## N129 A3 Lottie moments: Inbox zero, Round complete, Day closed (Owner task)
 
 Owner task: "Ok then continue working next task" … "dotLottie anyway"

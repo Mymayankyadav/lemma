@@ -40,7 +40,7 @@ function PlanMap({title,nodes,existing,adds,changed}:{title:string;nodes:readonl
 }
 
 /** PLAN §6.10 Plan proposal: what changes first, the whole plan as a path map (before and after side by side on desktop),
- *  sources, the advanced draft editor (#1343) and Reject / Approve in a sticky bar. */
+ *  sources, the advanced draft editor (#1343) and Reject / Approve in a sticky bar (Reject on the left, V17). */
 export default function PlanProposalV7(){
  const {id=''}=useParams(),navigate=useNavigate(),proposal=useProposal(id),projects=useProjects();
  const p=proposal.data,project=useProject(p?.projectSlug??'');
@@ -106,9 +106,10 @@ export default function PlanProposalV7(){
   </details>}
   {draft.editor&&<p className="v7-meta">Save or cancel your edit before deciding on this plan.</p>}
   {problem&&<p role="alert" className="v7-error">{problem}</p>}
-  <div className="v7-learn-bar" role="group" aria-label="Plan decision">
-   <Button variant="primary" disabled={unavailable} loading={busy&&approve.isPending} onClick={()=>{void decide(true);}}>Approve</Button>
+  {/* V17: Reject left, Approve right, as in the Inbox and the kit's rule; Approve keeps the wide column. */}
+  <div className="v7-learn-bar v7-learn-bar-decide" role="group" aria-label="Plan decision">
    <Button disabled={unavailable} loading={busy&&reject.isPending} onClick={()=>{void decide(false);}}>Reject</Button>
+   <Button variant="primary" disabled={unavailable} loading={busy&&approve.isPending} onClick={()=>{void decide(true);}}>Approve</Button>
   </div>
  </main>;
 }

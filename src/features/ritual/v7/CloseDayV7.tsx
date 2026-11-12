@@ -18,6 +18,7 @@ import {formatClock,formatDuration,formatShortDate,ownerZone} from '../../../lib
 import {useToast} from '../../../ui/Toast';
 import {calendarRange} from '../../calendar/model';
 import {loadAllPracticeTopics} from '../../practice/Page';
+import {practiceProgress} from '../../practice/progress';
 import {ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
 import {civilDay} from '../../tasks/v7/tasksModel';
 import {STEPS,blockTomorrow,closeDayRecord,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
@@ -66,9 +67,8 @@ export default function CloseDayV7(){
    const tomorrow=firstStudy?{title:firstStudy.title,startsAt:firstStudy.startsAt,endsAt:firstStudy.endsAt,suggested:false}
     :await loadSuggestions(nextDay(date),tz).then(next=>{const place=next.result.placements[0];return place?{title:next.tasks.find(task=>task.id===place.taskId)?.title??'Study task',startsAt:place.start,endsAt:place.end,suggested:true}:null;}).catch(()=>null);
    const reviewsDone=await getApi().getInsightData(7).then(insight=>insight.reviews.filter(review=>civilDay(review.reviewedAt,tz)===date).length).catch(()=>null);
-   const practice=await loadAllPracticeTopics('active').then(topics=>({
-    done:topics.filter(topic=>topic.lastPracticedAt&&civilDay(topic.lastPracticedAt,tz)===date).length,
-    due:topics.filter(topic=>topic.nextDueDate&&topic.nextDueDate<=date&&!(topic.lastPracticedAt&&civilDay(topic.lastPracticedAt,tz)===date)).length})).catch(()=>null);
+   // V03: the same definition as Today's Practice target.
+   const practice=await loadAllPracticeTopics('active').then(topics=>practiceProgress(topics,date,tz)).catch(()=>null);
    if(!live)return;
    const ritual=plan?.ritual??{};
    setFirst(typeof ritual.tomorrowFirstTaskId==='string'?ritual.tomorrowFirstTaskId:plan?.tomorrowFirstTaskId??'');
