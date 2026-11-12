@@ -20,7 +20,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 |---|:-:|:-:|---|
 | U0 Truth | 20 | 0 | none (E1) |
 | G2 Illustration, motion, icon polish | 8 | 6 | E19, E21, E22 for some |
-| U2 Resilience (= AN2) | 2 | 7 | E12; device check 1 |
+| U2 Resilience (= AN2) | 4 | 5 | E12; device check 1 |
 | AN1 Make the built app right | 6 | 4 | E23, a device |
 | G0 Refresh what is stale | 2 | 0 | none |
 | AN3 Feel | 0 | 6 | E17 |
@@ -82,9 +82,9 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U2 · Resilience = AN2 (web, M) — `02` §4 · the most urgent web phase
 
-- [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%"
-- [ ] **V11** Dock at large text: icons, with only the selected tab's label shown
-- [ ] **V11** Gutters (calendar times, charts, tiles) sized from their content; rows that wrap (Focus, segmented controls)
+- [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%" (the key screens are checked by `v7-n134-text-scale.spec.ts`, N134)
+- [x] **V11** Dock at large text: icons, with only the selected tab's label shown — N134
+- [x] **V11** Gutters (calendar times, tiles; chart gutters were N125) sized from their content; rows that wrap (Focus, segmented controls: a menu above three options) — N134
 - [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
 - [ ] V36 The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days)
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
