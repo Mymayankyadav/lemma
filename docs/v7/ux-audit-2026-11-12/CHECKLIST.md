@@ -21,8 +21,8 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | U0 Truth | 20 | 0 | none (E1) |
 | G2 Illustration, motion, icon polish | 8 | 6 | E19, E21, E22 for some |
 | U2 Resilience (= AN2) | 2 | 7 | E12; device check 1 |
-| AN1 Make the built app right | 3 | 7 | E23 |
-| G0 Refresh what is stale | 0 | 2 | none |
+| AN1 Make the built app right | 6 | 4 | E23, a device |
+| G0 Refresh what is stale | 2 | 0 | none |
 | AN3 Feel | 0 | 6 | E17 |
 | U1 Large screens | 0 | 11 | E2 |
 | G1 Pipeline | 0 | 4 | none |
@@ -98,17 +98,17 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130 (#1363)
 - [ ] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page
 - [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130 (#1363)
-- [ ] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note
-- [ ] AW9 Study mode in one trip (remember the intent across system settings)
-- [ ] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast
+- [x] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note — N133
+- [x] AW9 Study mode in one trip (the request is remembered for ten minutes across system settings) — N133
+- [x] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast — N133
 - [ ] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details
 - [ ] **IC4** IC6 *(P7, needs E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon
 - [ ] AW17 *(verify on a device)* Sign-in failure says something useful
 
 ### G0 · Refresh what is stale (S) — `04` §2
 
-- [ ] V12 Install-dialog screenshots and labels: v7 Today in Day and Night, plus one wide
-- [ ] V12 `index.html` pre-paint and theme colours: the v7 page colours
+- [x] V12 Install-dialog screenshots and labels: v7 Today in Day and Night (`scripts/v7/install-shots.mjs`; no wide one: the PWA gate allows two) — N133
+- [x] V12 `index.html` pre-paint and theme colours: the v7 page colours, from the build's v7 flag — N133
 
 ---
 

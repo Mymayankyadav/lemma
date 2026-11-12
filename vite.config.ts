@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {FLAG_DEFAULTS,resolveFlags} from './src/flags';
+import {prePaintPaper} from './src/app/paper';
 import {shouldBundlePushWorker, shouldStartPushWorker} from './src/lib/push-build-flag';
 
 const allowOverrides = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1';
@@ -13,6 +14,8 @@ const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, all
 // Notebook icon (D3 = C); under v6 the Graph-night page. Rolling v7Shell back flips these with it.
 // The build's own flags decide (production builds ignore overrides, so they follow FLAG_DEFAULTS).
 const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#F8F5F0' : '#13171D';
+// G0 (v7 UX audit r3): the papers index.html paints before the app loads follow the build's v7 flag.
+const paper = prePaintPaper(resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell);
 
 // `vite build --mode android` bundles the same app for the Capacitor shell (N123): Capacitor serves the files from
 // the APK, so there is no service worker, no web push worker and no PWA manifest (android/ supplies all three natively).
@@ -22,6 +25,7 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
  ...(android?{define:Object.fromEntries(Object.entries(loadEnv('production',process.cwd(),'VITE_'))
   .filter(([key])=>!(key in process.env)).map(([key,value])=>['import.meta.env.'+key,JSON.stringify(value)]))}:{}),
  plugins:[
+  {name:'lemma-pre-paint-paper',transformIndexHtml:(html:string)=>html.replaceAll('__PAPER_DAY__',paper.day).replaceAll('__PAPER_NIGHT__',paper.night)},
   react(),tailwindcss(),
   // URL-only overrides require a distinct SW script URL: query params on the page
   // are not available to the service worker when it first evaluates.
@@ -68,8 +72,8 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
      {name:'Atlas',short_name:'Atlas',url:'/lemma/#/atlas',icons:[{src:'/lemma/icons/shortcut-atlas.png',sizes:'96x96',type:'image/png'}]},
     ],
     screenshots:[
-     {src:'/lemma/screenshots/today-day-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Graph day'},
-     {src:'/lemma/screenshots/today-night-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Graph night'},
+     {src:'/lemma/screenshots/today-day-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Day'},
+     {src:'/lemma/screenshots/today-night-1080x1920.png',sizes:'1080x1920',type:'image/png',form_factor:'narrow',label:'Today · Night'},
     ],
     theme_color:installColour,
     background_color:installColour,

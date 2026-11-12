@@ -71,3 +71,7 @@
  :where(html[data-v7]) .v7-focus-error > svg {flex:none;width:20px;height:20px;color:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-focus-error > p {flex:1;margin:0;}
 }
+/* AW13 (v7 UX audit r3): "Were you drifting?" as a quiet card at the top of Focus, until answered. */
+:where(html[data-v7]) .v7-focus-away {display:grid;gap:var(--v7-space-3);margin:0 var(--v7-page-margin) var(--v7-space-3);padding:var(--v7-space-4);}
+:where(html[data-v7]) .v7-focus-away p {margin:0;}
+:where(html[data-v7]) .v7-focus-away-actions {display:flex;justify-content:flex-end;gap:var(--v7-space-2);}

@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N133 v7 UX audit r3: the rest of AN1 and G0 (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = the Android app's remaining AN1 items that need no Owner decision and the stale assets of G0 are fixed, each with a test, and ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`: AW5 (the welcome sheet as three glyph rows, focus on its text, the notification line), AW9 (Study mode turns on when the learner comes back with access granted), AW13 (the drift question as a card on Focus with No and Yes, note it), G0 (pre-paint colours from the build's v7 flag; v7 install screenshots); recorded in `docs/current/N133.md`.
+Tests: `tests/unit/v7/n133-app.test.tsx`, `tests/e2e/v7-n133-app.spec.ts`, existing suites unchanged.
+Scope: `src/platform/{NativeWelcome.tsx,native-welcome.css,drift.ts,studyMode.ts,device.ts,start.ts}`, `src/features/focus/v7/{FocusV7.tsx,DriftCard.tsx,focus.css}`, `src/features/settings/v7/PhoneSettings.tsx`, `src/app/paper.ts`, `index.html`, `vite.config.ts`, `scripts/check-pwa.mjs`, `scripts/v7/install-shots.mjs`, `public/screenshots/**`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N133.md`.
+Not: AW14 and P7 (decision E23), AW15 (a wording decision), AW17 (needs a device), a wide install screenshot (the PWA gate allows two), server changes, new dependencies.
+
 ## N132 v7 UX audit r3: the rest of U0 (truth) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"

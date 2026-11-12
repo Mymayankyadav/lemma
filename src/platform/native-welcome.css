@@ -1,0 +1,13 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* AW5 (v7 UX audit r3): the Android app's welcome sheet, three rows with glyphs. Loaded with the sheet itself (the
+   sign-in stylesheet it used to rely on is not on Today, so its list showed unstyled). */
+@layer v7-components {
+ :where(html[data-v7]) .v7-native-welcome {display:grid;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-native-welcome-lead {margin:0;outline:none;}
+ :where(html[data-v7]) .v7-native-welcome-list {display:grid;gap:var(--v7-space-3);margin:0;padding:0;list-style:none;}
+ :where(html[data-v7]) .v7-native-welcome-list li {display:grid;grid-template-columns:40px minmax(0,1fr);align-items:start;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-native-welcome-list li > span:last-child {display:grid;gap:2px;}
+ :where(html[data-v7]) .v7-native-welcome-list small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/1.4 var(--v7-sans);}
+ :where(html[data-v7]) .v7-native-welcome-icon {display:grid;place-items:center;width:40px;height:40px;border-radius:var(--v7-radius-2);background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-native-welcome-icon svg {width:20px;height:20px;}
+}

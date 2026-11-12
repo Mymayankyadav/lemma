@@ -11,7 +11,6 @@ import {getApi} from '../data';
 import {getMode} from '../data/mode';
 import {getStudyApi} from '../data/study';
 import {getThoughtApi} from '../data/parked-thoughts';
-import {getStudyEventApi} from '../data/study-events';
 import {FOCUS_CHANGED, announceFocusChange} from '../app/v7/focus';
 import {toast} from '../ui/Toast';
 import type {LemmaNativePlugin} from './bridge';
@@ -23,6 +22,7 @@ import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
 import {holdCaptureText, holdSharedSources, routeShare, sharedItems} from './share';
 import {offerNotificationsOnce} from './permissions';
+import {askDrift} from './drift';
 
 const DRIFT_MS = 2 * 60_000;
 let native: LemmaNativePlugin;
@@ -178,9 +178,8 @@ async function checkDrift(): Promise<void> {
     const entry = await getStudyApi().activeStudyEntry();
     if (!entry || entry.id !== entryId || entry.status !== 'running') return;
     const minutes = Math.max(1, Math.round((Date.now() - since) / 60_000));
-    toast('You were away for ' + minutes + ' min during focus. Were you drifting?', {duration: 10_000, action: {label: 'Log drift', onClick: () => {
-      void getStudyEventApi().recordEvent({entryId, kind: 'drift', durationMinutes: minutes}).then(() => toast('Noted', {tone: 'success'}), () => toast('We couldn’t note that.', {tone: 'danger'}));
-    }}});
+    // AW13: a card on Focus with Yes and No that stays until answered (it was a 10-second toast with no "No").
+    askDrift({entryId, minutes, at: Date.now()});
   } catch {/* only a prompt */}
 }
 

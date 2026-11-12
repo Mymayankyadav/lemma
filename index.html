@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#FAFAF6" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#13171D" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="__PAPER_DAY__" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="__PAPER_NIGHT__" />
     <link rel="icon" href="%BASE_URL%icons/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="%BASE_URL%icons/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="%BASE_URL%icons/apple-touch-icon.png" />
 <script>
-      /* Graph paper before first paint, with migration from obsolete worlds. */
+      /* Graph paper before first paint, with migration from obsolete worlds. G0 (v7 UX audit r3): the papers come
+         from the build's v7 flag (src/app/paper.ts, filled in by vite.config.ts). */
       (function(){
-        var colors={graph:'#FAFAF6','graph-night':'#13171D'},mode='auto';
+        var colors={graph:'__PAPER_DAY__','graph-night':'__PAPER_NIGHT__'},mode='auto';
         try{var saved=JSON.parse(localStorage.getItem('lemma.ui')||'null');
           if(saved&&typeof saved==='object'){
             if(['auto','day','night'].includes(saved.mode))mode=saved.mode;
