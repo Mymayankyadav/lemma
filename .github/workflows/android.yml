@@ -2,8 +2,9 @@ name: Android
 # N123 · builds Lemma for Android (Capacitor) and checks it: the shell invariants, the web layer's platform tests,
 # the Java unit tests, Android lint and a debug APK. There is no Play Console: on main (and on a `android-v*` tag or a
 # manual run) it also builds a release APK signed with the Owner's own key and attaches it to a GitHub Release, to
-# install on the phone directly (the same model as the Carrel app). Without the four ANDROID_KEY* secrets the release
-# step is skipped with a notice, never published unsigned.
+# install on the phone directly (the same model as the Carrel app). It needs two secrets, ANDROID_KEYSTORE_BASE64 and
+# ANDROID_KEYSTORE_PASSWORD (alias `lemma` and a key password equal to the store password are the defaults; the
+# ANDROID_KEY_ALIAS / ANDROID_KEY_PASSWORD secrets override them). Without the key the release is skipped, never unsigned.
 on:
   pull_request:
     paths:
@@ -76,11 +77,11 @@ jobs:
     permissions:
       contents: write
     env:
-      SIGNED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+      SIGNED: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' }}
     steps:
       - name: Signing key present?
         if: env.SIGNED != 'true'
-        run: echo "::notice title=No Android release::Add ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD to publish a signed APK."
+        run: echo "::notice title=No Android release::Add the ANDROID_KEYSTORE_BASE64 and ANDROID_KEYSTORE_PASSWORD secrets to publish a signed APK."
       - uses: actions/checkout@v4
         if: env.SIGNED == 'true'
       - uses: actions/setup-node@v4
@@ -112,8 +113,8 @@ jobs:
         working-directory: android
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'lemma' }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD || secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: ./gradlew --no-daemon assembleRelease
       - name: Verify the signature
         if: env.SIGNED == 'true'
