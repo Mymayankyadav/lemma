@@ -3,15 +3,16 @@ import {defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
-import {FLAG_DEFAULTS} from './src/flags';
+import {FLAG_DEFAULTS,resolveFlags} from './src/flags';
 import {shouldBundlePushWorker, shouldStartPushWorker} from './src/lib/push-build-flag';
 
 const allowOverrides = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1';
 const pushEnabled = shouldBundlePushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides);
 const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides, process.env.VITE_FLAGS ?? '');
-// Splash and installed-window colours follow the default shell: the v7 Night page once v7Shell defaults on (release
-// plan R2/R3), the v6 Graph-night page until then. Flipping the default in the switch PR flips these with it.
-const installColour = FLAG_DEFAULTS.v7Shell ? '#091023' : '#13171D';
+// Splash and installed-window colours follow the default shell: under v7 the Day paper page, matching the graph-paper
+// Notebook icon (D3 = C); under v6 the Graph-night page. Rolling v7Shell back flips these with it.
+// The build's own flags decide (production builds ignore overrides, so they follow FLAG_DEFAULTS).
+const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#F8F5F0' : '#13171D';
 
 export default defineConfig({
  base:'/lemma/',

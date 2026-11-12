@@ -20,8 +20,9 @@ export const FLAG_DEFAULTS = {
   notificationsPush: false,
   /** v6 navigation, screens and shared shell (default on since N102; `?flags=-v6Shell` shows the legacy app in dev/test/e2e builds). */
   v6Shell: true,
-  /** Constellation remains off until the Owner's release gates are met. */
-  v7Shell: false,
+  /** Constellation, on by default since the Owner's release of 12 Nov 2026 (release gates waived by the Owner). v6Shell
+   *  stays on underneath it as the rollback: changing this default back to false restores v6 with no data change. */
+  v7Shell: true,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

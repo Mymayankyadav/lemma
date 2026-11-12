@@ -12,3 +12,9 @@ This is the Owner's visual approval, not a claim that the complete P1 acceptance
 
 Code inspection at the approved source commit also confirms that "Due each day" still shows seven days; the fourteen-day Review forecast permitted by the accepted constraints remains unfinished. Preserve Today's existing seven-day RPC.
 
+
+## Owner re-approval after release plan R0–R2 · 12 Nov 2026
+
+The Owner wrote: "I needed the graph paper icon. I approve the other result and can increase the D5. I approve to waive off release gates as I checked those and it looks fine. Just change the icon and release"
+
+The six phone golden screens in `docs/v7/golden/` (Day and Night, 390 × 844, and their comparison images) are replaced by the R0–R2 candidates the Owner reviewed in `docs/v7/release/d2-*-approved-vs-candidate.png` (captured on `54b9fa7`; Atlas unchanged). The 11 Nov images remain in git history. The Owner waived the remaining release gates (re-audit, device and screen-reader checks, independent review and the desktop visual approval) and approved the release with `v7Shell` on by default.

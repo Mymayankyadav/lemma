@@ -3,9 +3,10 @@ import {FLAG_DEFAULTS,resolveFlags,isFlagOn,resolveEffectiveShell,currentEffecti
 import {setShellRoot} from '../../src/app/shellRoot'
 
 describe('feature flags',()=>{
- it('every flag except v6Shell is off by default (v6Shell turned on by N102)',()=>{
-  const {v6Shell,...rest}=FLAG_DEFAULTS
+ it('every flag except v6Shell and v7Shell is off by default (v6Shell turned on by N102, v7Shell by the v7 release)',()=>{
+  const {v6Shell,v7Shell,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
+  expect(v7Shell).toBe(true)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
@@ -52,7 +53,8 @@ describe('feature flags',()=>{
    expect(flags.v7Shell).toBe(v7Shell)
   }
   expect(resolveFlags({allowOverrides:true,envFlags:'-v6Shell,-v7Shell',search:'?flags=v6Shell,v7Shell'})).toMatchObject({v6Shell:true,v7Shell:true})
-  expect(resolveFlags({allowOverrides:false,envFlags:'v7Shell',search:'?flags=v7Shell'}).v7Shell).toBe(false)
+  // Production never honours an override in either direction; v7Shell is on by default since the v7 release.
+  expect(resolveFlags({allowOverrides:false,envFlags:'-v7Shell',search:'?flags=-v7Shell'}).v7Shell).toBe(true)
   expect(currentEffectiveShell()).toBe('v6')
  })
  it('sets mutually exclusive root attributes including for portal descendants',()=>{

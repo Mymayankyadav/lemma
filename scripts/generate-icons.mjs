@@ -1,5 +1,5 @@
 /**
- * Generate the installed-app icons, favicons and launcher shortcut icons from the Compass mark
+ * Generate the installed-app icons, favicons and launcher shortcut icons from the Notebook mark
  * (scripts/brand/lemma-mark.mjs) on every build. No native canvas, font or image dependencies.
  * Output goes to public/icons/ (git-ignored).
  */
@@ -44,17 +44,17 @@ export function encodePng(size,rgba,opaque=false){
 }
 const write=(name,data)=>{writeFileSync(join(out,name),data);console.log('Generated '+name+' ('+data.length+' bytes)');};
 
-// Installed icons: Night is the default installed icon (D3); full bleed, the platform applies its own mask.
-const icon=(size,opts={})=>encodePng(size,rasterMark({size,theme:'night',layout:size<64?'simple':'full',...opts}),opts.opaque);
+// Installed icons: the graph-paper Day page (D3 = C · Notebook); full bleed, the platform applies its own mask.
+const icon=(size,opts={})=>encodePng(size,rasterMark({size,theme:'day',layout:size<64?'simple':'full',...opts}),opts.opaque);
 write('lemma-192.png',icon(192));
 write('lemma-512.png',icon(512));
-write('lemma-maskable-512.png',icon(512)); // all meaningful art is inside the central 80% circle
+write('lemma-maskable-512.png',icon(512)); // the ℓ and ∎ sit inside the central 80% circle; the grid is texture
 write('apple-touch-icon.png',icon(180,{opaque:true}));
 
-// Favicons: ℓ in a circle only, on a disc that follows the device theme.
-write('favicon.svg',Buffer.from(markSvg({theme:'auto',layout:'simple',background:'disc',size:32})));
-const fav32=encodePng(32,rasterMark({size:32,theme:'night',layout:'simple',background:'disc'}));
-const fav16=encodePng(16,rasterMark({size:16,theme:'night',layout:'simple',background:'disc'}));
+// Favicons: ℓ on a small graph-paper page that follows the device theme (no margin rule or ∎ at tab size).
+write('favicon.svg',Buffer.from(markSvg({theme:'auto',layout:'simple',background:'rounded',size:32})));
+const fav32=encodePng(32,rasterMark({size:32,theme:'day',layout:'simple',background:'rounded'}));
+const fav16=encodePng(16,rasterMark({size:16,theme:'day',layout:'simple',background:'rounded'}));
 write('favicon-32.png',fav32);
 { // ICO container with embedded PNGs (16 and 32)
  const images=[[16,fav16],[32,fav32]],head=Buffer.alloc(6+16*images.length);
@@ -71,7 +71,8 @@ write('favicon-32.png',fav32);
 write('lemma-mark-night.svg',Buffer.from(markSvg({theme:'night'})));
 write('lemma-mark-day.svg',Buffer.from(markSvg({theme:'day'})));
 
-/** 96 px launcher shortcuts in the same family: the circle with a cards glyph, a check or a star, on transparency. */
+/** 96 px launcher shortcuts in the same family: a notebook page (rounded square with a margin rule) holding a cards glyph,
+ * a check or a star, on transparency. */
 const clamp=(x)=>Math.max(0,Math.min(1,x));
 const seg=(x,y,ax,ay,bx,by)=>{const dx=bx-ax,dy=by-ay,t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy));return Math.hypot(x-ax-t*dx,y-ay-t*dy);};
 const polyline=(x,y,pts,closed)=>{let d=1;for(let k=0;k<pts.length-(closed?0:1);k++){const a=pts[k],b=pts[(k+1)%pts.length];d=Math.min(d,seg(x,y,a[0],a[1],b[0],b[1]));}return d;};
@@ -87,9 +88,9 @@ function shortcut(kind){
  const rgb=(h)=>[1,3,5].map((k)=>parseInt(h.slice(k,k+2),16));
  const rgba=new Uint8ClampedArray(size*size*4);
  for(let j=0;j<size;j++)for(let i=0;i<size;i++){
-  const x=(i+.5)*px,y=(j+.5)*px,d=Math.hypot(x-.5,y-.5);
-  const ring=clamp((0.03-Math.abs(d-0.4))/px+.5),mark=clamp((0.032-glyphs[kind](x,y))/px+.5);
-  const colour=mark>=ring?rgb(ink):rgb(brand),a=Math.max(ring,mark),o=(j*size+i)*4;
+  const x=(i+.5)*px,y=(j+.5)*px;
+  const page=clamp((0.03-roundRect(x,y,0.5,0.5,0.38,0.38,0.09))/px+.5),rule=Math.abs(x-0.27)<0.012&&Math.abs(y-0.5)<0.36?0.6:0,mark=clamp((0.032-glyphs[kind](x+0.03,y))/px+.5);
+  const ring=Math.max(page,rule),colour=mark>=ring?rgb(ink):page>=rule?rgb(brand):rgb(MARK_THEMES.day.margin),a=Math.max(ring,mark),o=(j*size+i)*4;
   rgba[o]=colour[0];rgba[o+1]=colour[1];rgba[o+2]=colour[2];rgba[o+3]=Math.round(a*255);
  }
  write('shortcut-'+kind+'.png',encodePng(size,rgba));

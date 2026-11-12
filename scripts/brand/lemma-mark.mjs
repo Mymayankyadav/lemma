@@ -1,9 +1,9 @@
 /**
- * The Lemma "Compass" mark (release plan R2, Owner decision D3 = A · Compass): the ℓ inside a circle being drawn,
- * with a compass arm and pivot and a faint construction line. One geometry, two outputs:
- *  - `markSvg()` writes vector masters (the theme-following favicon and the 1024 reference), and
+ * The Lemma "Notebook" mark (release plan R2, Owner decision D3 = C · Notebook, 12 Nov 2026): a large ℓ on graph paper,
+ * with a red margin rule and an indigo ∎ (end of proof). One geometry, two outputs:
+ *  - `markSvg()` writes vector masters (the theme-following favicon and the 1024 references), and
  *  - `rasterMark()` rasterises the same geometry to RGBA with analytic anti-aliasing, so every PNG is generated on
- *    each build with no native canvas, font or image dependency (like the earlier generator).
+ *    each build with no native canvas, font or image dependency.
  * Coordinates are in the unit square (0..1, y down). The ℓ is the STIX Two Math glyph that the v7 shell already uses
  * for its ℓ mark (the Newsreader Latin subset has no U+2113), stored as its outline so no font is needed at build time.
  */
@@ -12,35 +12,27 @@
 export const ELL_PATH = 'M18 249Q41 254 66 259.5Q91 265 117 272Q144 342 177.5 412.5Q211 483 249.5 541Q288 599 331.5 634.5Q375 670 421 670Q465 670 487 643.5Q509 617 509 572Q509 509 481 459.5Q453 410 406.5 372.5Q360 335 303 308Q246 281 188 263Q171 219 159 177Q147 135 147 97Q147 72 159 51Q171 30 196 30Q234 30 270 69Q306 108 362 190L386 173Q326 79 281.5 34.5Q237 -10 182 -10Q158 -10 133.5 -0.5Q109 9 93 35Q77 61 77 112Q77 140 85 172.5Q93 205 105 239Q58 228 22 222ZM414 625Q390 625 366.5 605Q343 585 322 553Q301 521 283 485Q265 449 251 416Q237 383 228 361L203 299Q270 323 328.5 359Q387 395 424 445Q461 495 461 562Q461 598 447 611.5Q433 625 414 625Z';
 const ELL_BOUNDS = {x0: 18, y0: -10, x1: 509, y1: 670};
 
-/** v7 palette (src/ui/v7/tokens.css): page, primary text, brand indigo. */
+/** v7 palette (src/ui/v7/tokens.css): paper (page), ink (primary text), the brand indigo grid and ∎, the margin red. */
 export const MARK_THEMES = {
- night: {page: '#091023', ink: '#EEF2FA', brand: '#5159D7'},
- day: {page: '#F8F5F0', ink: '#121B31', brand: '#4246C2'},
+ day: {page: '#F8F5F0', ink: '#121B31', brand: '#4246C2', margin: '#C86265'},
+ night: {page: '#091023', ink: '#EEF2FA', brand: '#5159D7', margin: '#FF9D9E'},
 };
 
 /**
- * Layouts. `full` is the installed icon (64 px and up): ring, construction line and dashed construction circle, arm,
- * pivot and pencil point. `simple` is the favicon and anything under 64 px: ring and ℓ only (spec: the arm is busy at 16 px).
- * The meaningful art of `full` stays inside the maskable safe zone (the central circle of radius 0.4).
+ * Layouts. `full` is the installed icon (64 px and up): a 48/1024 graph grid, the margin rule, the ℓ and the ∎.
+ * `simple` is the favicon and anything under 64 px: a coarse 4 × 4 grid and a larger ℓ, without the margin rule or the
+ * ∎ (the plan warns the grid vanishes and the ∎ reads as a bug at 32 px). All meaningful art of `full` (the ℓ and ∎)
+ * stays inside the maskable safe zone, the central circle of radius 0.4.
  */
 export const LAYOUTS = {
- full: {ring: 0.293, ellHeight: 0.35, ellCentre: [0.5, 0.49], arm: true, construction: true},
- simple: {ring: 0.42, ellHeight: 0.56, ellCentre: [0.5, 0.49], arm: false, construction: false},
+ full: {grid: 48 / 1024, gridAlpha: 0.12, margin: 0.215, ellHeight: 0.4, ellCentre: [0.5, 0.49], qed: [0.66, 0.632, 0.072]},
+ simple: {grid: 0.25, gridAlpha: 0.22, margin: null, ellHeight: 0.66, ellCentre: [0.5, 0.5], qed: null},
 };
-const ARM_ANGLE = -Math.PI / 4; // up and to the right
 
-/** Stroke widths in unit coordinates, scaled so the ring is never thinner than 1.5 px at the target size. */
+/** Line widths in unit coordinates: the grid never thinner than 1 px, the margin rule never thinner than 1.5 px. */
 export function strokes(size, layout = 'full') {
  const px = 1 / size;
- const base = layout === 'simple' ? 0.065 : 11 / 1024;
- return {
-  ring: Math.max(base, 1.5 * px),
-  arm: Math.max(6 / 1024, 1.25 * px),
-  pivot: Math.max(10 / 1024, 1.25 * px),
-  pencil: Math.max(14 / 1024, 1.5 * px),
-  construction: Math.max(3 / 1024, 1 * px),
-  dashed: Math.max(2 / 1024, 1 * px),
- };
+ return {grid: Math.max(2 / 1024, px), margin: Math.max(4 / 1024, 1.5 * px)};
 }
 
 /** The ℓ placement: scale and offset from font units to the unit square (y flipped). Optically centred, not by advance. */
@@ -75,7 +67,6 @@ export function ellPolygons(layout = 'full', steps = 12) {
  return polys;
 }
 
-const armEnd = (r) => [0.5 + r * Math.cos(ARM_ANGLE), 0.5 + r * Math.sin(ARM_ANGLE)];
 const f = (n) => +n.toFixed(2);
 
 /** SVG path data for the ℓ in a 1024 viewBox. */
@@ -87,42 +78,32 @@ export function ellPathData(layout = 'full', box = 1024) {
   return c + out.join(' ');
  });
 }
+const gridLines = (step) => {const out = []; for (let v = step; v < 1 - 1e-9; v += step) out.push(v); return out;};
 
 /**
- * Vector mark. `theme` is 'night', 'day' or 'auto' (a prefers-color-scheme media query switches the colours, Day
- * first). `background`: 'square' (full bleed), 'disc' (favicon) or 'none'.
+ * Vector mark. `theme` is 'day', 'night' or 'auto' (a prefers-color-scheme media query switches the colours, Day
+ * first). `background`: 'square' (full bleed) or 'rounded' (the favicon's page with 18% corners).
  */
-export function markSvg({theme = 'night', layout = 'full', background = 'square', size = 1024} = {}) {
+export function markSvg({theme = 'day', layout = 'full', background = 'square', size = 1024} = {}) {
  const B = 1024, l = LAYOUTS[layout], w = strokes(size, layout);
- const t = theme === 'auto' ? MARK_THEMES.day : MARK_THEMES[theme];
- const style = theme === 'auto'
-  ? `<style>.p{fill:${MARK_THEMES.day.page}}.i{fill:${MARK_THEMES.day.ink}}.b{stroke:${MARK_THEMES.day.brand}}.bf{fill:${MARK_THEMES.day.brand}}.c{stroke:${MARK_THEMES.day.ink}}@media (prefers-color-scheme: dark){.p{fill:${MARK_THEMES.night.page}}.i{fill:${MARK_THEMES.night.ink}}.b{stroke:${MARK_THEMES.night.brand}}.bf{fill:${MARK_THEMES.night.brand}}.c{stroke:${MARK_THEMES.night.ink}}}</style>`
-  : `<style>.p{fill:${t.page}}.i{fill:${t.ink}}.b{stroke:${t.brand}}.bf{fill:${t.brand}}.c{stroke:${t.ink}}</style>`;
+ const css = (t) => `.p{fill:${t.page}}.i{fill:${t.ink}}.b{stroke:${t.brand}}.bf{fill:${t.brand}}.m{stroke:${t.margin}}`;
+ const style = theme === 'auto' ? `<style>${css(MARK_THEMES.day)}@media (prefers-color-scheme: dark){${css(MARK_THEMES.night)}}</style>` : `<style>${css(MARK_THEMES[theme])}</style>`;
  const parts = [style];
- if (background === 'square') parts.push(`<rect class="p" width="${B}" height="${B}"/>`);
- if (background === 'disc') parts.push(`<circle class="p" cx="512" cy="512" r="512"/>`);
- const r = l.ring * B;
- if (l.construction) {
-  parts.push(`<line class="c" x1="${f(512 - r)}" y1="512" x2="${f(512 + r)}" y2="512" stroke-opacity=".14" stroke-width="${f(w.construction * B)}"/>`);
-  parts.push(`<circle class="c" cx="512" cy="512" r="${f(r)}" fill="none" stroke-opacity=".18" stroke-width="${f(w.dashed * B)}" stroke-dasharray="6 14" transform="rotate(-20 512 512)"/>`);
- }
- parts.push(`<circle class="b" cx="512" cy="512" r="${f(r)}" fill="none" stroke-width="${f(w.ring * B)}"/>`);
- if (l.arm) {
-  const [ex, ey] = armEnd(l.ring);
-  parts.push(`<line class="b" x1="512" y1="512" x2="${f(ex * B)}" y2="${f(ey * B)}" stroke-width="${f(w.arm * B)}" stroke-linecap="round"/>`);
-  parts.push(`<circle class="bf" cx="512" cy="512" r="${f(w.pivot * B)}"/><circle class="bf" cx="${f(ex * B)}" cy="${f(ey * B)}" r="${f(w.pencil * B)}"/>`);
- }
+ const radius = background === 'rounded' ? 0.18 * B : 0;
+ if (radius) parts.push(`<clipPath id="page"><rect width="${B}" height="${B}" rx="${radius}"/></clipPath>`);
+ parts.push(`<g${radius ? ' clip-path="url(#page)"' : ''}><rect class="p" width="${B}" height="${B}"/>`);
+ const g = gridLines(l.grid).map((v) => f(v * B));
+ parts.push(`<path class="b" stroke-opacity="${l.gridAlpha}" stroke-width="${f(w.grid * B)}" d="${g.map((v) => `M${v} 0V${B}M0 ${v}H${B}`).join('')}"/>`);
+ if (l.margin !== null) parts.push(`<path class="m" stroke-opacity=".55" stroke-width="${f(w.margin * B)}" d="M${f(l.margin * B)} 0V${B}"/>`);
  parts.push(`<path class="i" d="${ellPathData(layout, B)}"/>`);
+ if (l.qed) {const [x, y, q] = l.qed; parts.push(`<rect class="bf" x="${f(x * B)}" y="${f(y * B)}" width="${f(q * B)}" height="${f(q * B)}"/>`);}
+ parts.push('</g>');
  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${B} ${B}" width="${size}" height="${size}">${parts.join('')}</svg>\n`;
 }
 
 // ---------- raster ----------
 const hex = (h) => [1, 3, 5].map((k) => parseInt(h.slice(k, k + 2), 16));
 const clamp = (x) => Math.max(0, Math.min(1, x));
-const segDist = (x, y, ax, ay, bx, by) => {
- const dx = bx - ax, dy = by - ay, t = clamp(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy));
- return Math.hypot(x - ax - t * dx, y - ay - t * dy);
-};
 
 /** Nonzero-winding coverage of closed polygons (unit coords) on a size×size grid, 8 sub-rows, exact horizontal spans. */
 export function polygonCoverage(polys, size, sub = 8) {
@@ -152,38 +133,32 @@ export function polygonCoverage(polys, size, sub = 8) {
  return cov;
 }
 
-/** A pixel-accurate RGBA raster of `markSvg` with the same options; `background: 'none'` leaves alpha transparent. */
-export function rasterMark({size, theme = 'night', layout = 'full', background = 'square'}) {
+/** A pixel-accurate RGBA raster of `markSvg` with the same options; 'rounded' leaves the corners transparent. */
+export function rasterMark({size, theme = 'day', layout = 'full', background = 'square'}) {
  const l = LAYOUTS[layout], w = strokes(size, layout), t = MARK_THEMES[theme];
- const page = hex(t.page), ink = hex(t.ink), brand = hex(t.brand);
+ const page = hex(t.page), ink = hex(t.ink), brand = hex(t.brand), margin = hex(t.margin);
  const glyph = polygonCoverage(ellPolygons(layout), size);
- const out = new Uint8ClampedArray(size * size * 4), px = 1 / size;
- const [ex, ey] = armEnd(l.ring), dashRot = (-20 * Math.PI) / 180, period = (20 / 1024) / l.ring;
+ const out = new Uint8ClampedArray(size * size * 4), px = 1 / size, lines = gridLines(l.grid);
+ const near = (v) => Math.min(...lines.map((g) => Math.abs(v - g)));
  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
-  const x = (i + 0.5) * px, y = (j + 0.5) * px, d = Math.hypot(x - 0.5, y - 0.5);
-  let rgb = [...page], alpha = background === 'none' ? 0 : 1;
-  if (background === 'disc') alpha = clamp((0.5 - d) / px + 0.5);
-  const paint = (colour, a) => {
-   if (a <= 0) return;
-   const total = a + alpha * (1 - a);
-   rgb = rgb.map((c, k) => (colour[k] * a + c * alpha * (1 - a)) / (total || 1));
-   alpha = total;
-  };
-  if (l.construction) {
-   paint(ink, 0.14 * clamp((w.construction / 2 - Math.abs(y - 0.5)) / px + 0.5) * (Math.abs(x - 0.5) <= l.ring ? 1 : 0));
-   const ang = (Math.atan2(y - 0.5, x - 0.5) - dashRot + 4 * Math.PI) % (2 * Math.PI);
-   const inDash = ((ang / period) % 1) < 6 / 20 ? 1 : 0;
-   paint(ink, 0.18 * inDash * clamp((w.dashed / 2 - Math.abs(d - l.ring)) / px + 0.5));
+  const x = (i + 0.5) * px, y = (j + 0.5) * px;
+  let rgb = [...page], alpha = 1;
+  if (background === 'rounded') {
+   const r = 0.18, qx = Math.max(Math.abs(x - 0.5) - (0.5 - r), 0), qy = Math.max(Math.abs(y - 0.5) - (0.5 - r), 0);
+   alpha = clamp((r - Math.hypot(qx, qy)) / px + 0.5);
   }
-  paint(brand, clamp((w.ring / 2 - Math.abs(d - l.ring)) / px + 0.5));
-  if (l.arm) {
-   paint(brand, clamp((w.arm / 2 - segDist(x, y, 0.5, 0.5, ex, ey)) / px + 0.5));
-   paint(brand, clamp((w.pivot - d) / px + 0.5));
-   paint(brand, clamp((w.pencil - Math.hypot(x - ex, y - ey)) / px + 0.5));
-  }
+  const paint = (colour, a) => {if (a > 0) rgb = rgb.map((c, k) => colour[k] * a + c * (1 - a));};
+  const gridCover = Math.max(clamp((w.grid / 2 - near(x)) / px + 0.5), clamp((w.grid / 2 - near(y)) / px + 0.5));
+  paint(brand, l.gridAlpha * gridCover);
+  if (l.margin !== null) paint(margin, 0.55 * clamp((w.margin / 2 - Math.abs(x - l.margin)) / px + 0.5));
   paint(ink, clamp(glyph[j * size + i]));
+  if (l.qed) {
+   const [qx0, qy0, q] = l.qed;
+   const cover = clamp(Math.min(x - qx0, qx0 + q - x) / px + 0.5) * clamp(Math.min(y - qy0, qy0 + q - y) / px + 0.5);
+   paint(brand, cover);
+  }
   const o = (j * size + i) * 4;
-  out[o] = rgb[0]; out[o + 1] = rgb[1]; out[o + 2] = rgb[2]; out[o + 3] = Math.round(alpha * 255);
+  out[o] = Math.round(rgb[0]); out[o + 1] = Math.round(rgb[1]); out[o + 2] = Math.round(rgb[2]); out[o + 3] = Math.round(alpha * 255);
  }
  return out;
 }

@@ -40,9 +40,10 @@
       }
     </script>
     <script type="module">
-      import {isV7Kit} from '/src/app/v7Kit.ts';
+      import {isV7Route} from '/src/app/v7Kit.ts';
       import {loadShellFonts} from '/src/app/shellFonts.ts';
-      const v7=isV7Kit();
+      // Every v7 route (not only /kit) uses the self-hosted v7 fonts from the first paint; v7 never requests Google Fonts.
+      const v7=isV7Route();
       if(v7)document.documentElement.setAttribute('data-v7','');
       loadShellFonts(v7);
     </script>
