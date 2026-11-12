@@ -29,4 +29,5 @@
  :where(html[data-v7]) .v7-cd-closed {place-content:center;justify-items:center;text-align:center;grid-template-rows:auto auto auto auto;}
  :where(html[data-v7]) .v7-cd-closed .v7-qed {font-size:var(--v7-type-numeric-xl);color:var(--v7-role-status-warning);}
  :where(html[data-v7]) .v7-cd-closed .v7-cd-art {width:min(160px,60vw);}
+ :where(html[data-v7]) .v7-cd-closed .v7-cd-done {min-width:calc(var(--v7-touch) * 3);margin-top:var(--v7-space-4);}
 }

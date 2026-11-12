@@ -42,16 +42,18 @@ export function cssColourToRgb(value: string, fallback: Rgb = [128, 128, 128]): 
   }
 }
 
-/** The theme colours as seen from `element` (so a subject class on an ancestor sets the accent). */
-export function roleColours(element: Element): Record<LottieRole, Rgb> {
+/** The theme colours as seen from `element` (so a subject class on an ancestor sets the accent). The paper is the
+ *  illustrations' own object fill (`--v7-il-paper`, P1: lighter than the disc in Day and Night). */
+export function roleColours(element: Element, parse: (value: string) => Rgb = cssColourToRgb): Record<LottieRole, Rgb> {
   const style = getComputedStyle(element);
-  const read = (name: string, fallback: string) => cssColourToRgb(style.getPropertyValue(name) || fallback);
+  const value = (name: string) => style.getPropertyValue(name).trim();
+  const read = (name: string, fallback: string) => parse(value(name) || fallback);
   return {
     bg: read('--v7-role-surface-muted', '#E9E4DC'),
     ink: read('--v7-role-text-primary', '#121B31'),
     muted: read('--v7-role-text-tertiary', '#7A8294'),
-    paper: read('--v7-role-surface-raised', '#FFFFFF'),
-    accent: cssColourToRgb(style.getPropertyValue('--v7-subject') || style.getPropertyValue('--v7-role-selection-fg') || '#3738AC'),
+    paper: parse(value('--v7-il-paper') || value('--v7-role-surface-raised') || '#FFFFFF'),
+    accent: parse(value('--v7-subject') || value('--v7-role-selection-fg') || '#3738AC'),
     onAccent: read('--v7-role-surface-page', '#F8F5F0'),
   };
 }

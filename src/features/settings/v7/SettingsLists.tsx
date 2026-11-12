@@ -11,6 +11,7 @@ import {validateFocusValues,validateReviewBudgetValues} from '../v6/Focus';
 import {validatePlanningValues} from '../v6/Planning';
 import {isNative} from '../../../platform/native';
 import {requestNotificationPermission} from '../../../platform/permissions';
+import {reminderKindRows} from './reminderKinds';
 // N123: phone-only rows load only inside the Android app.
 const PhoneReminders=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneReminders})));
 const PhonePlanning=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhonePlanning})));
@@ -27,6 +28,17 @@ export function ValueRow({label,value,onOpen,hint}:{label:string;value:string;on
  return <li><button type="button" className="v7-set-row" onClick={onOpen} aria-haspopup="dialog">
   <span className="v7-set-text"><span className="v7-set-label">{label}</span>{hint&&<small>{hint}</small>}</span>
   <span className="v7-set-value">{value}</span><ChevronRight aria-hidden="true"/></button></li>;
+}
+/** A row that only states something (no action): a version, or a reminder kind this phone cannot deliver. */
+export function InfoRow({label,value,hint}:{label:string;value?:string;hint?:string}){
+ return <li><div className="v7-set-row v7-set-info">
+  <span className="v7-set-text"><span className="v7-set-label">{label}</span>{hint&&<small>{hint}</small>}</span>
+  {value!==undefined&&<span className="v7-set-value">{value}</span>}</div></li>;
+}
+/** A row that opens a page outside Lemma (the release page), not a sheet. */
+export function LinkRow({label,hint,onOpen}:{label:string;hint?:string;onOpen:()=>void}){
+ return <li><button type="button" className="v7-set-row" onClick={onOpen}>
+  <span className="v7-set-text"><span className="v7-set-label">{label}</span>{hint&&<small>{hint}</small>}</span><ChevronRight aria-hidden="true"/></button></li>;
 }
 export function SwitchRow({label,checked,onChange,disabled}:{label:string;checked:boolean;onChange:(value:boolean)=>void;disabled?:boolean}){
  return <li className="v7-set-switch"><Switch label={label} checked={checked} onChange={onChange} disabled={disabled}/></li>;
@@ -179,13 +191,13 @@ export function PlanningLists({settings}:{settings:Settings}){
  </div>;
 }
 
-const kinds=[['due','Cards due'],['deadline','Checkpoint deadlines'],['behind','Falling behind'],['resume','Resuming a session'],['tutor','Tutor proposals'],['digest','Weekly digest'],['plan','Plans'],['rhythm','Study rhythm']] as const;
 const scheduleWord={off:'Off',live:'As things happen',daily:'Daily summary',weekly:'Weekly digest'} as const;
 /** Reminders: one switch, the schedule, what to remind about, quiet hours and the digest; every change saves at once. */
 export function ReminderLists({settings}:{settings:Settings}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Reminders');
  const value:NotifyPrefs=settings.notify??{};
  const put=(patch:NotifyPrefs)=>{void save({notify:mergeNotifyPrefs(value,patch)},{notify:value});};
+ const app=isNative(),rows=reminderKindRows(app);
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};
  return <div className="v7-settings-body">
   <Group title="Reminders" note={'Times are in '+(settings.timeZone?settings.timeZone.split('/').pop()!.replace(/_/g,' ')+' time':'your device’s time zone')+'.'}>
@@ -195,11 +207,14 @@ export function ReminderLists({settings}:{settings:Settings}){
    <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n===1?'reminder':'reminders',onSave:maxPerDay=>put({maxPerDay})})}/>
   </Group>
   <Group title="Remind me about">
-   {kinds.map(([key,label])=><SwitchRow key={key} label={label} checked={value.kinds?.[key]??false} disabled={busy} onChange={on=>put({kinds:{[key]:on}})}/>)}
-   <SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>
+   {rows.switches.map(({key,label})=><SwitchRow key={key} label={label} checked={value.kinds?.[key]??false} disabled={busy} onChange={on=>put({kinds:{[key]:on}})}/>)}
+   {rows.proposalsSwitch&&<SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>}
    <ValueRow label="When cards due reach" value={(value.dueThreshold??10)+' cards'} onOpen={()=>editor.setOpen({kind:'pick',title:'When cards due reach',value:value.dueThreshold??10,options:[1,10,25,50].map(n=>({value:n,label:n+(n===1?' card':' cards')})),onPick:((dueThreshold:1|10|25|50)=>put({dueThreshold})) as (value:never)=>void})}/>
   </Group>
-  {isNative()&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
+  {app&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
+  {app&&<Group title="In your Inbox on this phone" note="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">
+   {rows.inbox.map(label=><InfoRow key={label} label={label}/>)}
+  </Group>}
   <Group title="Quiet hours">
    <ValueRow label="Starts" value={quiet.start} onOpen={()=>editor.setOpen({kind:'time',title:'Quiet hours start',value:quiet.start,onSave:start=>put({quiet:{start,end:quiet.end}})})}/>
    <ValueRow label="Ends" value={quiet.end} onOpen={()=>editor.setOpen({kind:'time',title:'Quiet hours end',value:quiet.end,onSave:end=>put({quiet:{start:quiet.start,end}})})}/>

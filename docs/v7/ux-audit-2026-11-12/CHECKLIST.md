@@ -19,9 +19,9 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | Phase | Done | Open | Gate |
 |---|:-:|:-:|---|
 | U0 Truth | 6 | 14 | none (E1) |
-| G2 Illustration, motion, icon polish | 6 | 8 | E18–E22 for some |
-| U2 Resilience (= AN2) | 0 | 7 | E5, E6, E8, E12 |
-| AN1 Make the built app right | 0 | 9 | E14–E16, E23 |
+| G2 Illustration, motion, icon polish | 8 | 6 | E19, E21, E22 for some |
+| U2 Resilience (= AN2) | 2 | 7 | E12; device check 1 |
+| AN1 Make the built app right | 3 | 7 | E23 |
 | G0 Refresh what is stale | 0 | 2 | none |
 | AN3 Feel | 0 | 6 | E17 |
 | U1 Large screens | 0 | 11 | E2 |
@@ -30,7 +30,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | AN4 Large screens and postures | 0 | 4 | U1 |
 | A5′ Share and release pages | 0 | 2 | none |
 | U4 Signature | 0 | 8 | a sheet per flag, E3, E9, E10 |
-| Owner decisions | 0 | 20 | Owner |
+| Owner decisions | 8 | 12 | Owner |
 | Device checks | 0 | 10 | a phone |
 | Definition of done | 0 | 4 | a re-audit |
 
@@ -71,11 +71,11 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] LT5 *(P4)* The badge's tick draws while its disc grows, so there is no bare dot — N130
 - [x] LT6 *(P4)* Round complete: stroke before fill, so the cards end at full line weight — N130
 - [x] LT10 *(P5)* Theme change after play shows the still in the new colours — N130
-- [ ] **LT3** *(P5, needs E20)* Day closed stays until Done or 5 s, with or without motion (now 2.6 s, or 0.4 s under reduced motion)
+- [x] **LT3** *(P5, E20)* Day closed stays until Done or 5 s, with or without motion (was 2.6 s, or 0.4 s under reduced motion) — N130
 - [ ] LT7 *(P5, needs E22)* Skip the player on Save-Data and 2G; warm it in idle time near an ending
 - [ ] LT8 *(P5, with AN3)* `haptic('complete')` on the frame the ✓ or ∎ lands (Inbox 66, Round 72, Day closed 80)
 - [ ] LT9 Stars fade in from 70%; a badge's ring draws before it fills
-- [ ] **IL1** *(P1, needs E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`)
+- [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130
 - [ ] **IL2** IL8 IL6 *(P2, needs E19 for Round complete)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred, Round complete with ∎. Markup: `visuals/src/r3/r3-art.json`
 - [ ] IL3 IL4 IL5 IL7 *(P3)* Rules: live area 80 units, two sizes (160 and 120 px), empty state in the first viewport (Calendar Day, Progress), accent ≥ 3 : 1 on the disc
 - [ ] **IC1** IC2 IC3 IC5 *(P6, needs E21)* 1.75 px strokes at every size (`LucideProvider`), one meaning per glyph, six drawn marks
@@ -85,16 +85,19 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%"
 - [ ] **V11** Dock at large text: icons, with only the selected tab's label shown
 - [ ] **V11** Gutters (calendar times, charts, tiles) sized from their content; rows that wrap (Focus, segmented controls)
-- [ ] V36 / AW12 *(needs E6)* Touch size: 44 px on the web, 48 px in the app; fix the six controls under 44
-- [ ] V22 / AW10 *(needs E8)* Landscape: lock phones to portrait, or one-row headers, full-height sheets and the desk clock
+- [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130
+- [ ] V36 The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days)
+- [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130
+- [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
 - [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand
-- [ ] **AW1** *(needs E5 + device check 1)* Honour the system font size, capped at 200%
+- [ ] **AW1** *(E5 approved; after the three V11 items and device check 1)* Honour the system font size, capped at 200%
 
 ### AN1 · Make the built app right (Android, M) — `03` §4
 
-- [ ] **AW2** *(needs E14)* "Download a backup" saves in the app (share sheet or Downloads) and says where
-- [ ] **AW3** *(needs E15)* About this app: version, "Check for updates", what changed
-- [ ] **AW4** *(needs E16)* Reminder kinds the phone cannot deliver are not working-looking switches
+- [x] **AW2** *(E14)* "Save a backup" in the app goes to Android's share sheet (Files, Drive, email) and says so — N130
+- [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130
+- [ ] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page
+- [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130
 - [ ] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note
 - [ ] AW9 Study mode in one trip (remember the intent across system settings)
 - [ ] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast
@@ -196,25 +199,25 @@ Not open work: home-screen widgets (board 09), server-sent notifications, docume
 
 ## Owner decisions — `05` §3 and §8
 
-Recommendations are the plan's. Tick a decision and add the date when the Owner takes it.
+Recommendations are the plan's. Tick a decision and add the date when the Owner takes it. On 12 Nov 2026 the Owner approved E5, E6, E8, E14, E15, E16, E18 and E20 as recommended ("I approve each of them.").
 
 - [ ] E1 U0, G0 and AN1 are fixes that need no new visual approval — *recommended: yes* (N130 started U0 on the Owner's "start working on it")
 - [ ] E2 Desktop direction: page and margin, review spread, task columns (board 08); six desktop goldens at the end of U1
 - [ ] E3 The ∎ as the single mark of completion, behind `v7Qed` (board 05)
-- [ ] E5 Honour the system font size in the app, capped at 200% (after device check 1)
-- [ ] E6 Touch size 48 px in the app, 44 px on the web
-- [ ] E8 Phone landscape: lock to portrait now, landscape with the desk clock later
+- [x] E5 Honour the system font size in the app, capped at 200% (after device check 1) — **approved by the Owner, 12 Nov 2026** (built after U2's large-text layouts, as the plan orders it)
+- [x] E6 Touch size 48 px in the app, 44 px on the web — **approved by the Owner, 12 Nov 2026**
+- [x] E8 Phone landscape: lock to portrait now, landscape with the desk clock later — **approved by the Owner, 12 Nov 2026**
 - [ ] E9 Paper and sky in Appearance, as a small flag after U0–U2
 - [ ] E10 Scratch paper in review, behind `v7Scratch`
 - [ ] E11 First-run order: subject, rhythm, then the tutor connection
 - [ ] E12 Targets: app readable in 1 s and live in 2 s; web first load ≤ 350 KB (CI budgets stay an Owner `rules:` PR)
-- [ ] E14 Backup in the app: the share sheet (recommended) or straight to Downloads
-- [ ] E15 "Check for updates": the release-page link first, then one quiet daily check with a privacy-page line
-- [ ] E16 Undeliverable reminder kinds: shown, grouped, without switches
+- [x] E14 Backup in the app: the share sheet (recommended) or straight to Downloads — **approved by the Owner, 12 Nov 2026**: the share sheet
+- [x] E15 "Check for updates": the release-page link first, then one quiet daily check with a privacy-page line — **approved by the Owner, 12 Nov 2026**
+- [x] E16 Undeliverable reminder kinds: shown, grouped, without switches — **approved by the Owner, 12 Nov 2026**
 - [ ] E17 Haptic vocabulary on by default, following the system and Lemma's Haptics switch
-- [ ] E18 Night: illustration objects lighter than their disc (one token)
+- [x] E18 Night: illustration objects lighter than their disc (one token) — **approved by the Owner, 12 Nov 2026**
 - [ ] E19 ✓ means nothing is waiting; ∎ means you finished something; Round complete gets a ∎ still
-- [ ] E20 Day closed stays until Done (or 5 s), the same with or without motion
+- [x] E20 Day closed stays until Done (or 5 s), the same with or without motion — **approved by the Owner, 12 Nov 2026**
 - [ ] E21 Icons: 1.75 px at every size, one meaning per glyph, six new drawn marks (review on one sheet)
 - [ ] E22 Lottie guard rails: skip on Save-Data and 2G; warm in idle time
 - [ ] E23 Android: one shortcut recipe, distinct tile glyphs, ∎ in the themed icon

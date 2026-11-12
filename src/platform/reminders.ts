@@ -9,6 +9,9 @@ import type {CalendarBlockRecord} from '../data/study/contract';
 import type {NativeReminder} from './bridge';
 
 const HORIZON_MS = 48 * 3600_000;
+/** AW4 (v7 UX audit r3, Owner decision E16): the reminder kinds this phone can deliver itself (`planReminders` reads
+ *  only these). Every other kind needs a push service, so in the app it waits in the Inbox and has no switch. */
+export const PHONE_REMINDER_KINDS = ['due', 'plan'] as const;
 
 /** Local wall-clock parts of an instant in an IANA zone. */
 export function zonedParts(ms: number, zone: string): {date: string; time: string; minutes: number} {

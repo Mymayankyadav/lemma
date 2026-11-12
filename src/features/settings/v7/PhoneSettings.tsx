@@ -1,14 +1,14 @@
 /**
  * N123 · settings that describe this Android phone, shown only inside the app: notification permission and on-time
  * alarms (Reminders), Study mode and the device calendar (Planning). They are device-local, never synced, and every
- * one is opt-in and off by default (Owner decision D13).
+ * one is opt-in and off by default (Owner decision D13). AW3 adds "About this app" (Data and account).
  */
 import {useCallback,useEffect,useState} from 'react';
 import {Sheet} from '../../../ui/v7/components';
 import {useToast} from '../../../ui/Toast';
-import {Group,SwitchRow,ValueRow} from './SettingsLists';
+import {Group,InfoRow,LinkRow,SwitchRow,ValueRow} from './SettingsLists';
 import {lemmaNative,type DeviceCalendar,type PermissionWord} from '../../../platform/bridge';
-import {readDevicePref,writeDevicePref} from '../../../platform/device';
+import {readDevicePref,releaseLinks,writeDevicePref} from '../../../platform/device';
 import {requestNotificationPermission} from '../../../platform/permissions';
 
 /** Re-read a native status now and whenever the learner comes back from system settings. */
@@ -75,5 +75,23 @@ export function PhonePlanning(){
    {picking.length?<ul className="v7-settings-card v7-set-list">{picking.map(item=><SwitchRow key={item.id} label={item.name+(item.account&&item.account!==item.name?' · '+item.account:'')}
     checked={busy.includes(item.id)} onChange={on=>toggleBusy(item.id,on)}/>)}</ul>:<p className="v7-meta">No other calendars on this phone.</p>}
   </Sheet>}
+ </Group>;
+}
+
+/**
+ * AW3 (v7 UX audit r3, Owner decision E15): the app has no store and no updater, and every web fix reaches the phone
+ * only with a new APK on GitHub Releases. This group shows the installed version, opens the newest release ("Check for
+ * updates") and this version's release ("What changed"). A later step adds one quiet check a day, with a line in the
+ * privacy page.
+ */
+export function PhoneAbout(){
+ const read=useCallback(async()=>{const {App}=await import('@capacitor/app');return App.getInfo();},[]);
+ const [info]=useStatus(read);
+ const links=releaseLinks(info?.version);
+ const open=(url:string)=>{void import('@capacitor/browser').then(({Browser})=>Browser.open({url})).catch(()=>window.open(url,'_blank','noopener'));};
+ return <Group title="About this app" note="Lemma for Android is installed from GitHub Releases. A newer Lemma.apk installs over this one and keeps your data.">
+  <InfoRow label="Version" value={info?.version??'…'}/>
+  <LinkRow label="Check for updates" hint="Opens the newest release" onOpen={()=>open(links.latest)}/>
+  {links.thisVersion&&<LinkRow label={'What changed in '+info!.version} onOpen={()=>open(links.thisVersion!)}/>}
  </Group>;
 }

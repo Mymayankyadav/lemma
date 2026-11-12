@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {applyReduceEffects} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Bell,Brain,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
@@ -22,6 +22,9 @@ import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
 import ExportSettings from '../v6/Export';
 import DeleteAccount from '../v6/DeleteAccount';
 import './settings.css';
+import {isNative} from '../../../platform/native';
+// AW3: the app's version and updates, only inside the Android app.
+const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
 
 type Mode='auto'|'day'|'night';
 type Section='appearance'|'tutor'|'study'|'planning'|'reminders'|'subjects'|'data';
@@ -170,6 +173,7 @@ export default function SettingsV7(){
     <div className="v7-settings-card"><p>{getMode()==='demo'?'You are exploring the example workspace.':'Your study record.'}</p>
      <Button onClick={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}><LogOut aria-hidden="true"/>Sign out</Button></div>
     <Legacy><ExportSettings/></Legacy>
+    {isNative()&&<Suspense fallback={null}><PhoneAbout/></Suspense>}
     <section className="v7-settings-card v7-settings-danger" aria-label="Delete account"><DeleteAccount onExport={()=>navigate('/settings?section=data')}/></section>
    </div>}
   </>}

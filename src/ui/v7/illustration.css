@@ -12,7 +12,12 @@
 :where(html[data-v7]) .v7-il .thick {stroke-width:6;}
 :where(html[data-v7]) .v7-il .w {stroke:var(--v7-role-surface-page);stroke-width:3;}
 :where(html[data-v7]) .v7-il .f {fill:var(--v7-il-accent);}
-:where(html[data-v7]) .v7-il .page {fill:var(--v7-role-surface-raised);}
+:where(html[data-v7]) .v7-il .page {fill:var(--v7-il-paper);}
+/* P1 (v7 UX audit r3, Owner decision E18): an object is lighter than its disc in both themes, as by day. In Night the
+   raised surface is darker than the muted disc, so objects read as holes; they take the muted hover surface instead.
+   The Lottie moments read the same role (lottie.ts), so the animations follow. */
+:where(html[data-v7]) :is(.v7-il,.v7-lottie) {--v7-il-paper:var(--v7-role-surface-raised);}
+:where(html[data-v7][data-theme="graph-night"]) :is(.v7-il,.v7-lottie) {--v7-il-paper:var(--v7-role-surface-muted-hover);}
 :where(html[data-v7]) .v7-lottie {display:block;max-width:100%;}
 :where(html[data-v7]) .v7-lottie :is(svg,canvas):not([hidden]) {display:block;width:100%;height:auto;aspect-ratio:4/3;}
 /* N130 (LT1): when the player misses its window the still fades in over the backdrop instead of popping in. */
