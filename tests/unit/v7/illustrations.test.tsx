@@ -7,10 +7,11 @@ import {describe,expect,it} from 'vitest';
 import {ILLUSTRATIONS,Illustration} from '../../../src/ui/v7/Illustration';
 import {EmptyMoment} from '../../../src/ui/v7/EmptyMoment';
 
-// A2 · the eight empty-state illustrations (IL-01 … IL-08) in the Owner's chosen style (D6 = A · Notebook line art).
+// A2 · the eight empty-state illustrations (IL-01 … IL-08) in the Owner's chosen style (D6 = A · Notebook line art), plus
+// the Day closed still of the N129 animation.
 describe('A2 illustrations',()=>{
  it('has all eight, each small, decorative and drawn only in theme colours',()=>{
-  expect(ILLUSTRATIONS).toEqual(['paths','calendar','review','inbox','cards','atlas','progress','tasks']);
+  expect(ILLUSTRATIONS).toEqual(['paths','calendar','review','inbox','cards','atlas','progress','tasks','closed']);
   for(const name of ILLUSTRATIONS){
    const svg=renderToStaticMarkup(<Illustration name={name}/>);
    expect(svg.length).toBeLessThan(12*1024);

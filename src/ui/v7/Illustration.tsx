@@ -10,7 +10,7 @@ import './illustration.css';
  * Classes: `bg` backdrop, `i` ink stroke, `m` muted stroke, `a` accent stroke, `f` accent fill, `w` mark on an accent
  * badge, `page` paper fill, `thick` a heavier stroke.
  */
-export type IllustrationName = 'paths' | 'calendar' | 'review' | 'inbox' | 'cards' | 'atlas' | 'progress' | 'tasks';
+export type IllustrationName = 'paths' | 'calendar' | 'review' | 'inbox' | 'cards' | 'atlas' | 'progress' | 'tasks' | 'closed';
 
 const art: Record<IllustrationName, string> = {
   // IL-01 Paths: a route rising from a start point through a waypoint to a flag, balanced about the centre.
@@ -44,6 +44,10 @@ const art: Record<IllustrationName, string> = {
   tasks: `<circle class="bg" cx="120" cy="90" r="66"/>
     <rect class="i page" x="86" y="56" width="68" height="72" rx="8"/><rect class="i page" x="104" y="48" width="32" height="14" rx="5"/>
     <path class="m" d="M100 80H140M100 94H140M100 108H126"/><circle class="f" cx="150" cy="124" r="13"/><path class="w" d="M144 124l4 4 8-8"/>`,
+  // Day closed (N129, the still of the L-12 animation): a crescent moon, two small stars in its hollow, and ∎.
+  closed: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <path class="i page" d="M116 58A30 30 0 0 1 116 118C129.3 98 129.3 78 116 58Z"/>
+    <path class="f" d="M94 61C95.8 66.4 97.6 68.2 103 70C97.6 71.8 95.8 73.6 94 79C92.2 73.6 90.4 71.8 85 70C90.4 68.2 92.2 66.4 94 61Z"/><path class="f" d="M100 98C101.2 101.6 102.4 102.8 106 104C102.4 105.2 101.2 106.4 100 110C98.8 106.4 97.6 105.2 94 104C97.6 102.8 98.8 101.6 100 98Z"/><rect class="f" x="115" y="129" width="10" height="10" rx="1.5"/>`,
 };
 
 export const ILLUSTRATIONS = Object.keys(art) as IllustrationName[];

@@ -13,5 +13,7 @@
 :where(html[data-v7]) .v7-il .w {stroke:var(--v7-role-surface-page);stroke-width:3;}
 :where(html[data-v7]) .v7-il .f {fill:var(--v7-il-accent);}
 :where(html[data-v7]) .v7-il .page {fill:var(--v7-role-surface-raised);}
+:where(html[data-v7]) .v7-lottie {display:block;max-width:100%;}
+:where(html[data-v7]) .v7-lottie :is(svg,canvas):not([hidden]) {display:block;width:100%;height:auto;aspect-ratio:4/3;}
 @media(forced-colors:active){:where(html[data-v7]) .v7-il :is(.i,.m,.g,.a) {stroke:CanvasText;opacity:1;}:where(html[data-v7]) .v7-il .f {fill:CanvasText;}}
 }

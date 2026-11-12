@@ -21,6 +21,7 @@ import {loadAllPracticeTopics} from '../../practice/Page';
 import {ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
 import {civilDay} from '../../tasks/v7/tasksModel';
 import {STEPS,blockTomorrow,closeDayRecord,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
+import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import './close.css';
 
 interface DayData{plan:DayPlanRecord|null;tasks:TaskRecord[];thoughts:ParkedThought[];saved:StudyEntryRecord[];blocks:CalendarBlockRecord[];
@@ -111,7 +112,8 @@ export default function CloseDayV7(){
    await closeDayRecord(getDayPlanApi(),{plan:data.plan,date,zone:tz,aim,first,taskIds:data.tasks.map(task=>task.id)},plan=>setData(previous=>previous?{...previous,plan}:previous));
    setClosed(true);
    const reduced=motionReduced();
-   timer.current=window.setTimeout(()=>navigate('/'),reduced?400:1600);
+   // N129: long enough for the Day closed animation (1.6 s, after the player loads) to finish before going home.
+   timer.current=window.setTimeout(()=>navigate('/'),reduced?400:2600);
   }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
   finally{setBusy(false);}
  }
@@ -124,7 +126,7 @@ export default function CloseDayV7(){
  const leave=<Link className="v7-icon-button" to="/" aria-label="Close"><X aria-hidden="true"/></Link>;
  const dots=<ol className="v7-cd-dots" aria-label={'Step '+(step+1)+' of 3: '+STEPS[step]}>{STEPS.map((name,index)=><li key={name} data-state={index<step?'done':index===step?'now':'next'}><span className="v7-sr-only">{name}</span></li>)}</ol>;
  if(closed)return <main id="main-content" className="v7-cd v7-cd-closed" aria-label="Day closed"><ImmersiveHeader leave={leave} center={dots}/>
-  <span className="v7-qed" aria-hidden="true">∎</span><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p></main>;
+  <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art"/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p></main>;
  const already=data?.plan?.status==='closed';
  return <main id="main-content" className="v7-cd" aria-label="Close the day">
   <ImmersiveHeader leave={leave} center={dots}/>
