@@ -40,6 +40,6 @@ export async function auditRenderedKit(page) {
   assert.equal(await page.locator('.v7-kit-header [role="radiogroup"][aria-label="Theme"]').count(),1);
   assert.equal(await page.locator('.v7-kit-header [role="tablist"]').count(),0);
   const steps=page.getByRole('region',{name:'Components and states',exact:true}).locator('.v7-split-panel').first().getByRole('group',{name:'Daily sessions',exact:true});
-  await steps.getByRole('button',{name:'Increase Daily sessions',exact:true}).focus();await page.keyboard.press('ArrowUp');assert.equal((await steps.locator('output').textContent()).trim(),'4');await page.keyboard.press('ArrowDown');
+  await steps.getByRole('button',{name:'Increase Daily sessions',exact:true}).focus();await page.keyboard.press('ArrowUp');assert.equal((await steps.locator('output').textContent()).trim(),'4 sessions'); // R0 · F14: every stepper shows its unitawait page.keyboard.press('ArrowDown');
   return report;
 }
