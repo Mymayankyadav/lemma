@@ -22,6 +22,8 @@ const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew
 const visibleDue=(node:DeckNode)=>node.due>0||node.children.some(child=>child.due>0);
 const keysFor=(node:DeckNode)=>[node.key,...node.children.filter(child=>child.due>0).map(child=>child.key)];
 
+/** R0 · F05: "23 due + 2 new" for a round that mixes due and new cards. */
+export function roundSplit(count:number,fresh:number):string{return (count-fresh)+' due + '+fresh+' new';}
 /** PLAN §6.4 A: the review hub. One count, one button, then the shape of the week and the decks behind it. */
 export default function ReviewHubV7(){
  const navigate=useNavigate(),[params]=useSearchParams(),pathSlug=params.get('path');
@@ -69,8 +71,8 @@ export default function ReviewHubV7(){
   if(project.children.filter(node=>node.due>0).every(node=>next.has(node.key)))next.add(project.key);else next.delete(project.key);
   setSelected(next);
  }
- const count=result.batch.length,totalDue=result.allDue;
- const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):'Nothing selected for this round';
+ const count=result.batch.length,totalDue=result.allDue,fresh=result.batch.filter(card=>card.state.state===0).length;
+ const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):totalDue>0?'Choose decks to review in Customise this round':'Nothing is due right now';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
   <HubHeader title="Review">
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
@@ -82,6 +84,8 @@ export default function ReviewHubV7(){
   {!loading&&!failed&&<>
    <section className="v7-rv-hero" aria-label="Review counts">
     <p className="v7-rv-figure"><strong aria-label="Cards in this round">{count}</strong><span>{count===1?'card':'cards'} today</span></p>
+    {/* R0 · F05: when the round includes new cards, the hero says so, so it agrees with Today's and the tab's due count. */}
+    {fresh>0&&<p className="v7-rv-note" data-split="">{roundSplit(count,fresh)}</p>}
     <p className="v7-rv-note">{note}{totalDue>count?' · '+(totalDue-count).toLocaleString()+' more due later':''}</p>
     {/* B5: a 6 px meter split into subject segments with 2 px page-colour gaps, then a wrapping legend of glyph, subject and
         count. Nothing is cut at 320 px, and the parts add up to the hero number. Each legend item narrows the round. */}

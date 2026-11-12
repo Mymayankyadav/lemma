@@ -1,47 +1,16 @@
 /**
- * Generate Android-installable 192/512 PNG icons from the same mathematical
- * constellation artwork on every build. No native canvas, font or image dependencies.
+ * Generate the installed-app icons, favicons and launcher shortcut icons from the Compass mark
+ * (scripts/brand/lemma-mark.mjs) on every build. No native canvas, font or image dependencies.
+ * Output goes to public/icons/ (git-ignored).
  */
 import {mkdirSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {deflateSync} from 'node:zlib';
+import {markSvg,rasterMark,MARK_THEMES} from './brand/lemma-mark.mjs';
 
 const out=join(process.cwd(),'public','icons');
 mkdirSync(out,{recursive:true});
-const palette={
- background:[13,12,17],card:[23,21,29],border:[56,48,57],
- edge:[113,85,46],halo:[72,53,30],amber:[247,181,56],light:[255,224,161],
-};
-const clamp=(x)=>Math.max(0,Math.min(1,x));
-const blend=(base,fg,a)=>base.map((b,i)=>Math.round(b*(1-clamp(a))+fg[i]*clamp(a)));
-const distanceLine=(x,y,ax,ay,bx,by)=>{
- const dx=bx-ax,dy=by-ay;
- const t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy));
- return Math.hypot(x-ax-t*dx,y-ay-t*dy);
-};
-function pixel(x,y,maskable){
- const p=[x,y],a=[.31,.42],b=[.70,.30],c=[.61,.70];
- let color=palette.background;
- const qx=Math.abs(x-.5)-.24,qy=Math.abs(y-.5)-.24;
- const sdf=Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-.20;
- if(maskable)color=palette.card;
- else{
-  color=blend(color,palette.border,clamp((.01-sdf)*480));
-  color=blend(color,palette.card,clamp((-.004-sdf)*480));
- }
- for(const [u,v] of [[a,b],[b,c],[c,a]]){
-  const d=distanceLine(...p,...u,...v);
-  color=blend(color,palette.edge,clamp((.009-d)*280));
- }
- for(const [i,[nx,ny]] of [a,b,c].entries()){
-  const d=Math.hypot(x-nx,y-ny),radius=i===2?.066:.054;
-  color=blend(color,palette.halo,clamp((radius*1.9-d)*180));
-  color=blend(color,i===2?palette.light:palette.amber,clamp((radius-d)*260));
- }
- const square=Math.max(Math.abs(x-.58),Math.abs(y-.63));
- color=blend(color,palette.amber,clamp((.043-square)*280));
- return color;
-}
+
 function crc32(buffer){
  let crc=-1;
  for(const byte of buffer){
@@ -56,49 +25,73 @@ function chunk(name,data){
  crc.writeUInt32BE(crc32(Buffer.concat([label,data])),0);
  return Buffer.concat([length,label,data,crc]);
 }
-function generate(size,maskable=false){
- const bytes=Buffer.alloc(size*(size*4+1));
+/** Encode RGBA pixels as PNG; `opaque` writes RGB only (Apple touch icons must have no transparency). */
+export function encodePng(size,rgba,opaque=false){
+ const channels=opaque?3:4,bytes=Buffer.alloc(size*(size*channels+1));
  for(let y=0;y<size;y++){
-  const row=y*(size*4+1);bytes[row]=0;
+  const row=y*(size*channels+1);bytes[row]=0;
   for(let x=0;x<size;x++){
-   const rgb=pixel((x+.5)/size,(y+.5)/size,maskable),offset=row+1+x*4;
-   bytes[offset]=rgb[0];bytes[offset+1]=rgb[1];bytes[offset+2]=rgb[2];bytes[offset+3]=255;
+   const src=(y*size+x)*4,dst=row+1+x*channels;
+   for(let k=0;k<channels;k++)bytes[dst+k]=rgba[src+k];
   }
  }
  const header=Buffer.alloc(13);
  header.writeUInt32BE(size,0);header.writeUInt32BE(size,4);
- header[8]=8;header[9]=6;
- const png=Buffer.concat([
+ header[8]=8;header[9]=opaque?2:6;
+ return Buffer.concat([
   Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),chunk('IDAT',deflateSync(bytes,{level:9})),chunk('IEND',Buffer.alloc(0)),
  ]);
- const name=maskable?'lemma-maskable-512.png':'lemma-'+size+'.png';
- writeFileSync(join(out,name),png);
- console.log('Generated '+name+' ('+png.length+' bytes)');
 }
-generate(192);generate(512);generate(512,true);
+const write=(name,data)=>{writeFileSync(join(out,name),data);console.log('Generated '+name+' ('+data.length+' bytes)');};
 
-/** Three 96px monochrome launcher shortcut glyphs; alpha is the Android tint mask. */
-function shortcutInk(kind,x,y){
- const line=(a,b,c,d)=>distanceLine(x,y,a,b,c,d);
- const box=(left,top,right,bottom)=>Math.min(Math.abs(x-left),Math.abs(x-right),Math.abs(y-top),Math.abs(y-bottom));
- if(kind==='review')return x>=.25&&x<=.75&&y>=.21&&y<=.79&&box(.25,.21,.75,.79)<.033
-   ||(x>.36&&x<.67&&Math.abs(y-.39)<.025)||(x>.36&&x<.62&&Math.abs(y-.55)<.025);
- if(kind==='approve')return Math.min(line(.19,.51,.42,.72),line(.42,.72,.83,.27))<.055;
- return Math.min(line(.23,.69,.51,.23),line(.51,.23,.79,.65),line(.23,.69,.79,.65))<.027
-  ||[[.23,.69],[.51,.23],[.79,.65]].some(([a,b])=>Math.hypot(x-a,y-b)<.072);
+// Installed icons: Night is the default installed icon (D3); full bleed, the platform applies its own mask.
+const icon=(size,opts={})=>encodePng(size,rasterMark({size,theme:'night',layout:size<64?'simple':'full',...opts}),opts.opaque);
+write('lemma-192.png',icon(192));
+write('lemma-512.png',icon(512));
+write('lemma-maskable-512.png',icon(512)); // all meaningful art is inside the central 80% circle
+write('apple-touch-icon.png',icon(180,{opaque:true}));
+
+// Favicons: ℓ in a circle only, on a disc that follows the device theme.
+write('favicon.svg',Buffer.from(markSvg({theme:'auto',layout:'simple',background:'disc',size:32})));
+const fav32=encodePng(32,rasterMark({size:32,theme:'night',layout:'simple',background:'disc'}));
+const fav16=encodePng(16,rasterMark({size:16,theme:'night',layout:'simple',background:'disc'}));
+write('favicon-32.png',fav32);
+{ // ICO container with embedded PNGs (16 and 32)
+ const images=[[16,fav16],[32,fav32]],head=Buffer.alloc(6+16*images.length);
+ head.writeUInt16LE(0,0);head.writeUInt16LE(1,2);head.writeUInt16LE(images.length,4);
+ let offset=head.length;
+ images.forEach(([size,png],k)=>{
+  const e=6+16*k;head[e]=size;head[e+1]=size;head[e+2]=0;head[e+3]=0;
+  head.writeUInt16LE(1,e+4);head.writeUInt16LE(32,e+6);head.writeUInt32LE(png.length,e+8);head.writeUInt32LE(offset,e+12);
+  offset+=png.length;
+ });
+ write('favicon.ico',Buffer.concat([head,...images.map(([,png])=>png)]));
 }
-function generateShortcut(kind){
- const size=96,bytes=Buffer.alloc(size*(size*4+1));
- for(let y=0;y<size;y++){
-  const row=y*(size*4+1);
-  for(let x=0;x<size;x++){
-   const offset=row+1+x*4,ink=shortcutInk(kind,(x+.5)/size,(y+.5)/size);
-   bytes[offset]=25;bytes[offset+1]=30;bytes[offset+2]=37;bytes[offset+3]=ink?255:0;
-  }
+// Vector masters for reference (Day and Night, 1024).
+write('lemma-mark-night.svg',Buffer.from(markSvg({theme:'night'})));
+write('lemma-mark-day.svg',Buffer.from(markSvg({theme:'day'})));
+
+/** 96 px launcher shortcuts in the same family: the circle with a cards glyph, a check or a star, on transparency. */
+const clamp=(x)=>Math.max(0,Math.min(1,x));
+const seg=(x,y,ax,ay,bx,by)=>{const dx=bx-ax,dy=by-ay,t=clamp(((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy));return Math.hypot(x-ax-t*dx,y-ay-t*dy);};
+const polyline=(x,y,pts,closed)=>{let d=1;for(let k=0;k<pts.length-(closed?0:1);k++){const a=pts[k],b=pts[(k+1)%pts.length];d=Math.min(d,seg(x,y,a[0],a[1],b[0],b[1]));}return d;};
+const roundRect=(x,y,cx,cy,hw,hh,r)=>{const qx=Math.abs(x-cx)-hw+r,qy=Math.abs(y-cy)-hh+r;return Math.abs(Math.hypot(Math.max(qx,0),Math.max(qy,0))+Math.min(Math.max(qx,qy),0)-r);};
+const star=Array.from({length:10},(_,k)=>{const a=-Math.PI/2+k*Math.PI/5,r=k%2?0.095:0.215;return [0.5+r*Math.cos(a),0.515+r*Math.sin(a)];});
+const glyphs={
+ review:(x,y)=>Math.min(roundRect(x,y,0.47,0.53,0.13,0.17,0.03),Math.max(roundRect(x,y,0.53,0.47,0.13,0.17,0.03),-(Math.max(Math.abs(x-0.47)-0.13,Math.abs(y-0.53)-0.17)))),
+ approve:(x,y)=>polyline(x,y,[[0.35,0.51],[0.46,0.62],[0.66,0.40]],false),
+ atlas:(x,y)=>polyline(x,y,star,true),
+};
+function shortcut(kind){
+ const size=96,px=1/size,brand=MARK_THEMES.day.brand,ink=MARK_THEMES.day.ink;
+ const rgb=(h)=>[1,3,5].map((k)=>parseInt(h.slice(k,k+2),16));
+ const rgba=new Uint8ClampedArray(size*size*4);
+ for(let j=0;j<size;j++)for(let i=0;i<size;i++){
+  const x=(i+.5)*px,y=(j+.5)*px,d=Math.hypot(x-.5,y-.5);
+  const ring=clamp((0.03-Math.abs(d-0.4))/px+.5),mark=clamp((0.032-glyphs[kind](x,y))/px+.5);
+  const colour=mark>=ring?rgb(ink):rgb(brand),a=Math.max(ring,mark),o=(j*size+i)*4;
+  rgba[o]=colour[0];rgba[o+1]=colour[1];rgba[o+2]=colour[2];rgba[o+3]=Math.round(a*255);
  }
- const header=Buffer.alloc(13);header.writeUInt32BE(size,0);header.writeUInt32BE(size,4);
- header[8]=8;header[9]=6;
- const png=Buffer.concat([Buffer.from('89504e470d0a1a0a','hex'),chunk('IHDR',header),chunk('IDAT',deflateSync(bytes,{level:9})),chunk('IEND',Buffer.alloc(0))]);
- writeFileSync(join(out,'shortcut-'+kind+'.png'),png);
+ write('shortcut-'+kind+'.png',encodePng(size,rgba));
 }
-for(const kind of ['review','approve','atlas'])generateShortcut(kind);
+for(const kind of ['review','approve','atlas'])shortcut(kind);

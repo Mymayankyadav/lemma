@@ -4,7 +4,9 @@ import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
 import {useAddComment,useCard,useDismissComment,useProjects,useSetNoteStatus,useSettings,useUpdateNote} from '../../../data/hooks';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Button,IconButton,Sheet,Skeleton,StatTile} from '../../../ui/v7/components';
+import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {StatusBadge} from '../../../ui/v7/Status';
+import {GradeBadge,gradeOf} from '../../../ui/v7/grades';
 import {Tag} from '../../../ui/v7/KitPrimitives';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {MathText} from '../../../ui/MathText';
@@ -15,12 +17,11 @@ import {kitSubject} from '../../atlas/v7/model';
 import {CardEditorSheet} from '../../cards/v7/CardEditorSheet';
 import type {EditorValue} from '../../cards/Editor';
 import {RecallChart} from './RecallChart';
-import {gradeKey,gradeWord,recallNow,recallSeries} from './recallModel';
+import {gradeKey,recallNow,recallSeries} from './recallModel';
 import '../../project/v7/learning.css';
 import '../../cards/v7/cards.css';
 
 const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
-const gradeTone={1:'danger',2:'warning',3:'success',4:'info'} as const;
 
 /** PLAN §6.11 Card detail: the card as in a review, Memory (three stats over a real recall chart), History, notes for the tutor,
  *  and "Edit card" / "Pause" in a sticky bar. */
@@ -59,8 +60,8 @@ export default function CardV7(){
  }
  const comments=detail.comments.filter(item=>item.status!=='dismissed');
  return <main id="main-content" className={'v7-page v7-learn v7-card '+subjectClass(subject)} aria-label="Card">
-  <DetailHeader title={'Card N'+note.noteNo} back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
-  <h1 className="v7-sr-only">{'Card N'+note.noteNo}</h1>
+  <DetailHeader title="Card" back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
+  <h1 className="v7-sr-only">{'Card in '+(project?.title??'your library')}</h1>
   <article className="v7-card-face" aria-label="Card">
    <div className="v7-card-face-head"><Tag subject={subject}/>{paused&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
    <p className="v7-eyebrow">{noteKindText(note.kind)}</p>
@@ -68,7 +69,7 @@ export default function CardV7(){
    <hr/>
    <div className="v7-card-face-back"><MathText source={note.back}/></div>
    <div className="v7-learn-chiprow">
-    {project&&<Link className="v7-learn-chip v7-learn-link" to={'/p/'+encodeURIComponent(project.slug)+(note.checkpointCode?'/cp/'+encodeURIComponent(note.checkpointCode):'')}>{project.title}{note.checkpointCode?' · '+note.checkpointCode:''}</Link>}
+    {project&&<Link className="v7-learn-chip v7-learn-link" to={'/p/'+encodeURIComponent(project.slug)+(note.checkpointCode?'/cp/'+encodeURIComponent(note.checkpointCode):'')}>{project.title}</Link>}
     {note.sourceShort&&<span className="v7-learn-chip"><BookOpen aria-hidden="true"/>{note.sourceShort}{note.pageLabel?' · p. '+note.pageLabel:''}</span>}
     {note.sessionNumber!==null&&<Link className="v7-learn-chip v7-learn-link" to={'/s/'+encodeURIComponent(note.projectSlug)+'/'+note.sessionNumber}>{'Session '+note.sessionNumber}</Link>}
     {note.origin!=='user'&&<span className="v7-learn-chip">{'From '+clientName(note.origin)}</span>}
@@ -86,7 +87,7 @@ export default function CardV7(){
    {detail.history.length?<ul className="v7-learn-list">{[...detail.history].sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)).slice(0,20).map((row,index)=>{
     const interval=intervals.get(Date.parse(row.reviewedAt));
     return <li key={row.reviewedAt+index} className="v7-card-history" data-grade={gradeKey[row.rating]}>
-     <span>{formatShortDate(row.reviewedAt,{zone})}</span><StatusBadge tone={gradeTone[row.rating]}>{gradeWord[row.rating]}</StatusBadge>
+     <span>{formatShortDate(row.reviewedAt,{zone})}</span><GradeBadge grade={gradeOf(row.rating)}/>
      <small>{[row.confidence?confidenceWord[row.confidence]:null,interval?'next in '+formatInterval(interval):null].filter(Boolean).join(' · ')}</small>
     </li>;})}</ul>:<p className="v7-learn-empty">Not reviewed yet.</p>}
   </section>
@@ -104,13 +105,11 @@ export default function CardV7(){
    <Button variant="primary" onClick={()=>setEditing(true)}>Edit card</Button>
    <Button loading={status.isPending} onClick={()=>{void setNoteStatus(paused?'active':'suspended');}}>{paused?'Resume':'Pause'}</Button>
   </div>
-  <Sheet open={more} onClose={()=>setMore(false)} title={'Card N'+note.noteNo}>
-   <div className="v7-menu-content" role="menu" aria-label="Card actions">
-    <button type="button" role="menuitem" onClick={()=>{setMore(false);void setNoteStatus(paused?'active':'suspended');}}>{paused?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>}{paused?'Resume card':'Pause card'}</button>
-    <button type="button" role="menuitem" className="v7-menu-danger" onClick={()=>{setMore(false);setDeleting(true);}}><Trash2 aria-hidden="true"/>Delete card</button>
-   </div>
-  </Sheet>
-  <Sheet open={deleting} onClose={()=>setDeleting(false)} title="Delete this card?" footer={<><Button onClick={()=>setDeleting(false)}>Keep card</Button><Button variant="primary" destructive loading={status.isPending} onClick={()=>{void setNoteStatus('deleted');}}>Delete card</Button></>}>
+  <ActionSheet open={more} onClose={()=>setMore(false)} title="This card" label="Card actions" items={[
+   {label:paused?'Resume card':'Pause card',hint:paused?'Bring it back into reviews':'Keep it out of reviews until you resume',icon:paused?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>,onClick:()=>{void setNoteStatus(paused?'active':'suspended');}},
+   {label:'Delete card',hint:'Its review history is kept',destructive:true,icon:<Trash2 aria-hidden="true"/>,onClick:()=>setDeleting(true)},
+  ]}/>
+  <Sheet open={deleting} onClose={()=>setDeleting(false)} title="Delete this card?" footer={<><Button variant="ghost" onClick={()=>setDeleting(false)}>Keep card</Button><Button variant="primary" destructive loading={status.isPending} onClick={()=>{void setNoteStatus('deleted');}}>Delete card</Button></>}>
    <p>Its review history is kept, but it leaves your reviews and the library.</p>
   </Sheet>
   {editing&&<CardEditorSheet open onClose={()=>setEditing(false)} initial={note} busy={update.isPending} onSubmit={value=>{void save(value);}}/>}

@@ -34,8 +34,9 @@ export function dueWords(row:Pick<CardRow,'due'|'status'>,now:Date,zone:string):
  return 'due '+formatShortDate(due,{zone,now});
 }
 /** "N49 · CP3 · due in 7 days", plus open comments when there are any. */
-export function cardMeta(row:CardRow,now:Date,zone:string):string{
- return ['N'+row.noteNo,row.checkpointCode,dueWords(row,now,zone),row.openComments>0?row.openComments+(row.openComments===1?' comment':' comments'):null].filter(Boolean).join(' · ');
+/** R1 · F49: names, not codes. The meta line says the path and when the card is due, never "N49 · CP9". */
+export function cardMeta(row:CardRow,now:Date,zone:string,pathTitle?:string):string{
+ return [pathTitle,dueWords(row,now,zone),row.openComments>0?row.openComments+(row.openComments===1?' comment':' comments'):null].filter(Boolean).join(' · ');
 }
 export function sortCards(rows:readonly CardRow[],sort:CardSort):CardRow[]{
  const copy=[...rows];

@@ -1,3 +1,4 @@
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useEffect,useMemo,useState} from 'react';
 import {ChevronLeft,ChevronRight,Download,Pencil,Scissors,Ban,RotateCcw} from 'lucide-react';
 import {getStudyApi} from '../../../data/study';
@@ -7,6 +8,7 @@ import {HubHeader} from '../../../app/v7/V7Shell';
 import {Button,DatePicker,Field,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
 import {TimeRange} from '../../../ui/v7/KitPrimitives';
 import {RowMenu} from '../../../ui/v7/RowMenu';
+import {EntrySheetV7} from './EntrySheetV7';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {formatClock,formatDuration,formatLongDate,formatShortDate,ownerZone} from '../../../lib/format';
@@ -15,7 +17,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {weekStartDay} from '../../calendar/model';
 import {civilDay,addDays} from '../../progress-v6/model';
 import {ProgressTabs} from '../../insights/v7/ProgressV7';
-import {EntryDialog,csvLog,logDate,visibleLogRange,visibleLogRecords} from '../Page';
+import {csvLog,logDate,visibleLogRange,visibleLogRecords} from '../Page';
 import {manualFocusInterval} from '../local-time';
 import '../../insights/v7/progress.css';
 import './log.css';
@@ -89,10 +91,10 @@ export default function TimeLogV7(){
      {label:'Split',icon:<Scissors aria-hidden="true"/>,onClick:()=>setEditing(entry)},
      {label:'Void',icon:<Ban aria-hidden="true"/>,onClick:()=>setVoiding(entry)},
     ]}/>
-   </li>;})}</ul></section>):<p className="v7-progress-empty">No study time saved this week. Use Add time to record a session you studied without the timer.</p>)}
-  {editing&&<EntryDialog entry={editing} busy={busy} onClose={()=>setEditing(null)} onChange={async()=>{setEditing(null);setReload(value=>value+1);}}/>}
+   </li>;})}</ul></section>):<EmptyMoment title="No study time this week">Focus sessions land here. Use Add time for study you did without the timer.</EmptyMoment>)}
+  {editing&&<EntrySheetV7 key={editing.id+'-'+editing.version} entry={editing} busy={busy} onClose={()=>setEditing(null)} onChange={async()=>{setEditing(null);setReload(value=>value+1);}}/>}
   <Sheet open={!!voiding} onClose={()=>setVoiding(null)} title={voiding?'Void “'+voiding.intent+'”?':'Void entry'}
-   footer={<><Button variant="primary" destructive loading={busy} onClick={()=>{if(voiding)void voidEntry(voiding);}}>Void entry</Button><Button onClick={()=>setVoiding(null)}>Keep entry</Button></>}>
+   footer={<><Button variant="ghost" onClick={()=>setVoiding(null)}>Keep entry</Button><Button variant="primary" destructive loading={busy} onClick={()=>{if(voiding)void voidEntry(voiding);}}>Void entry</Button></>}>
    <p>Its time stops counting. You can restore it from the log.</p>
   </Sheet>
   <Sheet open={adding} onClose={()=>setAdding(false)} title="Add time" footer={<Button variant="primary" loading={busy} onClick={()=>{void addTime();}}>Add time</Button>}>

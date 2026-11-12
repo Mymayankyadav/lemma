@@ -35,6 +35,9 @@
  :where(html[data-v7]) .v7-cal-block {position:absolute;z-index:1;}
  :where(html[data-v7]) .v7-cal-block > :is(button,div) {position:relative;width:100%;height:100%;min-width:0;display:grid;align-content:start;gap:1px;padding:var(--v7-space-1) var(--v7-space-2) var(--v7-space-1) var(--v7-space-3);overflow:hidden;
   border:0;border-radius:12px;text-align:left;color:var(--v7-role-text-primary);background:color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 14%,var(--v7-role-surface-page));touch-action:pan-y;}
+ /* R2 · F25: in Night an event is an elevated surface with a 14% subject tint and a 1 px subject border, so it never sinks
+    into the page and the subject survives beyond the 3 px rule. */
+ :where(html[data-v7][data-theme="graph-night"]) .v7-cal-block:not([data-kind="busy"]) > :is(button,div) {background:color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 14%,var(--v7-role-surface-raised));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 40%,transparent);}
 :where(html[data-v7]) .v7-cal-block > :is(button,div)::before {content:"";position:absolute;top:var(--v7-space-1);bottom:var(--v7-space-1);left:var(--v7-space-1);width:3px;border-radius:var(--v7-round);background:var(--v7-subject,var(--v7-role-text-secondary));}
  /* A block under 30 minutes keeps its title only, with a 44 px tap area. */
  :where(html[data-v7]) .v7-cal-block[data-size="title"] > button::after {content:"";position:absolute;inset-inline:0;top:50%;height:44px;transform:translateY(-50%);}

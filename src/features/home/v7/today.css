@@ -12,7 +12,7 @@
  /* Hero: subject tint, the path's emblem bleeding off the top-right corner. */
 :where(html[data-v7]) .v7-today-hero {position:relative;isolation:isolate;overflow:hidden;display:grid;gap:var(--v7-space-3);padding:var(--v7-space-6);border:var(--v7-hairline) solid var(--v7-role-border-subtle);
   border-radius:var(--v7-radius-4);background:var(--v7-role-surface-raised);box-shadow:var(--v7-shadow-1);}
-:where(html[data-v7]) .v7-today-hero-emblem {position:absolute;right:calc(-1 * var(--v7-space-8));bottom:calc(-1 * var(--v7-space-6));width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);pointer-events:none;z-index:-1;color:var(--v7-subject,var(--v7-role-text-secondary));}
+:where(html[data-v7]) .v7-today-hero-emblem {position:absolute;right:-72px;bottom:-64px;width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);pointer-events:none;z-index:-1;color:var(--v7-subject,var(--v7-role-text-secondary));}
 :where(html[data-v7]) .v7-today-hero > :not(.v7-today-hero-emblem) {position:relative;}
  :where(html[data-v7]) .v7-today-hero-labels {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-today-hero-title {max-width:22ch;font:400 var(--v7-type-headline)/1.2 var(--v7-serif);overflow-wrap:anywhere;}
@@ -42,6 +42,8 @@
  :where(html[data-v7]) .v7-today-target > :nth-child(2) {justify-self:end;}
  :where(html[data-v7]) .v7-today-target-track {grid-column:1 / -1;height:6px;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);overflow:hidden;}
 :where(html[data-v7]) .v7-today-target-track > span {display:block;height:100%;border-radius:var(--v7-round);background:var(--v7-role-viz-neutral);}
+ /* R1 · F23: a met target is announced and drawn in the same colour: the bar fills with success. */
+ :where(html[data-v7]) .v7-today-target-track[data-complete="true"] > span {background:var(--v7-role-status-success);}
  :where(html[data-v7]) .v7-today-notice svg,:where(html[data-v7]) .v7-notice svg {width:16px;height:16px;}
 
  :where(html[data-v7]) .v7-today-needs {display:grid;gap:var(--v7-space-1);}

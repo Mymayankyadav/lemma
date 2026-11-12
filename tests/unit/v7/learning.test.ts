@@ -64,7 +64,9 @@ describe('v7 Cards (PLAN §6.11)',()=>{
   expect(isDueToday(card({due:null}),now,zone)).toBe(false);
  });
  it('writes the meta line with words, not abbreviations',()=>{
-  expect(cardMeta(card({noteNo:49,due:'2026-11-16T06:00:00Z',openComments:2}),now,zone)).toBe('N49 · CP4 · due in 7 days · 2 comments');
+  expect(cardMeta(card({noteNo:49,due:'2026-11-16T06:00:00Z',openComments:2}),now,zone,'Real Analysis')).toBe('Real Analysis · due in 7 days · 2 comments');
+  // R1 · F49: no internal codes in the meta line.
+  expect(cardMeta(card({noteNo:49,due:'2026-11-16T06:00:00Z',openComments:0}),now,zone)).not.toMatch(/N49|CP4/);
   expect(dueWords(card({status:'suspended'}),now,zone)).toBe('paused');
   expect(dueWords(card({due:'2026-11-10T06:00:00Z'}),now,zone)).toBe('due tomorrow');
  });

@@ -38,4 +38,23 @@
  :where(html[data-v7]) .v7-settings-legacy {padding:var(--v7-space-4);--ink:var(--v7-role-text-primary);--ink-soft:var(--v7-role-text-primary);--ink-2:var(--v7-role-text-secondary);--ink-3:var(--v7-role-text-tertiary);
   --edge:var(--v7-role-border-subtle);--edge-2:var(--v7-role-border-default);--edge-3:var(--v7-role-border-strong);--raised:var(--v7-role-surface-raised);--well:var(--v7-role-surface-sunken);--fill-1:var(--v7-role-surface-muted);--fill-2:var(--v7-role-surface-muted-hover);
   --paper:var(--v7-role-surface-raised);--paper-2:var(--v7-role-surface-muted);--hair:var(--v7-role-border-subtle);--control-edge:var(--v7-role-border-default);--card:var(--v7-role-surface-raised);--slab:var(--v7-role-surface-raised);--link:var(--v7-role-link-fg);--accent:var(--v7-role-action-bg);}
+ /* R1 · F03 grouped lists: an overline per group, rows of 56 px with the label, the current value and a chevron, or a switch. */
+ :where(html[data-v7]) .v7-set-group {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-set-group > h2 {margin:0 0 0 var(--v7-space-1);}
+ :where(html[data-v7]) .v7-set-note {margin:0 var(--v7-space-1);color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-set-row,:where(html[data-v7]) .v7-pick-row {display:flex;align-items:center;gap:var(--v7-space-3);width:100%;min-height:56px;padding:var(--v7-space-2) 0;border:0;background:transparent;color:var(--v7-role-text-primary);text-align:left;font:inherit;cursor:pointer;}
+ :where(html[data-v7]) .v7-set-text {flex:1;min-width:0;display:grid;gap:2px;}
+ :where(html[data-v7]) .v7-set-label {font:500 var(--v7-type-body)/1.3 var(--v7-sans);}
+ :where(html[data-v7]) .v7-set-text small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/1.3 var(--v7-sans);}
+ :where(html[data-v7]) .v7-set-value {flex:none;max-width:45%;color:var(--v7-role-text-secondary);font:400 var(--v7-type-body)/1.3 var(--v7-sans);font-variant-numeric:tabular-nums;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ :where(html[data-v7]) .v7-set-row > svg {flex:none;width:20px;height:20px;color:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-set-switch {display:flex;align-items:center;min-height:56px;}
+ :where(html[data-v7]) .v7-set-switch > .v7-switch-choice {flex:1;}
+ :where(html[data-v7]) .v7-pick-list {display:grid;padding:0 var(--v7-space-5) var(--v7-space-4);}
+ :where(html[data-v7]) .v7-pick-row + .v7-pick-row {border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-pick-row > svg {flex:none;width:20px;height:20px;color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-pick-row[aria-checked="true"] .v7-set-label {font-weight:600;}
+ /* R2 · F31: hosted Advanced forms sit flat inside their one card, never card-in-card. */
+ :where(html[data-v7]) .v7-settings-legacy :is(.rounded-slab,section[class*="border"]) {border:0;padding-inline:0;background:transparent;}
+ :where(html[data-v7]) .v7-set-switch .v7-switch-choice > span {font:500 var(--v7-type-body)/1.3 var(--v7-sans);}
 }

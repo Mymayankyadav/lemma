@@ -60,6 +60,10 @@ export const shots:Shot[]=[
  {name:"settings",hash:"/settings"},
  {name:"settings-appearance",hash:"/settings?section=appearance"},
  {name:"settings-subjects",hash:"/settings?section=subjects"},
+ // Release plan R1 · F03: the rebuilt grouped-list Settings pages.
+ {name:"settings-study",hash:"/settings?section=study"},
+ {name:"settings-planning",hash:"/settings?section=planning"},
+ {name:"settings-reminders",hash:"/settings?section=reminders"},
  {name:"sign-in",hash:"/sign-in"},
  {name:"welcome",hash:"/welcome"},
 ];

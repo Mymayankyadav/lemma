@@ -1,6 +1,6 @@
 import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
-import {X} from 'lucide-react';
+import {CircleAlert,CircleCheck,Info,X} from 'lucide-react';
 
 const RichTex=lazy(()=>import('./Tex').then(module=>({default:module.Tex})));
 const richSyntax=new Set([String.fromCharCode(92),String.fromCharCode(36),String.fromCharCode(96),'*','_','~','[',']','<','>','!','#','|','&',String.fromCharCode(13),String.fromCharCode(10)]);
@@ -36,14 +36,47 @@ function resumeToast(id:number){
  const item=snapshot.find(entry=>entry.id===id);
  if(item)timeouts.set(id,setTimeout(()=>dismiss(id),item.duration??4000));
 }
+const v7Root=()=>typeof document!=='undefined'&&document.documentElement.hasAttribute('data-v7');
+/**
+ * Release plan R0 · F13: an identical message already on screen is refreshed rather than stacked; under v7 at most one
+ * toast shows (a new one replaces the old), v6 keeps its three-deep stack.
+ */
 export function toast(message:string,options:ToastOptions={}){
+ const same=snapshot.find(item=>item.message===message&&item.tone===options.tone&&item.action?.label===options.action?.label);
+ if(same){
+  snapshot=snapshot.map(item=>item.id===same.id?{...item,...options}:item);
+  notify();resumeToast(same.id);
+  return ()=>dismiss(same.id);
+ }
  const id=++counter;
- snapshot=[...snapshot.slice(-2),{id,message,...options}];
+ for(const item of v7Root()?snapshot:snapshot.slice(0,-2))pauseToast(item.id);
+ snapshot=[...(v7Root()?[]:snapshot.slice(-2)),{id,message,...options}];
  notify();
  resumeToast(id);
  return ()=>dismiss(id);
 }
+/** F13: errors do not follow you to another screen; the v7 shell clears them on navigation. */
+export function clearToasts(match:(item:ToastProps)=>boolean=()=>true){
+ const gone=snapshot.filter(match);
+ if(!gone.length)return;
+ for(const item of gone)pauseToast(item.id);
+ snapshot=snapshot.filter(item=>!match(item));notify();
+}
 export function useToast(){return toast}
+/** F40: the v7 toast is an ink pill (Day) or raised navy pill (Night) with an icon, the message, a bold indigo action and
+ * a countdown hairline for the undo window. */
+function V7ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
+ const Icon=item.tone==='danger'?CircleAlert:item.tone==='success'?CircleCheck:Info;
+ return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-tone={item.tone??'normal'}
+  initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.2}}
+  onPointerEnter={()=>pauseToast(item.id)} onPointerLeave={()=>resumeToast(item.id)} onFocus={()=>pauseToast(item.id)}>
+  <Icon className="v7-app-toast-icon" aria-hidden="true"/>
+  <span className="v7-app-toast-text"><ToastText source={item.message}/></span>
+  {item.action&&<button type="button" className="v7-app-toast-action" onClick={()=>{item.action?.onClick();dismiss(item.id)}}><ToastText source={item.action.label}/></button>}
+  <button type="button" aria-label="Dismiss notification" className="v7-app-toast-close" onClick={()=>dismiss(item.id)}><X aria-hidden="true"/></button>
+  {item.action&&!reduce&&<span className="v7-app-toast-countdown" aria-hidden="true" style={{animationDuration:(item.duration??4000)+'ms'}}/>}
+ </motion.div>;
+}
 function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  const [expanded,setExpanded]=useState(false);
  const [overflow,setOverflow]=useState(false);
@@ -77,6 +110,8 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
 export function ToastHost(){
  const items=useSyncExternalStore(subscribe,current,current);
  const reduce=!!useReducedMotion();
+ if(v7Root())return <div aria-live="polite" aria-atomic="false" className="v7-toast-host">
+  <AnimatePresence>{items.slice(-1).map(item=><V7ToastItem key={item.id} item={item} reduce={reduce}/>)}</AnimatePresence></div>;
  return <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed inset-x-4 bottom-[calc(108px+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-[480px] flex-col gap-2">
  <AnimatePresence>{items.map(item=><ToastItem key={item.id} item={item} reduce={reduce}/>)}</AnimatePresence></div>;
 }

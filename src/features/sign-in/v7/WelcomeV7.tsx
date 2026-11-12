@@ -52,7 +52,7 @@ export default function WelcomeV7(){
    <a className="v7-button v7-ghost" href="?demo=1#/"><span>Use the example</span></a>
   </section>}
   {step===2&&<section className="v7-welcome-body" aria-label={steps[2]}>
-   <Stepper label={'Daily minimum · '+formatDuration(hours*60)} value={hours} min={0} max={12} onChange={setHours}/>
+   <Stepper label="Daily minimum" unit="h" format={n=>n===0?'None':formatDuration(n*60)} value={hours} min={0} max={12} onChange={setHours}/>
    <Field label="Day ends at" inputMode="numeric" maxLength={5} value={dayEnd} onChange={event=>setDayEnd(event.target.value)} hint="24-hour time, for example 17:00"/>
    <Switch label="Reminders" checked={remind} onChange={setRemind}/>
    <Button variant="primary" loading={busy} onClick={()=>{void saveDay();}}>Finish</Button>

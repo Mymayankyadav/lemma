@@ -5,7 +5,7 @@ import {useApproveProposal,useProject,useProjects,useProposal,useRejectProposal}
 import type {CheckpointView} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Button,Skeleton} from '../../../ui/v7/components';
-import {StatusBadge} from '../../../ui/v7/Status';
+import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {kitSubject} from '../../atlas/v7/model';
@@ -34,7 +34,7 @@ function PlanMap({title,nodes,existing,adds,changed}:{title:string;nodes:readonl
       :state==='locked'?<circle cx="10" cy="10" r="4" className="v7-path-dim"/>:<circle cx="10" cy="10" r="6.5" className="v7-path-hollow"/>}
     </svg>
     <span className="v7-path-body"><strong>{node.title}</strong><small>{node.code}{node.stage?' · '+node.stage:''}{cp&&!added?' · '+nodeWord[nodeStateOf(cp.ui)]:''}</small></span>
-    {added?<StatusBadge tone="info">Added</StatusBadge>:edit?<StatusBadge tone="warning">Changed</StatusBadge>:<span/>}
+    {added?<MetaChip kind="added">Added</MetaChip>:edit?<MetaChip kind="changed">Changed</MetaChip>:<span/>}
    </li>;})}</ol>:<p className="v7-learn-empty">No checkpoints.</p>}
  </section>;
 }

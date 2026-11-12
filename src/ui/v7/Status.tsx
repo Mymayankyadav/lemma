@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import {Link} from 'react-router';
-import {Clock3} from 'lucide-react';
+import {CalendarDays,CircleDashed,Clock3,Flag,Plus,Sparkle,Triangle} from 'lucide-react';
 import {StatusIcon,type Tone} from './KitPrimitives';
 
 /** KC1: the kit's one Badge — 8 px corners, 24 px tall, a filled status icon, "Label · meaning" in the status colour on its
@@ -14,6 +14,17 @@ export function StatusBadge({tone='info',children,onClick,to,label,className=''}
  if(to)return <Link className={klass} to={to} aria-label={label}>{body}</Link>;
  if(onClick)return <button type="button" className={klass} onClick={onClick} aria-label={label}>{body}</button>;
  return <span className={klass}>{body}</span>;
+}
+/**
+ * R1 · F21: a neutral meta chip for things that are not a status: a date or target (flag, calendar), "next" (a ring),
+ * a diff (+ Added in success, Δ Changed), a suggestion. Status icons stay for success, warning, danger and info only.
+ */
+export type MetaKind='target'|'date'|'next'|'added'|'changed'|'suggested';
+const metaIcon={target:Flag,date:CalendarDays,next:CircleDashed,added:Plus,changed:Triangle,suggested:Sparkle} as const;
+export function MetaChip({kind,children,to,className=''}:{kind:MetaKind;children:ReactNode;to?:string;className?:string}){
+ const Icon=metaIcon[kind],klass='v7-meta-chip'+(className?' '+className:'');
+ const body=<><Icon aria-hidden="true"/><span>{children}</span></>;
+ return to?<Link className={klass} data-kind={kind} to={to}>{body}</Link>:<span className={klass} data-kind={kind}>{body}</span>;
 }
 /** KA7: a "live" time chip ("in 1 h 55 min", "Now · until 16:30") — an info badge with a clock icon. */
 export function LiveChip({children}:{children:ReactNode}){

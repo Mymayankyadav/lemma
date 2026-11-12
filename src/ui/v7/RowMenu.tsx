@@ -1,18 +1,8 @@
-import {useState,type ReactNode} from 'react';
-import {MoreHorizontal} from 'lucide-react';
-import {IconButton,Sheet} from './components';
+import type {ReactNode} from 'react';
+import {MoreActions} from './ActionSheet';
 
-export interface RowMenuItem{label:string;icon:ReactNode;onClick:()=>void}
-/** The per-row ⋯: a 44 px icon button that opens the row's actions in a sheet (Tasks, Paths, Cards). */
+export interface RowMenuItem{label:string;icon:ReactNode;onClick:()=>void;hint?:string;destructive?:boolean}
+/** The per-row ⋯: a 44 px icon button that opens the row's actions in the shared ActionSheet (R0 · F01). */
 export function RowMenu({label,title,items}:{label:string;title:string;items:RowMenuItem[]}){
- const [open,setOpen]=useState(false);
- return <>
-  <IconButton label={label} aria-haspopup="menu" aria-expanded={open} onClick={()=>setOpen(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
-  {open&&<Sheet open onClose={()=>setOpen(false)} title={title}>
-   <div className="v7-menu-content" role="menu" aria-label={label}>
-    {items.map(item=><button key={item.label} type="button" role="menuitem" className={/delete|remove/i.test(item.label)?'v7-menu-danger':undefined}
-     onClick={()=>{setOpen(false);item.onClick();}}>{item.icon}{item.label}</button>)}
-   </div>
-  </Sheet>}
- </>;
+ return <MoreActions label={label} title={title} items={items.map(item=>({...item,destructive:item.destructive??/^(delete|remove|void)\b/i.test(item.label)}))}/>;
 }

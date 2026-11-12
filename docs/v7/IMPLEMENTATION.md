@@ -321,3 +321,7 @@ Today's first load on the example workspace is **578 KB** transferred (411 KB sc
 - The Path desktop layout (map on 5 of 12 columns with the selected checkpoint on 7) and the Cards preview pane are not built; both screens use the single column on desktop.
 - The almanac stays at 26 weeks on desktop (the plan asks for a year).
 - The Owner's tablet and desktop visual approval, physical-device, hardware-keyboard and screen-reader checks, the switch PR and the independent review (Part 13).
+
+## Release plan R0–R3 (12 Nov 2026)
+
+The "before release" phases of the Owner's release and assets plan (sources in `docs/v7/release/source/`) are built on this PR behind `v7Shell`, recorded item by item with audit IDs, tests and the Owner decisions taken by default in `docs/v7/RELEASE_R0_R3.md`. Open: D2 golden re-approval (sheets in `docs/v7/release/`), D5 budget (589 KB measured), the independent re-audit, device and screen-reader checks, the independent review and the switch PR.

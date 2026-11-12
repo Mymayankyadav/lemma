@@ -1,3 +1,4 @@
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
@@ -7,8 +8,9 @@ import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../..
 import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
-import {Button,Chip,Menu,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
-import {StatusBadge} from '../../../ui/v7/Status';
+import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {MoreActions} from '../../../ui/v7/ActionSheet';
+import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {chatLink,planPrompt,studyPrompt} from '../../../lib/chat';
@@ -50,7 +52,7 @@ function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];ind
  </li>;
 }
 function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
- if(!sessions.length)return <p className="v7-path-empty">No sessions yet. Continue with your tutor to start an evidence trail.</p>;
+ if(!sessions.length)return <EmptyMoment title="No sessions yet">Continue with your tutor to start an evidence trail.</EmptyMoment>;
  const sorted=[...sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)||b.number-a.number).slice(0,40);
  return <ul className="v7-path-sessions" aria-label="Sessions">{sorted.map(session=><li key={session.id}>
   <Link to={'/s/'+encodeURIComponent(slug)+'/'+session.number}>
@@ -74,6 +76,12 @@ function PathCards({slug}:{slug:string}){
   {rows.length>12&&<li className="v7-path-cards-empty">{rows.length-12} more in the card library.</li>}</ul>;
 }
 /** PLAN §6.9: the path as a constellation, with the primary action in a sticky bar. */
+/** A 20 px progress ring for the collapsed Path bar. */
+function ProgressRing({done,total}:{done:number;total:number}){
+ const r=8,c=2*Math.PI*r,share=total?Math.min(1,done/total):0;
+ return <svg className="v7-progress-ring" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" className="v7-progress-ring-track"/>
+  <circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-share)} transform="rotate(-90 10 10)" className="v7-progress-ring-fill"/></svg>;
+}
 export default function V7Path(){
  const {slug:raw}=useParams(),slug=raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
@@ -112,21 +120,22 @@ export default function V7Path(){
  const counts:Record<Tab,string>={Map:'Map',Sessions:'Sessions '+data.sessions.length,Sources:'Sources '+data.sources.length,Cards:'Cards '+cards};
  const label=counts[tab];
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
-  <DetailHeader title={project.title} back="/projects" action={<Menu label="More" items={[
-   {label:'Switch path',icon:<Layers aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
+  <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
+   action={<><Link className="v7-header-pill" to={'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
+   {label:'Switch path',hint:'Open another path in the same place',icon:<Layers aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<Waypoints aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    project.status==='paused'
-    ?{label:'Resume path',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
-    :{label:'Pause path',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},
-   {label:'Archive path',icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
-  ]}/>}/>
+    ?{label:'Resume path',hint:'Bring it back into Today and reviews',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
+    :{label:'Pause path',hint:'Hide it from Today until you resume',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},
+   {label:'Archive path',hint:'You can restore it from Paths',destructive:true,icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
+  ]}/></>}/>
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={164} animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
    <p className="v7-path-goal">{project.goal?.trim()||'Your tutor fills this in.'}</p>
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
-   <div className="v7-path-chips">{target&&<StatusBadge tone="info">{'Target '+target}</StatusBadge>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
+   <div className="v7-path-chips">{target&&<MetaChip kind="target">{'Target '+target}</MetaChip>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
   </header>
   {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
    <p className="v7-eyebrow">Tell your tutor</p>
@@ -138,7 +147,7 @@ export default function V7Path(){
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=><li key={stage.key} className="v7-path-stage"><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>
      <ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end}/>;})}</ol></li>)}
-   </ol>:<p className="v7-path-empty">A plan is waiting to be written. Ask your tutor to break your goal into checkpoints.</p>)}
+   </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense>}
    {tab==='Cards'&&<ul className="v7-path-cards" aria-label="Cards by checkpoint">
@@ -148,9 +157,9 @@ export default function V7Path(){
    </ul>}
    {tab==='Cards'&&<PathCards slug={slug}/>}
   </section>
+  {/* R2 · F11: one floating layer above the tab bar — the Continue pill; Review lives in the header actions. */}
   <div className="v7-path-bar" role="group" aria-label="Path actions">
    <Button variant="primary" onClick={()=>setPrompt(true)}>Continue with tutor</Button>
-   <Link className="v7-button v7-secondary" to={'/review?path='+encodeURIComponent(slug)}><span>{due>0?'Review '+due:'Review'}</span></Link>
   </div>
   <Sheet open={prompt} onClose={()=>setPrompt(false)} title="Continue with your tutor" eyebrow="Study prompt"
    footer={<Button variant="primary" onClick={copy}><Copy aria-hidden="true"/>Copy prompt</Button>}>

@@ -1,11 +1,12 @@
 import {useMemo,useState} from 'react';
 import {Link,useParams} from 'react-router';
-import {Check,ChevronRight,Copy,MoreHorizontal,BookOpen} from 'lucide-react';
+import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpen} from 'lucide-react';
+import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useCheckpoint,useProject,useSettings} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Button,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
-import {StatusBadge} from '../../../ui/v7/Status';
+import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {MathText} from '../../../ui/MathText';
 import {FastTex as Tex} from '../../../ui/FastTex';
@@ -59,7 +60,7 @@ export default function CheckpointV7(){
     return <li key={index} data-state={state} aria-current={state==='current'?'step':undefined}>
      <span className="v7-steps-mark" aria-hidden="true">{state==='done'?<Check/>:index+1}</span>
      <span className="v7-steps-text"><Tex source={text}/></span>
-     {state==='current'&&<StatusBadge tone="info">Next</StatusBadge>}
+     {state==='current'&&<MetaChip kind="next">Next</MetaChip>}
      <span className="v7-sr-only">{state==='done'?'Done':state==='current'?'Current step':'Later'}</span>
     </li>;})}</ol></section>}
   {(detail.prereqs.length>0||detail.sourceShort||detail.pages)&&<section aria-label="Prerequisites and sources"><h2 className="v7-learn-h2">Prerequisites and sources</h2>
@@ -80,14 +81,10 @@ export default function CheckpointV7(){
     :<Button variant="primary" onClick={()=>launch()}>Work on this with your tutor</Button>}
    <IconButton label="More checkpoint actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
   </div>
-  <Sheet open={more} onClose={()=>setMore(false)} title={view.title}>
-   <div className="v7-learn-actions">
-    {view.ui!=='done'&&view.ui!=='locked'&&<div><Button onClick={()=>{setMore(false);launch('Please assess my proof for checkpoint '+view.code+' and record a demonstration only when supported by evidence.');}}>Demonstrate</Button>
-     <p className="v7-meta">Show your proof; your tutor records it if it holds up.</p></div>}
-    {view.ui!=='done'&&<div><Button onClick={()=>{setMore(false);launch('Please help me defer checkpoint '+view.code+' and update the study plan only with my approval.');}}>Defer</Button>
-     <p className="v7-meta">Move it later in your plan, with your approval.</p></div>}
-    <div><Button onClick={()=>{setMore(false);void navigator.clipboard?.writeText(studyPrompt(title,view.code,view.title)).then(()=>notify('Tutor prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy study prompt</Button></div>
-   </div>
-  </Sheet>
+  <ActionSheet open={more} onClose={()=>setMore(false)} title={view.title} label="Checkpoint actions" items={[
+   ...(view.ui!=='done'&&view.ui!=='locked'?[{label:'Demonstrate',hint:'Show your proof; your tutor records it if it holds up.',icon:<CircleCheck aria-hidden="true"/>,onClick:()=>launch('Please assess my proof for checkpoint '+view.code+' and record a demonstration only when supported by evidence.')}]:[]),
+   ...(view.ui!=='done'?[{label:'Defer',hint:'Move it later in your plan, with your approval.',icon:<CalendarClock aria-hidden="true"/>,onClick:()=>launch('Please help me defer checkpoint '+view.code+' and update the study plan only with my approval.')}]:[]),
+   {label:'Copy study prompt',hint:'Paste it into a chat with your tutor',icon:<Copy aria-hidden="true"/>,onClick:()=>{void navigator.clipboard?.writeText(studyPrompt(title,view.code,view.title)).then(()=>notify('Tutor prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}},
+  ]}/>
  </main>;
 }

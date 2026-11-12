@@ -1,4 +1,9 @@
-import { formatDay } from "../../lib/format";
+import { formatDay, formatShortDate } from "../../lib/format";
+/** "Today · Mon 9 Nov" or "Sat 7 Nov". */
+export function pickerDate(value: string): string {
+  const word = formatDay(value);
+  return ["Today", "Tomorrow", "Yesterday"].includes(word) ? word + " · " + formatShortDate(value) : formatShortDate(value);
+}
 import {
   useEffect,
   useId,
@@ -289,6 +294,7 @@ export function Picker({
   optional?: boolean;
 }) {
   const [open, setOpen] = useState(false),
+    [query, setQuery] = useState(""),
     [desktop, setDesktop] = useState(false),
     id = useId(),
     ref = useRef<HTMLDivElement>(null);
@@ -311,8 +317,16 @@ export function Picker({
     document.addEventListener("click", outside);
     return () => document.removeEventListener("click", outside);
   }, [open, desktop]);
+  // R2 · F76: beyond 8 options a picker gains a search field and a filtered list, so long lists stay usable.
+  const searchable = options.length > 8;
+  const shown = searchable && query.trim() ? options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase())) : options;
+  const search = searchable ? (
+    <input type="search" className="v7-field v7-picker-search" placeholder={"Search " + label.toLowerCase()} aria-label={"Search " + label.toLowerCase()}
+      value={query} onChange={(e) => setQuery(e.target.value)} />
+  ) : null;
   function choose(option: string) {
     onChange(option);
+    setQuery("");
     setOpen(false);
     ref.current?.querySelector("button")?.focus();
   }
@@ -357,7 +371,8 @@ export function Picker({
             }
           }}
         >
-          {options.map((option) => (
+          {search}
+          {shown.map((option) => (
             <button
         type="button"
               role="option"
@@ -379,8 +394,10 @@ export function Picker({
           onClose={() => setOpen(false)}
           title={label}
         >
+          {search}
           <div role="radiogroup" aria-label={label}>
-            {options.map((option) => (
+            {shown.length === 0 && <p className="v7-meta">No matches.</p>}
+            {shown.map((option) => (
               <label className="v7-radio-row" key={option}>
                 <input
                   type="radio"
@@ -434,7 +451,8 @@ export function DatePicker({
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
-        {formatDay(value)}
+        {/* F51: one date format ("Sat 7 Nov"), with Today/Tomorrow/Yesterday in front when it applies. */}
+        {pickerDate(value)}
         <ChevronDown />
       </button>
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose a date">
@@ -761,19 +779,31 @@ export function Slider({
     </div>
   );
 }
+/**
+ * R0 · F14: the one stepper: a pill with 44 px end caps and a tabular numeral, always with a visible label and a unit
+ * ("Focused time · 25 min"). `unit` may be a function for plurals ("1 block" / "2 blocks").
+ */
 export function Stepper({
   label,
+  unit,
   value,
   onChange,
   min = 0,
   max = 10,
+  format,
 }: {
   label: string;
+  unit: string | ((value: number) => string);
   value: number;
   onChange: (v: number) => void;
   min?: number;
   max?: number;
+  /** Optional display of the value (e.g. hours as "2 h 30 min"); the unit is then omitted. */
+  format?: (value: number) => string;
 }) {
+  const labelId = useId();
+  const unitText = typeof unit === "function" ? unit(value) : unit;
+  const shown = format ? format(value) : value + (unitText ? " " + unitText : "");
   const delay=useRef<ReturnType<typeof setTimeout>|null>(null),repeat=useRef<ReturnType<typeof setInterval>|null>(null),repeated=useRef(false);
   const latest=useRef({value,onChange,min,max});latest.current={value,onChange,min,max};
   function stop(){if(delay.current)clearTimeout(delay.current);if(repeat.current)clearInterval(repeat.current);delay.current=null;repeat.current=null;}
@@ -781,7 +811,8 @@ export function Stepper({
   function hold(direction:number){stop();repeated.current=false;delay.current=setTimeout(()=>{repeated.current=true;step(direction);repeat.current=setInterval(()=>step(direction),120);},400);}
   useEffect(()=>stop,[]);
   return (
-    <div className="v7-stepper" role="group" aria-label={label} onKeyDown={event=>{if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft","Home","End"].includes(event.key)){event.preventDefault();if(event.key==="Home")onChange(min);else if(event.key==="End")onChange(max);else step(event.key==="ArrowUp"||event.key==="ArrowRight"?1:-1);}}}>
+    <div className="v7-stepper-field"><span id={labelId} className="v7-stepper-label">{label}</span>
+    <div className="v7-stepper" role="group" aria-labelledby={labelId} onKeyDown={event=>{if(["ArrowUp","ArrowRight","ArrowDown","ArrowLeft","Home","End"].includes(event.key)){event.preventDefault();if(event.key==="Home")onChange(min);else if(event.key==="End")onChange(max);else step(event.key==="ArrowUp"||event.key==="ArrowRight"?1:-1);}}}>
       <IconButton
         label={`Decrease ${label}`}
         disabled={value <= min}
@@ -790,7 +821,7 @@ export function Stepper({
       >
         <Minus />
       </IconButton>
-      <output aria-label={label+" value"} aria-live="polite" aria-atomic="true">{value}</output>
+      <output aria-label={label+" value"} aria-live="polite" aria-atomic="true">{shown}</output>
       <IconButton
         label={`Increase ${label}`}
         disabled={value >= max}
@@ -799,7 +830,7 @@ export function Stepper({
       >
         <Plus />
       </IconButton>
-    </div>
+    </div></div>
   );
 }
 export function Card({

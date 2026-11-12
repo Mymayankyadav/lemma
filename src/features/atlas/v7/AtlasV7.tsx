@@ -107,12 +107,16 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  </section>;
 }
 
+/** R2 · F12: past this many concepts or links the map becomes a hairball on a phone, so the list is the default. */
+export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
  const reduced=useReducedMotion();
- const view=params.get('view')==='list'?'list':'map';
  const model=useMemo(()=>query.data?buildAtlasModel(query.data):null,[query.data]);
+ // R2 · F12: a sky too dense to read opens as the list; the map stays one tap away (?view=map).
+ const dense=!!model&&atlasTooDense(model.stars.length,model.edges.length);
+ const view=params.get('view')==='list'||(dense&&params.get('view')!=='map')?'list':'map';
  const [layout,setLayout]=useState<{result:LayoutResult;source:LayoutSource}|null>(null);
  const [layoutError,setLayoutError]=useState(false);
  const [searching,setSearching]=useState(false),[term,setTerm]=useState(''),[expanded,setExpanded]=useState(false);
@@ -136,7 +140,7 @@ export default function AtlasV7(){
  },[model,params]);
  const update=(next:{view?:'map'|'list';id?:string|null})=>{
   const out=new URLSearchParams(params);out.delete('focus');
-  const nextView=next.view??view;if(nextView==='list')out.set('view','list');else out.delete('view');
+  const nextView=next.view??view;if(nextView==='list'&&!dense)out.set('view','list');else if(nextView==='map'&&dense)out.set('view','map');else if(nextView==='map')out.delete('view');else out.delete('view');
   const id=next.id===undefined?params.get('id'):next.id;if(id)out.set('id',id);else out.delete('id');
   setParams(out,{replace:true});
  };
@@ -206,6 +210,7 @@ export default function AtlasV7(){
   </section>
   :<section className="v7-atlas-list" aria-label="Concept list">
    <p className="v7-atlas-meta">{summary}</p>
+   {dense&&params.get('view')!=='list'&&<p className="v7-atlas-meta" role="note">Your sky has {model.stars.length.toLocaleString('en-GB')} concepts, so it opens as a list. Choose Map to see the whole sky.</p>}
    <ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
     return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}>
      <StarMark state={star.state} subjectClassName={subjectClass(cluster?.subject??'Other')}/>

@@ -89,6 +89,16 @@ for(const [name,v] of Object.entries(doc.component))
   assert(!/<select\b|type=["'](date|time|datetime-local)["']/.test(text),file+" renders a native select, date or time control (B7)");
  }
  for(const [file,text] of sources)assert(!/#(121212|FF7B6B|1A2028|202841)\b/i.test(text),file+" contains an off-kit colour from the Night critique");
+ // Release plan R1 · F20/F21/F22: every colour has one job. Status icons are for status only (not dates, targets, "Next",
+ // diffs, suggestions or grades); red is for destructive actions and errors only (never Save or Undo); grades use the
+ // shared grade language, not status badges.
+ for(const [file,text] of sources.filter(([f])=>/\/v7\/|V7/.test(f)&&f.endsWith(".tsx")&&!f.includes("features/kit/"))){
+  const misuse=/<StatusBadge\b[^>]*>\s*(?:\{\s*'?|')?(Target|Next|Added|Changed|Suggested|Easy|Hard|Good|Again|Partial|In \d)/.exec(text);
+  assert(!misuse,file+" puts a status icon on '"+(misuse&&misuse[1])+"' (F21: use MetaChip or the grade language)");
+  assert(!/<StatusBadge\b[^>]*\{grade/i.test(text),file+" draws a grade as a status badge (F22: use GradeBadge)");
+  const red=/<Button\b[^>]*\bdestructive\b[^>]*>\s*(Save|Undo|Save changes)\b/.exec(text);
+  assert(!red,file+" draws '"+(red&&red[1])+"' in red (F20: red is for destructive actions and errors)");
+ }
 }
 for(const filename of ["src/ui/v7/KitPrimitives.tsx","src/ui/v7/kit-system.css","src/ui/v7/kit-page.css","src/ui/v7/components.css","src/ui/v7/states.css","src/features/atlas/v7/atlas.css","src/features/atlas/v7/AtlasV7.tsx","src/features/atlas/v7/scene.ts","src/app/v7/shell.css","src/features/home/v7/today.css","src/features/focus/v7/focus.css","src/features/review-run/v7/review.css","src/features/calendar/v7/calendar.css","src/features/project/v7/path.css","src/app/v7/V7Shell.tsx","src/features/home/v7/V7Today.tsx","src/features/focus/v7/FocusV7.tsx","src/features/review-run/v7/ReviewRoundV7.tsx","src/features/calendar/v7/V7CalendarDay.tsx","src/features/calendar/v7/DayGrid.tsx","src/features/calendar/v7/WeekGrid.tsx","src/features/calendar/v7/MonthGrid.tsx","src/features/calendar/v7/AgendaList.tsx","src/features/calendar/v7/QuickAddSheet.tsx","src/features/calendar/v7/OverdueSheetV7.tsx","src/features/calendar/v7/SuggestionsBanner.tsx","src/features/project/v7/V7Path.tsx","src/app/v7/CaptureSheet.tsx","src/app/v7/SearchSheet.tsx","src/features/review/v7/ReviewHubV7.tsx","src/features/review-done/v7/RoundCompleteV7.tsx","src/features/review/v7/review-hub.css","src/features/practice/v7/practice.css","src/features/practice/v7/PracticeV7.tsx","src/features/tasks/v7/TasksV7.tsx","src/features/tasks/v7/tasks.css","src/features/ritual/v7/CloseDayV7.tsx","src/features/ritual/v7/close.css"]){
  const source=readFileSync(filename,"utf8");

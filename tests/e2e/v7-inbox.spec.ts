@@ -101,7 +101,8 @@ test("§6.10 a plan card shows what changes without opening the detail",async({p
  await expect(plan.getByRole("list",{name:"Where the change sits"})).toBeVisible();
  await plan.getByRole("link",{name:"Compare whole plan"}).click();
  await expect(page.getByRole("heading",{level:1,name:"What changes"})).toBeVisible();
- await expect(page.locator(".v7-plan-map .v7-badge",{hasText:"Added"}).first()).toBeVisible();
+ // R1 · F21: "Added" is a diff mark (+ in the success colour), not a status badge.
+ await expect(page.locator(".v7-plan-map .v7-meta-chip[data-kind='added']",{hasText:"Added"}).first()).toBeVisible();
  await expect(page.getByRole("group",{name:"Plan decision"}).getByRole("button",{name:"Approve"})).toBeEnabled();
 });
 

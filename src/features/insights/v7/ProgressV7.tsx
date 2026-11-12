@@ -1,3 +1,4 @@
+import {GRADES,GRADE_KEYS} from '../../../ui/v7/grades';
 import {useEffect,useMemo,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {getStudyApi} from '../../../data/study';
@@ -24,7 +25,7 @@ const axis=(value:number)=>value<60?Math.round(value)+' min':(Math.round(value/6
 const percent=(value:number)=>Math.round(value)+'%';
 const tabWords:Record<Tab,string>={overview:'Overview',learning:'Learning',time:'Time'};
 const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
-const gradeColors=['var(--v7-role-status-danger)','var(--v7-role-status-warning)','var(--v7-role-status-success)','var(--v7-role-selection-fg)'];
+const gradeColors=GRADE_KEYS.map(key=>GRADES[key].colour);
 
 /** Progress hub tabs: Overview · Learning · Time · Log (the time log is its own route). */
 export function ProgressTabs({current}:{current:Tab|'log'}){
@@ -52,7 +53,7 @@ function GoalSheet({goal,onClose,onSaved}:{goal:GoalRecord;onClose:()=>void;onSa
   catch{setProblem('Could not save the goal. Try again.');}finally{setBusy(false);}
  }
  return <Sheet open onClose={onClose} title="Edit goal" footer={<Button variant="primary" loading={busy} onClick={()=>{void save();}}>Save goal</Button>}>
-  <Stepper label="Target hours" value={hours} min={1} max={200} onChange={setHours}/>
+  <Stepper label="Target" unit="h" value={hours} min={1} max={200} onChange={setHours}/>
   {problem&&<p role="alert" className="v7-error">{problem}</p>}
  </Sheet>;
 }

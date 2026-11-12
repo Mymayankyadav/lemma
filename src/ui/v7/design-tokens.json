@@ -403,19 +403,19 @@
       },
       "viz.heat1": {
         "$type": "color",
-        "$value": "#756B51"
+        "$value": "#5560B8"
       },
       "viz.heat2": {
         "$type": "color",
-        "$value": "#9E8E65"
+        "$value": "#7C86DD"
       },
       "viz.heat3": {
         "$type": "color",
-        "$value": "#CFB883"
+        "$value": "#A9B3F2"
       },
       "viz.heat4": {
         "$type": "color",
-        "$value": "#FCEABE"
+        "$value": "#D6DDFF"
       },
       "state.hover": {
         "$type": "color",

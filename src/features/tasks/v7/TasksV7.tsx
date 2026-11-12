@@ -1,3 +1,4 @@
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
@@ -14,7 +15,7 @@ import {ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {useOverdueSummary} from '../../calendar/v7/overdue';
-import TaskSheet from '../TaskSheet';
+import TaskSheet from './TaskSheetV7';
 import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,reorderedTasks,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
 import './tasks.css';
 
@@ -47,6 +48,7 @@ export default function TasksV7(){
  },[reload]);
  useEffect(()=>{const again=()=>setReload(value=>value+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system),[home.data]);
+ const [pathQuery,setPathQuery]=useState('');
  const look=useMemo(()=>new Map(projects.map(project=>[project.id,{title:project.title,klass:subjectClass(kitSubject(project.subject.name))}])),[projects]);
  const put=useCallback((record:TaskRecord)=>setRows(old=>merge(old,[record])),[]);
  const change=useCallback(async(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>{
@@ -126,18 +128,19 @@ export default function TasksV7(){
   {phase==='ready'&&<>
    {segment==='To do'&&(groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2><ul>{group.items.map(task=>rowFor(task,group.items))}</ul></section>)
-     :<p className="v7-tk-empty">{total===0?'No tasks yet. Use Capture to add one.':'Nothing to do here.'}</p>)}
-   {segment==='Doing'&&(doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<p className="v7-tk-empty">Nothing in progress. Move a task here from its menu.</p>)}
+     :<EmptyMoment title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>)}
+   {segment==='Doing'&&(doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<EmptyMoment title="Nothing in progress">Move a task here from its ⋯ menu when you start it.</EmptyMoment>)}
    {segment==='Done'&&<>
-    {done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<p className="v7-tk-empty">Nothing completed yet.</p>}
+    {done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<EmptyMoment title="Nothing completed yet">Finished tasks gather here.</EmptyMoment>}
     {cancelled.length>0&&<details className="v7-tk-cancelled"><summary>Cancelled ({cancelled.length})</summary><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></details>}
    </>}
    {cursor&&<div className="v7-tk-more"><span>{rows.length} of {total} tasks shown</span><Button variant="secondary" small loading={busy} onClick={()=>{void more();}}>Load more</Button></div>}
   </>}
   <Sheet open={picker} onClose={()=>setPicker(false)} title="Filter by path" footer={<Button variant="primary" onClick={()=>setPicker(false)}>Done</Button>}>
+   {projects.length>8&&<input type="search" className="v7-field v7-picker-search" placeholder="Search paths" aria-label="Search paths" value={pathQuery} onChange={event=>setPathQuery(event.target.value)}/>}
    <div className="v7-tk-picker" role="radiogroup" aria-label="Path">
     <button type="button" role="radio" aria-checked={!filter.projectId} className="v7-filter-chip" onClick={()=>setFilter(old=>({...old,projectId:null}))}>All paths</button>
-    {projects.map(project=><button key={project.id} type="button" role="radio" aria-checked={filter.projectId===project.id} className="v7-filter-chip" onClick={()=>setFilter(old=>({...old,projectId:project.id}))}>{project.title}</button>)}
+    {projects.filter(project=>!pathQuery.trim()||project.title.toLowerCase().includes(pathQuery.trim().toLowerCase())||project.id===filter.projectId).map(project=><button key={project.id} type="button" role="radio" aria-checked={filter.projectId===project.id} className="v7-filter-chip" onClick={()=>setFilter(old=>({...old,projectId:project.id}))}>{project.title}</button>)}
    </div>
   </Sheet>
   {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={()=>setEditing(null)} onSaved={put}

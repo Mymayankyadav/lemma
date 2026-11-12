@@ -69,8 +69,11 @@
  :where(html[data-v7]) .v7-sheet-footer > .v7-primary {margin-left:auto;}
  :where(html[data-v7]) .v7-sheet-footer > .v7-primary:only-child {flex:1;}
  :where(html[data-v7]) .v7-radio-row {display:flex;gap:var(--v7-space-3);align-items:center;min-height:var(--v7-touch);}
- :where(html[data-v7]) .v7-stepper {display:inline-flex;align-items:center;gap:var(--v7-space-3);background:var(--v7-role-surface-muted);border-radius:var(--v7-radius-2);}
- :where(html[data-v7]) .v7-stepper output {min-width:var(--v7-space-6);text-align:center;font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-stepper-field {display:grid;gap:var(--v7-space-2);justify-items:start;}
+ :where(html[data-v7]) .v7-stepper-label {font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-stepper {display:inline-flex;align-items:center;gap:var(--v7-space-2);padding:2px;background:var(--v7-role-surface-muted);border-radius:var(--v7-round);}
+ :where(html[data-v7]) .v7-stepper .v7-icon-button {border-radius:var(--v7-round);}
+ :where(html[data-v7]) .v7-stepper output {min-width:calc(var(--v7-space-10) * 2);text-align:center;font:600 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums lining-nums;}
  :where(html[data-v7]) .v7-toast {position:fixed;bottom:var(--v7-space-6);left:var(--v7-space-5);right:var(--v7-space-5);z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin:auto;display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font-size:var(--v7-type-supporting);}
  :where(html[data-v7]) .v7-toast > span {flex:1;}
  :where(html[data-v7]) .v7-toast-preview {position:static;width:100%;max-width:none;margin:0;}
@@ -90,6 +93,11 @@
  :where(html[data-v7]) .v7-card, :where(html[data-v7]) .v7-hero {padding:var(--v7-space-5);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-meter {height:var(--v7-meter);background:var(--v7-role-border-subtle);border-radius:var(--v7-round);}
  :where(html[data-v7]) .v7-meter > span {display:block;height:100%;background:var(--v7-subject);border-radius:inherit;}
+ :where(html[data-v7]) .v7-meter-row[data-complete="true"] .v7-meter > span {background:var(--v7-role-status-success);}
+ :where(html[data-v7]) .v7-meta-chip {display:inline-flex;align-items:center;gap:var(--v7-space-1);min-height:24px;padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/1 var(--v7-sans);text-decoration:none;white-space:nowrap;}
+ :where(html[data-v7]) .v7-meta-chip > svg {width:14px;height:14px;flex:none;}
+ :where(html[data-v7]) .v7-meta-chip[data-kind="added"] {color:var(--v7-role-status-success);border-color:currentColor;}
+ :where(html[data-v7]) .v7-meta-chip[data-kind="suggested"] {border-style:dotted;}
  :where(html[data-v7]) .v7-list-row {display:flex;align-items:center;gap:var(--v7-space-3);min-height:var(--v7-row);}
  :where(html[data-v7]) .v7-grow {flex:1;min-width:0;}
  :where(html[data-v7]) .v7-stat {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-4);background:var(--v7-role-surface-raised);border-radius:var(--v7-radius-3);}
@@ -108,5 +116,53 @@
  :where(html[data-v7]) .v7-time-wheel button {width:100%;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-time-wheel [aria-selected="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-lead {display:grid;place-items:center;flex:none;width:var(--v7-space-10);height:var(--v7-space-10);border-radius:var(--v7-radius-2);background:var(--v7-subject-subtle);color:var(--v7-subject);font-family:var(--v7-glyph);}
- :where(html[data-v7]) .v7-figure-m {font:600 var(--v7-type-numeric-md)/var(--v7-leading-lead) var(--v7-sans);}
+ :where(html[data-v7]) .v7-figure-m {font:500 var(--v7-type-numeric-md)/var(--v7-leading-lead) var(--v7-sans);}
+/* R1 · F17 Form sheet: fields stack with one gap; the footer holds ghost Cancel left, primary right. */
+:where(html[data-v7]) .v7-form-stack {display:grid;gap:var(--v7-space-4);min-width:0;}
+:where(html[data-v7]) .v7-form-stack > .v7-field-group > .v7-segmented {width:100%;}
+:where(html[data-v7]) textarea.v7-field {resize:none;field-sizing:content;min-height:calc(3 * var(--v7-touch) / 1.5);}
+:where(html[data-v7]) .v7-interval-list {display:grid;gap:var(--v7-space-3);min-width:0;margin:0;padding:0;border:0;}
+:where(html[data-v7]) .v7-interval-list > legend {padding:0;margin-bottom:var(--v7-space-2);}
+:where(html[data-v7]) .v7-interval-row {display:grid;gap:var(--v7-space-3);padding-bottom:var(--v7-space-3);border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-interval-head {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);}
+:where(html[data-v7]) .v7-interval-times {display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-space-3);}
+/* R0 · F04/F13/F40: one toast, docked 12 px above the top-most bottom layer (tab bar, session row or sticky action bar),
+   never over a primary action; an ink pill in Day, a raised navy pill in Night. */
+:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom));position:fixed;left:var(--v7-space-4);right:var(--v7-space-4);bottom:calc(var(--v7-toast-dock) + var(--v7-space-3));z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin-inline:auto;display:grid;pointer-events:none;}
+:where(html[data-v7]):has(.v7-shell[data-session="true"]) .v7-toast-host {--v7-toast-dock:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom));}
+:where(html[data-v7]):has(.v7-shell[data-immersive="true"]) .v7-toast-host {--v7-toast-dock:calc(var(--v7-space-6) + env(safe-area-inset-bottom));}
+:where(html[data-v7]):has(.v7-learn-bar,.v7-path-bar,.v7-sticky-actions) .v7-toast-host {--v7-toast-dock:calc(64px + 64px + var(--v7-space-5) + env(safe-area-inset-bottom));}
+:where(html[data-v7]):has(dialog[open]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}
+@media(min-width:700px){:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}}
+:where(html[data-v7]) .v7-app-toast {position:relative;pointer-events:auto;display:flex;align-items:center;gap:var(--v7-space-2);min-height:48px;padding:var(--v7-space-1) var(--v7-space-1) var(--v7-space-1) var(--v7-space-4);border-radius:var(--v7-round);overflow:hidden;
+  background:var(--v7-role-text-primary);color:var(--v7-role-surface-page);box-shadow:var(--v7-shadow-3);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+:where(html[data-v7][data-theme="graph-night"]) .v7-app-toast {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);border:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-app-toast-icon {flex:none;width:20px;height:20px;}
+:where(html[data-v7]) .v7-app-toast[data-tone="danger"] .v7-app-toast-icon {color:var(--v7-role-status-danger);}
+:where(html[data-v7]) .v7-app-toast[data-tone="success"] .v7-app-toast-icon {color:var(--v7-role-status-success);}
+:where(html[data-v7]:not([data-theme="graph-night"])) .v7-app-toast .v7-app-toast-icon {color:currentColor;}
+:where(html[data-v7]) .v7-app-toast-text {flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+:where(html[data-v7]) .v7-app-toast-action {flex:none;min-height:var(--v7-touch);padding-inline:var(--v7-space-3);border:0;border-radius:var(--v7-round);background:transparent;color:var(--v7-role-selection-fg);font:700 var(--v7-type-supporting)/1 var(--v7-sans);}
+:where(html[data-v7]:not([data-theme="graph-night"])) .v7-app-toast-action {color:var(--v7-role-surface-page);}
+:where(html[data-v7]) .v7-app-toast-close {flex:none;width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:0;border-radius:var(--v7-round);background:transparent;color:inherit;opacity:.8;}
+:where(html[data-v7]) .v7-app-toast-close svg {width:16px;height:16px;}
+:where(html[data-v7]) .v7-app-toast-countdown {position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--v7-role-selection-fg);transform-origin:left;animation:v7-toast-countdown linear forwards;}
+@keyframes v7-toast-countdown {from{transform:scaleX(1)}to{transform:scaleX(0)}}
+:where(html[data-v7]) .v7-sheet-footer > .v7-primary:only-child {flex:1;margin-left:0;}
+:where(html[data-v7]) .v7-sheet-danger-zone {display:grid;justify-items:start;gap:var(--v7-space-2);padding-top:var(--v7-space-3);border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+/* R1 · F33: disabled looks disabled (40% of its own style) and says why in a reason line beneath (v7-disabled-reason). */
+:where(html[data-v7]) .v7-button:disabled:not([aria-busy="true"]) {opacity:.4;}
+/* R1 · F35: no resize grips; text areas grow with their content. */
+:where(html[data-v7]) textarea {resize:none;field-sizing:content;}
+/* R1 · F32: a selected filter chip is indigo tint, indigo text, a leading ✓ and a bolder label. */
+:where(html[data-v7]) .v7-filter-chip:is([aria-pressed="true"],[aria-checked="true"]) {font-weight:700;border-color:transparent;background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+:where(html[data-v7]) .v7-filter-chip:is([aria-pressed="true"],[aria-checked="true"])::before {content:"";width:14px;height:14px;background:currentColor;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/contain no-repeat;}
+:where(html[data-v7]) .v7-picker-search {width:100%;margin-bottom:var(--v7-space-2);}
+:where(html[data-v7]) .v7-menu:has(.v7-picker-search) {max-height:min(60vh,420px);overflow:auto;}
+/* R2 · F27 placement rule: a hero emblem is cropped by its container at the bottom-right, showing only its corner, so it
+   never sits behind the title or body text. */
+:where(html[data-v7]) .v7-path-head > :is(h1,.v7-path-goal) {max-width:calc(100% - 64px);}
+/* R2 · F77: long content is clamped where it is listed; the full text is one tap away. */
+:where(html[data-v7]) :is(.v7-cards-front,.v7-paths-title,.v7-tk-title,.v7-learn-front) {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;}
 }

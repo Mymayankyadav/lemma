@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {Link,useNavigate} from 'react-router';
-import {Check,ChevronDown,Coffee,MoreHorizontal,Pause,Play,Waves} from 'lucide-react';
+import {Check,ChevronDown,CircleAlert,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
+import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useHome} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import {getThoughtApi} from '../../../data/parked-thoughts';
@@ -22,9 +23,17 @@ function readDraft(id:string):string|null{try{return localStorage.getItem(draftK
 function writeDraft(id:string,value:string|null){try{if(value===null)localStorage.removeItem(draftKey(id));else localStorage.setItem(draftKey(id),value);}catch{/* a device-local convenience only */}}
 const ratings=['Rough','Hard going','Steady','Good','Great'] as const;
 
-function focusedMinutes(entry:StudyEntryRecord,now:number):number{
+/** Whole focused minutes so far (0 when less than half a minute has been focused). */
+export function focusedMinutes(entry:StudyEntryRecord,now:number):number{
  let total=0;for(const interval of entry.intervals)if(interval.kind==='focus')total+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));
- return Math.max(1,Math.round(total/60_000));
+ return Math.round(total/60_000);
+}
+/** R0 · F09: what a learner reads when a focus action fails: what happened and what is safe, never validation text. */
+export function focusError(reason:unknown,action:'save'|'other'='other'):string{
+ const message=reason instanceof Error?reason.message:'';
+ if(/another device|changed/i.test(message))return 'This session changed on another device. Refresh to see where it is now.';
+ if(/end must follow start|interval|minutes/i.test(message))return 'This session is too short to save. Discard it, or keep going and finish later.';
+ return action==='save'?'We couldn’t save this session. It is still running, so nothing is lost; try again.':'That didn’t work. Your session is still running; try again.';
 }
 
 /** PLAN §6.3: one session, nothing else on screen. */
@@ -44,7 +53,7 @@ export default function FocusV7(){
    const fresh=await getStudyApi().activeStudyEntry();
    if(!fresh||fresh.id!==entry.id)throw Error('This session changed on another device. Refresh to continue.');
    await action(fresh);
-  }catch(reason){setError(reason instanceof Error?reason.message:'That did not work. Try again.');}
+  }catch(reason){setError(focusError(reason));}
   finally{setBusy(false);refresh();announceFocusChange();}
  }
  const pause=()=>act(fresh=>fresh.status==='paused'?getStudyApi().resumeStudyEntry(fresh.id,fresh.version):getStudyApi().pauseStudyEntry(fresh.id,fresh.version));
@@ -66,12 +75,12 @@ export default function FocusV7(){
  const park=async()=>{
   if(!entry||!thought.trim())return;
   try{await getThoughtApi().createThought({text:thought.trim(),studyEntryId:entry.id});setThought('');setNoted('Parked');}
-  catch(reason){setError(reason instanceof Error?reason.message:'Could not park that thought.');}
+  catch{setError('We couldn’t park that thought. It is still in the box; try again.');}
  };
  const drifted=async()=>{
   if(!entry)return;
   try{await getStudyEventApi().recordEvent({entryId:entry.id,kind:'drift',durationMinutes:1});setNoted('Noted');}
-  catch(reason){setError(reason instanceof Error?reason.message:'Could not log that.');}
+  catch{setError('We couldn’t note that. Try again.');}
  };
  useEffect(()=>{if(!noted)return;const timer=window.setTimeout(()=>setNoted(null),1000);return ()=>window.clearTimeout(timer);},[noted]);
  // Desktop keys: Space pauses or resumes, B takes a break, Esc minimises.
@@ -97,12 +106,13 @@ export default function FocusV7(){
  return <main id="main-content" className={'v7-focus '+subjectClass(subject)} aria-label="Focus" data-word={word}>
   <ImmersiveHeader leave={<Link className="v7-icon-button" to="/" aria-label="Minimise"><ChevronDown aria-hidden="true"/></Link>}
    center={project?<span className="v7-focus-subject"><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}</span></span>:<span className="v7-meta">Focus</span>}
-   more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-expanded={menu} onClick={()=>setMenu(open=>!open)}><MoreHorizontal aria-hidden="true"/></button>
-    {menu&&<div className="v7-focus-menu" role="menu" aria-label="Timer details">
-     {clock.endsAt&&<p className="v7-meta">This phase ends at {clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)}.</p>}
-     {entry.mode&&entry.mode!=='open'&&<button type="button" role="menuitem" disabled={busy} onClick={()=>{setMenu(false);void act(fresh=>getStudyApi().nextPhase(fresh.id,fresh.version));}}>Skip to the next phase</button>}
-     <button type="button" role="menuitem" disabled={busy} onClick={()=>{setMenu(false);void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}}>Take control on this device</button>
-    </div>}</div>}/>
+   more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-haspopup="menu" aria-expanded={menu} onClick={()=>setMenu(true)}><MoreHorizontal aria-hidden="true"/></button>
+    {menu&&<ActionSheet open onClose={()=>setMenu(false)} title="Timer" label="Timer details"
+     note={clock.endsAt?'This phase ends at '+clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)+'.':undefined}
+     items={[
+      ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().nextPhase(fresh.id,fresh.version));}}]:[]),
+      {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
+     ]}/>}</div>}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>
   <section className="v7-focus-centre" aria-label="Timer">
    {/* FO1/KC23: the emblem is centred on the timer, with the kit's Night hero glow; eyebrow, timer and intention are one block. */}
@@ -132,7 +142,7 @@ export default function FocusV7(){
     <button type="button" className="v7-focus-drift" onClick={()=>{void drifted();}} aria-label="Drifted: log a distraction"><Waves aria-hidden="true"/><span aria-hidden="true">Drifted</span></button>
    </form>
    <p className="v7-focus-noted" role="status">{noted?<><Check aria-hidden="true"/>{noted}</>:' '}</p>
-   {!!error&&<p className="v7-alert" role="alert">{error}</p>}
+   {!!error&&<div className="v7-focus-error" role="alert"><CircleAlert aria-hidden="true"/><p>{error}</p><Button small variant="ghost" onClick={()=>setError('')}>Dismiss</Button></div>}
    <div className="v7-focus-controls">
     <div><button type="button" className="v7-focus-control" disabled={busy||onBreak||entry.status==='paused'} onClick={()=>{void takeBreak();}} aria-label="Take a break"><Coffee aria-hidden="true"/></button><span>Break</span></div>
     <div><button type="button" className="v7-focus-control v7-focus-main" disabled={busy} onClick={()=>{void pause();}} aria-label={entry.status==='paused'?(onBreak?'Resume now':'Resume'):'Pause'}>
@@ -141,20 +151,25 @@ export default function FocusV7(){
     <div><button type="button" className={'v7-focus-control'+(clock.progress!==null&&clock.progress>=1?' v7-focus-finish':'')} disabled={busy} onClick={openFinish} aria-label="Finish"><Check aria-hidden="true"/></button><span>Finish</span></div>
    </div>
   </section>
+  {finishing&&minutes<1?<Sheet open onClose={()=>setFinishing(false)} title="Nothing to log yet" eyebrow={eyebrow}
+   footer={<><Button variant="ghost" onClick={()=>setFinishing(false)}>Keep going</Button><Button variant="primary" destructive loading={busy} onClick={()=>{void discard();}}>Discard session</Button></>}>
+   <p>Less than a minute was focused, so there is no time to save. Discard this session, or keep going and finish later.</p>
+  </Sheet>:
   <Sheet open={finishing} onClose={()=>setFinishing(false)} title="Log this session" eyebrow={eyebrow}
-   footer={<>{confirmDiscard?<Button destructive disabled={busy} onClick={()=>{void discard();}}>Discard this session</Button>
-     :<Button variant="ghost" destructive onClick={()=>setConfirmDiscard(true)}>Discard</Button>}
-    <Button variant="primary" disabled={busy} onClick={()=>{void save();}}>Save</Button></>}>
+   footer={<Button variant="primary" disabled={busy} onClick={()=>{void save();}}>Save</Button>}>
    <div className="v7-focus-finish-form">
-    <Stepper label="Minutes to save" value={minutes} min={1} max={1440} onChange={setMinutes}/>
+    <Stepper label="Focused time" unit="min" value={minutes} min={1} max={1440} onChange={setMinutes}/>
     <fieldset className="v7-focus-rating"><legend>How did it go?</legend>
      <div role="radiogroup" aria-label="How did it go?">{ratings.map((label,index)=><button key={label} type="button" role="radio" aria-checked={rating===index+1} aria-label={label} onClick={()=>setRating(index+1)}>
       <span aria-hidden="true"/></button>)}</div>
      <p className="v7-meta"><span>Rough</span><span>Great</span></p></fieldset>
     <label className="v7-today-field">What did you learn? <span className="v7-meta">Optional</span>
      <textarea rows={3} value={learned} onChange={event=>setLearned(event.target.value)}/></label>
-    {confirmDiscard&&<p className="v7-disabled-reason" role="status">Discarding removes this session's time. It can't be undone.</p>}
+    {/* R1 · F17/F39: Save is the footer's only, full-width action; a destructive action lives last in the body. */}
+    <div className="v7-sheet-danger-zone">{confirmDiscard?<><p className="v7-meta" role="status">Discarding removes this session's time. It can't be undone.</p>
+     <Button small destructive disabled={busy} onClick={()=>{void discard();}}>Discard this session</Button></>
+     :<Button small variant="ghost" destructive onClick={()=>setConfirmDiscard(true)}>Discard session</Button>}</div>
    </div>
-  </Sheet>
+  </Sheet>}
  </main>;
 }

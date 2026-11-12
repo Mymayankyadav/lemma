@@ -1,5 +1,6 @@
 // PLAN §6.4 B: the v7 review round. The durable-run engine is the N83 one used by v6:
 // a grade's committed reviewId is stored BEFORE any advance, so a retry never records it twice.
+import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
@@ -171,7 +172,7 @@ export default function ReviewRoundV7(){
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
      aria-label={label+(choice?', next in '+formatInterval(choice.delay/86_400_000):'')+' ('+(index+1)+')'}>
-     <span>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small></button>;})}</div>}
+     <span><GradeGlyph grade={label.toLowerCase() as GradeKey} size={14}/>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small></button>;})}</div>}
   </div>}
  </main>;
 }

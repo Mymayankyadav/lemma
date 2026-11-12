@@ -7,6 +7,8 @@
 :where(html[data-v7]) .v7-chart-legend {display:flex;flex-wrap:wrap;gap:var(--v7-space-4);list-style:none;padding:0;margin:0;color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);}
 :where(html[data-v7]) .v7-chart-legend li {display:inline-flex;align-items:center;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-chart-legend i {width:var(--v7-space-4);height:var(--v7-ring);}
+/* F45: the swatch matches the mark: a square for bars, a line for lines. */
+:where(html[data-v7]) .v7-chart-legend[data-mark="bar"] i {width:10px;height:10px;border-radius:2px;}
 :where(html[data-v7]) .v7-chart-direct-label {display:flex;align-items:center;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
 :where(html[data-v7]) svg.v7-plot {display:block;width:100%;height:auto;overflow:visible;}
 :where(html[data-v7]) .v7-chart-grid {stroke:var(--v7-role-border-subtle);stroke-width:1;}

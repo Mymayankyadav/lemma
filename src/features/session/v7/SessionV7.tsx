@@ -55,7 +55,7 @@ export default function SessionV7(){
   <section className="v7-learn-card" aria-label="Summary">
    <p className="v7-eyebrow">Summary</p>
    {session.summaryText?<MathText source={session.summaryText}/>:<p className="v7-meta">Your tutor has not written a summary yet.</p>}
-   <p className="v7-meta">{[session.styleName&&'Style: '+session.styleName,session.pages&&'Pages '+session.pages,summary.checkpointCode&&'Checkpoint '+summary.checkpointCode].filter(Boolean).join(' · ')}</p>
+   <p className="v7-meta">{[session.styleName&&'Style: '+session.styleName,session.pages&&'Pages '+session.pages,].filter(Boolean).join(' · ')}</p>
    {session.summaryText&&<Button small onClick={()=>{void navigator.clipboard?.writeText(session.summaryText??'').then(()=>notify('Summary copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy summary</Button>}
   </section>
   {open.length>0&&<section aria-label="Things to revisit"><h2 className="v7-learn-h2">Things to revisit</h2>
@@ -70,7 +70,7 @@ export default function SessionV7(){
   </section>
   {session.cards.length>0&&<section aria-label="Cards from this session"><h2 className="v7-learn-h2">{sessionCardSummary(session.cards.length,session.cards.filter(card=>card.state==='pending').length)}</h2>
    <ul className="v7-learn-list">{session.cards.slice(0,cards).map((card,index)=><li key={card.noteNo+'-'+index}>
-    <Link className="v7-learn-row" to={card.state==='pending'?'/proposals':'/cards/'+card.noteNo}><span className="v7-learn-front"><MathText source={card.front}/></span><small>{card.state==='pending'?'Waiting':'N'+card.noteNo}</small><ChevronRight aria-hidden="true"/></Link></li>)}</ul>
+    <Link className="v7-learn-row" to={card.state==='pending'?'/proposals':'/cards/'+card.noteNo}><span className="v7-learn-front"><MathText source={card.front}/></span><small>{card.state==='pending'?'Waiting for approval':'In your cards'}</small><ChevronRight aria-hidden="true"/></Link></li>)}</ul>
    {cards<session.cards.length&&<Button onClick={()=>setCards(value=>value+20)}>Show {Math.min(20,session.cards.length-cards)} more cards</Button>}
   </section>}
   {pending>0&&<Link className="v7-learn-row" to="/proposals"><span>{pending} {pending===1?'proposal':'proposals'} waiting in your Inbox</span><ChevronRight aria-hidden="true"/></Link>}

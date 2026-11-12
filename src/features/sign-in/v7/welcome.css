@@ -2,7 +2,7 @@
 /* PLAN §6.15 Sign-in and first run. */
 @layer v7-components {
  :where(html[data-v7]) .v7-signin {position:relative;display:grid;place-items:center;min-height:100dvh;padding:var(--v7-space-6) var(--v7-page-margin);overflow:hidden;isolation:isolate;text-align:center;}
- :where(html[data-v7]) .v7-signin-rose {position:absolute;z-index:-1;top:50%;left:50%;width:min(110vw,520px);transform:translate(-50%,-58%);opacity:.22;color:var(--v7-role-subject-geometry);pointer-events:none;}
+ :where(html[data-v7]) .v7-signin-rose {position:absolute;z-index:-1;top:50%;left:50%;width:min(110vw,520px);transform:translate(-50%,-58%);opacity:.24;color:var(--v7-role-link-fg);pointer-events:none;}
  :where(html[data-v7]) .v7-signin-rose svg {width:100%;height:auto;}
  :where(html[data-v7]) .v7-signin-content {display:grid;justify-items:center;gap:var(--v7-space-3);width:min(100%,360px);}
  :where(html[data-v7]) .v7-signin-mark {font:italic 400 3.5rem/1 var(--v7-serif);}

@@ -53,7 +53,7 @@
 
 :where(html[data-v7]) .v7-reading-italic {font-style:italic;}
 :where(html[data-v7]) .v7-body-strong {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
-:where(html[data-v7]) .v7-numeric-xl {font:600 var(--v7-type-numeric-xl)/1 var(--v7-sans);letter-spacing:-.02em;}
+:where(html[data-v7]) .v7-numeric-xl {font:500 var(--v7-type-numeric-xl)/1 var(--v7-sans);letter-spacing:-.02em;}
 :where(html[data-v7]) .v7-numeric-lg {font:600 var(--v7-numeric-lg)/1.1 var(--v7-sans);letter-spacing:-.02em;}
 :where(html[data-v7]) .v7-numeric-md {font:600 var(--v7-type-numeric-md)/1.14 var(--v7-sans);letter-spacing:-.02em;}
 :where(html[data-v7]) .v7-density-label {display:flex;align-items:center;gap:var(--v7-space-3);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}

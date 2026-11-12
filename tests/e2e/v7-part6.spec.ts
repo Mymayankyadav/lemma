@@ -67,12 +67,13 @@ test("Path More menu pauses a path and its Cards tab lists cards; Review N opens
  await page.goto(at("/"));
  await page.locator(".v7-today-tile").first().click();
  await expect(page.locator(".v7-path")).toBeVisible();
- await page.getByRole("button",{name:"More"}).click();
+ await page.getByRole("button",{name:"More path actions"}).click();
  await page.getByRole("menuitem",{name:"Pause path"}).click();
  await expect(page.locator(".v7-path-chips")).toContainText("Paused");
  await page.getByRole("tab",{name:/^Cards/}).click();
  await expect(page.getByRole("list",{name:"Cards on this path"})).toBeVisible();
- await page.getByRole("group",{name:"Path actions"}).getByRole("link",{name:/^Review/}).click();
+ // R2 · F11: Review moved from the bottom bar to the header actions.
+ await page.getByRole("navigation",{name:"Page actions"}).getByRole("link",{name:/^Review/}).click();
  await expect(page).toHaveURL(/#\/review\?path=/);
  await expect(page.getByLabel("Cards in this round")).toBeVisible();
 });

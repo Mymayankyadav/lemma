@@ -1,5 +1,6 @@
 import {Fragment,lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
+import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
@@ -72,6 +73,8 @@ function Capture(){
   window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll);
  },[]);
  useEffect(()=>setHidden(false),[location.pathname]);
+ // R0 · F13: an error toast belongs to the screen that raised it.
+ useEffect(()=>clearToasts(item=>item.tone==='danger'),[location.pathname]);
  return <>
   <button type="button" className="v7-capture" data-hidden={hidden&&mode==='closed'?'true':'false'} aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onFocus={()=>setHidden(false)}
@@ -169,11 +172,23 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  </header>;
 }
 /** B. Detail header: a sticky glass bar with Back, a short title and one action. */
-export function DetailHeader({title,back,action}:{title:string;back?:string;action?:ReactNode}){
- const navigate=useNavigate(),location=useLocation();
- return <header className="v7-detail-header">
+export function DetailHeader({title,back,action,compact}:{title:string;back?:string;action?:ReactNode;
+ /** R2 · F11: shown beside the bar title once the page's large title has scrolled away (an emblem thumbnail, a progress ring). */
+ compact?:ReactNode}){
+ const navigate=useNavigate(),location=useLocation(),ref=useRef<HTMLElement>(null);
+ // R1 · F18: the small bar title stays hidden while the page's own large title is on screen, so a title is never shown
+ // twice; it appears once the large title scrolls under the bar. Pages without a visible H1 always show it.
+ const [pageTitleVisible,setPageTitleVisible]=useState(false);
+ useEffect(()=>{
+  const heading=ref.current?.parentElement?.querySelector<HTMLElement>('h1:not(.v7-sr-only)');
+  if(!heading||typeof IntersectionObserver==='undefined'){setPageTitleVisible(false);return;}
+  const bar=ref.current?.getBoundingClientRect().height??56;
+  const observer=new IntersectionObserver(([entry])=>setPageTitleVisible(entry.isIntersecting),{rootMargin:'-'+Math.round(bar)+'px 0px 0px 0px'});
+  observer.observe(heading);return ()=>observer.disconnect();
+ },[title,location.pathname,location.search]);
+ return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
   <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default')navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
-  <p className="v7-detail-title" aria-hidden="true">{title}</p>
+  <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
   <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
  </header>;
 }

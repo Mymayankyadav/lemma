@@ -24,4 +24,4 @@ export function lastText(last:string|null,today:string):string{
  if(days===1)return 'Last practised yesterday';
  return 'Last practised '+days+' days ago';
 }
-export const ratingNames:Readonly<Record<1|2|3|4,string>>={1:"Couldn't recall",2:'Hard',3:'Good',4:'Easy'};
+export const ratingNames:Readonly<Record<1|2|3|4,string>>={1:'Again',2:'Hard',3:'Good',4:'Easy'};

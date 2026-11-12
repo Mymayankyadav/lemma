@@ -18,6 +18,24 @@ function movePoint(event: KeyboardEvent<SVGElement | HTMLButtonElement>, index: 
   event.currentTarget.closest("svg,ul,.v7-heatmap")?.querySelectorAll<SVGElement | HTMLButtonElement>("[data-chart-point]")[next]?.focus();
 }
 /** One graphic and one equivalent table share the same data and summary. */
+/** Approximate width of a caption-size label in plot units (the plot is drawn in a 360-unit viewBox). */
+export const labelWidth = (text: string) => text.length * 6.4;
+/**
+ * R0 · F06: which x tick labels to print. Labels are thinned by the room each one has (at least an 8-unit gap); a data
+ * point may mark a preferred tick (a week or month start) by giving `tickLabel`, and those win when thinning.
+ */
+export function visibleTicks(labels: string[], group: number, preferred: boolean[] = labels.map(() => true), gap = 8): boolean[] {
+  const widest = Math.max(0, ...labels.map(labelWidth));
+  const every = Math.max(1, Math.ceil((widest + gap) / Math.max(1, group)));
+  const anyPreferred = preferred.some(Boolean) && preferred.some(value => !value);
+  const out = labels.map(() => false);
+  let last = -Infinity;
+  labels.forEach((label, index) => {
+    if (!label || (anyPreferred && !preferred[index])) return;
+    if (index - last >= every) { out[index] = true; last = index; }
+  });
+  return out;
+}
 export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false }: ChartProps) {
   const [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null), id = useId();
   const percentage = /%/.test(format(100));
@@ -31,12 +49,17 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   const peak = data.reduce((best, row, index) => sum(row.values) > sum(data[best].values) ? index : best, 0);
   const summary = suppliedSummary ?? (!data.length ? "No data in this range yet." : percentage ?
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
-    `You studied ${format(total)} in this range, most on ${data[peak].label}.`);
+    // F43: per-metric wording. Time totals read "You studied 3 h 55 min"; counts read "413 reviews in this range".
+    /\b(h|min)\b/.test(format(total)) ? `You studied ${format(total)} in this range, most on ${data[peak].label}.` :
+    `${format(total)} ${title.toLowerCase().replace(/ (by|over|per) .*$/, "")} in this range, most on ${data[peak].label}.`);
   const width = 360, height = compact ? 150 : 224, left = 40, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
   const direct=series.length>1&&series.length<=3;
-  const plotRight=width-(direct?102:24);
+  // F06: a target line is labelled at the right edge, outside the data, so it never overprints a value.
+  const targetShown = target !== undefined && target >= 0 && target <= maximum;
+  const plotRight=width-(direct?102:targetShown?52:24);
   const group = (plotRight - left) / Math.max(1, data.length), bar = group * .5;
   const point = (index: number) => left + group * (index + .5);
+  const ticksShown = visibleTicks(data.map(row => row.tickLabel ?? row.label), group, data.some(row => row.tickLabel !== undefined) ? data.map(row => !!row.tickLabel) : undefined);
   const y = (value: number) => bottom - Math.min(maximum, finite(value)) / maximum * plotHeight;
   // KC3/KC4: subject colour means a subject. A series that is not a subject takes the neutral data colour, never indigo.
   const color = (index: number) => {
@@ -62,18 +85,23 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
-    {!!data.length && series.length > 3 && <ul className="v7-chart-legend">{series.map((seriesItem, index) => {
+    {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
     })}</ul>}
+    {/* F04/F46: the selection readout is pinned above the plot, so it never lands under a bar or a sticky bar. */}
+    {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
     {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} role="group" aria-label={title}>
         {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
-        {target !== undefined && target >= 0 && target <= maximum && <g><line x1={left} x2={width - 16} y1={y(target)} y2={y(target)} className="v7-chart-target" /><text x={width - 16} y={y(target) - 6} textAnchor="end" className="v7-chart-data-label">Goal {format(target)}</text></g>}
+        {targetShown && <g className="v7-chart-target-group"><line x1={left} x2={plotRight + 4} y1={y(target!)} y2={y(target!)} className="v7-chart-target" /><text x={plotRight + 8} y={y(target!) - 2} textAnchor="start" className="v7-chart-data-label"><tspan x={plotRight + 8}>Goal</tspan><tspan x={plotRight + 8} dy="12">{format(target!)}</tspan></text></g>}
         {kind === "line" && area && !!data.length && series.map((item, index) => <polygon key={item.label} fill={color(index)} opacity=".08" points={`${point(0)},${bottom} ${data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} ${point(data.length - 1)},${bottom}`} />)}
         {kind === "line" && series.map((item, index) => <polyline key={item.label} fill="none" stroke={color(index)} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} />)}
         {data.map((row, index) => {
           let accumulated = 0;
+          const peakValue = kind === "stacked" ? sum(row.values) : Math.max(...row.values, 0), valueText = format(peakValue);
+          // F06: a value label only when it fits its bar and says something (never "0 min").
+          const valueLabel = peakValue > 0 && (kind === 'line' ? index === data.length - 1 : data.length <= 7 && labelWidth(valueText) <= group - 2);
           return <g key={`${row.label}-${index}`} role="button" data-chart-point="" tabIndex={selected === index || selected === null && index === 0 ? 0 : -1}
             aria-label={`${row.label}: ${row.values.map((value, j) => `${series[j]?.label ?? ""} ${format(value)}`).join(", ")}`}
             onClick={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onFocus={() => setSelected(index)}
@@ -85,9 +113,9 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
               const radius = kind === "stacked" && j !== row.values.length - 1 ? 0 : Math.min(4, w / 2, heightY / 2);
               return <path key={j} d={`M${x} ${topY + heightY}V${topY + radius}Q${x} ${topY} ${x + radius} ${topY}H${x + w - radius}Q${x + w} ${topY} ${x + w} ${topY + radius}V${topY + heightY}Z`} fill={color(j)} />;
             })}
-            {(kind === 'line'?index===data.length-1:data.length<=7) && <text x={point(index)} y={Math.max(16, y(kind === "stacked" ? accumulated : Math.max(...row.values, 0)) - 8)} textAnchor="middle" className="v7-chart-data-label">{format(kind === "stacked" ? accumulated : Math.max(...row.values, 0))}</text>}
+            {valueLabel && <text x={point(index)} y={Math.max(16, y(peakValue) - 8)} textAnchor={kind === 'line' && index === data.length - 1 ? "end" : "middle"} className="v7-chart-data-label">{valueText}</text>}
             <rect x={point(index) - group / 2} y={top} width={group} height={plotHeight} fill="transparent" />
-            <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.tickLabel??row.label}</text>
+            {ticksShown[index] && <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.tickLabel??row.label}</text>}
           </g>;
         })}
         {labels.map(({item,j,index,actual,labelY})=><g key={item.label} aria-hidden="true">
@@ -95,7 +123,6 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
           <foreignObject x={plotRight+10} y={labelY-10} width={92} height={22}><span className="v7-chart-direct-label">{(item.subject??subjectFor(item.label))&&<SubjectMark subject={(item.subject??subjectFor(item.label))!}/>}<span>{item.label}</span></span></foreignObject>
         </g>)}
       </svg> : null}
-    {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
   </section>;
 }
 export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string }[]; format?: (value: number) => string }) {
@@ -103,7 +130,7 @@ export function HorizontalBars({ title, data, format = String }: { title: string
   const max = Math.max(1, ...data.map(item => finite(item.value))), total = data.reduce((value, item) => value + finite(item.value), 0);
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} subjects; bars are scaled to highest ({format(max)}).</p>
+    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} {data.length===1?'subject':'subjects'}, most in {data.reduce((best,item)=>item.value>best.value?item:best,data[0]??{label:'',value:0}).label}.</p>
     {table ? <table><thead><tr><th scope="col">Subject</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.label}><th scope="row">{item.label}</th><td>{format(item.value)}</td></tr>)}</tbody></table> :
       <ul className="v7-horizontal-bars">{data.map((item, index) => <li key={item.label}><button type="button" data-chart-point="" onKeyDown={event => { movePoint(event, index, data.length); }} onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)}>
         <span className="v7-subject-label">{subjectFor(item.label) && <SubjectMark subject={subjectFor(item.label)!} />}{item.label}</span><span>{format(item.value)}</span>
@@ -133,7 +160,7 @@ export function Heatmap({ title, data, format = String }: { title: string; data:
             onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onKeyDown={event => { movePoint(event, index, data.length, 7); }}><span aria-hidden="true" /></button>)}
         </div>
       </div></div>
-      <p className="v7-caption">{weeks} weeks · Scroll horizontally on narrow screens. Today has an outlined cell.</p>
+      <p className="v7-caption">Last {weeks} weeks, today ringed.</p>
       <div className="v7-heat-swatches" aria-label="Heatmap legend">{["0", "1–15", "16–30", "31–60", "60+ min"].map((label, index) => <span key={label}><i style={{ background: index === 0 ? "transparent" : `var(--v7-role-viz-heat${index})` }} aria-hidden="true" />{label}</span>)}</div>
     </>}
     {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {displayHeatmapDate(data[selected].date)}</p>}

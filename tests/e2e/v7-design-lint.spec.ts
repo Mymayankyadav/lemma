@@ -8,7 +8,8 @@ import {openScene,shots} from "./v7-scenes";
 //  - a subject colour used as a bare dot (no glyph within 8 px);
 //  - indigo (action.bg) on a meter, bar or chart;
 //  - text cut to fewer than four characters by an ellipsis;
-//  - a horizontal page scroll.
+//  - a horizontal page scroll;
+//  - an emblem over its tier's stroke budget (R2) or a textarea with a resize grip (R1).
 test.use({deviceScaleFactor:1,locale:"en-IN",timezoneId:"Asia/Kolkata"});
 const sizes=[{width:390,height:844},{width:320,height:640}];
 
@@ -69,6 +70,16 @@ for(const scheme of ["light","dark"] as const){
       if(node.scrollWidth<=node.clientWidth+1)continue;
       const chars=Math.floor(node.clientWidth/(parseFloat(style.fontSize)*.55));
       if(chars<4)out.push("text cut to "+chars+" characters: "+where(node));
+     }
+     // Release plan R2 (emblem v2, audit F27): no tile with more than 24 strokes, no hero with more than 160, glyphs 1–3.
+     for(const node of document.querySelectorAll("svg.v7-emblem[data-tier]")){
+      const tier=node.getAttribute("data-tier"),strokes=Number(node.getAttribute("data-strokes"));
+      const limit=tier==="tile"?24:tier==="glyph"?3:160;
+      if(strokes>limit)out.push("emblem "+tier+" with "+strokes+" strokes");
+     }
+     // Release plan R1 (F35): no textarea resize grips.
+     for(const node of document.querySelectorAll("textarea")){
+      if(visible(node)&&!inClosedDialog(node)&&getComputedStyle(node).resize!=="none")out.push("textarea with a resize grip: "+where(node));
      }
      if(document.documentElement.scrollWidth>innerWidth+1)out.push("horizontal page scroll: "+document.documentElement.scrollWidth+" > "+innerWidth);
      return out;

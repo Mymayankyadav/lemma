@@ -475,9 +475,9 @@
           "type": "COLOR",
           "modes": {
             "day": "#7E8CAB",
-            "night": "#756B51",
+            "night": "#5560B8",
             "day-hc": "#7E8CAB",
-            "night-hc": "#756B51"
+            "night-hc": "#5560B8"
           }
         },
         {
@@ -485,9 +485,9 @@
           "type": "COLOR",
           "modes": {
             "day": "#516494",
-            "night": "#9E8E65",
+            "night": "#7C86DD",
             "day-hc": "#516494",
-            "night-hc": "#9E8E65"
+            "night-hc": "#7C86DD"
           }
         },
         {
@@ -495,9 +495,9 @@
           "type": "COLOR",
           "modes": {
             "day": "#2F4275",
-            "night": "#CFB883",
+            "night": "#A9B3F2",
             "day-hc": "#2F4275",
-            "night-hc": "#CFB883"
+            "night-hc": "#A9B3F2"
           }
         },
         {
@@ -505,9 +505,9 @@
           "type": "COLOR",
           "modes": {
             "day": "#172448",
-            "night": "#FCEABE",
+            "night": "#D6DDFF",
             "day-hc": "#172448",
-            "night-hc": "#FCEABE"
+            "night-hc": "#D6DDFF"
           }
         },
         {
@@ -1607,9 +1607,9 @@
           "description": "Semantic viz heat1 role",
           "modes": {
             "day": "#7E8CAB",
-            "night": "#756B51",
+            "night": "#5560B8",
             "day-hc": "#7E8CAB",
-            "night-hc": "#756B51"
+            "night-hc": "#5560B8"
           }
         },
         {
@@ -1618,9 +1618,9 @@
           "description": "Semantic viz heat2 role",
           "modes": {
             "day": "#516494",
-            "night": "#9E8E65",
+            "night": "#7C86DD",
             "day-hc": "#516494",
-            "night-hc": "#9E8E65"
+            "night-hc": "#7C86DD"
           }
         },
         {
@@ -1629,9 +1629,9 @@
           "description": "Semantic viz heat3 role",
           "modes": {
             "day": "#2F4275",
-            "night": "#CFB883",
+            "night": "#A9B3F2",
             "day-hc": "#2F4275",
-            "night-hc": "#CFB883"
+            "night-hc": "#A9B3F2"
           }
         },
         {
@@ -1640,9 +1640,9 @@
           "description": "Semantic viz heat4 role",
           "modes": {
             "day": "#172448",
-            "night": "#FCEABE",
+            "night": "#D6DDFF",
             "day-hc": "#172448",
-            "night-hc": "#FCEABE"
+            "night-hc": "#D6DDFF"
           }
         },
         {

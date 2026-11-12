@@ -1,3 +1,4 @@
+import {GradeGlyph} from '../../../ui/v7/grades';
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Check} from 'lucide-react';
@@ -57,7 +58,7 @@ export default function RoundCompleteV7(){
     <ul className="v7-rc-bar" role="img" aria-label={grades.map(name=>summary.grades[name]+' '+gradeName[name]).join(', ')}>
      {grades.filter(name=>summary.grades[name]>0).map(name=><li key={name} data-grade={name} style={{flexGrow:summary.grades[name]}}>{summary.grades[name]}</li>)}
     </ul>
-    <ul className="v7-rc-legend">{grades.map(name=><li key={name} data-grade={name}>{gradeName[name]}</li>)}</ul>
+    <ul className="v7-rc-legend">{grades.map(name=><li key={name} data-grade={name}><GradeGlyph grade={name} size={14}/>{gradeName[name]}</li>)}</ul>
    </section>}
    {tomorrow!==undefined&&<p className="v7-rv-note" aria-label="Next round">Next: {tomorrow.toLocaleString()} {tomorrow===1?'card':'cards'} tomorrow</p>}
   </>}

@@ -32,7 +32,7 @@ test("§6.8 Paths: search filters as you type and the status chips filter the li
  await expect(page.locator(".v7-paths-card")).toHaveCount(1);
  await page.getByRole("searchbox").fill("");
  await page.getByRole("radio",{name:/^Archived/}).click();
- await expect(page.getByText(/No archived paths\.|No paths/)).toBeVisible();
+ await expect(page.getByText(/No archived paths|No paths/)).toBeVisible();
 });
 
 test("§6.8 New path: the sheet creates a path that opens with a Tell your tutor card",async({page})=>{
@@ -65,8 +65,8 @@ test("§6.9 Checkpoint: the steps show done, current and later, and evidence is 
  await expect(page.locator('.v7-steps li[data-state="done"]').first()).toBeVisible();
  await expect(page.locator(".v7-evidence-label").first()).toHaveText(/^Session \d+ · \w{3} \d{1,2} \w{3,4}$/);
  await page.getByRole("button",{name:"More checkpoint actions"}).click();
- await expect(page.getByRole("button",{name:"Demonstrate"})).toBeVisible();
- await expect(page.getByRole("button",{name:"Defer"})).toBeVisible();
+ await expect(page.getByRole("menuitem",{name:"Demonstrate"})).toBeVisible();
+ await expect(page.getByRole("menuitem",{name:"Defer"})).toBeVisible();
 });
 
 test("§6.11 Card: the recall chart has labelled axes, a legend and tap targets; history dates come from the formatter",async({page})=>{

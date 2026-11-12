@@ -202,11 +202,11 @@ function StatePreview({kind,state}:{kind:string;state:SpecimenState}){
  if(kind==="Checkbox")return <label className="v7-check-choice"><input type="checkbox" checked={selected} readOnly disabled={!!reason}/>Review cards</label>;
  if(kind==="Switch")return <label className="v7-switch-choice"><span>Reminders</span><input type="checkbox" role="switch" checked={selected} readOnly disabled={!!reason}/><span className="v7-switch-visual"><span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" aria-hidden="true"><path d={selected?"m5 10 3 3 7-7":"M5 10h10"}/></svg></span></span></label>;
  if(kind==="Slider")return <RangeSlider label="Duration" value={45} min={5} max={90} unit="min" onChange={()=>{}} disabledReason={reason}/>;
- if(kind==="Stepper")return <UI.Stepper label="Sessions" value={reason?0:3} min={0} max={reason?0:5} onChange={()=>{}}/>;
+ if(kind==="Stepper")return <UI.Stepper label="Sessions" unit={n=>n===1?"session":"sessions"} value={reason?0:3} min={0} max={reason?0:5} onChange={()=>{}}/>;
  if(kind==="Select")return <><UI.Picker label="Subject" value="Analysis" options={["Analysis","Algebra"]} onChange={()=>{}} disabledReason={reason} disabled={!!reason}/></>;
  return <UI.Segmented tabs={kind==="Tabs"} label={kind} value={selected?"Cards":"Atlas"} options={["Cards","Atlas"]} onChange={()=>{}} disabled={!!reason}/>;
 }
-function StepperExample(){const [value,setValue]=useState(3);return <UI.Stepper label="Daily sessions" value={value} onChange={setValue} min={0} max={5}/>;}
+function StepperExample(){const [value,setValue]=useState(3);return <UI.Stepper label="Daily sessions" unit={n=>n===1?"session":"sessions"} value={value} onChange={setValue} min={0} max={5}/>;}
 function PatternPanel(){
  const [sheet,setSheet]=useState(false),[toast,setToast]=useState(false),[retry,setRetry]=useState(false);
  return <>

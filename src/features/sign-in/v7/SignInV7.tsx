@@ -18,7 +18,7 @@ export default function SignInV7(){
   catch{notify('Could not start Google sign-in.',{tone:'danger'});}
  }
  return <main id="main-content" className="v7-signin" aria-label="Sign in">
-  <span className="v7-signin-rose" aria-hidden="true"><Emblem subject="Geometry" seed="lemma-sign-in" size={420} animate/></span>
+  <span className="v7-signin-rose" aria-hidden="true"><Emblem subject="Lemma" kind="compass" seed="lemma-sign-in" size={420} animate={false}/></span>
   <div className="v7-signin-content">
    <span className="v7-signin-mark" aria-hidden="true">ℓ</span>
    <h1 className="v7-display">Lemma</h1>

@@ -16,9 +16,8 @@ import {kitSubject} from '../../atlas/v7/model';
 import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from '../v6/StudyDefaults';
 import Activities from '../v6/Activities';
-import Planning from '../v6/Planning';
 import Focus from '../v6/Focus';
-import Reminders from '../v6/Reminders';
+import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
 import ExportSettings from '../v6/Export';
 import DeleteAccount from '../v6/DeleteAccount';
 import './settings.css';
@@ -161,14 +160,16 @@ export default function SettingsV7(){
    {section==='appearance'&&<Appearance settings={data}/>}
    {section==='subjects'&&<Subjects settings={data}/>}
    {section==='tutor'&&<Tutor settings={data}/>}
-   {section==='study'&&<div className="v7-settings-body"><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>}
-   {section==='planning'&&<div className="v7-settings-body"><Legacy><Planning settings={data}/></Legacy></div>}
-   {section==='reminders'&&<div className="v7-settings-body"><Legacy><Reminders prefs={data.notify} timeZone={data.timeZone}/></Legacy></div>}
+   {section==='study'&&(params.get('advanced')==='1'
+    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
+    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
+   {section==='planning'&&<PlanningLists settings={data}/>}
+   {section==='reminders'&&<ReminderLists settings={data}/>}
    {section==='data'&&<div className="v7-settings-body">
     <div className="v7-settings-card"><p>{getMode()==='demo'?'You are exploring the example workspace.':'Your study record.'}</p>
      <Button onClick={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}><LogOut aria-hidden="true"/>Sign out</Button></div>
     <Legacy><ExportSettings/></Legacy>
-    <section className="v7-settings-card v7-settings-danger" aria-label="Delete account"><h2>Delete account</h2><DeleteAccount onExport={()=>navigate('/settings?section=data')}/></section>
+    <section className="v7-settings-card v7-settings-danger" aria-label="Delete account"><DeleteAccount onExport={()=>navigate('/settings?section=data')}/></section>
    </div>}
   </>}
  </main>;

@@ -1,16 +1,13 @@
 import {useEffect,useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {CalendarPlus,Layers,Play,Route,Settings as SettingsIcon,CheckSquare,Sparkles,Sun,Target,Timer} from 'lucide-react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
 import {Sheet} from '../../ui/v7/components';
 import {FastTex} from '../../ui/FastTex';
 import {search,type Matched,type SearchGroupName,type SearchItem} from './searchModel';
+import {searchActionIcon,searchGroupIcon} from './searchIcons';
 
-const iconFor:Record<SearchGroupName,typeof Route>={Paths:Route,Checkpoints:Target,Cards:Layers,Concepts:Sparkles,Tasks:CheckSquare,Settings:SettingsIcon,Actions:Play};
-/** SE2: each action has its own icon (∎ for Close the day is drawn as text). */
-const actionIcon:Record<string,typeof Route|'qed'>={'action:focus':Timer,'action:review':Layers,'action:block':CalendarPlus,'action:close':'qed','action:day':Sun};
 const recentKey='lemma.v7.recent';
 const readRecent=():SearchItem[]=>{try{return (JSON.parse(localStorage.getItem(recentKey)??'[]') as SearchItem[]).slice(0,5);}catch{return [];}};
 const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
@@ -54,11 +51,10 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
  function reset(){setQuery('');setExpanded(new Set());setActive(0);}
  function close(){reset();onClose();}
  function openItem(item:SearchItem){writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});close();navigate(item.to);}
- const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=iconFor[item.group];
-  const special=item.group==='Actions'?actionIcon[item.id]:undefined;
+ const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=(item.group==='Actions'?searchActionIcon[item.id]:undefined)??searchGroupIcon[item.group];
   return <li key={item.id+index} role="presentation"><button type="button" role="option" id={'v7-search-'+index} aria-selected={index===active} data-active={index===active?'true':'false'} className="v7-search-row"
    onClick={()=>openItem(item)} onMouseEnter={()=>setActive(index)}>
-   {special==='qed'?<span className="v7-search-qed" aria-hidden="true">∎</span>:special?(()=>{const Special=special;return <Special aria-hidden="true"/>;})():<Icon aria-hidden="true"/>}
+   <Icon aria-hidden="true"/>
    <span>{hit?<>{hit.before}<mark>{hit.match}</mark><span data-rest="">{hit.after}</span></>:item.group==='Cards'?<FastTex source={item.title}/>:item.title}</span>
    {item.parent&&<small>{item.parent}</small>}
   </button></li>;};

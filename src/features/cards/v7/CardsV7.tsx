@@ -1,3 +1,4 @@
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {useInfiniteQuery} from '@tanstack/react-query';
@@ -27,7 +28,7 @@ function Choice({title,open,onClose,options,value,onChange}:{title:string;open:b
 function CheckpointChoice({slug,value,onChange,open,onClose}:{slug:string;value:string;onChange:(code:string)=>void;open:boolean;onClose:()=>void}){
  const project=useProject(slug);
  return <Choice title="Checkpoint" open={open} onClose={onClose} value={value} onChange={onChange}
-  options={[{value:'',label:'All checkpoints'},...(project.data?.checkpoints??[]).filter(cp=>cp.ui!=='proposed').map(cp=>({value:cp.code,label:cp.code+' · '+cp.title}))]}/>;
+  options={[{value:'',label:'All checkpoints'},...(project.data?.checkpoints??[]).filter(cp=>cp.ui!=='proposed').map(cp=>({value:cp.code,label:cp.title}))]}/>;
 }
 function Row({row,project,now,zone}:{row:CardRow;project:ProjectSummary|undefined;now:Date;zone:string}){
  const subject=kitSubject(project?.subject.name??''),due=row.status!=='suspended'&&isDueToday(row,now,zone);
@@ -35,7 +36,7 @@ function Row({row,project,now,zone}:{row:CardRow;project:ProjectSummary|undefine
   <Link to={'/cards/'+row.noteNo}>
    <span className="v7-cards-glyph" aria-hidden="true"><SubjectMark subject={subject}/></span>
    <span className="v7-cards-text"><span className="v7-cards-front"><MathText source={row.front}/></span>
-    <small>{cardMeta(row,now,zone)}</small></span>
+    <small>{cardMeta(row,now,zone,project?.title)}</small></span>
    {row.status==='suspended'?<Pause className="v7-cards-paused" aria-label="Paused"/>:due?<span className="v7-cards-due" role="img" aria-label="Due today"/>:<span/>}
   </Link>
  </li>;
@@ -43,6 +44,16 @@ function Row({row,project,now,zone}:{row:CardRow;project:ProjectSummary|undefine
 
 /** PLAN §6.11 Cards (Paths › Cards): search, filter chips that open pickers, a sort, a count line, 72 px rows that load further
  *  pages as you scroll (with "Load more" as the keyboard path). Capture opens the editor for a new card. */
+/**
+ * R0 · F05: a card total is exact, never "50+". With no filter (or only a path) the total comes from the paths' card
+ * counts, the same number the path's Cards tab shows; otherwise it is the rows loaded so far, said plainly.
+ */
+export function cardCountLabel({shown,more,exact}:{shown:number;more:boolean;exact:number|null}):string{
+ const n=(value:number)=>value.toLocaleString('en-GB').replace(/,/g,'\u2009');
+ const total=exact!==null&&exact>=shown&&(more||exact===shown)?exact:more?null:shown;
+ if(total!==null)return n(total)+(total===1?' card':' cards');
+ return n(shown)+' cards shown · more as you scroll';
+}
 export default function CardsV7(){
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),notify=useToast();
  const projects=useProjects(),home=useHome(),settings=useSettings(),create=useCreateNote();
@@ -94,13 +105,14 @@ export default function CardsV7(){
    <button type="button" className="v7-filter-chip v7-cards-sort" aria-haspopup="dialog" onClick={()=>setSheet('sort')}>{sort==='due'?'Due first':'Newest'}</button>
   </div>
   <div className="v7-cards-count">
-   <span aria-live="polite">{rows.length}{cards.hasNextPage?'+':''} {rows.length===1&&!cards.hasNextPage?'card':'cards'}{due>0&&!active?' · '+due+' due':''}</span>
+   <span aria-live="polite">{cardCountLabel({shown:rows.length,more:!!cards.hasNextPage,exact:slug&&!checkpoint&&state==='all'&&!comments&&!search?bySlug.get(slug)?.cardsCount??null:!active?(projects.data??[]).reduce((sum,row)=>sum+row.cardsCount,0):null})}{due>0&&!active?' · '+due.toLocaleString('en-GB')+' due':''}</span>
    {active&&<Button variant="ghost" small onClick={()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}>Clear filters</Button>}
   </div>
   {cards.isPending&&<><Skeleton/><Skeleton/></>}
   {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Could not load cards.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
   {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone}/>)}</ul>
-   :<div className="v7-cards-empty"><p>{active?'No cards match these filters.':'No cards yet. Your tutor proposes cards after each session, or use Capture to write one.'}</p></div>)}
+   :active?<EmptyMoment title="No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
+   :<EmptyMoment title="No cards yet">Your tutor proposes cards after each session, or use Capture to write one.</EmptyMoment>)}
   {cards.isFetchingNextPage&&<Skeleton/>}
   <div ref={sentinel} aria-hidden="true"/>
   {cards.hasNextPage&&<Button className="v7-cards-more" loading={cards.isFetchingNextPage} onClick={()=>{void cards.fetchNextPage();}}>Load more</Button>}

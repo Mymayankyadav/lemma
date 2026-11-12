@@ -4,13 +4,14 @@
  :where(html[data-v7]) .v7-learn {display:grid;gap:var(--v7-space-5,20px);align-content:start;padding-bottom:calc(var(--v7-dock-height) + 72px + var(--v7-space-8));}
  :where(html[data-v7]) .v7-learn > section {display:grid;gap:var(--v7-space-3);min-width:0;}
  :where(html[data-v7]) .v7-learn-head {display:grid;gap:var(--v7-space-2);padding-top:var(--v7-space-2);}
- :where(html[data-v7]) .v7-learn-title {margin:0;font:600 var(--v7-type-title)/1.15 var(--v7-sans);letter-spacing:-.01em;overflow-wrap:anywhere;}
+ /* R1 · F15: titles and section heads are serif; UI, labels, data and buttons are sans (kit sizes kept, D1). */
+ :where(html[data-v7]) .v7-learn-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-learn-chips,:where(html[data-v7]) .v7-learn-chiprow {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-learn-chip {display:inline-flex;align-items:center;gap:var(--v7-space-1);min-height:24px;padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-1);color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/1.2 var(--v7-sans);text-decoration:none;font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-learn-chip svg {width:14px;height:14px;}
  :where(html[data-v7]) .v7-learn-link {position:relative;min-height:32px;color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-learn-link::after {content:"";position:absolute;inset:-6px 0;}
- :where(html[data-v7]) .v7-learn-h2 {margin:0;font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);}
+ :where(html[data-v7]) .v7-learn-h2 {margin:0;font:500 var(--v7-type-subhead)/1.3 var(--v7-serif);}
  :where(html[data-v7]) .v7-learn-empty {display:grid;gap:var(--v7-space-3);justify-items:start;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-learn-card {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);justify-items:start;}
  :where(html[data-v7]) .v7-learn-list {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
@@ -39,7 +40,10 @@
  :where(html[data-v7]) .v7-evidence,:where(html[data-v7]) .v7-evidence ol {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-3);}
  :where(html[data-v7]) .v7-evidence-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-evidence-label {margin:0;color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1.3 var(--v7-sans);}
- :where(html[data-v7]) .v7-evidence-entry {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);min-width:0;}
+ /* R2 · F31: one surface per region — a session's evidence is one card with divided rows, not a card per entry. */
+ :where(html[data-v7]) .v7-evidence-group > ol {gap:0;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);overflow:hidden;}
+ :where(html[data-v7]) .v7-evidence-entry {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-3) var(--v7-space-4);min-width:0;}
+ :where(html[data-v7]) .v7-evidence-entry + .v7-evidence-entry {border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  :where(html[data-v7]) .v7-evidence-head {display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-evidence-time {margin-left:auto;color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-evidence-body {font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;}

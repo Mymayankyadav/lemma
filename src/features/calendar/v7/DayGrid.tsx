@@ -2,7 +2,7 @@ import {useEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,
 import {Check,Flag,Target} from 'lucide-react';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {haptic} from '../../../ui/v7/haptics';
-import {StatusBadge} from '../../../ui/v7/Status';
+import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {calendarRange} from '../model';
 import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinutes,type GridItem} from '../grid/layout';
 
@@ -178,7 +178,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" role="img"
       aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
       style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
-      <div><span className="v7-cal-suggested-line"><StatusBadge tone="info" className="v7-cal-suggested-badge">Suggested</StatusBadge><strong>{item.title}</strong></span></div></div>)}
+      <div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div></div>)}
      {draft&&draftTop!==null&&<div className="v7-cal-block v7-cal-suggested" data-kind="draft" role="img" aria-label={'New block at '+clock(draft.start)}
       style={{top:draftTop,height:Math.max(15,draft.minutes*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
       <div><strong>New block · {clock(draft.start)}</strong></div></div>}

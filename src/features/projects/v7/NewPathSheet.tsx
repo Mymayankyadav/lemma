@@ -19,7 +19,7 @@ export default function NewPathSheet({onClose}:{onClose:()=>void}){
   else if(result.kind==='failed')notify('Could not save your path',{tone:'danger'});
  }
  const label=saving?'Saving path and sources':created&&remaining?'Retry remaining uploads':'Create path';
- return <Sheet open onClose={onClose} title="New path" footer={<Button variant="primary" form="v7-new-path" type="submit" loading={saving} disabled={!name.trim()}>{label}</Button>}>
+ return <Sheet open onClose={onClose} title="New path" footer={<>{!name.trim()&&!saving&&<p className="v7-disabled-reason v7-footer-reason" id="v7-new-path-reason">Name your path to create it</p>}<Button variant="primary" form="v7-new-path" type="submit" loading={saving} disabled={!name.trim()} aria-describedby={!name.trim()?'v7-new-path-reason':undefined}>{label}</Button></>}>
   <form id="v7-new-path" className="v7-newpath" onSubmit={event=>{event.preventDefault();void create();}}>
    <Field label="Name" placeholder="e.g. Abstract Algebra" required maxLength={100} autoFocus autoComplete="off"
     value={name} onChange={event=>setName(event.target.value)} disabled={saving||!!created}/>

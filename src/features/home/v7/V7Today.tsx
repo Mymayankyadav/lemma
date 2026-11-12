@@ -13,7 +13,7 @@ import {loadActiveFocusPresets} from '../../focus/PresetPicker';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
-import {LiveChip,StatusBadge} from '../../../ui/v7/Status';
+import {LiveChip,MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {overdueSummary} from '../../calendar/v7/overdue';
 import {readTasks} from '../../planner/readTasks';
 import {DEFAULT_PLANNING} from '../../planner/model';
@@ -150,7 +150,7 @@ export default function V7Today(){
     <div className="v7-today-hero-labels">
      {hero.subject!=='Other'&&(state==='session'||state==='now'||state==='upcoming')&&<SubjectChip subject={hero.subject} name={hero.name}/>}
      {state==='upcoming'||state==='now'||state==='session'?<LiveChip>{copy.chip}</LiveChip>
-      :state==='closed'?<span className="v7-badge v7-proof-demonstrated"><span className="v7-proof-symbol" aria-hidden="true">∎</span>{copy.chip}</span>:<StatusBadge tone="info">{copy.chip}</StatusBadge>}
+      :state==='closed'?<span className="v7-badge v7-proof-demonstrated"><span className="v7-proof-symbol" aria-hidden="true">∎</span>{copy.chip}</span>:<MetaChip kind="date">{copy.chip}</MetaChip>}
     </div>
     <h2 className="v7-today-hero-title">{copy.title}</h2>
     {state==='session'&&clock?<div className="v7-today-hero-clock">
@@ -188,7 +188,7 @@ export default function V7Today(){
    {targets.length>0&&<section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
      {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}{row.key==='reviews'&&row.max>row.value?' · '+(row.max-row.value)+' left':''}</span>}
-     <span className="v7-today-target-track" role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
+     <span className="v7-today-target-track" data-complete={targetDone(row)?'true':undefined} role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
       <span style={{width:Math.min(100,row.value/row.max*100)+'%'}}/></span>
     </div>)}
    </section>}

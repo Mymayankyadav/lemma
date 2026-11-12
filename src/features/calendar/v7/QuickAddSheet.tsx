@@ -2,7 +2,7 @@ import {useEffect,useState} from 'react';
 import {getStudyApi} from '../../../data/study';
 import {getTaskApi} from '../../../data/tasks';
 import type {ProjectSummary} from '../../../data/types';
-import {Button,Chip,Field,Segmented,Sheet} from '../../../ui/v7/components';
+import {Button,Chip,Field,Segmented,Sheet,Picker} from '../../../ui/v7/components';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {kitSubject} from '../../atlas/v7/model';
 import {formatClock,formatShortDate} from '../../../lib/format';
@@ -54,10 +54,13 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
    <Segmented label="Block type" options={['Study','Busy']} value={study?'Study':'Busy'} onChange={value=>setStudy(value==='Study')}/>
    {/* QA1/KC2: the path chips carry their subject glyph in the subject colour. */}
    {study&&projects.length>0&&<div className="v7-qa-row" role="group" aria-label="Path">
-    {projects.slice(0,4).map(project=>{const subject=kitSubject(project.subject.name);
+    {/* R2 · F76: four chips (plus the chosen one) and, beyond that, a searchable picker of every path. */}
+    {projects.filter((project,index)=>index<4||project.id===projectId).map(project=>{const subject=kitSubject(project.subject.name);
      return <button key={project.id} type="button" className={'v7-filter-chip '+subjectClass(subject)} aria-pressed={projectId===project.id}
       onClick={()=>setProjectId(projectId===project.id?'':project.id)}><SubjectMark subject={subject}/>{project.title}</button>;})}
    </div>}
+   {study&&projects.length>4&&<Picker label="Another path" optional value={projects.find(project=>project.id===projectId)?.title??'None'}
+    options={['None',...projects.map(project=>project.title)]} onChange={title=>setProjectId(projects.find(project=>project.title===title)?.id??'')}/>}
   </form>
  </Sheet>;
 }
