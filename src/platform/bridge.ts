@@ -86,6 +86,8 @@ export interface LemmaNativePlugin {
   voiceAvailable(): Promise<{available: boolean}>;
   voiceRecognise(options: {prompt: string}): Promise<{text: string | null}>;
   shortcutsSet(options: {items: {id: string; label: string; route: string}[]}): Promise<void>;
+  /** AW2: write `text` to the app's cache as `name` and open Android's share sheet with it. */
+  shareFile(options: {name: string; mime: string; text: string; title?: string}): Promise<{shared: boolean}>;
 
   addListener(event: 'timerAction' | 'shareReceived', handler: () => void): Promise<{remove: () => Promise<void>}>;
 }

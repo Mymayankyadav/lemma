@@ -8,6 +8,15 @@ export const APP_PATH = '/lemma/';
 /** OAuth returns here; the Owner adds it to Supabase Auth → URL configuration → Redirect URLs. */
 export const AUTH_CALLBACK = 'io.github.mymayankyadav.lemma://auth/callback';
 
+/** AW3 (v7 UX audit r3, Owner decision E15): the app is installed from GitHub Releases, so updates live there. */
+export const RELEASES_URL = 'https://github.com/Mymayankyadav/lemma/releases';
+/** "Check for updates" (the newest release) and "What changed" (this version's release, when the build number is known:
+ *  CI names version 2.0.N and tags its release android-build-N; local builds are 2.0.0 and have no release). */
+export function releaseLinks(version: string | null | undefined): {latest: string; thisVersion: string | null} {
+  const build = /^2\.0\.([1-9]\d{0,8})$/.exec(String(version ?? '').trim())?.[1];
+  return {latest: RELEASES_URL + '/latest', thisVersion: build ? RELEASES_URL + '/tag/android-build-' + build : null};
+}
+
 export type DevicePrefKey = 'studyMode' | 'calendarSync' | 'busyCalendars' | 'welcomeSeen' | 'notificationsAsked';
 export const DEVICE_PREFS_CHANGED = 'lemma:device-prefs-changed';
 const prefKey = (key: DevicePrefKey) => 'lemma.android.' + key;

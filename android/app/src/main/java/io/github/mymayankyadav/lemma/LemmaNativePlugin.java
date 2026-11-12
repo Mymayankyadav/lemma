@@ -3,6 +3,7 @@ package io.github.mymayankyadav.lemma;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
+import android.content.ClipData;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -11,6 +12,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.speech.RecognizerIntent;
 import androidx.activity.result.ActivityResult;
+import androidx.core.content.FileProvider;
 import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.PermissionState;
@@ -21,7 +23,11 @@ import com.getcapacitor.annotation.ActivityCallback;
 import com.getcapacitor.annotation.CapacitorPlugin;
 import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -313,6 +319,46 @@ public class LemmaNativePlugin extends Plugin {
     public void shortcutsSet(PluginCall call) {
         Shortcuts.set(getContext(), call.getArray("items", new JSArray()));
         call.resolve();
+    }
+
+    // ---- export ----------------------------------------------------------------------------------------------------
+
+    /**
+     * AW2 (v7 UX audit r3, Owner decision E14): a WebView cannot save a download (Capacitor registers no download
+     * listener), so "Download a backup" did nothing in the app. The web layer sends the file's text; it is written to
+     * the app's cache (only the newest export is kept) and handed to Android's share sheet, where the learner picks
+     * Files, Drive or email. No storage permission is needed.
+     */
+    @PluginMethod
+    public void shareFile(PluginCall call) {
+        String text = call.getString("text");
+        if (text == null) {
+            call.reject("Nothing to share");
+            return;
+        }
+        String name = Exports.safeName(call.getString("name"));
+        String mime = Exports.mime(call.getString("mime"));
+        try {
+            File dir = new File(getContext().getCacheDir(), Exports.DIR);
+            File[] old = dir.listFiles();
+            if (old != null) for (File file : old) file.delete();
+            if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("No export folder");
+            File file = new File(dir, name);
+            try (FileOutputStream out = new FileOutputStream(file)) {
+                out.write(text.getBytes(StandardCharsets.UTF_8));
+            }
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
+            Intent send = new Intent(Intent.ACTION_SEND)
+                .setType(mime)
+                .putExtra(Intent.EXTRA_STREAM, uri)
+                .putExtra(Intent.EXTRA_TITLE, name)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            send.setClipData(ClipData.newRawUri(name, uri));
+            getActivity().startActivity(Intent.createChooser(send, call.getString("title", "Save your Lemma backup")));
+            call.resolve(new JSObject().put("shared", true));
+        } catch (Exception e) {
+            call.reject("Could not prepare the file");
+        }
     }
 
     // ---- helpers -------------------------------------------------------------------------------------------------

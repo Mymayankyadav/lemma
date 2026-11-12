@@ -1,0 +1,16 @@
+/* Replica of src/ui/v7/illustration.css with the v7 role colours, for the r3 boards. */
+.ilday{--ip:#F8F5F0;--ibg:#E9E4DC;--ipaper:#FEFCF9;--iink:#121B31;--imuted:#5B6375;--iacc:#3738AC}
+.ilnight{--ip:#091023;--ibg:#1E263B;--ipaper:#11192C;--iink:#EEF2FA;--imuted:#8B92A2;--iacc:#B9C6FF}
+.ilnight.fix{--ipaper:#273045}
+.ilday,.ilnight{background:var(--ip);color:var(--iink);border-radius:16px;padding:10px;display:inline-flex;flex-direction:column;align-items:center}
+.il{display:block;overflow:visible}
+.il .bg{fill:var(--ibg)}
+.il .i,.il .m,.il .a,.il .w{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.il .i{stroke:var(--iink);stroke-width:3}.il .m{stroke:var(--imuted);stroke-width:3}.il .a{stroke:var(--iacc);stroke-width:3}
+.il .thick{stroke-width:6}.il .w{stroke:var(--ip);stroke-width:3}.il .f{fill:var(--iacc)}.il .wf{fill:var(--ip)}
+.il .page{fill:var(--ipaper)}
+.il .i.page,.il .m.page{fill:var(--ipaper)}
+.acc-topology{--iacc:#009C85}.acc-number{--iacc:#978722}.acc-analysis{--iacc:#00789C}
+.ilcap{font:500 11.5px/1.3 "Sans";color:#5B6375;margin-top:6px;text-align:center}
+.ilnight .ilcap{color:#8B92A2}
+.bbox{position:absolute;border:1.5px dashed #D6336C}

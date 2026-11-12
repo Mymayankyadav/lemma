@@ -1,0 +1,666 @@
+{
+ "390": {
+  "count": 140,
+  "sizes": {
+   "14": 8,
+   "16": 4,
+   "18": 3,
+   "20": 62,
+   "22": 48,
+   "24": 13,
+   "28": 2
+  },
+  "strokePx": {
+   "1": 5,
+   "2": 13,
+   "0.02": 1,
+   "1.67": 57,
+   "1.17": 2,
+   "1.33": 3,
+   "1.83": 48,
+   "0.7": 6,
+   "1.5": 2,
+   "1.4": 1,
+   "0.8": 1,
+   "2.33": 1
+  },
+  "samples": [
+   {
+    "cls": "svg",
+    "size": 18,
+    "vb": 1024,
+    "sw": 1,
+    "px": 0.02,
+    "filled": true
+   },
+   {
+    "cls": "lucide-search",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-inbox",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-settings",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-days",
+    "size": 14,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.17,
+    "filled": false
+   },
+   {
+    "cls": "lucide-chevron-right",
+    "size": 16,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.33,
+    "filled": false
+   },
+   {
+    "cls": "lucide-house lucide-home",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-route",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-layers lucide-layers-3",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-days",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-plus",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-chevron-left",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-chevron-right",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "v7-status-icon",
+    "size": 14,
+    "vb": 20,
+    "sw": 1,
+    "px": 0.7,
+    "filled": null
+   },
+   {
+    "cls": "lucide-target",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-grip-vertical",
+    "size": 18,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.5,
+    "filled": false
+   },
+   {
+    "cls": "lucide-ellipsis lucide-more-horizontal",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-plus",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "v7-progress-ring",
+    "size": 20,
+    "vb": 20,
+    "sw": 1,
+    "px": 1,
+    "filled": null
+   },
+   {
+    "cls": "lucide-flag",
+    "size": 14,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.17,
+    "filled": false
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 20,
+    "vb": 20,
+    "sw": 1,
+    "px": 1,
+    "filled": null
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 28,
+    "vb": 20,
+    "sw": 1,
+    "px": 1.4,
+    "filled": null
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 16,
+    "vb": 20,
+    "sw": 1,
+    "px": 0.8,
+    "filled": null
+   },
+   {
+    "cls": "lucide-layout-list",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-x",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-pencil",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-check",
+    "size": 28,
+    "vb": 24,
+    "sw": 2,
+    "px": 2.33,
+    "filled": false
+   },
+   {
+    "cls": "lucide-palette",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-message-circle",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-brain",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-clock",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-bell",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-shapes",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-database",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-minus",
+    "size": 16,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.33,
+    "filled": false
+   },
+   {
+    "cls": "lucide-crosshair",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   }
+  ]
+ },
+ "1280": {
+  "count": 170,
+  "sizes": {
+   "14": 10,
+   "16": 4,
+   "18": 15,
+   "20": 66,
+   "22": 60,
+   "24": 13,
+   "28": 2
+  },
+  "strokePx": {
+   "1": 5,
+   "2": 13,
+   "0.02": 13,
+   "1.67": 61,
+   "1.17": 3,
+   "1.33": 3,
+   "1.5": 14,
+   "1.83": 48,
+   "0.7": 7,
+   "1.4": 1,
+   "0.8": 1,
+   "2.33": 1
+  },
+  "samples": [
+   {
+    "cls": "svg",
+    "size": 18,
+    "vb": 1024,
+    "sw": 1,
+    "px": 0.02,
+    "filled": true
+   },
+   {
+    "cls": "lucide-search",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-inbox",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-settings",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-days",
+    "size": 14,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.17,
+    "filled": false
+   },
+   {
+    "cls": "lucide-chevron-right",
+    "size": 16,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.33,
+    "filled": false
+   },
+   {
+    "cls": "svg",
+    "size": 22,
+    "vb": 1024,
+    "sw": 1,
+    "px": 0.02,
+    "filled": true
+   },
+   {
+    "cls": "lucide-search",
+    "size": 18,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.5,
+    "filled": false
+   },
+   {
+    "cls": "lucide-house lucide-home",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-route",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-layers lucide-layers-3",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-days",
+    "size": 22,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.83,
+    "filled": false
+   },
+   {
+    "cls": "lucide-plus",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-target",
+    "size": 14,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.17,
+    "filled": false
+   },
+   {
+    "cls": "v7-status-icon",
+    "size": 14,
+    "vb": 20,
+    "sw": 1,
+    "px": 0.7,
+    "filled": null
+   },
+   {
+    "cls": "lucide-chevron-left",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-chevron-right",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-target",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-grip-vertical",
+    "size": 18,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.5,
+    "filled": false
+   },
+   {
+    "cls": "lucide-ellipsis lucide-more-horizontal",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-plus",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "v7-progress-ring",
+    "size": 20,
+    "vb": 20,
+    "sw": 1,
+    "px": 1,
+    "filled": null
+   },
+   {
+    "cls": "lucide-flag",
+    "size": 14,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.17,
+    "filled": false
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 20,
+    "vb": 20,
+    "sw": 1,
+    "px": 1,
+    "filled": null
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 28,
+    "vb": 20,
+    "sw": 1,
+    "px": 1.4,
+    "filled": null
+   },
+   {
+    "cls": "v7-path-node",
+    "size": 16,
+    "vb": 20,
+    "sw": 1,
+    "px": 0.8,
+    "filled": null
+   },
+   {
+    "cls": "lucide-layout-list",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-x",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-pencil",
+    "size": 24,
+    "vb": 24,
+    "sw": 2,
+    "px": 2,
+    "filled": false
+   },
+   {
+    "cls": "lucide-check",
+    "size": 28,
+    "vb": 24,
+    "sw": 2,
+    "px": 2.33,
+    "filled": false
+   },
+   {
+    "cls": "lucide-palette",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-message-circle",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-brain",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-calendar-clock",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-bell",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-shapes",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-database",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-minus",
+    "size": 16,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.33,
+    "filled": false
+   },
+   {
+    "cls": "lucide-minus",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   },
+   {
+    "cls": "lucide-crosshair",
+    "size": 20,
+    "vb": 24,
+    "sw": 2,
+    "px": 1.67,
+    "filled": false
+   }
+  ]
+ }
+}

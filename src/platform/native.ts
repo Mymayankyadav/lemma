@@ -15,3 +15,11 @@ export function isNative(): boolean {
     return false;
   }
 }
+
+/** E6 (v7 UX audit r3): mark the document as the Android app before the first paint, so app-only sizes apply at once
+ *  (every touch target 48 px, Android's guideline; the website keeps 44 px). Returns whether it is the app. */
+export function markNativeApp(root: HTMLElement | null = typeof document === 'undefined' ? null : document.documentElement): boolean {
+  const app = isNative();
+  if (app && root) root.dataset.nativeApp = '';
+  return app;
+}

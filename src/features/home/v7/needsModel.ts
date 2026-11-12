@@ -42,6 +42,8 @@ export function needsRows(input:{due:number;tasks:readonly TaskRecord[];topics:r
  return {rows:all?rows:rows.slice(0,cap),hidden:all?0:Math.max(0,rows.length-cap),total:rows.length};
 }
 /** "Pomodoro · 25 / 5 × 4", "Flowtime", "Open". */
+/** V24: Quick focus's built-in choice. It is not called "Open", which is also the line of every open-mode preset. */
+export const QUICK_NO_TIMER={line:'No timer',label:'Count up from zero'} as const;
 export function presetLine(preset:Pick<PresetRecord,'mode'|'focusMinutes'|'breakMinutes'|'cycles'>):string{
  if(preset.mode==='pomodoro')return 'Pomodoro · '+preset.focusMinutes+' / '+preset.breakMinutes+' × '+preset.cycles;
  return preset.mode==='flowtime'?'Flowtime':'Open';

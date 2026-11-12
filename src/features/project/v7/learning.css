@@ -51,6 +51,7 @@
  :where(html[data-v7]) .v7-learn-bar {position:fixed;left:var(--v7-page-margin);right:var(--v7-page-margin);bottom:calc(var(--v7-dock-height) + var(--v7-space-2));z-index:9;max-width:calc(var(--v7-space-20) * 8 - var(--v7-page-margin) * 2);margin-inline:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:var(--v7-space-2);
   padding:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:20px;background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
  :where(html[data-v7]) .v7-learn-bar-single {grid-template-columns:minmax(0,1fr);}
+ :where(html[data-v7]) .v7-learn-bar-decide {grid-template-columns:auto minmax(0,1fr);}
  :where(html[data-v7]) .v7-learn-bar .v7-button {min-height:var(--v7-button);text-decoration:none;white-space:nowrap;}
  :where(html[data-v7]) .v7-learn-bar .v7-icon-button {width:var(--v7-button);height:var(--v7-button);}
  :where(html[data-v7]) .v7-learn-actions {display:grid;gap:var(--v7-space-4);}

@@ -166,3 +166,7 @@
 /* R2 · F77: long content is clamped where it is listed; the full text is one tap away. */
 :where(html[data-v7]) :is(.v7-cards-front,.v7-paths-title,.v7-tk-title,.v7-learn-front) {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;}
 }
+
+/* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
+   website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
+html[data-v7][data-native-app] {--v7-touch:48px;}

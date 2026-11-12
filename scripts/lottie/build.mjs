@@ -5,6 +5,10 @@
  * role (bg, ink, muted, paper, accent, onAccent) and src/ui/v7/lottie.ts swaps in the page's colours before playing,
  * so Day, Night and the subject colour follow. "Nothing bounces": every move eases out without overshoot; each plays
  * once, at most 1.6 s, and its last frame is the still drawing.
+ *
+ * N130 (v7 UX audit r3, P4): ink before paint (a fill fades in only after its outline is drawn, LT4); a badge's tick
+ * draws while its disc grows, so it never reads as a bare dot (LT5); and a shape that has both lists its stroke before
+ * its fill, so the paper never covers the inner half of the line (LT6: Round complete ended at half weight).
  */
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
@@ -44,7 +48,7 @@ function transform({anchor = [0, 0], position = anchor, scale = still([100, 100]
 }
 const group = (nm, items, tr = transform()) => ({ty: 'gr', nm, it: [...items, tr]});
 
-// In a Lottie layer or group the first item is drawn on top: list lines before the fills they sit on.
+// In a Lottie layer or group the first item is drawn on top: list lines before the fills they sit on (LT6).
 
 // ---- layers and composition ----------------------------------------------------------------------------------------
 let index = 0;
@@ -59,11 +63,13 @@ function composition(nm, op, layers) {
 }
 /** The A2 backdrop, there from the first frame, so frame 1 is a calm still (the plan's "frame 1 a valid still"). */
 const backdrop = op => layer('backdrop', [group('bg', [ellipse(120, 90, 66), fill('bg')])], op);
-/** A badge that grows from nothing at its centre, with a tick drawn on it. */
+/** A badge that grows from nothing at its centre, with a tick drawn on it while it grows (LT5: the tick starts 4 frames
+ *  in, not 12, so the disc is never a bare dot). The tick lands at `from + TICK_LANDS`. */
+const TICK_LANDS = 22;
 function badge(op, cx, cy, from, kind = 'check') {
   const mark = kind === 'check' ? path([[cx - 6, cy], [cx - 2, cy + 4], [cx + 6, cy - 4]]) : null;
   return layer('badge', [
-    group('tick', [mark, stroke('onAccent'), trim(from + 12, from + 30)]),
+    group('tick', [mark, stroke('onAccent'), trim(from + 4, from + TICK_LANDS)]),
     group('disc', [ellipse(cx, cy, 13), fill('accent')],
       transform({anchor: [cx, cy], scale: anim([from, [0, 0]], [from + 18, [100, 100]])})),
   ], op);
@@ -77,7 +83,7 @@ const inboxZero = composition('inbox-zero', 90, op => [
       [86, 118, 0, 0, -3.3, 0], [80, 112, 0, 3.3, 0, 0]], true), stroke('ink'), trim(4, 40)]),
     group('tray-lip', [path([[80, 92], [104, 92], [110, 102], [130, 102], [136, 92], [160, 92]]), stroke('ink'), trim(22, 46)]),
     group('tray-fill', [path([[80, 92], [94, 62], [146, 62], [160, 92], [160, 112], [154, 118], [86, 118], [80, 112]], true), fill('paper')],
-      transform({opacity: anim([4, 0], [16, 100])})),
+      transform({opacity: anim([30, 0], [42, 100])})),
   ], op),
   badge(op, 156, 114, 44),
 ]);
@@ -85,11 +91,11 @@ const inboxZero = composition('inbox-zero', 90, op => [
 // L-10 · Round complete: a card settles onto the deck, its lines are written, then the tick.
 const roundComplete = composition('round-complete', 96, op => [
   backdrop(op),
-  layer('deck', [group('back-card', [rect(120, 83, 68, 50, 8), fill('paper'), stroke('muted')],
+  layer('deck', [group('back-card', [rect(120, 83, 68, 50, 8), stroke('muted'), fill('paper')],
     transform({anchor: [120, 83], position: anim([0, [120, 91]], [20, [120, 83]]), rotation: still(-8), opacity: anim([0, 0], [14, 100])}))], op),
   layer('card', [group('front-card', [
     group('lines', [path([[96, 84], [144, 84]]), path([[96, 98], [130, 98]]), stroke('muted'), trim(28, 50)]),
-    rect(120, 92, 76, 52, 8), fill('paper'), stroke('ink'),
+    rect(120, 92, 76, 52, 8), stroke('ink'), fill('paper'),
   ], transform({anchor: [120, 92], position: anim([6, [120, 104]], [32, [120, 92]]), opacity: anim([6, 0], [22, 100])}))], op),
   badge(op, 154, 114, 50),
 ]);
@@ -107,7 +113,7 @@ const dayClosed = composition('day-closed', 96, op => [
   backdrop(op),
   layer('moon', [
     group('moon-outline', [crescent, stroke('ink'), trim(4, 44)]),
-    group('moon-fill', [crescent, fill('paper')], transform({opacity: anim([6, 0], [26, 100])})),
+    group('moon-fill', [crescent, fill('paper')], transform({opacity: anim([34, 0], [46, 100])})),
   ], op),
   layer('stars', [
     group('star-1', [star(94, 70, 9), fill('accent')], transform({anchor: [94, 70], scale: anim([40, [0, 0]], [58, [100, 100]])})),

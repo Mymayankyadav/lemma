@@ -51,11 +51,22 @@ export function stripWindow(input:{start?:string|null;end?:string|null;blocks:re
  if(to-from<180)to=Math.min(1440,from+180);
  return [from,to];
 }
-/** Up to seven evenly spaced hour labels across the window. */
-export function stripHours([from,to]:[number,number]):string[]{
- const hours=(to-from)/60,step=Math.max(1,Math.ceil(hours/6)),out:string[]=[];
- for(let h=from/60;h<=to/60;h+=step)out.push(String(h).padStart(2,'0'));
- return out;
+/** V02 (v7 UX audit r3): the strip's hour labels, each placed at its own share of the window, so a label sits exactly
+ *  over its hour. At most eight labels on a whole-hour step that divides the window when one does; the first label is
+ *  the window's start and the last its end. `left` is a percentage of the strip's width. */
+export function stripTicks([from,to]:[number,number]):{label:string;left:number}[]{
+ const hours=Math.max(1,Math.round((to-from)/60)),first=Math.round(from/60),steps=[1,2,3,4,6];
+ const step=steps.find(s=>hours%s===0&&hours/s<=7)??steps.find(s=>Math.ceil(hours/s)<=6)??6;
+ const at:number[]=[];
+ for(let h=0;h<hours;h+=step)at.push(h);
+ // The end is always labelled; a regular label closer to it than half a step gives way.
+ if(at.length>1&&hours-at[at.length-1]<step/2)at.pop();
+ at.push(hours);
+ return at.map(h=>({label:String(first+h).padStart(2,'0'),left:h/hours*100}));
+}
+/** The strip's hour labels, in order (see `stripTicks` for where each one sits). */
+export function stripHours(window:[number,number]):string[]{
+ return stripTicks(window).map(tick=>tick.label);
 }
 export function stripSegment(start:number,end:number,window:[number,number]=[360,1440]):{left:number;width:number}{
  const [lo,hi]=window,span=(hi-lo)/100,clip=(minutes:number)=>Math.min(hi,Math.max(lo,minutes)),from=clip(start),to=clip(end);

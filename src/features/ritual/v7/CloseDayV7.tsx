@@ -1,5 +1,4 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {motionReduced} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,X} from 'lucide-react';
 import {getApi} from '../../../data';
@@ -18,11 +17,16 @@ import {formatClock,formatDuration,formatShortDate,ownerZone} from '../../../lib
 import {useToast} from '../../../ui/Toast';
 import {calendarRange} from '../../calendar/model';
 import {loadAllPracticeTopics} from '../../practice/Page';
+import {practiceProgress} from '../../practice/progress';
 import {ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
 import {civilDay} from '../../tasks/v7/tasksModel';
 import {STEPS,blockTomorrow,closeDayRecord,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
 import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import './close.css';
+
+/** LT3 (v7 UX audit r3, Owner decision E20): how long Day closed stays before Today, unless Done is pressed first. The
+ *  same with or without motion: reduced motion means less movement, not less time to read the day's ending. */
+export const DAY_CLOSED_MS=5000;
 
 interface DayData{plan:DayPlanRecord|null;tasks:TaskRecord[];thoughts:ParkedThought[];saved:StudyEntryRecord[];blocks:CalendarBlockRecord[];
  tomorrow:{title:string;startsAt:string;endsAt:string;suggested:boolean}|null;reviewsDone:number|null;practice:{done:number;due:number}|null}
@@ -66,9 +70,8 @@ export default function CloseDayV7(){
    const tomorrow=firstStudy?{title:firstStudy.title,startsAt:firstStudy.startsAt,endsAt:firstStudy.endsAt,suggested:false}
     :await loadSuggestions(nextDay(date),tz).then(next=>{const place=next.result.placements[0];return place?{title:next.tasks.find(task=>task.id===place.taskId)?.title??'Study task',startsAt:place.start,endsAt:place.end,suggested:true}:null;}).catch(()=>null);
    const reviewsDone=await getApi().getInsightData(7).then(insight=>insight.reviews.filter(review=>civilDay(review.reviewedAt,tz)===date).length).catch(()=>null);
-   const practice=await loadAllPracticeTopics('active').then(topics=>({
-    done:topics.filter(topic=>topic.lastPracticedAt&&civilDay(topic.lastPracticedAt,tz)===date).length,
-    due:topics.filter(topic=>topic.nextDueDate&&topic.nextDueDate<=date&&!(topic.lastPracticedAt&&civilDay(topic.lastPracticedAt,tz)===date)).length})).catch(()=>null);
+   // V03: the same definition as Today's Practice target.
+   const practice=await loadAllPracticeTopics('active').then(topics=>practiceProgress(topics,date,tz)).catch(()=>null);
    if(!live)return;
    const ritual=plan?.ritual??{};
    setFirst(typeof ritual.tomorrowFirstTaskId==='string'?ritual.tomorrowFirstTaskId:plan?.tomorrowFirstTaskId??'');
@@ -111,9 +114,8 @@ export default function CloseDayV7(){
   try{
    await closeDayRecord(getDayPlanApi(),{plan:data.plan,date,zone:tz,aim,first,taskIds:data.tasks.map(task=>task.id)},plan=>setData(previous=>previous?{...previous,plan}:previous));
    setClosed(true);
-   const reduced=motionReduced();
-   // N129: long enough for the Day closed animation (1.6 s, after the player loads) to finish before going home.
-   timer.current=window.setTimeout(()=>navigate('/'),reduced?400:2600);
+   // LT3 (E20): Day closed stays until Done, or DAY_CLOSED_MS, the same with or without motion.
+   timer.current=window.setTimeout(()=>navigate('/'),DAY_CLOSED_MS);
   }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
   finally{setBusy(false);}
  }
@@ -126,7 +128,8 @@ export default function CloseDayV7(){
  const leave=<Link className="v7-icon-button" to="/" aria-label="Close"><X aria-hidden="true"/></Link>;
  const dots=<ol className="v7-cd-dots" aria-label={'Step '+(step+1)+' of 3: '+STEPS[step]}>{STEPS.map((name,index)=><li key={name} data-state={index<step?'done':index===step?'now':'next'}><span className="v7-sr-only">{name}</span></li>)}</ol>;
  if(closed)return <main id="main-content" className="v7-cd v7-cd-closed" aria-label="Day closed"><ImmersiveHeader leave={leave} center={dots}/>
-  <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art"/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p></main>;
+  <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art"/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
+  <Button variant="primary" className="v7-cd-done" onClick={()=>{if(timer.current)window.clearTimeout(timer.current);navigate('/');}}>Done</Button></main>;
  const already=data?.plan?.status==='closed';
  return <main id="main-content" className="v7-cd" aria-label="Close the day">
   <ImmersiveHeader leave={leave} center={dots}/>
