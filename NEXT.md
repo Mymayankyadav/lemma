@@ -18,6 +18,15 @@ Tests: `tests/unit/android/bridge.test.ts`, `tests/unit/v7/n125-owner-report.tes
 Scope: `src/platform/**`, `src/ui/v7/**`, `src/app/v7/**`, `src/features/settings/v7/**`, `src/features/calendar/block-sheet/BlockSheet.tsx`, tests, `docs/current/N125.md`.
 Not: server changes, new dependencies, flag defaults.
 
+## N127 A2 Empty-state illustrations (Owner task, one PR)
+
+Owner task: "You draw them and go with A"
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-assets
+Done = the eight empty-state illustrations of A2 (IL-01 … IL-08) drawn in the Owner's chosen style (D6 = A · Notebook line art; D8: drawn by Claude), Day and Night from theme roles, wired into their empty states; recorded in `docs/current/N127.md`.
+Tests: `tests/unit/v7/illustrations.test.tsx`, existing suites unchanged.
+Scope: `src/ui/v7/Illustration.tsx`, `src/ui/v7/illustration.css`, `src/ui/v7/EmptyMoment.tsx` and its CSS, the eight empty states (Paths, Calendar Day, Review, Inbox, Cards, Atlas, Progress, Tasks), tests, `docs/current/N127.md`.
+Not: the icon-set redraw (the app keeps lucide plus the drawn marks), Lottie or Rive (A3), new dependencies.
+
 ## N124 A1 Motion v1 (Owner task, one PR)
 
 Owner task: "Yes start A1"

@@ -133,7 +133,7 @@ export default function TasksV7(){
   {phase==='ready'&&<>
    {segment==='To do'&&(groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2><ul>{group.items.map(task=>rowFor(task,group.items))}</ul></section>)
-     :<EmptyMoment title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>)}
+     :<EmptyMoment art={total===0?undefined:'tasks'} title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>)}
    {segment==='Doing'&&(doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<EmptyMoment title="Nothing in progress">Move a task here from its ⋯ menu when you start it.</EmptyMoment>)}
    {segment==='Done'&&<>
     {done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<EmptyMoment title="Nothing completed yet">Finished tasks gather here.</EmptyMoment>}

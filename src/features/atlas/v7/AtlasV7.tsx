@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
+import {Illustration} from '../../../ui/v7/Illustration';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight,Crosshair,Minus,Plus,Search,X} from 'lucide-react';
@@ -6,7 +7,7 @@ import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {FastTex} from '../../../ui/FastTex';
 import {Button,IconButton,Segmented} from '../../../ui/v7/components';
-import {ErrorEmblem,EmptyEmblem,StateButton} from '../../../ui/v7/KitPrimitives';
+import {ErrorEmblem,StateButton} from '../../../ui/v7/KitPrimitives';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import ConceptPin from '../v6/ConceptPin';
 import AtlasCommands from '../v6/AtlasCommands';
@@ -163,7 +164,7 @@ export default function AtlasV7(){
  if(query.error||!model)return <main id="main-content" className="v7-atlas" aria-label="Atlas">{header}
   <div className="v7-atlas-state" role="alert"><ErrorEmblem/><Button onClick={()=>{void query.refetch();}}>Retry loading the Atlas</Button></div></main>;
  if(model.stars.length===0)return <main id="main-content" className="v7-atlas" aria-label="Atlas">{header}
-  <div className="v7-atlas-state"><EmptyEmblem/><p>No concepts yet. They appear as your plans grow.</p>
+  <div className="v7-atlas-state"><Illustration name="atlas" width={180}/><p>No concepts yet. They appear as your plans grow.</p>
    <Button variant="primary" onClick={()=>setDialog('new')}>New concept</Button></div>
   {dialog==='new'&&query.data&&<AtlasCommands graph={query.data} sourceId={null} onClose={()=>setDialog(null)} onSaved={refetch}/>}
  </main>;

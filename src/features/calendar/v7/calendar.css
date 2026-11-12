@@ -19,6 +19,7 @@
  :where(html[data-v7]) .v7-cal-lane > * {flex:none;text-decoration:none;}
  :where(html[data-v7]) .v7-cal-capacity {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-cal-capacity strong {color:var(--v7-role-text-primary);font-weight:600;}
+ :where(html[data-v7]) .v7-cal-empty-state {display:grid;justify-items:center;gap:var(--v7-space-2);padding:var(--v7-space-4) 0;text-align:center;}
  :where(html[data-v7]) .v7-cal-empty {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-cal-skeleton {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-cal-skeleton > span {display:block;height:64px;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);}

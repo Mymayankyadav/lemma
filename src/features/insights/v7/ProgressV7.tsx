@@ -1,4 +1,5 @@
 import {GRADES,GRADE_KEYS} from '../../../ui/v7/grades';
+import {Illustration} from '../../../ui/v7/Illustration';
 import {useEffect,useMemo,useState} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {getStudyApi} from '../../../data/study';
@@ -108,7 +109,7 @@ export default function ProgressV7(){
   <p className="v7-meta">focused {rangePhrase(range)}</p>
   {chip&&<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>}
  </section>;
- const empty=<p className="v7-progress-empty">No study time in this range yet.</p>;
+ const empty=<><Illustration name="progress" width={120} className="v7-progress-art"/><p className="v7-progress-empty">No study time in this range yet.</p></>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
   <HubHeader title="Progress"><ProgressTabs current={tab}/></HubHeader>
   <Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>

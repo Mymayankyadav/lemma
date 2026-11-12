@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react';
+import {Illustration} from '../../../ui/v7/Illustration';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../../data';
@@ -83,6 +84,8 @@ export default function ReviewHubV7(){
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
   {!loading&&!failed&&<>
    <section className="v7-rv-hero" aria-label="Review counts">
+    {/* A2 · IL-03: all caught up. */}
+    {count===0&&totalDue===0&&<Illustration name="review" width={150} className="v7-rv-art"/>}
     <p className="v7-rv-figure"><strong aria-label="Cards in this round">{count}</strong><span>{count===1?'card':'cards'} today</span></p>
     {/* R0 · F05: when the round includes new cards, the hero says so, so it agrees with Today's and the tab's due count. */}
     {fresh>0&&<p className="v7-rv-note" data-split="">{roundSplit(count,fresh)}</p>}
