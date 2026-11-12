@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N131 The rest of the assets plan, as v7 UX plan r3 keeps it: coded moments, the focus orbit prototype, sounds, "Share the page" (Owner task)
+
+Owner task: "Continue for the of work. Keep it one pr and don't merge. But complete all A tasks" … "there is new pr which will supersede the current plan. N130 make sure they aligned. Second the checkpoint path is still looking ugly revert to legacy."
+Stage: Build · Status: open · Needs: N130 · Assigned: owner-setup-assets
+Done = what the release-and-assets plan's A3–A5 still asks for after plan r3 (`docs/v7/ux-audit-2026-11-12/04_ASSETS_AND_MOTION_PLAN.md` §6–§8) is built in code: L-07 the approve/reject stamp for a button or key decision with its 4° settle; L-09 an emblem glyph drawing itself as the loader; L-16 a cross-fade between Day and Night; L-20 a still splash on the web; the focus orbit as an SVG prototype behind `focusOrbit` (off); optional sounds, off by default (pencil tick, page turn, low chime, each ≤ 200 ms, synthesised, no files); A5′ "Share the page" images for Day closed, the week page and a finished path, and the site's share preview; the Path map stays the list (the drawn map was reverted at the Owner's request); recorded in `docs/current/N131.md`.
+Tests: `tests/unit/v7/a-assets.test.tsx`, `tests/e2e/v7-assets.spec.ts`, existing suites unchanged.
+Scope: `src/features/proposals/v7/{InboxV7.tsx,inbox.css}`, `src/ui/v7/{Loader.tsx,components.css,motion.css,sounds.ts,shareImage.ts}`, `src/styles/appearance.ts`, `index.html`, `src/flags.ts` (`focusOrbit`), `src/features/focus/v7/**`, the loader's six screens, `src/features/{review-run,review-done,ritual,insights,project,settings}/v7/**` for sounds and sharing, `scripts/brand/og-image.mjs`, `public/og-image.png`, tests, `docs/current/N131.md`, the A5′ line of `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Not: what r3 drops or gates (achievement seals, store assets, L-08 beyond the existing toast, L-13 and the endings before E3, the Atlas sky and a drawn path map before U3's spine, the icon strokes before E21), G0's install screenshots and pre-paint colours (their own item), Rive, server changes, flag defaults.
+
 ## N130 v7 UX audit r3: the tracking checklist, the first fixes and the Owner's decisions (Owner task)
 
 Owner task: "Start working on it maybe create a branch and checklist to Collaborate and track completed task." … "I approve each of them."

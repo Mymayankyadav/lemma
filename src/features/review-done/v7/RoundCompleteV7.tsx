@@ -1,10 +1,11 @@
 import {GradeGlyph} from '../../../ui/v7/grades';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Check} from 'lucide-react';
 import {useQuery} from '@tanstack/react-query';
 import {getApi} from '../../../data';
-import {useDeckTree,useReviewItems} from '../../../data/hooks';
+import {useDeckTree,useReviewItems,useSettings} from '../../../data/hooks';
+import {playSound,soundsOn} from '../../../ui/v7/sounds';
 import type {QueueFilter} from '../../../data/types';
 import {Button} from '../../../ui/v7/components';
 import {getRun,type DurableRun} from '../../review-run/v6/adapter';
@@ -14,6 +15,7 @@ import {clock,roundSummary,type GradeSplit} from '../../review/v7/reviewModel';
 import {useStartRound} from '../../review/v7/useStartRound';
 import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import '../../review/v7/review-hub.css';
+import {Loader} from '../../../ui/v7/Loader';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const grades:(keyof GradeSplit)[]=['again','hard','good','easy'];
@@ -26,6 +28,9 @@ export default function RoundCompleteV7(){
  const [run,setRun]=useState<DurableRun|null>(null),[error,setError]=useState<string|null>(null);
  // N123 · N1: the first finished round is the moment the Android app asks once for notification permission.
  useEffect(()=>{if(run)void offerNotificationsOnce();},[run]);
+ // N131 · A5: a page turn once per finished round, when Sounds is on.
+ const sounds=soundsOn(useSettings().data?.ui),turned=useRef('');
+ useEffect(()=>{if(run?.progress.done&&turned.current!==run.id){turned.current=run.id;void playSound('page',sounds);}},[run,sounds]);
  useEffect(()=>{
   let live=true;
   if(!id){setError('No completed review-run ID');return;}
@@ -50,7 +55,7 @@ export default function RoundCompleteV7(){
    :<span className="v7-rc-proof" aria-hidden="true"><Check/></span>}
   <h1 className="v7-rc-title">{run&&!run.progress.done?'Round paused':'Round complete'}</h1>
   {error&&<p role="alert" className="v7-rv-note">{error}</p>}
-  {!run&&!error&&<p role="status" className="v7-rv-note">Loading saved review results…</p>}
+  {!run&&!error&&<Loader className="v7-rv-note" label="Loading saved review results…"/>}
   {run&&summary&&<>
    {run.progress.skipped>0&&<p className="v7-rv-note">{run.progress.skipped} {run.progress.skipped===1?'card was':'cards were'} skipped because {run.progress.skipped===1?'it':'they'} changed since you started.</p>}
    {!run.progress.done&&<p role="status" className="v7-rv-note">{run.progress.remaining} cards are still waiting in this round.</p>}

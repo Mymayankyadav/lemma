@@ -18,6 +18,8 @@ import {kitSubject} from '../../atlas/v7/model';
 import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,undoLast,unpauseRun,type DurableRun} from '../v6/adapter';
 import {clearPendingGrade,pendingGrade,writePendingGrade,type PendingGrade} from '../v6/pending';
 import './review.css';
+import {Loader} from '../../../ui/v7/Loader';
+import {playSound,soundsOn} from '../../../ui/v7/sounds';
 
 const filter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 export const gradeNames=['Again','Hard','Good','Easy'] as const;
@@ -70,6 +72,8 @@ export default function ReviewRoundV7(){
  async function grade(rating:Rating){
   if(!run||!item||!card||!choices||!settings.data||busy||pending)return;
   setBusy(true);setMessage(null);
+  // N131 · A5: the pencil tick, when Sounds is on (it plays on the tap, before saving, so it is felt as the mark).
+  void playSound('tick',soundsOn(settings.data.ui));
   try{
    const currentVersion=await cardVersion(item.cardId);
    if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
@@ -127,7 +131,7 @@ export default function ReviewRoundV7(){
  const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){if(!revealed)setRevealed(true);else void grade(rating);}};
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
- if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><p role="status" className="v7-review-state">Restoring your review…</p></main>;
+ if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><Loader className="v7-review-state" label="Restoring your review…"/></main>;
  if(!run)return <main id="main-content" className="v7-review" aria-label="Review round">
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>navigate('/review')}><X aria-hidden="true"/></button>} center={<span className="v7-meta">Review</span>}/>
   <div className="v7-review-state"><h1 className="v7-hub-title">No review in progress</h1>

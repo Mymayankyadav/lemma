@@ -69,7 +69,7 @@ function Appearance({settings}:{settings:Settings}){
   if(!await save({mode:next})){setMode(previous);applyAppearance({mode:previous});}
  }
  const initial=(key:string,fallback:boolean)=>typeof ui[key]==='boolean'?ui[key] as boolean:fallback;
- const [flags,setFlags]=useState(()=>({reduceEffects:initial('reduceEffects',false),haptics:initial('haptics',true),chime:initial('chime',false)}));
+ const [flags,setFlags]=useState(()=>({reduceEffects:initial('reduceEffects',false),haptics:initial('haptics',true),chime:initial('chime',false),sounds:initial('sounds',false)}));
  const flag=(key:keyof typeof flags)=>flags[key];
  async function toggle(key:keyof typeof flags,value:boolean){
   setFlags(old=>({...old,[key]:value}));
@@ -83,6 +83,8 @@ function Appearance({settings}:{settings:Settings}){
    <p className="v7-meta">No movement, blur or glow.</p>
    <Switch label="Haptics" checked={flag('haptics')} onChange={value=>{void toggle('haptics',value);}}/>
    <Switch label="Phase chime" checked={flag('chime')} onChange={value=>{void toggle('chime',value);}}/>
+   <Switch label="Sounds" checked={flag('sounds')} onChange={value=>{void toggle('sounds',value);}}/>
+   <p className="v7-meta">A pencil tick when you grade, a page turn when a round ends, a low chime when you close the day.</p>
   </div>
  </div>;
 }

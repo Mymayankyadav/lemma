@@ -31,3 +31,8 @@
  :where(html[data-v7]) .v7-cd-closed .v7-cd-art {width:min(160px,60vw);}
  :where(html[data-v7]) .v7-cd-closed .v7-cd-done {min-width:calc(var(--v7-touch) * 3);margin-top:var(--v7-space-4);}
 }
+@layer v7-components {
+ /* N131 · A5′: "Share the page" above Done on Day closed. */
+ :where(html[data-v7]) .v7-cd-closed .v7-cd-share {margin-top:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-cd-closed .v7-cd-share + .v7-cd-done {margin-top:var(--v7-space-2);}
+}

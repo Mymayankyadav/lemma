@@ -170,7 +170,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 ### A5′ · Share and release pages — `04` §8
 
 - [ ] Release page per APK (plain words, the APK, one image)
-- [ ] "Share the page" images: Day closed, the week page, a finished path
+- [x] "Share the page" images: Day closed, the week page, a finished path — N131 (#1364)
 
 A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N127, N128): the illustrated set stays and G2 refines it.
 
