@@ -45,7 +45,7 @@ export async function deviceBusyBlocks(start: string, end: string, zone: string)
     const {lemmaNative} = await import('./bridge');
     const native = await lemmaNative();
     const {busy} = await native.calendarBusy({from: Date.parse(start), to: Date.parse(end), calendarIds});
-    return busyBlocks(busy, zone);
+    return busyBlocks(Array.isArray(busy) ? busy : [], zone);
   } catch {
     return [];
   }

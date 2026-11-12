@@ -61,7 +61,7 @@ export function PhonePlanning(){
  }
  async function pick(){
   const {calendars}=await (await lemmaNative()).calendarList();
-  setPicking(calendars);
+  setPicking(Array.isArray(calendars)?calendars:[]);
  }
  function toggleBusy(id:string,on:boolean){
   const next=on?[...new Set([...busy,id])]:busy.filter(item=>item!==id);

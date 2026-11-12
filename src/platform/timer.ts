@@ -56,7 +56,8 @@ export async function replayTimerActions(native: Pick<LemmaNativePlugin, 'timerP
   createThought: (text: string, entryId: string) => Promise<unknown>): Promise<ReplayOutcome[]> {
   const {actions} = await native.timerPendingActions();
   const outcomes: ReplayOutcome[] = [];
-  for (const action of [...actions].sort((a, b) => a.at - b.at)) {
+  // N126: a missing list (the plugin once sent null) means nothing is pending.
+  for (const action of [...(Array.isArray(actions) ? actions : [])].sort((a, b) => a.at - b.at)) {
     let outcome: ReplayOutcome = 'skipped';
     try {
       outcome = await replayOne(action, api, createThought);

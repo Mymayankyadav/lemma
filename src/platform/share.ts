@@ -29,3 +29,13 @@ export function takeSharedSources(): File[] {const files = pendingSources; pendi
 let pendingCapture: string | null = null;
 export function holdCaptureText(text: string): void {pendingCapture = text;}
 export function takeCaptureText(): string | null {const text = pendingCapture; pendingCapture = null; return text;}
+
+/** What was shared since the last look: always a list, empty when nothing was shared or the plugin answered oddly. */
+export async function sharedItems(native: {shareTake(): Promise<{items?: SharedItem[] | null}>}): Promise<SharedItem[]> {
+  try {
+    const {items} = await native.shareTake();
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
