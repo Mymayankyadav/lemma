@@ -122,9 +122,12 @@ export default function ReviewRoundV7(){
   };
   window.addEventListener('keydown',handler);return ()=>window.removeEventListener('keydown',handler);
  },[]);
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
+ // N131: a mouse swipe that starts on text the previous swipe selected would drag that text (the browser's own drag and
+ // drop cancels the gesture), so the card never graded. Clear the selection when a swipe starts and after one is read.
+ const clearSelection=()=>{try{window.getSelection()?.removeAllRanges();}catch{/* no selection API */}};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{if(!dragStart.current)return;setDrag({dx:event.clientX-dragStart.current.x,dy:event.clientY-dragStart.current.y});};
- const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){if(!revealed)setRevealed(true);else void grade(rating);}};
+ const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){clearSelection();if(!revealed)setRevealed(true);else void grade(rating);}};
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><p role="status" className="v7-review-state">Restoring your review…</p></main>;

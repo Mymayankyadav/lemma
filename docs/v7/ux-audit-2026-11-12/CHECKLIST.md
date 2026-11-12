@@ -18,7 +18,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 
 | Phase | Done | Open | Gate |
 |---|:-:|:-:|---|
-| U0 Truth | 6 | 14 | none (E1) |
+| U0 Truth | 20 | 0 | none (E1) |
 | G2 Illustration, motion, icon polish | 8 | 6 | E19, E21, E22 for some |
 | U2 Resilience (= AN2) | 2 | 7 | E12; device check 1 |
 | AN1 Make the built app right | 3 | 7 | E23 |
@@ -44,38 +44,38 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] **V01** Chart value axes read "0 min" on every tick — N125
 - [x] **V04** Selected duration chips show two ticks — N125
-- [x] **V02** Today strip: each hour label at its own position, last label = window end — N130
-- [x] **V03** One number, two values: practice "0 of 1" vs "0 of 2"; review estimate 9 vs 10 min — N130
-- [x] V17 Plan proposal: Reject left, Approve right — N130
-- [x] V24 Quick focus: two options called "Open" — N130
-- [ ] V14 Dock keeps Capture's slot when Capture fades; the bar must stay symmetric
-- [ ] V15 Calendar Month heat numerals ≥ 4.5 : 1 on every step, Day and Night (now 2.93 : 1)
-- [ ] V16 Almanac opens at today; one roving focus; no empty weeks before the first study day
-- [ ] V18 Names, not codes: "CP4", "CP1 · Foundations", "S6", "S7"
-- [ ] V32 Unknown address shows Today silently → "This page isn't in the notebook"
-- [ ] V33 Example deck repeats the same two cards
-- [ ] V34 Copy: "Calcutta time", "glyph ∫", the tutor tile, "1.6 h" under "1 h 35 min", the card editor's first helpers
-- [ ] V35 Cloze highlight uses danger red → selection tint and ink
-- [ ] V43 Data and account: two grouped lists (Export; Delete account in a sheet), kit sizes and checkbox
-- [ ] V37 Inbox triage: three round buttons, one size, one baseline
-- [ ] V38 Card detail: "Thu 12 Nov" on one line; pinned action "Review now" when due, otherwise none
-- [ ] V39 Sign-in: the construction circle crosses the example link
-- [ ] V40 Session: "Resolved" is drawn as a button
-- [ ] V42 Calendar Month: out-of-month days dimmed; Week blocks show a two-word title from 44 px
+- [x] **V02** Today strip: each hour label at its own position, last label = window end — N130 (#1363)
+- [x] **V03** One number, two values: practice "0 of 1" vs "0 of 2"; review estimate 9 vs 10 min — N130 (#1363)
+- [x] V17 Plan proposal: Reject left, Approve right — N130 (#1363)
+- [x] V24 Quick focus: two options called "Open" — N130 (#1363)
+- [x] V14 Capture stays in the dock (no fade that kept its slot); tabs and Capture sit at the same inset, so the bar is symmetric — N131
+- [x] V15 Calendar Month heat numerals ≥ 4.5 : 1 on every step, Day and Night (step 2 was 2.93 : 1) — N131
+- [x] V16 Almanac opens at today; one roving focus, starting on today; no empty weeks before the first study day — N131
+- [x] V18 Names, not codes: "CP4", "CP1 · Foundations", "S6", "S7" (`nameCodes`) — N131
+- [x] V32 Unknown address → "This page isn't in the notebook" with Search and Today — N131
+- [x] V33 Example deck: Linear Algebra and Topology repeat no card (Real Analysis still repeats a few further down) — N131
+- [x] V34 Copy: "India Standard Time", subject rows without "glyph", the tutor tile, exact durations in chart sentences, the card editor's first helpers — N131
+- [x] V35 Cloze highlight: selection tint and ink (7.4 : 1 Day, 8.3 : 1 Night), not danger red — N131
+- [x] V43 Data and account: grouped lists (Account, Export, Delete account in a sheet), kit sizes and checkbox — N131
+- [x] V37 Inbox triage: three round buttons, one size, one baseline — N131
+- [x] V38 Card detail: "Thu 12 Nov" on one line; "Review now" is the pinned primary when due ("Edit card" stays as a secondary button: an existing §6.11 test requires it) — N131
+- [x] V39 Sign-in: the construction drawing passes behind the title, never the links or the note — N131
+- [x] V40 Session: the button reads "Mark resolved" — N131
+- [x] V42 Calendar Month: out-of-month days dimmed; Week blocks show a two-word title from 40 px (a 390 px phone's column is 42 px) — N131
 
 ### G2 · Illustration, motion and icon polish (M) — `06` §5
 
-- [x] LT1 *(P5)* **Never erase:** only the backdrop shows while the player loads; a late player fades the still in — N130
-- [x] LT2 *(P5)* **Crisp:** canvas at the screen's density (at most 3×), not always 2× — N130
-- [x] LT4 *(P4)* Ink before paint: the tray and moon fills fade in after their outlines — N130
-- [x] LT5 *(P4)* The badge's tick draws while its disc grows, so there is no bare dot — N130
-- [x] LT6 *(P4)* Round complete: stroke before fill, so the cards end at full line weight — N130
-- [x] LT10 *(P5)* Theme change after play shows the still in the new colours — N130
-- [x] **LT3** *(P5, E20)* Day closed stays until Done or 5 s, with or without motion (was 2.6 s, or 0.4 s under reduced motion) — N130
+- [x] LT1 *(P5)* **Never erase:** only the backdrop shows while the player loads; a late player fades the still in — N130 (#1363)
+- [x] LT2 *(P5)* **Crisp:** canvas at the screen's density (at most 3×), not always 2× — N130 (#1363)
+- [x] LT4 *(P4)* Ink before paint: the tray and moon fills fade in after their outlines — N130 (#1363)
+- [x] LT5 *(P4)* The badge's tick draws while its disc grows, so there is no bare dot — N130 (#1363)
+- [x] LT6 *(P4)* Round complete: stroke before fill, so the cards end at full line weight — N130 (#1363)
+- [x] LT10 *(P5)* Theme change after play shows the still in the new colours — N130 (#1363)
+- [x] **LT3** *(P5, E20)* Day closed stays until Done or 5 s, with or without motion (was 2.6 s, or 0.4 s under reduced motion) — N130 (#1363)
 - [ ] LT7 *(P5, needs E22)* Skip the player on Save-Data and 2G; warm it in idle time near an ending
 - [ ] LT8 *(P5, with AN3)* `haptic('complete')` on the frame the ✓ or ∎ lands (Inbox 66, Round 72, Day closed 80)
 - [ ] LT9 Stars fade in from 70%; a badge's ring draws before it fills
-- [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130
+- [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130 (#1363)
 - [ ] **IL2** IL8 IL6 *(P2, needs E19 for Round complete)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred, Round complete with ∎. Markup: `visuals/src/r3/r3-art.json`
 - [ ] IL3 IL4 IL5 IL7 *(P3)* Rules: live area 80 units, two sizes (160 and 120 px), empty state in the first viewport (Calendar Day, Progress), accent ≥ 3 : 1 on the disc
 - [ ] **IC1** IC2 IC3 IC5 *(P6, needs E21)* 1.75 px strokes at every size (`LucideProvider`), one meaning per glyph, six drawn marks
@@ -85,19 +85,19 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%"
 - [ ] **V11** Dock at large text: icons, with only the selected tab's label shown
 - [ ] **V11** Gutters (calendar times, charts, tiles) sized from their content; rows that wrap (Focus, segmented controls)
-- [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130
+- [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
 - [ ] V36 The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days)
-- [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130
+- [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
 - [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
 - [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand
 - [ ] **AW1** *(E5 approved; after the three V11 items and device check 1)* Honour the system font size, capped at 200%
 
 ### AN1 · Make the built app right (Android, M) — `03` §4
 
-- [x] **AW2** *(E14)* "Save a backup" in the app goes to Android's share sheet (Files, Drive, email) and says so — N130
-- [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130
+- [x] **AW2** *(E14)* "Save a backup" in the app goes to Android's share sheet (Files, Drive, email) and says so — N130 (#1363)
+- [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130 (#1363)
 - [ ] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page
-- [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130
+- [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130 (#1363)
 - [ ] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note
 - [ ] AW9 Study mode in one trip (remember the intent across system settings)
 - [ ] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast

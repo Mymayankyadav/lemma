@@ -18,6 +18,7 @@ const DayRitual=lazy(()=>import('../features/ritual/Page'))
 const TimeLog=lazy(()=>import('../features/time-log/Page'))
 const FocusV7=lazy(()=>import('../features/focus/v7/FocusV7'))
 const WelcomeV7=lazy(()=>import('../features/sign-in/v7/WelcomeV7'))
+const NotFoundV7=lazy(()=>import('./v7/NotFoundV7'))
 const queryClient = new QueryClient({defaultOptions: {queries: {
  staleTime: 30_000, refetchOnWindowFocus: true,
  retry: (count, error) => !(error instanceof LemmaError && ['auth', 'not_found', 'invalid', 'not_implemented'].includes(error.code)) && count < 2,
@@ -39,7 +40,8 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
  ...(isFlagOn('v7Shell')?[{path:'/focus',element:<Suspense fallback={<RouteFallback/>}><FocusV7/></Suspense>,errorElement:<RouteError/>},
   // PLAN §6.15 first run: three skippable steps after the first sign-in.
   {path:'/welcome',element:<Suspense fallback={<RouteFallback/>}><WelcomeV7/></Suspense>,errorElement:<RouteError/>}]:[]),
- {path: '*', element: <Navigate to="/" replace />},
+ // V32 (v7 UX audit r3): with v7 an unknown address says so (NotFoundV7); without it, it still goes to Today.
+ {path: '*', handle: {notFound: true}, element: isFlagOn('v7Shell')?<Suspense fallback={<RouteFallback/>}><NotFoundV7/></Suspense>:<Navigate to="/" replace />},
 ]}])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>

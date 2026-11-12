@@ -117,7 +117,7 @@ export default function ProgressV7(){
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load your saved study time.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&summary&&tab==='overview'&&<>
    {hero}
-   <Chart title={range==='day'?'Focus today':range==='90'?'Focus by week':'Focus by day'} compact kind="bars" format={axis}
+   <Chart title={range==='day'?'Focus today':range==='90'?'Focus by week':'Focus by day'} compact kind="bars" format={axis} totalFormat={minutes}
     data={stacks.map(column=>({label:columnLabel(column),tickLabel:formatShortDate(column.from,{zone}).split(' ').slice(1).join(' '),values:[column.minutes]}))} series={[{label:'Focus'}]}/>
    <div className="v7-progress-stats">
     <StatTile label="Reviews" value={learn?String(learn.reviews):'—'}/>
@@ -125,7 +125,7 @@ export default function ProgressV7(){
     <StatTile label="Checkpoints" value={String(checkpoints.length)}/>
    </div>
    <Heatmap title="Study almanac" format={minutes} data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/>
-   {subjectIds.length?<Chart title="Time by subject" kind="stacked" format={axis}
+   {subjectIds.length?<Chart title="Time by subject" kind="stacked" format={axis} totalFormat={minutes}
     data={stacks.map(column=>({label:columnLabel(column),tickLabel:formatShortDate(column.from,{zone}).split(' ').slice(1).join(' '),values:subjectIds.map(id=>column.bySubject[id]??0)}))}
     series={subjectIds.map(id=>({label:name(id),color:color(id)}))}/>:<section className="v7-chart v7-chart-empty"><h3 className="v7-headline">Time by subject</h3>{empty}</section>}
    {insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')}).map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
@@ -139,11 +139,11 @@ export default function ProgressV7(){
     {learn.calibrationMessage&&<p className="v7-meta">{learn.calibrationMessage}</p>}
    </section>
    <Chart title="Checkpoints demonstrated" kind="bars" data={groups.map(days=>({label:columnLabel({from:days[0],to:days[days.length-1]}),tickLabel:tick(days[0]),values:[checkpoints.filter(event=>{const day=civilDay(new Date(event.at),zone);return day>=days[0]&&day<=days[days.length-1];}).length]}))} series={[{label:'Demonstrated'}]}/>
-   <StatTile label="Tutor sessions" value={formatDuration(learn.minutes)+' in tutor sessions'}/>
+   <StatTile label="Tutor sessions" value={formatDuration(learn.minutes)}/>
   </>:<Skeleton/>)}
   {status==='ready'&&summary&&tab==='time'&&<>
    {hero}
-   <Chart title={range==='90'?'Focus by week':'Focus by day'} kind="bars" format={axis}
+   <Chart title={range==='90'?'Focus by week':'Focus by day'} kind="bars" format={axis} totalFormat={minutes}
     data={groupDays(period.days,range==='90'?7:1).map(days=>{const column=stackColumns(entries,[days],zone,stamp)[0];return {label:columnLabel(column),tickLabel:formatShortDate(column.from,{zone}).split(' ').slice(1).join(' '),values:[column.minutes]};})} series={[{label:'Focus'}]}/>
    {summary.exactParts.length?<HorizontalBars title="By subject" format={minutes} data={summary.exactParts.map(part=>({label:name(part.id),value:part.minutes,color:color(part.id)}))}/>
     :<section className="v7-chart v7-chart-empty"><h3 className="v7-headline">By subject</h3>{empty}</section>}

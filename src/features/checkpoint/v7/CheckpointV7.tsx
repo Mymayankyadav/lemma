@@ -43,7 +43,8 @@ export default function CheckpointV7(){
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
  const step=Math.max(0,view.currentStep);
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
-  <DetailHeader title={view.code} back={back}/>
+  {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
+  <DetailHeader title={view.title} back={back}/>
   <header className="v7-learn-head">
    <p className="v7-eyebrow">{'Checkpoint '+view.code.replace(/^\D+/,'')+' · '+title}</p>
    <h1 className="v7-learn-title"><Tex source={view.title}/></h1>

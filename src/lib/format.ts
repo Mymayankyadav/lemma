@@ -104,3 +104,13 @@ export function formatTimeLeft(due:{kind:'date';date:string}|{kind:'instant';at:
  if(days<=6)return `Due in ${days} days`;
  return 'Due '+formatShortDate(day,{...options,zone});
 }
+
+/** V34 (v7 UX audit r3): a time zone as people say it ("India Standard Time"), not its id's city ("Calcutta time").
+ *  Falls back to the city when the platform only knows an offset. */
+export function zoneLongName(zone: string, at: Date = new Date()): string {
+  try {
+    const name = new Intl.DateTimeFormat('en-GB', {timeZone: zone, timeZoneName: 'long'}).formatToParts(at).find(part => part.type === 'timeZoneName')?.value;
+    if (name && !/^(GMT|UTC)[+-−]/.test(name)) return name;
+  } catch {/* an unknown zone falls through */}
+  return (zone.split('/').pop() ?? zone).replace(/_/g, ' ') + ' time';
+}
