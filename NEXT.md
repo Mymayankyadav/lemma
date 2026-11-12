@@ -8,7 +8,7 @@ Owner decisions (12 Nov 2026, on `05_ANDROID_APP_PLAN.md` from the release and a
 Done = phases N0–N7 of `docs/android/PLAN.md` within those decisions, as recorded phase by phase in `docs/current/N123.md` (each part built, deferred by a decision, or waiting for the Owner's device checks); the app builds in CI (lint, Java unit tests, debug APK, release AAB).
 Tests: `tests/unit/android/platform.test.ts`, `tests/unit/android/android-shell.test.ts` (replaces the TWA shell test with the same invariants on the Capacitor shell), the Java unit tests in `android/app/src/test/`, existing suites unchanged.
 Scope: `android/**`, `src/platform/**`, small hooks in existing screens (Capture, New path, Focus, Calendar suggestions, Settings, Round complete, haptics, sign-in), `capacitor.config.json`, `vite.config.ts` android mode, `scripts/android-*.mjs`, `.github/workflows/android.yml`, docs, `public/privacy.html`.
-Not: `supabase/**` (no migration, no FCM transport, no widget RPC); new web-push behaviour; widgets, document scanner, WorkManager, in-app updates or review (dependencies not approved); flag defaults.
+Not: `supabase/**` (no migration, no FCM transport, no widget RPC); new web-push behaviour; WorkManager, in-app updates or review (dependencies not approved); flag defaults. Deferred by the Owner (12 Nov 2026): server-sent phone notifications (FCM), home-screen widgets (Glance), document scanner (ML Kit).
 
 ## N122 Lemma v7 Constellation (Owner task, one PR)
 
