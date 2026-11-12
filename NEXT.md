@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N125 Fix the Owner's phone report of 12 Nov 2026 (Owner task, one PR)
+
+Owner task: "1. l looks of centered. 2. Can't press any of the buttons. 3. No notifications in the android app. 3. The buttons looks congested 4. This awkward highlight bar appears in almost all charts and is disgusting. 5. Why everything is 0 mins. 6. Awkward placement of the buttons."
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-fixes
+Done = every item in `docs/current/N125.md` fixed with a regression test: the header ℓ optically centred; the Android app's own native calls working (they all failed), so its buttons, permission prompt, timer notification and reminders work, and a first focus session asks for notifications; the Tutor actions laid out; no focus ring on tapped chart columns; axis labels not clipped; the time-block sheet footer on one row; one tick on a selected chip.
+Tests: `tests/unit/android/bridge.test.ts`, `tests/unit/v7/n125-owner-report.test.tsx`, `tests/unit/v7/brand-mark.test.ts`, existing suites unchanged.
+Scope: `src/platform/**`, `src/ui/v7/**`, `src/app/v7/**`, `src/features/settings/v7/**`, `src/features/calendar/block-sheet/BlockSheet.tsx`, tests, `docs/current/N125.md`.
+Not: server changes, new dependencies, flag defaults.
+
 ## N124 A1 Motion v1 (Owner task, one PR)
 
 Owner task: "Yes start A1"

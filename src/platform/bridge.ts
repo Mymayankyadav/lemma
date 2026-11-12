@@ -90,10 +90,19 @@ export interface LemmaNativePlugin {
   addListener(event: 'timerAction' | 'shareReceived', handler: () => void): Promise<{remove: () => Promise<void>}>;
 }
 
+/**
+ * Capacitor's plugin proxy answers every property with a native method, `then` included, so a promise that resolves
+ * to it treats it as a thenable and calls a native `then()` that does not exist: every call silently failed on the
+ * phone (Owner report, 12 Nov 2026). Hand out a view that has no `then`.
+ */
+export function notThenable<T extends object>(proxy: T): T {
+  return new Proxy(proxy, {get: (target, property) => property === 'then' ? undefined : Reflect.get(target, property)});
+}
+
 let plugin: Promise<LemmaNativePlugin> | null = null;
-/** The plugin proxy, created on first use (the import never runs in a browser). */
+/** The plugin, created on first use (the import never runs in a browser). Safe to `await`. */
 export function lemmaNative(): Promise<LemmaNativePlugin> {
-  return plugin ??= import('@capacitor/core').then(({registerPlugin}) => registerPlugin<LemmaNativePlugin>('LemmaNative'));
+  return plugin ??= import('@capacitor/core').then(({registerPlugin}) => notThenable(registerPlugin<LemmaNativePlugin>('LemmaNative')));
 }
 export function setLemmaNativeForTests(fake: LemmaNativePlugin | null): void {
   plugin = fake ? Promise.resolve(fake) : null;

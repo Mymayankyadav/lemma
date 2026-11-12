@@ -126,7 +126,7 @@ function Tutor({settings}:{settings:Settings}){
   <div className="v7-settings-card">
    <p className="v7-eyebrow">Connector address</p>
    <ConnectorAddress value={revealed?settings.connectorUrl:settings.connectorUrl.replace(/\/[^/]+$/,'/••••••')}/>
-   <div className="v7-learn-chips">
+   <div className="v7-connector-actions">
     <Button small onClick={()=>setRevealed(value=>!value)}>{revealed?<EyeOff aria-hidden="true"/>:<Eye aria-hidden="true"/>}{revealed?'Hide':'Show'}</Button>
     <Button small onClick={()=>{void navigator.clipboard?.writeText(settings.connectorUrl).then(()=>notify('Copied',{tone:'success'})).catch(()=>notify('Could not copy',{tone:'danger'}));}}><Copy aria-hidden="true"/>Copy</Button>
     <Button small loading={rotate.isPending} onClick={()=>{void rotate.mutateAsync().then(()=>notify('New address created; reconnect your tutor',{tone:'success'})).catch(()=>notify('Could not rotate the address',{tone:'danger'}));}}><RefreshCw aria-hidden="true"/>New address</Button>

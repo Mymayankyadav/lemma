@@ -60,7 +60,8 @@
  :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] .v7-hub-title {font-size:var(--v7-type-subhead);}
  :where(html[data-v7]) .v7-hub-extra {display:grid;gap:var(--v7-space-2);margin-top:calc(-1 * var(--v7-gap,var(--v7-space-4)) + var(--v7-space-1));}
  :where(html[data-v7]) .v7-hub-date {display:flex;align-items:center;gap:var(--v7-space-2);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
-:where(html[data-v7]) .v7-hub-mark {display:grid;place-items:center;width:28px;height:28px;border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:italic 500 var(--v7-type-lead)/1 var(--v7-serif);}
+:where(html[data-v7]) .v7-hub-mark {display:grid;place-items:center;width:28px;height:28px;border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-hub-mark svg,:where(html[data-v7]) .v7-rail-brand svg {display:block;flex:none;}
 :where(html[data-v7]) .v7-hub-title {min-width:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
  :where(html[data-v7]) .v7-hub-title.v7-display {font-size:var(--v7-type-display);line-height:1.1;}
  :where(html[data-v7]) .v7-detail-header,:where(html[data-v7]) .v7-immersive-header {min-width:0;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-2);

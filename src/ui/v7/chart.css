@@ -39,3 +39,9 @@
 @media(forced-colors:active){:where(html[data-v7]) .v7-chart path,:where(html[data-v7]) .v7-chart polyline {stroke:CanvasText;}:where(html[data-v7]) .v7-heatmap button {border-color:ButtonText;}}
 
 }
+
+/* N125 (Owner report, 12 Nov 2026): a tapped column showed the browser's thick focus ring. Taps select with a faint band;
+   keyboard focus keeps a visible ring on that band. */
+:where(html[data-v7]) .v7-chart [data-chart-point]:focus,:where(html[data-v7]) .v7-chart :is(button,[tabindex]):focus:not(:focus-visible) {outline:none;}
+:where(html[data-v7]) .v7-chart-band {fill:var(--v7-role-text-primary);opacity:.06;pointer-events:none;}
+:where(html[data-v7]) .v7-chart [data-chart-point]:focus-visible .v7-chart-band {opacity:.1;stroke:var(--v7-role-focus-ring);stroke-width:2;}
