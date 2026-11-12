@@ -3,12 +3,15 @@
 @layer v7-components {
 :where(html[data-v7]) .v7-il {display:block;max-width:100%;height:auto;color:var(--v7-role-text-primary);overflow:visible;
   --v7-il-accent:var(--v7-subject,var(--v7-role-selection-fg));}
-:where(html[data-v7]) .v7-il :is(.i,.m,.g,.a) {fill:none;stroke-linecap:round;stroke-linejoin:round;}
-:where(html[data-v7]) .v7-il .i {stroke:currentColor;stroke-width:2.2;}
-:where(html[data-v7]) .v7-il .m {stroke:var(--v7-role-text-tertiary);stroke-width:1.8;}
+:where(html[data-v7]) .v7-il :is(.i,.m,.g,.a,.w) {fill:none;stroke-linecap:round;stroke-linejoin:round;}
+:where(html[data-v7]) .v7-il .bg {fill:var(--v7-role-surface-muted);}
+:where(html[data-v7]) .v7-il .i {stroke:currentColor;stroke-width:3;}
+:where(html[data-v7]) .v7-il .m {stroke:var(--v7-role-text-tertiary);stroke-width:3;}
 :where(html[data-v7]) .v7-il .g {stroke:var(--v7-il-accent);stroke-width:1.2;opacity:.22;}
-:where(html[data-v7]) .v7-il .a {stroke:var(--v7-il-accent);stroke-width:2.6;}
+:where(html[data-v7]) .v7-il .a {stroke:var(--v7-il-accent);stroke-width:3;}
+:where(html[data-v7]) .v7-il .thick {stroke-width:6;}
+:where(html[data-v7]) .v7-il .w {stroke:var(--v7-role-surface-page);stroke-width:3;}
 :where(html[data-v7]) .v7-il .f {fill:var(--v7-il-accent);}
-:where(html[data-v7]) .v7-il .page {fill:var(--v7-role-surface-page);}
+:where(html[data-v7]) .v7-il .page {fill:var(--v7-role-surface-raised);}
 @media(forced-colors:active){:where(html[data-v7]) .v7-il :is(.i,.m,.g,.a) {stroke:CanvasText;opacity:1;}:where(html[data-v7]) .v7-il .f {fill:CanvasText;}}
 }

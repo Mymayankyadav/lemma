@@ -1,58 +1,49 @@
 import './illustration.css';
 
 /**
- * A2 · the empty-state illustrations (release and assets plan, IL-01 … IL-08), in the style the Owner chose on
- * 12 Nov 2026 (D6 = A · Notebook line art): one ink weight with round caps and joins, muted secondary lines, and a single
- * accent (the subject colour where there is one, else the brand indigo). Drawn in code, about 1 KB each; every colour
- * comes from the theme, so Day and Night follow automatically. Decorative: the empty state's text carries the meaning.
+ * A2 · the empty-state illustrations (release and assets plan, IL-01 … IL-08), line art (D6 = A). Redrawn on the Owner's
+ * note of 12 Nov 2026 ("too weird; something clean"): one familiar object per state, centred on a soft round backdrop,
+ * one line weight, and a single accent detail (a badge, a flag, a star) in the subject colour or the brand indigo.
+ * Drawn in code, under 1 KB each; every colour comes from the theme, so Day and Night follow. Decorative: the empty
+ * state's text carries the meaning.
  *
- * Classes: `i` ink stroke, `m` muted stroke, `g` faint accent grid, `a` accent stroke, `f` accent fill.
+ * Classes: `bg` backdrop, `i` ink stroke, `m` muted stroke, `a` accent stroke, `f` accent fill, `w` mark on an accent
+ * badge, `page` paper fill, `thick` a heavier stroke.
  */
 export type IllustrationName = 'paths' | 'calendar' | 'review' | 'inbox' | 'cards' | 'atlas' | 'progress' | 'tasks';
 
 const art: Record<IllustrationName, string> = {
-  // IL-01 Paths: a blank notebook page with a compass about to draw.
-  paths: `<path class="i" d="M40 50Q80 42 120 52Q160 42 200 50V142Q160 134 120 144Q80 134 40 142Z"/><path class="i" d="M120 52V144"/>
-    <path class="m" d="M54 72H104M54 86H98M54 100H104"/>
-    <path class="g" d="M136 66V128M150 64V130M164 64V130M178 64V130M192 66V128M130 80H196M130 96H196M130 112H196"/>
-    <circle class="i" cx="164" cy="30" r="5"/><path class="i" d="M161 34 150 104M167 34 180 102"/><path class="i" d="M180 102l2 8"/>
-    <path class="a" stroke-dasharray="3 6" d="M146 112A36 36 0 0 0 184 114"/>`,
-  // IL-02 Calendar day: an empty day under a ruler; a dashed block shows where study could go.
-  calendar: `<rect class="i" x="56" y="34" width="128" height="104" rx="10"/><path class="i" d="M56 56H184"/>
-    <path class="m" d="M72 76H170M72 96H170M72 116H170"/>
-    <rect class="a" stroke-dasharray="4 6" x="92" y="82" width="62" height="28" rx="6"/>
-    <rect class="i" x="44" y="146" width="152" height="18" rx="4"/>
-    <path class="i" d="M60 146v7M76 146v5M92 146v7M108 146v5M124 146v7M140 146v5M156 146v7M172 146v5"/>`,
-  // IL-03 Review, all caught up: a squared deck with ∎ and a tick above.
-  review: `<rect class="m" x="62" y="62" width="104" height="72" rx="10" transform="rotate(-7 114 98)"/>
-    <rect class="m" x="70" y="58" width="104" height="72" rx="10" transform="rotate(3 122 94)"/>
-    <rect class="i page" x="76" y="54" width="104" height="72" rx="10"/><path class="i" d="M92 76H150M92 90H138"/>
-    <rect class="f" x="156" y="104" width="12" height="12" rx="1.5"/><path class="a" d="M106 26l8 8 16-16"/>`,
-  // IL-04 Inbox zero: an empty tray, a tick lifted above it.
-  inbox: `<path class="i" d="M50 104 66 70H174L190 104V134a8 8 0 0 1-8 8H58a8 8 0 0 1-8-8Z"/>
-    <path class="i" d="M50 104H92l8 14H140l8-14H190"/><path class="m" d="M80 84H160"/>
-    <circle class="a" cx="120" cy="36" r="18"/><path class="a" d="M111 36l6 6 12-12"/>`,
-  // IL-05 Cards, no match: a lens over a card, finding nothing.
-  cards: `<rect class="m" x="44" y="54" width="112" height="78" rx="10"/><path class="m" d="M60 76H120M60 92H108M60 108H96"/>
-    <circle class="i page" cx="156" cy="96" r="30"/><circle class="a" stroke-dasharray="3 6" cx="156" cy="96" r="18"/>
-    <path class="i" d="M178 118 200 140"/>`,
-  // IL-06 Atlas, an empty sky: a dome, a few faint stars, one bright star with nothing joined to it yet.
-  atlas: `<path class="i" d="M36 140A84 84 0 0 1 204 140"/><path class="i" d="M28 140H212"/>
-    <path class="m" d="M80 92v8M76 96h8M150 70v6M147 73h6M170 112v6M167 115h6M98 124v6M95 127h6"/>
-    <path class="a" d="M120 64l4 10 10 4-10 4-4 10-4-10-10-4 10-4Z"/>
-    <path class="a" stroke-dasharray="2 7" d="M128 84 160 106"/>`,
-  // IL-07 Progress, no time yet: an empty chart waiting on a stopwatch.
-  progress: `<path class="i" d="M48 36V140H200"/>
-    <rect class="m" stroke-dasharray="3 5" x="64" y="112" width="18" height="28" rx="3"/>
-    <rect class="m" stroke-dasharray="3 5" x="94" y="96" width="18" height="44" rx="3"/>
-    <rect class="m" stroke-dasharray="3 5" x="124" y="104" width="18" height="36" rx="3"/>
-    <circle class="a" cx="170" cy="62" r="20"/><path class="a" d="M170 50v12l8 6M166 36h8"/>`,
-  // IL-08 Tasks, all done: a list with every box ticked and ∎ at the end.
-  tasks: `<rect class="i" x="60" y="30" width="120" height="124" rx="10"/>
-    <rect class="i" x="76" y="50" width="14" height="14" rx="3"/><path class="a" d="M79 57l3 3 6-6"/><path class="m" d="M100 57H160"/>
-    <rect class="i" x="76" y="78" width="14" height="14" rx="3"/><path class="a" d="M79 85l3 3 6-6"/><path class="m" d="M100 85H152"/>
-    <rect class="i" x="76" y="106" width="14" height="14" rx="3"/><path class="a" d="M79 113l3 3 6-6"/><path class="m" d="M100 113H156"/>
-    <rect class="f" x="156" y="134" width="10" height="10" rx="1.5"/>`,
+  // IL-01 Paths: a path from a starting point to a flag.
+  paths: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <path class="i" d="M86 120C104 116 98 98 116 94S148 90 156 84"/><circle class="i page" cx="84" cy="121" r="6"/>
+    <path class="i" d="M156 44V86"/><path class="f" d="M158 46 180 54 158 62Z"/>`,
+  // IL-02 Calendar Day: an empty calendar page, a plus to add a block.
+  calendar: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <rect class="i page" x="78" y="52" width="84" height="76" rx="10"/><path class="i" d="M78 74H162M100 44V60M140 44V60"/>
+    <path class="m" d="M96 92h8M116 92h8M136 92h8M96 108h8M116 108h8"/><circle class="f" cx="160" cy="122" r="14"/><path class="w" d="M160 116v12M154 122h12"/>`,
+  // IL-03 Review, all caught up: a card with a tick.
+  review: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <rect class="m page" x="88" y="56" width="76" height="54" rx="8" transform="rotate(-8 126 83)"/>
+    <rect class="i page" x="80" y="66" width="80" height="56" rx="8"/><path class="m" d="M94 86H140M94 100H128"/><circle class="f" cx="160" cy="120" r="14"/><path class="w" d="M154 120l4 4 8-8"/>`,
+  // IL-04 Inbox zero: an empty tray with a tick.
+  inbox: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <path class="i page" d="M78 98 92 66H148L162 98V120a6 6 0 0 1-6 6H84a6 6 0 0 1-6-6Z"/><path class="i" d="M78 98H102l6 10H132l6-10H162"/><circle class="f" cx="160" cy="64" r="14"/><path class="w" d="M154 64l4 4 8-8"/>`,
+  // IL-05 Cards, no match: a magnifier that found nothing.
+  cards: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <circle class="i page" cx="112" cy="84" r="28"/><path class="m" d="M100 84H124"/><path class="a thick" d="M133 105 154 126"/>`,
+  // IL-06 Atlas, an empty sky: one bright star and two small ones.
+  atlas: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <path class="f" d="M120 56C122 78 128 84 150 86C128 88 122 94 120 116C118 94 112 88 90 86C112 84 118 78 120 56Z"/>
+    <path class="i" d="M84 60C85 68 87 70 95 71C87 72 85 74 84 82C83 74 81 72 73 71C81 70 83 68 84 60Z"/>
+    <path class="i" d="M158 108C159 114 160 115 166 116C160 117 159 118 158 124C157 118 156 117 150 116C156 115 157 114 158 108Z"/>`,
+  // IL-07 Progress, no time yet: a clock waiting at twelve.
+  progress: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <circle class="i page" cx="120" cy="90" r="34"/><path class="m" d="M120 62v6M148 90h-6M120 118v-6M92 90h6"/>
+    <path class="a" d="M120 74V90l10 8"/><circle class="f" cx="120" cy="90" r="3"/>`,
+  // IL-08 Tasks, all done: a clipboard with a tick.
+  tasks: `<circle class="bg" cx="120" cy="90" r="66"/>
+    <rect class="i page" x="86" y="54" width="68" height="78" rx="8"/><rect class="i page" x="104" y="46" width="32" height="14" rx="5"/>
+    <path class="m" d="M100 80H140M100 96H140M100 112H126"/><circle class="f" cx="152" cy="124" r="14"/><path class="w" d="M146 124l4 4 8-8"/>`,
 };
 
 export const ILLUSTRATIONS = Object.keys(art) as IllustrationName[];

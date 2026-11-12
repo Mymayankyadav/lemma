@@ -18,7 +18,7 @@ describe('A2 illustrations',()=>{
    expect(svg).toContain('data-illustration="'+name+'"');
    expect(svg).not.toMatch(/#[0-9a-f]{3,8}\b|rgb\(|stroke="|fill="/i);
    const classes=[...svg.matchAll(/class="([^"]+)"/g)].flatMap(match=>match[1].split(' '));
-   for(const cls of classes)expect(['v7-il','i','m','g','a','f','page']).toContain(cls);
+   for(const cls of classes)expect(['v7-il','bg','i','m','a','f','w','page','thick']).toContain(cls);
    expect(classes.filter(cls=>cls==='a'||cls==='f').length).toBeGreaterThan(0);
   }
  });
