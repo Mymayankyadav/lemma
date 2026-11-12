@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`v7 mathematical emblems (emblem system v2) > matches the approved family × tier construction (deterministic SVG strings) 1`] = `
+{
+  "Algebra · glyph": "2 strokes · 2ee93c56",
+  "Algebra · hero": "37 strokes · 41d5088b",
+  "Algebra · tile": "11 strokes · 757bf817",
+  "Analysis · glyph": "2 strokes · 37377373",
+  "Analysis · hero": "6 strokes · e34f1d46",
+  "Analysis · tile": "4 strokes · b4cc79d1",
+  "Combinatorics · glyph": "2 strokes · 114740c0",
+  "Combinatorics · hero": "22 strokes · b4a59687",
+  "Combinatorics · tile": "10 strokes · 19b28b51",
+  "Geometry · glyph": "2 strokes · ef809de6",
+  "Geometry · hero": "14 strokes · a53dd700",
+  "Geometry · tile": "7 strokes · 6ff1e7db",
+  "Logic · glyph": "2 strokes · 3f162562",
+  "Logic · hero": "49 strokes · a4819ffe",
+  "Logic · tile": "14 strokes · 6b6e9ab2",
+  "Number theory · glyph": "2 strokes · f6bb2f12",
+  "Number theory · hero": "105 strokes · 4f11f18d",
+  "Number theory · tile": "23 strokes · 958f4336",
+  "Other · glyph": "1 strokes · bbdb8f53",
+  "Other · hero": "4 strokes · 12723f6e",
+  "Other · tile": "2 strokes · 35d7bad2",
+  "Probability · glyph": "2 strokes · 505a55a6",
+  "Probability · hero": "123 strokes · 5e1fa5a8",
+  "Probability · tile": "17 strokes · 93a3a355",
+  "Topology · glyph": "1 strokes · cc5e041d",
+  "Topology · hero": "7 strokes · 86180b20",
+  "Topology · tile": "3 strokes · 40fca250",
+}
+`;

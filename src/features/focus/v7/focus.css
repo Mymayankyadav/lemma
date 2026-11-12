@@ -1,0 +1,73 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.3 Focus. Role tokens only. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-focus {position:relative;min-height:100dvh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;padding:0 var(--v7-page-margin) calc(env(safe-area-inset-bottom) + var(--v7-space-6));
+  background:radial-gradient(circle at 50% 42%,transparent 40%,color-mix(in oklab,var(--v7-role-surface-sunken) 70%,var(--v7-role-text-primary) 4%) 100%),var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-focus-empty {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-4);text-align:center;}
+:where(html[data-v7]) .v7-focus-emblem {position:absolute;left:50%;top:50%;width:520px;height:520px;margin:-260px 0 0 -260px;opacity:.15;color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;z-index:-1;animation:v7-focus-turn 240s linear infinite;}
+ :where(html[data-v7]) .v7-focus-emblem[data-still] {animation:none;}
+ :where(html[data-v7]) .v7-focus-breath {display:block;width:180px;height:180px;margin:170px auto;border-radius:var(--v7-round);background:var(--v7-subject,var(--v7-role-text-secondary));opacity:.5;animation:v7-focus-breathe 10s ease-in-out infinite;}
+ :where(html[data-v7]) .v7-focus-breath[data-still] {animation:none;}
+ @keyframes v7-focus-turn {to {transform:rotate(360deg);}}
+ @keyframes v7-focus-breathe {0% {transform:scale(.7);} 40% {transform:scale(1);} 100% {transform:scale(.7);}}
+:where(html[data-v7]) .v7-focus > :not(.v7-sr-only,dialog) {position:relative;}
+ /* FO1: the visually hidden heading must not take the flexible row, or the timer drops to the bottom. */
+ :where(html[data-v7]) .v7-focus > .v7-sr-only {position:absolute;}
+ :where(html[data-v7]) .v7-focus-more {position:relative;}
+ :where(html[data-v7]) .v7-focus-menu {position:absolute;right:0;top:calc(100% + var(--v7-space-1));z-index:5;min-width:240px;display:grid;gap:var(--v7-space-1);padding:var(--v7-space-2);
+  border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-focus-menu p {padding:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-focus-menu button {min-height:var(--v7-touch);padding-inline:var(--v7-space-3);border:0;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-primary);text-align:left;}
+
+:where(html[data-v7]) .v7-focus-centre {position:relative;isolation:isolate;display:grid;justify-items:center;align-content:center;gap:var(--v7-space-5);text-align:center;}
+ :where(html[data-v7]) .v7-focus-subject {display:grid;justify-items:center;gap:2px;}
+ :where(html[data-v7]) .v7-focus-subject .v7-meta {max-width:22ch;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:var(--v7-type-caption);}
+ :where(html[data-v7]) .v7-focus-ring {position:relative;width:280px;height:280px;}
+ :where(html[data-v7]) .v7-focus-ring svg {width:100%;height:100%;}
+ :where(html[data-v7]) .v7-focus-track {fill:none;stroke:var(--v7-role-border-subtle);stroke-width:6;}
+ :where(html[data-v7]) .v7-focus-arc {fill:none;stroke:var(--v7-subject,var(--v7-role-action-bg));stroke-width:6;stroke-linecap:round;transition:stroke-dashoffset 1s linear;}
+ :where(html[data-v7]) .v7-focus-head {fill:var(--v7-subject,var(--v7-role-action-bg));}
+ :where(html[data-v7]) .v7-focus-ring[data-word="Break"] :is(.v7-focus-arc,.v7-focus-head) {stroke:var(--v7-role-text-tertiary);fill:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-focus-ring .v7-focus-head {stroke:none;}
+ :where(html[data-v7]) .v7-focus-readout,:where(html[data-v7]) .v7-focus-open {position:absolute;inset:0;display:grid;justify-items:center;align-content:center;gap:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-focus-open {position:static;}
+ :where(html[data-v7]) .v7-focus-time {font:500 var(--v7-type-numeric-xl)/1 var(--v7-sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums lining-nums;}
+ :where(html[data-v7]) .v7-focus[data-word="Paused"] .v7-focus-time {color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-focus-intention {max-width:24ch;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-text-primary);font:450 var(--v7-type-subhead)/1.3 var(--v7-serif);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-focus-intention-form input {width:min(100%,32ch);min-height:48px;padding-inline:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);
+  background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);text-align:center;font:450 var(--v7-type-subhead)/1.3 var(--v7-serif);}
+
+ /* Every control sits in the bottom 40% of the screen. */
+ :where(html[data-v7]) .v7-focus-bottom {display:grid;gap:var(--v7-space-3);width:100%;max-width:480px;margin-inline:auto;}
+ :where(html[data-v7]) .v7-focus-thought {display:flex;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-focus-thought input {flex:1;min-width:0;min-height:var(--v7-field);padding-inline:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);
+  background:var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+ :where(html[data-v7]) .v7-focus-thought input::placeholder {color:var(--v7-role-text-tertiary);}
+:where(html[data-v7]) .v7-focus-drift {min-height:var(--v7-field);flex:none;display:inline-flex;align-items:center;gap:var(--v7-space-1);padding-inline:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-focus-drift svg {width:18px;height:18px;}
+ :where(html[data-v7]) .v7-focus-noted {min-height:var(--v7-leading-supporting);display:flex;justify-content:center;align-items:center;gap:var(--v7-space-1);color:var(--v7-role-status-success);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-focus-noted svg {width:16px;height:16px;}
+:where(html[data-v7]) .v7-focus-controls {display:flex;justify-content:center;align-items:flex-start;gap:var(--v7-space-8);}
+:where(html[data-v7]) .v7-focus-controls > div {display:grid;grid-template-rows:72px auto;justify-items:center;align-items:center;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-focus-control {width:56px;height:56px;display:grid;place-items:center;border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);}
+:where(html[data-v7]) .v7-focus-main {width:72px;height:72px;border-color:var(--v7-role-border-default);background:var(--v7-role-surface-muted);}
+ :where(html[data-v7]) .v7-focus-finish {border-color:transparent;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
+ :where(html[data-v7]) .v7-focus-control:disabled {border-color:var(--v7-role-border-subtle);background:transparent;color:var(--v7-role-text-disabled);}
+ :where(html[data-v7]) .v7-focus-finish-form {display:grid;gap:var(--v7-space-5);}
+ :where(html[data-v7]) .v7-focus-rating {border:0;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-focus-rating legend {font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);margin-bottom:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-focus-rating [role="radiogroup"] {display:flex;justify-content:space-between;}
+ :where(html[data-v7]) .v7-focus-rating button {width:var(--v7-touch);height:var(--v7-touch);display:grid;place-items:center;border:0;background:transparent;}
+ :where(html[data-v7]) .v7-focus-rating button span {width:20px;height:20px;border:2px solid var(--v7-role-border-default);border-radius:var(--v7-round);}
+:where(html[data-v7]) .v7-focus-rating button[aria-checked="true"] span {border-color:var(--v7-role-action-bg);background:var(--v7-role-action-bg);}
+ :where(html[data-v7]) .v7-focus-rating p {display:flex;justify-content:space-between;}
+ :where(html[data-v7]) .v7-today-field textarea {padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+ @media (min-width:1024px) {:where(html[data-v7]) .v7-focus-ring {width:360px;height:360px;}}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) :is(.v7-focus-emblem,.v7-focus-breath) {animation:none;} :where(html[data-v7]) .v7-focus-arc {transition:none;}}
+
+ :where(html[data-v7]) .v7-focus-finish-form .v7-today-field {display:grid;gap:var(--v7-space-2);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ /* R0 · F09: an inline banner with an icon, a sentence and Dismiss; it never pushes the controls around. */
+ :where(html[data-v7]) .v7-focus-error {display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-2) var(--v7-space-2) var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-status-danger-subtle);color:var(--v7-role-text-primary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-focus-error > svg {flex:none;width:20px;height:20px;color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-focus-error > p {flex:1;margin:0;}
+}

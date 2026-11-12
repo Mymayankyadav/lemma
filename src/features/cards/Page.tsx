@@ -19,8 +19,10 @@ import type {EditorValue} from './Editor';
 import {ProjectFilterTitle,projectFilterOptionLabel} from './ProjectFilterTitle';
 import {isFlagOn} from '../../flags';
 import V6Cards from './v6/V6Cards';
+import {v7Screen} from '../../app/v7Kit';
 
 const Editor=lazy(()=>import('./Editor').then(module=>({default:module.Editor})));
+const CardsV7=lazy(()=>import('./v7/CardsV7'));
 const ROW_HEIGHT=92,OVERSCAN=6;
 function relative(due:string|null){
  if(!due)return 'New';
@@ -199,5 +201,7 @@ function LegacyCards(){
 
 /** The existing card library is preserved exactly when the v6 shell is off. */
 export default function Page(){
+ // v7 Cards (PLAN §6.11) behind v7Shell; v6 and legacy stay for rollback.
+ if(v7Screen()==='cards')return <Suspense fallback={<div role="status" aria-label="Cards loading" className="min-h-dvh"/>}><CardsV7/></Suspense>;
  return isFlagOn('v6Shell')?<V6Cards/>:<LegacyCards/>;
 }

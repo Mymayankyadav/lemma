@@ -1,0 +1,40 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §5.3 for the Part 8–10 screens: from 700 px the rail replaces the tab bar, from 1100 px the desktop layouts apply. */
+@layer v7-components {
+ /* Q3 at 200% text: hub tabs wrap rather than push the page sideways, and a chart's labels stay inside its card (the table
+    view carries every value in full). Neither changes anything at normal text sizes. */
+ :where(html[data-v7]) .v7-hub-tabs {flex-wrap:wrap;column-gap:var(--v7-space-4);row-gap:0;}
+ :where(html[data-v7]) .v7-chart {overflow-x:clip;}
+ @media (min-width:700px) {
+  /* Sticky action bars sit in the content column, clear of the rail, at the bottom edge (there is no tab bar). */
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar,.v7-path-bar) {left:calc(var(--v7-rail-width,0px) + var(--v7-page-margin));bottom:var(--v7-space-4);max-width:calc(720px - var(--v7-page-margin) * 2);}
+  :where(html[data-v7]) .v7-paths-list {grid-template-columns:repeat(2,minmax(0,1fr));}
+  /* A subject with one path has no heading, so its card joins the shared grid; a headed subject takes its own row. */
+  :where(html[data-v7]) .v7-paths-groups {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v7-space-3);}
+  :where(html[data-v7]) .v7-paths-group:not(:has(.v7-paths-heading)),:where(html[data-v7]) .v7-paths-group:not(:has(.v7-paths-heading)) > .v7-paths-list {display:contents;}
+  :where(html[data-v7]) .v7-paths-group:has(.v7-paths-heading) {grid-column:1 / -1;}
+  :where(html[data-v7]) .v7-learn {padding-bottom:calc(72px + var(--v7-space-8));}
+  :where(html[data-v7]) .v7-inbox-card {max-height:none;}
+ }
+ @media (min-width:1100px) {
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar,.v7-path-bar) {max-width:calc(960px - var(--v7-page-margin) * 2);}
+  /* Paths: a three-column grid of path cards. */
+  :where(html[data-v7]) .v7-paths-list,:where(html[data-v7]) .v7-paths-groups {grid-template-columns:repeat(3,minmax(0,1fr));}
+  /* Progress: hero and tiles on top, the almanac full width, then charts two abreast. */
+  :where(html[data-v7]) .v7-progress {grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--v7-space-6);}
+  :where(html[data-v7]) .v7-progress > :not(section.v7-chart) {grid-column:1 / -1;}
+  :where(html[data-v7]) .v7-progress > section.v7-chart:has(.v7-heatmap-scroll),:where(html[data-v7]) .v7-progress > section.v7-chart:first-of-type {grid-column:1 / -1;}
+  :where(html[data-v7]) .v7-rail-library a[aria-current="page"] {color:var(--v7-role-text-primary);font-weight:600;}
+  /* Cards: a table-like list. */
+  :where(html[data-v7]) .v7-cards-row > a {grid-template-columns:40px minmax(0,2fr) minmax(0,1fr) 20px;}
+  :where(html[data-v7]) .v7-cards-text {display:contents;}
+  :where(html[data-v7]) .v7-cards-text small {white-space:normal;}
+  /* Inbox: the queue on the left, the decision on the right. */
+  :where(html[data-v7]) .v7-inbox-desk {display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2fr);gap:var(--v7-space-6);align-items:start;}
+  :where(html[data-v7]) .v7-inbox-queue {position:sticky;top:96px;display:grid;gap:var(--v7-space-1);max-height:calc(100dvh - 140px);overflow:auto;margin:0;padding:0;list-style:none;}
+  :where(html[data-v7]) .v7-inbox-queue button {display:grid;gap:2px;width:100%;min-height:56px;padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:transparent;color:var(--v7-role-text-primary);text-align:left;cursor:pointer;}
+  :where(html[data-v7]) .v7-inbox-queue button[aria-current="true"] {border-color:var(--v7-role-border-default);background:var(--v7-role-selection-subtle);}
+  :where(html[data-v7]) .v7-inbox-queue small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1.2 var(--v7-sans);}
+  :where(html[data-v7]) .v7-settings {max-width:720px;}
+ }
+}

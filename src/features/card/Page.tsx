@@ -3,7 +3,8 @@ import {isFlagOn} from '../../flags';
 import CardVariants from './v6/CardVariants';
 import {getApi} from "../../data";
 import {useQuery} from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { v7Screen } from "../../app/v7Kit";
 import { Link, useNavigate, useParams } from "react-router";
 import {
   ArrowRight,
@@ -46,7 +47,13 @@ function age(at: string) {
   const days = Math.floor((Date.now() - Date.parse(at)) / 86400000);
   return days <= 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
 }
+const CardV7 = lazy(() => import('./v7/CardV7'));
 export default function Page() {
+  // v7 Card detail (PLAN §6.11) behind v7Shell; v6 and legacy stay for rollback.
+  if (v7Screen() === 'card') return <Suspense fallback={<div role="status" aria-label="Card loading" className="min-h-dvh"/>}><CardV7/></Suspense>;
+  return <LegacyCardPage/>;
+}
+function LegacyCardPage() {
   const { no = "0" } = useParams(),
     number = Number(no),
     query = useCard(number),

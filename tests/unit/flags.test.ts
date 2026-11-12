@@ -1,10 +1,12 @@
 import {describe,expect,it} from 'vitest'
-import {FLAG_DEFAULTS,resolveFlags,isFlagOn} from '../../src/flags'
+import {FLAG_DEFAULTS,resolveFlags,isFlagOn,resolveEffectiveShell,currentEffectiveShell} from '../../src/flags'
+import {setShellRoot} from '../../src/app/shellRoot'
 
 describe('feature flags',()=>{
- it('every flag except v6Shell is off by default (v6Shell turned on by N102)',()=>{
-  const {v6Shell,...rest}=FLAG_DEFAULTS
+ it('every flag except v6Shell and v7Shell is off by default (v6Shell turned on by N102, v7Shell by the v7 release)',()=>{
+  const {v6Shell,v7Shell,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
+  expect(v7Shell).toBe(true)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
@@ -42,5 +44,42 @@ describe('feature flags',()=>{
  })
  it('isFlagOn reads the live environment (test mode allows overrides, no query -> off)',()=>{
   expect(isFlagOn('ciSelfTest')).toBe(false)
+ })
+ it('selects v7 before v6 before legacy without changing raw flag values',()=>{
+  for (const [v7Shell,v6Shell,shell] of [[true,true,'v7'],[true,false,'v7'],[false,true,'v6'],[false,false,'legacy']] as const) {
+   const flags=resolveFlags({allowOverrides:true,envFlags:`${v7Shell?'':'-'}v7Shell,${v6Shell?'':'-'}v6Shell`})
+   expect(resolveEffectiveShell(flags)).toBe(shell)
+   expect(flags.v6Shell).toBe(v6Shell)
+   expect(flags.v7Shell).toBe(v7Shell)
+  }
+  expect(resolveFlags({allowOverrides:true,envFlags:'-v6Shell,-v7Shell',search:'?flags=v6Shell,v7Shell'})).toMatchObject({v6Shell:true,v7Shell:true})
+  // Production never honours an override in either direction; v7Shell is on by default since the v7 release.
+  expect(resolveFlags({allowOverrides:false,envFlags:'-v7Shell',search:'?flags=-v7Shell'}).v7Shell).toBe(true)
+  expect(currentEffectiveShell()).toBe('v6')
+ })
+ it('sets mutually exclusive root attributes including for portal descendants',()=>{
+  const root=document.createElement('html'),body=document.createElement('body'),portal=document.createElement('div')
+  root.append(body); body.append(portal)
+  setShellRoot('v6',root)
+  expect(portal.closest('[data-v6]')).toBe(root)
+  expect(root.hasAttribute('data-v7')).toBe(false)
+  setShellRoot('v7',root)
+  expect(portal.closest('[data-v7]')).toBe(root)
+  expect(root.hasAttribute('data-v6')).toBe(false)
+  setShellRoot('legacy',root)
+  expect(root.hasAttribute('data-v6')).toBe(false)
+  expect(root.hasAttribute('data-v7')).toBe(false)
+ })
+ it('allows test URL overrides to supersede the test environment',()=>{
+  const original=window.location.href
+  try {
+   window.history.replaceState({},'', '/?flags=v7Shell')
+   expect(isFlagOn('v7Shell')).toBe(true)
+   expect(currentEffectiveShell()).toBe('v7')
+   window.history.replaceState({},'', '/?flags=-v6Shell,-v7Shell')
+   expect(currentEffectiveShell()).toBe('legacy')
+   window.history.replaceState({},'', '/?flags=v6Shell')
+   expect(currentEffectiveShell()).toBe('v6')
+  } finally {window.history.replaceState({},'',original)}
  })
 })

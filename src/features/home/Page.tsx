@@ -29,6 +29,8 @@ const GoalDistance=lazy(()=>import('./GoalDistance').then(module=>({default:modu
 const ReviewOutlook=lazy(()=>import('./ReviewOutlook').then(module=>({default:module.ReviewOutlook})));
 const TodayFocus=lazy(()=>import('../focus/TodayFocus'));
 const V6TodayPlan=lazy(()=>import('./V6TodayPlan'));
+const V7Today=lazy(()=>import('./v7/V7Today'));
+import {isV7Route} from '../../app/v7Kit';
 
 function TodayHeader({pending}: {pending:number}) {
  const today=new Date();
@@ -184,6 +186,11 @@ export function TutorHandoff({home,onCopy}:{home:HomeSummary;onCopy:(projectTitl
 }
 
 export default function Page(){
+ // v7 Today (PLAN §6.2) behind v7Shell; the v6/legacy Today below stays for rollback.
+ if(isV7Route('/'))return <Suspense fallback={<div role="status" aria-label="Today loading" className="min-h-dvh"/>}><V7Today/></Suspense>;
+ return <LegacyToday/>;
+}
+function LegacyToday(){
  const home=useHome(),settings=useSettings(),notify=useToast();
  // Live Today must not expose navigation while a deferred owner-scoped outlook
  // RPC can still leak into Insights' one-request budget. Prefetch both views

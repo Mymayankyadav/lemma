@@ -13,6 +13,10 @@ export function reviewRequired(files, cfg = readJson('ci/review-required.json'))
   // 2026-11-08 (#1303): app captures prove the v6 port matches the Owner's mockup; a second agent compares them.
   const design = (files || []).map((f) => f.filename).filter((f) => matchesAny(f, cfg.designPaths || []));
   if (design.length) why.push(`it changes v6 app captures (${design.slice(0, 3).map((f) => '`' + f + '`').join(', ')}${design.length > 3 ? ' …' : ''}); compare each with the same-named mockup in docs/v6/screens/`);
+  const golden = (files || []).map((f) => f.filename).filter((f) => matchesAny(f, cfg.v7GoldenPaths || []));
+  if (golden.length) why.push(`it changes v7 golden references (${golden.slice(0, 3).map((f) => '`' + f + '`').join(', ')}${golden.length > 3 ? ' …' : ''}); obtain Owner approval of the gallery and golden screens`);
+  const v7Design = (files || []).map((f) => f.filename).filter((f) => matchesAny(f, cfg.v7DesignPaths || []));
+  if (v7Design.length) why.push(`it changes v7 app captures (${v7Design.slice(0, 3).map((f) => '`' + f + '`').join(', ')}${v7Design.length > 3 ? ' …' : ''}); compare each with the Owner-approved reference in docs/v7/golden/`);
   const flags = (files || []).find((f) => f.filename === cfg.flagsFile);
   const on = flags ? flagsTurnedOn(flags.patch) : [];
   if (on.length) why.push(`it turns a flag on by default (${on.map((l) => '`' + l + '`').join(', ')})`);

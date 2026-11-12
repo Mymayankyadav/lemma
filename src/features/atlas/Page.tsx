@@ -2,6 +2,8 @@ import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {isFlagOn} from '../../flags';
 import AtlasV6 from './v6/AtlasV6';
+import {v7Screen} from '../../app/v7Kit';
+const AtlasV7=lazy(()=>import('./v7/AtlasV7'));
 import {ArrowLeft,ChevronRight,Info,MessageCircle,RotateCcw,Search,X} from 'lucide-react';
 import {getMode} from '../../data/mode';
 import {useAtlas} from '../../data/hooks';
@@ -382,6 +384,8 @@ function LegacyAtlasPage(){
 /** Keep the entire existing Atlas map unchanged and accessible as ?view=map. */
 export default function Page(){
  const location=useLocation();
+ // v7 owns /atlas (map and list) when its flag is on; the v6 and legacy screens stay for rollback.
+ if(v7Screen()==='atlas')return <Suspense fallback={<p role="status" className="p-4">Loading the Atlas…</p>}><AtlasV7/></Suspense>;
  return isFlagOn('v6Shell')&&new URLSearchParams(location.search).get('view')!=='map'
   ?<AtlasV6/>:<LegacyAtlasPage/>;
 }

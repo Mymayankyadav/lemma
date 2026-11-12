@@ -2,7 +2,7 @@ import {readFileSync,existsSync} from 'node:fs';
 import {resolve} from 'node:path';
 
 const path=name=>resolve(process.cwd(),'dist',name);
-const required=['manifest.webmanifest','sw.js','icons/lemma-192.png','icons/lemma-512.png','icons/lemma-maskable-512.png','icons/shortcut-review.png','icons/shortcut-approve.png','icons/shortcut-atlas.png','screenshots/today-day-1080x1920.png','screenshots/today-night-1080x1920.png'];
+const required=['manifest.webmanifest','sw.js','icons/lemma-192.png','icons/lemma-512.png','icons/lemma-maskable-512.png','icons/shortcut-review.png','icons/shortcut-approve.png','icons/shortcut-atlas.png','icons/apple-touch-icon.png','icons/favicon.svg','icons/favicon-32.png','icons/favicon.ico','screenshots/today-day-1080x1920.png','screenshots/today-night-1080x1920.png'];
 for(const file of required)if(!existsSync(path(file)))throw Error('Missing PWA release artifact: '+file);
 const manifest=JSON.parse(readFileSync(path('manifest.webmanifest'),'utf8'));
 if(manifest.display!=='standalone'||manifest.start_url!=='/lemma/'||manifest.scope!=='/lemma/')
@@ -16,6 +16,10 @@ if(!manifest.icons.some(icon=>icon.purpose==='maskable')||!manifest.icons.some(i
  throw Error('PWA manifest is missing installable icons: '+JSON.stringify(manifest.icons));
 const index=readFileSync(path('index.html'),'utf8');
 if(!index.includes('manifest.webmanifest'))throw Error('HTML does not link the PWA manifest');
+if(!index.includes('rel="apple-touch-icon" href="/lemma/icons/apple-touch-icon.png"')||!index.includes('href="/lemma/icons/favicon.svg" type="image/svg+xml"'))
+ throw Error('HTML does not link the Compass favicon and Apple touch icon');
+{const touch=readFileSync(path('icons/apple-touch-icon.png'));
+ if(touch.readUInt32BE(16)!==180||touch[25]!==2)throw Error('Apple touch icon must be 180 px and opaque (RGB)');}
 const worker=readFileSync(path('sw.js'),'utf8');
 if(!worker.includes('lemma')||!worker.includes('precache'))throw Error('Workbox offline asset cache missing');
 // Store-listing PNGs are available at their manifest URLs, but must not be

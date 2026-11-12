@@ -12,6 +12,9 @@ export default defineConfig({test: {
   include: ['tests/unit/**/*.test.{ts,tsx}'],
   exclude: [...configDefaults.exclude, ...perf],
   environment: 'jsdom',
+  // Existing suites retain their chosen legacy/v6 shell after v7 defaults on;
+  // URL flag overrides still take precedence for v7 tests.
+  env: {VITE_FLAGS: '-v7Shell'},
   clearMocks: true,
   reporters: junit ? ['default', ['junit', {outputFile: `${junit}/unit-${process.env.CI_JUNIT_NAME ?? 'unit'}.xml`}]] : ['default'],
 }})

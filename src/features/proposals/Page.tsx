@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { isFlagOn } from "../../flags";
+import { v7Screen } from "../../app/v7Kit";
 import { Link, useSearchParams } from "react-router";
 import {
   motion,
@@ -233,7 +234,13 @@ function PendingCard({
     </motion.div>
   );
 }
+const InboxV7 = lazy(() => import("./v7/InboxV7"));
 export default function Page() {
+  // v7 Inbox (PLAN §6.10) behind v7Shell; v6 and legacy stay for rollback.
+  if (v7Screen() === "inbox") return <Suspense fallback={<div role="status" aria-label="Inbox loading" className="min-h-dvh"/>}><InboxV7/></Suspense>;
+  return <LegacyInbox/>;
+}
+function LegacyInbox() {
   const query = useProposals(),
     approve = useApproveProposal(),
     reject = useRejectProposal(),

@@ -1,7 +1,8 @@
 // N78: v6-only practice topic management. Practice records are distinct from card reviews.
 import {formatDay,formatInterval} from '../../lib/format';
 import {practiceRatingText} from '../../lib/labels';
-import {useEffect,useState,type FormEvent} from 'react';
+import {lazy,Suspense,useEffect,useState,type FormEvent} from 'react';
+import {v7Screen} from '../../app/v7Kit';
 import {Link} from 'react-router';
 import {getPracticeTopicApi} from '../../data/practice-topics';
 import type {PracticeCadence,PracticeEventRecord,PracticeRating,
@@ -71,7 +72,11 @@ export async function loadAllPracticeEvents(topicId:string){
  throw Error('Practice event paging limit reached');
 }
 
+const PracticeV7=lazy(()=>import('./v7/PracticeV7'));
 export default function PracticePage(){
+ return v7Screen()==='practice'?<Suspense fallback={<div role="status" aria-label="Practice loading" className="min-h-dvh"/>}><PracticeV7/></Suspense>:<LegacyPracticePage/>;
+}
+function LegacyPracticePage(){
  const [items,setItems]=useState<PracticeTopicRecord[]>([]);
  const [selected,setSelected]=useState<string|null>(null);
  const [events,setEvents]=useState<PracticeEventRecord[]>([]);

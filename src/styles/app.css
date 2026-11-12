@@ -1,10 +1,11 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 @import 'tailwindcss';
-@import './tokens.css';
-@import './themes.css';
-@import './base.css';
-@import './surfaces.css';
-@import './effects.css';
-@import './graph.css';
+@import './tokens.css' layer(lemma-app);
+@import './themes.css' layer(lemma-app);
+@import './base.css' layer(lemma-app);
+@import './surfaces.css' layer(lemma-app);
+@import './effects.css' layer(lemma-app);
+@import './graph.css' layer(lemma-app);
 @theme inline {
   --text-micro: var(--type-micro); --text-caption: var(--type-caption); --text-label: var(--type-label);
   --text-body: var(--type-body); --text-body-l: var(--type-body-l); --text-headline: var(--type-headline);
@@ -21,3 +22,4 @@
   --font-ui: 'Instrument Sans', system-ui, sans-serif;
   --font-math: 'STIX Two Text', Georgia, serif;
 }
+

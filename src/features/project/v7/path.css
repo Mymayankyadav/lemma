@@ -1,0 +1,66 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* PLAN §6.9 Path. The line is solid in the subject colour down to the current node, dotted after it. */
+@layer v7-components {
+ :where(html[data-v7]) .v7-path {display:grid;gap:var(--v7-space-4);align-content:start;}
+ :where(html[data-v7]) .v7-path-head {position:relative;display:grid;gap:var(--v7-space-2);padding-top:var(--v7-space-4);isolation:isolate;overflow:hidden;}
+ /* KC11: the emblem is ornament — 164 px, bottom-right at 10%, cropped by the header, never behind the title. */
+ :where(html[data-v7]) .v7-path-emblem {position:absolute;z-index:-1;bottom:-64px;right:-72px;width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);color:var(--v7-subject,var(--v7-role-text-secondary));pointer-events:none;}
+ :where(html[data-v7]) .v7-path-goal {max-width:34ch;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
+ :where(html[data-v7]) .v7-path-meter {display:flex;align-items:center;gap:var(--v7-space-3);font:600 var(--v7-type-supporting)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-path-meter > [role="meter"] {flex:1;max-width:240px;height:6px;border-radius:var(--v7-round);background:var(--v7-role-border-subtle);overflow:hidden;}
+ :where(html[data-v7]) .v7-path-meter > [role="meter"] > span {display:block;height:100%;background:var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-path-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-path-panel {display:grid;gap:var(--v7-space-3);min-width:0;padding-bottom:calc(64px + var(--v7-space-6));}
+ :where(html[data-v7]) .v7-path-empty {display:grid;gap:var(--v7-space-3);color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ /* Map: a 2 px line 36 px from the left edge; each row owns the segment below its node. */
+ :where(html[data-v7]) .v7-path-map,:where(html[data-v7]) .v7-path-map ol {list-style:none;margin:0;padding:0;}
+ :where(html[data-v7]) .v7-path-stage {display:grid;gap:var(--v7-space-2);margin-bottom:var(--v7-space-4);}
+ :where(html[data-v7]) .v7-path-stage > h2 {padding-left:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-path-row {position:relative;display:grid;grid-template-columns:var(--v7-touch) minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-3);min-height:56px;padding-left:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-path-row::before {content:"";position:absolute;left:calc(var(--v7-touch) / 2 + var(--v7-space-1) - 1px);top:0;bottom:0;width:0;border-left:2px dotted var(--v7-role-border-strong,var(--v7-role-border-default));}
+ :where(html[data-v7]) .v7-path-row[data-reached="true"]::before {border-left:2px solid var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-path-node {justify-self:center;position:relative;z-index:1;background:var(--v7-role-surface-page);border-radius:var(--v7-round);}
+ /* K4/PA0: a demonstrated checkpoint is a star filled in the subject colour (the kit has no gold). */
+ :where(html[data-v7]) .v7-path-demonstrated {fill:var(--v7-subject,var(--v7-role-text-primary));}
+ :where(html[data-v7]) .v7-path-ring {fill:var(--v7-role-surface-page);stroke:var(--v7-subject,var(--v7-role-text-secondary));stroke-width:2;}
+ :where(html[data-v7]) .v7-path-core {fill:var(--v7-subject,var(--v7-role-text-secondary));}
+ :where(html[data-v7]) .v7-path-halo {fill:var(--v7-subject,var(--v7-role-text-secondary));opacity:.18;transform-origin:center;animation:v7-path-halo 3.2s var(--v7-ease-out) infinite;}
+ :where(html[data-v7]) .v7-path-dashed {fill:none;stroke:var(--v7-subject,var(--v7-role-text-secondary));stroke-width:1.8;stroke-dasharray:3 2.4;}
+ :where(html[data-v7]) .v7-path-hollow {fill:none;stroke:var(--v7-role-text-secondary);stroke-width:1.8;}
+ :where(html[data-v7]) .v7-path-dim {fill:var(--v7-role-border-strong,var(--v7-role-border-default));}
+ :where(html[data-v7]) .v7-path-body {display:grid;gap:2px;min-width:0;padding-block:var(--v7-space-2);color:var(--v7-role-text-primary);text-decoration:none;}
+ :where(html[data-v7]) .v7-path-body strong {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-path-body small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-path-row[data-state="demonstrated"] .v7-path-body strong,:where(html[data-v7]) .v7-path-row[data-state="up_next"] .v7-path-body strong {color:var(--v7-role-text-secondary);font-weight:500;}
+ :where(html[data-v7]) .v7-path-row[data-state="locked"] .v7-path-body {color:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-path-row[data-state="locked"] .v7-path-body strong {color:var(--v7-role-text-tertiary);font-weight:500;}
+ :where(html[data-v7]) .v7-path-row .v7-button {min-height:var(--v7-touch);text-decoration:none;}
+ :where(html[data-v7]) .v7-path-sessions,:where(html[data-v7]) .v7-path-cards {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-path-sessions a,:where(html[data-v7]) .v7-path-cards a,:where(html[data-v7]) .v7-path-cards-total {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);
+  background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);text-decoration:none;min-height:var(--v7-touch);}
+ :where(html[data-v7]) .v7-path-sessions a > span {display:flex;justify-content:space-between;gap:var(--v7-space-2);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-path-sessions em {font-style:normal;color:var(--v7-role-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+ :where(html[data-v7]) .v7-path-sessions small,:where(html[data-v7]) .v7-path-cards small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-path-cards-total {grid-template-columns:1fr auto;align-items:center;}
+ :where(html[data-v7]) .v7-path-cards-empty {color:var(--v7-role-text-secondary);}
+ /* Sticky glass bar above the tab bar. */
+ /* R2 · F11: a single floating Continue pill above the tab bar, not a full bar. */
+ :where(html[data-v7]) .v7-path-bar {position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--v7-dock-height) + var(--v7-space-3));z-index:9;display:flex;padding:0;border:0;background:transparent;}
+ :where(html[data-v7]) .v7-path-bar .v7-button.v7-primary {border-radius:var(--v7-round);padding-inline:var(--v7-space-6);box-shadow:var(--v7-shadow-3);}
+ :where(html[data-v7]) .v7-path-tabs {position:sticky;top:calc(52px + env(safe-area-inset-top));z-index:7;margin-inline:calc(var(--v7-page-margin) * -1);padding:var(--v7-space-1) var(--v7-page-margin);background:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-page-actions > a.v7-header-pill {width:auto;padding-inline:var(--v7-space-3);border-radius:var(--v7-round);background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);font:600 var(--v7-type-supporting)/1 var(--v7-sans);text-decoration:none;white-space:nowrap;}
+ :where(html[data-v7]) .v7-detail-compact {display:inline-flex;align-items:center;gap:var(--v7-space-1);margin-right:var(--v7-space-2);color:var(--v7-subject,var(--v7-role-text-secondary));vertical-align:middle;}
+ :where(html[data-v7]) .v7-detail-header[data-title-hidden="true"] .v7-detail-compact {visibility:hidden;}
+ :where(html[data-v7]) .v7-progress-ring-track {stroke:var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-progress-ring-fill {stroke:var(--v7-subject,var(--v7-role-viz-neutral));}
+ :where(html[data-v7]) .v7-path-bar .v7-button {min-height:var(--v7-button);text-decoration:none;white-space:nowrap;}
+ :where(html[data-v7]) .v7-path-prompt {padding:var(--v7-space-3);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;overflow:hidden;}
+ :where(html[data-v7]) .v7-path-note {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-path-tell {display:grid;gap:var(--v7-space-2);justify-items:start;padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
+ @keyframes v7-path-halo {0%,100% {transform:scale(.85);opacity:.12;} 50% {transform:scale(1.1);opacity:.28;}}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-path-halo {animation:none;}}
+ :where(html[data-v7]) .v7-path-cardlist {list-style:none;margin:var(--v7-space-3) 0 0;padding:0;display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-path-cardlist a {display:grid;gap:var(--v7-space-1);min-height:var(--v7-touch);padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);text-decoration:none;}
+ :where(html[data-v7]) .v7-path-card-front {display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-serif);}
+ :where(html[data-v7]) .v7-path-cardlist small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+}

@@ -34,7 +34,7 @@ export default function ExportSettings(){
  }
  return <section aria-labelledby="v6-export-title" className="flex flex-col gap-4 pb-8">
   <h2 id="v6-export-title" className="text-title-s font-semibold text-ink">Export</h2>
-  <p className="text-body text-ink-2">Save a JSON backup of your existing study record. This uses the same export as the original Settings screen.</p>
+  <p className="text-body text-ink-2">Save a JSON backup of your existing study record.</p>
   <div className="rounded-slab border border-edge bg-[var(--paper)] p-4">
    <h3 className="text-body font-semibold text-ink">Download a backup</h3>
    <p className="my-3 text-label text-ink-2">Keep the downloaded file somewhere only you can access. No data is shared from this screen.</p>

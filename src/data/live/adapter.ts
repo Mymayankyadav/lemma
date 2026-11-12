@@ -10,6 +10,7 @@ import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, 
 import { LemmaError, notImplemented } from '../api'
 import { mergeNotifyPrefs } from '../notify'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
+import {pathForecast} from '../path-review-forecast'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -165,6 +166,26 @@ export class LiveAdapter implements LemmaApi {
  async getReviewForecast(): ReturnType<LemmaApi['getReviewForecast']> {
   const db=liveClient(),uid=await owner(db)
   return (await homeReviewOutlook(db,uid)).forecast
+ }
+ /** KC4: a Review-only metadata read. No card bodies, search cap, quota or
+  * sibling collapse; RLS and explicit owner filters apply to every page. */
+ async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
+  const db=liveClient(),uid=await owner(db),settings=await this.getSettings();
+  const forecast=pathForecast(settings),size=500;
+  let cursor:string|null=null;
+  for(;;){
+   let query=db.from('cards').select('id,state,due,notes!inner(status,projects!inner(slug,status,system,subjects(name)))')
+    .eq('user_id',uid).neq('state',0).lt('due',forecast.end)
+    .eq('notes.status','active').neq('notes.projects.status','archived').eq('notes.projects.system',false)
+    .order('id',{ascending:true}).limit(size);
+   if(cursor)query=query.gt('id',cursor);
+   const page=checked(await query) as unknown as {id:string;state:number;due:string;notes:{projects:{slug:string;subjects:{name:string}|null}}}[];
+   for(const card of page)forecast.add(card,{slug:card.notes.projects.slug,subject:card.notes.projects.subjects?.name??'Other'});
+   if(page.length<size)return forecast.result();
+   const next=page[page.length-1].id;
+   if(cursor!==null&&next<=cursor)throw new LemmaError('server','The forecast page did not advance. Retry.');
+   cursor=next;
+  }
  }
  async getAuth(...args: Parameters<LemmaApi['getAuth']>): ReturnType<LemmaApi['getAuth']> {
   const {data,error} = await liveClient().auth.getUser()

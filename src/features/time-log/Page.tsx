@@ -1,4 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {v7Screen} from '../../app/v7Kit';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {getApi} from '../../data';
 import type {ProjectSummary} from '../../data/types';
@@ -75,7 +76,7 @@ export function intervalSummary(entry:StudyEntryRecord):string{
 function focusMinutes(entry:StudyEntryRecord):number{
  return entry.intervals.filter(i=>i.kind==='focus'&&i.end).reduce((sum,i)=>sum+(Date.parse(i.end!)-Date.parse(i.start))/60000,0);
 }
-function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecord;onChange:()=>Promise<void>;onClose:()=>void;busy:boolean}){
+export function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecord;onChange:()=>Promise<void>;onClose:()=>void;busy:boolean}){
  const api=getStudyApi();
  const [intent,setIntent]=useState(entry.intent);
  const [reflection,setReflection]=useState(entry.reflection??'');
@@ -159,7 +160,13 @@ function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecord;onCha
   </section>
  </Dialog>;
 }
+const TimeLogV7=lazy(()=>import('./v7/TimeLogV7'));
 export default function TimeLog(){
+ // v7 Time log (PLAN §6.13) behind v7Shell; the v6 log stays for rollback.
+ if(v7Screen()==='log')return <Suspense fallback={<div role="status" aria-label="Time log loading" className="min-h-dvh"/>}><TimeLogV7/></Suspense>;
+ return <TimeLogV6/>;
+}
+function TimeLogV6(){
  const enabled=isFlagOn('v6Shell');
  const api=getStudyApi(),zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
  const [day,setDay]=useState(()=>weekStartDay(localDay(new Date().toISOString(),zone)));

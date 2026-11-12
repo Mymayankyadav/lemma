@@ -1,3 +1,6 @@
+import {lazy,Suspense} from 'react';
+import {isV7Kit} from '../../app/v7Kit';
+const V7Page=lazy(()=>import('./V7Page'));
 import {CompassArt} from '../../ui/art/CompassArt';
 import {CardFanArt} from '../../ui/art/CardFanArt';
 import {PlugArt} from '../../ui/art/PlugArt';
@@ -41,7 +44,8 @@ const keys=[{key:'Space',label:'Reveal'},{key:'1',label:'Again'},{key:'4',label:
 function Section({title,children}:{title:string;children:React.ReactNode}){
  return <section aria-label={title} className="flex flex-col gap-4"><SectionHeading>{title}</SectionHeading>{children}</section>;
 }
-export default function Page(){
+export default function Page(){return isV7Kit('/kit')?<Suspense fallback={null}><V7Page/></Suspense>:<LegacyKit/>;}
+function LegacyKit(){
  const [mode,setMode]=useState('study'),[switchOn,setSwitchOn]=useState(true),[checked,setChecked]=useState(true),[mixed,setMixed]=useState<boolean|'mixed'>('mixed'),[sheetOpen,setSheetOpen]=useState(false);
  const notify=useToast();
  return <Screen title="Component kit" back="/" className="pb-12">

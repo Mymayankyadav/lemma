@@ -1,4 +1,5 @@
-import {useEffect,useMemo,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
+import {v7Screen} from '../../app/v7Kit';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {CalendarDays,Clock3,RotateCcw,Target} from 'lucide-react';
 import {getApi} from '../../data';
@@ -164,10 +165,12 @@ function NothingReviewed(){
   <button className="min-h-11 text-label text-[var(--link)] underline" onClick={()=>navigate('/review')}>Back to Review</button>
  </main>;
 }
+const RoundCompleteV7=lazy(()=>import('./v7/RoundCompleteV7'));
 export default function Page(){
  const [search]=useSearchParams();
  const answers=useReviewSession(s=>s.answers);
  const v6=isFlagOn('v6Shell');
+ if(v7Screen()==='review-done')return <Suspense fallback={<div role="status" aria-label="Results loading" className="min-h-dvh"/>}><RoundCompleteV7/></Suspense>;
  // Existing local reminder/legacy rounds have no durable run ID and retain
  // their Done page, including reminder offers and the ordinary Done action.
  // N121 F8: in v6, opening the page with nothing reviewed shows an honest empty state.

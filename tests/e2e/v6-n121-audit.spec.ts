@@ -446,7 +446,11 @@ test('N121 F10 overdue tasks are marked and lead their group',async({page})=>{
  const backlog=page.getByRole('region',{name:'Backlog'});
  await expect(backlog.locator('li').first()).toContainText('Overdue · ');
  await page.getByRole('button',{name:/^\d+ overdue$/}).click();
- for(const row of await page.locator('section[aria-label] li').all())await expect(row).toContainText('Overdue · ');
+ // The filter re-renders the list after the click, so a one-time snapshot of the rows raced it (rows vanished mid-check).
+ // Retry until every visible row is overdue, and require the filtered list to be non-empty.
+ const rows=page.locator('section[aria-label] li');
+ await expect(rows.first()).toContainText('Overdue · ');
+ await expect(rows.filter({hasNotText:'Overdue · '})).toHaveCount(0);
 });
 
 // ---------------------------------------------------------------------------- H1

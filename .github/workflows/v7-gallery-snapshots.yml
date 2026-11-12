@@ -1,0 +1,158 @@
+name: V7 Constellation gallery snapshots
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/v7-gallery-snapshots.yml'
+      - 'src/ui/v7/**'
+      - 'src/app/v7/**'
+      - 'src/features/**/v7/**'
+      - 'tests/e2e/v7-*.ts'
+      - 'src/features/kit/V7Page.tsx'
+      - 'scripts/v7/**'
+      - 'docs/v7/AUDIT_CLOSURE.md'
+      - 'docs/v7/IMPLEMENTATION.md'
+      - 'docs/current/N122.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/v7/install-chromium.mjs
+      - name: Verify the official fallback installs the exact pinned browser
+        run: node scripts/v7/install-chromium.mjs --official-fallback
+      - name: Build gallery with URL feature-flag overrides
+        env:
+          VITE_ALLOW_FLAG_OVERRIDES: '1'
+          VITE_FLAGS: '-v6Shell,-v7Shell'
+        run: npm run build
+      - name: Capture mobile, desktop and component details
+        shell: bash
+        env:
+          CAPTURE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          (npx vite preview --host 127.0.0.1 --port 4173 --strictPort > /tmp/v7-preview.log 2>&1 &)
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          import { mkdir, writeFile } from 'node:fs/promises';
+          import { auditRenderedKit } from './scripts/v7/audit-rendered-kit.mjs';
+          import { exportKitHtml } from './scripts/v7/export-kit-html.mjs';
+          const output = 'artifacts/v7-gallery';
+          await mkdir(output, { recursive: true });
+          const browser = await chromium.launch();
+          const files = [];
+          try {
+            const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
+            const url = 'http://127.0.0.1:4173/lemma/?demo=1&flags=v7Shell,v6Shell&mode=day#/kit';
+            // Preview startup is observed here, rather than relying on a fixed sleep.
+            for (let attempt = 0; ; attempt++) {
+              try { await page.goto(url, { waitUntil: 'networkidle' }); break; }
+              catch (error) { if (attempt >= 20) throw error; await new Promise(resolve => setTimeout(resolve, 500)); }
+            }
+            await page.getByRole('heading', { name: 'A little more clarity.' }).waitFor();
+            await page.evaluate(() => document.fonts.ready);
+            async function shot(name, locator) {
+              await page.mouse.move(0,0);
+              const path = `${output}/${name}.png`;
+              if (locator) await locator.screenshot({ path }); else await page.screenshot({ path });
+              files.push(name + '.png');
+            }
+            for (const theme of ['Day', 'Night']) {
+              await page.getByRole('radio', { name: theme, exact: true }).click();
+              await page.locator(`html[data-theme="${theme === 'Day' ? 'graph' : 'graph-night'}"]`).waitFor();
+              await page.evaluate(() => window.scrollTo(0, 0));
+              await shot(`${theme.toLowerCase()}-mobile-390`);
+            }
+            await page.setViewportSize({ width: 1440, height: 1000 });
+            await page.getByRole('radio', { name: 'Day', exact: true }).click();
+            await page.evaluate(() => window.scrollTo(0, 0));
+            const audit=await auditRenderedKit(page);
+            await writeFile(`${output}/rendered-audit.json`,JSON.stringify(audit,null,2));
+            await page.evaluate(()=>window.scrollTo(0,0));
+            await shot('desktop-overview-1440');
+            for (const [title, name] of [['Icons and mathematical emblems', 'emblems'], ['Components and states', 'components'], ['Patterns', 'patterns'], ['Data visualisation', 'charts']]) {
+              await shot(`desktop-${name}-day-night`, page.getByRole('region', { name: title, exact: true }));
+            }
+            const controls = page.getByRole('region', { name: 'Components and states', exact: true });
+            for (const title of ['Primary button', 'Text field', 'Switch']) {
+              for (const panel of await controls.locator('.v7-split-panel').all()) {
+                await panel.locator('summary').filter({ hasText: new RegExp(`^${title}$`) }).click();
+              }
+            }
+            await shot('desktop-state-matrices', controls.locator('.v7-split'));
+            await page.getByRole('checkbox', { name: 'High contrast comparison', exact: true }).check();
+            await shot('desktop-high-contrast-charts', page.getByRole('region', { name: 'Data visualisation', exact: true }));
+
+            // HD review captures: every component reference is expanded, and charts stay in the same full-page image.
+            const hd = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 2, reducedMotion: 'reduce' });
+            await hd.goto(url, { waitUntil: 'networkidle' });
+            await hd.evaluate(() => document.fonts.ready);
+            await hd.locator('details').evaluateAll(items => items.forEach(item => { item.open = true; }));
+            // Use the available desktop width for the expanded documentation board.
+            await hd.addStyleTag({ content: '.v7-kit { --v7-content: 1760px; }' });
+            await hd.mouse.move(0, 0);
+            const hdCapture = async (name, locator) => {
+              const path = `${output}/${name}.png`;
+              if (locator) await locator.screenshot({ path, animations: 'disabled' });
+              else await hd.screenshot({ path, fullPage: true, animations: 'disabled' });
+              files.push(name + '.png');
+            };
+            await hdCapture('hd-full-kit-expanded-day-night');
+            for (const [title, name] of [['Components and states', 'components-expanded'], ['Patterns', 'patterns'], ['Data visualisation', 'charts'], ['Icons and mathematical emblems', 'emblems']]) {
+              await hdCapture('hd-' + name + '-day-night', hd.getByRole('region', { name: title, exact: true }));
+            }
+
+            const offline = await browser.newPage({ viewport: { width:390, height:844 }, reducedMotion:'reduce' });
+            await offline.goto(url, { waitUntil:'networkidle' });
+            await offline.evaluate(() => document.fonts.ready);
+            const portable = await offline.evaluate(async () => {
+              let fontCss = '';
+              for (const sheet of document.styleSheets) {
+                if (!sheet.href || !sheet.href.includes('/fonts/v7/')) continue;
+                let source = Array.from(sheet.cssRules).map(rule => rule.cssText).join('\n');
+                const urls = [...source.matchAll(/url\(([^)]+)\)/g)];
+                for (const match of urls) {
+                  const resource = match[1].trim().replace(/^['"]|['"]$/g, '');
+                  if (resource.startsWith('data:')) continue;
+                  const response = await fetch(new URL(resource, sheet.href));
+                  if (!response.ok) throw new Error('Could not embed kit font');
+                  // Read bytes separately so the generated document never depends on the preview server.
+                  const blob = await response.blob();
+                  const embedded = await new Promise(resolve=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.readAsDataURL(blob);});
+                  source = source.replace(match[0], 'url("' + embedded + '")');
+                }
+                fontCss += source + '\n';
+              }
+              const main = document.querySelector('.v7-kit').cloneNode(true);
+              const originals = document.querySelectorAll('.v7-kit input');
+              main.querySelectorAll('input').forEach((input,index)=>{const original=originals[index];input.setAttribute('value',original.value);if(original.checked)input.setAttribute('checked','');else input.removeAttribute('checked');});
+              const ids=['principles','colours','emblems','controls','patterns','charts','changelog'];
+              main.querySelectorAll('.v7-system-section').forEach((item,index)=>{item.id='kit-'+ids[index];});
+              return { fontCss, snapshot:main.outerHTML };
+            });
+            await exportKitHtml({ output:output+'/lemma-ui-kit.html', ...portable, commit:process.env.CAPTURE_SHA });
+            files.push('lemma-ui-kit.html');
+            await writeFile(`${output}/manifest.json`, JSON.stringify({ commit: process.env.CAPTURE_SHA, files }, null, 2));
+          } finally { await browser.close(); }
+          NODE
+      - name: Capture audit screens in four modes and responsive layouts
+        run: node --experimental-strip-types scripts/v7/capture-audit.mjs
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v7-constellation-kit-gallery
+          path: artifacts/v7-gallery/
+          if-no-files-found: error
+          retention-days: 14

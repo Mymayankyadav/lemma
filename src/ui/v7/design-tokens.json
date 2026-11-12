@@ -1,0 +1,2803 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "$description": "Lemma Constellation UI Kit 1.0 — role colours are the only styling API; mode aliases come from this source.",
+  "raw": {
+    "day": {
+      "surface.page": {
+        "$type": "color",
+        "$value": "#F8F5F0"
+      },
+      "surface.sunken": {
+        "$type": "color",
+        "$value": "#F0ECE5"
+      },
+      "surface.raised": {
+        "$type": "color",
+        "$value": "#FEFCF9"
+      },
+      "surface.overlay": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "surface.muted": {
+        "$type": "color",
+        "$value": "#E9E4DC"
+      },
+      "surface.muted-hover": {
+        "$type": "color",
+        "$value": "#E1DCD2"
+      },
+      "border.subtle": {
+        "$type": "color",
+        "$value": "#DDD8D0"
+      },
+      "border.default": {
+        "$type": "color",
+        "$value": "#857F77"
+      },
+      "border.strong": {
+        "$type": "color",
+        "$value": "#625D55"
+      },
+      "text.primary": {
+        "$type": "color",
+        "$value": "#121B31"
+      },
+      "text.secondary": {
+        "$type": "color",
+        "$value": "#40495C"
+      },
+      "text.tertiary": {
+        "$type": "color",
+        "$value": "#5B6375"
+      },
+      "text.disabled": {
+        "$type": "color",
+        "$value": "#878C99"
+      },
+      "text.on-action": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "action.bg": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "action.hover": {
+        "$type": "color",
+        "$value": "#393BAF"
+      },
+      "action.pressed": {
+        "$type": "color",
+        "$value": "#313498"
+      },
+      "selection.subtle": {
+        "$type": "color",
+        "$value": "#E2E8FF"
+      },
+      "selection.hover": {
+        "$type": "color",
+        "$value": "#D5DEFF"
+      },
+      "selection.fg": {
+        "$type": "color",
+        "$value": "#3738AC"
+      },
+      "focus.ring": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "link.fg": {
+        "$type": "color",
+        "$value": "#4246C2"
+      },
+      "status.success": {
+        "$type": "color",
+        "$value": "#107C40"
+      },
+      "status.success-subtle": {
+        "$type": "color",
+        "$value": "#E2F6E6"
+      },
+      "status.warning": {
+        "$type": "color",
+        "$value": "#9B610E"
+      },
+      "status.warning-subtle": {
+        "$type": "color",
+        "$value": "#FFF0DF"
+      },
+      "status.danger": {
+        "$type": "color",
+        "$value": "#9E1D1C"
+      },
+      "status.danger-subtle": {
+        "$type": "color",
+        "$value": "#FFE9E5"
+      },
+      "status.danger-solid": {
+        "$type": "color",
+        "$value": "#9E1D1C"
+      },
+      "status.danger-hover": {
+        "$type": "color",
+        "$value": "#94020D"
+      },
+      "subject.analysis": {
+        "$type": "color",
+        "$value": "#00789C"
+      },
+      "subject.analysis-subtle": {
+        "$type": "color",
+        "$value": "#D9F4FD"
+      },
+      "subject.topology": {
+        "$type": "color",
+        "$value": "#009C85"
+      },
+      "subject.topology-subtle": {
+        "$type": "color",
+        "$value": "#DAF6EF"
+      },
+      "subject.logic": {
+        "$type": "color",
+        "$value": "#417934"
+      },
+      "subject.logic-subtle": {
+        "$type": "color",
+        "$value": "#E4F4E1"
+      },
+      "subject.number-theory": {
+        "$type": "color",
+        "$value": "#978722"
+      },
+      "subject.number-theory-subtle": {
+        "$type": "color",
+        "$value": "#F3EFD9"
+      },
+      "subject.algebra": {
+        "$type": "color",
+        "$value": "#9D5300"
+      },
+      "subject.algebra-subtle": {
+        "$type": "color",
+        "$value": "#FEEADB"
+      },
+      "subject.combinatorics": {
+        "$type": "color",
+        "$value": "#C86265"
+      },
+      "subject.combinatorics-subtle": {
+        "$type": "color",
+        "$value": "#FFE7E6"
+      },
+      "subject.geometry": {
+        "$type": "color",
+        "$value": "#984780"
+      },
+      "subject.geometry-subtle": {
+        "$type": "color",
+        "$value": "#FDE7F5"
+      },
+      "subject.probability": {
+        "$type": "color",
+        "$value": "#9E6EC0"
+      },
+      "subject.probability-subtle": {
+        "$type": "color",
+        "$value": "#F5E9FE"
+      },
+      "viz.heat1": {
+        "$type": "color",
+        "$value": "#7E8CAB"
+      },
+      "viz.heat2": {
+        "$type": "color",
+        "$value": "#516494"
+      },
+      "viz.heat3": {
+        "$type": "color",
+        "$value": "#2F4275"
+      },
+      "viz.heat4": {
+        "$type": "color",
+        "$value": "#172448"
+      },
+      "state.hover": {
+        "$type": "color",
+        "$value": "#121B310F"
+      },
+      "state.pressed": {
+        "$type": "color",
+        "$value": "#121B311F"
+      },
+      "viz.neutral": {
+        "$type": "color",
+        "$value": "#40495C"
+      }
+    },
+    "night": {
+      "surface.page": {
+        "$type": "color",
+        "$value": "#091023"
+      },
+      "surface.sunken": {
+        "$type": "color",
+        "$value": "#050A1B"
+      },
+      "surface.raised": {
+        "$type": "color",
+        "$value": "#11192C"
+      },
+      "surface.overlay": {
+        "$type": "color",
+        "$value": "#192135"
+      },
+      "surface.muted": {
+        "$type": "color",
+        "$value": "#1E263B"
+      },
+      "surface.muted-hover": {
+        "$type": "color",
+        "$value": "#273045"
+      },
+      "border.subtle": {
+        "$type": "color",
+        "$value": "#262D40"
+      },
+      "border.default": {
+        "$type": "color",
+        "$value": "#687082"
+      },
+      "border.strong": {
+        "$type": "color",
+        "$value": "#8A92A4"
+      },
+      "text.primary": {
+        "$type": "color",
+        "$value": "#EEF2FA"
+      },
+      "text.secondary": {
+        "$type": "color",
+        "$value": "#B1B7C6"
+      },
+      "text.tertiary": {
+        "$type": "color",
+        "$value": "#8B92A2"
+      },
+      "text.disabled": {
+        "$type": "color",
+        "$value": "#676D7C"
+      },
+      "text.on-action": {
+        "$type": "color",
+        "$value": "#FFFFFF"
+      },
+      "action.bg": {
+        "$type": "color",
+        "$value": "#5159D7"
+      },
+      "action.hover": {
+        "$type": "color",
+        "$value": "#5862E1"
+      },
+      "action.pressed": {
+        "$type": "color",
+        "$value": "#4C52D0"
+      },
+      "selection.subtle": {
+        "$type": "color",
+        "$value": "#232953"
+      },
+      "selection.hover": {
+        "$type": "color",
+        "$value": "#2C3363"
+      },
+      "selection.fg": {
+        "$type": "color",
+        "$value": "#B9C6FF"
+      },
+      "focus.ring": {
+        "$type": "color",
+        "$value": "#B1BFFF"
+      },
+      "link.fg": {
+        "$type": "color",
+        "$value": "#A9B8FF"
+      },
+      "status.success": {
+        "$type": "color",
+        "$value": "#75D78D"
+      },
+      "status.success-subtle": {
+        "$type": "color",
+        "$value": "#112917"
+      },
+      "status.warning": {
+        "$type": "color",
+        "$value": "#FFBF67"
+      },
+      "status.warning-subtle": {
+        "$type": "color",
+        "$value": "#301F07"
+      },
+      "status.danger": {
+        "$type": "color",
+        "$value": "#FF8579"
+      },
+      "status.danger-subtle": {
+        "$type": "color",
+        "$value": "#361A17"
+      },
+      "status.danger-solid": {
+        "$type": "color",
+        "$value": "#BA2B28"
+      },
+      "status.danger-hover": {
+        "$type": "color",
+        "$value": "#AE2523"
+      },
+      "subject.analysis": {
+        "$type": "color",
+        "$value": "#17A9CB"
+      },
+      "subject.analysis-subtle": {
+        "$type": "color",
+        "$value": "#082831"
+      },
+      "subject.topology": {
+        "$type": "color",
+        "$value": "#52D7C1"
+      },
+      "subject.topology-subtle": {
+        "$type": "color",
+        "$value": "#082A25"
+      },
+      "subject.logic": {
+        "$type": "color",
+        "$value": "#74A968"
+      },
+      "subject.logic-subtle": {
+        "$type": "color",
+        "$value": "#192916"
+      },
+      "subject.number-theory": {
+        "$type": "color",
+        "$value": "#CEC06A"
+      },
+      "subject.number-theory-subtle": {
+        "$type": "color",
+        "$value": "#28240C"
+      },
+      "subject.algebra": {
+        "$type": "color",
+        "$value": "#CE8545"
+      },
+      "subject.algebra-subtle": {
+        "$type": "color",
+        "$value": "#321F0F"
+      },
+      "subject.combinatorics": {
+        "$type": "color",
+        "$value": "#FF9D9E"
+      },
+      "subject.combinatorics-subtle": {
+        "$type": "color",
+        "$value": "#351C1C"
+      },
+      "subject.geometry": {
+        "$type": "color",
+        "$value": "#C97AAF"
+      },
+      "subject.geometry-subtle": {
+        "$type": "color",
+        "$value": "#311C2A"
+      },
+      "subject.probability": {
+        "$type": "color",
+        "$value": "#D5A8F8"
+      },
+      "subject.probability-subtle": {
+        "$type": "color",
+        "$value": "#2A1E33"
+      },
+      "viz.heat1": {
+        "$type": "color",
+        "$value": "#5560B8"
+      },
+      "viz.heat2": {
+        "$type": "color",
+        "$value": "#7C86DD"
+      },
+      "viz.heat3": {
+        "$type": "color",
+        "$value": "#A9B3F2"
+      },
+      "viz.heat4": {
+        "$type": "color",
+        "$value": "#D6DDFF"
+      },
+      "state.hover": {
+        "$type": "color",
+        "$value": "#FFFFFF0F"
+      },
+      "state.pressed": {
+        "$type": "color",
+        "$value": "#FFFFFF1F"
+      },
+      "viz.neutral": {
+        "$type": "color",
+        "$value": "#B1B7C6"
+      }
+    }
+  },
+  "role": {
+    "surface.page": {
+      "$type": "color",
+      "$value": "{raw.day.surface.page}",
+      "$description": "Page canvas, never a control",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.page}",
+          "day-hc": "{raw.day.surface.page}",
+          "night-hc": "{raw.night.surface.page}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.sunken": {
+      "$type": "color",
+      "$value": "{raw.day.surface.sunken}",
+      "$description": "Editable wells",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.sunken}",
+          "day-hc": "{raw.day.surface.sunken}",
+          "night-hc": "{raw.night.surface.sunken}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.raised": {
+      "$type": "color",
+      "$value": "{raw.day.surface.raised}",
+      "$description": "Ordinary paper/card",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.raised}",
+          "day-hc": "{raw.day.surface.raised}",
+          "night-hc": "{raw.night.surface.raised}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.overlay": {
+      "$type": "color",
+      "$value": "{raw.day.surface.overlay}",
+      "$description": "Menus, sheets and notifications",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.overlay}",
+          "day-hc": "{raw.day.surface.overlay}",
+          "night-hc": "{raw.night.surface.overlay}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.muted": {
+      "$type": "color",
+      "$value": "{raw.day.surface.muted}",
+      "$description": "Secondary controls and neutral tags",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.muted}",
+          "day-hc": "{raw.day.surface.muted}",
+          "night-hc": "{raw.night.surface.muted}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "surface.muted-hover": {
+      "$type": "color",
+      "$value": "{raw.day.surface.muted-hover}",
+      "$description": "Semantic surface muted-hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.surface.muted-hover}",
+          "day-hc": "{raw.day.surface.muted-hover}",
+          "night-hc": "{raw.night.surface.muted-hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "border.subtle": {
+      "$type": "color",
+      "$value": "{raw.day.border.subtle}",
+      "$description": "Semantic border subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.subtle}",
+          "day-hc": "{raw.day.border.subtle}",
+          "night-hc": "{raw.night.border.subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
+      }
+    },
+    "border.default": {
+      "$type": "color",
+      "$value": "{raw.day.border.default}",
+      "$description": "Visible non-text edges, at least 3:1 on adjacent surfaces",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.default}",
+          "day-hc": "{raw.day.border.default}",
+          "night-hc": "{raw.night.border.default}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "border.default",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.sunken",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.raised",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.overlay",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.default",
+            "background": "surface.muted",
+            "minimum": 3,
+            "kind": "control"
+          }
+        ]
+      }
+    },
+    "border.strong": {
+      "$type": "color",
+      "$value": "{raw.day.border.strong}",
+      "$description": "Semantic border strong role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.border.strong}",
+          "day-hc": "{raw.day.border.strong}",
+          "night-hc": "{raw.night.border.strong}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "border.strong",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.sunken",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.raised",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.overlay",
+            "minimum": 3,
+            "kind": "control"
+          },
+          {
+            "foreground": "border.strong",
+            "background": "surface.muted",
+            "minimum": 3,
+            "kind": "control"
+          }
+        ]
+      }
+    },
+    "text.primary": {
+      "$type": "color",
+      "$value": "{raw.day.text.primary}",
+      "$description": "Primary readable copy",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.primary}",
+          "day-hc": "{raw.day.text.primary}",
+          "night-hc": "{raw.night.text.primary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.primary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "text.secondary": {
+      "$type": "color",
+      "$value": "{raw.day.text.secondary}",
+      "$description": "Secondary readable copy",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.secondary}",
+          "day-hc": "{raw.day.text.secondary}",
+          "night-hc": "{raw.night.text.secondary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.secondary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.secondary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "text.tertiary": {
+      "$type": "color",
+      "$value": "{raw.day.text.tertiary}",
+      "$description": "Placeholder and supporting details",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.tertiary}",
+          "day-hc": "{raw.day.text.tertiary}",
+          "night-hc": "{raw.night.text.tertiary}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.sunken",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.raised",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.muted",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.tertiary",
+            "background": "surface.overlay",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "text.disabled": {
+      "$type": "color",
+      "$value": "{raw.day.text.disabled}",
+      "$description": "Clearly unavailable (exempt from text contrast)",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.disabled}",
+          "day-hc": "{raw.day.text.disabled}",
+          "night-hc": "{raw.night.text.disabled}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.disabled",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "disabled (advisory)"
+          }
+        ]
+      }
+    },
+    "text.on-action": {
+      "$type": "color",
+      "$value": "{raw.day.text.on-action}",
+      "$description": "Semantic text on-action role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.text.on-action}",
+          "day-hc": "{raw.day.text.on-action}",
+          "night-hc": "{raw.night.text.on-action}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.bg",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.on-action",
+            "background": "action.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "text.on-action",
+            "background": "action.pressed",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "action.bg": {
+      "$type": "color",
+      "$value": "{raw.day.action.bg}",
+      "$description": "Primary actions only",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.bg}",
+          "day-hc": "{raw.day.action.bg}",
+          "night-hc": "{raw.night.action.bg}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.bg",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "action.hover": {
+      "$type": "color",
+      "$value": "{raw.day.action.hover}",
+      "$description": "Semantic action hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.hover}",
+          "day-hc": "{raw.day.action.hover}",
+          "night-hc": "{raw.night.action.hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "action.pressed": {
+      "$type": "color",
+      "$value": "{raw.day.action.pressed}",
+      "$description": "Semantic action pressed role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.action.pressed}",
+          "day-hc": "{raw.day.action.pressed}",
+          "night-hc": "{raw.night.action.pressed}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "action.pressed",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "selection.subtle": {
+      "$type": "color",
+      "$value": "{raw.day.selection.subtle}",
+      "$description": "State selection only",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.subtle}",
+          "day-hc": "{raw.day.selection.subtle}",
+          "night-hc": "{raw.night.selection.subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "selection.hover": {
+      "$type": "color",
+      "$value": "{raw.day.selection.hover}",
+      "$description": "Semantic selection hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.hover}",
+          "day-hc": "{raw.day.selection.hover}",
+          "night-hc": "{raw.night.selection.hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "selection.fg": {
+      "$type": "color",
+      "$value": "{raw.day.selection.fg}",
+      "$description": "Semantic selection fg role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.selection.fg}",
+          "day-hc": "{raw.day.selection.fg}",
+          "night-hc": "{raw.night.selection.fg}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "selection.fg",
+            "background": "selection.subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "focus.ring": {
+      "$type": "color",
+      "$value": "{raw.day.focus.ring}",
+      "$description": "Keyboard focus, non-text contrast",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.focus.ring}",
+          "day-hc": "{raw.day.focus.ring}",
+          "night-hc": "{raw.night.focus.ring}"
+        },
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "surface.sunken",
+          "surface.muted"
+        ],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "focus.ring",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "control"
+          }
+        ]
+      }
+    },
+    "link.fg": {
+      "$type": "color",
+      "$value": "{raw.day.link.fg}",
+      "$description": "Semantic link fg role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.link.fg}",
+          "day-hc": "{raw.day.link.fg}",
+          "night-hc": "{raw.night.link.fg}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "link.fg",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.success": {
+      "$type": "color",
+      "$value": "{raw.day.status.success}",
+      "$description": "Completed or successful state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.success}",
+          "day-hc": "{raw.day.status.success}",
+          "night-hc": "{raw.night.status.success}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.success",
+            "background": "status.success-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.success",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.success-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.success-subtle}",
+      "$description": "Semantic status success-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.success-subtle}",
+          "day-hc": "{raw.day.status.success-subtle}",
+          "night-hc": "{raw.night.status.success-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.success",
+            "background": "status.success-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.warning": {
+      "$type": "color",
+      "$value": "{raw.day.status.warning}",
+      "$description": "Attention required state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.warning}",
+          "day-hc": "{raw.day.status.warning}",
+          "night-hc": "{raw.night.status.warning}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.warning",
+            "background": "status.warning-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.warning",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.warning-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.warning-subtle}",
+      "$description": "Semantic status warning-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.warning-subtle}",
+          "day-hc": "{raw.day.status.warning-subtle}",
+          "night-hc": "{raw.night.status.warning-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.warning",
+            "background": "status.warning-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.danger": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger}",
+      "$description": "Destructive or failed state",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger}",
+          "day-hc": "{raw.day.status.danger}",
+          "night-hc": "{raw.night.status.danger}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.danger",
+            "background": "status.danger-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "status.danger",
+            "background": "surface.page",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.danger-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-subtle}",
+      "$description": "Semantic status danger-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-subtle}",
+          "day-hc": "{raw.day.status.danger-subtle}",
+          "night-hc": "{raw.night.status.danger-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "status.danger",
+            "background": "status.danger-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.danger-solid": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-solid}",
+      "$description": "Semantic status danger-solid role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-solid}",
+          "day-hc": "{raw.day.status.danger-solid}",
+          "night-hc": "{raw.night.status.danger-solid}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "status.danger-solid",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "status.danger-hover": {
+      "$type": "color",
+      "$value": "{raw.day.status.danger-hover}",
+      "$description": "Semantic status danger-hover role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.status.danger-hover}",
+          "day-hc": "{raw.day.status.danger-hover}",
+          "night-hc": "{raw.night.status.danger-hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.on-action",
+            "background": "status.danger-hover",
+            "minimum": 4.5,
+            "kind": "text"
+          }
+        ]
+      }
+    },
+    "subject.analysis": {
+      "$type": "color",
+      "$value": "{raw.day.subject.analysis}",
+      "$description": "Semantic subject analysis role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.analysis}",
+          "day-hc": "{raw.day.subject.analysis}",
+          "night-hc": "{raw.night.subject.analysis}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.analysis",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.analysis",
+            "background": "subject.analysis-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.analysis-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.analysis-subtle}",
+      "$description": "Semantic subject analysis-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.analysis-subtle}",
+          "day-hc": "{raw.day.subject.analysis-subtle}",
+          "night-hc": "{raw.night.subject.analysis-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.analysis-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.analysis",
+            "background": "subject.analysis-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.topology": {
+      "$type": "color",
+      "$value": "{raw.day.subject.topology}",
+      "$description": "Semantic subject topology role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.topology}",
+          "day-hc": "{raw.day.subject.topology}",
+          "night-hc": "{raw.night.subject.topology}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.topology",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.topology",
+            "background": "subject.topology-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.topology-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.topology-subtle}",
+      "$description": "Semantic subject topology-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.topology-subtle}",
+          "day-hc": "{raw.day.subject.topology-subtle}",
+          "night-hc": "{raw.night.subject.topology-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.topology-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.topology",
+            "background": "subject.topology-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.logic": {
+      "$type": "color",
+      "$value": "{raw.day.subject.logic}",
+      "$description": "Semantic subject logic role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.logic}",
+          "day-hc": "{raw.day.subject.logic}",
+          "night-hc": "{raw.night.subject.logic}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.logic",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.logic",
+            "background": "subject.logic-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.logic-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.logic-subtle}",
+      "$description": "Semantic subject logic-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.logic-subtle}",
+          "day-hc": "{raw.day.subject.logic-subtle}",
+          "night-hc": "{raw.night.subject.logic-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.logic-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.logic",
+            "background": "subject.logic-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.number-theory": {
+      "$type": "color",
+      "$value": "{raw.day.subject.number-theory}",
+      "$description": "Semantic subject number-theory role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.number-theory}",
+          "day-hc": "{raw.day.subject.number-theory}",
+          "night-hc": "{raw.night.subject.number-theory}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.number-theory",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.number-theory",
+            "background": "subject.number-theory-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.number-theory-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.number-theory-subtle}",
+      "$description": "Semantic subject number-theory-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.number-theory-subtle}",
+          "day-hc": "{raw.day.subject.number-theory-subtle}",
+          "night-hc": "{raw.night.subject.number-theory-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.number-theory-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.number-theory",
+            "background": "subject.number-theory-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.algebra": {
+      "$type": "color",
+      "$value": "{raw.day.subject.algebra}",
+      "$description": "Semantic subject algebra role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.algebra}",
+          "day-hc": "{raw.day.subject.algebra}",
+          "night-hc": "{raw.night.subject.algebra}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.algebra",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.algebra",
+            "background": "subject.algebra-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.algebra-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.algebra-subtle}",
+      "$description": "Semantic subject algebra-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.algebra-subtle}",
+          "day-hc": "{raw.day.subject.algebra-subtle}",
+          "night-hc": "{raw.night.subject.algebra-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.algebra-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.algebra",
+            "background": "subject.algebra-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.combinatorics": {
+      "$type": "color",
+      "$value": "{raw.day.subject.combinatorics}",
+      "$description": "Semantic subject combinatorics role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.combinatorics}",
+          "day-hc": "{raw.day.subject.combinatorics}",
+          "night-hc": "{raw.night.subject.combinatorics}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.combinatorics",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.combinatorics",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.combinatorics-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.combinatorics-subtle}",
+      "$description": "Semantic subject combinatorics-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.combinatorics-subtle}",
+          "day-hc": "{raw.day.subject.combinatorics-subtle}",
+          "night-hc": "{raw.night.subject.combinatorics-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.combinatorics",
+            "background": "subject.combinatorics-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.geometry": {
+      "$type": "color",
+      "$value": "{raw.day.subject.geometry}",
+      "$description": "Semantic subject geometry role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.geometry}",
+          "day-hc": "{raw.day.subject.geometry}",
+          "night-hc": "{raw.night.subject.geometry}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.geometry",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.geometry",
+            "background": "subject.geometry-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.geometry-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.geometry-subtle}",
+      "$description": "Semantic subject geometry-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.geometry-subtle}",
+          "day-hc": "{raw.day.subject.geometry-subtle}",
+          "night-hc": "{raw.night.subject.geometry-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.geometry-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.geometry",
+            "background": "subject.geometry-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.probability": {
+      "$type": "color",
+      "$value": "{raw.day.subject.probability}",
+      "$description": "Semantic subject probability role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.probability}",
+          "day-hc": "{raw.day.subject.probability}",
+          "night-hc": "{raw.night.subject.probability}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "subject.probability",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "subject mark"
+          },
+          {
+            "foreground": "subject.probability",
+            "background": "subject.probability-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "subject.probability-subtle": {
+      "$type": "color",
+      "$value": "{raw.day.subject.probability-subtle}",
+      "$description": "Semantic subject probability-subtle role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.subject.probability-subtle}",
+          "day-hc": "{raw.day.subject.probability-subtle}",
+          "night-hc": "{raw.night.subject.probability-subtle}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "text.primary",
+            "background": "subject.probability-subtle",
+            "minimum": 4.5,
+            "kind": "text"
+          },
+          {
+            "foreground": "subject.probability",
+            "background": "subject.probability-subtle",
+            "minimum": 3,
+            "kind": "subject mark"
+          }
+        ]
+      }
+    },
+    "viz.heat1": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat1}",
+      "$description": "Semantic viz heat1 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat1}",
+          "day-hc": "{raw.day.viz.heat1}",
+          "night-hc": "{raw.night.viz.heat1}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat1",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
+      }
+    },
+    "viz.heat2": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat2}",
+      "$description": "Semantic viz heat2 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat2}",
+          "day-hc": "{raw.day.viz.heat2}",
+          "night-hc": "{raw.night.viz.heat2}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat2",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
+      }
+    },
+    "viz.heat3": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat3}",
+      "$description": "Semantic viz heat3 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat3}",
+          "day-hc": "{raw.day.viz.heat3}",
+          "night-hc": "{raw.night.viz.heat3}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat3",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
+      }
+    },
+    "viz.heat4": {
+      "$type": "color",
+      "$value": "{raw.day.viz.heat4}",
+      "$description": "Semantic viz heat4 role",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.viz.heat4}",
+          "day-hc": "{raw.day.viz.heat4}",
+          "night-hc": "{raw.night.viz.heat4}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.heat4",
+            "background": "surface.page",
+            "minimum": 3,
+            "kind": "data mark"
+          }
+        ]
+      }
+    },
+    "state.hover": {
+      "$type": "color",
+      "$value": "{raw.day.state.hover}",
+      "$description": "Pointer state overlay; never a subject or status.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.hover}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
+      }
+    },
+    "state.pressed": {
+      "$type": "color",
+      "$value": "{raw.day.state.pressed}",
+      "$description": "Pointer state overlay; never a subject or status.",
+      "$extensions": {
+        "lemma.modes": {
+          "night": "{raw.night.state.pressed}"
+        },
+        "lemma.contrastWith": [],
+        "lemma.decorative": true,
+        "lemma.contrastPairs": []
+      }
+    },
+    "viz.neutral": {
+      "$type": "color",
+      "$value": "{raw.day.viz.neutral}",
+      "$description": "Single-series amounts and meters that are not about a subject (never indigo, never a subject colour).",
+      "$extensions": {
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "border.subtle"
+        ],
+        "lemma.modes": {
+          "night": "{raw.night.viz.neutral}"
+        },
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.neutral",
+            "background": "surface.raised",
+            "minimum": 3
+          },
+          {
+            "foreground": "viz.neutral",
+            "background": "border.subtle",
+            "minimum": 3
+          }
+        ]
+      }
+    }
+  },
+  "component": {},
+  "$extensions": {
+    "lemma.modes": [
+      "day",
+      "night",
+      "day-hc",
+      "night-hc"
+    ],
+    "lemma.density": [
+      "comfortable",
+      "compact"
+    ]
+  },
+  "foundation": {
+    "raw": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
+      },
+      "serif": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 Newsreader\", \"Lemma v7 Serif fallback\", serif"
+      },
+      "glyph": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 STIX Two Math\", \"Lemma v7 STIX Two Text\", serif"
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "\"Lemma v7 IBM Plex Mono\", monospace"
+      },
+      "type-caption": {
+        "$type": "dimension",
+        "$value": "0.75rem"
+      },
+      "type-supporting": {
+        "$type": "dimension",
+        "$value": "0.875rem"
+      },
+      "type-body": {
+        "$type": "dimension",
+        "$value": "1rem"
+      },
+      "type-numeric-md": {
+        "$type": "dimension",
+        "$value": "1.75rem"
+      },
+      "type-numeric-xl": {
+        "$type": "dimension",
+        "$value": "4rem"
+      },
+      "leading-caption": {
+        "$type": "dimension",
+        "$value": "1rem"
+      },
+      "leading-supporting": {
+        "$type": "dimension",
+        "$value": "1.25rem"
+      },
+      "leading-body": {
+        "$type": "dimension",
+        "$value": "1.5rem"
+      },
+      "leading-lead": {
+        "$type": "dimension",
+        "$value": "1.75rem"
+      },
+      "leading-subhead": {
+        "$type": "dimension",
+        "$value": "1.875rem"
+      },
+      "type-display": {
+        "$type": "dimension",
+        "$value": "2.75rem"
+      },
+      "type-title": {
+        "$type": "dimension",
+        "$value": "2rem"
+      },
+      "type-headline": {
+        "$type": "dimension",
+        "$value": "1.625rem"
+      },
+      "type-subhead": {
+        "$type": "dimension",
+        "$value": "1.25rem"
+      },
+      "type-lead": {
+        "$type": "dimension",
+        "$value": "1.1875rem"
+      },
+      "type-reading": {
+        "$type": "dimension",
+        "$value": "1.0625rem"
+      },
+      "space-1": {
+        "$type": "dimension",
+        "$value": "4px"
+      },
+      "space-2": {
+        "$type": "dimension",
+        "$value": "8px"
+      },
+      "space-3": {
+        "$type": "dimension",
+        "$value": "12px"
+      },
+      "space-4": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "space-5": {
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "space-6": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "space-8": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "space-10": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "space-12": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "space-14": {
+        "$type": "dimension",
+        "$value": "56px"
+      },
+      "space-16": {
+        "$type": "dimension",
+        "$value": "64px"
+      },
+      "space-20": {
+        "$type": "dimension",
+        "$value": "80px"
+      },
+      "radius-1": {
+        "$type": "dimension",
+        "$value": "8px"
+      },
+      "radius-2": {
+        "$type": "dimension",
+        "$value": "12px"
+      },
+      "radius-3": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "radius-4": {
+        "$type": "dimension",
+        "$value": "24px"
+      },
+      "radius-xs": {
+        "$type": "dimension",
+        "$value": "4px"
+      },
+      "round": {
+        "$type": "dimension",
+        "$value": "9999px"
+      },
+      "touch": {
+        "$type": "dimension",
+        "$value": "44px"
+      },
+      "button": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "small": {
+        "$type": "dimension",
+        "$value": "32px"
+      },
+      "field": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "chip": {
+        "$type": "dimension",
+        "$value": "28px"
+      },
+      "segment": {
+        "$type": "dimension",
+        "$value": "40px"
+      },
+      "row": {
+        "$type": "dimension",
+        "$value": "64px"
+      },
+      "check": {
+        "$type": "dimension",
+        "$value": "20px"
+      },
+      "switch-width": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "switch-height": {
+        "$type": "dimension",
+        "$value": "28px"
+      },
+      "meter": {
+        "$type": "dimension",
+        "$value": "6px"
+      },
+      "hero-alpha": {
+        "$type": "string",
+        "$value": "10%"
+      },
+      "menu-layer": {
+        "$type": "number",
+        "$value": "10"
+      },
+      "toast-layer": {
+        "$type": "number",
+        "$value": "30"
+      },
+      "hairline": {
+        "$type": "dimension",
+        "$value": "1px"
+      },
+      "ring": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "focus-width": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "menu-width": {
+        "$type": "dimension",
+        "$value": "280px"
+      },
+      "dialog-min": {
+        "$type": "dimension",
+        "$value": "480px"
+      },
+      "dialog-max": {
+        "$type": "dimension",
+        "$value": "560px"
+      },
+      "content": {
+        "$type": "dimension",
+        "$value": "1120px"
+      },
+      "sheet-max": {
+        "$type": "string",
+        "$value": "85dvh"
+      },
+      "reading": {
+        "$type": "string",
+        "$value": "68ch"
+      },
+      "regular": {
+        "$type": "number",
+        "$value": "400"
+      },
+      "medium": {
+        "$type": "number",
+        "$value": "500"
+      },
+      "semibold": {
+        "$type": "number",
+        "$value": "600"
+      },
+      "display-tracking": {
+        "$type": "string",
+        "$value": "-.015em"
+      },
+      "eyebrow-tracking": {
+        "$type": "string",
+        "$value": ".08em"
+      },
+      "instant": {
+        "$type": "duration",
+        "$value": "80ms"
+      },
+      "fast": {
+        "$type": "duration",
+        "$value": "120ms"
+      },
+      "base": {
+        "$type": "duration",
+        "$value": "200ms"
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "320ms"
+      },
+      "scenic": {
+        "$type": "duration",
+        "$value": "900ms"
+      },
+      "ease-standard": {
+        "$type": "string",
+        "$value": "cubic-bezier(.2,0,0,1)"
+      },
+      "ease-out": {
+        "$type": "string",
+        "$value": "cubic-bezier(0,0,0,1)"
+      },
+      "ease-in": {
+        "$type": "string",
+        "$value": "cubic-bezier(.3,0,1,1)"
+      },
+      "snappy-stiffness": {
+        "$type": "number",
+        "$value": "520"
+      },
+      "snappy-damping": {
+        "$type": "number",
+        "$value": "38"
+      },
+      "gentle-stiffness": {
+        "$type": "number",
+        "$value": "260"
+      },
+      "gentle-damping": {
+        "$type": "number",
+        "$value": "28"
+      },
+      "lively-stiffness": {
+        "$type": "number",
+        "$value": "400"
+      },
+      "lively-damping": {
+        "$type": "number",
+        "$value": "22"
+      },
+      "skeleton": {
+        "$type": "duration",
+        "$value": "1.6s"
+      },
+      "skeleton-delay": {
+        "$type": "duration",
+        "$value": "300ms"
+      },
+      "pressed": {
+        "$type": "number",
+        "$value": ".98"
+      },
+      "disabled": {
+        "$type": "number",
+        "$value": ".4"
+      },
+      "focus-gap": {
+        "$type": "dimension",
+        "$value": "2px"
+      },
+      "helper-gap": {
+        "$type": "dimension",
+        "$value": "6px"
+      },
+      "icon-stroke": {
+        "$type": "dimension",
+        "$value": "1.5px"
+      },
+      "mixed-width": {
+        "$type": "dimension",
+        "$value": "10px"
+      },
+      "switch-thumb": {
+        "$type": "dimension",
+        "$value": "22px"
+      },
+      "emblem-hero": {
+        "$type": "dimension",
+        "$value": "164px"
+      },
+      "state-column": {
+        "$type": "dimension",
+        "$value": "160px"
+      },
+      "principle-column": {
+        "$type": "dimension",
+        "$value": "220px"
+      },
+      "page-margin": {
+        "$type": "dimension",
+        "$value": "16px"
+      },
+      "section-gap": {
+        "$type": "dimension",
+        "$value": "48px"
+      },
+      "numeric-lg": {
+        "$type": "dimension",
+        "$value": "2.5rem"
+      },
+      "star-height": {
+        "$type": "dimension",
+        "$value": "54px"
+      },
+      "long": {
+        "$type": "duration",
+        "$value": "600ms"
+      },
+      "completion": {
+        "$type": "duration",
+        "$value": "300ms"
+      },
+      "pulse": {
+        "$type": "duration",
+        "$value": "2s"
+      },
+      "toast-max": {
+        "$type": "dimension",
+        "$value": "400px"
+      },
+      "grid-line": {
+        "$type": "dimension",
+        "$value": "1px"
+      },
+      "texture-star": {
+        "$type": "dimension",
+        "$value": "1.5px"
+      }
+    },
+    "role": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.sans}",
+        "$description": "Shared sans foundation."
+      },
+      "serif": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.serif}",
+        "$description": "Shared serif foundation."
+      },
+      "glyph": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.glyph}",
+        "$description": "Shared glyph foundation."
+      },
+      "mono": {
+        "$type": "fontFamily",
+        "$value": "{foundation.raw.mono}",
+        "$description": "Shared mono foundation."
+      },
+      "type-caption": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-caption}",
+        "$description": "Caption role, 12 px."
+      },
+      "type-supporting": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-supporting}",
+        "$description": "Supporting role, 14 px."
+      },
+      "type-body": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-body}",
+        "$description": "Body role, 16 px."
+      },
+      "type-numeric-md": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-numeric-md}",
+        "$description": "Numeric md role, 28 px."
+      },
+      "type-numeric-xl": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-numeric-xl}",
+        "$description": "Numeric xl role, 64 px."
+      },
+      "leading-caption": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-caption}",
+        "$description": "Line height for Caption."
+      },
+      "leading-supporting": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-supporting}",
+        "$description": "Line height for Supporting."
+      },
+      "leading-body": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-body}",
+        "$description": "Line height for Body."
+      },
+      "leading-lead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-lead}",
+        "$description": "Line height for Lead."
+      },
+      "leading-subhead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.leading-subhead}",
+        "$description": "Line height for Subhead."
+      },
+      "type-display": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-display}",
+        "$description": "Shared type display foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "3.5rem",
+            "desktop": "3.5rem"
+          }
+        }
+      },
+      "type-title": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-title}",
+        "$description": "Shared type title foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "2.5rem",
+            "desktop": "2.5rem"
+          }
+        }
+      },
+      "type-headline": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-headline}",
+        "$description": "Shared type headline foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "1.875rem",
+            "desktop": "1.875rem"
+          }
+        }
+      },
+      "type-subhead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-subhead}",
+        "$description": "Shared type subhead foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "1.375rem",
+            "desktop": "1.375rem"
+          }
+        }
+      },
+      "type-lead": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-lead}",
+        "$description": "Shared type lead foundation."
+      },
+      "type-reading": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.type-reading}",
+        "$description": "Shared type reading foundation."
+      },
+      "space-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-1}",
+        "$description": "Shared space 1 foundation."
+      },
+      "space-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-2}",
+        "$description": "Shared space 2 foundation."
+      },
+      "space-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-3}",
+        "$description": "Shared space 3 foundation."
+      },
+      "space-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-4}",
+        "$description": "Shared space 4 foundation."
+      },
+      "space-5": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-5}",
+        "$description": "Shared space 5 foundation."
+      },
+      "space-6": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-6}",
+        "$description": "Shared space 6 foundation."
+      },
+      "space-8": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-8}",
+        "$description": "Shared space 8 foundation."
+      },
+      "space-10": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-10}",
+        "$description": "Shared space 10 foundation."
+      },
+      "space-12": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-12}",
+        "$description": "Shared space 12 foundation."
+      },
+      "space-14": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-14}",
+        "$description": "Shared space 14 foundation."
+      },
+      "space-16": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-16}",
+        "$description": "Shared space 16 foundation."
+      },
+      "space-20": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.space-20}",
+        "$description": "Shared space 20 foundation."
+      },
+      "radius-1": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-1}",
+        "$description": "Shared radius 1 foundation."
+      },
+      "radius-2": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-2}",
+        "$description": "Shared radius 2 foundation."
+      },
+      "radius-3": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-3}",
+        "$description": "Shared radius 3 foundation."
+      },
+      "radius-4": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-4}",
+        "$description": "Shared radius 4 foundation."
+      },
+      "radius-xs": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.radius-xs}",
+        "$description": "Shared radius xs foundation."
+      },
+      "round": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.round}",
+        "$description": "Shared round foundation."
+      },
+      "touch": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.touch}",
+        "$description": "Shared touch foundation."
+      },
+      "button": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.button}",
+        "$description": "Shared button foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "40px",
+            "desktop": "40px"
+          }
+        }
+      },
+      "small": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.small}",
+        "$description": "Shared small foundation."
+      },
+      "field": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.field}",
+        "$description": "Shared field foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "40px",
+            "desktop": "40px"
+          }
+        }
+      },
+      "chip": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.chip}",
+        "$description": "Shared chip foundation."
+      },
+      "segment": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.segment}",
+        "$description": "Shared segment foundation."
+      },
+      "row": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.row}",
+        "$description": "Shared row foundation."
+      },
+      "check": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.check}",
+        "$description": "Shared check foundation."
+      },
+      "switch-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-width}",
+        "$description": "Shared switch width foundation."
+      },
+      "switch-height": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-height}",
+        "$description": "Shared switch height foundation."
+      },
+      "meter": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.meter}",
+        "$description": "Shared meter foundation."
+      },
+      "hero-alpha": {
+        "$type": "string",
+        "$value": "{foundation.raw.hero-alpha}",
+        "$description": "Shared hero alpha foundation."
+      },
+      "menu-layer": {
+        "$type": "number",
+        "$value": "{foundation.raw.menu-layer}",
+        "$description": "Shared menu layer foundation."
+      },
+      "toast-layer": {
+        "$type": "number",
+        "$value": "{foundation.raw.toast-layer}",
+        "$description": "Shared toast layer foundation."
+      },
+      "hairline": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.hairline}",
+        "$description": "Shared hairline foundation."
+      },
+      "ring": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.ring}",
+        "$description": "Shared ring foundation."
+      },
+      "focus-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.focus-width}",
+        "$description": "Shared focus width foundation."
+      },
+      "menu-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.menu-width}",
+        "$description": "Shared menu width foundation."
+      },
+      "dialog-min": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.dialog-min}",
+        "$description": "Shared dialog min foundation."
+      },
+      "dialog-max": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.dialog-max}",
+        "$description": "Shared dialog max foundation."
+      },
+      "content": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.content}",
+        "$description": "Shared content foundation."
+      },
+      "sheet-max": {
+        "$type": "string",
+        "$value": "{foundation.raw.sheet-max}",
+        "$description": "Shared sheet max foundation."
+      },
+      "reading": {
+        "$type": "string",
+        "$value": "{foundation.raw.reading}",
+        "$description": "Shared reading foundation."
+      },
+      "regular": {
+        "$type": "number",
+        "$value": "{foundation.raw.regular}",
+        "$description": "Shared regular foundation."
+      },
+      "medium": {
+        "$type": "number",
+        "$value": "{foundation.raw.medium}",
+        "$description": "Shared medium foundation."
+      },
+      "semibold": {
+        "$type": "number",
+        "$value": "{foundation.raw.semibold}",
+        "$description": "Shared semibold foundation."
+      },
+      "display-tracking": {
+        "$type": "string",
+        "$value": "{foundation.raw.display-tracking}",
+        "$description": "Shared display tracking foundation."
+      },
+      "eyebrow-tracking": {
+        "$type": "string",
+        "$value": "{foundation.raw.eyebrow-tracking}",
+        "$description": "Shared eyebrow tracking foundation."
+      },
+      "instant": {
+        "$type": "duration",
+        "$value": "{foundation.raw.instant}",
+        "$description": "Shared instant foundation."
+      },
+      "fast": {
+        "$type": "duration",
+        "$value": "{foundation.raw.fast}",
+        "$description": "Shared fast foundation."
+      },
+      "base": {
+        "$type": "duration",
+        "$value": "{foundation.raw.base}",
+        "$description": "Shared base foundation."
+      },
+      "slow": {
+        "$type": "duration",
+        "$value": "{foundation.raw.slow}",
+        "$description": "Shared slow foundation."
+      },
+      "scenic": {
+        "$type": "duration",
+        "$value": "{foundation.raw.scenic}",
+        "$description": "Shared scenic foundation."
+      },
+      "ease-standard": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-standard}",
+        "$description": "Shared ease standard foundation."
+      },
+      "ease-out": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-out}",
+        "$description": "Shared ease out foundation."
+      },
+      "ease-in": {
+        "$type": "string",
+        "$value": "{foundation.raw.ease-in}",
+        "$description": "Shared ease in foundation."
+      },
+      "snappy-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.snappy-stiffness}",
+        "$description": "Shared snappy stiffness foundation."
+      },
+      "snappy-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.snappy-damping}",
+        "$description": "Shared snappy damping foundation."
+      },
+      "gentle-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.gentle-stiffness}",
+        "$description": "Shared gentle stiffness foundation."
+      },
+      "gentle-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.gentle-damping}",
+        "$description": "Shared gentle damping foundation."
+      },
+      "lively-stiffness": {
+        "$type": "number",
+        "$value": "{foundation.raw.lively-stiffness}",
+        "$description": "Shared lively stiffness foundation."
+      },
+      "lively-damping": {
+        "$type": "number",
+        "$value": "{foundation.raw.lively-damping}",
+        "$description": "Shared lively damping foundation."
+      },
+      "skeleton": {
+        "$type": "duration",
+        "$value": "{foundation.raw.skeleton}",
+        "$description": "Shared skeleton foundation."
+      },
+      "skeleton-delay": {
+        "$type": "duration",
+        "$value": "{foundation.raw.skeleton-delay}",
+        "$description": "Shared skeleton delay foundation."
+      },
+      "pressed": {
+        "$type": "number",
+        "$value": "{foundation.raw.pressed}",
+        "$description": "Shared pressed foundation."
+      },
+      "disabled": {
+        "$type": "number",
+        "$value": "{foundation.raw.disabled}",
+        "$description": "Shared disabled foundation."
+      },
+      "focus-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.focus-gap}",
+        "$description": "Shared focus gap foundation."
+      },
+      "helper-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.helper-gap}",
+        "$description": "Shared helper gap foundation."
+      },
+      "icon-stroke": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.icon-stroke}",
+        "$description": "Shared icon stroke foundation."
+      },
+      "mixed-width": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.mixed-width}",
+        "$description": "Shared mixed width foundation."
+      },
+      "switch-thumb": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.switch-thumb}",
+        "$description": "Shared switch thumb foundation."
+      },
+      "emblem-hero": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.emblem-hero}",
+        "$description": "Shared emblem hero foundation."
+      },
+      "state-column": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.state-column}",
+        "$description": "Shared state column foundation."
+      },
+      "principle-column": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.principle-column}",
+        "$description": "Shared principle column foundation."
+      },
+      "page-margin": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.page-margin}",
+        "$description": "Shared page margin foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "32px",
+            "desktop": "48px"
+          }
+        }
+      },
+      "section-gap": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.section-gap}",
+        "$description": "Shared section gap foundation.",
+        "$extensions": {
+          "lemma.viewport": {
+            "tablet": "64px",
+            "desktop": "80px"
+          }
+        }
+      },
+      "numeric-lg": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.numeric-lg}",
+        "$description": "Shared numeric lg foundation."
+      },
+      "star-height": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.star-height}",
+        "$description": "Shared star height foundation."
+      },
+      "long": {
+        "$type": "duration",
+        "$value": "{foundation.raw.long}",
+        "$description": "Shared long foundation."
+      },
+      "completion": {
+        "$type": "duration",
+        "$value": "{foundation.raw.completion}",
+        "$description": "Shared completion foundation."
+      },
+      "pulse": {
+        "$type": "duration",
+        "$value": "{foundation.raw.pulse}",
+        "$description": "Shared pulse foundation."
+      },
+      "toast-max": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.toast-max}",
+        "$description": "Shared toast max foundation."
+      },
+      "grid-line": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.grid-line}",
+        "$description": "Shared grid line foundation."
+      },
+      "texture-star": {
+        "$type": "dimension",
+        "$value": "{foundation.raw.texture-star}",
+        "$description": "Shared texture star foundation."
+      }
+    },
+    "effects": {
+      "day": {
+        "backdrop": "rgb(18 27 49 / 40%)",
+        "shadow-1": "0 1px 2px rgb(18 27 49 / 6%)",
+        "shadow-2": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+        "shadow-3": "0 24px 64px rgb(18 27 49 / 18%)"
+      },
+      "night": {
+        "backdrop": "rgb(0 0 0 / 60%)",
+        "shadow-1": "inset 0 1px rgb(255 255 255 / 5%)",
+        "shadow-2": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
+        "shadow-3": "0 24px 64px rgb(0 0 0 / 60%)"
+      }
+    }
+  }
+}

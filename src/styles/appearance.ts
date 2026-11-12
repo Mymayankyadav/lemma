@@ -1,4 +1,5 @@
 import {themes,type ThemeId} from './themes';
+import {syncThemeColour} from '../app/shellRoot';
 export type AppearanceMode='auto'|'day'|'night';
 export interface Appearance {mode:AppearanceMode}
 export const DEFAULT_APPEARANCE:Appearance={mode:'auto'};
@@ -20,6 +21,7 @@ function updateTheme(mode:AppearanceMode){
  root.dataset.density='compact';root.dataset.effects='calm';
  delete root.dataset.themePreference;
  document.querySelectorAll('meta[name="theme-color"]').forEach(meta=>meta.setAttribute('content',themes.find(t=>t.id===theme)?.t.bg||'#FAFAF6'));
+ if(root.hasAttribute('data-v7'))syncThemeColour(root);
 }
 export function applyAppearance(patch:Partial<Appearance>):Appearance {
  const next=normalize({...readAppearance(),...patch});

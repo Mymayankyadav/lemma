@@ -1,0 +1,2320 @@
+{
+  "name": "Lemma v7 Constellation / Figma variable interchange",
+  "modes": [
+    "day",
+    "night",
+    "day-hc",
+    "night-hc"
+  ],
+  "collections": [
+    {
+      "name": "Raw",
+      "variables": [
+        {
+          "name": "surface/page",
+          "type": "COLOR",
+          "modes": {
+            "day": "#F8F5F0",
+            "night": "#091023",
+            "day-hc": "#F8F5F0",
+            "night-hc": "#091023"
+          }
+        },
+        {
+          "name": "surface/sunken",
+          "type": "COLOR",
+          "modes": {
+            "day": "#F0ECE5",
+            "night": "#050A1B",
+            "day-hc": "#F0ECE5",
+            "night-hc": "#050A1B"
+          }
+        },
+        {
+          "name": "surface/raised",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FEFCF9",
+            "night": "#11192C",
+            "day-hc": "#FEFCF9",
+            "night-hc": "#11192C"
+          }
+        },
+        {
+          "name": "surface/overlay",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FFFFFF",
+            "night": "#192135",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#192135"
+          }
+        },
+        {
+          "name": "surface/muted",
+          "type": "COLOR",
+          "modes": {
+            "day": "#E9E4DC",
+            "night": "#1E263B",
+            "day-hc": "#E9E4DC",
+            "night-hc": "#1E263B"
+          }
+        },
+        {
+          "name": "surface/muted-hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#E1DCD2",
+            "night": "#273045",
+            "day-hc": "#E1DCD2",
+            "night-hc": "#273045"
+          }
+        },
+        {
+          "name": "border/subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#DDD8D0",
+            "night": "#262D40",
+            "day-hc": "#DDD8D0",
+            "night-hc": "#262D40"
+          }
+        },
+        {
+          "name": "border/default",
+          "type": "COLOR",
+          "modes": {
+            "day": "#857F77",
+            "night": "#687082",
+            "day-hc": "#857F77",
+            "night-hc": "#687082"
+          }
+        },
+        {
+          "name": "border/strong",
+          "type": "COLOR",
+          "modes": {
+            "day": "#625D55",
+            "night": "#8A92A4",
+            "day-hc": "#625D55",
+            "night-hc": "#8A92A4"
+          }
+        },
+        {
+          "name": "text/primary",
+          "type": "COLOR",
+          "modes": {
+            "day": "#121B31",
+            "night": "#EEF2FA",
+            "day-hc": "#121B31",
+            "night-hc": "#EEF2FA"
+          }
+        },
+        {
+          "name": "text/secondary",
+          "type": "COLOR",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#40495C",
+            "night-hc": "#B1B7C6"
+          }
+        },
+        {
+          "name": "text/tertiary",
+          "type": "COLOR",
+          "modes": {
+            "day": "#5B6375",
+            "night": "#8B92A2",
+            "day-hc": "#5B6375",
+            "night-hc": "#8B92A2"
+          }
+        },
+        {
+          "name": "text/disabled",
+          "type": "COLOR",
+          "modes": {
+            "day": "#878C99",
+            "night": "#676D7C",
+            "day-hc": "#878C99",
+            "night-hc": "#676D7C"
+          }
+        },
+        {
+          "name": "text/on-action",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FFFFFF",
+            "night": "#FFFFFF",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#FFFFFF"
+          }
+        },
+        {
+          "name": "action/bg",
+          "type": "COLOR",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#5159D7",
+            "day-hc": "#4246C2",
+            "night-hc": "#5159D7"
+          }
+        },
+        {
+          "name": "action/hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#393BAF",
+            "night": "#5862E1",
+            "day-hc": "#393BAF",
+            "night-hc": "#5862E1"
+          }
+        },
+        {
+          "name": "action/pressed",
+          "type": "COLOR",
+          "modes": {
+            "day": "#313498",
+            "night": "#4C52D0",
+            "day-hc": "#313498",
+            "night-hc": "#4C52D0"
+          }
+        },
+        {
+          "name": "selection/subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#E2E8FF",
+            "night": "#232953",
+            "day-hc": "#E2E8FF",
+            "night-hc": "#232953"
+          }
+        },
+        {
+          "name": "selection/hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#D5DEFF",
+            "night": "#2C3363",
+            "day-hc": "#D5DEFF",
+            "night-hc": "#2C3363"
+          }
+        },
+        {
+          "name": "selection/fg",
+          "type": "COLOR",
+          "modes": {
+            "day": "#3738AC",
+            "night": "#B9C6FF",
+            "day-hc": "#3738AC",
+            "night-hc": "#B9C6FF"
+          }
+        },
+        {
+          "name": "focus/ring",
+          "type": "COLOR",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#B1BFFF",
+            "day-hc": "#4246C2",
+            "night-hc": "#B1BFFF"
+          }
+        },
+        {
+          "name": "link/fg",
+          "type": "COLOR",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#A9B8FF",
+            "day-hc": "#4246C2",
+            "night-hc": "#A9B8FF"
+          }
+        },
+        {
+          "name": "status/success",
+          "type": "COLOR",
+          "modes": {
+            "day": "#107C40",
+            "night": "#75D78D",
+            "day-hc": "#107C40",
+            "night-hc": "#75D78D"
+          }
+        },
+        {
+          "name": "status/success-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#E2F6E6",
+            "night": "#112917",
+            "day-hc": "#E2F6E6",
+            "night-hc": "#112917"
+          }
+        },
+        {
+          "name": "status/warning",
+          "type": "COLOR",
+          "modes": {
+            "day": "#9B610E",
+            "night": "#FFBF67",
+            "day-hc": "#9B610E",
+            "night-hc": "#FFBF67"
+          }
+        },
+        {
+          "name": "status/warning-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FFF0DF",
+            "night": "#301F07",
+            "day-hc": "#FFF0DF",
+            "night-hc": "#301F07"
+          }
+        },
+        {
+          "name": "status/danger",
+          "type": "COLOR",
+          "modes": {
+            "day": "#9E1D1C",
+            "night": "#FF8579",
+            "day-hc": "#9E1D1C",
+            "night-hc": "#FF8579"
+          }
+        },
+        {
+          "name": "status/danger-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FFE9E5",
+            "night": "#361A17",
+            "day-hc": "#FFE9E5",
+            "night-hc": "#361A17"
+          }
+        },
+        {
+          "name": "status/danger-solid",
+          "type": "COLOR",
+          "modes": {
+            "day": "#9E1D1C",
+            "night": "#BA2B28",
+            "day-hc": "#9E1D1C",
+            "night-hc": "#BA2B28"
+          }
+        },
+        {
+          "name": "status/danger-hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#94020D",
+            "night": "#AE2523",
+            "day-hc": "#94020D",
+            "night-hc": "#AE2523"
+          }
+        },
+        {
+          "name": "subject/analysis",
+          "type": "COLOR",
+          "modes": {
+            "day": "#00789C",
+            "night": "#17A9CB",
+            "day-hc": "#00789C",
+            "night-hc": "#17A9CB"
+          }
+        },
+        {
+          "name": "subject/analysis-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#D9F4FD",
+            "night": "#082831",
+            "day-hc": "#D9F4FD",
+            "night-hc": "#082831"
+          }
+        },
+        {
+          "name": "subject/topology",
+          "type": "COLOR",
+          "modes": {
+            "day": "#009C85",
+            "night": "#52D7C1",
+            "day-hc": "#009C85",
+            "night-hc": "#52D7C1"
+          }
+        },
+        {
+          "name": "subject/topology-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#DAF6EF",
+            "night": "#082A25",
+            "day-hc": "#DAF6EF",
+            "night-hc": "#082A25"
+          }
+        },
+        {
+          "name": "subject/logic",
+          "type": "COLOR",
+          "modes": {
+            "day": "#417934",
+            "night": "#74A968",
+            "day-hc": "#417934",
+            "night-hc": "#74A968"
+          }
+        },
+        {
+          "name": "subject/logic-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#E4F4E1",
+            "night": "#192916",
+            "day-hc": "#E4F4E1",
+            "night-hc": "#192916"
+          }
+        },
+        {
+          "name": "subject/number-theory",
+          "type": "COLOR",
+          "modes": {
+            "day": "#978722",
+            "night": "#CEC06A",
+            "day-hc": "#978722",
+            "night-hc": "#CEC06A"
+          }
+        },
+        {
+          "name": "subject/number-theory-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#F3EFD9",
+            "night": "#28240C",
+            "day-hc": "#F3EFD9",
+            "night-hc": "#28240C"
+          }
+        },
+        {
+          "name": "subject/algebra",
+          "type": "COLOR",
+          "modes": {
+            "day": "#9D5300",
+            "night": "#CE8545",
+            "day-hc": "#9D5300",
+            "night-hc": "#CE8545"
+          }
+        },
+        {
+          "name": "subject/algebra-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FEEADB",
+            "night": "#321F0F",
+            "day-hc": "#FEEADB",
+            "night-hc": "#321F0F"
+          }
+        },
+        {
+          "name": "subject/combinatorics",
+          "type": "COLOR",
+          "modes": {
+            "day": "#C86265",
+            "night": "#FF9D9E",
+            "day-hc": "#C86265",
+            "night-hc": "#FF9D9E"
+          }
+        },
+        {
+          "name": "subject/combinatorics-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FFE7E6",
+            "night": "#351C1C",
+            "day-hc": "#FFE7E6",
+            "night-hc": "#351C1C"
+          }
+        },
+        {
+          "name": "subject/geometry",
+          "type": "COLOR",
+          "modes": {
+            "day": "#984780",
+            "night": "#C97AAF",
+            "day-hc": "#984780",
+            "night-hc": "#C97AAF"
+          }
+        },
+        {
+          "name": "subject/geometry-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#FDE7F5",
+            "night": "#311C2A",
+            "day-hc": "#FDE7F5",
+            "night-hc": "#311C2A"
+          }
+        },
+        {
+          "name": "subject/probability",
+          "type": "COLOR",
+          "modes": {
+            "day": "#9E6EC0",
+            "night": "#D5A8F8",
+            "day-hc": "#9E6EC0",
+            "night-hc": "#D5A8F8"
+          }
+        },
+        {
+          "name": "subject/probability-subtle",
+          "type": "COLOR",
+          "modes": {
+            "day": "#F5E9FE",
+            "night": "#2A1E33",
+            "day-hc": "#F5E9FE",
+            "night-hc": "#2A1E33"
+          }
+        },
+        {
+          "name": "viz/heat1",
+          "type": "COLOR",
+          "modes": {
+            "day": "#7E8CAB",
+            "night": "#5560B8",
+            "day-hc": "#7E8CAB",
+            "night-hc": "#5560B8"
+          }
+        },
+        {
+          "name": "viz/heat2",
+          "type": "COLOR",
+          "modes": {
+            "day": "#516494",
+            "night": "#7C86DD",
+            "day-hc": "#516494",
+            "night-hc": "#7C86DD"
+          }
+        },
+        {
+          "name": "viz/heat3",
+          "type": "COLOR",
+          "modes": {
+            "day": "#2F4275",
+            "night": "#A9B3F2",
+            "day-hc": "#2F4275",
+            "night-hc": "#A9B3F2"
+          }
+        },
+        {
+          "name": "viz/heat4",
+          "type": "COLOR",
+          "modes": {
+            "day": "#172448",
+            "night": "#D6DDFF",
+            "day-hc": "#172448",
+            "night-hc": "#D6DDFF"
+          }
+        },
+        {
+          "name": "state/hover",
+          "type": "COLOR",
+          "modes": {
+            "day": "#121B310F",
+            "night": "#FFFFFF0F",
+            "day-hc": "#121B310F",
+            "night-hc": "#FFFFFF0F"
+          }
+        },
+        {
+          "name": "state/pressed",
+          "type": "COLOR",
+          "modes": {
+            "day": "#121B311F",
+            "night": "#FFFFFF1F",
+            "day-hc": "#121B311F",
+            "night-hc": "#FFFFFF1F"
+          }
+        },
+        {
+          "name": "viz/neutral",
+          "type": "COLOR",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#40495C",
+            "night-hc": "#B1B7C6"
+          }
+        },
+        {
+          "name": "foundation/sans",
+          "type": "fontFamily",
+          "value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
+        },
+        {
+          "name": "foundation/serif",
+          "type": "fontFamily",
+          "value": "\"Lemma v7 Newsreader\", \"Lemma v7 Serif fallback\", serif"
+        },
+        {
+          "name": "foundation/glyph",
+          "type": "fontFamily",
+          "value": "\"Lemma v7 STIX Two Math\", \"Lemma v7 STIX Two Text\", serif"
+        },
+        {
+          "name": "foundation/mono",
+          "type": "fontFamily",
+          "value": "\"Lemma v7 IBM Plex Mono\", monospace"
+        },
+        {
+          "name": "foundation/type-caption",
+          "type": "dimension",
+          "value": "0.75rem"
+        },
+        {
+          "name": "foundation/type-supporting",
+          "type": "dimension",
+          "value": "0.875rem"
+        },
+        {
+          "name": "foundation/type-body",
+          "type": "dimension",
+          "value": "1rem"
+        },
+        {
+          "name": "foundation/type-numeric-md",
+          "type": "dimension",
+          "value": "1.75rem"
+        },
+        {
+          "name": "foundation/type-numeric-xl",
+          "type": "dimension",
+          "value": "4rem"
+        },
+        {
+          "name": "foundation/leading-caption",
+          "type": "dimension",
+          "value": "1rem"
+        },
+        {
+          "name": "foundation/leading-supporting",
+          "type": "dimension",
+          "value": "1.25rem"
+        },
+        {
+          "name": "foundation/leading-body",
+          "type": "dimension",
+          "value": "1.5rem"
+        },
+        {
+          "name": "foundation/leading-lead",
+          "type": "dimension",
+          "value": "1.75rem"
+        },
+        {
+          "name": "foundation/leading-subhead",
+          "type": "dimension",
+          "value": "1.875rem"
+        },
+        {
+          "name": "foundation/type-display",
+          "type": "dimension",
+          "value": "2.75rem"
+        },
+        {
+          "name": "foundation/type-title",
+          "type": "dimension",
+          "value": "2rem"
+        },
+        {
+          "name": "foundation/type-headline",
+          "type": "dimension",
+          "value": "1.625rem"
+        },
+        {
+          "name": "foundation/type-subhead",
+          "type": "dimension",
+          "value": "1.25rem"
+        },
+        {
+          "name": "foundation/type-lead",
+          "type": "dimension",
+          "value": "1.1875rem"
+        },
+        {
+          "name": "foundation/type-reading",
+          "type": "dimension",
+          "value": "1.0625rem"
+        },
+        {
+          "name": "foundation/space-1",
+          "type": "dimension",
+          "value": "4px"
+        },
+        {
+          "name": "foundation/space-2",
+          "type": "dimension",
+          "value": "8px"
+        },
+        {
+          "name": "foundation/space-3",
+          "type": "dimension",
+          "value": "12px"
+        },
+        {
+          "name": "foundation/space-4",
+          "type": "dimension",
+          "value": "16px"
+        },
+        {
+          "name": "foundation/space-5",
+          "type": "dimension",
+          "value": "20px"
+        },
+        {
+          "name": "foundation/space-6",
+          "type": "dimension",
+          "value": "24px"
+        },
+        {
+          "name": "foundation/space-8",
+          "type": "dimension",
+          "value": "32px"
+        },
+        {
+          "name": "foundation/space-10",
+          "type": "dimension",
+          "value": "40px"
+        },
+        {
+          "name": "foundation/space-12",
+          "type": "dimension",
+          "value": "48px"
+        },
+        {
+          "name": "foundation/space-14",
+          "type": "dimension",
+          "value": "56px"
+        },
+        {
+          "name": "foundation/space-16",
+          "type": "dimension",
+          "value": "64px"
+        },
+        {
+          "name": "foundation/space-20",
+          "type": "dimension",
+          "value": "80px"
+        },
+        {
+          "name": "foundation/radius-1",
+          "type": "dimension",
+          "value": "8px"
+        },
+        {
+          "name": "foundation/radius-2",
+          "type": "dimension",
+          "value": "12px"
+        },
+        {
+          "name": "foundation/radius-3",
+          "type": "dimension",
+          "value": "16px"
+        },
+        {
+          "name": "foundation/radius-4",
+          "type": "dimension",
+          "value": "24px"
+        },
+        {
+          "name": "foundation/radius-xs",
+          "type": "dimension",
+          "value": "4px"
+        },
+        {
+          "name": "foundation/round",
+          "type": "dimension",
+          "value": "9999px"
+        },
+        {
+          "name": "foundation/touch",
+          "type": "dimension",
+          "value": "44px"
+        },
+        {
+          "name": "foundation/button",
+          "type": "dimension",
+          "value": "48px"
+        },
+        {
+          "name": "foundation/small",
+          "type": "dimension",
+          "value": "32px"
+        },
+        {
+          "name": "foundation/field",
+          "type": "dimension",
+          "value": "48px"
+        },
+        {
+          "name": "foundation/chip",
+          "type": "dimension",
+          "value": "28px"
+        },
+        {
+          "name": "foundation/segment",
+          "type": "dimension",
+          "value": "40px"
+        },
+        {
+          "name": "foundation/row",
+          "type": "dimension",
+          "value": "64px"
+        },
+        {
+          "name": "foundation/check",
+          "type": "dimension",
+          "value": "20px"
+        },
+        {
+          "name": "foundation/switch-width",
+          "type": "dimension",
+          "value": "48px"
+        },
+        {
+          "name": "foundation/switch-height",
+          "type": "dimension",
+          "value": "28px"
+        },
+        {
+          "name": "foundation/meter",
+          "type": "dimension",
+          "value": "6px"
+        },
+        {
+          "name": "foundation/hero-alpha",
+          "type": "string",
+          "value": "10%"
+        },
+        {
+          "name": "foundation/menu-layer",
+          "type": "number",
+          "value": "10"
+        },
+        {
+          "name": "foundation/toast-layer",
+          "type": "number",
+          "value": "30"
+        },
+        {
+          "name": "foundation/hairline",
+          "type": "dimension",
+          "value": "1px"
+        },
+        {
+          "name": "foundation/ring",
+          "type": "dimension",
+          "value": "2px"
+        },
+        {
+          "name": "foundation/focus-width",
+          "type": "dimension",
+          "value": "2px"
+        },
+        {
+          "name": "foundation/menu-width",
+          "type": "dimension",
+          "value": "280px"
+        },
+        {
+          "name": "foundation/dialog-min",
+          "type": "dimension",
+          "value": "480px"
+        },
+        {
+          "name": "foundation/dialog-max",
+          "type": "dimension",
+          "value": "560px"
+        },
+        {
+          "name": "foundation/content",
+          "type": "dimension",
+          "value": "1120px"
+        },
+        {
+          "name": "foundation/sheet-max",
+          "type": "string",
+          "value": "85dvh"
+        },
+        {
+          "name": "foundation/reading",
+          "type": "string",
+          "value": "68ch"
+        },
+        {
+          "name": "foundation/regular",
+          "type": "number",
+          "value": "400"
+        },
+        {
+          "name": "foundation/medium",
+          "type": "number",
+          "value": "500"
+        },
+        {
+          "name": "foundation/semibold",
+          "type": "number",
+          "value": "600"
+        },
+        {
+          "name": "foundation/display-tracking",
+          "type": "string",
+          "value": "-.015em"
+        },
+        {
+          "name": "foundation/eyebrow-tracking",
+          "type": "string",
+          "value": ".08em"
+        },
+        {
+          "name": "foundation/instant",
+          "type": "duration",
+          "value": "80ms"
+        },
+        {
+          "name": "foundation/fast",
+          "type": "duration",
+          "value": "120ms"
+        },
+        {
+          "name": "foundation/base",
+          "type": "duration",
+          "value": "200ms"
+        },
+        {
+          "name": "foundation/slow",
+          "type": "duration",
+          "value": "320ms"
+        },
+        {
+          "name": "foundation/scenic",
+          "type": "duration",
+          "value": "900ms"
+        },
+        {
+          "name": "foundation/ease-standard",
+          "type": "string",
+          "value": "cubic-bezier(.2,0,0,1)"
+        },
+        {
+          "name": "foundation/ease-out",
+          "type": "string",
+          "value": "cubic-bezier(0,0,0,1)"
+        },
+        {
+          "name": "foundation/ease-in",
+          "type": "string",
+          "value": "cubic-bezier(.3,0,1,1)"
+        },
+        {
+          "name": "foundation/snappy-stiffness",
+          "type": "number",
+          "value": "520"
+        },
+        {
+          "name": "foundation/snappy-damping",
+          "type": "number",
+          "value": "38"
+        },
+        {
+          "name": "foundation/gentle-stiffness",
+          "type": "number",
+          "value": "260"
+        },
+        {
+          "name": "foundation/gentle-damping",
+          "type": "number",
+          "value": "28"
+        },
+        {
+          "name": "foundation/lively-stiffness",
+          "type": "number",
+          "value": "400"
+        },
+        {
+          "name": "foundation/lively-damping",
+          "type": "number",
+          "value": "22"
+        },
+        {
+          "name": "foundation/skeleton",
+          "type": "duration",
+          "value": "1.6s"
+        },
+        {
+          "name": "foundation/skeleton-delay",
+          "type": "duration",
+          "value": "300ms"
+        },
+        {
+          "name": "foundation/pressed",
+          "type": "number",
+          "value": ".98"
+        },
+        {
+          "name": "foundation/disabled",
+          "type": "number",
+          "value": ".4"
+        },
+        {
+          "name": "foundation/focus-gap",
+          "type": "dimension",
+          "value": "2px"
+        },
+        {
+          "name": "foundation/helper-gap",
+          "type": "dimension",
+          "value": "6px"
+        },
+        {
+          "name": "foundation/icon-stroke",
+          "type": "dimension",
+          "value": "1.5px"
+        },
+        {
+          "name": "foundation/mixed-width",
+          "type": "dimension",
+          "value": "10px"
+        },
+        {
+          "name": "foundation/switch-thumb",
+          "type": "dimension",
+          "value": "22px"
+        },
+        {
+          "name": "foundation/emblem-hero",
+          "type": "dimension",
+          "value": "164px"
+        },
+        {
+          "name": "foundation/state-column",
+          "type": "dimension",
+          "value": "160px"
+        },
+        {
+          "name": "foundation/principle-column",
+          "type": "dimension",
+          "value": "220px"
+        },
+        {
+          "name": "foundation/page-margin",
+          "type": "dimension",
+          "value": "16px"
+        },
+        {
+          "name": "foundation/section-gap",
+          "type": "dimension",
+          "value": "48px"
+        },
+        {
+          "name": "foundation/numeric-lg",
+          "type": "dimension",
+          "value": "2.5rem"
+        },
+        {
+          "name": "foundation/star-height",
+          "type": "dimension",
+          "value": "54px"
+        },
+        {
+          "name": "foundation/long",
+          "type": "duration",
+          "value": "600ms"
+        },
+        {
+          "name": "foundation/completion",
+          "type": "duration",
+          "value": "300ms"
+        },
+        {
+          "name": "foundation/pulse",
+          "type": "duration",
+          "value": "2s"
+        },
+        {
+          "name": "foundation/toast-max",
+          "type": "dimension",
+          "value": "400px"
+        },
+        {
+          "name": "foundation/grid-line",
+          "type": "dimension",
+          "value": "1px"
+        },
+        {
+          "name": "foundation/texture-star",
+          "type": "dimension",
+          "value": "1.5px"
+        },
+        {
+          "name": "effects/backdrop",
+          "type": "STRING",
+          "modes": {
+            "day": "rgb(18 27 49 / 40%)",
+            "night": "rgb(0 0 0 / 60%)",
+            "day-hc": "rgb(18 27 49 / 40%)",
+            "night-hc": "rgb(0 0 0 / 60%)"
+          }
+        },
+        {
+          "name": "effects/shadow-1",
+          "type": "STRING",
+          "modes": {
+            "day": "0 1px 2px rgb(18 27 49 / 6%)",
+            "night": "inset 0 1px rgb(255 255 255 / 5%)",
+            "day-hc": "0 1px 2px rgb(18 27 49 / 6%)",
+            "night-hc": "inset 0 1px rgb(255 255 255 / 5%)"
+          }
+        },
+        {
+          "name": "effects/shadow-2",
+          "type": "STRING",
+          "modes": {
+            "day": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "night": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)",
+            "day-hc": "0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%)",
+            "night-hc": "inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%)"
+          }
+        },
+        {
+          "name": "effects/shadow-3",
+          "type": "STRING",
+          "modes": {
+            "day": "0 24px 64px rgb(18 27 49 / 18%)",
+            "night": "0 24px 64px rgb(0 0 0 / 60%)",
+            "day-hc": "0 24px 64px rgb(18 27 49 / 18%)",
+            "night-hc": "0 24px 64px rgb(0 0 0 / 60%)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Role",
+      "variables": [
+        {
+          "name": "surface/page",
+          "type": "COLOR",
+          "description": "Page canvas, never a control",
+          "modes": {
+            "day": "#F8F5F0",
+            "night": "#091023",
+            "day-hc": "#F8F5F0",
+            "night-hc": "#091023"
+          }
+        },
+        {
+          "name": "surface/sunken",
+          "type": "COLOR",
+          "description": "Editable wells",
+          "modes": {
+            "day": "#F0ECE5",
+            "night": "#050A1B",
+            "day-hc": "#F0ECE5",
+            "night-hc": "#050A1B"
+          }
+        },
+        {
+          "name": "surface/raised",
+          "type": "COLOR",
+          "description": "Ordinary paper/card",
+          "modes": {
+            "day": "#FEFCF9",
+            "night": "#11192C",
+            "day-hc": "#FEFCF9",
+            "night-hc": "#11192C"
+          }
+        },
+        {
+          "name": "surface/overlay",
+          "type": "COLOR",
+          "description": "Menus, sheets and notifications",
+          "modes": {
+            "day": "#FFFFFF",
+            "night": "#192135",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#192135"
+          }
+        },
+        {
+          "name": "surface/muted",
+          "type": "COLOR",
+          "description": "Secondary controls and neutral tags",
+          "modes": {
+            "day": "#E9E4DC",
+            "night": "#1E263B",
+            "day-hc": "#E9E4DC",
+            "night-hc": "#1E263B"
+          }
+        },
+        {
+          "name": "surface/muted-hover",
+          "type": "COLOR",
+          "description": "Semantic surface muted-hover role",
+          "modes": {
+            "day": "#E1DCD2",
+            "night": "#273045",
+            "day-hc": "#E1DCD2",
+            "night-hc": "#273045"
+          }
+        },
+        {
+          "name": "border/subtle",
+          "type": "COLOR",
+          "description": "Semantic border subtle role",
+          "modes": {
+            "day": "#DDD8D0",
+            "night": "#262D40",
+            "day-hc": "#DDD8D0",
+            "night-hc": "#262D40"
+          }
+        },
+        {
+          "name": "border/default",
+          "type": "COLOR",
+          "description": "Visible non-text edges, at least 3:1 on adjacent surfaces",
+          "modes": {
+            "day": "#857F77",
+            "night": "#687082",
+            "day-hc": "#625D55",
+            "night-hc": "#8A92A4"
+          }
+        },
+        {
+          "name": "border/strong",
+          "type": "COLOR",
+          "description": "Semantic border strong role",
+          "modes": {
+            "day": "#625D55",
+            "night": "#8A92A4",
+            "day-hc": "#625D55",
+            "night-hc": "#8A92A4"
+          }
+        },
+        {
+          "name": "text/primary",
+          "type": "COLOR",
+          "description": "Primary readable copy",
+          "modes": {
+            "day": "#121B31",
+            "night": "#EEF2FA",
+            "day-hc": "#121B31",
+            "night-hc": "#EEF2FA"
+          }
+        },
+        {
+          "name": "text/secondary",
+          "type": "COLOR",
+          "description": "Secondary readable copy",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#121B31",
+            "night-hc": "#EEF2FA"
+          }
+        },
+        {
+          "name": "text/tertiary",
+          "type": "COLOR",
+          "description": "Placeholder and supporting details",
+          "modes": {
+            "day": "#5B6375",
+            "night": "#8B92A2",
+            "day-hc": "#121B31",
+            "night-hc": "#EEF2FA"
+          }
+        },
+        {
+          "name": "text/disabled",
+          "type": "COLOR",
+          "description": "Clearly unavailable (exempt from text contrast)",
+          "modes": {
+            "day": "#878C99",
+            "night": "#676D7C",
+            "day-hc": "#878C99",
+            "night-hc": "#676D7C"
+          }
+        },
+        {
+          "name": "text/on-action",
+          "type": "COLOR",
+          "description": "Semantic text on-action role",
+          "modes": {
+            "day": "#FFFFFF",
+            "night": "#FFFFFF",
+            "day-hc": "#FFFFFF",
+            "night-hc": "#FFFFFF"
+          }
+        },
+        {
+          "name": "action/bg",
+          "type": "COLOR",
+          "description": "Primary actions only",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#5159D7",
+            "day-hc": "#4246C2",
+            "night-hc": "#5159D7"
+          }
+        },
+        {
+          "name": "action/hover",
+          "type": "COLOR",
+          "description": "Semantic action hover role",
+          "modes": {
+            "day": "#393BAF",
+            "night": "#5862E1",
+            "day-hc": "#393BAF",
+            "night-hc": "#5862E1"
+          }
+        },
+        {
+          "name": "action/pressed",
+          "type": "COLOR",
+          "description": "Semantic action pressed role",
+          "modes": {
+            "day": "#313498",
+            "night": "#4C52D0",
+            "day-hc": "#313498",
+            "night-hc": "#4C52D0"
+          }
+        },
+        {
+          "name": "selection/subtle",
+          "type": "COLOR",
+          "description": "State selection only",
+          "modes": {
+            "day": "#E2E8FF",
+            "night": "#232953",
+            "day-hc": "#E2E8FF",
+            "night-hc": "#232953"
+          }
+        },
+        {
+          "name": "selection/hover",
+          "type": "COLOR",
+          "description": "Semantic selection hover role",
+          "modes": {
+            "day": "#D5DEFF",
+            "night": "#2C3363",
+            "day-hc": "#D5DEFF",
+            "night-hc": "#2C3363"
+          }
+        },
+        {
+          "name": "selection/fg",
+          "type": "COLOR",
+          "description": "Semantic selection fg role",
+          "modes": {
+            "day": "#3738AC",
+            "night": "#B9C6FF",
+            "day-hc": "#3738AC",
+            "night-hc": "#B9C6FF"
+          }
+        },
+        {
+          "name": "focus/ring",
+          "type": "COLOR",
+          "description": "Keyboard focus, non-text contrast",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#B1BFFF",
+            "day-hc": "#4246C2",
+            "night-hc": "#B1BFFF"
+          }
+        },
+        {
+          "name": "link/fg",
+          "type": "COLOR",
+          "description": "Semantic link fg role",
+          "modes": {
+            "day": "#4246C2",
+            "night": "#A9B8FF",
+            "day-hc": "#4246C2",
+            "night-hc": "#A9B8FF"
+          }
+        },
+        {
+          "name": "status/success",
+          "type": "COLOR",
+          "description": "Completed or successful state",
+          "modes": {
+            "day": "#107C40",
+            "night": "#75D78D",
+            "day-hc": "#107C40",
+            "night-hc": "#75D78D"
+          }
+        },
+        {
+          "name": "status/success-subtle",
+          "type": "COLOR",
+          "description": "Semantic status success-subtle role",
+          "modes": {
+            "day": "#E2F6E6",
+            "night": "#112917",
+            "day-hc": "#E2F6E6",
+            "night-hc": "#112917"
+          }
+        },
+        {
+          "name": "status/warning",
+          "type": "COLOR",
+          "description": "Attention required state",
+          "modes": {
+            "day": "#9B610E",
+            "night": "#FFBF67",
+            "day-hc": "#9B610E",
+            "night-hc": "#FFBF67"
+          }
+        },
+        {
+          "name": "status/warning-subtle",
+          "type": "COLOR",
+          "description": "Semantic status warning-subtle role",
+          "modes": {
+            "day": "#FFF0DF",
+            "night": "#301F07",
+            "day-hc": "#FFF0DF",
+            "night-hc": "#301F07"
+          }
+        },
+        {
+          "name": "status/danger",
+          "type": "COLOR",
+          "description": "Destructive or failed state",
+          "modes": {
+            "day": "#9E1D1C",
+            "night": "#FF8579",
+            "day-hc": "#9E1D1C",
+            "night-hc": "#FF8579"
+          }
+        },
+        {
+          "name": "status/danger-subtle",
+          "type": "COLOR",
+          "description": "Semantic status danger-subtle role",
+          "modes": {
+            "day": "#FFE9E5",
+            "night": "#361A17",
+            "day-hc": "#FFE9E5",
+            "night-hc": "#361A17"
+          }
+        },
+        {
+          "name": "status/danger-solid",
+          "type": "COLOR",
+          "description": "Semantic status danger-solid role",
+          "modes": {
+            "day": "#9E1D1C",
+            "night": "#BA2B28",
+            "day-hc": "#9E1D1C",
+            "night-hc": "#BA2B28"
+          }
+        },
+        {
+          "name": "status/danger-hover",
+          "type": "COLOR",
+          "description": "Semantic status danger-hover role",
+          "modes": {
+            "day": "#94020D",
+            "night": "#AE2523",
+            "day-hc": "#94020D",
+            "night-hc": "#AE2523"
+          }
+        },
+        {
+          "name": "subject/analysis",
+          "type": "COLOR",
+          "description": "Semantic subject analysis role",
+          "modes": {
+            "day": "#00789C",
+            "night": "#17A9CB",
+            "day-hc": "#00789C",
+            "night-hc": "#17A9CB"
+          }
+        },
+        {
+          "name": "subject/analysis-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject analysis-subtle role",
+          "modes": {
+            "day": "#D9F4FD",
+            "night": "#082831",
+            "day-hc": "#D9F4FD",
+            "night-hc": "#082831"
+          }
+        },
+        {
+          "name": "subject/topology",
+          "type": "COLOR",
+          "description": "Semantic subject topology role",
+          "modes": {
+            "day": "#009C85",
+            "night": "#52D7C1",
+            "day-hc": "#009C85",
+            "night-hc": "#52D7C1"
+          }
+        },
+        {
+          "name": "subject/topology-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject topology-subtle role",
+          "modes": {
+            "day": "#DAF6EF",
+            "night": "#082A25",
+            "day-hc": "#DAF6EF",
+            "night-hc": "#082A25"
+          }
+        },
+        {
+          "name": "subject/logic",
+          "type": "COLOR",
+          "description": "Semantic subject logic role",
+          "modes": {
+            "day": "#417934",
+            "night": "#74A968",
+            "day-hc": "#417934",
+            "night-hc": "#74A968"
+          }
+        },
+        {
+          "name": "subject/logic-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject logic-subtle role",
+          "modes": {
+            "day": "#E4F4E1",
+            "night": "#192916",
+            "day-hc": "#E4F4E1",
+            "night-hc": "#192916"
+          }
+        },
+        {
+          "name": "subject/number-theory",
+          "type": "COLOR",
+          "description": "Semantic subject number-theory role",
+          "modes": {
+            "day": "#978722",
+            "night": "#CEC06A",
+            "day-hc": "#978722",
+            "night-hc": "#CEC06A"
+          }
+        },
+        {
+          "name": "subject/number-theory-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject number-theory-subtle role",
+          "modes": {
+            "day": "#F3EFD9",
+            "night": "#28240C",
+            "day-hc": "#F3EFD9",
+            "night-hc": "#28240C"
+          }
+        },
+        {
+          "name": "subject/algebra",
+          "type": "COLOR",
+          "description": "Semantic subject algebra role",
+          "modes": {
+            "day": "#9D5300",
+            "night": "#CE8545",
+            "day-hc": "#9D5300",
+            "night-hc": "#CE8545"
+          }
+        },
+        {
+          "name": "subject/algebra-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject algebra-subtle role",
+          "modes": {
+            "day": "#FEEADB",
+            "night": "#321F0F",
+            "day-hc": "#FEEADB",
+            "night-hc": "#321F0F"
+          }
+        },
+        {
+          "name": "subject/combinatorics",
+          "type": "COLOR",
+          "description": "Semantic subject combinatorics role",
+          "modes": {
+            "day": "#C86265",
+            "night": "#FF9D9E",
+            "day-hc": "#C86265",
+            "night-hc": "#FF9D9E"
+          }
+        },
+        {
+          "name": "subject/combinatorics-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject combinatorics-subtle role",
+          "modes": {
+            "day": "#FFE7E6",
+            "night": "#351C1C",
+            "day-hc": "#FFE7E6",
+            "night-hc": "#351C1C"
+          }
+        },
+        {
+          "name": "subject/geometry",
+          "type": "COLOR",
+          "description": "Semantic subject geometry role",
+          "modes": {
+            "day": "#984780",
+            "night": "#C97AAF",
+            "day-hc": "#984780",
+            "night-hc": "#C97AAF"
+          }
+        },
+        {
+          "name": "subject/geometry-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject geometry-subtle role",
+          "modes": {
+            "day": "#FDE7F5",
+            "night": "#311C2A",
+            "day-hc": "#FDE7F5",
+            "night-hc": "#311C2A"
+          }
+        },
+        {
+          "name": "subject/probability",
+          "type": "COLOR",
+          "description": "Semantic subject probability role",
+          "modes": {
+            "day": "#9E6EC0",
+            "night": "#D5A8F8",
+            "day-hc": "#9E6EC0",
+            "night-hc": "#D5A8F8"
+          }
+        },
+        {
+          "name": "subject/probability-subtle",
+          "type": "COLOR",
+          "description": "Semantic subject probability-subtle role",
+          "modes": {
+            "day": "#F5E9FE",
+            "night": "#2A1E33",
+            "day-hc": "#F5E9FE",
+            "night-hc": "#2A1E33"
+          }
+        },
+        {
+          "name": "viz/heat1",
+          "type": "COLOR",
+          "description": "Semantic viz heat1 role",
+          "modes": {
+            "day": "#7E8CAB",
+            "night": "#5560B8",
+            "day-hc": "#7E8CAB",
+            "night-hc": "#5560B8"
+          }
+        },
+        {
+          "name": "viz/heat2",
+          "type": "COLOR",
+          "description": "Semantic viz heat2 role",
+          "modes": {
+            "day": "#516494",
+            "night": "#7C86DD",
+            "day-hc": "#516494",
+            "night-hc": "#7C86DD"
+          }
+        },
+        {
+          "name": "viz/heat3",
+          "type": "COLOR",
+          "description": "Semantic viz heat3 role",
+          "modes": {
+            "day": "#2F4275",
+            "night": "#A9B3F2",
+            "day-hc": "#2F4275",
+            "night-hc": "#A9B3F2"
+          }
+        },
+        {
+          "name": "viz/heat4",
+          "type": "COLOR",
+          "description": "Semantic viz heat4 role",
+          "modes": {
+            "day": "#172448",
+            "night": "#D6DDFF",
+            "day-hc": "#172448",
+            "night-hc": "#D6DDFF"
+          }
+        },
+        {
+          "name": "state/hover",
+          "type": "COLOR",
+          "description": "Pointer state overlay; never a subject or status.",
+          "modes": {
+            "day": "#121B310F",
+            "night": "#FFFFFF0F",
+            "day-hc": "#121B310F",
+            "night-hc": "#FFFFFF0F"
+          }
+        },
+        {
+          "name": "state/pressed",
+          "type": "COLOR",
+          "description": "Pointer state overlay; never a subject or status.",
+          "modes": {
+            "day": "#121B311F",
+            "night": "#FFFFFF1F",
+            "day-hc": "#121B311F",
+            "night-hc": "#FFFFFF1F"
+          }
+        },
+        {
+          "name": "viz/neutral",
+          "type": "COLOR",
+          "description": "Single-series amounts and meters that are not about a subject (never indigo, never a subject colour).",
+          "modes": {
+            "day": "#40495C",
+            "night": "#B1B7C6",
+            "day-hc": "#40495C",
+            "night-hc": "#B1B7C6"
+          }
+        },
+        {
+          "name": "foundation/sans",
+          "type": "fontFamily",
+          "alias": "{foundation.raw.sans}",
+          "description": "Shared sans foundation."
+        },
+        {
+          "name": "foundation/serif",
+          "type": "fontFamily",
+          "alias": "{foundation.raw.serif}",
+          "description": "Shared serif foundation."
+        },
+        {
+          "name": "foundation/glyph",
+          "type": "fontFamily",
+          "alias": "{foundation.raw.glyph}",
+          "description": "Shared glyph foundation."
+        },
+        {
+          "name": "foundation/mono",
+          "type": "fontFamily",
+          "alias": "{foundation.raw.mono}",
+          "description": "Shared mono foundation."
+        },
+        {
+          "name": "foundation/type-caption",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-caption}",
+          "description": "Caption role, 12 px."
+        },
+        {
+          "name": "foundation/type-supporting",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-supporting}",
+          "description": "Supporting role, 14 px."
+        },
+        {
+          "name": "foundation/type-body",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-body}",
+          "description": "Body role, 16 px."
+        },
+        {
+          "name": "foundation/type-numeric-md",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-numeric-md}",
+          "description": "Numeric md role, 28 px."
+        },
+        {
+          "name": "foundation/type-numeric-xl",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-numeric-xl}",
+          "description": "Numeric xl role, 64 px."
+        },
+        {
+          "name": "foundation/leading-caption",
+          "type": "dimension",
+          "alias": "{foundation.raw.leading-caption}",
+          "description": "Line height for Caption."
+        },
+        {
+          "name": "foundation/leading-supporting",
+          "type": "dimension",
+          "alias": "{foundation.raw.leading-supporting}",
+          "description": "Line height for Supporting."
+        },
+        {
+          "name": "foundation/leading-body",
+          "type": "dimension",
+          "alias": "{foundation.raw.leading-body}",
+          "description": "Line height for Body."
+        },
+        {
+          "name": "foundation/leading-lead",
+          "type": "dimension",
+          "alias": "{foundation.raw.leading-lead}",
+          "description": "Line height for Lead."
+        },
+        {
+          "name": "foundation/leading-subhead",
+          "type": "dimension",
+          "alias": "{foundation.raw.leading-subhead}",
+          "description": "Line height for Subhead."
+        },
+        {
+          "name": "foundation/type-display",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-display}",
+          "description": "Shared type display foundation."
+        },
+        {
+          "name": "foundation/type-title",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-title}",
+          "description": "Shared type title foundation."
+        },
+        {
+          "name": "foundation/type-headline",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-headline}",
+          "description": "Shared type headline foundation."
+        },
+        {
+          "name": "foundation/type-subhead",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-subhead}",
+          "description": "Shared type subhead foundation."
+        },
+        {
+          "name": "foundation/type-lead",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-lead}",
+          "description": "Shared type lead foundation."
+        },
+        {
+          "name": "foundation/type-reading",
+          "type": "dimension",
+          "alias": "{foundation.raw.type-reading}",
+          "description": "Shared type reading foundation."
+        },
+        {
+          "name": "foundation/space-1",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-1}",
+          "description": "Shared space 1 foundation."
+        },
+        {
+          "name": "foundation/space-2",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-2}",
+          "description": "Shared space 2 foundation."
+        },
+        {
+          "name": "foundation/space-3",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-3}",
+          "description": "Shared space 3 foundation."
+        },
+        {
+          "name": "foundation/space-4",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-4}",
+          "description": "Shared space 4 foundation."
+        },
+        {
+          "name": "foundation/space-5",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-5}",
+          "description": "Shared space 5 foundation."
+        },
+        {
+          "name": "foundation/space-6",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-6}",
+          "description": "Shared space 6 foundation."
+        },
+        {
+          "name": "foundation/space-8",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-8}",
+          "description": "Shared space 8 foundation."
+        },
+        {
+          "name": "foundation/space-10",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-10}",
+          "description": "Shared space 10 foundation."
+        },
+        {
+          "name": "foundation/space-12",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-12}",
+          "description": "Shared space 12 foundation."
+        },
+        {
+          "name": "foundation/space-14",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-14}",
+          "description": "Shared space 14 foundation."
+        },
+        {
+          "name": "foundation/space-16",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-16}",
+          "description": "Shared space 16 foundation."
+        },
+        {
+          "name": "foundation/space-20",
+          "type": "dimension",
+          "alias": "{foundation.raw.space-20}",
+          "description": "Shared space 20 foundation."
+        },
+        {
+          "name": "foundation/radius-1",
+          "type": "dimension",
+          "alias": "{foundation.raw.radius-1}",
+          "description": "Shared radius 1 foundation."
+        },
+        {
+          "name": "foundation/radius-2",
+          "type": "dimension",
+          "alias": "{foundation.raw.radius-2}",
+          "description": "Shared radius 2 foundation."
+        },
+        {
+          "name": "foundation/radius-3",
+          "type": "dimension",
+          "alias": "{foundation.raw.radius-3}",
+          "description": "Shared radius 3 foundation."
+        },
+        {
+          "name": "foundation/radius-4",
+          "type": "dimension",
+          "alias": "{foundation.raw.radius-4}",
+          "description": "Shared radius 4 foundation."
+        },
+        {
+          "name": "foundation/radius-xs",
+          "type": "dimension",
+          "alias": "{foundation.raw.radius-xs}",
+          "description": "Shared radius xs foundation."
+        },
+        {
+          "name": "foundation/round",
+          "type": "dimension",
+          "alias": "{foundation.raw.round}",
+          "description": "Shared round foundation."
+        },
+        {
+          "name": "foundation/touch",
+          "type": "dimension",
+          "alias": "{foundation.raw.touch}",
+          "description": "Shared touch foundation."
+        },
+        {
+          "name": "foundation/button",
+          "type": "dimension",
+          "alias": "{foundation.raw.button}",
+          "description": "Shared button foundation."
+        },
+        {
+          "name": "foundation/small",
+          "type": "dimension",
+          "alias": "{foundation.raw.small}",
+          "description": "Shared small foundation."
+        },
+        {
+          "name": "foundation/field",
+          "type": "dimension",
+          "alias": "{foundation.raw.field}",
+          "description": "Shared field foundation."
+        },
+        {
+          "name": "foundation/chip",
+          "type": "dimension",
+          "alias": "{foundation.raw.chip}",
+          "description": "Shared chip foundation."
+        },
+        {
+          "name": "foundation/segment",
+          "type": "dimension",
+          "alias": "{foundation.raw.segment}",
+          "description": "Shared segment foundation."
+        },
+        {
+          "name": "foundation/row",
+          "type": "dimension",
+          "alias": "{foundation.raw.row}",
+          "description": "Shared row foundation."
+        },
+        {
+          "name": "foundation/check",
+          "type": "dimension",
+          "alias": "{foundation.raw.check}",
+          "description": "Shared check foundation."
+        },
+        {
+          "name": "foundation/switch-width",
+          "type": "dimension",
+          "alias": "{foundation.raw.switch-width}",
+          "description": "Shared switch width foundation."
+        },
+        {
+          "name": "foundation/switch-height",
+          "type": "dimension",
+          "alias": "{foundation.raw.switch-height}",
+          "description": "Shared switch height foundation."
+        },
+        {
+          "name": "foundation/meter",
+          "type": "dimension",
+          "alias": "{foundation.raw.meter}",
+          "description": "Shared meter foundation."
+        },
+        {
+          "name": "foundation/hero-alpha",
+          "type": "string",
+          "alias": "{foundation.raw.hero-alpha}",
+          "description": "Shared hero alpha foundation."
+        },
+        {
+          "name": "foundation/menu-layer",
+          "type": "number",
+          "alias": "{foundation.raw.menu-layer}",
+          "description": "Shared menu layer foundation."
+        },
+        {
+          "name": "foundation/toast-layer",
+          "type": "number",
+          "alias": "{foundation.raw.toast-layer}",
+          "description": "Shared toast layer foundation."
+        },
+        {
+          "name": "foundation/hairline",
+          "type": "dimension",
+          "alias": "{foundation.raw.hairline}",
+          "description": "Shared hairline foundation."
+        },
+        {
+          "name": "foundation/ring",
+          "type": "dimension",
+          "alias": "{foundation.raw.ring}",
+          "description": "Shared ring foundation."
+        },
+        {
+          "name": "foundation/focus-width",
+          "type": "dimension",
+          "alias": "{foundation.raw.focus-width}",
+          "description": "Shared focus width foundation."
+        },
+        {
+          "name": "foundation/menu-width",
+          "type": "dimension",
+          "alias": "{foundation.raw.menu-width}",
+          "description": "Shared menu width foundation."
+        },
+        {
+          "name": "foundation/dialog-min",
+          "type": "dimension",
+          "alias": "{foundation.raw.dialog-min}",
+          "description": "Shared dialog min foundation."
+        },
+        {
+          "name": "foundation/dialog-max",
+          "type": "dimension",
+          "alias": "{foundation.raw.dialog-max}",
+          "description": "Shared dialog max foundation."
+        },
+        {
+          "name": "foundation/content",
+          "type": "dimension",
+          "alias": "{foundation.raw.content}",
+          "description": "Shared content foundation."
+        },
+        {
+          "name": "foundation/sheet-max",
+          "type": "string",
+          "alias": "{foundation.raw.sheet-max}",
+          "description": "Shared sheet max foundation."
+        },
+        {
+          "name": "foundation/reading",
+          "type": "string",
+          "alias": "{foundation.raw.reading}",
+          "description": "Shared reading foundation."
+        },
+        {
+          "name": "foundation/regular",
+          "type": "number",
+          "alias": "{foundation.raw.regular}",
+          "description": "Shared regular foundation."
+        },
+        {
+          "name": "foundation/medium",
+          "type": "number",
+          "alias": "{foundation.raw.medium}",
+          "description": "Shared medium foundation."
+        },
+        {
+          "name": "foundation/semibold",
+          "type": "number",
+          "alias": "{foundation.raw.semibold}",
+          "description": "Shared semibold foundation."
+        },
+        {
+          "name": "foundation/display-tracking",
+          "type": "string",
+          "alias": "{foundation.raw.display-tracking}",
+          "description": "Shared display tracking foundation."
+        },
+        {
+          "name": "foundation/eyebrow-tracking",
+          "type": "string",
+          "alias": "{foundation.raw.eyebrow-tracking}",
+          "description": "Shared eyebrow tracking foundation."
+        },
+        {
+          "name": "foundation/instant",
+          "type": "duration",
+          "alias": "{foundation.raw.instant}",
+          "description": "Shared instant foundation."
+        },
+        {
+          "name": "foundation/fast",
+          "type": "duration",
+          "alias": "{foundation.raw.fast}",
+          "description": "Shared fast foundation."
+        },
+        {
+          "name": "foundation/base",
+          "type": "duration",
+          "alias": "{foundation.raw.base}",
+          "description": "Shared base foundation."
+        },
+        {
+          "name": "foundation/slow",
+          "type": "duration",
+          "alias": "{foundation.raw.slow}",
+          "description": "Shared slow foundation."
+        },
+        {
+          "name": "foundation/scenic",
+          "type": "duration",
+          "alias": "{foundation.raw.scenic}",
+          "description": "Shared scenic foundation."
+        },
+        {
+          "name": "foundation/ease-standard",
+          "type": "string",
+          "alias": "{foundation.raw.ease-standard}",
+          "description": "Shared ease standard foundation."
+        },
+        {
+          "name": "foundation/ease-out",
+          "type": "string",
+          "alias": "{foundation.raw.ease-out}",
+          "description": "Shared ease out foundation."
+        },
+        {
+          "name": "foundation/ease-in",
+          "type": "string",
+          "alias": "{foundation.raw.ease-in}",
+          "description": "Shared ease in foundation."
+        },
+        {
+          "name": "foundation/snappy-stiffness",
+          "type": "number",
+          "alias": "{foundation.raw.snappy-stiffness}",
+          "description": "Shared snappy stiffness foundation."
+        },
+        {
+          "name": "foundation/snappy-damping",
+          "type": "number",
+          "alias": "{foundation.raw.snappy-damping}",
+          "description": "Shared snappy damping foundation."
+        },
+        {
+          "name": "foundation/gentle-stiffness",
+          "type": "number",
+          "alias": "{foundation.raw.gentle-stiffness}",
+          "description": "Shared gentle stiffness foundation."
+        },
+        {
+          "name": "foundation/gentle-damping",
+          "type": "number",
+          "alias": "{foundation.raw.gentle-damping}",
+          "description": "Shared gentle damping foundation."
+        },
+        {
+          "name": "foundation/lively-stiffness",
+          "type": "number",
+          "alias": "{foundation.raw.lively-stiffness}",
+          "description": "Shared lively stiffness foundation."
+        },
+        {
+          "name": "foundation/lively-damping",
+          "type": "number",
+          "alias": "{foundation.raw.lively-damping}",
+          "description": "Shared lively damping foundation."
+        },
+        {
+          "name": "foundation/skeleton",
+          "type": "duration",
+          "alias": "{foundation.raw.skeleton}",
+          "description": "Shared skeleton foundation."
+        },
+        {
+          "name": "foundation/skeleton-delay",
+          "type": "duration",
+          "alias": "{foundation.raw.skeleton-delay}",
+          "description": "Shared skeleton delay foundation."
+        },
+        {
+          "name": "foundation/pressed",
+          "type": "number",
+          "alias": "{foundation.raw.pressed}",
+          "description": "Shared pressed foundation."
+        },
+        {
+          "name": "foundation/disabled",
+          "type": "number",
+          "alias": "{foundation.raw.disabled}",
+          "description": "Shared disabled foundation."
+        },
+        {
+          "name": "foundation/focus-gap",
+          "type": "dimension",
+          "alias": "{foundation.raw.focus-gap}",
+          "description": "Shared focus gap foundation."
+        },
+        {
+          "name": "foundation/helper-gap",
+          "type": "dimension",
+          "alias": "{foundation.raw.helper-gap}",
+          "description": "Shared helper gap foundation."
+        },
+        {
+          "name": "foundation/icon-stroke",
+          "type": "dimension",
+          "alias": "{foundation.raw.icon-stroke}",
+          "description": "Shared icon stroke foundation."
+        },
+        {
+          "name": "foundation/mixed-width",
+          "type": "dimension",
+          "alias": "{foundation.raw.mixed-width}",
+          "description": "Shared mixed width foundation."
+        },
+        {
+          "name": "foundation/switch-thumb",
+          "type": "dimension",
+          "alias": "{foundation.raw.switch-thumb}",
+          "description": "Shared switch thumb foundation."
+        },
+        {
+          "name": "foundation/emblem-hero",
+          "type": "dimension",
+          "alias": "{foundation.raw.emblem-hero}",
+          "description": "Shared emblem hero foundation."
+        },
+        {
+          "name": "foundation/state-column",
+          "type": "dimension",
+          "alias": "{foundation.raw.state-column}",
+          "description": "Shared state column foundation."
+        },
+        {
+          "name": "foundation/principle-column",
+          "type": "dimension",
+          "alias": "{foundation.raw.principle-column}",
+          "description": "Shared principle column foundation."
+        },
+        {
+          "name": "foundation/page-margin",
+          "type": "dimension",
+          "alias": "{foundation.raw.page-margin}",
+          "description": "Shared page margin foundation."
+        },
+        {
+          "name": "foundation/section-gap",
+          "type": "dimension",
+          "alias": "{foundation.raw.section-gap}",
+          "description": "Shared section gap foundation."
+        },
+        {
+          "name": "foundation/numeric-lg",
+          "type": "dimension",
+          "alias": "{foundation.raw.numeric-lg}",
+          "description": "Shared numeric lg foundation."
+        },
+        {
+          "name": "foundation/star-height",
+          "type": "dimension",
+          "alias": "{foundation.raw.star-height}",
+          "description": "Shared star height foundation."
+        },
+        {
+          "name": "foundation/long",
+          "type": "duration",
+          "alias": "{foundation.raw.long}",
+          "description": "Shared long foundation."
+        },
+        {
+          "name": "foundation/completion",
+          "type": "duration",
+          "alias": "{foundation.raw.completion}",
+          "description": "Shared completion foundation."
+        },
+        {
+          "name": "foundation/pulse",
+          "type": "duration",
+          "alias": "{foundation.raw.pulse}",
+          "description": "Shared pulse foundation."
+        },
+        {
+          "name": "foundation/toast-max",
+          "type": "dimension",
+          "alias": "{foundation.raw.toast-max}",
+          "description": "Shared toast max foundation."
+        },
+        {
+          "name": "foundation/grid-line",
+          "type": "dimension",
+          "alias": "{foundation.raw.grid-line}",
+          "description": "Shared grid line foundation."
+        },
+        {
+          "name": "foundation/texture-star",
+          "type": "dimension",
+          "alias": "{foundation.raw.texture-star}",
+          "description": "Shared texture star foundation."
+        },
+        {
+          "name": "effects/backdrop",
+          "type": "STRING",
+          "alias": "{foundation.effects.backdrop}"
+        },
+        {
+          "name": "effects/shadow-1",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-1}"
+        },
+        {
+          "name": "effects/shadow-2",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-2}"
+        },
+        {
+          "name": "effects/shadow-3",
+          "type": "STRING",
+          "alias": "{foundation.effects.shadow-3}"
+        }
+      ]
+    },
+    {
+      "name": "Component",
+      "variables": []
+    }
+  ]
+}
