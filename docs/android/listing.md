@@ -1,5 +1,7 @@
 # Lemma — Google Play listing kit (AND-4)
 
+> N123 (12 Nov 2026): there is no Play Console; the app is installed from GitHub Releases (`android/README.md`). This kit is kept for a future Play listing.
+
 **Track:** Internal testing (one owner). Do not publish to production without the owner's separate decision. Package: `io.github.mymayankyadav.lemma`.
 
 ## Copy for Play Console
@@ -76,8 +78,6 @@ CI artifact still shows the `Re-check 1` label wrapping at 360 CSS pixels.
 - [ ] Confirm the final Data safety form against deployed features.
 - [ ] Upload the first signed AAB manually to Internal testing and add the owner's tester account.
 - [ ] Verify the origin-root Digital Asset Links and both signing fingerprints.
-- [ ] N123: add `io.github.mymayankyadav.lemma://auth/callback` to Supabase Redirect URLs before the Capacitor app reaches testers (sign-in fails without it).
-- [ ] N123: confirm the upload key is the TWA's before the first Capacitor upload (same package, update in place).
 - [ ] Approve any future public listing/closed-test requirement separately.
 
 Source: [Android spec §5–6](../spec/android.md#5-store-listing-and-privacy-and-4).

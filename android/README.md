@@ -14,13 +14,13 @@ npm ci
 npm run build:android            # icons, vite build --mode android, cap sync
 cd android
 ./gradlew testDebugUnitTest lintDebug assembleDebug   # Java tests, lint, debug APK
-./gradlew bundleRelease                               # release AAB
+./gradlew assembleRelease                             # release APK (signed when the key variables are set)
 ```
 
-Release signing reads `ANDROID_KEYSTORE_FILE`, `ANDROID_UPLOAD_KEYSTORE_PASSWORD`, `ANDROID_UPLOAD_KEY_ALIAS` and
-`ANDROID_UPLOAD_KEY_PASSWORD`; without them the AAB is unsigned and must not be uploaded. CI (`.github/workflows/android.yml`)
-does all of the above and keeps the AAB, APK and lint report as artifacts. Never commit keystores, passwords,
-`local.properties` or `google-services.json` (there is no Firebase in this app).
+There is no Play Console. CI (`.github/workflows/android.yml`) checks every pull request and, on main, builds a
+release APK signed with the Owner's key and attaches it to a GitHub Release (`Lemma.apk`), the same model as the
+Carrel app. Install it on the phone directly. Every update must be signed with the same key, so keep a backup of it.
+Never commit the keystore, its passwords or `local.properties`.
 
 ## Layout
 
@@ -33,9 +33,13 @@ does all of the above and keeps the AAB, APK and lint report as artifacts. Never
 - `scripts/check-shell.mjs` — package, start path, App Links, sign-in callback and permission invariants.
 - Icons are generated from the Notebook mark by `scripts/android-icons.mjs`; edit the mark, not the PNGs.
 
-## Owner setup
+## Owner setup (once)
 
 1. Supabase → Authentication → URL configuration → Redirect URLs: add `io.github.mymayankyadav.lemma://auth/callback`.
-2. Publish `docs/android/assetlinks.template.json`, with the Play App Signing SHA-256, at
-   `https://mymayankyadav.github.io/.well-known/assetlinks.json` (the separate user-site repository, not under /lemma/).
-3. Add the four upload-key secrets above (keystore as `ANDROID_UPLOAD_KEYSTORE_BASE64`); confirm it is the TWA's upload key.
+2. Make a signing key and keep a backup of the file and both passwords (losing it means uninstalling to update):
+   `keytool -genkeypair -v -keystore lemma-release.jks -alias lemma -keyalg RSA -keysize 4096 -validity 10000`
+3. Repository secrets: `ANDROID_KEYSTORE_BASE64` (`base64 -w0 lemma-release.jks`), `ANDROID_KEYSTORE_PASSWORD`,
+   `ANDROID_KEY_ALIAS` (`lemma`), `ANDROID_KEY_PASSWORD`.
+4. Optional: `assetlinks.json` at `https://mymayankyadav.github.io/.well-known/` (from `docs/android/assetlinks.template.json`,
+   with this key's SHA-256) makes Lemma web links tapped in other apps open the app. Without it they open in the browser;
+   nothing in the app depends on it.
