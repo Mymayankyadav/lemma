@@ -30,6 +30,11 @@ Lemma is an independent study organiser. It is not affiliated with Claude, ChatG
 | App activity | Yes | No | Projects, plans, checkpoints, sessions, reviews, progress, tutor notes and optional reminder preferences | HTTPS in transit; delete on request |
 | Files | Yes, when uploaded | No | Uploaded PDFs and their extracted page text for the owner's study projects | HTTPS in transit; delete on request |
 
+| Calendar events | **Not collected** (processed on device only, opt-in) | No | Writes study blocks to a local "Lemma" calendar and reads busy times from calendars the user chooses, on the phone | Never uploaded; removed when sync is turned off or on sign-out |
+| Audio | **Not collected** | No | Voice capture uses the system speech recogniser; the app receives only text | — |
+
+N123 (Capacitor app): there is no push service, advertising ID, device token or analytics SDK. The app stores an encrypted copy of the short-lived session token on the device for lock-screen timer actions; it is not "collected" beyond the account data above. Permissions: notifications, exact alarms ("Alarms & reminders", user-granted), boot completed, vibrate, Do Not Disturb access (Study mode, opt-in), calendar (opt-in). No camera, location, contacts or microphone permission.
+
 Supabase is the app's storage/authentication service provider, hosted in **ap-south-1 (Mumbai)**. No ads, analytics SDK or data brokerage. The owner should verify these answers against the final shipped features, especially notifications and any optional integrations, before submitting the Play form. "Not shared" follows the approved app specification's processor distinction; Play Console may require its own processing disclosure.
 
 **Privacy policy URL:** `https://mymayankyadav.github.io/lemma/privacy.html`
@@ -71,6 +76,8 @@ CI artifact still shows the `Re-check 1` label wrapping at 360 CSS pixels.
 - [ ] Confirm the final Data safety form against deployed features.
 - [ ] Upload the first signed AAB manually to Internal testing and add the owner's tester account.
 - [ ] Verify the origin-root Digital Asset Links and both signing fingerprints.
+- [ ] N123: add `io.github.mymayankyadav.lemma://auth/callback` to Supabase Redirect URLs before the Capacitor app reaches testers (sign-in fails without it).
+- [ ] N123: confirm the upload key is the TWA's before the first Capacitor upload (same package, update in place).
 - [ ] Approve any future public listing/closed-test requirement separately.
 
 Source: [Android spec §5–6](../spec/android.md#5-store-listing-and-privacy-and-4).

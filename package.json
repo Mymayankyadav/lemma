@@ -14,9 +14,16 @@
     "check": "npm run typecheck && npm run test && npm run build",
     "format": "prettier --write .",
     "prebuild": "node scripts/generate-icons.mjs",
-    "postbuild": "node scripts/check-pwa.mjs"
+    "postbuild": "node scripts/check-pwa.mjs",
+    "build:android": "node scripts/generate-icons.mjs && node scripts/android-icons.mjs && tsc -b && vite build --mode android --outDir dist-android/lemma --emptyOutDir && node scripts/android-web.mjs && cap sync android"
   },
   "dependencies": {
+    "@capacitor/android": "8.6.0",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.6.0",
+    "@capacitor/haptics": "8.0.2",
+    "@capacitor/splash-screen": "8.0.2",
     "@supabase/supabase-js": "2.118.0",
     "@tailwindcss/vite": "4.3.3",
     "@tanstack/react-query": "5.105.0",
@@ -40,6 +47,7 @@
     "zustand": "5.0.16"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.6.0",
     "@playwright/test": "1.63.0",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

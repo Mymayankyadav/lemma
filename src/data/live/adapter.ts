@@ -196,6 +196,12 @@ export class LiveAdapter implements LemmaApi {
   const db=liveClient()
   if (typeof window === 'undefined') throw new LemmaError('auth','Sign-in requires a browser')
   sessionStorage.setItem('lemma:oauth-return',window.location.hash)
+  // N123: the Android app signs in through a Custom Tab and its own callback scheme (Google blocks WebView sign-in).
+  // (Inline rather than importing src/platform, so this lazy chunk does not depend on the app's entry chunk.)
+  if((window as unknown as {Capacitor?:{isNativePlatform?:()=>boolean}}).Capacitor?.isNativePlatform?.()===true){
+   try{await (await import('../../platform/auth')).nativeSignIn(db)}catch(error){fail(error as {message:string})}
+   return
+  }
   const redirectTo=window.location.origin+window.location.pathname
   const {error}=await db.auth.signInWithOAuth({provider:'google',options:{redirectTo}})
   if(error) fail(error)

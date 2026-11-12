@@ -1,2 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><color name="paper">#13171D</color><color name="paper_night">#13171D</color><color name="ink">#E8EDF4</color></resources>
+<resources>
+    <color name="lemma_paper">#091023</color>
+    <color name="lemma_ink">#5159D7</color>
+</resources>

@@ -1,5 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N123 Lemma for Android: the Capacitor app (Owner task, one PR)
+
+Owner task: "Start working on Android app complete the taskd"
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-android
+Owner decisions (12 Nov 2026, on `05_ANDROID_APP_PLAN.md` from the release and assets plan): D10 yes (Capacitor replaces the TWA, same package); D11 Capacitor core and official plugins only (no Firebase, ML Kit or Glance); D12 no server changes and no Firebase service account; D13 Study mode and device calendar built, opt-in, off by default; one Owner `rules:` PR with the Android CI job.
+Done = phases N0–N7 of `docs/android/PLAN.md` within those decisions, as recorded phase by phase in `docs/current/N123.md` (each part built, deferred by a decision, or waiting for the Owner's device checks); the app builds in CI (lint, Java unit tests, debug APK, release AAB).
+Tests: `tests/unit/android/platform.test.ts`, `tests/unit/android/android-shell.test.ts` (replaces the TWA shell test with the same invariants on the Capacitor shell), the Java unit tests in `android/app/src/test/`, existing suites unchanged.
+Scope: `android/**`, `src/platform/**`, small hooks in existing screens (Capture, New path, Focus, Calendar suggestions, Settings, Round complete, haptics, sign-in), `capacitor.config.json`, `vite.config.ts` android mode, `scripts/android-*.mjs`, `.github/workflows/android.yml`, docs, `public/privacy.html`.
+Not: `supabase/**` (no migration, no FCM transport, no widget RPC); new web-push behaviour; widgets, document scanner, WorkManager, in-app updates or review (dependencies not approved); flag defaults.
+
 ## N122 Lemma v7 Constellation (Owner task, one PR)
 
 Owner task: "Implement this plan on lemma repo. It will pushed as just one pr under owner setup. Some parts are tricky and some parts are just basic labour. So what we do for each part we decide the model and effort level and once the part is complete you put in chat the model name and effort level."

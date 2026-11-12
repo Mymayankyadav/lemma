@@ -1,2 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><color name="paper">#FAFAF6</color><color name="paper_night">#13171D</color><color name="ink">#1B2A41</color></resources>
+<resources>
+    <!-- v7 Day palette (src/ui/v7/tokens.css); values-night holds the Night page. -->
+    <color name="lemma_paper">#F8F5F0</color>
+    <color name="lemma_ink">#4246C2</color>
+    <color name="colorPrimary">#4246C2</color>
+    <color name="colorPrimaryDark">#121B31</color>
+    <color name="colorAccent">#4246C2</color>
+</resources>

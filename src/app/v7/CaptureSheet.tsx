@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {Clock3,Layers,CheckSquare,MessageSquareText,X} from 'lucide-react';
+import {Clock3,Layers,CheckSquare,MessageSquareText,Mic,X} from 'lucide-react';
 import {getApi} from '../../data';
 import {useHome,useSettings} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
@@ -11,6 +11,8 @@ import {Button,Segmented,Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import {useActiveFocus} from './focus';
 import {addLabel,captureKinds,defaultStart,kindLabel,parseCapture,type CaptureKind} from './captureModel';
+import {takeCaptureText} from '../../platform/share';
+import {useNativeVoice} from '../../platform/voice';
 
 const icons={task:CheckSquare,block:Clock3,card:Layers,thought:MessageSquareText} as const;
 /** Local date and time in a zone to an instant: midnight of that civil day plus the elapsed minutes. */
@@ -22,7 +24,7 @@ export function instantAt(date:string,time:string,zone:string):string{
 export default function CaptureSheet({open,onClose,initialKind=null,picker=false}:{open:boolean;onClose:()=>void;initialKind?:CaptureKind|null;picker?:boolean}){
  const home=useHome(),settings=useSettings(),{entry}=useActiveFocus(),navigate=useNavigate(),notify=useToast();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
- const [text,setText]=useState(''),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
+ const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
  const paths=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived').map(project=>({id:project.id,slug:project.slug,title:project.title})),[home.data]);
  const parse=useMemo(()=>parseCapture(text,{now:new Date(),zone,paths,session:!!entry},ignored,chosen),[text,zone,paths,entry,ignored,chosen]);
@@ -70,6 +72,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   <textarea data-v7-autofocus="true" className="v7-capture-field" rows={3} maxLength={500} aria-label="What do you want to add?" placeholder="What do you want to add?"
    value={text} onChange={event=>{setText(event.target.value);}}
    onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void save();}}}/>
+  {voice.available&&<Button small variant="ghost" onClick={()=>{void voice.listen().then(spoken=>{if(spoken)setText(previous=>(previous.trim()?previous.trim()+' ':'')+spoken);}).catch(()=>setError('Voice input is not available right now.'));}}><Mic aria-hidden="true"/>Speak</Button>}
   {!text&&<p className="v7-capture-hint">Try: Rudin ch 4 tomorrow 4pm 90m #real</p>}
   {parse.tokens.length>0&&<ul className="v7-capture-tokens" aria-label="Recognised">{parse.tokens.map(token=><li key={token.id}>
    <button type="button" aria-label={'Remove '+token.label} onClick={()=>setIgnored(new Set([...ignored,token.id]))}><span>{token.label}</span><X aria-hidden="true"/></button></li>)}</ul>}

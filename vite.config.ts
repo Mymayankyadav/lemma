@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {defineConfig} from 'vite';
+import {defineConfig,loadEnv} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
@@ -14,13 +14,18 @@ const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, all
 // The build's own flags decide (production builds ignore overrides, so they follow FLAG_DEFAULTS).
 const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#F8F5F0' : '#13171D';
 
-export default defineConfig({
+// `vite build --mode android` bundles the same app for the Capacitor shell (N123): Capacitor serves the files from
+// the APK, so there is no service worker, no web push worker and no PWA manifest (android/ supplies all three natively).
+// It is a production build: it reads the same public Supabase settings as the website (.env.production).
+export default defineConfig(({mode})=>{const android=mode==='android';return {
  base:'/lemma/',
+ ...(android?{define:Object.fromEntries(Object.entries(loadEnv('production',process.cwd(),'VITE_'))
+  .filter(([key])=>!(key in process.env)).map(([key,value])=>['import.meta.env.'+key,JSON.stringify(value)]))}:{}),
  plugins:[
   react(),tailwindcss(),
   // URL-only overrides require a distinct SW script URL: query params on the page
   // are not available to the service worker when it first evaluates.
-  ...(allowOverrides ? [{
+  ...(allowOverrides&&!android ? [{
    name: 'lemma-push-query-registration',
    transformIndexHtml() {
     return [{tag:'script',attrs:{src:'/lemma/lemma-push-query.js',defer:true},injectTo:'head' as const}];
@@ -30,7 +35,7 @@ export default defineConfig({
      source:readFileSync(new URL('./src/lib/lemma-push-query.js',import.meta.url),'utf8')});
    },
   }] : []),
-  ...(pushEnabled ? [{
+  ...(pushEnabled&&!android ? [{
    name: 'lemma-push-worker-asset',
    generateBundle() {
     this.emitFile({type:'asset',fileName:'lemma-push-worker.js',
@@ -38,7 +43,9 @@ export default defineConfig({
       readFileSync(new URL('./src/lib/lemma-push-worker.js', import.meta.url),'utf8')});
    },
   }] : []),
-  VitePWA({
+  // PwaStatus never registers a worker in the app (MODE 'android'); this stub only lets its lazy import resolve.
+  ...(android?[{name:'lemma-android-no-pwa',resolveId:(id:string)=>id==='virtual:pwa-register'?'\0lemma-no-pwa':null,
+   load:(id:string)=>id==='\0lemma-no-pwa'?'export function registerSW(){return ()=>Promise.resolve();}':null}]:[VitePWA({
    injectRegister:false,
    registerType:'prompt',
    includeAssets:['icons/lemma-192.png','icons/lemma-512.png','icons/lemma-maskable-512.png','icons/apple-touch-icon.png','icons/favicon.svg','icons/favicon-32.png','icons/favicon.ico','icons/shortcut-review.png','icons/shortcut-approve.png','icons/shortcut-atlas.png'],
@@ -89,6 +96,6 @@ export default defineConfig({
        expiration:{maxEntries:30,maxAgeSeconds:60*60*24*365}}},
     ],
    },
-  }),
+  })]),
  ],
-});
+};});

@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {Check,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
 import type {SettingsPatch} from '../../../data/api';
@@ -9,6 +9,11 @@ import {Button,Field,Sheet,Slider,Stepper,Switch} from '../../../ui/v7/component
 import {formatDuration} from '../../../lib/format';
 import {validateFocusValues,validateReviewBudgetValues} from '../v6/Focus';
 import {validatePlanningValues} from '../v6/Planning';
+import {isNative} from '../../../platform/native';
+import {requestNotificationPermission} from '../../../platform/permissions';
+// N123: phone-only rows load only inside the Android app.
+const PhoneReminders=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneReminders})));
+const PhonePlanning=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhonePlanning})));
 
 /**
  * Release plan R1 · F03: Settings as grouped lists. A row shows its label and current value with a chevron, or an inline
@@ -160,6 +165,7 @@ export function PlanningLists({settings}:{settings:Settings}){
    <ValueRow label="Week starts on" value={weekdays[settings.weekStart??1]} onOpen={()=>editor.setOpen({kind:'pick',title:'Week starts on',value:settings.weekStart??1,options:weekdays.map((label,value)=>({value,label})),onPick:((value:number)=>{void save({weekStart:value},{weekStart:settings.weekStart??1});}) as (value:never)=>void})}/>
    <ValueRow label="Time display" value={(settings.clock24h??true)?'24-hour':'12-hour'} onOpen={()=>editor.setOpen({kind:'pick',title:'Time display',value:(settings.clock24h??true)?'24':'12',options:[{value:'24',label:'24-hour',hint:'17:30'},{value:'12',label:'12-hour',hint:'5:30 pm'}],onPick:((value:string)=>{void save({clock24h:value==='24'},{clock24h:settings.clock24h??true});}) as (value:never)=>void})}/>
   </Group>
+  {isNative()&&<Suspense fallback={null}><PhonePlanning/></Suspense>}
   <Group title="More">
    <ValueRow label="Advanced" value="" hint="Gaps between blocks and the longest stretch" onOpen={()=>setAdvanced(true)}/>
   </Group>
@@ -183,7 +189,7 @@ export function ReminderLists({settings}:{settings:Settings}){
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};
  return <div className="v7-settings-body">
   <Group title="Reminders" note={'Times are in '+(settings.timeZone?settings.timeZone.split('/').pop()!.replace(/_/g,' ')+' time':'your device’s time zone')+'.'}>
-   <SwitchRow label="Reminders" checked={value.enabled===true} disabled={busy} onChange={enabled=>put({enabled})}/>
+   <SwitchRow label="Reminders" checked={value.enabled===true} disabled={busy} onChange={enabled=>{put({enabled});if(enabled)void requestNotificationPermission();}}/>
    <ValueRow label="Schedule" value={scheduleWord[mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Schedule',value:mode,options:(Object.keys(scheduleWord) as (keyof typeof scheduleWord)[]).map(key=>({value:key,label:scheduleWord[key]})),onPick:((next:NotifyPrefs['mode'])=>put({mode:next})) as (value:never)=>void})}/>
    <ValueRow label="Preferred study time" value={value.studyTime??'09:00'} onOpen={()=>editor.setOpen({kind:'time',title:'Preferred study time',value:value.studyTime??'09:00',onSave:studyTime=>put({studyTime})})}/>
    <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n===1?'reminder':'reminders',onSave:maxPerDay=>put({maxPerDay})})}/>
@@ -193,6 +199,7 @@ export function ReminderLists({settings}:{settings:Settings}){
    <SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>
    <ValueRow label="When cards due reach" value={(value.dueThreshold??10)+' cards'} onOpen={()=>editor.setOpen({kind:'pick',title:'When cards due reach',value:value.dueThreshold??10,options:[1,10,25,50].map(n=>({value:n,label:n+(n===1?' card':' cards')})),onPick:((dueThreshold:1|10|25|50)=>put({dueThreshold})) as (value:never)=>void})}/>
   </Group>
+  {isNative()&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
   <Group title="Quiet hours">
    <ValueRow label="Starts" value={quiet.start} onOpen={()=>editor.setOpen({kind:'time',title:'Quiet hours start',value:quiet.start,onSave:start=>put({quiet:{start,end:quiet.end}})})}/>
    <ValueRow label="Ends" value={quiet.end} onOpen={()=>editor.setOpen({kind:'time',title:'Quiet hours end',value:quiet.end,onSave:end=>put({quiet:{start:quiet.start,end}})})}/>

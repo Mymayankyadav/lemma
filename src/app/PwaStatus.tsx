@@ -6,7 +6,8 @@ import {offlineReadyNotice} from './pwa-notice';
 export default function PwaStatus(){
  const notify=useToast();
  useEffect(()=>{
-  if(!import.meta.env.PROD || !('serviceWorker' in navigator))return;
+  // The Android app (N123) is served from the APK and updated through Play, so it has no service worker.
+  if(!import.meta.env.PROD || import.meta.env.MODE==='android' || !('serviceWorker' in navigator))return;
   // FIX #657: PWA registration is not required to paint the first goal.
   // Keep its virtual module out of the cold Today/Atlas entry chunk, then
   // register immediately after mount. Cancellation avoids a stale registration
