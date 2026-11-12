@@ -48,20 +48,20 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **V03** One number, two values: practice "0 of 1" vs "0 of 2"; review estimate 9 vs 10 min — N130 (#1363)
 - [x] V17 Plan proposal: Reject left, Approve right — N130 (#1363)
 - [x] V24 Quick focus: two options called "Open" — N130 (#1363)
-- [x] V14 Capture stays in the dock (no fade that kept its slot); tabs and Capture sit at the same inset, so the bar is symmetric — N131
-- [x] V15 Calendar Month heat numerals ≥ 4.5 : 1 on every step, Day and Night (step 2 was 2.93 : 1) — N131
-- [x] V16 Almanac opens at today; one roving focus, starting on today; no empty weeks before the first study day — N131
-- [x] V18 Names, not codes: "CP4", "CP1 · Foundations", "S6", "S7" (`nameCodes`) — N131
-- [x] V32 Unknown address → "This page isn't in the notebook" with Search and Today — N131
-- [x] V33 Example deck: Linear Algebra and Topology repeat no card (Real Analysis still repeats a few further down) — N131
-- [x] V34 Copy: "India Standard Time", subject rows without "glyph", the tutor tile, exact durations in chart sentences, the card editor's first helpers — N131
-- [x] V35 Cloze highlight: selection tint and ink (7.4 : 1 Day, 8.3 : 1 Night), not danger red — N131
-- [x] V43 Data and account: grouped lists (Account, Export, Delete account in a sheet), kit sizes and checkbox — N131
-- [x] V37 Inbox triage: three round buttons, one size, one baseline — N131
-- [x] V38 Card detail: "Thu 12 Nov" on one line; "Review now" is the pinned primary when due ("Edit card" stays as a secondary button: an existing §6.11 test requires it) — N131
-- [x] V39 Sign-in: the construction drawing passes behind the title, never the links or the note — N131
-- [x] V40 Session: the button reads "Mark resolved" — N131
-- [x] V42 Calendar Month: out-of-month days dimmed; Week blocks show a two-word title from 40 px (a 390 px phone's column is 42 px) — N131
+- [x] V14 Capture stays in the dock (no fade that kept its slot); tabs and Capture sit at the same inset, so the bar is symmetric — N132
+- [x] V15 Calendar Month heat numerals ≥ 4.5 : 1 on every step, Day and Night (step 2 was 2.93 : 1) — N132
+- [x] V16 Almanac opens at today; one roving focus, starting on today; no empty weeks before the first study day — N132
+- [x] V18 Names, not codes: "CP4", "CP1 · Foundations", "S6", "S7" (`nameCodes`) — N132
+- [x] V32 Unknown address → "This page isn't in the notebook" with Search and Today — N132
+- [x] V33 Example deck: Linear Algebra and Topology repeat no card (Real Analysis still repeats a few further down) — N132
+- [x] V34 Copy: "India Standard Time", subject rows without "glyph", the tutor tile, exact durations in chart sentences, the card editor's first helpers — N132
+- [x] V35 Cloze highlight: selection tint and ink (7.4 : 1 Day, 8.3 : 1 Night), not danger red — N132
+- [x] V43 Data and account: grouped lists (Account, Export, Delete account in a sheet), kit sizes and checkbox — N132
+- [x] V37 Inbox triage: three round buttons, one size, one baseline — N132
+- [x] V38 Card detail: "Thu 12 Nov" on one line; "Review now" is the pinned primary when due ("Edit card" stays as a secondary button: an existing §6.11 test requires it) — N132
+- [x] V39 Sign-in: the construction drawing passes behind the title, never the links or the note — N132
+- [x] V40 Session: the button reads "Mark resolved" — N132
+- [x] V42 Calendar Month: out-of-month days dimmed; Week blocks show a two-word title from 40 px (a 390 px phone's column is 42 px) — N132
 
 ### G2 · Illustration, motion and icon polish (M) — `06` §5
 

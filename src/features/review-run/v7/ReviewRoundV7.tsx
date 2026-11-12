@@ -122,7 +122,7 @@ export default function ReviewRoundV7(){
   };
   window.addEventListener('keydown',handler);return ()=>window.removeEventListener('keydown',handler);
  },[]);
- // N131: a mouse swipe that starts on text the previous swipe selected would drag that text (the browser's own drag and
+ // N132: a mouse swipe that starts on text the previous swipe selected would drag that text (the browser's own drag and
  // drop cancels the gesture), so the card never graded. Clear the selection when a swipe starts and after one is read.
  const clearSelection=()=>{try{window.getSelection()?.removeAllRanges();}catch{/* no selection API */}};
  const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};

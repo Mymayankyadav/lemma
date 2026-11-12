@@ -6,7 +6,7 @@ import {nameCodes} from '../../../src/lib/codeNames';
 import {zoneLongName} from '../../../src/lib/format';
 import {editorKeys,insertAt,macroKeys} from '../../../src/features/cards/v7/editorModel';
 
-// N131 · v7 UX audit r3, the rest of phase U0 (truth). The ids are the audit's
+// N132 · v7 UX audit r3, the rest of phase U0 (truth). The ids are the audit's
 // (docs/v7/ux-audit-2026-11-12/01_AUDIT_RELEASED_V7.md).
 
 describe('V16 · the almanac starts where the record starts',()=>{

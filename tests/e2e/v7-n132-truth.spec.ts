@@ -1,6 +1,6 @@
 import {test,expect,type Page} from "@playwright/test";
 import {NOW,at} from "./v7-scenes";
-// N131 · v7 UX audit r3, the rest of phase U0 (truth), on the audit seed with the clock frozen. The ids are the audit's
+// N132 · v7 UX audit r3, the rest of phase U0 (truth), on the audit seed with the clock frozen. The ids are the audit's
 // (docs/v7/ux-audit-2026-11-12/01_AUDIT_RELEASED_V7.md).
 test.use({locale:"en-IN",timezoneId:"Asia/Kolkata",colorScheme:"dark"});
 async function open(page:Page,hash:string,{width=390,scheme="dark" as "dark"|"light"}={}){
