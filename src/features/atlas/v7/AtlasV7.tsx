@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
+import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight,Crosshair,Minus,Plus,Search,X} from 'lucide-react';
 import {useAtlas} from '../../../data/hooks';
@@ -20,16 +21,8 @@ import './atlas.css';
 const PAGE=200,PEEK=180,DOCK=92;
 const legendOrder:StarState[]=['demonstrated','in_progress','up_next','revisit','not_started'];
 
-const motionQuery='(prefers-reduced-motion: reduce)';
-function useReducedMotion():boolean{
- const [reduced,setReduced]=useState(()=>typeof matchMedia==='function'&&matchMedia(motionQuery).matches);
- useEffect(()=>{
-  if(typeof matchMedia!=='function')return;
-  const query=matchMedia(motionQuery),change=()=>setReduced(query.matches);
-  query.addEventListener('change',change);return ()=>query.removeEventListener('change',change);
- },[]);
- return reduced;
-}
+// A1: the system setting or Settings › Reduce effects (src/ui/v7/effects.ts).
+const useReducedMotion=useMotionReduced;
 /** The same five marks as the canvas, drawn in SVG for the list, the sheet and the legend. */
 export function StarMark({state,subjectClassName}:{state:StarState;subjectClassName:string}){
  const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6 5.4-.5z';

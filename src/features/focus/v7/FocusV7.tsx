@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronDown,CircleAlert,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
@@ -43,7 +44,7 @@ export default function FocusV7(){
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState(''),[thought,setThought]=useState(''),[noted,setNoted]=useState<string|null>(null);
  const [finishing,setFinishing]=useState(false),[minutes,setMinutes]=useState(25),[rating,setRating]=useState<number|null>(null),[learned,setLearned]=useState('');
  const [confirmDiscard,setConfirmDiscard]=useState(false);
- const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const reduced=useMotionReduced();
  const intention=entry?(readDraft(entry.id)??entry.intent):'';
  const project=home.data?.projects.find(item=>item.id===entry?.projectId);
  const subject=kitSubject(project?.subject.name??'');

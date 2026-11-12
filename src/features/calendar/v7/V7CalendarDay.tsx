@@ -28,6 +28,7 @@ import SuggestionsBanner from './SuggestionsBanner';
 import {DEFAULT_LENGTH,lengthFromParam,quickStart} from './quickAddModel';
 import {dotClasses,loadRange,parseView,viewLabel} from './viewModel';
 import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
+import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
 
 const views=['Day','Week','Month','Agenda'] as const;
@@ -48,6 +49,8 @@ export default function V7CalendarDay(){
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
+ // A1: blocks added after this day and view loaded (an accepted suggestion, a quick add) rise in; a loaded day never animates.
+ const enter=useEnterMarks(blocks.map(block=>block.id),phase==='ready',date+'|'+view);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),30_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
   let live=true;setPhase('loading');setMessage('');
@@ -188,7 +191,7 @@ export default function V7CalendarDay(){
   {phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
    onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
   {phase==='ready'&&view==='day'&&<>
-   <DayGrid suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
+   <DayGrid enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p>}

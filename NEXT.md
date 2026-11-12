@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N124 A1 Motion v1 (Owner task, one PR)
+
+Owner task: "Yes start A1"
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-motion
+Done = phase A1 of the release and assets plan (`03_LATER_ASSETS_SPEC.md` §A1, recorded in `docs/current/N124.md`): the motion tokens; the Settings › Reduce effects switch working everywhere (it now stops all movement, blur and glow, applies before first paint and follows the account); sheets rising on the sheet spring; list inserts (Tasks, Calendar Day blocks) rising in with a 30 ms stagger; a task's tick drawing when completed; the review answer rising in on reveal; a lifted calendar block growing; emblems drawing on the compass curve. Every animation runs only when motion is allowed and Reduce effects is off, and the settled layout is identical either way.
+Tests: `tests/unit/v7/motion-v1.test.tsx`, `tests/e2e/v7-motion.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/**`, the v7 screens that use the new marks (Tasks, Calendar Day, Settings, Focus, Close the day, Atlas, Toast), `src/main.tsx`, `src/app/v7/V7Shell.tsx`, tests, `docs/current/N124.md`.
+Not: new dependencies, Lottie or Rive (A3), illustrations (A2), flag defaults, server changes.
 ## N123 Lemma for Android: the Capacitor app (Owner task, one PR)
 
 Owner task: "Start working on Android app complete the taskd"

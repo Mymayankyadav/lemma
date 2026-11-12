@@ -7,6 +7,7 @@ import {calendarRange} from '../model';
 import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinutes,type GridItem} from '../grid/layout';
 
 // This grid is also lazy-loaded by Today; it owns its presentation at either entry.
+import type {EnterMark} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
 
 export const HOUR_PX=64;
@@ -14,6 +15,8 @@ const MINUTE=60_000;
 export interface BlockLook{subjectClass:string;path:string;}
 type Drag={id:string;pointerId:number;y:number;delta:number;mode:'move'|'resize';lifted:boolean;touch:boolean;lastStep:number;timer:number|null};
 type Props={
+ /** A1: entrance marks for blocks added since the day loaded (accepted suggestions, quick-add). */
+ enterOf?:(id:string)=>EnterMark;
  date:string;zone:string;clock:(instant:string)=>string;entries:StudyEntryRecord[];blocks:CalendarBlockRecord[];busy?:boolean;
  now:number;lookOf:(block:CalendarBlockRecord)=>BlockLook;
  onCreate:(startsAt:string)=>void;onEdit:(block:CalendarBlockRecord)=>void;
@@ -36,7 +39,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf}:Props){
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -150,7 +153,9 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    {block?.taskId&&size!=='title'&&<Flag className="v7-cal-link" aria-hidden="true"/>}
    {item.continuesBefore||item.continuesAfter?<span className="v7-sr-only">Continues across midnight</span>:null}
   </>;
-  return <div key={item.id} className={'v7-cal-block '+look.subjectClass} data-kind={kind} data-size={size} data-past={past?'true':'false'} data-lifted={moving&&preview.lifted?'true':'false'} style={lane}>
+  const mark=block&&enterOf?enterOf(block.id):{};
+  return <div key={item.id} className={'v7-cal-block '+look.subjectClass} data-kind={kind} data-size={size} data-past={past?'true':'false'} data-lifted={moving&&preview.lifted?'true':'false'}
+   data-v7-enter={mark['data-v7-enter']} style={mark.style?{...lane,...mark.style}:lane}>
    {block?<button type="button" data-calendar-block={block.id}
     aria-label={block.title+', '+(kind==='busy'?'Busy':done?'Completed study':'Planned study')+(look.path?', '+look.path:'')+', '+range+'. Enter for details; Alt+Up/Down to move, Alt+Shift+Up/Down to resize.'}
     onClick={()=>{if(suppress.current){suppress.current=false;return;}onEdit(block);}}

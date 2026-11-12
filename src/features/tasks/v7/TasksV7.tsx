@@ -10,6 +10,9 @@ import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {RowMenu} from '../../../ui/v7/RowMenu';
 import {SubjectGlyph} from '../../../ui/v7/Subject';
+import {useEnterMarks,type EnterMark} from '../../../ui/v7/useEnterMarks';
+import {motionReduced} from '../../../ui/v7/effects';
+import {motionV1} from '../../../ui/v7/motion';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
@@ -101,7 +104,9 @@ export default function TasksV7(){
  const groups=useMemo(()=>groupTodo(visible,now,zone),[visible,now,zone]);
  const doing=visible.filter(task=>task.status==='in_progress'),done=visible.filter(task=>task.status==='completed'),cancelled=visible.filter(task=>task.status==='cancelled');
  const unscheduled=rows.some(task=>task.status==='backlog'&&task.due.kind==='none');
- const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
+ // A1: a task added after the list loaded rises in; the loaded list itself never animates.
+ const enter=useEnterMarks(rows.map(task=>task.id),phase==='ready');
+ const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} enter={enter(task.id)} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
   onChange={change} onEdit={setEditing} onDelete={remove} onReorder={reorder}
   onSchedule={()=>navigate('/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
@@ -148,14 +153,23 @@ export default function TasksV7(){
  </main>;
 }
 
-interface RowProps{task:TaskRecord;list:readonly TaskRecord[];now:Date;zone:string;busy:boolean;look:{title:string;klass:string}|null;
+interface RowProps{enter:EnterMark;task:TaskRecord;list:readonly TaskRecord[];now:Date;zone:string;busy:boolean;look:{title:string;klass:string}|null;
  onChange:(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>Promise<void>;onEdit:(task:TaskRecord)=>void;onDelete:(task:TaskRecord)=>Promise<void>;onSchedule:()=>void;
  onReorder:(list:readonly TaskRecord[],from:string,to:string)=>Promise<void>}
-function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule,onReorder}:RowProps){
+function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule,onReorder}:RowProps){
  const done=task.status==='completed',closed=done||task.status==='cancelled',chip=closed?null:dueChip(task,now,zone),estimate=estimateText(task.estimateMinutes);
  const [dx,setDx]=useState(0),[revealed,setRevealed]=useState(false),start=useRef<{x:number;y:number}|null>(null);
  const index=list.findIndex(item=>item.id===task.id);
- const complete=()=>{void onChange(task,{status:'completed'},{message:'Task completed',undo:{status:task.status}});};
+ // A1: completing here draws the tick first (240 ms, only when motion is allowed), then saves, so the tick is seen before
+ // the row leaves To do. Tasks that were already done never animate; under reduced motion the save is immediate as before.
+ const [drawn,setDrawn]=useState(false),drawTimer=useRef<number|undefined>(undefined);
+ useEffect(()=>()=>window.clearTimeout(drawTimer.current),[]);
+ const complete=()=>{
+  // A failed save un-draws the tick (the row stays in To do with its error).
+  const save=()=>{void onChange(task,{status:'completed'},{message:'Task completed',undo:{status:task.status}}).finally(()=>setDrawn(false));};
+  if(motionReduced()){save();return;}
+  setDrawn(true);drawTimer.current=window.setTimeout(save,Math.round(motionV1.base*1000));
+ };
  const reopen=()=>{void onChange(task,{status:'backlog'},{message:'Task reopened',undo:{status:task.status}});};
  const down=(event:ReactPointerEvent<HTMLDivElement>)=>{if(closed||(event.target as HTMLElement).closest('button,a,[role=menu]'))return;start.current={x:event.clientX,y:event.clientY};};
  const move=(event:ReactPointerEvent<HTMLDivElement>)=>{const origin=start.current;if(!origin)return;const x=event.clientX-origin.x,y=event.clientY-origin.y;if(Math.abs(x)>8&&Math.abs(x)>Math.abs(y))setDx(Math.max(-140,Math.min(140,x)));};
@@ -177,11 +191,11 @@ function TaskRow({task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedu
   ...(task.status==='cancelled'?[{label:'Reopen',icon:<RotateCcw aria-hidden="true"/>,onClick:reopen}]:[]),
   {label:'Delete task',icon:<Trash2 aria-hidden="true"/>,onClick:()=>{void onDelete(task);}},
  ];
- return <li className={'v7-tk-row '+(look?.klass??'')} data-task-id={task.id} data-state={task.status} data-revealed={revealed||undefined}>
+ return <li {...enter} className={'v7-tk-row '+(look?.klass??'')} data-task-id={task.id} data-state={task.status} data-revealed={revealed||undefined}>
   <div className="v7-tk-main" style={{transform:dx?'translateX('+dx+'px)':undefined}} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{start.current=null;setDx(0);}}>
-   <button type="button" role="checkbox" aria-checked={done} className="v7-tk-check" disabled={busy||task.status==='cancelled'}
+   <button type="button" role="checkbox" aria-checked={done||drawn} className="v7-tk-check" disabled={busy||drawn||task.status==='cancelled'}
     aria-label={(done?'Reopen ':'Complete ')+task.title} onClick={()=>{if(done)reopen();else complete();}}>
-    <span aria-hidden="true">{done&&<Check/>}</span></button>
+    <span aria-hidden="true" data-v7-draw={drawn?'':undefined}>{(done||drawn)&&<Check/>}</span></button>
    <div className="v7-tk-body">
     <p className="v7-tk-title" data-closed={closed||undefined}>{task.title}</p>
     {/* TK4: one fixed order — due, priority, estimate, subject — that wraps as one unit. KC1: overdue is a Badge with its icon;
