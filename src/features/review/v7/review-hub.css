@@ -40,6 +40,7 @@
  :where(html[data-v7]) .v7-rc > * {width:100%;}
  :where(html[data-v7]) .v7-rc-proof {justify-self:center;width:64px;height:64px;display:grid;place-items:center;border-radius:var(--v7-round);background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-rc-proof svg {width:32px;height:32px;}
+ :where(html[data-v7]) .v7-rc-art {justify-self:center;}
  :where(html[data-v7]) .v7-rc-title {margin:0;font:400 var(--v7-type-title)/1.1 var(--v7-serif);letter-spacing:-.015em;}
  :where(html[data-v7]) .v7-rc-tiles {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--v7-space-2);text-align:left;}
  :where(html[data-v7]) .v7-rc-bar {display:flex;gap:2px;height:28px;border-radius:var(--v7-radius-1);overflow:hidden;margin:0;padding:0;list-style:none;background:var(--v7-role-surface-muted);}

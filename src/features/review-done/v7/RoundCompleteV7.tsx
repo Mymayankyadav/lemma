@@ -12,6 +12,7 @@ import {offerNotificationsOnce} from '../../../platform/permissions';
 import {defaultSelection,reviewBatch} from '../../review/v6/selection';
 import {clock,roundSummary,type GradeSplit} from '../../review/v7/reviewModel';
 import {useStartRound} from '../../review/v7/useStartRound';
+import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import '../../review/v7/review-hub.css';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
@@ -45,7 +46,8 @@ export default function RoundCompleteV7(){
  const tomorrow=forecast.data?.[1]?.due;
  const showBar=!!summary&&summary.counted>0;
  return <main id="main-content" className="v7-page v7-rc" aria-label="Review results">
-  <span className="v7-rc-proof" aria-hidden="true"><Check/></span>
+  {run?.progress.done?<LottieMoment name="review" animation="round-complete" width={144} className="v7-rc-art"/>
+   :<span className="v7-rc-proof" aria-hidden="true"><Check/></span>}
   <h1 className="v7-rc-title">{run&&!run.progress.done?'Round paused':'Round complete'}</h1>
   {error&&<p role="alert" className="v7-rv-note">{error}</p>}
   {!run&&!error&&<p role="status" className="v7-rv-note">Loading saved review results…</p>}

@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N129 A3 Lottie moments: Inbox zero, Round complete, Day closed (Owner task)
+
+Owner task: "Ok then continue working next task" … "dotLottie anyway"
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-assets
+Done = the dotLottie web player added (Owner approved the dependency, D-A3) and loaded only on demand with its WebAssembly self-hosted; L-11 Inbox zero, L-10 Round complete and L-12 Day closed drawn in code as Lottie files (≤ 60 KB, one play ≤ 1.6 s, nothing overshoots), themed from the page's roles so Day, Night and the subject colour follow; each starts over its A2 still, which stays under reduced motion, offline or on any failure; Today never loads the player; recorded in `docs/current/N129.md`.
+Tests: `tests/unit/v7/lottie.test.tsx`, `tests/e2e/v7-lottie.spec.ts`, `tests/unit/v7/illustrations.test.tsx`, existing suites unchanged.
+Scope: `package.json`, `package-lock.json`, `scripts/lottie/**`, `src/ui/v7/{lottie.ts,lottiePlayer.ts,LottieMoment.tsx,lottie/**,Illustration.tsx,illustration.css}`, the three moments (`InboxV7.tsx`, `RoundCompleteV7.tsx`, `CloseDayV7.tsx` and their CSS), tests, `docs/current/N129.md`.
+Not: the other A3 animations (L-04 focus orbit, L-07 stamps, L-08 copied, L-09 loader, L-13, L-16, L-20), Rive, server changes.
+
 ## N126 Stop the "could not open what was shared" toast on every return to the app (Owner task)
 
 Owner task: "This annoying toast keep coming for no reason wherever I switch app to lemma. After this fix move on to next item in the plan."

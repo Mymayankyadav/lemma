@@ -1,4 +1,5 @@
 import {Illustration} from '../../../ui/v7/Illustration';
+import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {Check,LayoutList,Layers,Link as LinkIcon,Unlink,Minus,MoveRight,Pencil,Plus,X} from 'lucide-react';
@@ -160,7 +161,7 @@ export default function InboxV7(){
     </div>
     {peers.length>1&&<Button variant="ghost" className="v7-inbox-all" onClick={()=>setBatch(peers)}>{'Approve all '+peers.length+' from Session '+top.sessionNumber}</Button>}
     <p className="v7-sr-only">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
-   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
    {query.isSuccess&&tab==='cards'&&list&&(queue.length?<>
     {groupBySession(queue,titleOf).map(group=><section key={group.key} className="v7-inbox-group" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2>
@@ -172,7 +173,7 @@ export default function InboxV7(){
      <Button disabled={!selected.size} onClick={()=>{act('reject',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Reject '+selected.size}</Button>
      <Button variant="primary" disabled={!selected.size} onClick={()=>{act('approve',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Approve '+selected.size}</Button>
     </div>
-   </>:<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
    {query.isSuccess&&tab==='plan'&&(plans.length?<ul className="v7-inbox-plans">{plans.map(p=><PlanCard key={p.id} proposal={p} project={bySlug.get(p.projectSlug)} onDecide={action=>act(action,[p])}/>)}</ul>
     :<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>No plan changes</h2><p>When your tutor proposes a plan or a change, it appears here.</p></div>)}
   </section>
