@@ -8,6 +8,7 @@ import {useDeckTree,useReviewItems} from '../../../data/hooks';
 import type {QueueFilter} from '../../../data/types';
 import {Button} from '../../../ui/v7/components';
 import {getRun,type DurableRun} from '../../review-run/v6/adapter';
+import {offerNotificationsOnce} from '../../../platform/permissions';
 import {defaultSelection,reviewBatch} from '../../review/v6/selection';
 import {clock,roundSummary,type GradeSplit} from '../../review/v7/reviewModel';
 import {useStartRound} from '../../review/v7/useStartRound';
@@ -22,6 +23,8 @@ const MORE=10;
 export default function RoundCompleteV7(){
  const [search]=useSearchParams(),navigate=useNavigate(),id=search.get('run');
  const [run,setRun]=useState<DurableRun|null>(null),[error,setError]=useState<string|null>(null);
+ // N123 · N1: the first finished round is the moment the Android app asks once for notification permission.
+ useEffect(()=>{if(run)void offerNotificationsOnce();},[run]);
  useEffect(()=>{
   let live=true;
   if(!id){setError('No completed review-run ID');return;}

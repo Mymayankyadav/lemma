@@ -1,0 +1,23 @@
+{
+  "appId": "io.github.mymayankyadav.lemma",
+  "appName": "Lemma",
+  "webDir": "dist-android",
+  "server": {
+    "androidScheme": "https",
+    "appStartPath": "/lemma/"
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "launchShowDuration": 800,
+      "backgroundColor": "#F8F5F0"
+    },
+    "SystemBars": {
+      "insetsHandling": "css"
+    }
+  }
+}

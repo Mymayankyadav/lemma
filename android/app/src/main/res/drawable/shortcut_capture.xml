@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- N123: Capture shortcut (a plus on the brand indigo). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#4246C2" android:pathData="M24,0a24,24 0,1 1,0 48a24,24 0,1 1,0 -48z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M22.5,13h3v9.5h9.5v3h-9.5v9.5h-3v-9.5h-9.5v-3h9.5z"/>
+</vector>

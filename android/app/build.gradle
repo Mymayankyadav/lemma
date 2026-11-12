@@ -1,42 +1,71 @@
-import groovy.json.JsonSlurper
-plugins { id 'com.android.application' }
-def twa = new JsonSlurper().parse(file('../twa-manifest.json'))
+apply plugin: 'com.android.application'
+
+// N123 · Lemma for Android (Capacitor), installed from GitHub Releases (no Play Console). versionCode stays above
+// every earlier TWA build. Release signing uses the Owner's own key (ANDROID_KEYSTORE_FILE, ANDROID_KEYSTORE_PASSWORD,
+// ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD, set by CI from secrets) and is skipped without it.
 def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE')
+def runNumber = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '0')
+
 android {
- namespace 'io.github.mymayankyadav.lemma'
- compileSdk 36
- defaultConfig {
-  applicationId twa.packageId
-  minSdk 23
-  targetSdk 35
-  versionCode = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '1')
-  versionName twa.appVersionName
-  resValue 'string', 'app_name', twa.name
- }
- signingConfigs {
-  release {
-   if (keystoreFile) {
-    storeFile file(keystoreFile)
-    storePassword System.getenv('ANDROID_UPLOAD_KEYSTORE_PASSWORD')
-    keyAlias System.getenv('ANDROID_UPLOAD_KEY_ALIAS')
-    keyPassword System.getenv('ANDROID_UPLOAD_KEY_PASSWORD')
-   }
-  }
- }
- buildTypes {
-  release {
-   minifyEnabled false
-   if (keystoreFile) signingConfig signingConfigs.release
-  }
- }
- compileOptions {
-  sourceCompatibility JavaVersion.VERSION_17
-  targetCompatibility JavaVersion.VERSION_17
- }
- lint { abortOnError true; checkReleaseBuilds true }
+    namespace = "io.github.mymayankyadav.lemma"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "io.github.mymayankyadav.lemma"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 200000 + runNumber
+        versionName "2.0." + runNumber
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (keystoreFile) {
+                storeFile file(keystoreFile)
+                storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystoreFile) signingConfig signingConfigs.release
+        }
+    }
+    lint {
+        abortOnError true
+        checkReleaseBuilds true
+        // The web bundle is copied in by `cap sync`; lint checks Lemma's own Java and resources.
+        disable 'GradleDependency', 'NewerVersionAvailable', 'AndroidGradlePluginVersion', 'OldTargetApi'
+    }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
 dependencies {
- implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.7.3'
- implementation 'androidx.browser:browser:1.10.0'
- implementation 'androidx.core:core:1.17.0'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    // The JVM's real org.json for unit tests (android.jar only has stubs); test-only, never shipped.
+    testImplementation "org.json:json:20240303"
+    implementation project(':capacitor-cordova-android-plugins')
 }
+
+apply from: 'capacitor.build.gradle'

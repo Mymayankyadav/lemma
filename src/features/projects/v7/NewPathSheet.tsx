@@ -1,9 +1,10 @@
-import {useRef} from 'react';
+import {useEffect,useRef} from 'react';
 import {useNavigate} from 'react-router';
 import {Check,FileText,Plus,Trash2} from 'lucide-react';
 import {Button,Field,IconButton,Sheet} from '../../../ui/v7/components';
 import {useToast} from '../../../ui/Toast';
 import {bytes,useNewPath} from '../../new-project/useNewPath';
+import {takeSharedSources} from '../../../platform/share';
 
 const statusWord:Record<string,string>={queued:'Waiting',reading:'Reading',uploading:'Uploading',saving:'Saving',ready:'Added',failed:'Failed'};
 
@@ -12,6 +13,9 @@ const statusWord:Record<string,string>={queued:'Waiting',reading:'Reading',uploa
 export default function NewPathSheet({onClose}:{onClose:()=>void}){
  const navigate=useNavigate(),notify=useToast(),input=useRef<HTMLInputElement>(null);
  const {name,setName,items,error,saving,created,remaining,enqueue,remove,submit}=useNewPath();
+ // N123: files shared to the Android app arrive here as sources; the first one's name suggests the path's name.
+ useEffect(()=>{const shared=takeSharedSources();if(!shared.length)return;enqueue(shared);setName(previous=>previous||shared[0].name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').slice(0,100));
+ },[]);
  async function create(){
   const result=await submit();
   if(result.kind==='created')navigate('/p/'+encodeURIComponent(result.project.slug)+'?new=1');

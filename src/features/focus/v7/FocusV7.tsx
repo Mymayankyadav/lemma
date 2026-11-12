@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Link,useNavigate} from 'react-router';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronDown,CircleAlert,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useHome} from '../../../data/hooks';
@@ -82,6 +82,10 @@ export default function FocusV7(){
   try{await getStudyEventApi().recordEvent({entryId:entry.id,kind:'drift',durationMinutes:1});setNoted('Noted');}
   catch{setError('We couldn’t note that. Try again.');}
  };
+ // N123: "Finish" on the Android lock screen pauses the session and opens this screen with ?finish=1 to log it.
+ const [params,setParams]=useSearchParams();
+ useEffect(()=>{if(params.get('finish')!=='1'||!entry)return;openFinish();const next=new URLSearchParams(params);next.delete('finish');setParams(next,{replace:true});// eslint-disable-line react-hooks/exhaustive-deps
+ },[params,entry]);
  useEffect(()=>{if(!noted)return;const timer=window.setTimeout(()=>setNoted(null),1000);return ()=>window.clearTimeout(timer);},[noted]);
  // Desktop keys: Space pauses or resumes, B takes a break, Esc minimises.
  const keys=useRef({pause,takeBreak,finishing,editing});keys.current={pause,takeBreak,finishing,editing};
