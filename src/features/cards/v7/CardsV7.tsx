@@ -111,7 +111,7 @@ export default function CardsV7(){
   {cards.isPending&&<><Skeleton/><Skeleton/></>}
   {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Could not load cards.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
   {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone}/>)}</ul>
-   :active?<EmptyMoment title="No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
+   :active?<EmptyMoment art="cards" title="No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
    :<EmptyMoment title="No cards yet">Your tutor proposes cards after each session, or use Capture to write one.</EmptyMoment>)}
   {cards.isFetchingNextPage&&<Skeleton/>}
   <div ref={sentinel} aria-hidden="true"/>

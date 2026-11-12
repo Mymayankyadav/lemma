@@ -93,7 +93,7 @@ export default function PathsV7(){
   {projects.isSuccess&&<>
    <p className="v7-sr-only" aria-live="polite">{visible.length} {visible.length===1?'path':'paths'} shown</p>
    {visible.length===0?(all.length===0
-     ?<EmptyMoment title="Every proof starts somewhere" action={{label:'Start a new path',to:'/projects/new'}}>Start a path and your tutor will plan it with you.</EmptyMoment>
+     ?<EmptyMoment art="paths" title="Every proof starts somewhere" action={{label:'Start a new path',to:'/projects/new'}}>Start a path and your tutor will plan it with you.</EmptyMoment>
      :query.trim()?<EmptyMoment title={'No paths match “'+query.trim()+'”'} action={{label:'Clear search',onClick:()=>setQuery('')}}/>
      :<EmptyMoment title={'No '+filterWord[filter].toLowerCase()+' paths'}>Paths you mark this way will gather here.</EmptyMoment>)
    :<div className="v7-paths-groups">{groups.map(group=><section key={group.key} className="v7-paths-group" aria-label={group.subject+' paths'}>

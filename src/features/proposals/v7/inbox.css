@@ -40,7 +40,7 @@
  :where(html[data-v7]) .v7-inbox-all {justify-self:center;}
  :where(html[data-v7]) .v7-inbox-empty {display:grid;gap:var(--v7-space-2);justify-items:center;text-align:center;padding:var(--v7-space-10) var(--v7-space-4);color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-inbox-empty h2 {margin:0;color:var(--v7-role-text-primary);font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);}
- :where(html[data-v7]) .v7-inbox-zero .v7-inbox-zero-mark {width:48px;height:48px;color:var(--v7-role-status-success);}
+ :where(html[data-v7]) .v7-inbox-zero .v7-inbox-zero-art {width:min(160px,60vw);margin-bottom:var(--v7-space-2);}
  :where(html[data-v7]) .v7-inbox-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-inbox-group ul {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-1);}
  :where(html[data-v7]) .v7-inbox-group li {padding:var(--v7-space-1) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}

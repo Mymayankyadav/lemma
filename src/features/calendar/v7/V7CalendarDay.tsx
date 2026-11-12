@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Illustration} from '../../../ui/v7/Illustration';
 import {Link,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight,Flag,Target} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -194,7 +195,7 @@ export default function V7CalendarDay(){
    <DayGrid enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
-   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p>}
+   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={140}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
   </>}
   <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
    onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={(startsAt,carry)=>moreParams(startsAt,carry)}/>
