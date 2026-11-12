@@ -21,7 +21,7 @@ import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
 import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
-import {holdCaptureText, holdSharedSources, routeShare} from './share';
+import {holdCaptureText, holdSharedSources, routeShare, sharedItems} from './share';
 import {offerNotificationsOnce} from './permissions';
 
 const DRIFT_MS = 2 * 60_000;
@@ -107,9 +107,11 @@ export async function syncCalendar(): Promise<void> {
 }
 
 async function takeShares(): Promise<void> {
-  try {
-    const {items} = await native.shareTake();
-    for (const item of items) {
+  // N126: this runs on every return to the app; with nothing shared (or the list unreadable) it stays silent.
+  // Only a share that was actually received and could not be opened is reported.
+  const items = await sharedItems(native);
+  for (const item of items) {
+    try {
       const target = routeShare(item);
       if (target.kind === 'capture') {
         holdCaptureText(target.text);
@@ -124,8 +126,8 @@ async function takeShares(): Promise<void> {
         holdSharedSources(files);
         go('/projects/new');
       } else toast(target.reason, {tone: 'danger'});
-    }
-  } catch {toast('Lemma could not open what was shared. Try again.', {tone: 'danger'});}
+    } catch {toast('Lemma could not open what was shared. Try again.', {tone: 'danger'});}
+  }
 }
 
 async function startBlockNow(blockId: string): Promise<void> {

@@ -238,3 +238,17 @@ describe('N123 · N5 device calendar', () => {
     expect(blocks[0]).toMatchObject({kind: 'busy', status: 'planned', startsAt: '2026-11-12T10:00:00.000Z', endsAt: '2026-11-12T11:00:00.000Z'})
   })
 })
+
+describe('N126 resuming the app with nothing shared', () => {
+  it('reads a missing, null or failing share list as empty (no "could not open" toast)', async () => {
+    const {sharedItems} = await import('../../../src/platform/share')
+    expect(await sharedItems({shareTake: async () => ({items: null})})).toEqual([])
+    expect(await sharedItems({shareTake: async () => ({})})).toEqual([])
+    expect(await sharedItems({shareTake: async () => {throw new Error('bridge')}})).toEqual([])
+    expect(await sharedItems({shareTake: async () => ({items: [{kind: 'text', text: 'x'}]})})).toEqual([{kind: 'text', text: 'x'}])
+  })
+  it('treats a null pending-action list as nothing to replay', async () => {
+    const native = {timerPendingActions: vi.fn(async () => ({actions: null as unknown as PendingTimerAction[]})), timerAckActions: vi.fn(async () => undefined)}
+    expect(await replayTimerActions(native, {} as StudyApi, async () => undefined)).toEqual([])
+  })
+})

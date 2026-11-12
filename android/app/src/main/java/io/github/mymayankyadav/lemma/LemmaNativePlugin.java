@@ -101,7 +101,7 @@ public class LemmaNativePlugin extends Plugin {
 
     @PluginMethod
     public void timerPendingActions(PluginCall call) {
-        call.resolve(new JSObject().put("actions", JSArray.from(toList(PendingActions.all(getContext())))));
+        call.resolve(result("actions", PendingActions.all(getContext())));
     }
 
     @PluginMethod
@@ -132,7 +132,7 @@ public class LemmaNativePlugin extends Plugin {
     @PluginMethod
     public void notificationStatus(PluginCall call) {
         call.resolve(new JSObject().put("permission", notificationWord()).put("exactAlarms", exactAlarms())
-            .put("channelsBlocked", JSArray.from(Channels.blocked(getContext()).toArray())));
+            .put("channelsBlocked", new JSONArray(Channels.blocked(getContext()))));
     }
 
     @PluginMethod
@@ -235,7 +235,7 @@ public class LemmaNativePlugin extends Plugin {
     @PluginMethod
     public void calendarList(PluginCall call) {
         if (!calendarAllowed(call)) return;
-        runInBackground(call, () -> call.resolve(new JSObject().put("calendars", JSArray.from(toList(CalendarSync.list(getContext()))))));
+        runInBackground(call, () -> call.resolve(result("calendars", CalendarSync.list(getContext()))));
     }
 
     @PluginMethod
@@ -265,14 +265,14 @@ public class LemmaNativePlugin extends Plugin {
         JSArray ids = call.getArray("calendarIds", new JSArray());
         Set<String> chosen = new HashSet<>();
         for (int i = 0; i < ids.length(); i++) chosen.add(ids.optString(i));
-        runInBackground(call, () -> call.resolve(new JSObject().put("busy", JSArray.from(toList(CalendarSync.busy(getContext(), from, to, chosen))))));
+        runInBackground(call, () -> call.resolve(result("busy", CalendarSync.busy(getContext(), from, to, chosen))));
     }
 
     // ---- capture: share, voice, shortcuts -----------------------------------------------------------------------
 
     @PluginMethod
     public void shareTake(PluginCall call) {
-        call.resolve(new JSObject().put("items", JSArray.from(toList(ShareIntake.take()))));
+        call.resolve(result("items", ShareIntake.take()));
     }
 
     private Intent recogniser(String prompt) {
@@ -338,9 +338,13 @@ public class LemmaNativePlugin extends Plugin {
         }
     }
 
-    private static List<Object> toList(JSONArray array) {
-        List<Object> out = new ArrayList<>();
-        for (int i = 0; i < array.length(); i++) out.add(array.opt(i));
+    /**
+     * `{key: [...]}` for a JS caller. N126: `JSArray.from(List)` returns null (it takes only Java arrays), which left
+     * the web layer with `items: null` on every resume ("Lemma could not open what was shared"); put the array itself.
+     */
+    static JSObject result(String key, JSONArray array) {
+        JSObject out = new JSObject();
+        out.put(key, array == null ? new JSONArray() : array);
         return out;
     }
 }

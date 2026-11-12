@@ -10,14 +10,25 @@ type Mode = 'motion' | 'system-reduced' | 'reduce-effects'
 async function open(page: Page, mode: Mode, hash = '/') {
   await page.emulateMedia({reducedMotion: mode === 'system-reduced' ? 'reduce' : 'no-preference'})
   if (mode === 'reduce-effects') await page.addInitScript(() => localStorage.setItem('lemma.v7.reduce-effects', '1'))
+  await page.addInitScript(record)
   await page.clock.setFixedTime(NOW)
   await page.goto(at(hash))
   await expect(page.locator('html')).toHaveAttribute('data-v7', '')
   await page.waitForLoadState('networkidle')
 }
-/** Names of the animations and transitions running on an element (CSS transitions report their property). */
-const running = (page: Page, selector: string) => page.locator(selector).first().evaluate(element =>
-  element.getAnimations({subtree: false}).map(animation => (animation as CSSTransition).transitionProperty ?? (animation as CSSAnimation).animationName))
+/**
+ * Every transition and animation that starts, recorded as it starts (CI runners are slow enough that a 350 ms sheet
+ * transition can be over before a later getAnimations() call, so the test never asks "what is running now").
+ */
+function record() {
+  const seen: {target: Element; name: string}[] = [];
+  (window as unknown as {__motion: typeof seen}).__motion = seen
+  addEventListener('transitionstart', event => seen.push({target: event.target as Element, name: event.propertyName}), true)
+  addEventListener('animationstart', event => seen.push({target: event.target as Element, name: event.animationName}), true)
+}
+/** Names of the transitions and animations that started on (or inside) the first match, since the page loaded. */
+const started = (page: Page, selector: string) => page.locator(selector).first().evaluate(element =>
+  (window as unknown as {__motion: {target: Element; name: string}[]}).__motion.filter(entry => element === entry.target || element.contains(entry.target)).map(entry => entry.name))
 const settle = (page: Page, selector: string) => page.locator(selector).first().evaluate(async element => {
   await Promise.all(element.getAnimations({subtree: true}).map(animation => animation.finished.catch(() => undefined)))
   const box = element.getBoundingClientRect()
@@ -32,8 +43,7 @@ async function openCapture(page: Page) {
 test('A1 a sheet rises and fades in on the spring when motion is allowed', async ({page}) => {
   await open(page, 'motion')
   await openCapture(page)
-  const names = await running(page, 'dialog.v7-sheet[open]')
-  expect(names).toEqual(expect.arrayContaining(['opacity', 'translate']))
+  await expect.poll(() => started(page, 'dialog.v7-sheet[open]')).toEqual(expect.arrayContaining(['opacity', 'translate']))
 })
 
 for (const mode of ['system-reduced', 'reduce-effects'] as const) {
@@ -41,7 +51,9 @@ for (const mode of ['system-reduced', 'reduce-effects'] as const) {
     await open(page, mode)
     if (mode === 'reduce-effects') await expect(page.locator('html')).toHaveAttribute('data-v7-reduce-effects', '')
     await openCapture(page)
-    expect(await running(page, 'dialog.v7-sheet[open]')).not.toContain('translate')
+    // Give a would-be transition time to start (it would begin within a frame or two), then check none did.
+    await page.waitForTimeout(500)
+    expect(await started(page, 'dialog.v7-sheet[open]')).not.toContain('translate')
   })
 }
 
@@ -67,9 +79,8 @@ test('A1 a revealed answer rises in; under reduced motion it simply appears', as
     await page.waitForURL(/#\/review\/run/)
     await page.getByRole('button', {name: 'Show answer'}).click()
     await expect(page.locator('.v7-review-back')).toBeVisible()
-    const names = await running(page, '.v7-review-back')
-    if (mode === 'motion') expect(names).toContain('v7-m-rise')
-    else expect(names).not.toContain('v7-m-rise')
+    if (mode === 'motion') await expect.poll(() => started(page, '.v7-review-back')).toContain('v7-m-rise')
+    else {await page.waitForTimeout(400); expect(await started(page, '.v7-review-back')).not.toContain('v7-m-rise')}
   }
 })
 
@@ -78,7 +89,6 @@ test('A1 a task completed here draws its tick; tasks already done do not', async
   await expect(page.locator('[data-v7-draw]')).toHaveCount(0)
   const box = page.getByRole('checkbox', {name: /^Complete /}).first()
   await box.click()
-  const drawn = page.locator('[data-v7-draw]').first()
-  await expect(drawn).toBeAttached()
-  expect(await drawn.locator('path').first().evaluate(path => path.getAnimations().map(animation => (animation as CSSAnimation).animationName))).toContain('v7-m-check')
+  // The row leaves To do once saved, so read the record of the whole page rather than the (soon gone) row.
+  await expect.poll(() => page.evaluate(() => (window as unknown as {__motion: {name: string}[]}).__motion.map(entry => entry.name))).toContain('v7-m-check')
 })

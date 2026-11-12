@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N126 Stop the "could not open what was shared" toast on every return to the app (Owner task)
+
+Owner task: "This annoying toast keep coming for no reason wherever I switch app to lemma. After this fix move on to next item in the plan."
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-fixes
+Done = returning to the Android app with nothing shared shows no toast; the plugin's lists (shares, pending lock-screen actions, calendars, busy times) reach the web layer as arrays; recorded in `docs/current/N126.md`.
+Tests: `android/app/src/test/.../PluginResultTest.java`, `tests/unit/android/platform.test.ts` (N126 cases), existing suites unchanged.
+Scope: `android/app/src/main/java/**/LemmaNativePlugin.java`, `src/platform/**`, `src/features/settings/v7/PhoneSettings.tsx`, tests, `docs/current/N126.md`.
+Not: anything else.
+
 ## N125 Fix the Owner's phone report of 12 Nov 2026 (Owner task, one PR)
 
 Owner task: "1. l looks of centered. 2. Can't press any of the buttons. 3. No notifications in the android app. 3. The buttons looks congested 4. This awkward highlight bar appears in almost all charts and is disgusting. 5. Why everything is 0 mins. 6. Awkward placement of the buttons."
