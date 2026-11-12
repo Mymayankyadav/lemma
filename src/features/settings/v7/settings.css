@@ -58,3 +58,8 @@
  :where(html[data-v7]) .v7-settings-legacy :is(.rounded-slab,section[class*="border"]) {border:0;padding-inline:0;background:transparent;}
  :where(html[data-v7]) .v7-set-switch .v7-switch-choice > span {font:500 var(--v7-type-body)/1.3 var(--v7-sans);}
 }
+
+/* N125: the connector address actions in a tidy grid (Show and Copy side by side, New address below), not a wrapped row. */
+:where(html[data-v7]) .v7-connector-actions {display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-space-3);margin-top:var(--v7-space-3);}
+:where(html[data-v7]) .v7-connector-actions > .v7-button {justify-content:center;width:100%;}
+:where(html[data-v7]) .v7-connector-actions > .v7-button:last-child {grid-column:1 / -1;}

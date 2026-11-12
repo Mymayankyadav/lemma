@@ -95,7 +95,8 @@ export function Chip({
   onClick?: () => void;
 }) {
   const name:Subject=subjects[Math.max(0,Math.min(subjects.length-1,subject-1))] ?? "Other";
-  const content=<>{kind==="subject"&&<SubjectMark subject={name}/>} {kind==="status"&&<CircleCheck aria-hidden="true"/>}{kind==="ready"&&<CircleDot aria-hidden="true"/>}{kind==="mastery"&&<span className="v7-proof" aria-hidden="true">∎</span>}{onClick&&selected&&<Check aria-hidden="true"/>}{children}</>;
+  const content=<>{kind==="subject"&&<SubjectMark subject={name}/>} {kind==="status"&&<CircleCheck aria-hidden="true"/>}{kind==="ready"&&<CircleDot aria-hidden="true"/>}{kind==="mastery"&&<span className="v7-proof" aria-hidden="true">∎</span>}{children}</>;
+  // N125: a selected filter chip already draws its tick in CSS (components.css); a second <Check/> showed "✓ ✓ 50 min".
   return onClick?<button type="button" className="v7-filter-chip" aria-pressed={!!selected} onClick={onClick}>{content}</button>:
    <span className={kind==="subject"?"v7-tag "+subjectClass(name):"v7-badge "+(kind==="gold"?"v7-tone-warning":kind==="mastery"||kind==="status"?"v7-tone-success":"v7-tone-info")}>{content}</span>;
 }

@@ -8,6 +8,7 @@ import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import {Button,Sheet} from '../../ui/v7/components';
+import {EllMark} from '../../ui/v7/marks';
 import {useMinWidth} from './useMinWidth';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
@@ -121,7 +122,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   <Fragment key={colours}>{children}</Fragment>
   <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
   <div className="v7-dock">
-   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home">ℓ <span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
+   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
    <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
@@ -168,7 +169,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  </>;
  return <header className="v7-hub-header" data-display="true">
   <div className="v7-hub-row">
-   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true">ℓ</span>{date}</p>:<span/>}
+   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span>{date}</p>:<span/>}
    {actions}
   </div>
   <h1 className="v7-hub-title v7-display">{title}</h1>

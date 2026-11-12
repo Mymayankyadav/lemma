@@ -52,7 +52,9 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     // F43: per-metric wording. Time totals read "You studied 3 h 55 min"; counts read "413 reviews in this range".
     /\b(h|min)\b/.test(format(total)) ? `You studied ${format(total)} in this range, most on ${data[peak].label}.` :
     `${format(total)} ${title.toLowerCase().replace(/ (by|over|per) .*$/, "")} in this range, most on ${data[peak].label}.`);
-  const width = 360, height = compact ? 150 : 224, left = 40, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
+  // N125: the axis gutter fits its widest tick label ("40 min" was clipped to "0 min" in a fixed 40-unit gutter).
+  const left = Math.max(40, Math.ceil(Math.max(...ticks.map(tick => labelWidth(format(tick)))) * 1.15) + 12);
+  const width = 360, height = compact ? 150 : 224, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
   const direct=series.length>1&&series.length<=3;
   // F06: a target line is labelled at the right edge, outside the data, so it never overprints a value.
   const targetShown = target !== undefined && target >= 0 && target <= maximum;
@@ -106,6 +108,8 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
             aria-label={`${row.label}: ${row.values.map((value, j) => `${series[j]?.label ?? ""} ${format(value)}`).join(", ")}`}
             onClick={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onFocus={() => setSelected(index)}
             onKeyDown={event => { movePoint(event, index, data.length); if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelected(index); } }}>
+            {/* N125: the selected column is a faint band, not the browser's focus ring (which showed on every tap). */}
+            {selected === index && <rect className="v7-chart-band" x={point(index) - group / 2 + 1} y={top - 4} width={Math.max(0, group - 2)} height={plotHeight + 4} rx={4} />}
             {kind === "line" ? row.values.map((value, j) => <circle key={j} cx={point(index)} cy={y(value)} r="4" fill={color(j)} stroke="var(--v7-role-surface-page)" strokeWidth="2" />) : row.values.map((value, j) => {
               const start = accumulated; accumulated += finite(value);
               const topY = kind === "stacked" ? y(accumulated) : y(value), heightY = kind === "stacked" ? Math.max(0, y(start) - topY - (j ? 2 : 0)) : bottom - topY;

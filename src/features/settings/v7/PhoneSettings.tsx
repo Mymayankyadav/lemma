@@ -25,12 +25,12 @@ export function PhoneReminders(){
  const read=useCallback(async()=>(await lemmaNative()).notificationStatus(),[]);
  const [status,refresh]=useStatus(read);
  return <Group title="On this phone" note="Lemma reminds you from this phone about cards due at your study time and about planned study blocks. Tutor and digest messages stay in the Inbox. Each kind has its own channel in Android settings.">
-  <ValueRow label="Notifications" value={permissionWord(status?.permission)} hint={status?.channelsBlocked.length?'Some kinds are off in Android settings':undefined}
+  <ValueRow label="Notifications" value={status?permissionWord(status.permission):'…'} hint={status?.channelsBlocked.length?'Some kinds are off in Android settings':undefined}
    onOpen={()=>{void (async()=>{
     if(status?.permission==='prompt'){await requestNotificationPermission();refresh();return;}
     await (await lemmaNative()).openNotificationSettings({});
    })();}}/>
-  <ValueRow label="On-time alarms" value={status?.exactAlarms?'On':'Within a minute'} hint="Ends of pomodoros, breaks and blocks"
+  <ValueRow label="On-time alarms" value={!status?'…':status.exactAlarms?'On':'Within a minute'} hint="Ends of pomodoros, breaks and blocks"
    onOpen={()=>{void lemmaNative().then(native=>native.openExactAlarmSettings());}}/>
  </Group>;
 }

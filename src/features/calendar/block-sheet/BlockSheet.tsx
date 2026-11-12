@@ -261,9 +261,9 @@ const day=start.slice(0,10);
   };
   const paths=pick(projects,pathLabel,projectId,'No path'),cps=pick(checkpoints,cpLabel,checkpointId,'No checkpoint'),tks=pick(tasks,taskLabel,taskId,'No task');
   const statuses:Record<string,CalendarBlockStatus>={Planned:'planned',Done:'done',Cancelled:'cancelled'};
+  // N125 (kit rule R1 · F17/F39): the footer holds Cancel and the primary action on one row; Delete is the body's last item.
   return <Sheet open onClose={onClose} title={current?'Edit time block':'New time block'} eyebrow="Time block" footer={<>
-    {current&&!confirmDelete&&<Button variant="ghost" destructive disabled={saving} onClick={()=>setConfirmDelete(true)}>Delete</Button>}
-    <Button variant="secondary" disabled={saving} onClick={onClose}>Cancel</Button>
+    <Button variant="ghost" disabled={saving} onClick={onClose}>Cancel</Button>
     <button type="submit" form="n121-block-form" className="v7-button v7-primary" disabled={saving}><span>{saving?'Saving…':current?'Save changes':'Create block'}</span></button>
    </>}>
    {otherZone&&<p className="v7-meta">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
@@ -280,6 +280,7 @@ const day=start.slice(0,10);
     {linksError&&<p role="status" className="v7-meta">{linksError}</p>}
     {current&&<Picker label="Status" value={Object.keys(statuses).find(key=>statuses[key]===status)??'Planned'} options={Object.keys(statuses)} onChange={text=>setStatus(statuses[text]??'planned')}/>}
     {error&&<p role="alert" className="v7-alert">{error}</p>}
+    {current&&!confirmDelete&&<div className="v7-sheet-danger-zone"><Button small variant="ghost" destructive disabled={saving} onClick={()=>setConfirmDelete(true)}>Delete</Button></div>}
     {current&&confirmDelete&&<div className="v7-bs-confirm">
      <p>Delete this block? You can restore it with Undo.</p>
      <div className="v7-od-actions"><Button small disabled={saving} onClick={()=>setConfirmDelete(false)}>Keep block</Button>

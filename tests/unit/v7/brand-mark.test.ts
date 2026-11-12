@@ -58,4 +58,12 @@ describe('Notebook app mark', () => {
   it('is deterministic', () => {
     expect(Buffer.from(rasterMark({size: 48})).equals(Buffer.from(rasterMark({size: 48})))).toBe(true);
   });
+  it('draws the header and rail ℓ with the icon\'s own path, not a text glyph (N125)', async () => {
+    const {ELL_MARK_PATH} = await import('../../../src/ui/v7/marks');
+    const {ellPathData} = await import('../../../scripts/brand/lemma-mark.mjs');
+    expect(ELL_MARK_PATH).toBe(ellPathData('simple', 1024));
+    const shell = (await import('node:fs')).readFileSync('src/app/v7/V7Shell.tsx', 'utf8');
+    expect(shell).toContain('<span className="v7-hub-mark" aria-hidden="true"><EllMark');
+    expect(shell).not.toMatch(/v7-hub-mark" aria-hidden="true">ℓ/);
+  });
 });

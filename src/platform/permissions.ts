@@ -1,5 +1,6 @@
 /**
- * N123 · N1 notification permission (Android 13+): asked in context, never at launch — when the learner turns
+ * N123 · N1 notification permission (Android 13+): asked in context, never at launch — when a first focus session runs
+ * (its lock-screen timer needs it), when the learner turns
  * reminders on, or once after their first finished review round. A "no" is respected: Today and the Inbox still show
  * everything, and Settings › Reminders explains how to turn notifications on in system settings.
  */

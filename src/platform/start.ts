@@ -22,6 +22,7 @@ import {nativeTimerState, replayTimerActions} from './timer';
 import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
 import {holdCaptureText, holdSharedSources, routeShare} from './share';
+import {offerNotificationsOnce} from './permissions';
 
 const DRIFT_MS = 2 * 60_000;
 let native: LemmaNativePlugin;
@@ -62,7 +63,8 @@ async function syncTimer(): Promise<void> {
     const entry = await getStudyApi().activeStudyEntry();
     const ctx = await context();
     const state = nativeTimerState(entry, Date.now(), entry?.projectId ? ctx.projects.get(entry.projectId) ?? '' : '', ctx.clock24h);
-    if (state) await native.timerUpdate({state});
+    // The lock-screen timer is the payoff of notifications: a first running session is the moment to ask (once).
+    if (state) {await native.timerUpdate({state}); void offerNotificationsOnce();}
     else await native.timerClear();
   } catch {/* offline: the notification keeps its last state, rebuilt on the next sync */}
 }
