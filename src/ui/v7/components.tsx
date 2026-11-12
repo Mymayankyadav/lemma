@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { SubjectMark, subjects, subjectClass, type Subject } from "./Subject";
 import "./components.css";
+import "./motion.css";
 export function Button({
   variant = "secondary",
   small = false,

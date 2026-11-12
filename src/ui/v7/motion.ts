@@ -59,3 +59,37 @@ export function interpolateNumber(from:number,to:number,progress:number,reduced=
 export function dismissSheet(distance:number,height:number,velocity:number):boolean {
  return height>0&&(distance/height>=.3||velocity>600);
 }
+
+/**
+ * A1 · Motion v1 tokens ("drawn with a compass"): lines stroke in, surfaces fade and rise a few points, nothing
+ * bounces, one thing moves at a time. Durations in seconds for `motion`; motion.css has the same values for CSS.
+ */
+export const motionV1={
+ instant:.09, quick:.16, base:.24, draw:.7,
+ drawEase:[.65,0,.35,1] as [number,number,number,number],
+ sheet:{type:'spring' as const,stiffness:380,damping:36},
+ /** Stagger between list items, capped at six items. */
+ stagger:.03, staggerCap:6,
+ /** Largest translate, in CSS pixels. */
+ rise:12,
+};
+/** Delay for the i-th entering item: 30 ms apart, never more than six steps. */
+export function staggerDelay(index:number):number{
+ return Math.max(0,Math.min(motionV1.staggerCap-1,Math.floor(Number.isFinite(index)?index:0)))*motionV1.stagger;
+}
+/**
+ * A damped spring (mass 1) sampled as a CSS `linear()` easing, so CSS transitions move like `motion`'s springs.
+ * Returns the time to settle within 0.1 % and the easing. Pure; motion.css carries the 380/36 result.
+ */
+export function springEasing(stiffness:number,damping:number,points=24):{ms:number;easing:string}{
+ const w0=Math.sqrt(stiffness),zeta=damping/(2*w0);
+ const at=(t:number)=>{
+  if(zeta<1){const wd=w0*Math.sqrt(1-zeta*zeta);return 1-Math.exp(-zeta*w0*t)*(Math.cos(wd*t)+(zeta*w0/wd)*Math.sin(wd*t));}
+  return 1-Math.exp(-w0*t)*(1+w0*t);
+ };
+ let end=0.01;
+ while(end<3&&(Math.abs(1-at(end))>1e-3||Math.abs(1-at(end+0.05))>1e-3))end+=0.01;
+ const stops=Array.from({length:points+1},(_,i)=>Number(at(end*i/points).toFixed(3)));
+ stops[0]=0;stops[points]=1;
+ return {ms:Math.round(end*1000),easing:'linear('+stops.join(', ')+')'};
+}

@@ -1,4 +1,5 @@
 import { createElement, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { motionReduced } from "./effects";
 import { Check, ChevronRight, Clock3, LockKeyhole, LoaderCircle, Minus } from "lucide-react";
 import { Emblem } from "./Emblem";
 import { Toast } from "./components";
@@ -200,7 +201,7 @@ export function CompletionPattern() {
     timers.current.forEach(clearTimeout);
     setPhase(1);
     haptic("complete",true);
-    const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = motionReduced();
     for (const [delay, next] of [[300, 2], [600, 3], [1500, 4]]) timers.current.push(setTimeout(() => setPhase(next), reduced ? 120 : delay));
   }
   return <div className={`v7-completion-pattern v7-subject-1 v7-completion-phase-${phase}`}>

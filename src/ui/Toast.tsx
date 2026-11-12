@@ -1,4 +1,5 @@
 import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
+import {useMotionReduced} from './v7/effects';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import {CircleAlert,CircleCheck,Info,X} from 'lucide-react';
 
@@ -109,9 +110,10 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
 }
 export function ToastHost(){
  const items=useSyncExternalStore(subscribe,current,current);
- const reduce=!!useReducedMotion();
+ const reduce=!!useReducedMotion(),effectsReduced=useMotionReduced();
+ // A1: the v7 toast also honours Settings › Reduce effects.
  if(v7Root())return <div aria-live="polite" aria-atomic="false" className="v7-toast-host">
-  <AnimatePresence>{items.slice(-1).map(item=><V7ToastItem key={item.id} item={item} reduce={reduce}/>)}</AnimatePresence></div>;
+  <AnimatePresence>{items.slice(-1).map(item=><V7ToastItem key={item.id} item={item} reduce={reduce||effectsReduced}/>)}</AnimatePresence></div>;
  return <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed inset-x-4 bottom-[calc(108px+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-[480px] flex-col gap-2">
  <AnimatePresence>{items.map(item=><ToastItem key={item.id} item={item} reduce={reduce}/>)}</AnimatePresence></div>;
 }

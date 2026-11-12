@@ -1,4 +1,5 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {motionReduced} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,X} from 'lucide-react';
 import {getApi} from '../../../data';
@@ -109,7 +110,7 @@ export default function CloseDayV7(){
   try{
    await closeDayRecord(getDayPlanApi(),{plan:data.plan,date,zone:tz,aim,first,taskIds:data.tasks.map(task=>task.id)},plan=>setData(previous=>previous?{...previous,plan}:previous));
    setClosed(true);
-   const reduced=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+   const reduced=motionReduced();
    timer.current=window.setTimeout(()=>navigate('/'),reduced?400:1600);
   }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
   finally{setBusy(false);}

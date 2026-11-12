@@ -1,0 +1,69 @@
+/*
+ * A1 · Motion v1, "drawn with a compass" (release and assets plan, 03_LATER_ASSETS_SPEC.md): lines stroke in, surfaces
+ * fade and rise a few points, nothing bounces, one thing moves at a time. No library: CSS plus the existing `motion`.
+ *
+ * Every animation here runs only when the system allows motion AND Settings › Appearance › Reduce effects is off
+ * (`html[data-v7-reduce-effects]`, src/ui/v7/effects.ts). Under either, layout is identical and nothing moves.
+ * Values mirror `motionV1` in motion.ts (tests/unit/v7/motion-v1.test.ts keeps them in step).
+ */
+:where(html[data-v7]) {
+  --v7-m-instant: 90ms;
+  --v7-m-quick: 160ms;
+  --v7-m-base: 240ms;
+  --v7-m-draw: 700ms;
+  --v7-ease-draw: cubic-bezier(.65, 0, .35, 1);
+  /* springEasing(380, 36): a sheet settles in 350 ms without overshoot. */
+  --v7-spring-sheet: linear(0, 0.034, 0.114, 0.217, 0.327, 0.434, 0.533, 0.62, 0.696, 0.759, 0.812, 0.855, 0.889, 0.917, 0.938, 0.954, 0.967, 0.977, 0.984, 0.989, 0.993, 0.995, 0.997, 0.999, 1);
+  --v7-spring-sheet-time: 350ms;
+  --v7-stagger: 30ms;
+  --v7-rise: 12px;
+  --v7-rise-small: 6px;
+}
+
+/* Reduce effects: the same as the system's reduced motion, plus no blur and no glow. */
+:where(html[data-v7][data-v7-reduce-effects]) *,
+:where(html[data-v7][data-v7-reduce-effects]) *::before,
+:where(html[data-v7][data-v7-reduce-effects]) *::after {animation: none !important; transition: opacity var(--v7-fast) !important; backdrop-filter: none !important;}
+:where(html[data-v7][data-v7-reduce-effects]) body {background-image: none;}
+:where(html[data-v7][data-v7-reduce-effects]) .v7-emblem path {stroke-dasharray: none;}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Sheets and dialogs rise and fade in on the sheet spring; the backdrop fades. (Closing stays instant.) */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {
+    transition: opacity var(--v7-m-quick) var(--v7-ease-standard), translate var(--v7-spring-sheet-time) var(--v7-spring-sheet), scale var(--v7-spring-sheet-time) var(--v7-spring-sheet);
+  }
+  @starting-style {
+    :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {opacity: 0; translate: 0 var(--v7-rise);}
+  }
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open]::backdrop {transition: opacity var(--v7-m-base) linear;}
+  @starting-style {
+    :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open]::backdrop {opacity: 0;}
+  }
+  @media (min-width: 700px) {
+    @starting-style {
+      :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-sheet[open] {translate: 0 0; scale: .98;}
+    }
+  }
+
+  /* List insert: an item added after the list loaded (useEnterMarks) rises in, 30 ms apart, at most six steps. */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) [data-v7-enter] {animation: v7-m-rise var(--v7-m-base) var(--v7-ease-standard) both;}
+
+  /* Check-draw: a task completed here draws its tick (lucide Check, path length ~23). */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) [data-v7-draw] svg path {stroke-dasharray: 24; animation: v7-m-check var(--v7-m-base) var(--v7-ease-draw) both;}
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-tk-check[aria-checked="true"] > span {transition: background-color var(--v7-m-quick) var(--v7-ease-standard), border-color var(--v7-m-quick) var(--v7-ease-standard);}
+
+  /* Review: the answer and the grade buttons rise into place when the card is revealed. */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-review-back {animation: v7-m-rise var(--v7-m-quick) var(--v7-ease-standard) both;}
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-review-grades {animation: v7-m-fade var(--v7-m-quick) var(--v7-ease-standard) both;}
+
+  /* Calendar: a lifted block grows a touch while it is dragged. */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-cal-block {transition: scale var(--v7-m-quick) var(--v7-ease-standard);}
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-cal-block[data-lifted="true"] {scale: 1.02;}
+
+  /* Emblems stroke in on the compass curve. */
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-emblem-draw path {animation-timing-function: var(--v7-ease-draw);}
+}
+
+@keyframes v7-m-rise {from {opacity: 0; translate: 0 var(--v7-rise-small);}}
+@keyframes v7-m-fade {from {opacity: 0;}}
+@keyframes v7-m-check {from {stroke-dashoffset: 24;} to {stroke-dashoffset: 0;}}

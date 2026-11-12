@@ -1,4 +1,5 @@
 import {useState,type ReactNode} from 'react';
+import {applyReduceEffects} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Bell,Brain,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
 import {useRotateConnectorSecret,useSettings,useSignOut,useSubjects,useUpdateSettings,useUpdateSubject} from '../../../data/hooks';
@@ -69,14 +70,14 @@ function Appearance({settings}:{settings:Settings}){
  const flag=(key:keyof typeof flags)=>flags[key];
  async function toggle(key:keyof typeof flags,value:boolean){
   setFlags(old=>({...old,[key]:value}));
-  if(key==='reduceEffects')document.documentElement.toggleAttribute('data-v7-reduce-effects',value);
-  if(!await save({[key]:value}))setFlags(old=>({...old,[key]:!value}));
+  if(key==='reduceEffects')applyReduceEffects(value);
+  if(!await save({[key]:value})){setFlags(old=>({...old,[key]:!value}));if(key==='reduceEffects')applyReduceEffects(!value);}
  }
  return <div className="v7-settings-body">
   <div className="v7-theme-cards" role="radiogroup" aria-label="Theme">{(['auto','day','night'] as Mode[]).map(item=><ThemeCard key={item} mode={item} selected={mode===item} onSelect={()=>{void choose(item);}}/>)}</div>
   <div className="v7-settings-card">
    <Switch label="Reduce effects" checked={flag('reduceEffects')} onChange={value=>{void toggle('reduceEffects',value);}}/>
-   <p className="v7-meta">No blur and no glow.</p>
+   <p className="v7-meta">No movement, blur or glow.</p>
    <Switch label="Haptics" checked={flag('haptics')} onChange={value=>{void toggle('haptics',value);}}/>
    <Switch label="Phase chime" checked={flag('chime')} onChange={value=>{void toggle('chime',value);}}/>
   </div>

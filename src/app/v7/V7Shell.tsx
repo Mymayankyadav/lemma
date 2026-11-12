@@ -11,6 +11,7 @@ import {Button,Sheet} from '../../ui/v7/components';
 import {useMinWidth} from './useMinWidth';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
+import {applyReduceEffects} from '../../ui/v7/effects';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 import './responsive.css';
@@ -93,6 +94,9 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
+ // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
+ const reduceEffects=settings.data?.ui?.reduceEffects;
+ useEffect(()=>{if(typeof reduceEffects==='boolean')applyReduceEffects(reduceEffects);},[reduceEffects]);
  useEffect(()=>{
   if(location.pathname!=='/'||!settings.data||!home.data)return;
   if(needsWelcome(settings.data.ui,home.data.projects.filter(project=>!project.system).length))navigate('/welcome',{replace:true});
