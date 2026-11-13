@@ -99,3 +99,38 @@ for(const [width,scale] of sizes){
   expect(labels[labels.length-1].right).toBeLessThanOrEqual(box.x+box.width);
  });
 }
+
+for(const [width,scale] of sizes){
+ test("Calendar's view choice is a header menu on a phone, which frees the row the segments took, at "+width+" px, text x"+scale,async({page})=>{
+  await open(page,"#/calendar?view=day&date=2026-11-09",width,scale);
+  const button=page.getByRole("button",{name:"Calendar view: Day"});
+  await expect(button).toBeVisible();
+  // It sits in the title row, beside the title, and the segmented control is gone from the page.
+  const title=(await page.getByRole("heading",{name:"Calendar",level:1}).boundingBox())!,b=(await button.boundingBox())!;
+  expect(Math.abs((b.y+b.height/2)-(title.y+title.height/2))).toBeLessThanOrEqual(12);
+  expect(b.height).toBeGreaterThanOrEqual(44);
+  await expect(page.getByRole("radiogroup",{name:"Calendar view"})).toHaveCount(0);
+  // The menu lists the four views, with the current one checked, and switching works by tap and by keyboard.
+  await button.click();
+  const menu=page.getByRole("menu",{name:"Calendar view"});
+  await expect(menu.getByRole("menuitemradio")).toHaveText(["Day","Week","Month","Agenda"]);
+  await expect(menu.getByRole("menuitemradio",{name:"Day"})).toHaveAttribute("aria-checked","true");
+  await expect(menu.getByRole("menuitemradio",{name:"Day"})).toBeFocused();
+  const item=(await menu.getByRole("menuitemradio",{name:"Agenda"}).boundingBox())!;
+  expect(item.x+item.width).toBeLessThanOrEqual(width);
+  await menu.getByRole("menuitemradio",{name:"Week"}).click();
+  await expect(page).toHaveURL(/view=week/);
+  await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeFocused();
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitemradio",{name:"Month"})).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu",{name:"Calendar view"})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeFocused();
+ });
+}
+test("wide screens keep the segmented view control and no header menu",async({page})=>{
+ await open(page,"#/calendar?view=week&date=2026-11-09",1024,1);
+ await expect(page.getByRole("radio",{name:"Week",exact:true})).toHaveAttribute("aria-checked","true");
+ await expect(page.getByRole("button",{name:/^Calendar view:/})).toHaveCount(0);
+});

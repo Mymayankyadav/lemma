@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {useDockedRuler} from './useDockedRuler';
+import {ViewMenu} from './ViewMenu';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
@@ -156,7 +157,8 @@ export default function V7CalendarDay(){
  };
  const unit=view==='month'?'month':'week',step=(direction:1|-1)=>view==='month'?shiftMonth(date,direction):shiftDay(date,direction*7);
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
-  {!(room&&view==='day')&&<HubHeader title={room?'Schedule':'Calendar'}>
+  {!(room&&view==='day')&&<HubHeader title={room?'Schedule':'Calendar'}
+   control={<ViewMenu value={viewLabel(view)} options={views} onChange={value=>go('view',value.toLowerCase())}/>}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>}
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
@@ -190,7 +192,8 @@ export default function V7CalendarDay(){
      <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
     </button>;})}
   </nav>}
-  {!(room&&view==='day')&&<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/>}
+  {/* N161: on a phone the view choice is the header's menu (ViewMenu); wide screens keep this segmented control. */}
+  {!(room&&view==='day')&&<div className="v7-cal-views-wide"><Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/></div>}
   {!(room&&view==='day')&&phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
    {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
    {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<MEANING_ICON.deadline aria-hidden="true"/>:<MEANING_ICON.practice aria-hidden="true"/>}<span>{item.value.title}</span></span>)}

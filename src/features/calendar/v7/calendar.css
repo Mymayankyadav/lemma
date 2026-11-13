@@ -203,4 +203,23 @@
   :where(html[data-v7]) .v7-cal > .v7-cal-desktop-panel {grid-column:1;grid-row:3 / span 12;position:sticky;top:var(--v7-space-4);align-self:start;}
   :where(html[data-v7]) .v7-cal .v7-cal-scroll {max-height:calc(100dvh - 280px);}
  }
+ /* N161: the view menu in the header on a phone; the segmented control from 700 px. */
+ :where(html[data-v7]) .v7-hub-control {margin-inline-start:auto;flex:none;}
+ :where(html[data-v7]) .v7-cal-viewmenu {position:relative;}
+ :where(html[data-v7]) .v7-cal-viewmenu-button {display:inline-flex;align-items:center;gap:var(--v7-space-1);min-height:var(--v7-touch);padding:0 var(--v7-space-3);
+  border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);
+  color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-cal-viewmenu-button svg {width:16px;height:16px;}
+ :where(html[data-v7]) .v7-cal-viewmenu-list {position:absolute;top:calc(100% + var(--v7-space-1));right:0;z-index:30;display:grid;min-width:160px;padding:var(--v7-space-1);
+  border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-cal-viewmenu-list button {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);min-height:var(--v7-touch);padding:0 var(--v7-space-3);
+  border:0;border-radius:var(--v7-radius-2);background:transparent;color:var(--v7-role-text-primary);font:500 var(--v7-type-body)/1.2 var(--v7-sans);text-align:left;}
+ :where(html[data-v7]) .v7-cal-viewmenu-list button[aria-checked="true"] {color:var(--v7-role-selection-fg);font-weight:600;}
+ :where(html[data-v7]) .v7-cal-viewmenu-list button:hover,:where(html[data-v7]) .v7-cal-viewmenu-list button:focus-visible {background:var(--v7-role-surface-sunken);}
+ :where(html[data-v7]) .v7-cal-viewmenu-list svg {width:16px;height:16px;}
+ :where(html[data-v7]) .v7-cal-views-wide {display:none;}
+ @media (min-width:700px) {
+  :where(html[data-v7]) .v7-cal-views-wide {display:block;}
+  :where(html[data-v7]) .v7-hub-control:has(.v7-cal-viewmenu) {display:none;}
+ }
 }
