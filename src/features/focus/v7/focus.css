@@ -70,6 +70,18 @@
  :where(html[data-v7]) .v7-focus-error {display:flex;align-items:center;gap:var(--v7-space-2);padding:var(--v7-space-2) var(--v7-space-2) var(--v7-space-2) var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-status-danger-subtle);color:var(--v7-role-text-primary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-focus-error > svg {flex:none;width:20px;height:20px;color:var(--v7-role-status-danger);}
  :where(html[data-v7]) .v7-focus-error > p {flex:1;margin:0;}
+ /* N131 · A4 focus orbit (flag focusOrbit): the open-mode ring fills once a minute; paused it dims and rests; Drifted ripples once. */
+ :where(html[data-v7]) .v7-focus-orbit {width:100%;height:100%;}
+ :where(html[data-v7]) .v7-focus-orbit .v7-focus-head {stroke:none;}
+ /* At the turn of each minute the ring empties at once rather than sweeping back. */
+ :where(html[data-v7]) .v7-focus-orbit[data-wrap] .v7-focus-arc {transition:none;}
+ :where(html[data-v7]) .v7-focus-orbit[data-paused] :is(.v7-focus-arc,.v7-focus-head) {opacity:.45;}
+ :where(html[data-v7]) .v7-focus-ripple {fill:none;stroke:var(--v7-role-status-warning);stroke-width:2;opacity:0;transform-origin:center;}
+ @media (prefers-reduced-motion: no-preference) {
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-focus-orbit:not([data-paused]) .v7-focus-arc {transition:stroke-dashoffset 1s linear;}
+  :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-focus-ripple {animation:v7-orbit-ripple 900ms cubic-bezier(.2,0,0,1) both;}
+ }
+ @keyframes v7-orbit-ripple {from{opacity:.6;transform:scale(1)}to{opacity:0;transform:scale(1.12)}}
 }
 /* AW13 (v7 UX audit r3): "Were you drifting?" as a quiet card at the top of Focus, until answered. */
 :where(html[data-v7]) .v7-focus-away {display:grid;gap:var(--v7-space-3);margin:0 var(--v7-page-margin) var(--v7-space-3);padding:var(--v7-space-4);}

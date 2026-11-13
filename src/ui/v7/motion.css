@@ -67,3 +67,10 @@
 @keyframes v7-m-rise {from {opacity: 0; translate: 0 var(--v7-rise-small);}}
 @keyframes v7-m-fade {from {opacity: 0;}}
 @keyframes v7-m-check {from {stroke-dashoffset: 24;} to {stroke-dashoffset: 0;}}
+
+/* N131 · L-16 theme transition (v7 UX plan r3, `04` §7: "a cross-fade"): a learner-made Day/Night switch cross-fades over
+   the base duration as a View Transition (src/styles/appearance.ts; never under reduced motion or Reduce effects). */
+@media (prefers-reduced-motion: no-preference) {
+  :where(html[data-v7][data-v7-theme-turn]:not([data-v7-reduce-effects]))::view-transition-old(root),
+  :where(html[data-v7][data-v7-theme-turn]:not([data-v7-reduce-effects]))::view-transition-new(root) {animation-duration: var(--v7-m-base); animation-timing-function: linear;}
+}

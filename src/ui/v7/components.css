@@ -167,6 +167,17 @@
 :where(html[data-v7]) :is(.v7-cards-front,.v7-paths-title,.v7-tk-title,.v7-learn-front) {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;}
 }
 
+@layer v7-components {
+/* N131 · L-09 loader: an emblem glyph draws itself in construction order, holds, and lifts again (1.6 s a cycle). */
+:where(html[data-v7]) .v7-loader {display:inline-flex;align-items:center;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-loader-mark {flex:none;display:inline-flex;width:20px;height:20px;color:var(--v7-subject,var(--v7-role-selection-fg));}
+@media (prefers-reduced-motion: no-preference) {
+ :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-loader-mark .v7-emblem-draw path {animation:v7-loader-draw 1.6s var(--v7-ease-draw,cubic-bezier(.65,0,.35,1)) infinite;}
+}
+@keyframes v7-loader-draw {0%{stroke-dashoffset:1;opacity:1}55%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
+}
+
 /* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
    website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
 html[data-v7][data-native-app] {--v7-touch:48px;}
+
