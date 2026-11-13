@@ -183,14 +183,14 @@ A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N
 
 ### U4 · Signature (web, L) — `02` §6 · one flag at a time, each with an Owner-approved sheet
 
-- [ ] S1 The ruler, flag `v7Ruler`
-- [ ] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page
-- [ ] S5 Review as an open notebook, flag `v7Spread`
-- [ ] S6 Scratch paper, flag `v7Scratch` *(needs E10)*
-- [ ] S14 Paper and sky, flag `v7Paper` *(needs E9)*
-- [ ] S15 The week page
-- [ ] S16 Desk clock, flag `v7DeskClock`
-- [ ] Errata and empty-state copy ("Erratum: …", "as of", ∅)
+- [x] S1 The ruler, flag `v7Ruler` — N157 (on Today; the New block, Calendar Day and widget uses follow)
+- [ ] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page — the task ∎, the round's closing ∎ and Inbox zero's ∎ in N157; V25 (Close the day as one page) not yet
+- [x] S5 Review as an open notebook, flag `v7Spread` — N157
+- [x] S6 Scratch paper, flag `v7Scratch` *(needs E10)* — N157
+- [x] S14 Paper and sky, flag `v7Paper` *(needs E9)* — N157
+- [x] S15 The week page — N157 (flag `v7Week`; the Sunday notification still opens Progress)
+- [x] S16 Desk clock, flag `v7DeskClock` — N157
+- [x] Errata and empty-state copy ("Erratum: …", "as of", ∅) — N157 ("as of" in N151)
 
 A4 (the Atlas sky, the drawn path map) follows U3's path spine and phone Atlas.
 
