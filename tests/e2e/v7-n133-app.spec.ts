@@ -76,6 +76,6 @@ test("AW9 · without a request nothing turns on by itself",async({page})=>{
 
 test("G0 · the install screenshots are v7 Today",async({page})=>{
  const manifest=await (await page.request.get("/lemma/manifest.webmanifest")).json() as {screenshots:{src:string;label:string}[]};
- expect(manifest.screenshots.map(shot=>shot.label)).toEqual(["Today · Day","Today · Night"]);
+ expect(manifest.screenshots.map(shot=>shot.label)).toEqual(["Today, day theme","Today, night theme"]);
  for(const shot of manifest.screenshots)expect((await page.request.get(shot.src)).status()).toBe(200);
 });
