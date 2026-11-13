@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N158 v7 UX audit r3 · U3 room and rhythm (Owner task)
+
+Owner task: "Start working on U3"
+Stage: Build · Status: open · Needs: — · Assigned: chat-42#q8rm
+Done = the nine U3 findings V13, V31, V26, V28, V29, V27, V19, V30 and V41 are implemented behind default-off v7Room with behavior and layout tests, documented in docs/current/N158.md and ticked in the r3 checklist. Builds on the current N157 branch; preserves all existing flag-off behavior.
+Scope: src/** (v7 room and rhythm only), tests/unit/v7/n158-*, tests/e2e/v7-n158-*, docs/current/N158.md, docs/v7/ux-audit-2026-11-12/{CHECKLIST.md,u3/**}, NEXT.md.
+Not: U4, server changes, dependencies, protected CI files or budgets, production flag enablement.
+
 ## N157 v7 UX audit r3 · everything left in the checklist, in one PR (Owner task)
 
 Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
