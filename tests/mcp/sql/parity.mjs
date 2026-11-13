@@ -1722,6 +1722,35 @@ try{
  void seriesSkipped;void seriesUnskipped;void seriesStopped;
  mark('task_series','create','update','skip','unskip','stop','resume');
  await role('service_role');
+ // N160 period plans: every operation through MCP, then the app boundary and undo.
+ await role(null);
+ const ppStart=(await q('select (public.task_series_today($1)+1)::text d',[owner]))[0].d;
+ await role('service_role');
+ status(await mcp(command('tasks','create',{patch:{title:'N160 plan me',estimate_minutes:60}})),'tasks','create');
+ const ppPreview=await mcp(command('period_plans','preview',{patch:{period:'week',start_date:ppStart}}));
+ assert.equal(ppPreview.status,'ok');assert.equal(ppPreview.actionNo,null);
+ assert.ok(ppPreview.planned_minutes>=60,'preview places the task');
+ const ppCreate=command('period_plans','create',{patch:{period:'week',start_date:ppStart}});
+ const ppCreated=status(await mcp(ppCreate),'period_plans','create');
+ assert.deepEqual(await mcp(ppCreate),ppCreated,'N160 plan replay');
+ const ppId=ppCreated.changed[0].id;
+ const ppStep=async(operation,version,patch={})=>status(await mcp(command('period_plans',operation,{
+  target:{id:ppId},expectedVersion:version,patch})),'period_plans',operation);
+ assert.equal((await mcp(command('period_plans','update',{target:{id:ppId},expectedVersion:9,patch:{}}))).status,'conflict');
+ await ppStep('update',1,{daily_cap_minutes:180});
+ await role(null);
+ const ppIds=(await q('select placements from public.period_plans where id=$1',[ppId]))[0].placements.map(x=>x.id);
+ await role('service_role');
+ await ppStep('commit',2,{placement_ids:ppIds});
+ await ppStep('replan',3);
+ const ppArchived=await ppStep('archive',4,{cancel_blocks:true});
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('period_plans','archive',{target:{id:ppId},expectedVersion:5,patch:{}}))]),/not found/i);
+ await as(owner);
+ assert.equal((await undo(ppArchived.actionNo)).undone,ppArchived.actionNo);
+ assert.equal((await q('select status from public.period_plans where id=$1',[ppId]))[0].status,'committed');
+ mark('period_plans','create','update','preview','commit','replan','archive');
+ await role('service_role');
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

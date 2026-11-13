@@ -526,6 +526,32 @@
           "materialized_through"
         ]
       }
+    },
+    {
+      "resource": "period_plans",
+      "command_fn": "period_plans_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "preview",
+          "commit",
+          "replan",
+          "archive"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "status",
+          "daily_cap_minutes",
+          "exclude_task_ids",
+          "placements",
+          "unplaced",
+          "committed_at"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

@@ -100,7 +100,7 @@
   {
    "n": 5,
    "title": "Manage calendar blocks",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "study",
     "get"
@@ -123,9 +123,7 @@
      ]
     }
    ],
-   "note": "Move, resize and cancel are update patches (starts_at, ends_at, status).",
-   "gap": "There is no read that lists the overlaps a proposed block would create.",
-   "item": "N160.2"
+   "note": "Move, resize and cancel are update patches (starts_at, ends_at, status). get(what=calendar_overlaps,start,end) lists the overlaps before a block is created or moved."
   },
   {
    "n": 6,
@@ -151,20 +149,41 @@
   {
    "n": 7,
    "title": "Plan my week and month",
-   "status": "missing",
-   "tools": [],
-   "covers": [],
-   "gap": "Only a single day can be planned; nothing distributes work across dates from deadlines, working hours and goals.",
-   "item": "N160.3"
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "period_plans",
+     "operations": [
+      "preview",
+      "create",
+      "update",
+      "commit",
+      "archive"
+     ]
+    }
+   ]
   },
   {
    "n": 8,
    "title": "Replan unfinished work",
-   "status": "partial",
+   "status": "supported",
    "tools": [
-    "study"
+    "study",
+    "get",
+    "undo"
    ],
    "covers": [
+    {
+     "resource": "period_plans",
+     "operations": [
+      "replan"
+     ]
+    },
     {
      "resource": "day_plans",
      "operations": [
@@ -173,8 +192,7 @@
      ]
     }
    ],
-   "gap": "Carry-over exists for one day; there is no command that reschedules missed tasks or adjusts a period when availability changes.",
-   "item": "N160.3"
+   "note": "A replan can be scheduled with pending_commands so it runs while the app is closed."
   },
   {
    "n": 9,

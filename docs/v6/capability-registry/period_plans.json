@@ -1,0 +1,111 @@
+{
+  "table": "period_plans",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "period": {
+      "classification": "owner-editable",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "start_date": {
+      "classification": "owner-editable",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "end_date": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "time_zone": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "daily_cap_minutes": {
+      "classification": "owner-editable",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "exclude_task_ids": {
+      "classification": "owner-editable",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "placements": {
+      "classification": "command-managed",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "unplaced": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "committed_at": {
+      "classification": "command-managed",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "owner-visible through the calendar blocks a committed plan writes",
+      "mcpPath": "MCP get(period_plans); registered period_plans_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (period_plans is a registered undo table)"
+    }
+  }
+}
