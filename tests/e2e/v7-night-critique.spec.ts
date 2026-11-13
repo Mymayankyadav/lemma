@@ -1,7 +1,7 @@
 import {test,expect,type Page} from "@playwright/test";
+import {at} from './v7-scenes';
 // End-to-end checks for the v7 Night critique (v2, 11 Nov 2026), on the audit seed with the clock frozen at
 // Mon 9 Nov 2026, 13:43 IST. The ids in the test names are the critique's.
-const at=(hash:string)=>"/lemma/?demo=1&flags=v7Shell,v6Shell#"+hash;
 test.use({locale:"en-IN",timezoneId:"Asia/Kolkata",colorScheme:"dark"});
 async function open(page:Page,hash:string,width=390){
  await page.setViewportSize({width,height:844});
