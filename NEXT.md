@@ -1,5 +1,18 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N150 Inbox: a key pressed just after the Inbox opens is not lost (bug #1375) (Owner task)
+
+Owner task: "Work on the v7 audit items the other agent is not doing"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = bug #1375 fixed with a regression test, as follows.
+- The Inbox's keys (A, R, arrows, E) are handled from the Inbox's first commit; one listener is attached synchronously in `useInboxKeys`.
+- An E pressed while the stack is loading, or before the Inbox's code has loaded (kept by `inboxEarlyKeys.ts`, which the app's routes load from the start), opens the editor when the first card shows, within 5 s.
+- A decision key is never replayed on a card the learner has not seen.
+- `tests/e2e/v7-inbox.spec.ts` "keys alone … E opens the editor" holds under load. That test is unchanged.
+- Recorded in `docs/current/N150.md`.
+Tests: `tests/unit/v7/n150-inbox-keys.test.tsx`, `tests/e2e/v7-n150-inbox-keys.spec.ts`, existing suites unchanged.
+Scope: `src/features/proposals/v7/{InboxV7.tsx (keyboard only),useInboxKeys.ts,inboxEarlyKeys.ts}`, `src/app/routes.tsx` (one side-effect import), tests, `docs/current/N150.md`.
+Not: InboxV7's pointer handlers, other screens' keys, server changes, new dependencies.
 ## N134 v7 UX audit r3: large text holds (U2 · V11) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"

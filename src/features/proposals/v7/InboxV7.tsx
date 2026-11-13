@@ -21,6 +21,7 @@ import {firstProposalFrontLine} from '../frontPreview';
 import {planReviewNodes} from '../../plan-proposal/nodes';
 import {changeRows,groupBySession,isCardProposal,isPlanProposal,mergeOrder,miniWindow,sameSession,skipFirst,swipeIntent,swipeStyle,type ChangeIcon,type Decision} from './inboxModel';
 import {useInboxDecisions} from './useInboxDecisions';
+import {useInboxKeys,type InboxKeyAction} from './useInboxKeys';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import '../../project/v7/learning.css';
@@ -133,19 +134,15 @@ export default function InboxV7(){
   stampTimer.current=window.setTimeout(()=>{setStamp(null);decide(targets,action);},STAMP_MS);
  },[top,decide,haptics,reduced,stamp]);
  const skip=useCallback(()=>setOrder(previous=>skipFirst(mergeOrder(previous,cards.map(p=>p.id)))),[cards]);
- useEffect(()=>{
-  if(tab!=='cards'||list||editing||batch)return;
-  const keys=(event:KeyboardEvent)=>{
-   if(event.target instanceof HTMLElement&&event.target.closest('input,textarea,[contenteditable],dialog'))return;
-   if(event.ctrlKey||event.metaKey||event.altKey||!top)return;
-   const key=event.key.toLowerCase();
-   if(key==='a'||event.key==='ArrowRight'){event.preventDefault();act('approve');}
-   else if(key==='r'||event.key==='ArrowLeft'){event.preventDefault();act('reject');}
-   else if(key==='e'){event.preventDefault();setEditing(top);}
-   else if(event.key==='ArrowUp'){event.preventDefault();skip();}
-  };
-  window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
- },[tab,list,editing,batch,top,act,skip]);
+ // N150 (bug #1375): one listener from the first commit; an E pressed while the stack loads opens the editor when it shows.
+ const onKey=useCallback((action:InboxKeyAction)=>{
+  if(!top)return;
+  if(action==='approve')act('approve');
+  else if(action==='reject')act('reject');
+  else if(action==='edit')setEditing(top);
+  else skip();
+ },[top,act,skip]);
+ useInboxKeys({enabled:tab==='cards'&&!list&&!editing&&!batch,ready:!!top,onAction:onKey});
  function setTab(value:string){const next=new URLSearchParams(params);if(value.startsWith('Plans'))next.set('tab','plan');else next.delete('tab');setParams(next);}
  function toggleList(){const next=new URLSearchParams(params);if(list)next.delete('view');else next.set('view','list');setParams(next);setSelected(new Set());}
  const titleOf=(slug:string)=>bySlug.get(slug)?.title??slug;
