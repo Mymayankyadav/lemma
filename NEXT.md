@@ -9,6 +9,15 @@ Tests: `tests/unit/v7/g1-pipeline.test.tsx`, existing suites unchanged.
 Scope: `assets.manifest.json`, `scripts/brand/{asset-lint.mjs,android-colors.mjs,emblem-export.mjs,lemma-mark.mjs}`, `scripts/android-icons.mjs`, `package.json` (scripts only), `android/app/src/main/res/{values,values-night}/colors.xml`, `android/app/src/main/res/mipmap-*/ic_launcher_*`, `src/ui/v7/emblemExport.ts`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (G1 lines), `docs/current/N137.md`.
 Not: the ∎ in the themed icon (E23), the scene camera (after N133's install shots land), wiring the lint into CI (an Owner `rules:` PR), new dependencies, server changes.
 
+## N133 v7 UX audit r3: the rest of AN1 and G0 (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = the Android app's remaining AN1 items that need no Owner decision and the stale assets of G0 are fixed, each with a test, and ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`: AW5 (the welcome sheet as three glyph rows, focus on its text, the notification line), AW9 (Study mode turns on when the learner comes back with access granted), AW13 (the drift question as a card on Focus with No and Yes, note it), G0 (pre-paint colours from the build's v7 flag; v7 install screenshots); recorded in `docs/current/N133.md`.
+Tests: `tests/unit/v7/n133-app.test.tsx`, `tests/e2e/v7-n133-app.spec.ts`, existing suites unchanged.
+Scope: `src/platform/{NativeWelcome.tsx,native-welcome.css,drift.ts,studyMode.ts,device.ts,start.ts}`, `src/features/focus/v7/{FocusV7.tsx,DriftCard.tsx,focus.css}`, `src/features/settings/v7/PhoneSettings.tsx`, `src/app/paper.ts`, `index.html`, `vite.config.ts`, `scripts/check-pwa.mjs`, `scripts/v7/install-shots.mjs`, `public/screenshots/**`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N133.md`.
+Not: AW14 and P7 (decision E23), AW15 (a wording decision), AW17 (needs a device), a wide install screenshot (the PWA gate allows two), server changes, new dependencies.
+
 ## N132 v7 UX audit r3: the rest of U0 (truth) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
@@ -80,6 +89,7 @@ Done = phase A1 of the release and assets plan (`03_LATER_ASSETS_SPEC.md` §A1, 
 Tests: `tests/unit/v7/motion-v1.test.tsx`, `tests/e2e/v7-motion.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/**`, the v7 screens that use the new marks (Tasks, Calendar Day, Settings, Focus, Close the day, Atlas, Toast), `src/main.tsx`, `src/app/v7/V7Shell.tsx`, tests, `docs/current/N124.md`.
 Not: new dependencies, Lottie or Rive (A3), illustrations (A2), flag defaults, server changes.
+
 ## N123 Lemma for Android: the Capacitor app (Owner task, one PR)
 
 Owner task: "Start working on Android app complete the taskd"
@@ -135,7 +145,5 @@ Done = #1299 (undo the last answer in the durable v6 review run), #1300 (Kit at 
 Tests: `tests/e2e/v6-g7-fixes.spec.ts`, `tests/mcp/sql/review_runs_undo_last.mjs`, `tests/e2e/v6-release-audit.spec.ts` (no known-defect exemptions left), the unit tests listed in `docs/current/N119.md`.
 Scope: v6 screens and shell under src/**, one additive migration under supabase/migrations/, tests, docs/v6/release-captures/**, docs/current/N119.md.
 Not: turning v6 on (N102); flag-off screens.
-
-
 
 (Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N119.)

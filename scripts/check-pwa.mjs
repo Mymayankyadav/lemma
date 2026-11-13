@@ -45,8 +45,11 @@ for(const [name,hash] of Object.entries(expectedShortcuts)){
  if(bytes.toString('hex',0,8)!=='89504e470d0a1a0a'||bytes.readUInt32BE(16)!==96||bytes.readUInt32BE(20)!==96)
   throw Error('Invalid shortcut icon dimensions: '+filename);
 }
-if(!index.includes('media="(prefers-color-scheme: light)" content="#FAFAF6"')||
- !index.includes('media="(prefers-color-scheme: dark)" content="#13171D"'))
+// G0 (v7 UX audit r3): the pre-paint papers follow the build's v7 flag (src/app/paper.ts), as the install colour does.
+const paper=manifest.theme_color==='#F8F5F0'?{day:'#F8F5F0',night:'#091023'}:{day:'#FAFAF6',night:'#13171D'};
+if(!index.includes('media="(prefers-color-scheme: light)" content="'+paper.day+'"')||
+ !index.includes('media="(prefers-color-scheme: dark)" content="'+paper.night+'"')||
+ !index.includes("var colors={graph:'"+paper.day+"','graph-night':'"+paper.night+"'}")||index.includes('__PAPER_'))
  throw Error('Missing Graph day/night theme-color variants');
 
 /** AND-1 screenshot gate: real 360px phone captures at 3× DPR, committed

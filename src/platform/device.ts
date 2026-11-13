@@ -17,7 +17,7 @@ export function releaseLinks(version: string | null | undefined): {latest: strin
   return {latest: RELEASES_URL + '/latest', thisVersion: build ? RELEASES_URL + '/tag/android-build-' + build : null};
 }
 
-export type DevicePrefKey = 'studyMode' | 'calendarSync' | 'busyCalendars' | 'welcomeSeen' | 'notificationsAsked';
+export type DevicePrefKey = 'studyMode' | 'studyModeRequestedAt' | 'calendarSync' | 'busyCalendars' | 'welcomeSeen' | 'notificationsAsked';
 export const DEVICE_PREFS_CHANGED = 'lemma:device-prefs-changed';
 const prefKey = (key: DevicePrefKey) => 'lemma.android.' + key;
 export function readDevicePref<T>(key: DevicePrefKey, fallback: T): T {

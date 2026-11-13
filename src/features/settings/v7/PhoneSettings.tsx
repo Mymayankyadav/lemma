@@ -10,6 +10,7 @@ import {Group,InfoRow,LinkRow,SwitchRow,ValueRow} from './SettingsLists';
 import {lemmaNative,type DeviceCalendar,type PermissionWord} from '../../../platform/bridge';
 import {readDevicePref,releaseLinks,writeDevicePref} from '../../../platform/device';
 import {requestNotificationPermission} from '../../../platform/permissions';
+import {studyModeOnReturn} from '../../../platform/studyMode';
 
 /** Re-read a native status now and whenever the learner comes back from system settings. */
 function useStatus<T>(read:()=>Promise<T>):[T|null,()=>void]{
@@ -44,9 +45,20 @@ export function PhonePlanning(){
  const [picking,setPicking]=useState<DeviceCalendar[]|null>(null);
  async function studyMode(on:boolean){
   const native=await lemmaNative();
-  if(on&&!mode?.access){notify('Allow Lemma under “Do Not Disturb access”, then come back and turn Study mode on.');await native.openStudyModeSettings();return;}
-  await native.studyModeSetEnabled({enabled:on});writeDevicePref('studyMode',on);refreshMode();
+  // AW9: remember the request, so coming back with access granted finishes it (one trip, not two).
+  if(on&&!mode?.access){writeDevicePref('studyModeRequestedAt',Date.now());notify('Allow Lemma under “Do Not Disturb access”, then come back: Study mode turns on by itself.');await native.openStudyModeSettings();return;}
+  await native.studyModeSetEnabled({enabled:on});writeDevicePref('studyMode',on);writeDevicePref('studyModeRequestedAt',null);refreshMode();
  }
+ useEffect(()=>{
+  const step=studyModeOnReturn(readDevicePref<number|null>('studyModeRequestedAt',null),mode,Date.now());
+  if(step==='forget')writeDevicePref('studyModeRequestedAt',null);
+  if(step!=='enable')return;
+  void (async()=>{
+   const native=await lemmaNative();
+   await native.studyModeSetEnabled({enabled:true});writeDevicePref('studyMode',true);writeDevicePref('studyModeRequestedAt',null);
+   notify('Study mode is on.',{tone:'success'});refreshMode();
+  })().catch(()=>undefined);
+ },[mode,notify,refreshMode]);
  async function calendarSync(on:boolean){
   const native=await lemmaNative();
   if(on){

@@ -12,6 +12,7 @@ import {Button,Sheet,Stepper} from '../../../ui/v7/components';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {DriftCard} from './DriftCard';
 import {announceFocusChange,focusClock,focusEyebrow,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
@@ -119,6 +120,7 @@ export default function FocusV7(){
       {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
      ]}/>}</div>}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>
+  <DriftCard entryId={entry.id}/>
   <section className="v7-focus-centre" aria-label="Timer">
    {/* FO1/KC23: the emblem is centred on the timer, with the kit's Night hero glow; eyebrow, timer and intention are one block. */}
    <div className="v7-focus-emblem" aria-hidden="true" data-still={reduced||onBreak?'true':undefined}>
