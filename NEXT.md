@@ -1,6 +1,5 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
-
 ## N160 Chat connector and app: the Owner's 30-area checklist, last open part (Owner task)
 
 Owner task: "Implement these" (the 30-area MCP and app checklist, recorded in `docs/mcp/OWNER_CHECKLIST.md`)
@@ -10,6 +9,15 @@ Done = every one of the 30 areas of `docs/mcp/capability-map.json` is `supported
 Tests: the delivery tick's SQL and unit tests, plus the existing `tests/unit/mcp/capability-map.test.ts` (which turns green only when area 30 is supported).
 Scope: `supabase/migrations/` (additive only), `supabase/functions/notify/**`, `docs/mcp/capability-map.json`, tests, `docs/current/N160.md`.
 Not: replacing an existing command function without a `Replaces function:` claim, new dependencies, flag defaults, the Android native code.
+
+## N159 Ship the approved U4 signature features in Android (Owner task)
+
+Owner task: "Ok do it"
+Stage: Harden · Status: open · Needs: — · Assigned: chat-42#q8rm
+Done = the seven implemented U4 flags default on in production, phone landscape is available with the desk clock, the Week page is reachable from Progress, production builds show these without overrides, rollout and rollback tests pass, and the signed Android release is verified after green CI and merge. Owner authorizes release on 13 Nov 2026; MCP work remains paused. Recorded in `docs/current/N159.md`.
+Tests: existing suites plus `tests/unit/v7/n159-release.test.ts`, `tests/e2e/v7-n159-release.spec.ts`; prior default-off/orientation expectations updated only for this explicit Owner rollout decision.
+Scope: `src/flags.ts`, `src/features/insights/v7/ProgressV7.tsx`, `android/app/src/main/java/io/github/mymayankyadav/lemma/{OrientationPolicy.java,MainActivity.java}`, `android/app/src/test/java/io/github/mymayankyadav/lemma/OrientationPolicyTest.java`, tests, `docs/current/N159.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Not: MCP implementation, U3/margin/orbit rollout, server changes, dependencies, protected workflows or budgets, the Progress table.
 
 ## N156 v7 UX audit r3 · one meaning per glyph, one line weight (IC1, IC2, IC3, IC5) (Owner task)
 

@@ -1,6 +1,6 @@
 import {test,expect} from "@playwright/test";
+import {at} from './v7-scenes';
 // PLAN §6.1 F/G and §6.4 A, with v7 on. Structure and behaviour, not pixels.
-const at=(hash:string)=>"/lemma/?demo=1&flags=v7Shell,v6Shell#"+hash;
 
 test("Capture reads a time block out of one sentence and saves it with Undo",async({page})=>{
  await page.goto(at("/"));

@@ -3,10 +3,11 @@ import {FLAG_DEFAULTS,resolveFlags,isFlagOn,resolveEffectiveShell,currentEffecti
 import {setShellRoot} from '../../src/app/shellRoot'
 
 describe('feature flags',()=>{
- it('every flag except v6Shell and v7Shell is off by default (v6Shell turned on by N102, v7Shell by the v7 release)',()=>{
-  const {v6Shell,v7Shell,...rest}=FLAG_DEFAULTS
+ it('released shells and U4 are enabled; all unreleased flags remain off',()=>{
+  const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
   expect(v7Shell).toBe(true)
+  expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })

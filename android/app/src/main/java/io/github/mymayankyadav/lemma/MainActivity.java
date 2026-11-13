@@ -1,6 +1,7 @@
 package io.github.mymayankyadav.lemma;
 
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -69,9 +70,11 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    /** E8: portrait on phones, free rotation on tablets and unfolded foldables (OrientationPolicy). */
+    /** N159: follow system rotation on phones, tablets and unfolded foldables (OrientationPolicy). */
     private void applyOrientation(Configuration configuration) {
-        int wanted = OrientationPolicy.requested(configuration.smallestScreenWidthDp);
+        // Translate the pure policy's values to Android's orientation constants for its @IntDef contract.
+        int wanted = OrientationPolicy.requested(configuration.smallestScreenWidthDp) == OrientationPolicy.UNSPECIFIED
+                ? ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED : ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
         if (getRequestedOrientation() != wanted) setRequestedOrientation(wanted);
     }
 }

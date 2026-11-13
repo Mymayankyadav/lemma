@@ -131,6 +131,7 @@ export default function ProgressV7(){
   <p className="v7-progress-empty">No study time in this range yet.</p></section>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
   <HubHeader title={isFlagOn('v7Room')?tabWords[tab]:'Progress'}><ProgressTabs current={tab}/></HubHeader>
+  {isFlagOn('v7Week')&&<Link className="v7-button v7-ghost v7-small" to="/week">Your week</Link>}
   <Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>
   {status==='loading'&&<Skeleton/>}
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
