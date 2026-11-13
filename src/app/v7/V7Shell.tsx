@@ -1,4 +1,4 @@
-import {Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
@@ -20,6 +20,9 @@ import {applyReduceEffects} from '../../ui/v7/effects';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 import './responsive.css';
+import '../../ui/v7/room.css';
+import {isFlagOn} from '../../flags';
+import {rememberRoomItem} from '../../ui/v7/room';
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
 const SearchSheet=lazy(()=>import('./SearchSheet'));
@@ -115,6 +118,20 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
+ useEffect(()=>{
+  if(!isFlagOn('v7Room'))return;
+  const path=location.pathname,to=path+location.search;
+  const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':null;
+  if(!group)return;
+  const record=()=>{
+   const main=document.querySelector('main'),title=main?.querySelector('h1')?.textContent?.trim();
+   if(!title||['Path','Card','Checkpoint','Loading…'].includes(title))return;
+   const project=home.data?.projects.find(item=>path==='/p/'+item.slug);
+   rememberRoomItem({id:to,group,title:project?.title??title,to});
+  };
+  record();const observer=new MutationObserver(record);observer.observe(document.body,{childList:true,subtree:true});
+  return()=>observer.disconnect();
+ },[location.pathname,location.search,home.data]);
  // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
  const reduceEffects=settings.data?.ui?.reduceEffects;
  // AW6: haptic() follows Lemma's Haptics switch everywhere in v7.
@@ -171,6 +188,14 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
 export function HubHeader({title,date,settings=false,display=false,children}:{title:string;date?:string;settings?:boolean;display?:boolean;children?:ReactNode}){
+ const findSelected=(nodes:ReactNode):string|undefined=>{
+  for(const node of Children.toArray(nodes)){
+   if(!isValidElement<{children?:ReactNode;'aria-current'?:string}>(node))continue;
+   if(node.props['aria-current']==='page'&&typeof node.props.children==='string')return node.props.children;
+   const nested=findSelected(node.props.children);if(nested)return nested;
+  }
+ };
+ if(isFlagOn('v7Room')&&!display)title=findSelected(children)??title;
  const pending=useHome().data?.pendingProposals??0;
  // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
  const update=useDevicePrefValue<number|null>('updateAvailable',null);

@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
-import {Link,useSearchParams} from 'react-router';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -32,10 +32,13 @@ import {dotClasses,loadRange,parseView,viewLabel} from './viewModel';
 import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
 import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
+import {isFlagOn} from '../../../flags';
 
 const views=['Day','Week','Month','Agenda'] as const;
 /** PLAN §6.5: the shape of the day, with a week strip above and a time grid below. */
 export default function V7CalendarDay(){
+ const room=isFlagOn('v7Room');
+ const navigate=useNavigate();
  const home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
@@ -147,9 +150,9 @@ export default function V7CalendarDay(){
  };
  const unit=view==='month'?'month':'week',step=(direction:1|-1)=>view==='month'?shiftMonth(date,direction):shiftDay(date,direction*7);
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
-  <HubHeader title="Calendar">
+  {!(room&&view==='day')&&<HubHeader title={room?'Schedule':'Calendar'}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
-  </HubHeader>
+  </HubHeader>}
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">
@@ -162,12 +165,17 @@ export default function V7CalendarDay(){
   </aside>}
   {/* B4/CD2: one line at 320–390 px — the month label between chevrons, a Today pill only when away. New blocks come from the
       Capture button or a tap on the grid, so there is no "+ New block" in the top third. */}
-  <div className="v7-cal-dateRow">
+  {room&&view==='day'?<header className="v7-cal-compact">
+   <button type="button" className="v7-icon-button" aria-label="Previous week" onClick={()=>go('date',step(-1))}><ChevronLeft aria-hidden="true"/></button>
+   <h1>{formatShortDate(date,{zone})}</h1>
+   <button type="button" className="v7-icon-button" aria-label="Next week" onClick={()=>go('date',step(1))}><ChevronRight aria-hidden="true"/></button>
+   <select className="v7-cal-view-menu" aria-label="Calendar view" value={view} onChange={event=>event.target.value==='tasks'?navigate('/tasks'):go('view',event.target.value)}>{views.map(label=><option key={label} value={label.toLowerCase()}>{label}</option>)}<option value="tasks">Tasks</option></select>
+  </header>:<div className="v7-cal-dateRow">
    <button type="button" className="v7-icon-button" aria-label={'Previous '+unit} onClick={()=>go('date',step(-1))}><ChevronLeft aria-hidden="true"/></button>
    <h2 className="v7-cal-month" aria-live="polite">{monthWord}</h2>
    <button type="button" className="v7-icon-button" aria-label={'Next '+unit} onClick={()=>go('date',step(1))}><ChevronRight aria-hidden="true"/></button>
    {!isToday&&<button type="button" className="v7-button v7-secondary v7-small v7-cal-today" onClick={()=>go('date',today)}><span>Today</span></button>}
-  </div>
+  </div>}
   {(view==='day'||view==='agenda')&&<nav className="v7-cal-strip" aria-label="Week">
    {cells.map(cell=>{const dots=stripDots(cell.day);
     return <button key={cell.day} type="button" data-strip-day={cell.day} aria-label={cell.long+(cell.day===today?', today':'')} aria-pressed={cell.day===date}
@@ -176,8 +184,8 @@ export default function V7CalendarDay(){
      <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
     </button>;})}
   </nav>}
-  <Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/>
-  {phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
+  {!(room&&view==='day')&&<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/>}
+  {!(room&&view==='day')&&phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
    {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
    {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<MEANING_ICON.deadline aria-hidden="true"/>:<MEANING_ICON.practice aria-hidden="true"/>}<span>{item.value.title}</span></span>)}
   </div>}
@@ -190,9 +198,15 @@ export default function V7CalendarDay(){
   {phase==='ready'&&view==='agenda'&&<AgendaList date={date} today={today} zone={zone} clock={clock} clock24h={clock24h} entries={entries} blocks={blocks} dues={dues} projects={projects}
    lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onAdd={day=>{
     const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
-  {phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
+  {!(room&&view==='day')&&phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
    onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
   {phase==='ready'&&view==='day'&&<div className="v7-cal-day-stack">
+   {room&&<div className="v7-cal-grid-actions">
+    {!isToday&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>go('date',today)}><span>Today</span></button>}
+    {overdueCount>0&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>setOverdueOpen(true)} aria-label={overdueCount+' overdue. Triage'}><span>{overdueCount} overdue</span></button>}
+    {dueToday.length>0&&<details className="v7-room-due"><summary className="v7-meta">{dueToday.length} due today</summary><ul>{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul></details>}
+    {date>=today&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
+   </div>}
    <DayGrid enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>

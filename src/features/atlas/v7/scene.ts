@@ -51,6 +51,8 @@ export function drawStarMark(ctx:CanvasRenderingContext2D,state:StarState,cx:num
 }
 
 export class AtlasScene{
+ labelCluster:number|null=null;
+ highlighted:ReadonlySet<number>|null=null;
  camera:Camera={x:0,y:0,k:1};
  selected:number|null=null;
  private ctx:Ctx;
@@ -118,6 +120,17 @@ export class AtlasScene{
  }
  /** Camera centred on one star, close enough to read its neighbourhood. */
  focusCamera(index:number,k=Math.max(this.camera.k,1.4)):Camera{return {x:this.layout.x[index],y:this.layout.y[index],k:Math.min(MAX_ZOOM,k)};}
+ /** U3: frame one subject with room for every concept label, instead of fitting the whole sky on a phone. */
+ clusterCamera(cluster:number):Camera{
+  const members=this.model.stars.map((star,i)=>star.cluster===cluster?i:-1).filter(i=>i>=0);
+  if(!members.length)return this.fitCamera();
+  const left=Math.min(...members.map(i=>this.layout.x[i])),right=Math.max(...members.map(i=>this.layout.x[i]));
+  const top=Math.min(...members.map(i=>this.layout.y[i])),bottom=Math.max(...members.map(i=>this.layout.y[i]));
+  const label=Math.min(210,Math.max(...members.map(i=>this.model.stars[i].label.length))*7);
+  const width=Math.max(40,this.width-this.insets.left-this.insets.right-label-48),height=Math.max(40,this.height-this.insets.top-this.insets.bottom-80);
+  const k=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,width/Math.max(1,right-left+24),height/Math.max(1,bottom-top+24)));
+  return {x:(left+right)/2+label/2/k,y:(top+bottom)/2,k};
+ }
  /** Zoom around a screen point, keeping that point still. */
  zoomCamera(sx:number,sy:number,factor:number,from:Camera=this.camera):Camera{
   const k=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,from.k*factor));
@@ -196,7 +209,7 @@ export class AtlasScene{
   const scale=Math.min(1.6,Math.max(.75,Math.sqrt(camera.k)));
   for(const i of visible){
    const sprite=this.sprite(i),[sx,sy]=this.toScreen(layout.x[i],layout.y[i]),half=sprite.half*scale;
-   ctx.globalAlpha=dimmed&&i!==selected&&!this.neighbourSet.has(i)?.4:1;
+   ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.15:dimmed&&i!==selected&&!this.neighbourSet.has(i)?.4:1;
    ctx.drawImage(sprite.canvas,sx-half,sy-half,half*2,half*2);
   }
   ctx.globalAlpha=1;
@@ -264,9 +277,9 @@ export class AtlasScene{
   if('letterSpacing' in ctx)ctx.letterSpacing='0px';
   ctx.textAlign='left';
   const dim=this.selected!==null;
-  const candidates=(camera.k<FAR_ZOOM?visible.filter(i=>this.topLabels.has(i)):visible)
+  const candidates=(this.labelCluster!==null?visible.filter(i=>model.stars[i].cluster===this.labelCluster):camera.k<FAR_ZOOM?visible.filter(i=>this.topLabels.has(i)):visible)
    .filter(i=>i!==this.selected).sort((a,b)=>model.stars[b].radius-model.stars[a].radius||a-b).slice(0,220);
-  for(const i of candidates){ctx.globalAlpha=dim&&!this.neighbourSet.has(i)?.4:1;label(i,12,500,palette.textSecondary);}
+  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,12,500,palette.textSecondary,this.labelCluster!==null);}
   ctx.globalAlpha=1;
  }
 }

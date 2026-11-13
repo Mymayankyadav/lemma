@@ -3,6 +3,8 @@ import {useNavigate,useParams,Link} from 'react-router';
 import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
 import {useAddComment,useCard,useDismissComment,useProjects,useSetNoteStatus,useSettings,useUpdateNote} from '../../../data/hooks';
 import {DetailHeader} from '../../../app/v7/V7Shell';
+import {isFlagOn} from '../../../flags';
+import {plainMath} from '../../../lib/plain-math';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Sheet,Skeleton,StatTile} from '../../../ui/v7/components';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
@@ -63,7 +65,7 @@ export default function CardV7(){
  }
  const comments=detail.comments.filter(item=>item.status!=='dismissed');
  return <main id="main-content" className={'v7-page v7-learn v7-card-page '+subjectClass(subject)} aria-label="Card">
-  <DetailHeader title="Card" back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
+  <DetailHeader title={isFlagOn('v7Room')?plainMath(note.front):'Card'} back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
   {/* N157 · U1 S11 (flag v7Margin): why this card, its source and its last reviews, beside the page. */}
   <Margin notes={[
    ...(project?[{title:'Why this card',body:<p><Link to={'/p/'+encodeURIComponent(project.slug)+(note.checkpointCode?'/cp/'+encodeURIComponent(note.checkpointCode):'')}>{project.title}</Link>
@@ -72,7 +74,7 @@ export default function CardV7(){
    ...(detail?.history.length?[{title:'Last reviews',body:<ul>{[...detail.history].sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)).slice(0,5).map((row,index)=>
     <li key={row.reviewedAt+index}>{formatShortDate(row.reviewedAt,{zone})} · {gradeWord[row.rating-1]}</li>)}</ul>}]:[]),
   ]}/>
-  <h1 className="v7-sr-only">{'Card in '+(project?.title??'your library')}</h1>
+  <h1 className="v7-sr-only">{isFlagOn('v7Room')?plainMath(note.front):'Card in '+(project?.title??'your library')}</h1>
   <article className="v7-card-face" aria-label="Card">
    <div className="v7-card-face-head"><Tag subject={subject}/>{paused&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
    <p className="v7-eyebrow">{noteKindText(note.kind)}</p>

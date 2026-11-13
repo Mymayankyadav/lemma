@@ -24,6 +24,8 @@ import {useMinWidth} from '../../../app/v7/useMinWidth';
 import TaskSheet from './TaskSheetV7';
 import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,reorderedTasks,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
 import './tasks.css';
+import {isFlagOn} from '../../../flags';
+import {overdueParts} from '../../../ui/v7/room';
 
 const PAGE=50;
 const statuses:TaskRecord['status'][]=['backlog','in_progress','completed','cancelled'];
@@ -35,6 +37,7 @@ const merge=(old:TaskRecord[],next:readonly TaskRecord[])=>{
 
 /** PLAN §6.6: tasks as To do / Doing / Done, one card per group, rows with chips, swipe right to complete. */
 export default function TasksV7(){
+ const room=isFlagOn('v7Room');
  const navigate=useNavigate(),notify=useToast(),home=useHome(),settings=useSettings();
  const zone=ownerZone(settings.data);
  const [rows,setRows]=useState<TaskRecord[]>([]),[total,setTotal]=useState(0),[cursor,setCursor]=useState<string|null>(null);
@@ -122,11 +125,11 @@ export default function TasksV7(){
  };
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
  return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
-  <HubHeader title="Calendar">
+  <HubHeader title={room?'Tasks':'Calendar'}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar">Schedule</Link><Link to="/tasks" aria-current="page">Tasks</Link></nav>
   </HubHeader>
   {overdue.total>0&&<Link className="v7-tk-overdue" to="/calendar?view=day&overdue=1" aria-label={overdue.total+' overdue. Triage'}>
-   <StatusBadge tone="warning">{overdue.total} overdue</StatusBadge><span className="v7-meta">Tasks, deadlines and practice · Triage</span>
+   <StatusBadge tone="warning">{overdue.total} overdue</StatusBadge><span className="v7-meta">{room?overdueParts(overdue):'Tasks, deadlines and practice'} · Triage</span>
   </Link>}
   <div className="v7-tk-bar">
    {!board&&<Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>}

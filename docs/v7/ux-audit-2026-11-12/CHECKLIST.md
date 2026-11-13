@@ -153,6 +153,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U3 · Room and rhythm (web, M) — `02` §5 · flag `v7Room`, each part after its sheet is approved
 
+Implementation is in progress in **N158 (#1393)**, stacked on N157, behind default-off `v7Room`. The nine entries remain open pending browser layout checks and Calendar Day / Path visual re-approval; see `docs/current/N158.md`.
+
 - [ ] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
 - [ ] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
 - [ ] V26 Path spine: every checkpoint as a star by stage; opens at the current one (S8)

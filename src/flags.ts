@@ -29,6 +29,8 @@ export const FLAG_DEFAULTS = {
   v7Margin: false,
   /** N157 · U1 V09 / U4 S5 Review as an open notebook: from 840 px (and in book posture) question left, answer right. */
   v7Spread: false,
+  /** N158 · U3 room and rhythm, from the approved r3 boards. */
+  v7Room: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
