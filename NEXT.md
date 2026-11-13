@@ -1,14 +1,5 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
-## N134 v7 UX audit r3: large text holds (U2 · V11) (Owner task)
-
-Owner task: "Ok continue working. Make significant progress"
-Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
-Done = at 360 px with the text at 130% and 200%, no dock name runs into another (the dock keeps only the selected name when they do not fit), the calendar's hours keep every digit, segmented controls never overlap (a menu for more than three options, two lines for up to three), Focus keeps every control on the screen, and stat tiles stay on the screen; 390 px at 100% looks as before; ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` and recorded in `docs/current/N134.md`.
-Tests: `tests/e2e/v7-n134-text-scale.spec.ts`, existing suites unchanged.
-Scope: `src/app/v7/{V7Shell.tsx,shell.css}`, `src/ui/v7/{components.tsx,components.css}`, `src/features/calendar/v7/calendar.css`, `src/features/focus/v7/focus.css`, `src/features/{cards,insights,review}/v7/*.css`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N134.md`.
-Not: the design lint's every-scene pass, V36, V21, AW1/E5 (system text size in the app), server changes, new dependencies.
-
 ## N137 v7 UX plan r3 · G1 the asset pipeline: manifest and lint, Android colours from tokens, icon layers, emblem exporter (Owner task)
 
 Owner task: "Your pr is done next work on things not picked by the other agenr"

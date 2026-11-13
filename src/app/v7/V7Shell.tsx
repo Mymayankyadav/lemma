@@ -1,4 +1,4 @@
-import {Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {Fragment,lazy,Suspense,useEffect,useRef,useState,type CSSProperties,type ReactNode} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
@@ -79,34 +79,10 @@ function Capture(){
  </>;
 }
 
-/**
- * V11 (v7 UX audit r3): whether every tab name fits its slot in the phone dock. With large system text or a narrow phone
- * the names ran together ("ReviewCalendarProgress"); then the dock shows icons and only the selected tab's name (the
- * others stay available to assistive technology). Measured, so it follows the real font size, language and width.
- */
-export function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean):boolean{
- const [fit,setFit]=useState(true);
- useLayoutEffect(()=>{
-  const nav=ref.current;
-  if(!nav||wide){setFit(true);return;}
-  const check=()=>setFit([...nav.querySelectorAll<HTMLElement>('.v7-tab-label')].every(label=>{
-   const tab=label.closest<HTMLElement>('.v7-tab');
-   return !tab||label.scrollWidth<=tab.clientWidth-4;
-  }));
-  check();
-  const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(check);
-  observer?.observe(nav);
-  void document.fonts?.ready.then(check).catch(()=>undefined);
-  return()=>observer?.disconnect();
- },[ref,wide]);
- return fit;
-}
-
 /** Wraps every v7 route except the kit. Immersive screens keep the navigation landmark, hidden until focused. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false),[shortcuts,setShortcuts]=useState(false);
  const wide=useMinWidth(700);
- const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
@@ -141,11 +117,11 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
-   <nav ref={tabbar} aria-label="Main navigation" className="v7-tabbar" data-labels={labelsFit?'all':'selected'} style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
+   <nav aria-label="Main navigation" className="v7-tabbar" style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
     {active>=0&&<span className="v7-tab-pill" aria-hidden="true"/>}
     {tabs.map(({to,label,Icon},index)=><Link key={label} to={to} className="v7-tab" aria-current={index===active?'page':undefined}>
      <span className="v7-tab-icon"><Icon aria-hidden="true"/>{label==='Review'&&due>0&&<span className="v7-tab-pip" aria-label={due+' cards due'}>{due>99?'99+':due}</span>}</span>
-     <span className="v7-tab-label">{label}</span>
+     <span>{label}</span>
     </Link>)}
    </nav>
    {!immersive&&capture&&<Capture/>}
