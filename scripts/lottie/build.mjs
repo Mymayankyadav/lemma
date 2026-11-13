@@ -73,14 +73,19 @@ const emerge = (anchor, from, to) => transform({anchor, scale: anim([from, [70, 
  *  (LT5: the tick starts in the first half of the disc's growth, so the disc is never a bare dot; LT9: the ring before
  *  the fill). The ring sits inside the disc's edge in the same colour, so the last frame is the still's plain disc. The
  *  tick lands at `from + TICK_LANDS`. */
-const TICK_LANDS = 22, RING = 3;
-function badge(op, cx, cy, from, kind = 'check') {
-  const mark = kind === 'check' ? path([[cx - 6, cy], [cx - 2, cy + 4], [cx + 6, cy - 4]]) : null;
+const TICK_LANDS = 22, RING = 3, QED = 9;
+/** The badge's mark, drawn by a pen: a ✓, or (N155, Owner decision E19: ∎ means you finished something) a ∎ drawn as one
+ *  stroke as wide as the square, left to right. The group keeps the name `tick` for either mark. */
+function badgeMark(cx, cy, kind) {
+  if (kind === 'qed') return [path([[cx - QED / 2, cy], [cx + QED / 2, cy]]), {...stroke('onAccent', QED), lc: 1}];
+  return [path([[cx - 6, cy], [cx - 2, cy + 4], [cx + 6, cy - 4]]), stroke('onAccent')];
+}
+function badge(op, cx, cy, from, kind = 'check', offset = [0, 0]) {
   return layer('badge', [
-    group('tick', [mark, stroke('onAccent'), trim(from + 10, from + TICK_LANDS)]),
+    group('tick', [...badgeMark(cx, cy, kind), trim(from + 10, from + TICK_LANDS)]),
     group('ring', [ellipse(cx, cy, 13 - RING / 2), stroke('accent', RING), trim(from, from + 12)]),
     group('disc', [ellipse(cx, cy, 13), fill('accent')], emerge([cx, cy], from + 6, from + 18)),
-  ], op);
+  ], op, offset);
 }
 
 // L-11 · Inbox zero: the tray draws itself, then a badge appears with a tick (the still is IL-04).
@@ -96,7 +101,7 @@ const inboxZero = composition('inbox-zero', 90, op => [
   badge(op, 156, 114, 44),
 ]);
 
-// L-10 · Round complete: a card settles onto the deck, its lines are written, then the tick.
+// L-10 · Round complete: a card settles onto the deck, its lines are written, then the ∎ (N155, E19; it was a tick).
 const roundComplete = composition('round-complete', 96, op => [
   backdrop(op),
   layer('deck', [group('back-card', [rect(120, 83, 68, 50, 8), stroke('muted'), fill('paper')],
@@ -105,7 +110,7 @@ const roundComplete = composition('round-complete', 96, op => [
     group('lines', [path([[96, 84], [144, 84]]), path([[96, 98], [130, 98]]), stroke('muted'), trim(28, 50)]),
     rect(120, 92, 76, 52, 8), stroke('ink'), fill('paper'),
   ], transform({anchor: [120, 92], position: anim([6, [120, 104]], [32, [120, 92]]), opacity: anim([6, 0], [22, 100])}))], op),
-  badge(op, 154, 114, 50),
+  badge(op, 154, 114, 50, 'qed'),
 ]);
 
 // L-12 · Day closed: a crescent moon is drawn, two small stars come out in its hollow, and ∎ closes the day.

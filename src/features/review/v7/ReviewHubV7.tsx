@@ -93,7 +93,7 @@ export default function ReviewHubV7(){
   {!loading&&!failed&&<>
    <section className="v7-rv-hero" aria-label="Review counts">
     {/* A2 · IL-03: all caught up. */}
-    {count===0&&totalDue===0&&<Illustration name="review" width={150} className="v7-rv-art"/>}
+    {count===0&&totalDue===0&&<Illustration name="review" width={120} className="v7-rv-art"/>}
     <p className="v7-rv-figure"><strong aria-label="Cards in this round">{shownCount}</strong><span>{count===1?'card':'cards'} today</span></p>
     {/* R0 · F05: when the round includes new cards, the hero says so, so it agrees with Today's and the tab's due count. */}
     {fresh>0&&<p className="v7-rv-note" data-split="">{roundSplit(count,fresh)}</p>}

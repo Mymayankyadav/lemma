@@ -77,8 +77,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] LT9 Stars fade in from 70%; a badge's ring draws before it fills — N154
 - [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130 (#1363)
 - [x] **IL2** IL8 IL3 *(P2)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred with its animation — N135
-- [ ] IL6 *(P2, needs E19)* Round complete gets its own still and ending with ∎. Markup: `visuals/src/r3/r3-art.json` (`round`)
-- [ ] IL3 IL4 IL5 IL7 *(P3)* Rules: live area 80 units, two sizes (160 and 120 px), empty state in the first viewport (Calendar Day, Progress), accent ≥ 3 : 1 on the disc
+- [x] IL6 *(P2, E19)* Round complete gets its own still and ending with ∎. Markup: `visuals/src/r3/r3-art.json` (`round`) — N155
+- [x] IL3 IL4 IL5 IL7 *(P3)* Rules: live area 80 units, two sizes (160 and 120 px), empty state in the first viewport (Calendar Day, Progress), accent ≥ 3 : 1 on the disc — N155
 - [ ] **IC1** IC2 IC3 IC5 *(P6, needs E21)* 1.75 px strokes at every size (`LucideProvider`), one meaning per glyph, six drawn marks
 
 ### U2 · Resilience = AN2 (web, M) — `02` §4 · the most urgent web phase

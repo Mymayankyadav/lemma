@@ -51,7 +51,7 @@ export default function RoundCompleteV7(){
  const tomorrow=forecast.data?.[1]?.due;
  const showBar=!!summary&&summary.counted>0;
  return <main id="main-content" className="v7-page v7-rc" aria-label="Review results">
-  {run?.progress.done?<LottieMoment name="review" animation="round-complete" width={144} className="v7-rc-art" feel/>
+  {run?.progress.done?<LottieMoment name="round" animation="round-complete" width={160} className="v7-rc-art" feel/>
    :<span className="v7-rc-proof" aria-hidden="true"><Check/></span>}
   <h1 className="v7-rc-title">{run&&!run.progress.done?'Round paused':'Round complete'}</h1>
   {error&&<p role="alert" className="v7-rv-note">{error}</p>}

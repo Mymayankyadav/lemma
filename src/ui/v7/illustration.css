@@ -13,6 +13,14 @@
 :where(html[data-v7]) .v7-il .w {stroke:var(--v7-role-surface-page);stroke-width:3;}
 :where(html[data-v7]) .v7-il .f {fill:var(--v7-il-accent);}
 :where(html[data-v7]) .v7-il .page {fill:var(--v7-il-paper);}
+/* N155 · IL6: a ∎ on a badge is a small filled square in the badge's mark colour. */
+:where(html[data-v7]) .v7-il rect.w {fill:var(--v7-role-surface-page);}
+/* N155 · IL4 (P3): a badge (✓ or ∎) is a status mark, so it is always the brand indigo; the subject colour stays on the
+   object's own detail (a flag, a waypoint, a star, the lens's handle, the sand). */
+:where(html[data-v7]) .v7-il [data-badge] {fill:var(--v7-role-selection-fg);}
+/* IL4: by day topology and number theory sit under 3 : 1 on the disc; 20% ink brings them over it. */
+:where(html[data-v7]:not([data-theme="graph-night"])) :is(.v7-subject-3,.v7-subject-4) .v7-il,
+:where(html[data-v7]:not([data-theme="graph-night"])) .v7-il:is(.v7-subject-3,.v7-subject-4) {--v7-il-accent:color-mix(in srgb,var(--v7-subject) 80%,var(--v7-role-text-primary));}
 /* P1 (v7 UX audit r3, Owner decision E18): an object is lighter than its disc in both themes, as by day. In Night the
    raised surface is darker than the muted disc, so objects read as holes; they take the muted hover surface instead.
    The Lottie moments read the same role (lottie.ts), so the animations follow. */

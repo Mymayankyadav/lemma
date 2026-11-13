@@ -6,7 +6,7 @@ const source=readFileSync("src/ui/v7/Illustration.tsx","utf8");
 const art=Object.fromEntries([...source.matchAll(/^ {2}(\w+): `([\s\S]*?)`,$/gm)].map(match=>[match[1],match[2]]));
 
 test("P2 · Day closed, Cards and Progress sit on the disc's centre; no drawing is more than 5 units off",async({page})=>{
- expect(Object.keys(art)).toHaveLength(9);
+ expect(Object.keys(art)).toHaveLength(10); // N155 (E19) adds Round complete's own still, `round`
  const offsets:Record<string,{cx:number;cy:number}>={};
  for(const [name,markup] of Object.entries(art)){
   await page.setContent(`<svg id="s" viewBox="0 0 240 180" width="240" height="180">${markup}</svg>`);

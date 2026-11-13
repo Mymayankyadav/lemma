@@ -124,12 +124,18 @@ export default function ProgressV7(){
   {range==='7'&&summary&&<Button small variant="ghost" onClick={()=>{void shareWeek();}}><Share2 aria-hidden="true"/>Share this week</Button>}
  </section>;
  const empty=<><Illustration name="progress" width={120} className="v7-progress-art"/><p className="v7-progress-empty">No study time in this range yet.</p></>;
+ // IL5 (P3): with no time in the range, one empty state (the page's own, 160 px) takes the place of the hero, the empty
+ // chart, the stats and the empty subject chart, so it is in the first viewport.
+ const nothing=<section className="v7-progress-nothing" aria-label="Focused time"><Illustration name="progress" width={160} className="v7-progress-art"/>
+  <p className="v7-progress-empty">No study time in this range yet.</p></section>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
   <HubHeader title="Progress"><ProgressTabs current={tab}/></HubHeader>
   <Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>
   {status==='loading'&&<Skeleton/>}
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load your saved study time.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
-  {status==='ready'&&summary&&tab==='overview'&&<>
+  {status==='ready'&&summary&&tab==='overview'&&total<=0&&<>{nothing}
+   <Heatmap title="Study almanac" format={minutes} data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/></>}
+  {status==='ready'&&summary&&tab==='overview'&&total>0&&<>
    {hero}
    <Chart title={range==='day'?'Focus today':range==='90'?'Focus by week':'Focus by day'} compact kind="bars" format={axis} totalFormat={minutes}
     data={stacks.map(column=>({label:columnLabel(column),tickLabel:formatShortDate(column.from,{zone}).split(' ').slice(1).join(' '),values:[column.minutes]}))} series={[{label:'Focus'}]}/>
@@ -156,11 +162,11 @@ export default function ProgressV7(){
    <StatTile label="Tutor sessions" value={formatDuration(learn.minutes)}/>
   </>:<Skeleton/>)}
   {status==='ready'&&summary&&tab==='time'&&<>
-   {hero}
+   {total<=0?nothing:<>{hero}
    <Chart title={range==='90'?'Focus by week':'Focus by day'} kind="bars" format={axis} totalFormat={minutes}
     data={groupDays(period.days,range==='90'?7:1).map(days=>{const column=stackColumns(entries,[days],zone,stamp)[0];return {label:columnLabel(column),tickLabel:formatShortDate(column.from,{zone}).split(' ').slice(1).join(' '),values:[column.minutes]};})} series={[{label:'Focus'}]}/>
    {summary.exactParts.length?<HorizontalBars title="By subject" format={minutes} data={summary.exactParts.map(part=>({label:name(part.id),value:part.minutes,color:color(part.id)}))}/>
-    :<section className="v7-chart v7-chart-empty"><h3 className="v7-headline">By subject</h3>{empty}</section>}
+    :<section className="v7-chart v7-chart-empty"><h3 className="v7-headline">By subject</h3>{empty}</section>}</>}
    <section aria-label="Goals" className="v7-goals"><h2 className="v7-learn-h2">Goals</h2>
     {goals.filter(goal=>!goal.archivedAt&&goal.endDate>=period.days[0]).length?<ul>{goals.filter(goal=>!goal.archivedAt&&goal.endDate>=period.days[0]).map(goal=>
      <GoalCard key={goal.id} goal={goal} entries={entries} scope={goal.subjectId?name(goal.subjectId):'All subjects'} onEdit={()=>setEditing(goal)}/>)}</ul>

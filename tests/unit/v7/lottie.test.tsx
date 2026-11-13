@@ -79,7 +79,7 @@ describe('N129 Lottie files', () => {
   });
   it('the three moments use it, each over its A2 still', () => {
     expect(readFileSync('src/features/proposals/v7/InboxV7.tsx', 'utf8')).toContain('<LottieMoment name="inbox" animation="inbox-zero"');
-    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('<LottieMoment name="review" animation="round-complete"');
+    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('<LottieMoment name="round" animation="round-complete"');
     expect(readFileSync('src/features/ritual/v7/CloseDayV7.tsx', 'utf8')).toContain('<LottieMoment name="closed" animation="day-closed"');
   });
 });

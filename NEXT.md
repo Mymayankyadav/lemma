@@ -1,5 +1,20 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N155 v7 UX audit r3 · Round complete's own ∎ (IL6) and the rules for the illustration set (IL3, IL4, IL5, IL7) (Owner task)
+
+Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = P2's last row and P3 of `06_ILLUSTRATION_ANIMATION_ICON_AUDIT.md` (Owner decision E19), each with a test.
+- IL6: Round complete has its own still, Review's cards with a ∎ badge (`round`), and its animation draws a ∎ where it drew a tick, landing on the same frame.
+- IL3: every drawing's object spans 80 ± 6 units and lies inside the 86-unit box centred on the disc (paths and atlas drawn smaller, the hourglass larger).
+- IL4: badges are always the brand indigo; by day topology and number theory take 20% ink, so every subject's accent clears 3 : 1 on the disc in Day and Night.
+- IL5: Calendar Day's empty state lies over the grid's visible hours (taps pass through); Progress with no time in the range shows one 160 px empty state in place of the hero, chart and stats.
+- IL7: 160 px for a page's only empty state, 120 px inline (Atlas 180 → 160, Round complete 144 → 160, Progress 120 → 160, Review hub 150 → 120, Calendar Day 140 → 120).
+- Recorded in `docs/current/N155.md`, IL6 and the P3 line ticked.
+Tests: `tests/unit/v7/n155-illustrations.test.ts`, `tests/e2e/v7-n155-illustrations.spec.ts`; `illustrations.test.tsx` and `lottie.test.tsx` updated for the new still (one expected name each).
+Scope: `src/ui/v7/{Illustration.tsx,illustration.css}`, `scripts/lottie/build.mjs`, `src/ui/v7/lottie/round-complete.json`, `docs/v7/ux-audit-2026-11-12/visuals/src/r3/r3-art.json` (progress, round), `src/features/{review-done,atlas,review,calendar,insights}/v7/*` (sizes and placement), tests, `docs/current/N155.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Not: IL1, IL2, IL8 (done), the icons (IC*, next item), new drawings beyond `round`, new dependencies.
+
 ## N154 v7 UX audit r3 · the Owner's remaining decisions; endings felt where they land; the haptic vocabulary; Lottie guard rails (Owner task)
 
 Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
