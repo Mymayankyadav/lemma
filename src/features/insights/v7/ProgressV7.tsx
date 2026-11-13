@@ -17,7 +17,10 @@ import {kitSubject,subjectToken} from '../../atlas/v7/model';
 import {civilDay,effortSummary} from '../../progress-v6/model';
 import {goalSavedMinutes} from '../../progress-v6/goal-model';
 import {almanacPeriod,asRange,changeChip,coveringSpan,currentPeriod,goalView,groupDays,insightDays,insightSentences,previousPeriod,rangePhrase,ranges,stackColumns,type ProgressRange} from './progressModel';
+import {Share2} from 'lucide-react';
+import {useToast} from '../../../ui/Toast';
 import './progress.css';
+
 
 type Tab='overview'|'learning'|'time';
 const minutes=(value:number)=>formatDuration(value);
@@ -61,7 +64,7 @@ function GoalSheet({goal,onClose,onSaved}:{goal:GoalRecord;onClose:()=>void;onSa
 
 /** PLAN §6.13 Progress: one range control above everything it affects; Overview, Learning and Time. */
 export default function ProgressV7(){
- const [params,setParams]=useSearchParams(),settings=useSettings(),subjects=useSubjects();
+ const [params,setParams]=useSearchParams(),settings=useSettings(),subjects=useSubjects(),notify=useToast();
  const tab:Tab=params.get('tab')==='learning'?'learning':params.get('tab')==='time'?'time':'overview';
  const range:ProgressRange=asRange(params.get('range'));
  const zone=ownerZone(settings.data),now=useMemo(()=>new Date(),[]);
@@ -104,10 +107,21 @@ export default function ProgressV7(){
  const total=summary?.minutes??0;
  const tick=(day:string)=>formatShortDate(day,{zone}).split(' ').slice(1).join(' ');
  const columnLabel=(column:{from:string;to:string})=>column.from===column.to?formatShortDate(column.from,{zone}):formatShortDate(column.from,{zone})+' – '+formatShortDate(column.to,{zone});
+ /** N131 · A5′: the weekly summary as a 1200 × 630 notebook-page image (drawn only when asked; the module loads then). */
+ async function shareWeek(){
+  if(!summary)return;
+  try{
+   const {shareCard}=await import('../../../ui/v7/shareImage');
+   const outcome=await shareCard({kind:'week',minutes:summary.minutes,reviews:learn?.reviews??0,demonstrated:checkpoints.length,
+    days:summary.daily.map(day=>day.minutes),range:formatShortDate(period.days[0],{zone})+' – '+formatShortDate(period.days[period.days.length-1],{zone})});
+   if(outcome==='saved')notify('Image saved',{tone:'success'});
+  }catch{notify('Could not make the image',{tone:'danger'});}
+ }
  const hero=<section className="v7-progress-hero" aria-label="Focused time">
   <p className="v7-progress-figure">{formatDuration(total)}</p>
   <p className="v7-meta">focused {rangePhrase(range)}</p>
   {chip&&<StatusBadge tone={chip.tone}>{chip.text}</StatusBadge>}
+  {range==='7'&&summary&&<Button small variant="ghost" onClick={()=>{void shareWeek();}}><Share2 aria-hidden="true"/>Share this week</Button>}
  </section>;
  const empty=<><Illustration name="progress" width={120} className="v7-progress-art"/><p className="v7-progress-empty">No study time in this range yet.</p></>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
