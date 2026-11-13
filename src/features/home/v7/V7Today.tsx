@@ -1,4 +1,5 @@
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
+import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronRight,Layers,Pause,Play} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -140,6 +141,7 @@ export default function V7Today(){
   if(busy)return;setBusy(true);
   try{
    const receipt=await getTaskApi().updateTask(task.id,task.version,{status:'completed'});reload();
+   haptic('check');
    notify('Task completed',{tone:'success',action:{label:'Undo',onClick:()=>{void getTaskApi().updateTask(task.id,receipt.record.version,{status:task.status}).then(reload).catch(()=>notify('Could not undo that',{tone:'danger'}));}}});
   }catch{notify('Could not complete that task. Try again.',{tone:'danger'});reload();}finally{setBusy(false);}
  }

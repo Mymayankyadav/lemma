@@ -1,6 +1,8 @@
 // PLAN §6.4 B: the v7 review round. The durable-run engine is the N83 one used by v6:
 // a grade's committed reviewId is stored BEFORE any advance, so a retry never records it twice.
 import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
+import {haptic} from '../../../ui/v7/haptics';
+import {warmMoment} from '../../../ui/v7/LottieMoment';
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
@@ -74,6 +76,8 @@ export default function ReviewRoundV7(){
   setBusy(true);setMessage(null);
   // N131 · A5: the pencil tick, when Sounds is on (it plays on the tap, before saving, so it is felt as the mark).
   void playSound('tick',soundsOn(settings.data.ui));
+  // AW6: Good, Hard or Easy is one click, Again two light ticks.
+  haptic(rating===1?'gradeAgain':'grade');
   try{
    const currentVersion=await cardVersion(item.cardId);
    if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
@@ -115,7 +119,12 @@ export default function ReviewRoundV7(){
   finally{setBusy(false);}
  }
  // Keyboard: Space reveals, 1–4 grade, U undoes.
- const keys=useRef({revealed,grade,undo,reveal:()=>setRevealed(true)});keys.current={revealed,grade,undo,reveal:()=>setRevealed(true)};
+ // AW6: revealing the answer is one soft tick.
+ const reveal=()=>{if(!revealed)haptic('reveal');setRevealed(true);};
+ // LT7: with one card left, Round complete is one grade away: fetch its player in idle time.
+ const left=run?run.progress.total-run.progress.position:0;
+ useEffect(()=>{if(left===1)warmMoment('round-complete');},[left]);
+ const keys=useRef({revealed,grade,undo,reveal});keys.current={revealed,grade,undo,reveal};
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
    const target=event.target as HTMLElement|null;
@@ -131,7 +140,7 @@ export default function ReviewRoundV7(){
  const clearSelection=()=>{try{window.getSelection()?.removeAllRanges();}catch{/* no selection API */}};
  const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{if(!dragStart.current)return;setDrag({dx:event.clientX-dragStart.current.x,dy:event.clientY-dragStart.current.y});};
- const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){clearSelection();if(!revealed)setRevealed(true);else void grade(rating);}};
+ const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){clearSelection();if(!revealed)reveal();else void grade(rating);}};
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
  const project=home.data?.projects.find(entry=>entry.slug===card?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(loading)return <main id="main-content" className="v7-review" aria-label="Review round"><Loader className="v7-review-state" label="Restoring your review…"/></main>;
@@ -175,7 +184,7 @@ export default function ReviewRoundV7(){
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
   {item&&card&&!pending&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
-   {!revealed?<Button variant="primary" onClick={()=>setRevealed(true)}>Show answer</Button>
+   {!revealed?<Button variant="primary" onClick={reveal}>Show answer</Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
      aria-label={label+(choice?', next in '+formatInterval(choice.delay/86_400_000):'')+' ('+(index+1)+')'}>

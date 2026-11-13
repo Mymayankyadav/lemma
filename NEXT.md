@@ -1,5 +1,19 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N154 v7 UX audit r3 · the Owner's remaining decisions; endings felt where they land; the haptic vocabulary; Lottie guard rails (Owner task)
+
+Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = the Owner's answers of 13 Nov 2026 are recorded in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`: E1, E2, E3, E9, E10, E11, E12, E17, E19, E21, E22 and E23 approved as recommended, and U3/U4 built from the boards behind flags that default off. And, each with a test:
+- LT7 (E22): the Lottie player is skipped on Save-Data and 2G (the still shows), and is fetched in idle time when an ending is one step away (one Inbox card or one review card left; the Close the day page).
+- LT8: `haptic('complete')` fires once, on the frame the ✓ or ∎ lands (66, 72, 80), or when the still shows in its place; an Inbox that was already empty is not felt.
+- LT9: stars fade in from 70%; a badge draws its ring before its disc fills (from 70%); the endings land on the same frames.
+- AW6 (E17): a soft tick on reveal, a click for Good, Hard or Easy, two ticks for Again, a click for a task tick, rise-pause-rise at a pomodoro's end, a tick at the sheet's dismiss threshold. Every call follows Lemma's Haptics switch: the Inbox read the wrong field, so the switch was ignored there.
+- Recorded in `docs/current/N154.md`, with LT7, LT8, LT9 and AW6 ticked.
+Tests: `tests/unit/v7/n154-feel.test.tsx`, `tests/unit/v7/n154-player.test.ts`, `tests/e2e/v7-n154-feel.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/{haptics.ts,useHapticsSetting.ts,lottie.ts,lottiePlayer.ts,LottieMoment.tsx,sheetDrag.ts}`, `scripts/lottie/build.mjs`, `src/ui/v7/lottie/*.json` (regenerated), `src/app/v7/V7Shell.tsx` (one hook), `src/features/{proposals,review-run,review-done,ritual,tasks,home,focus,settings,calendar}/v7/*` (the calls), tests, `docs/current/N154.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Not: the Progress table, new dependencies, server changes, the Android notification for a pomodoro's end (unchanged).
+
 ## N153 v7 UX audit r3 · V36 leftovers: the Inbox list's checkboxes and the card's review dots take a 44 px tap (Owner task)
 
 Owner task: "Work on the v7 audit items the other agent is not doing"

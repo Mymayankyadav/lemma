@@ -1,4 +1,5 @@
 import {lazy,Suspense,useState,type ReactNode} from 'react';
+import {setHapticsEnabled} from '../../../ui/v7/haptics';
 import {applyReduceEffects} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Bell,Brain,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
@@ -73,7 +74,8 @@ function Appearance({settings}:{settings:Settings}){
  async function toggle(key:keyof typeof flags,value:boolean){
   setFlags(old=>({...old,[key]:value}));
   if(key==='reduceEffects')applyReduceEffects(value);
-  if(!await save({[key]:value})){setFlags(old=>({...old,[key]:!value}));if(key==='reduceEffects')applyReduceEffects(!value);}
+  if(key==='haptics')setHapticsEnabled(value);
+  if(!await save({[key]:value})){setFlags(old=>({...old,[key]:!value}));if(key==='reduceEffects')applyReduceEffects(!value);if(key==='haptics')setHapticsEnabled(!value);}
  }
  return <div className="v7-settings-body">
   <div className="v7-theme-cards" role="radiogroup" aria-label="Theme">{(['auto','day','night'] as Mode[]).map(item=><ThemeCard key={item} mode={item} selected={mode===item} onSelect={()=>{void choose(item);}}/>)}</div>

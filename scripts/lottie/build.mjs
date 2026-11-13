@@ -9,6 +9,10 @@
  * N130 (v7 UX audit r3, P4): ink before paint (a fill fades in only after its outline is drawn, LT4); a badge's tick
  * draws while its disc grows, so it never reads as a bare dot (LT5); and a shape that has both lists its stroke before
  * its fill, so the paper never covers the inner half of the line (LT6: Round complete ended at half weight).
+ *
+ * N154 (LT9, "drawn with a compass"): nothing grows from nothing. A star fades in from 70% of its size; a badge's ring is
+ * drawn first, then its disc fades in from 70% under the ring, and the tick is drawn on it. The ✓ and ∎ land on the same
+ * frames as before (Inbox zero 66, Round complete 72, Day closed 80), where the `complete` haptic is felt (LT8).
  */
 import {mkdirSync, writeFileSync} from 'node:fs';
 import {join} from 'node:path';
@@ -63,15 +67,19 @@ function composition(nm, op, layers) {
 }
 /** The A2 backdrop, there from the first frame, so frame 1 is a calm still (the plan's "frame 1 a valid still"). */
 const backdrop = op => layer('backdrop', [group('bg', [ellipse(120, 90, 66), fill('bg')])], op);
-/** A badge that grows from nothing at its centre, with a tick drawn on it while it grows (LT5: the tick starts 4 frames
- *  in, not 12, so the disc is never a bare dot). The tick lands at `from + TICK_LANDS`. */
-const TICK_LANDS = 22;
+/** A shape that fades in from 70% of its size, from frame `from` to `to` (LT9: nothing grows from nothing). */
+const emerge = (anchor, from, to) => transform({anchor, scale: anim([from, [70, 70]], [to, [100, 100]]), opacity: anim([from, 0], [to, 100])});
+/** A badge: its ring is drawn, then its disc fades in from 70% under it, and a tick is drawn on the disc while it settles
+ *  (LT5: the tick starts in the first half of the disc's growth, so the disc is never a bare dot; LT9: the ring before
+ *  the fill). The ring sits inside the disc's edge in the same colour, so the last frame is the still's plain disc. The
+ *  tick lands at `from + TICK_LANDS`. */
+const TICK_LANDS = 22, RING = 3;
 function badge(op, cx, cy, from, kind = 'check') {
   const mark = kind === 'check' ? path([[cx - 6, cy], [cx - 2, cy + 4], [cx + 6, cy - 4]]) : null;
   return layer('badge', [
-    group('tick', [mark, stroke('onAccent'), trim(from + 4, from + TICK_LANDS)]),
-    group('disc', [ellipse(cx, cy, 13), fill('accent')],
-      transform({anchor: [cx, cy], scale: anim([from, [0, 0]], [from + 18, [100, 100]])})),
+    group('tick', [mark, stroke('onAccent'), trim(from + 10, from + TICK_LANDS)]),
+    group('ring', [ellipse(cx, cy, 13 - RING / 2), stroke('accent', RING), trim(from, from + 12)]),
+    group('disc', [ellipse(cx, cy, 13), fill('accent')], emerge([cx, cy], from + 6, from + 18)),
   ], op);
 }
 
@@ -119,8 +127,8 @@ const dayClosed = composition('day-closed', 96, op => [
     group('moon-fill', [crescent, fill('paper')], transform({opacity: anim([34, 0], [46, 100])})),
   ], op, CLOSED_OFFSET),
   layer('stars', [
-    group('star-1', [star(94, 70, 9), fill('accent')], transform({anchor: [94, 70], scale: anim([40, [0, 0]], [58, [100, 100]])})),
-    group('star-2', [star(100, 104, 6), fill('accent')], transform({anchor: [100, 104], scale: anim([50, [0, 0]], [66, [100, 100]])})),
+    group('star-1', [star(94, 70, 9), fill('accent')], emerge([94, 70], 40, 58)),
+    group('star-2', [star(100, 104, 6), fill('accent')], emerge([100, 104], 50, 66)),
   ], op, CLOSED_OFFSET),
   layer('qed', [group('qed', [rect(120, 134, 10, 10, 1.5), fill('accent')],
     transform({anchor: [120, 134], scale: anim([64, [0, 0]], [80, [100, 100]])}))], op, CLOSED_OFFSET),

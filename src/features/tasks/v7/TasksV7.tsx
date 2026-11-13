@@ -1,4 +1,5 @@
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {haptic} from '../../../ui/v7/haptics';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
 import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
@@ -167,8 +168,9 @@ function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,on
  const complete=()=>{
   // A failed save un-draws the tick (the row stays in To do with its error).
   const save=()=>{void onChange(task,{status:'completed'},{message:'Task completed',undo:{status:task.status}}).finally(()=>setDrawn(false));};
-  if(motionReduced()){save();return;}
-  setDrawn(true);drawTimer.current=window.setTimeout(save,Math.round(motionV1.base*1000));
+  // AW6: one click as the tick finishes drawing (at once when it does not animate).
+  if(motionReduced()){haptic('check');save();return;}
+  setDrawn(true);drawTimer.current=window.setTimeout(()=>{haptic('check');save();},Math.round(motionV1.base*1000));
  };
  const reopen=()=>{void onChange(task,{status:'backlog'},{message:'Task reopened',undo:{status:task.status}});};
  const down=(event:ReactPointerEvent<HTMLDivElement>)=>{if(closed||(event.target as HTMLElement).closest('button,a,[role=menu]'))return;start.current={x:event.clientX,y:event.clientY};};
