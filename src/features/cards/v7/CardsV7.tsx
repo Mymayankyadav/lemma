@@ -7,6 +7,7 @@ import {getApi} from '../../../data';
 import {useCreateNote,useHome,useProject,useProjects,useSettings} from '../../../data/hooks';
 import type {CardRow,ProjectSummary} from '../../../data/types';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {isFlagOn} from '../../../flags';
 import {Button,Sheet,Skeleton} from '../../../ui/v7/components';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {MathText} from '../../../ui/MathText';
@@ -94,7 +95,7 @@ export default function CardsV7(){
  const active=!!(slug||checkpoint||state!=='all'||comments||search);
  const due=home.data?.due??0;
  return <main id="main-content" className="v7-page v7-cards" aria-label="Cards">
-  <HubHeader title="Paths"><PathsTabs current="cards"/></HubHeader>
+  <HubHeader title={isFlagOn('v7Room')?'Cards':'Paths'}><PathsTabs current="cards"/></HubHeader>
   <label className="v7-cards-search"><span className="v7-sr-only">Search cards</span>
    <input type="search" className="v7-search-field" placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/></label>
   <div className="v7-cards-filters" role="group" aria-label="Card filters">

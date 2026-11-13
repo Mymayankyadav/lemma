@@ -3,8 +3,8 @@
 ## N157 v7 UX audit r3 · everything left in the checklist, in one PR (Owner task)
 
 Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
-Stage: Build · Status: open · Needs: — · Assigned: owner-setup-v7ux2
-Done = every open line of `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` that code can close is built and ticked (— N157), each with a test; new looks (U1's margin and spread, U4) behind flags that default off, as the Owner allowed on 13 Nov 2026; U3 (`v7Room`) is not in this PR (Owner, 13 Nov 2026: "Don't do U3"); what needs a phone or the Owner's eyes (the device checks, the desktop goldens, the re-audit) is listed in `docs/current/N157.md` as waiting for them. Recorded in `docs/current/N157.md`.
+Stage: Build · Status: open · Needs: — · Assigned: chat-42#q8rm
+Done = every open line of `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` that code can close is built and ticked (— N157), each with a test; new looks (U1's margin and spread, U3, U4) behind flags that default off, as the Owner allowed on 13 Nov 2026; U3 (`v7Room`) is included after the Owner consolidated PR #1393 into this PR on 13 Nov 2026; what needs a phone or the Owner's eyes (the device checks, the desktop goldens, the re-audit) is listed in `docs/current/N157.md` as waiting for them. Recorded in `docs/current/N157.md`.
 Tests: `tests/unit/v7/n157-*.test.ts*`, `tests/e2e/v7-n157-*.spec.ts`, existing suites unchanged except where a decision changes what they pin (named in the note).
 Scope: `src/**` (v7 screens, `src/flags.ts` for the new flags, default off, the design tokens), `scripts/android-icons.mjs`, `scripts/brand/{android-colors.mjs,lemma-mark.mjs}`, `scripts/v7/**` (the token generator, the scene camera), `scripts/release/android-notes.mjs`, `docs/release/**`, `public/privacy.html`, `android/app/src/main/**`, `assets.manifest.json`, tests, `docs/current/N157.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
 Not: server changes, new dependencies, CI or budget changes (Owner `rules:` PRs), the Progress table.

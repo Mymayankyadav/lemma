@@ -130,7 +130,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] **V05** Rail: the count badge covers "Review" — N157
 - [x] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it — N157
-- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move belongs to V26 (S8, U3), which is not in N157
+- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move belongs to V26 (S8, U3), now included in N157
 - [x] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px — N157
 - [x] **V09** Reading measure ≤ 34 em; the review spread from 840 px — N157 (the spread behind `v7Spread`)
 - [x] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast — N157
@@ -152,6 +152,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 ## Then
 
 ### U3 · Room and rhythm (web, M) — `02` §5 · flag `v7Room`, each part after its sheet is approved
+
+U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. Implementation remains behind default-off `v7Room`; browser checks and Calendar Day / Path review are in progress. See `docs/current/N157.md`.
 
 - [ ] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
 - [ ] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts

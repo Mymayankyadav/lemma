@@ -1,5 +1,5 @@
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
-import {lazy,Suspense,useMemo,useState} from 'react';
+import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
@@ -22,6 +22,7 @@ import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {dueTotal,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
 import './path.css';
+import {isFlagOn} from '../../../flags';
 
 const SourcesPanel=lazy(()=>import('../SourcesPanel').then(module=>({default:module.SourcesPanel})));
 const ProjectSwitcher=lazy(()=>import('../ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
@@ -40,16 +41,16 @@ function NodeMark({state}:{state:NodeState}){
   {state==='locked'&&<circle cx="10" cy="10" r="4" className="v7-path-dim"/>}
  </svg>;
 }
-function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean}){
+function Row({slug,cps,index,step,reached,onContinue}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean;onContinue?:()=>void}){
  const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current';
- return <li className="v7-path-row" data-state={text.state} data-reached={reached?'true':'false'}>
+ return <li className="v7-path-row" data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
   <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
    <strong>{cp.title}</strong>
    <small>{text.detail}</small>
   </Link>
   {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals">Proposed</StatusBadge>}
-  {current&&<Link className="v7-button v7-secondary v7-small" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>Continue</span></Link>}
+  {current&&(onContinue?<Button variant="primary" small onClick={onContinue}>Continue with tutor</Button>:<Link className="v7-button v7-secondary v7-small" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>Continue</span></Link>)}
   <span className="v7-sr-only">{text.label}</span>
  </li>;
 }
@@ -87,6 +88,7 @@ function ProgressRing({done,total}:{done:number;total:number}){
   <circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-share)} transform="rotate(-90 10 10)" className="v7-progress-ring-fill"/></svg>;
 }
 export default function V7Path(){
+ const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
  const [prompt,setPrompt]=useState(false),[switcher,setSwitcher]=useState(false);
@@ -95,6 +97,11 @@ export default function V7Path(){
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const detail=useCheckpoint(slug,current?.code??'');
  const step=current?(detail.data?.steps??[])[Math.max(0,current.currentStep-1)]??null:null;
+ useEffect(()=>{
+  if(!room||!data||tab!=='Map'||!current)return;
+  const frame=requestAnimationFrame(()=>document.querySelector<HTMLElement>('.v7-path-row[data-state="current"]')?.scrollIntoView({block:'start',behavior:'instant'}));
+  return()=>cancelAnimationFrame(frame);
+ },[room,!!data,slug,tab,current?.id]);
  if(query.isPending)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/><Skeleton/><Skeleton/></main>;
  if(query.error||!data)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
   <div role="alert" className="v7-path-empty"><p>Path unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
@@ -156,6 +163,12 @@ export default function V7Path(){
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
    <div className="v7-path-chips">{target&&<MetaChip kind="target">{'Target '+target}</MetaChip>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
   </header>
+  {room&&cps.length>0&&<nav className="v7-room-spine" aria-label="Path checkpoints">{stages.map(stage=><section key={stage.key} aria-label={stageLabel(stage.name,stage.checkpoints)}>
+   <h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2><ul>{stage.checkpoints.map(cp=><li key={cp.id}><a href={'#room-'+cp.code} aria-label={cp.title} aria-current={cp.id===current?.id?'step':undefined}
+    onClick={event=>{event.preventDefault();const node=document.querySelector<HTMLElement>('[data-checkpoint-code="'+cp.code+'"]');const folded=node?.closest('details');if(folded)folded.open=true;node?.scrollIntoView({block:'start',behavior:'instant'});node?.querySelector<HTMLAnchorElement>('a')?.focus({preventScroll:true});}}>
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d={star} fill={cp.ui==='done'?'currentColor':'none'} stroke="currentColor" strokeWidth="1.75"/></svg>
+   </a></li>)}</ul>
+  </section>)}</nav>}
   {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
    <p className="v7-eyebrow">Tell your tutor</p>
    <p>Ask your tutor to read the sources and plan this path with you.</p>
@@ -164,8 +177,8 @@ export default function V7Path(){
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
-    {stages.map(stage=><li key={stage.key} className="v7-path-stage"><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>
-     <ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end}/>;})}</ol></li>)}
+    {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>setPrompt(true):undefined}/>;})}</ol>;
+     return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>cp.ui==='done')?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
    </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense>}
@@ -177,9 +190,9 @@ export default function V7Path(){
    {tab==='Cards'&&<PathCards slug={slug}/>}
   </section>
   {/* R2 · F11: one floating layer above the tab bar — the Continue pill; Review lives in the header actions. */}
-  <div className="v7-path-bar" role="group" aria-label="Path actions">
+  {(!room||!current)&&<div className="v7-path-bar" role="group" aria-label="Path actions">
    <Button variant="primary" onClick={()=>setPrompt(true)}>Continue with tutor</Button>
-  </div>
+  </div>}
   <Sheet open={prompt} onClose={()=>setPrompt(false)} title="Continue with your tutor" eyebrow="Study prompt"
    footer={<Button variant="primary" onClick={copy}><Copy aria-hidden="true"/>Copy prompt</Button>}>
    <p className="v7-path-prompt">{text}</p>

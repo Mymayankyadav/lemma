@@ -31,7 +31,7 @@ type Props={
  /** QA4: the block quick-add is drafting, drawn on the grid and scrolled to sit just above the sheet. */
  draft?:{start:string;minutes:number}|null;
 };
-export interface SuggestedBlock{id:string;title:string;start:string;end:string}
+export interface SuggestedBlock{id:string;title:string;start:string;end:string;onAccept?:()=>void;busy?:boolean}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
 export function layoutKind(height:number):'full'|'line'|'title'{return height>=60?'full':height>=30?'line':'title';}
 export function quarterHour(elapsedMinutes:number,wholeMinutes:number):number{
@@ -182,10 +182,11 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ticks.map(minute=><i key={minute} aria-hidden="true" style={{top:(minute-first)*HOUR_PX/60}}/>)}
      {sameDay&&nowY>=0&&nowY<=height&&<b className="v7-cal-now" data-calendar-now="" aria-hidden="true" style={{top:nowY}}/>}
      {items.map(card)}
-     {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" role="img"
+     {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" data-accept={item.onAccept?'':undefined} role={item.onAccept?undefined:'img'}
       aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
       style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
-      <div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div></div>)}
+      {item.onAccept?<button type="button" disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title+', '+clock(item.start)+'–'+clock(item.end)}><strong>{item.title}</strong><small>{item.busy?'Adding…':'Suggested · Tap to add'}</small></button>
+       :<div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div>}</div>)}
      {draft&&draftTop!==null&&<div className="v7-cal-block v7-cal-suggested" data-kind="draft" role="img" aria-label={'New block at '+clock(draft.start)}
       style={{top:draftTop,height:Math.max(15,draft.minutes*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
       <div><strong>New block · {clock(draft.start)}</strong></div></div>}

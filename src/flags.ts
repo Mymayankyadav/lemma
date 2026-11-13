@@ -29,6 +29,8 @@ export const FLAG_DEFAULTS = {
   v7Margin: false,
   /** N157 · U1 V09 / U4 S5 Review as an open notebook: from 840 px (and in book posture) question left, answer right. */
   v7Spread: false,
+  /** N158 · U3 room and rhythm, from the approved r3 boards. */
+  v7Room: false,
   /** N157 · U4 S1 the ruler: Today's day as a ruler with a needle for now (a slider with spoken times). */
   v7Ruler: false,
   /** N157 · U4 S2–S4 the ∎ as the one ending: a task's tick becomes the square; Close the day as one page (V25). */
