@@ -7,7 +7,8 @@ test.use({locale: 'en-IN', timezoneId: 'Asia/Kolkata'})
 async function go(page: Page, width: number, hash: string, flags = '', height = 800) {
   await page.setViewportSize({width, height})
   await page.clock.setFixedTime(NOW)
-  await page.goto(at(hash).replace('flags=v7Shell,v6Shell', 'flags=v7Shell,v6Shell' + flags))
+  // at() now lists the U4 flags as off; a case's own flags go last so they win.
+  await page.goto(at(hash).replace('#', flags + '#'))
   await expect(page.locator('main').first()).toBeVisible()
   await page.waitForTimeout(300)
 }

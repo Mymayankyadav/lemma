@@ -13,7 +13,8 @@ async function fold(page: Page, width: number, height: number, orientation: 'ver
   await cdp.send('Emulation.setDeviceMetricsOverride', {width, height, deviceScaleFactor: 1, mobile: false,
     displayFeature: {orientation, offset, maskLength: 24}})
   await page.clock.setFixedTime(NOW)
-  await page.goto(at(hash).replace('flags=v7Shell,v6Shell', 'flags=v7Shell,v6Shell' + flags))
+  // at() now lists the U4 flags as off; a case's own flags go last so they win.
+  await page.goto(at(hash).replace('#', flags + '#'))
   await expect(page.locator('main').first()).toBeVisible()
   await page.waitForTimeout(400)
   expect(await page.evaluate(query => matchMedia(query).matches, orientation === 'vertical' ? '(horizontal-viewport-segments:2)' : '(vertical-viewport-segments:2)')).toBe(true)
