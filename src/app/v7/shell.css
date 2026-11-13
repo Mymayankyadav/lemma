@@ -16,7 +16,9 @@
  :where(html[data-v7]) .v7-tabbar {position:relative;display:grid;grid-template-columns:repeat(5,1fr);height:64px;padding:var(--v7-space-1) var(--v7-space-2);}
  :where(html[data-v7]) .v7-dock-row {display:flex;align-items:center;}
  :where(html[data-v7]) .v7-dock-row > .v7-tabbar {flex:1;min-width:0;}
- :where(html[data-v7]) .v7-dock-row > .v7-capture {position:relative;inset:auto;flex:none;width:48px;height:48px;margin-right:var(--v7-space-1);box-shadow:none;}
+ /* V14 (v7 UX audit r3): the tabs and Capture sit at the same inset from the dock's two ends, so the bar is symmetric. */
+ :where(html[data-v7]) .v7-dock-row {padding-inline:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-dock-row > .v7-capture {position:relative;inset:auto;flex:none;width:48px;height:48px;box-shadow:none;}
  :where(html[data-v7]) .v7-tab-pill {position:absolute;top:6px;left:var(--v7-space-2);width:calc((100% - var(--v7-space-4)) / 5);height:52px;border-radius:18px;background:var(--v7-role-selection-subtle);
   transform:translateX(calc(var(--v7-tab-index) * 100%));transition:transform var(--v7-base) var(--v7-ease-standard);}
  :where(html[data-v7]) .v7-tab {position:relative;display:grid;justify-items:center;align-content:center;gap:2px;min-width:0;min-height:var(--v7-touch);border-radius:18px;color:var(--v7-role-text-secondary);text-decoration:none;font:600 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
@@ -38,7 +40,6 @@
  /* F. Capture: overlay surface, never accent-filled, so a screen's primary stays the only filled action. */
 :where(html[data-v7]) .v7-capture {position:fixed;right:var(--v7-page-margin);bottom:calc(var(--v7-dock-height) + var(--v7-space-4));z-index:19;width:56px;height:56px;display:grid;place-items:center;
   border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);color:var(--v7-role-selection-fg);box-shadow:var(--v7-shadow-2);transition:transform var(--v7-base) var(--v7-ease-standard),opacity var(--v7-base) var(--v7-ease-standard);}
- :where(html[data-v7]) .v7-capture[data-hidden="true"] {transform:translateY(calc(100% + var(--v7-space-6)));opacity:0;pointer-events:none;}
  :where(html[data-v7]) .v7-capture svg {width:24px;height:24px;}
  :where(html[data-v7]) .v7-capture-types {display:grid;grid-template-columns:repeat(2,1fr);gap:var(--v7-space-2);margin-top:var(--v7-space-3);}
  :where(html[data-v7]) .v7-capture-types button {min-height:calc(var(--v7-touch) + var(--v7-space-4));display:flex;align-items:center;gap:var(--v7-space-2);padding-inline:var(--v7-space-4);
@@ -140,7 +141,7 @@
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) {--v7-dock-height:0px;--v7-rail-width:72px;padding-inline-start:var(--v7-rail-width);}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page {max-width:720px;padding-bottom:var(--v7-space-8);}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-dock {inset:0 auto 0 0;width:var(--v7-rail-width);max-width:none;border:0;border-right:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:0;display:flex;flex-direction:column;overflow-y:auto;box-shadow:none;}
-  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-dock-row {flex-direction:column-reverse;align-items:stretch;gap:var(--v7-space-2);}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-dock-row {flex-direction:column-reverse;align-items:stretch;gap:var(--v7-space-2);padding-inline:0;}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tabbar {display:grid;grid-template-columns:minmax(0,1fr);height:auto;flex:none;gap:var(--v7-space-2);padding:var(--v7-space-2);}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab {min-height:48px;border-radius:var(--v7-radius-2);}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab > span:last-child {position:absolute;clip-path:inset(50%);width:1px;height:1px;overflow:hidden;}
@@ -185,3 +186,8 @@
 :where(html[data-v7]) .v7-detail-title {transition:opacity var(--v7-base) var(--v7-ease-standard);}
 :where(html[data-v7]) .v7-detail-header[data-title-hidden="true"] .v7-detail-title {opacity:0;}
 }
+/* V32 (v7 UX audit r3): the page for an address Lemma does not know. */
+:where(html[data-v7]) .v7-not-found-card {display:grid;gap:var(--v7-space-3);margin-top:var(--v7-space-4);}
+:where(html[data-v7]) .v7-not-found-path {display:block;margin-top:var(--v7-space-1);color:var(--v7-role-text-secondary);overflow-wrap:anywhere;}
+:where(html[data-v7]) .v7-not-found-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-not-found-actions svg {width:18px;height:18px;}

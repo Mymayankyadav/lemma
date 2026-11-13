@@ -1,4 +1,4 @@
-import { useId, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { bounded } from "../charts/types";
 import { formatDay } from "../../lib/format";
 import { SubjectMark, subjects, type Subject } from "./KitPrimitives";
@@ -6,7 +6,9 @@ import "./chart.css";
 
 export interface ChartDatum { label: string; tickLabel?: string; values: number[] }
 export interface ChartSeries { label: string; color?: string; subject?: Subject }
-export interface ChartProps { title: string; data: ChartDatum[]; series: ChartSeries[]; kind?: "line" | "bars" | "stacked" | "heatmap"; area?: boolean; target?: number; format?: (value: number) => string; summary?: string; compact?: boolean }
+export interface ChartProps { title: string; data: ChartDatum[]; series: ChartSeries[]; kind?: "line" | "bars" | "stacked" | "heatmap"; area?: boolean; target?: number; format?: (value: number) => string; summary?: string; compact?: boolean;
+  /** V34 (v7 UX audit r3): the exact format for the summary sentence (axis ticks round to "1.6 h"; the sentence says "1 h 35 min"). */
+  totalFormat?: (value: number) => string }
 const finite = (value: number) => Number.isFinite(value) ? Math.max(0, value) : 0;
 const sum = (values: number[]) => values.reduce((total, value) => total + finite(value), 0);
 const subjectFor = (label: string): Subject | undefined => subjects.find(subject => subject === label);
@@ -36,7 +38,7 @@ export function visibleTicks(labels: string[], group: number, preferred: boolean
   });
   return out;
 }
-export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false }: ChartProps) {
+export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false, totalFormat = format }: ChartProps) {
   const [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null), id = useId();
   const percentage = /%/.test(format(100));
   const observed = Math.max(1, target ?? 0, ...(kind === "stacked" ? data.map(row => sum(row.values)) : data.flatMap(row => row.values).map(finite)));
@@ -50,7 +52,8 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   const summary = suppliedSummary ?? (!data.length ? "No data in this range yet." : percentage ?
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
     // F43: per-metric wording. Time totals read "You studied 3 h 55 min"; counts read "413 reviews in this range".
-    /\b(h|min)\b/.test(format(total)) ? `You studied ${format(total)} in this range, most on ${data[peak].label}.` :
+    // IL5: no "most on …" when nothing was studied.
+    /\b(h|min)\b/.test(format(total)) ? (total <= 0 ? "Nothing studied in this range yet." : `You studied ${totalFormat(total)} in this range, most on ${data[peak].label}.`) :
     `${format(total)} ${title.toLowerCase().replace(/ (by|over|per) .*$/, "")} in this range, most on ${data[peak].label}.`);
   // N125: the axis gutter fits its widest tick label ("40 min" was clipped to "0 min" in a fixed 40-unit gutter).
   const left = Math.max(40, Math.ceil(Math.max(...ticks.map(tick => labelWidth(format(tick)))) * 1.15) + 12);
@@ -144,21 +147,43 @@ export function HorizontalBars({ title, data, format = String }: { title: string
   </section>;
 }
 function displayHeatmapDate(value: string): string { return /^\d{4}-\d{2}-\d{2}$/.test(value) ? formatDay(value) : value; }
-export function Heatmap({ title, data, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
+const isDay = (value: string | undefined) => !!value && /^\d{4}-\d{2}-\d{2}$/.test(value);
+/**
+ * V16 (v7 UX audit r3): the almanac drew 26 weeks, most of them empty, starting in the past. Keep the days from the
+ * Monday of the week of the first study day (or, with no study yet, the last four weeks), so it starts where the record
+ * starts. Days are oldest first, one per date.
+ */
+export function heatmapDays<T extends { date: string; value: number }>(data: readonly T[]): T[] {
+  if (!data.length || !isDay(data[0].date)) return [...data];
+  const firstStudy = data.findIndex(item => finite(item.value) > 0);
+  const from = firstStudy < 0 ? Math.max(0, data.length - 28) : firstStudy;
+  const weekday = (new Date(`${data[from].date}T12:00:00Z`).getUTCDay() + 6) % 7;
+  return data.slice(Math.max(0, from - weekday));
+}
+export function Heatmap({ title, data: all, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
+  const data = heatmapDays(all), scroller = useRef<HTMLDivElement>(null);
   const total = data.reduce((value, item) => value + finite(item.value), 0), today = new Date().toLocaleDateString("en-CA");
   const first = data[0]?.date, offset = first && /^\d{4}-\d{2}-\d{2}$/.test(first) ? (new Date(`${first}T12:00:00Z`).getUTCDay() + 6) % 7 : 0;
   const weeks = Math.ceil((data.length + offset) / 7), style = { "--v7-heat-weeks": Math.max(1, weeks) } as CSSProperties;
+  // V16: the roving focus starts on today (else the newest day), and the almanac opens scrolled so that day is in view.
+  const todayIndex = data.findIndex(item => item.date === today), home = todayIndex >= 0 ? todayIndex : data.length - 1;
+  useLayoutEffect(() => {
+    const view = scroller.current, cell = view?.querySelectorAll<HTMLElement>("[data-chart-point]")[home];
+    if (!view || !cell) return;
+    const from = view.getBoundingClientRect(), at = cell.getBoundingClientRect();
+    if (at.right > from.right || at.left < from.left) view.scrollLeft += at.right - from.right + 8;
+  }, [table, home, data.length]);
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
     {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
-      <div className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
+      <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>
         <div className="v7-heatmap-days" aria-hidden="true">{["M", "T", "W", "T", "F", "S", "S"].map((day, index) => <span key={index}>{day}</span>)}</div>
         <div className="v7-heatmap" role="group" aria-label={title}>
           {Array.from({ length: offset }, (_, index) => <span key={`pad-${index}`} aria-hidden="true" />)}
-          {data.map((item, index) => <button type="button" key={item.date} data-chart-point="" tabIndex={selected === index || selected === null && index === 0 ? 0 : -1}
+          {data.map((item, index) => <button type="button" key={item.date} data-chart-point="" tabIndex={selected === index || selected === null && index === home ? 0 : -1}
             aria-current={item.date === today ? "date" : undefined} aria-label={`${displayHeatmapDate(item.date)}: ${format(item.value)}`}
             style={{ "--v7-heat-color": item.value <= 0 ? "transparent" : `var(--v7-role-viz-heat${item.value <= 15 ? 1 : item.value <= 30 ? 2 : item.value <= 60 ? 3 : 4})` } as CSSProperties}
             onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onKeyDown={event => { movePoint(event, index, data.length, 7); }}><span aria-hidden="true" /></button>)}

@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N132 v7 UX audit r3: the rest of U0 (truth) (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = every open U0 finding of the v7 UX audit r3 (`docs/v7/ux-audit-2026-11-12/02_WEB_PLAN.md` §2) is fixed with a regression test and ticked in `CHECKLIST.md`: V14 (dock symmetric, Capture stays), V15 (every Calendar Month heat step ≥ 4.5 : 1), V16 (almanac starts at the record and opens on today, one tab stop), V18 (names, not codes), V32 (a not-found page), V33 (no repeated example cards), V34 (time-zone name, subject rows, tutor tile, one duration format, editor helpers), V35 (cloze as a selection), V37 (triage buttons one size), V38 (date on one line; Review now when due), V39 (sign-in drawing behind the links), V40 ("Mark resolved"), V42 (out-of-month days dimmed; week titles on a phone), V43 (Data and account as grouped lists, deletion in a sheet); recorded in `docs/current/N132.md`.
+Tests: `tests/unit/v7/n132-truth.test.ts`, `tests/e2e/v7-n132-truth.spec.ts`, existing suites unchanged.
+Scope: `src/app/{App.tsx,AppShell.tsx,v7Kit.ts}`, `src/app/v7/{V7Shell.tsx,NotFoundV7.tsx,shell.css}`, `src/ui/v7/Chart.tsx`, `src/ui/math.css`, `src/lib/{codeNames.ts,format.ts}`, `src/features/calendar/v7/**`, `src/features/insights/v7/ProgressV7.tsx`, `src/features/checkpoint/v7/CheckpointV7.tsx`, `src/features/plan-proposal/v7/PlanProposalV7.tsx`, `src/features/project/v7/V7Path.tsx`, `src/features/proposals/v7/{InboxV7.tsx,inbox.css}`, `src/features/card/v7/CardV7.tsx`, `src/features/cards/v7/{editorModel.ts,CardEditorSheet.tsx,cards.css}`, `src/features/session/v7/SessionV7.tsx`, `src/features/review-run/v7/ReviewRoundV7.tsx` (swipes over selected text), `src/features/sign-in/v7/welcome.css`, `src/features/settings/v6/{Export.tsx,DeleteAccount.tsx}`, `src/features/settings/v7/**`, `src/data/demo/{math-prompts.ts,fixture.json}`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N132.md`.
+Not: server changes (the account-delete function is unchanged), new dependencies, flag defaults, phases U1–U4, AN1–AN4 and G0–G2.
+
 ## N131 The rest of the assets plan, as v7 UX plan r3 keeps it: coded moments, the focus orbit prototype, sounds, "Share the page" (Owner task)
 
 Owner task: "Continue for the of work. Keep it one pr and don't merge. But complete all A tasks" … "there is new pr which will supersede the current plan. N130 make sure they aligned. Second the checkpoint path is still looking ugly revert to legacy."
@@ -71,6 +80,7 @@ Done = phase A1 of the release and assets plan (`03_LATER_ASSETS_SPEC.md` §A1, 
 Tests: `tests/unit/v7/motion-v1.test.tsx`, `tests/e2e/v7-motion.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/**`, the v7 screens that use the new marks (Tasks, Calendar Day, Settings, Focus, Close the day, Atlas, Toast), `src/main.tsx`, `src/app/v7/V7Shell.tsx`, tests, `docs/current/N124.md`.
 Not: new dependencies, Lottie or Rive (A3), illustrations (A2), flag defaults, server changes.
+
 ## N123 Lemma for Android: the Capacitor app (Owner task, one PR)
 
 Owner task: "Start working on Android app complete the taskd"
@@ -126,7 +136,5 @@ Done = #1299 (undo the last answer in the durable v6 review run), #1300 (Kit at 
 Tests: `tests/e2e/v6-g7-fixes.spec.ts`, `tests/mcp/sql/review_runs_undo_last.mjs`, `tests/e2e/v6-release-audit.spec.ts` (no known-defect exemptions left), the unit tests listed in `docs/current/N119.md`.
 Scope: v6 screens and shell under src/**, one additive migration under supabase/migrations/, tests, docs/v6/release-captures/**, docs/current/N119.md.
 Not: turning v6 on (N102); flag-off screens.
-
-
 
 (Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N119.)
