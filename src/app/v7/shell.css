@@ -25,10 +25,6 @@
  :where(html[data-v7]) .v7-tab[aria-current="page"] {color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-tab[aria-current="page"] svg {color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-tab-icon {position:relative;display:grid;place-items:center;}
- /* V11 (v7 UX audit r3): names never wrap; when one does not fit its slot the dock keeps only the selected tab's name
-    (useTabLabelsFit), the others are for assistive technology only. */
- :where(html[data-v7]) .v7-tab-label {white-space:nowrap;}
- :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab:not([aria-current="page"]) .v7-tab-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
  :where(html[data-v7]) .v7-tab-icon svg {width:22px;height:22px;}
  :where(html[data-v7]) .v7-tab-pip {position:absolute;top:-6px;left:calc(100% - 6px);min-width:18px;height:18px;padding-inline:4px;display:grid;place-items:center;border-radius:var(--v7-round);
   background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:0 0 0 2px var(--v7-role-surface-overlay);font:600 var(--v7-type-caption)/1 var(--v7-sans);}

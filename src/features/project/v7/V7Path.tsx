@@ -3,7 +3,7 @@ import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
-import {Archive,Copy,Layers,Pause,Play,Share2,Waypoints} from 'lucide-react';
+import {Archive,Copy,Layers,Pause,Play,Waypoints} from 'lucide-react';
 import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
 import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
@@ -112,14 +112,6 @@ export default function V7Path(){
    if(status==='archived')navigate('/projects');
   }catch{notify('Could not update this path',{tone:'danger'});}
  }
- /** N131 · A5′ "Share the page": a completed path as a 1200 × 630 notebook-page image (the drawing module loads only now). */
- async function sharePath(){
-  try{
-   const {shareCard}=await import('../../../ui/v7/shareImage');
-   const outcome=await shareCard({kind:'path',title:project.title,subject:subject==='Other'?data!.subject.name:subject,done:data!.done,total:data!.total,date:shortDate(new Date().toISOString())});
-   if(outcome==='saved')notify('Image saved',{tone:'success'});
-  }catch{notify('Could not make the image',{tone:'danger'});}
- }
  function setTab(label:string){
   const next=new URLSearchParams(params),value=label.split(' ')[0].toLowerCase();
   if(value==='map')next.delete('tab');else next.set('tab',value);setParams(next);
@@ -134,7 +126,6 @@ export default function V7Path(){
    action={<><Link className="v7-header-pill" to={'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<Layers aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<Waypoints aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
-   ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),
    project.status==='paused'
     ?{label:'Resume path',hint:'Bring it back into Today and reviews',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
     :{label:'Pause path',hint:'Hide it from Today until you resume',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},

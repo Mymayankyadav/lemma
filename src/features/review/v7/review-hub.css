@@ -21,9 +21,7 @@
 :where(html[data-v7]) .v7-rv-subject[aria-pressed="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
 
  :where(html[data-v7]) .v7-rv-section {display:grid;gap:var(--v7-space-3);}
-/* V11 (v7 UX audit r3): stat tiles keep three across at 320–390 px and wrap to two or one as text grows (the fixed
-   three columns ran off the screen at 200%). The same rule holds for the card, Progress and round-complete tiles. */
-:where(html[data-v7]) .v7-rv-tiles {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,5.5rem),1fr));gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-rv-tiles {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-rv-tiles .v7-stat-measure {padding:var(--v7-space-3);grid-template-rows:calc(2 * var(--v7-leading-supporting)) auto auto;align-content:start;}
  :where(html[data-v7]) .v7-rv-tiles .v7-stat-measure p {align-self:end;}
  :where(html[data-v7]) .v7-rv-tiles .v7-stat-measure strong {font-size:var(--v7-numeric-lg);overflow-wrap:normal;white-space:nowrap;}
@@ -44,7 +42,7 @@
  :where(html[data-v7]) .v7-rc-proof svg {width:32px;height:32px;}
  :where(html[data-v7]) .v7-rc-art {justify-self:center;}
  :where(html[data-v7]) .v7-rc-title {margin:0;font:400 var(--v7-type-title)/1.1 var(--v7-serif);letter-spacing:-.015em;}
- :where(html[data-v7]) .v7-rc-tiles {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,5.5rem),1fr));gap:var(--v7-space-2);text-align:left;}
+ :where(html[data-v7]) .v7-rc-tiles {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--v7-space-2);text-align:left;}
  :where(html[data-v7]) .v7-rc-bar {display:flex;gap:2px;height:28px;border-radius:var(--v7-radius-1);overflow:hidden;margin:0;padding:0;list-style:none;background:var(--v7-role-surface-muted);}
  :where(html[data-v7]) .v7-rc-bar li {display:grid;place-items:center;min-width:0;background:var(--v7-grade);color:var(--v7-role-surface-page);font:600 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-rc-bar [data-grade="again"],:where(html[data-v7]) .v7-rc-legend [data-grade="again"] {--v7-grade:var(--v7-role-status-danger);}
