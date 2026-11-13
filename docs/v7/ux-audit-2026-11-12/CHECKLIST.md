@@ -91,8 +91,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] V36 leftovers: the Inbox list's checkboxes (20 px) and the card's recall-chart review dots (34 px tall at 360 px) take a tap within 44 px — N153
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
 - [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
-- [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand
-- [ ] **AW1** *(E5 approved; after the three V11 items and device check 1)* Honour the system font size, capped at 200%
+- [ ] V21 *(E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand — measured in N157 (582 KB, 87 requests in the demo); open, see `docs/current/N157.md`
+- [x] **AW1** *(E5 approved; after the three V11 items; device check 1 confirms it)* Honour the system font size, capped at 200% — N157
 
 ### AN1 · Make the built app right (Android, M) — `03` §4
 
