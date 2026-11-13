@@ -14,9 +14,9 @@ export function rulerTicks([from, to]: [number, number], labelEvery = 120) {
     ticks.push({minute, left: (minute - from) / (to - from) * 100, hour: minute % 60 === 0, label: minute % labelEvery === 0 ? rulerTime(minute) : null});
   return ticks;
 }
-/** N161: the widest label spacing (a multiple of two hours) at which every "HH:MM" label fits beside the next one. */
-export function rulerLabelEvery(width: number, [from, to]: [number, number], fontSize = 12): number {
-  const slot = 5 * fontSize * 0.65 + 12, slots = Math.max(1, Math.floor(width / slot));
+/** N161: the closest label spacing (a multiple of two hours) at which every "HH:MM" label, as wide as `labelWidth`, fits beside the next one. */
+export function rulerLabelEvery(width: number, [from, to]: [number, number], labelWidth = 39): number {
+  const slot = labelWidth + 12, slots = Math.max(1, Math.floor(width / slot));
   return 120 * Math.max(1, Math.ceil((to - from) / 120 / slots));
 }
 /** Snap to five minutes inside the window. */
@@ -36,11 +36,14 @@ export function Ruler({blocks, window, now, summary}: {blocks: RulerBlock[]; win
   useLayoutEffect(() => {
     const node = track.current; if (!node) return;
     const measure = () => {
-      const label = node.querySelector<HTMLElement>('.v7-ruler-label');
-      setLabelEvery(rulerLabelEvery(node.clientWidth, window, label ? parseFloat(getComputedStyle(label).fontSize) : 12));
+      // The labels' real rendered width (the font, its size and the device decide it), not an estimate.
+      const widths = [...node.querySelectorAll<HTMLElement>('.v7-ruler-label')].map(label => label.getBoundingClientRect().width);
+      setLabelEvery(rulerLabelEvery(node.clientWidth, window, widths.length ? Math.max(...widths) : 39));
     };
     measure(); if (typeof ResizeObserver === 'undefined') return;
-    const observer = new ResizeObserver(measure); observer.observe(node); return () => observer.disconnect();
+    // The card grows with the text size even when the ruler's width does not, so watch both.
+    const observer = new ResizeObserver(measure); observer.observe(node); if (node.parentElement) observer.observe(node.parentElement);
+    return () => observer.disconnect();
   }, [window[0], window[1]]);
   const at = probe ?? now, [from, to] = window, left = (minute: number) => (Math.min(to, Math.max(from, minute)) - from) / (to - from) * 100;
   const next = nextAfter(blocks, at);
