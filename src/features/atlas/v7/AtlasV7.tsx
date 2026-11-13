@@ -164,7 +164,7 @@ export default function AtlasV7(){
  if(query.error||!model)return <main id="main-content" className="v7-atlas" aria-label="Atlas">{header}
   <div className="v7-atlas-state" role="alert"><ErrorEmblem/><Button onClick={()=>{void query.refetch();}}>Retry loading the Atlas</Button></div></main>;
  if(model.stars.length===0)return <main id="main-content" className="v7-atlas" aria-label="Atlas">{header}
-  <div className="v7-atlas-state"><Illustration name="atlas" width={180}/><p>No concepts yet. They appear as your plans grow.</p>
+  <div className="v7-atlas-state"><Illustration name="atlas" width={160}/><p>No concepts yet. They appear as your plans grow.</p>
    <Button variant="primary" onClick={()=>setDialog('new')}>New concept</Button></div>
   {dialog==='new'&&query.data&&<AtlasCommands graph={query.data} sourceId={null} onClose={()=>setDialog(null)} onSaved={refetch}/>}
  </main>;

@@ -191,12 +191,13 @@ export default function V7CalendarDay(){
     const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
   {phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
    onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
-  {phase==='ready'&&view==='day'&&<>
+  {phase==='ready'&&view==='day'&&<div className="v7-cal-day-stack">
    <DayGrid enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
-   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={140}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
-  </>}
+   {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}
+   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={120}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
+  </div>}
   <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
    onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={(startsAt,carry)=>moreParams(startsAt,carry)}/>
   <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>

@@ -8,6 +8,8 @@
  :where(html[data-v7]) .v7-progress-stats .v7-figure-m {font-size:var(--v7-type-subhead);line-height:1.2;}
  :where(html[data-v7]) .v7-progress-insight {margin:0;padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
  :where(html[data-v7]) .v7-progress-empty {color:var(--v7-role-text-secondary);}
+ /* IL5 (P3): the page's one empty state when nothing was studied in the range. */
+ :where(html[data-v7]) .v7-progress-nothing {display:grid;justify-items:center;gap:var(--v7-space-2);padding:var(--v7-space-4) 0;text-align:center;}
  :where(html[data-v7]) .v7-chart-empty {opacity:.7;}
  :where(html[data-v7]) .v7-progress-error {display:grid;gap:var(--v7-space-3);justify-items:start;padding:var(--v7-space-4);border-radius:var(--v7-radius-3);background:var(--v7-role-status-danger-subtle);}
  :where(html[data-v7]) .v7-goals {display:grid;gap:var(--v7-space-3);}
