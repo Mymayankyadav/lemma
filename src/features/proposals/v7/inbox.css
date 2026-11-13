@@ -43,7 +43,9 @@
  :where(html[data-v7]) .v7-inbox-zero .v7-inbox-zero-art {width:min(160px,60vw);margin-bottom:var(--v7-space-2);}
  :where(html[data-v7]) .v7-inbox-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-inbox-group ul {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-1);}
- :where(html[data-v7]) .v7-inbox-group li {padding:var(--v7-space-1) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}
+ :where(html[data-v7]) .v7-inbox-group li {padding:var(--v7-space-1) var(--v7-space-3) var(--v7-space-1) 0;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}
+ /* N153 · V36: the row's leading space belongs to the checkbox's label, so a tap up to 22 px left of the 20 px box ticks it. */
+ :where(html[data-v7]) .v7-inbox-group li > .v7-check-choice {padding-inline-start:var(--v7-space-3);}
  :where(html[data-v7]) .v7-inbox-batch {grid-template-columns:1fr 1fr;}
  :where(html[data-v7]) .v7-inbox-batchlist {display:grid;gap:var(--v7-space-2);margin:0;padding-left:var(--v7-space-5);}
  /* Plans tab. */

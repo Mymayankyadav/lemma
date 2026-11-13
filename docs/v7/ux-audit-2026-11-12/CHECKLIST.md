@@ -88,6 +88,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **V11** Gutters (calendar times, tiles; chart gutters were N125) sized from their content; rows that wrap (Focus, segmented controls: a menu above three options) — N134
 - [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
 - [x] **V36** The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days) — N138
+- [x] V36 leftovers: the Inbox list's checkboxes (20 px) and the card's recall-chart review dots (34 px tall at 360 px) take a tap within 44 px — N153
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
 - [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
 - [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand

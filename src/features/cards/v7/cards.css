@@ -42,8 +42,10 @@
  :where(html[data-v7]) :is(.v7-recall-dot,.v7-recall-legend li,.v7-card-history)[data-grade="easy"] {--v7-grade:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-recall-dot {fill:var(--v7-grade);stroke:var(--v7-role-surface-page);stroke-width:2;}
  :where(html[data-v7]) .v7-recall-hits {position:absolute;inset:0 0 auto 0;aspect-ratio:340 / 180;pointer-events:none;}
- :where(html[data-v7]) .v7-recall-hits button {position:absolute;width:var(--v7-touch);height:var(--v7-touch);transform:translate(-50%,-50%);border:0;border-radius:var(--v7-round);background:transparent;pointer-events:auto;cursor:pointer;}
- :where(html[data-v7]) .v7-recall-hits button[aria-pressed="true"] {outline:var(--v7-hairline) solid var(--v7-role-border-strong);outline-offset:-12px;}
+ /* N153 · V36: RecallChart places and sizes each target (side-by-side, never overlapping); square-ish corners keep a dot
+    near a target's corner inside its own hit area. */
+ :where(html[data-v7]) .v7-recall-hits button {position:absolute;border:0;border-radius:var(--v7-radius-xs);background:transparent;pointer-events:auto;cursor:pointer;}
+ :where(html[data-v7]) .v7-recall-hits button[aria-pressed="true"] {outline:var(--v7-hairline) solid var(--v7-role-border-strong);outline-offset:-6px;}
  :where(html[data-v7]) .v7-recall figcaption {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-recall-legend {list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:var(--v7-space-4);color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1 var(--v7-sans);}
  :where(html[data-v7]) .v7-recall-legend li {display:inline-flex;align-items:center;gap:var(--v7-space-1);}

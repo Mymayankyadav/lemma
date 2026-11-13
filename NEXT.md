@@ -1,5 +1,18 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N153 v7 UX audit r3 · V36 leftovers: the Inbox list's checkboxes and the card's review dots take a 44 px tap (Owner task)
+
+Owner task: "Work on the v7 audit items the other agent is not doing"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = at 360 and 390 px, for every Inbox list checkbox and every tap target of the card's recall chart, the element at 21 px from the control's centre (up, down, left and right) is that control or its label, as follows.
+- Inbox list: the row's leading space belongs to the checkbox's label (20 px box, 44 px label), so a tap up to 22 px left of the box ticks it. The row looks as before.
+- Recall chart: reviews closer than a fingertip no longer have 44 px targets stacked over each other. The time axis is cut midway between reviews into side-by-side targets, each at least one touch target wide and tall (`--v7-touch`, 48 px in the app), that never overlap (`tapGroups`). A target holding several reviews names each of them in its label and lists them in the caption when tapped, and its dots are enlarged.
+- Every review stays in the History list.
+- Recorded in `docs/current/N153.md`, with a ticked V36 leftovers line in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Tests: `tests/unit/v7/n153-hit-areas.test.tsx`, `tests/e2e/v7-n153-hit-areas.spec.ts`, existing suites unchanged.
+Scope: `src/features/proposals/v7/inbox.css` (the list rows), `src/features/card/v7/{RecallChart.tsx,recallModel.ts}`, `src/features/cards/v7/cards.css` (the recall targets), tests, `docs/current/N153.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (one V36 line).
+Not: the six controls of the other V36 line (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days), `src/ui/v7/components.*`, server changes, new dependencies.
+
 ## N152 v7 UX audit r3 · V20 motion in use: drag a sheet to dismiss, a count that counts (Owner task)
 
 Owner task: "Work on the v7 audit items the other agent is not doing"

@@ -51,3 +51,29 @@ export function recallNow(state:CardState|undefined,settings:Settings|undefined,
  if(!state?.lastReview||state.stability<=0)return null;
  return retrievability(settings?.fsrsWeights??DEFAULT_W,Math.max(0,(now-Date.parse(state.lastReview))/DAY),state.stability);
 }
+
+/** One tap target on the recall chart: reviews `first`…`last` (indices into the dots) and its box in CSS pixels. */
+export interface TapGroup{first:number;last:number;left:number;right:number;top:number;bottom:number}
+/**
+ * N153 · V36: the recall chart's tap targets. Reviews are often closer together than a fingertip, so the time axis is cut
+ * into side-by-side targets, each at least one touch target wide and tall, that never overlap: a cut falls midway
+ * between two reviews, as early as it can while the target before it and the one after it each stay a full touch wide.
+ * Each target spans its reviews' heights plus half a touch above and below. `points` are the dots' centres in CSS
+ * pixels, in time order.
+ */
+export function tapGroups(points:readonly {x:number;y:number}[],touch:number):TapGroup[]{
+ const groups:TapGroup[]=[];
+ if(!points.length)return groups;
+ const end=points[points.length-1].x+touch/2;
+ const close=(first:number,last:number,left:number,right:number)=>{
+  const ys=points.slice(first,last+1).map(point=>point.y);
+  groups.push({first,last,left,right,top:Math.min(...ys)-touch/2,bottom:Math.max(...ys)+touch/2});
+ };
+ let first=0,left=points[0].x-touch/2;
+ for(let index=0;index<points.length-1;index++){
+  const here=points[index].x,next=points[index+1].x,cut=(here+next)/2;
+  if(next-here>=1&&cut-left>=touch&&end-cut>=touch){close(first,index,left,cut);first=index+1;left=cut;}
+ }
+ close(first,points.length-1,left,end);
+ return groups;
+}
