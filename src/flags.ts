@@ -1,6 +1,6 @@
 /**
- * Feature flags. Every flag is typed here and OFF by default; a flag is on in production only when its
- * default below is changed in a reviewed PR.
+ * Feature flags. Production follows the explicit defaults below; releasing a flag changes its default in a
+ * reviewed PR. The seven U4 signature defaults were authorized by the Owner on 13 Nov 2026 (N159).
  *
  * Overrides (dev, tests and e2e builds only; ignored in production builds):
  *   - URL:  `?flags=a,b`   (the query string, i.e. before the `#/route` part)
@@ -28,21 +28,21 @@ export const FLAG_DEFAULTS = {
   /** N157 · U1 S11 the margin: a 292 px notes column beside Path, Checkpoint, Session, Card and Review (a sheet below 1100 px). */
   v7Margin: false,
   /** N157 · U1 V09 / U4 S5 Review as an open notebook: from 840 px (and in book posture) question left, answer right. */
-  v7Spread: false,
+  v7Spread: true,
   /** N158 · U3 room and rhythm, from the approved r3 boards. */
   v7Room: false,
   /** N157 · U4 S1 the ruler: Today's day as a ruler with a needle for now (a slider with spoken times). */
-  v7Ruler: false,
+  v7Ruler: true,
   /** N157 · U4 S2–S4 the ∎ as the one ending: a task's tick becomes the square; Close the day as one page (V25). */
-  v7Qed: false,
+  v7Qed: true,
   /** N157 · U4 S6 scratch paper: a sheet of graph paper for an attempt before the reveal; nothing is stored. */
-  v7Scratch: false,
+  v7Scratch: true,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
-  v7Paper: false,
+  v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */
-  v7DeskClock: false,
+  v7DeskClock: true,
   /** N157 · U4 S15 the week page: the weekly digest as a page (/week), the Sunday notification's destination. */
-  v7Week: false,
+  v7Week: true,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

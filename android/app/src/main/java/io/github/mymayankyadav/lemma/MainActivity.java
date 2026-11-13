@@ -69,7 +69,7 @@ public class MainActivity extends BridgeActivity {
         });
     }
 
-    /** E8: portrait on phones, free rotation on tablets and unfolded foldables (OrientationPolicy). */
+    /** N159: follow system rotation on phones, tablets and unfolded foldables (OrientationPolicy). */
     private void applyOrientation(Configuration configuration) {
         int wanted = OrientationPolicy.requested(configuration.smallestScreenWidthDp);
         if (getRequestedOrientation() != wanted) setRequestedOrientation(wanted);

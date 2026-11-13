@@ -4,13 +4,13 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-/** E8 (v7 UX audit r3): phones are held in portrait; tablets and unfolded foldables rotate. */
+/** N159: the shipped desk clock and landscape layouts follow system rotation at every width. */
 public class OrientationPolicyTest {
-    @Test public void phonesStayInPortrait() {
-        assertEquals(OrientationPolicy.PORTRAIT, OrientationPolicy.requested(320));
-        assertEquals(OrientationPolicy.PORTRAIT, OrientationPolicy.requested(360));
-        assertEquals(OrientationPolicy.PORTRAIT, OrientationPolicy.requested(411));
-        assertEquals(OrientationPolicy.PORTRAIT, OrientationPolicy.requested(599));
+    @Test public void phonesFollowSystemRotationAfterDeskClockRelease() {
+        assertEquals(OrientationPolicy.UNSPECIFIED, OrientationPolicy.requested(320));
+        assertEquals(OrientationPolicy.UNSPECIFIED, OrientationPolicy.requested(360));
+        assertEquals(OrientationPolicy.UNSPECIFIED, OrientationPolicy.requested(411));
+        assertEquals(OrientationPolicy.UNSPECIFIED, OrientationPolicy.requested(599));
     }
 
     @Test public void tabletsAndUnfoldedFoldablesRotate() {
