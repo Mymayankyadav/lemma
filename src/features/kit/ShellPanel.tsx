@@ -1,4 +1,5 @@
 import {CalendarDays,ChartColumn,House,Layers,Plus,Route,Search,Inbox,Timer} from "lucide-react";
+import {MEANING_ICON} from '../../ui/v7/meanings';
 import {Emblem} from "../../ui/v7/Emblem";
 import {SubjectMark,Tag,subjectClass,subjects,type Subject} from "../../ui/v7/KitPrimitives";
 import {LiveChip,StatusBadge} from "../../ui/v7/Status";
@@ -72,7 +73,7 @@ export default function ShellPanel(){
   <div className="v7-compare-group"><h3 className="v7-subhead">Search row</h3>
    <p className="v7-meta">Search is a full-height sheet whose field is its header. Rows have their own icon and the match in bold.</p>
    <div className="v7-search-row v7-shell-search" data-active="true"><Timer aria-hidden="true"/><span>Quick focus</span><small>Action</small></div>
-   <div className="v7-search-row v7-shell-search" data-active="false"><Layers aria-hidden="true"/><span><mark>Comp</mark><span data-rest="">actness</span></span><small>Real Analysis</small></div>
+   <div className="v7-search-row v7-shell-search" data-active="false"><MEANING_ICON.concepts aria-hidden="true"/><span><mark>Comp</mark><span data-rest="">actness</span></span><small>Real Analysis</small></div>
   </div>
   <div className="v7-compare-group"><h3 className="v7-subhead">Cover size</h3>
    <p className="v7-meta">Between a 48 px tile and a 164 px hero: a 96 px cover on the subject tint with tile-level detail (at most 24 strokes at 1 px).</p>

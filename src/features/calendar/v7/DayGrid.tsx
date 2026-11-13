@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,type MouseEvent,type PointerEvent} from 'react';
-import {Check,Flag,Target} from 'lucide-react';
+import {Check} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {haptic} from '../../../ui/v7/haptics';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
@@ -149,8 +150,8 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    <strong>{label}</strong>
    {size!=='title'&&<small>{kind==='logged'?minutes+' min logged':range}</small>}
    {size==='full'&&kind!=='logged'&&look.path&&<small>{look.path}</small>}
-   {block?.checkpointId&&size!=='title'&&<Target className="v7-cal-link" aria-hidden="true"/>}
-   {block?.taskId&&size!=='title'&&<Flag className="v7-cal-link" aria-hidden="true"/>}
+   {block?.checkpointId&&size!=='title'&&<MEANING_ICON.checkpoint className="v7-cal-link" aria-hidden="true"/>}
+   {block?.taskId&&size!=='title'&&<MEANING_ICON.task className="v7-cal-link" aria-hidden="true"/>}
    {item.continuesBefore||item.continuesAfter?<span className="v7-sr-only">Continues across midnight</span>:null}
   </>;
   const mark=block&&enterOf?enterOf(block.id):{};

@@ -4,7 +4,7 @@ import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
 import {useHapticsSetting} from '../../../ui/v7/useHapticsSetting';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useSearchParams} from 'react-router';
-import {Check,LayoutList,Layers,Link as LinkIcon,Unlink,Minus,MoveRight,Pencil,Plus,X} from 'lucide-react';
+import {Check,GalleryVerticalEnd,LayoutList,Link as LinkIcon,Unlink,Minus,MoveRight,Pencil,Plus,X} from 'lucide-react';
 import {useProject,useProjects,useProposals,useSettings} from '../../../data/hooks';
 import type {Proposal,ProjectSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
@@ -155,7 +155,7 @@ export default function InboxV7(){
  const titleOf=(slug:string)=>bySlug.get(slug)?.title??slug;
  const tabs=['Cards '+cards.length,'Plans '+plans.length];
  return <main id="main-content" className="v7-page v7-inbox" aria-label="Inbox">
-  <DetailHeader title="Inbox" back="/" action={tab==='cards'?<IconButton label={list?'Show the stack':'Show as a list'} aria-pressed={list} onClick={toggleList}>{list?<Layers aria-hidden="true"/>:<LayoutList aria-hidden="true"/>}</IconButton>:undefined}/>
+  <DetailHeader title="Inbox" back="/" action={tab==='cards'?<IconButton label={list?'Show the stack':'Show as a list'} aria-pressed={list} onClick={toggleList}>{list?<GalleryVerticalEnd aria-hidden="true"/>:<LayoutList aria-hidden="true"/>}</IconButton>:undefined}/>
   <h1 className="v7-sr-only">Inbox</h1>
   <Segmented label="Proposal types" tabs panelId="v7-inbox-panel" options={tabs} value={tab==='plan'?tabs[1]:tabs[0]} onChange={setTab}/>
   <section id="v7-inbox-panel" role="tabpanel" aria-label={tab==='plan'?'Plans':'Cards'} className="v7-inbox-panel">

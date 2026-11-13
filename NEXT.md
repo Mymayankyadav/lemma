@@ -1,5 +1,17 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N156 v7 UX audit r3 · one meaning per glyph, one line weight (IC1, IC2, IC3, IC5) (Owner task)
+
+Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = P6 of `06_ILLUSTRATION_ANIMATION_ICON_AUDIT.md` (Owner decision E21), each with a test.
+- IC2/IC3: every lucide icon, drawn mark and grade glyph in v7 draws its line at 1.75 px whatever its size (a non-scaling stroke in `kit-system.css`; icons are sized by CSS, which LucideProvider's absoluteStrokeWidth cannot see); the grade glyphs are redrawn on the 24-unit grid.
+- IC1/IC5: one glyph per meaning, from `src/ui/v7/meanings.ts`: Layers only for Review; a drawn card for a card; ∫ on a card for practice; ArrowLeftRight for "Switch path"; a drawn three-star constellation for concepts and the Atlas; Target only for a checkpoint; Flag only for a target date; a calendar with "!" for a deadline; CheckSquare for a task (also a block's task link); ± for changed; a dashed square with + for suggested; BookOpen for Study settings (not Brain). Six new drawn marks in `marks.tsx`.
+- Recorded in `docs/current/N156.md`, the IC line ticked.
+Tests: `tests/unit/v7/n156-icons.test.tsx`, `tests/e2e/v7-n156-icons.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/{marks.tsx,meanings.ts,grades.tsx,Status.tsx,kit-system.css,kit-page.css}`, `src/app/v7/{searchIcons.ts,CaptureSheet.tsx,V7Shell.tsx}`, `src/features/{home,project,calendar,settings,proposals}/v7/*` and `src/features/kit/ShellPanel.tsx` (icon choices only), tests, `docs/current/N156.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`.
+Not: the Android shortcut and tile icons (IC4, IC6: the next Android item), v6 screens, new dependencies.
+
 ## N155 v7 UX audit r3 · Round complete's own ∎ (IL6) and the rules for the illustration set (IL3, IL4, IL5, IL7) (Owner task)
 
 Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"

@@ -1,6 +1,11 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 @layer v7-components {
 /* One shared component contract. Interaction styles live in the states layer. */
+/* N156 · IC2 IC3 (Owner decision E21): every line icon draws 1.75 px whatever its size: lucide, the drawn marks and the
+   grade glyphs. Icons are mostly sized by CSS, which LucideProvider's absoluteStrokeWidth cannot see, so the line is
+   held here instead (non-scaling strokes are measured in CSS pixels). */
+:where(html[data-v7]) :is(svg.lucide,svg.v7-mark,svg.v7-grade-glyph) {stroke-width:1.75;}
+:where(html[data-v7]) :is(svg.lucide,svg.v7-mark,svg.v7-grade-glyph) * {vector-effect:non-scaling-stroke;}
 :where(html[data-v7]) body {
   background-color:var(--v7-role-surface-page);
   background-image:linear-gradient(to right,color-mix(in srgb,var(--v7-role-border-subtle) 35%,transparent) var(--v7-hairline),transparent var(--v7-hairline)),linear-gradient(to bottom,color-mix(in srgb,var(--v7-role-border-subtle) 35%,transparent) var(--v7-hairline),transparent var(--v7-hairline));

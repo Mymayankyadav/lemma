@@ -1,8 +1,9 @@
 import {lazy,Suspense,useState,type ReactNode} from 'react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
 import {applyReduceEffects} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {Bell,Brain,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
+import {Bell,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
 import {useRotateConnectorSecret,useSettings,useSignOut,useSubjects,useUpdateSettings,useUpdateSubject} from '../../../data/hooks';
 import type {Settings,Subject as DataSubject,UiPreferences} from '../../../data/types';
 import {getMode} from '../../../data/mode';
@@ -47,7 +48,7 @@ export function settingsSummary(section:Section,settings:Settings|undefined,subj
   case 'data':return getMode()==='demo'?'Example workspace':'Export, sign out or delete';
  }
 }
-const icons:Record<Section,typeof Palette>={appearance:Palette,tutor:MessageCircle,study:Brain,planning:CalendarClock,reminders:Bell,subjects:Shapes,data:Database};
+const icons:Record<Section,typeof Palette>={appearance:Palette,tutor:MessageCircle,study:MEANING_ICON.study,planning:CalendarClock,reminders:Bell,subjects:Shapes,data:Database};
 const groups:Section[][]=[['appearance','tutor'],['study','planning','reminders'],['subjects','data']];
 
 function ThemeCard({mode,selected,onSelect}:{mode:Mode;selected:boolean;onSelect:()=>void}){
