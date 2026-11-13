@@ -4,6 +4,9 @@ const home='./?demo=1&flags=v6Shell#/';
 const log='./?demo=1&flags=v6Shell#/log';
 const progress='./?demo=1&flags=v6Shell#/insights?range=7';
 const longIntent='Prove '+'C'.repeat(145)+' \\(\\forall x\\in X\\)';
+// S0 #1368 (bug #1367): the manual log case ends 5 minutes before "now" and lasts 10, so on the real clock it crossed
+// midnight in the first quarter hour of every day. The geometry case runs at a fixed mid-day instant instead.
+const FIXED_NOW=new Date('2026-11-10T07:00:00.000Z');
 const scenarios=[
  {width:320,theme:'graph-night'},
  {width:360,theme:'graph'},
@@ -58,6 +61,7 @@ for(const {width,theme} of scenarios){
   test.setTimeout(120_000);
   await page.setViewportSize({width,height:844});
   await prepare(page);
+  await page.clock.setFixedTime(FIXED_NOW);
   await page.goto(home);
   await start(page);
   await layout(page,theme);
@@ -77,7 +81,7 @@ for(const {width,theme} of scenarios){
   await touchTarget(page.getByRole('button',{name:'Add time'}));
   await page.getByRole('button',{name:'Add time'}).click();
   await page.getByRole('textbox',{name:'Manual intent'}).fill(longIntent);
-  const end=new Date(Date.now()-5*60_000),begin=new Date(end.getTime()-10*60_000);
+  const end=new Date(FIXED_NOW.getTime()-5*60_000),begin=new Date(end.getTime()-10*60_000);
    const ownerFields=await page.evaluate(({start,stop})=>{
     const zone=Intl.DateTimeFormat().resolvedOptions().timeZone||'UTC';
     const fmt=new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',
