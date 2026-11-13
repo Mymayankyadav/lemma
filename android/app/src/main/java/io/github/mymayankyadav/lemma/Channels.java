@@ -50,7 +50,7 @@ public final class Channels {
         review.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
         channels.add(review);
 
-        NotificationChannel calendar = new NotificationChannel(CALENDAR, "Study blocks", NotificationManager.IMPORTANCE_HIGH);
+        NotificationChannel calendar = new NotificationChannel(CALENDAR, "Time blocks", NotificationManager.IMPORTANCE_HIGH);
         calendar.setDescription("A planned study block is starting.");
         calendar.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
         channels.add(calendar);

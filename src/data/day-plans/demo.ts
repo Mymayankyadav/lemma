@@ -7,6 +7,7 @@ import {civilPlanDate,comparePlanSources,normalizeAvailability,
  normalizeDayPlan,normalizePlanItems,normalizeDayCloseTransition,validatePlanClosure} from './model';
 import {createDemoTaskApi} from '../tasks/demo';
 import {createDemoStudyApi} from '../study/demo';
+import type {StudyApi} from '../study/contract';
 
 const KEY='lemma.v6.demo.day-plans.v1';
 const statuses:DayPlanStatus[]=['draft','previewed','committed','closed'];
@@ -114,7 +115,7 @@ function normalizePatch(row:DayPlanRecord,patch:DayPlanPatch):DayPlanRecord{
   capacityMinutes:validated.capacityMinutes,availability:validated.availability,
   tomorrowFirstTaskId:validated.tomorrowFirstTaskId,ritual:validated.ritual};
 }
-export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReader):DayPlanApi{
+export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReader,sharedStudy?:StudyApi):DayPlanApi{
  let memory=load()??{schema:1 as const,plans:[],items:[]};
  const current=():Snapshot=>{memory=load()??memory;return memory};
  const save=(plans:DayPlanRecord[],items:DayPlanItem[],
@@ -247,7 +248,7 @@ export function createDemoDayPlanApi(readSources:SourceReader=defaultSourceReade
      return fail('conflict','Atomic placement operationId reused with different payload');
     return clone(replay.receipt);
    }
-   const study=createDemoStudyApi();
+   const study=sharedStudy??createDemoStudyApi();
    const range={start:'1970-01-01T00:00:00.000Z',end:'2100-01-01T00:00:00.000Z'};
    const blocks=await study.listCalendarBlocks(range);
    const entries=await study.listStudyEntries(range),windows:{start:number;end:number}[]=[];

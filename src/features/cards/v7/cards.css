@@ -26,11 +26,16 @@
  :where(html[data-v7]) .v7-card-stats {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,5.5rem),1fr));gap:var(--v7-space-2);}
  /* V38: "Thu 12 Nov" stays on one line in a third of a phone's width (it wrapped to "Thu 12 / Nov"). */
  :where(html[data-v7]) .v7-card-stats .v7-figure-m {font-size:min(var(--v7-type-subhead),5.2vw);line-height:1.2;white-space:nowrap;}
- :where(html[data-v7]) .v7-card-history {display:grid;grid-template-columns:minmax(88px,auto) auto minmax(0,1fr);align-items:center;gap:var(--v7-space-3);min-height:var(--v7-touch);padding:var(--v7-space-1) 0;border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);font:400 var(--v7-type-supporting)/1.3 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-card-history {display:grid;grid-template-columns:minmax(88px,auto) auto minmax(min-content,1fr);align-items:center;gap:var(--v7-space-3);min-height:var(--v7-touch);padding:var(--v7-space-1) 0;border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);font:400 var(--v7-type-supporting)/1.3 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-card-history small {color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);text-align:right;}
+ /* N157 (V11): at large text the detail takes its own line rather than running past the edge. */
+ @supports (container-type:inline-size) {:where(html[data-v7]) .v7-learn-list:has(.v7-card-history) {container-type:inline-size;}
+  @container (max-width: 19em) {:where(html[data-v7]) .v7-card-history {grid-template-columns:auto 1fr;} :where(html[data-v7]) .v7-card-history small {grid-column:1 / -1;text-align:left;}}}
  /* Recall chart. Grade colours follow the review grade dock. */
  :where(html[data-v7]) .v7-recall {position:relative;margin:0;display:grid;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-recall svg {display:block;width:100%;height:auto;aspect-ratio:340 / 180;overflow:visible;}
+ :where(html[data-v7]) .v7-recall svg {display:block;width:100%;max-width:640px;height:auto;overflow:visible;}
+ /* N157 · V08: an empty full-width line the chart measures itself against (the drawing is at most 640 px). */
+ :where(html[data-v7]) .v7-recall-measure {position:absolute;inset:0 0 auto 0;height:0;}
  :where(html[data-v7]) .v7-recall-grid {stroke:var(--v7-role-border-subtle);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-mid {stroke:var(--v7-role-border-default);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-target {stroke:var(--v7-role-text-secondary);stroke-width:1;stroke-dasharray:4 3;}
@@ -41,7 +46,7 @@
  :where(html[data-v7]) :is(.v7-recall-dot,.v7-recall-legend li,.v7-card-history)[data-grade="good"] {--v7-grade:var(--v7-role-status-success);}
  :where(html[data-v7]) :is(.v7-recall-dot,.v7-recall-legend li,.v7-card-history)[data-grade="easy"] {--v7-grade:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-recall-dot {fill:var(--v7-grade);stroke:var(--v7-role-surface-page);stroke-width:2;}
- :where(html[data-v7]) .v7-recall-hits {position:absolute;inset:0 0 auto 0;aspect-ratio:340 / 180;pointer-events:none;}
+ :where(html[data-v7]) .v7-recall-hits {position:absolute;inset:0 auto auto 0;pointer-events:none;}
  /* N153 · V36: RecallChart places and sizes each target (side-by-side, never overlapping); square-ish corners keep a dot
     near a target's corner inside its own hit area. */
  :where(html[data-v7]) .v7-recall-hits button {position:absolute;border:0;border-radius:var(--v7-radius-xs);background:transparent;pointer-events:auto;cursor:pointer;}

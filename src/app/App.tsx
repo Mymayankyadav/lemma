@@ -12,6 +12,7 @@ import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
 import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
+import { weekRoute } from './weekRoute'
 import {isFlagOn} from '../flags'
 const PracticePage=lazy(()=>import('../features/practice/Page'))
 const DayRitual=lazy(()=>import('../features/ritual/Page'))
@@ -29,6 +30,7 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
+ weekRoute,
  ...(isFlagOn('v6Shell')||isFlagOn('v7Shell')?[{path:'/today/close',
   element:<Suspense fallback={<RouteFallback/>}><DayRitual/></Suspense>,
   errorElement:<RouteError/>}, {path:'/log',

@@ -1,4 +1,5 @@
 import {Illustration} from '../../../ui/v7/Illustration';
+import {fromEdge} from '../../../ui/v7/edges';
 import {nameCodes} from '../../../lib/codeNames';
 import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
 import {useHapticsSetting} from '../../../ui/v7/useHapticsSetting';
@@ -40,7 +41,7 @@ function TopCard({proposal,project,onDecide,onSkip,haptics,stamped}:{proposal:Pr
  const [drag,setDrag]=useState({dx:0,dy:0}),start=useRef<{x:number;y:number;t:number}|null>(null),ref=useRef<HTMLElement>(null),dragged=useRef(false);
  const face=faces(proposal),subject=kitSubject(project?.subject.name??''),citations=proposalCitations(proposal);
  const width=ref.current?.offsetWidth??340,style=swipeStyle(drag.dx,width);
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if((event.target as HTMLElement).closest('button,a'))return;dragged.current=false;start.current={x:event.clientX,y:event.clientY,t:performance.now()};event.currentTarget.setPointerCapture(event.pointerId);};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{if((event.target as HTMLElement).closest('button,a')||fromEdge(event.clientX))return;dragged.current=false;start.current={x:event.clientX,y:event.clientY,t:performance.now()};event.currentTarget.setPointerCapture(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{const origin=start.current;if(origin)setDrag({dx:event.clientX-origin.x,dy:Math.min(0,event.clientY-origin.y)});};
  const up=(event:ReactPointerEvent<HTMLElement>)=>{
   const origin=start.current;start.current=null;if(!origin)return;
@@ -116,7 +117,7 @@ export default function InboxV7(){
  const onUndo=useCallback((ids:string[])=>setOrder(previous=>[...ids,...previous.filter(id=>!ids.includes(id))]),[]);
  const onSettled=useCallback(()=>{void query.refetch();},[query]);
  const {held,decide}=useInboxDecisions({onUndo,onSettled});
- const desk=useMinWidth(1100);
+ const desk=useMinWidth(600);
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const all=useMemo(()=>(query.data??[]).filter(p=>!held.has(p.id)),[query.data,held]);
  const cards=useMemo(()=>all.filter(isCardProposal),[all]),plans=useMemo(()=>all.filter(isPlanProposal),[all]);
@@ -160,7 +161,7 @@ export default function InboxV7(){
   <Segmented label="Proposal types" tabs panelId="v7-inbox-panel" options={tabs} value={tab==='plan'?tabs[1]:tabs[0]} onChange={setTab}/>
   <section id="v7-inbox-panel" role="tabpanel" aria-label={tab==='plan'?'Plans':'Cards'} className="v7-inbox-panel">
    {query.isPending&&<Skeleton/>}
-   {query.isError&&<div role="alert" className="v7-inbox-empty"><p>Could not load proposals.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}
+   {query.isError&&<div role="alert" className="v7-inbox-empty"><p>Erratum: proposals didn’t load. Try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}
    {query.isSuccess&&tab==='cards'&&!list&&(top?<div className={desk?'v7-inbox-desk':'v7-inbox-panel'}>
     {desk&&<ol className="v7-inbox-queue" aria-label="Queue">{queue.map(p=><li key={p.id}><button type="button" aria-current={p.id===top.id?'true':undefined}
      onClick={()=>setOrder(previous=>[p.id,...mergeOrder(previous,cards.map(item=>item.id)).filter(id=>id!==p.id)])}>

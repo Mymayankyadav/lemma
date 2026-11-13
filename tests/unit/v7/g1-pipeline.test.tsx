@@ -60,13 +60,13 @@ describe('G1 the adaptive icon in two layers', () => {
     const ink = MARK_THEMES.day.ink.slice(1).match(/../g)!.map((h: string) => parseInt(h, 16));
     expect(Math.abs(background[centre] - ink[0])).toBeGreaterThan(60);
   });
-  it('the launcher uses the background layer, and the themed icon stays the ℓ alone (∎ waits for E23)', () => {
+  it('the launcher uses the background layer, and the themed icon is the ℓ and ∎ (E23, approved 13 Nov 2026; N157)', () => {
     for (const file of ['ic_launcher.xml', 'ic_launcher_round.xml']) {
       const xml = readFileSync('android/app/src/main/res/mipmap-anydpi-v26/' + file, 'utf8');
       expect(xml).toContain('<background android:drawable="@mipmap/ic_launcher_background"/>');
       expect(xml).toContain('<foreground android:drawable="@mipmap/ic_launcher_foreground"/>');
     }
-    expect(readFileSync('android/app/src/main/res/drawable/ic_launcher_monochrome.xml', 'utf8').match(/<path /g)).toHaveLength(1);
+    expect(readFileSync('android/app/src/main/res/drawable/ic_launcher_monochrome.xml', 'utf8').match(/<path /g)).toHaveLength(2);
   });
 });
 

@@ -1,4 +1,4 @@
-import {Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
@@ -11,6 +11,8 @@ import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import {Button,Sheet} from '../../ui/v7/components';
 import {EllMark} from '../../ui/v7/marks';
+import {SyncMark} from '../../ui/v7/SyncMark';
+import {useDevicePrefValue} from '../../platform/useDevicePref';
 import {useMinWidth} from './useMinWidth';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
@@ -18,6 +20,15 @@ import {applyReduceEffects} from '../../ui/v7/effects';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 import './responsive.css';
+import '../../ui/v7/room.css';
+import {rememberRoomItem} from '../../ui/v7/room';
+import {applyPaper} from '../../ui/v7/paper';
+import {isFlagOn} from '../../flags';
+import '../../ui/v7/qed.css';
+// N157 · U4 S14: the device's paper and sky (flag v7Paper) from the first paint of the shell.
+applyPaper();
+// N157 · U4 S2–S4: the ∎ as the one ending (flag v7Qed).
+if(typeof document!=='undefined'&&isFlagOn('v7Qed'))document.documentElement.setAttribute('data-v7-qed','');
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
 const SearchSheet=lazy(()=>import('./SearchSheet'));
@@ -113,6 +124,20 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
+ useEffect(()=>{
+  if(!isFlagOn('v7Room'))return;
+  const path=location.pathname,to=path+location.search;
+  const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
+  if(!group)return;
+  const record=()=>{
+   const main=document.querySelector('main'),title=main?.querySelector('h1')?.textContent?.trim();
+   if(!title||['Path','Card','Checkpoint','Loading…'].includes(title))return;
+   const project=home.data?.projects.find(item=>path==='/p/'+item.slug);
+   rememberRoomItem({id:to,group,title:project?.title??title,to});
+  };
+  record();const observer=new MutationObserver(record);observer.observe(document.body,{childList:true,subtree:true});
+  return()=>observer.disconnect();
+ },[location.pathname,location.search,home.data]);
  // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
  const reduceEffects=settings.data?.ui?.reduceEffects;
  // AW6: haptic() follows Lemma's Haptics switch everywhere in v7.
@@ -126,10 +151,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
  const due=home.data?.due??0,active=tabs.findIndex(tab=>tab.match(location.pathname));
  useEffect(()=>{
-  if(!wide)return;
   const keys=(event:KeyboardEvent)=>{
    if(event.target instanceof HTMLElement&&event.target.closest('input,textarea,select,[contenteditable],dialog'))return;
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setSearching(true);return;}
+   if(!wide)return;
    if(event.ctrlKey||event.metaKey||event.altKey)return;
    if(event.key==='?'){event.preventDefault();setShortcuts(true);}
    else if(!immersive&&/^[1-5]$/.test(event.key)){event.preventDefault();navigate(tabs[Number(event.key)-1].to);}
@@ -169,7 +194,17 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
 export function HubHeader({title,date,settings=false,display=false,children}:{title:string;date?:string;settings?:boolean;display?:boolean;children?:ReactNode}){
+ const findSelected=(nodes:ReactNode):string|undefined=>{
+  for(const node of Children.toArray(nodes)){
+   if(!isValidElement<{children?:ReactNode;'aria-current'?:string}>(node))continue;
+   if(node.props['aria-current']==='page'&&typeof node.props.children==='string')return node.props.children;
+   const nested=findSelected(node.props.children);if(nested)return nested;
+  }
+ };
+ if(isFlagOn('v7Room')&&!display)title=findSelected(children)??title;
  const pending=useHome().data?.pendingProposals??0;
+ // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
+ const update=useDevicePrefValue<number|null>('updateAvailable',null);
  // CD1: on hubs other than Today the title row is a sticky solid bar whose Title 32 shrinks to Subhead 20 once the page
  // scrolls, so content gets the room back (the tabs and controls below scroll away).
  const [collapsed,setCollapsed]=useState(false);
@@ -181,7 +216,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
-    {settings&&<Link to="/settings" aria-label="Settings" title="Settings"><Settings aria-hidden="true"/></Link>}
+    {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
    </nav>;
  if(!display)return <>
   <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 className="v7-hub-title">{title}</h1>{actions}</div></header>
@@ -189,7 +224,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  </>;
  return <header className="v7-hub-header" data-display="true">
   <div className="v7-hub-row">
-   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span>{date}</p>:<span/>}
+   {date?<p className="v7-hub-date"><SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>{date}</p>:<span/>}
    {actions}
   </div>
   <h1 className="v7-hub-title v7-display">{title}</h1>

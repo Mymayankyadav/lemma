@@ -37,4 +37,15 @@
 }
 @layer v7-components {
  :where(html[data-v7]) .v7-tk-overdue {display:flex;align-items:center;gap:var(--v7-space-2);flex-wrap:wrap;min-height:var(--v7-touch);text-decoration:none;}
+ /* N157 · U1 (S12): from 900 px, To do, Doing and Done side by side; each column scrolls with the page. */
+ :where(html[data-v7]) .v7-tk-board {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--v7-space-4);align-items:start;}
+ :where(html[data-v7]) .v7-tk-column {display:grid;gap:var(--v7-space-3);align-content:start;min-width:0;min-height:12rem;}
+ :where(html[data-v7]) .v7-tk-board .v7-tk-card {padding-inline:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-tk-board .v7-tk-body {grid-template-columns:minmax(0,1fr);}
+ :where(html[data-v7]) .v7-tk-board .v7-tk-main {gap:var(--v7-space-1);}
+ /* With a mouse the handle and the ⋯ button are 32 px wide (still 44 tall), so a column's title gets the room. */
+ @media (pointer:fine) {:where(html[data-v7]) .v7-tk-board .v7-tk-main > :is(.v7-tk-reorder,.v7-icon-button) {width:32px;min-width:32px;}}
+ /* The board takes the wide page (the list keeps the 720 px measure). */
+ @media (min-width:900px) {:where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page.v7-tk:has(> .v7-tk-board) {max-width:1200px;}}
+ :where(html[data-v7]) .v7-tk-column-title {margin:0;font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-secondary);}
 }

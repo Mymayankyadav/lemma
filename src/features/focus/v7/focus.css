@@ -92,4 +92,16 @@
 /* AW13 (v7 UX audit r3): "Were you drifting?" as a quiet card at the top of Focus, until answered. */
 :where(html[data-v7]) .v7-focus-away {display:grid;gap:var(--v7-space-3);margin:0 var(--v7-page-margin) var(--v7-space-3);padding:var(--v7-space-4);}
 :where(html[data-v7]) .v7-focus-away p {margin:0;}
-:where(html[data-v7]) .v7-focus-away-actions {display:flex;justify-content:flex-end;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-focus-away-actions {display:flex;justify-content:flex-end;gap:var(--v7-space-2); /* N157 · U4 S16 the desk clock (flag v7DeskClock): large digits, the intention and the ring, nothing else; a tap shows the
+    controls for four seconds. */
+ :where(html[data-v7]) .v7-focus[data-desk] {grid-template-rows:auto 1fr;align-content:center;}
+ :where(html[data-v7]) .v7-focus[data-desk] :is(.v7-focus-emblem,.v7-focus-thought,.v7-focus-noted,.v7-drift-card) {display:none;}
+ :where(html[data-v7]) .v7-focus[data-desk] .v7-focus-time {font-size:clamp(4rem,18vmin,10rem);line-height:1;}
+ :where(html[data-v7]) .v7-focus[data-desk] .v7-focus-ring {width:min(80vmin,520px);height:min(80vmin,520px);}
+ :where(html[data-v7]) .v7-focus[data-desk] .v7-focus-intention {font-size:var(--v7-type-headline);}
+ :where(html[data-v7]) .v7-focus[data-desk]:not([data-desk-controls]) :is(.v7-focus-bottom,.v7-immersive-header) {opacity:0;pointer-events:none;}
+ :where(html[data-v7]) .v7-focus[data-desk] .v7-focus-bottom {position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + var(--v7-space-4));transition:opacity var(--v7-fast) var(--v7-ease-out);}
+ @media (orientation:landscape) and (max-height:500px) {
+  :where(html[data-v7]) .v7-focus[data-desk] .v7-focus-ring {width:min(70vh,360px);height:min(70vh,360px);}
+ }
+}
