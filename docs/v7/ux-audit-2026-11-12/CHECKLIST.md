@@ -103,8 +103,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note — N133
 - [x] AW9 Study mode in one trip (the request is remembered for ten minutes across system settings) — N133
 - [x] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast — N133
-- [ ] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details
-- [ ] **IC4** IC6 *(P7, needs E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon
+- [x] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details — N157
+- [x] **IC4** IC6 *(P7, E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon — N157
 - [ ] AW17 *(verify on a device)* Sign-in failure says something useful
 
 ### G0 · Refresh what is stale (S) — `04` §2
@@ -144,7 +144,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] `assets.manifest.json` and the asset lint in `postbuild` (wiring it into CI is an Owner `rules:` PR) — N137
 - [x] Android colours generated from `design-tokens.json` — N137
-- [ ] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(needs E23)* the ∎ in the themed layer
+- [x] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(E23)* the ∎ in the themed layer — N157
 - [ ] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera is open (builds on N133's `scripts/v7/install-shots.mjs`)
 
 ---

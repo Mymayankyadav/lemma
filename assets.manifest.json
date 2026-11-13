@@ -485,7 +485,7 @@
     "day"
    ],
    "budget": 8192,
-   "use": "themed icon (Android 13+): the ℓ",
+   "use": "themed icon (Android 13+): the ℓ and ∎ (N157 · IC6)",
    "generated": "committed"
   },
   {
@@ -534,6 +534,227 @@
    ],
    "budget": 4096,
    "use": "native window, splash and notification colours",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_review.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, Android 7.1 (review)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable-anydpi-v26/shortcut_review.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, adaptive (review)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_review_glyph.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut glyph layer (review)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_focus.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, Android 7.1 (focus)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable-anydpi-v26/shortcut_focus.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, adaptive (focus)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_focus_glyph.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut glyph layer (focus)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_capture.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, Android 7.1 (capture)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable-anydpi-v26/shortcut_capture.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, adaptive (capture)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_capture_glyph.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut glyph layer (capture)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_inbox.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, Android 7.1 (inbox)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable-anydpi-v26/shortcut_inbox.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, adaptive (inbox)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_inbox_glyph.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut glyph layer (inbox)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_resume.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, Android 7.1 (resume)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable-anydpi-v26/shortcut_resume.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut, adaptive (resume)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/shortcut_resume_glyph.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "launcher shortcut glyph layer (resume)",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/tile_focus.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "Quick Settings tile glyph (focus), monochrome",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/tile_capture.xml",
+   "source": "lucide-react glyph (N157 · P7)",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "Quick Settings tile glyph (capture), monochrome",
    "generated": "committed"
   }
  ]
