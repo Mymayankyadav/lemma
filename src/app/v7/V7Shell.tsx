@@ -20,6 +20,9 @@ import {applyReduceEffects} from '../../ui/v7/effects';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 import './responsive.css';
+import {applyPaper} from '../../ui/v7/paper';
+// N157 · U4 S14: the device's paper and sky (flag v7Paper) from the first paint of the shell.
+applyPaper();
 
 const CaptureSheet=lazy(()=>import('./CaptureSheet'));
 const SearchSheet=lazy(()=>import('./SearchSheet'));

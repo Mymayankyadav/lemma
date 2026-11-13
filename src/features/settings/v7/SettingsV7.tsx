@@ -25,6 +25,8 @@ import {DataAccount} from './DataAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
+import {isFlagOn} from '../../../flags';
+import {PAPERS,SKIES,choosePaper,chooseSky,readPaper,readSky,type Paper,type Sky} from '../../../ui/v7/paper';
 // AW3: the app's version and updates, only inside the Android app.
 const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
 
@@ -58,6 +60,18 @@ function ThemeCard({mode,selected,onSelect}:{mode:Mode;selected:boolean;onSelect
   <strong>{modeWord[mode]}</strong><small>{mode==='auto'?'Follows your device':mode==='day'?'Light paper':'Dark sky'}</small>
  </button>;
 }
+/** N157 · U4 S14 (flag v7Paper): one paper by day and one sky by night, kept on this device. */
+function PaperChoice(){
+ const [paper,setPaper]=useState<Paper>(readPaper),[sky,setSky]=useState<Sky>(readSky);
+ const word=(value:string)=>value[0].toUpperCase()+value.slice(1);
+ return <div className="v7-settings-card">
+  <p className="v7-set-label">Paper</p>
+  <div className="v7-tk-picker" role="radiogroup" aria-label="Paper by day">{PAPERS.map(item=><button key={item} type="button" role="radio" aria-checked={paper===item} className="v7-filter-chip" onClick={()=>{setPaper(item);choosePaper(item);}}>{word(item)}</button>)}</div>
+  <p className="v7-set-label">Sky</p>
+  <div className="v7-tk-picker" role="radiogroup" aria-label="Sky by night">{SKIES.map(item=><button key={item} type="button" role="radio" aria-checked={sky===item} className="v7-filter-chip" onClick={()=>{setSky(item);chooseSky(item);}}>{word(item)}</button>)}</div>
+  <p className="v7-meta">Drawn at 7% ink, under your text. Off when Reduce effects is on.</p>
+ </div>;
+}
 function Appearance({settings}:{settings:Settings}){
  const update=useUpdateSettings(),notify=useToast();
  const [mode,setMode]=useState<Mode>(()=>(settings.ui?.mode as Mode|undefined)??readAppearance().mode);
@@ -89,6 +103,7 @@ function Appearance({settings}:{settings:Settings}){
    <Switch label="Sounds" checked={flag('sounds')} onChange={value=>{void toggle('sounds',value);}}/>
    <p className="v7-meta">A pencil tick when you grade, a page turn when a round ends, a low chime when you close the day.</p>
   </div>
+  {isFlagOn('v7Paper')&&<PaperChoice/>}
  </div>;
 }
 function SubjectSheet({subject,taken,current,onClose}:{subject:DataSubject;taken:Map<Subject,string>;current:Subject;onClose:()=>void}){
