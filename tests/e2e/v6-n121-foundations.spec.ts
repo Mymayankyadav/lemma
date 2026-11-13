@@ -28,6 +28,9 @@ test('N121 E2 demo plan proposals never show UUID or JSON draft editing',async({
  await expect(page.getByRole('main',{name:'Plan proposal review'})).toBeVisible();
  await expect(page.getByRole('region',{name:'Editable proposal draft'})).toHaveCount(0);
  await expect(page.getByText(/Expected a UUID|Full draft payload \(JSON\)|Retry drafts/)).toHaveCount(0);
+ // incident #1396: every CI shard must write at least one screenshot (the screens-shard upload fails closed), and the
+ // shard boundaries move whenever specs are added, so two specs in the middle of shard 3 keep it supplied.
+ await page.screenshot({path:'test-results/screens/review/n121-e2-proposal.png',fullPage:true});
 });
 
 test('N121 D1 Progress uses one range selector and consistent saved effort',async({page})=>{
