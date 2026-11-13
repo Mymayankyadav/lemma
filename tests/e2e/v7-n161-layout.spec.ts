@@ -69,6 +69,10 @@ for(const [width,scale] of sizes){
   expect(Math.abs(r.y+r.height-dock.y),"gap between ruler and tab bar").toBeLessThanOrEqual(1);
   expect(Math.abs(r.x-dock.x)).toBeLessThanOrEqual(1);
   expect(Math.abs(r.width-dock.width)).toBeLessThanOrEqual(1);
+  // Its time labels are whole, not cut off by the tab bar.
+  const labels=await ruler.locator(".v7-ruler-label").evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().bottom));
+  expect(labels.length).toBeGreaterThan(0);
+  expect(Math.max(...labels)).toBeLessThanOrEqual(r.y+r.height+0.5);
   // It opens on now.
   await expect(page.getByRole("slider",{name:"Browse day"})).toHaveAttribute("aria-valuetext","23:35");
   // Scrolled to the end, the whole day grid is above the ruler.

@@ -58,10 +58,15 @@ export default function V7CalendarDay(){
  useEffect(()=>{
   const node=scrubberRef.current,dock=document.querySelector<HTMLElement>('.v7-dock');
   if(!node||!dock||typeof ResizeObserver==='undefined')return;
-  const place=()=>node.style.setProperty('--v7-dock-top',Math.max(0,Math.round(window.innerHeight-dock.getBoundingClientRect().top))+'px');
+  // The shell's dock height grows by the ruler's own height, so the page keeps the whole day above it.
+  const shell=node.closest<HTMLElement>('.v7-shell');
+  const place=()=>{
+   node.style.setProperty('--v7-dock-top',Math.max(0,Math.round(window.innerHeight-dock.getBoundingClientRect().top))+'px');
+   shell?.style.setProperty('--v7-dock-ruler',Math.ceil(node.getBoundingClientRect().height)+'px');
+  };
   place();
-  const observer=new ResizeObserver(place);observer.observe(dock);window.addEventListener('resize',place);
-  return ()=>{observer.disconnect();window.removeEventListener('resize',place);node.style.removeProperty('--v7-dock-top');};
+  const observer=new ResizeObserver(place);observer.observe(dock);observer.observe(node);window.addEventListener('resize',place);
+  return ()=>{observer.disconnect();window.removeEventListener('resize',place);node.style.removeProperty('--v7-dock-top');shell?.style.removeProperty('--v7-dock-ruler');};
  });
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
