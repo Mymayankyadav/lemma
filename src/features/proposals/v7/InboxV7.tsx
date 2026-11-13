@@ -22,7 +22,6 @@ import {planReviewNodes} from '../../plan-proposal/nodes';
 import {changeRows,groupBySession,isCardProposal,isPlanProposal,mergeOrder,miniWindow,sameSession,skipFirst,swipeIntent,swipeStyle,type ChangeIcon,type Decision} from './inboxModel';
 import {useInboxDecisions} from './useInboxDecisions';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
-import {useMotionReduced} from '../../../ui/v7/effects';
 import '../../project/v7/learning.css';
 import './inbox.css';
 
@@ -33,8 +32,7 @@ const faces=(p:Proposal)=>p.kind==='card_edit'&&p.cardEdit?{front:p.cardEdit.fro
 
 /** The top card: the review-card design with its subject and session, the type as an eyebrow, front, hairline, back, and
  *  "Why this card?". Swipe right approves, left rejects, up skips; below the threshold it springs back. */
-function TopCard({proposal,project,onDecide,onSkip,haptics,stamped}:{proposal:Proposal;project:ProjectSummary|undefined;onDecide:(action:Decision)=>void;onSkip:()=>void;haptics:boolean;
- /** N131 · L-07: a decision made with a button or key stamps the card before it leaves. */stamped?:'Approve'|'Reject'}){
+function TopCard({proposal,project,onDecide,onSkip,haptics}:{proposal:Proposal;project:ProjectSummary|undefined;onDecide:(action:Decision)=>void;onSkip:()=>void;haptics:boolean}){
  const [drag,setDrag]=useState({dx:0,dy:0}),start=useRef<{x:number;y:number;t:number}|null>(null),ref=useRef<HTMLElement>(null),dragged=useRef(false);
  const face=faces(proposal),subject=kitSubject(project?.subject.name??''),citations=proposalCitations(proposal);
  const width=ref.current?.offsetWidth??340,style=swipeStyle(drag.dx,width);
@@ -54,8 +52,7 @@ function TopCard({proposal,project,onDecide,onSkip,haptics,stamped}:{proposal:Pr
   style={{transform:drag.dx||drag.dy?`translate(${drag.dx}px,${drag.dy}px) rotate(${style.rotate}deg)`:undefined,['--inbox-wash' as string]:String(style.wash)}}
   onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{start.current=null;setDrag({dx:0,dy:0});}}
   onClickCapture={event=>{if(dragged.current){event.preventDefault();event.stopPropagation();dragged.current=false;}}}>
-  {stamped?<span className="v7-inbox-wash" data-word={stamped} data-stamped="" aria-hidden="true" style={{['--inbox-wash' as string]:'1'}}><span className="v7-inbox-stamp">{stamped==='Approve'?<Check/>:<X/>}{stamped}</span></span>
-  :style.word&&<span className="v7-inbox-wash" data-word={style.word} aria-hidden="true"><span className="v7-inbox-stamp">{style.word==='Approve'?<Check/>:<X/>}{style.word}</span></span>}
+  {style.word&&<span className="v7-inbox-wash" data-word={style.word} aria-hidden="true"><span className="v7-inbox-stamp">{style.word==='Approve'?<Check/>:<X/>}{style.word}</span></span>}
   <div className="v7-inbox-card-head"><Tag subject={subject}/><span className="v7-meta">{project?.title??proposal.projectSlug}{proposal.sessionNumber!==null?' · Session '+proposal.sessionNumber:''}</span></div>
   <p className="v7-eyebrow">{face.kind}</p>
   <div className="v7-inbox-front"><MathText source={face.front} cloze={isCloze(proposal)?{ord:1,revealed:true}:undefined}/></div>
@@ -101,8 +98,6 @@ function PlanCard({proposal,project,onDecide}:{proposal:Proposal;project:Project
  </li>;
 }
 
-/** N131 · L-07: how long a stamped card stays before it leaves (the stamp lands in the first 220 ms). */
-export const STAMP_MS=360;
 /** PLAN §6.10 Inbox: a triage stack for cards (swipe, buttons or keys), a list view for batches, and plan cards. */
 export default function InboxV7(){
  const query=useProposals(),projects=useProjects(),settings=useSettings();
@@ -120,18 +115,11 @@ export default function InboxV7(){
  useEffect(()=>{setOrder(previous=>mergeOrder(previous,cards.map(p=>p.id)));},[cards]);
  const queue=useMemo(()=>{const byId=new Map(cards.map(p=>[p.id,p]));return mergeOrder(order,cards.map(p=>p.id)).map(id=>byId.get(id)!).filter(Boolean);},[order,cards]);
  const top=queue[0],peers=sameSession(top,queue);
- const reduced=useMotionReduced();
- const [stamp,setStamp]=useState<{id:string;word:'Approve'|'Reject'}|null>(null),stampTimer=useRef(0);
- useEffect(()=>()=>window.clearTimeout(stampTimer.current),[]);
- /** N131 · L-07: a single decision by button or key stamps the top card for STAMP_MS first; a swipe has already shown it. */
- const act=useCallback((action:Decision,items?:Proposal[],swiped=false)=>{
+ const act=useCallback((action:Decision,items?:Proposal[])=>{
   const targets=items??(top?[top]:[]);
-  if(!targets.length||stamp)return;
-  haptic('decision',haptics);
-  if(items||swiped||reduced||!top){decide(targets,action);return;}
-  setStamp({id:top.id,word:action==='approve'?'Approve':'Reject'});
-  stampTimer.current=window.setTimeout(()=>{setStamp(null);decide(targets,action);},STAMP_MS);
- },[top,decide,haptics,reduced,stamp]);
+  if(!targets.length)return;
+  haptic('decision',haptics);decide(targets,action);
+ },[top,decide,haptics]);
  const skip=useCallback(()=>setOrder(previous=>skipFirst(mergeOrder(previous,cards.map(p=>p.id)))),[cards]);
  useEffect(()=>{
   if(tab!=='cards'||list||editing||batch)return;
@@ -164,7 +152,7 @@ export default function InboxV7(){
     <div className="v7-inbox-panel">
     <div className="v7-inbox-stack" data-count={Math.min(3,queue.length)}>
      {queue.slice(1,3).reverse().map((p,index,rest)=><div key={p.id} className="v7-inbox-peek" data-depth={rest.length-index} aria-hidden="true"/>)}
-     <TopCard key={top.id} proposal={top} project={bySlug.get(top.projectSlug)} onDecide={action=>act(action,undefined,true)} onSkip={skip} haptics={haptics} stamped={stamp?.id===top.id?stamp.word:undefined}/>
+     <TopCard key={top.id} proposal={top} project={bySlug.get(top.projectSlug)} onDecide={action=>act(action)} onSkip={skip} haptics={haptics}/>
     </div>
     <p className="v7-inbox-position" aria-live="polite">1 of {queue.length}</p>
     <div className="v7-inbox-decide" role="group" aria-label="Decide on this card">

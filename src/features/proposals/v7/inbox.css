@@ -75,15 +75,3 @@
  :where(html[data-v7]) .v7-planp-draft > summary {min-height:var(--v7-touch);display:flex;align-items:center;font:600 var(--v7-type-supporting)/1 var(--v7-sans);cursor:pointer;}
  :where(html[data-v7]) .v7-planp-json {width:100%;min-height:176px;max-height:320px;overflow:auto;margin:0;padding:var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);font:400 var(--v7-type-caption)/1.5 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;}
 }
-
-@layer v7-components {
-/* N131 · L-07 approve/reject stamps (plan r3 §6.2, in code): a decision by button or key presses the stamp onto the card and
-   it settles the last 4° (220 ms, no bounce)
-   before the card leaves; a swipe has already shown it growing with the drag. Reduced motion skips the stamp entirely. */
-@media (prefers-reduced-motion: no-preference) {
- :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-inbox-wash[data-stamped] {animation:v7-stamp-wash var(--v7-m-quick) linear both;}
- :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-inbox-wash[data-stamped] .v7-inbox-stamp {animation:v7-stamp-land 220ms cubic-bezier(.2,0,0,1) both;}
-}
-@keyframes v7-stamp-wash {from{opacity:0}to{opacity:1}}
-@keyframes v7-stamp-land {from{opacity:0;transform:rotate(calc(var(--v7-stamp-turn,-8deg) + 4deg)) scale(1.12)}to{opacity:1;transform:rotate(var(--v7-stamp-turn,-8deg)) scale(1)}}
-}

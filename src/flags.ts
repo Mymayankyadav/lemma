@@ -23,8 +23,6 @@ export const FLAG_DEFAULTS = {
   /** Constellation, on by default since the Owner's release of 12 Nov 2026 (release gates waived by the Owner). v6Shell
    *  stays on underneath it as the rollback: changing this default back to false restores v6 with no data change. */
   v7Shell: true,
-  /** N131 · A4 the focus orbit (an SVG prototype, plan r3 §7): open-mode sessions trace a ring once a minute; paused and drifted states show on it. */
-  focusOrbit: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
