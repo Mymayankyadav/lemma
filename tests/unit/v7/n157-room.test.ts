@@ -18,6 +18,10 @@ describe('U3 local navigation history',()=>{
   rememberRoomItem({id:'action:focus',group:'Actions',title:'Quick focus',to:'/?quick=1'});
   expect(readRoomRecent()).toHaveLength(1);
  });
+ it('keeps opened tutoring sessions alongside paths and cards',()=>{
+  rememberRoomItem({id:'session',group:'Sessions',title:'Session 7 · Compactness',to:'/s/session-7'});
+  expect(readRoomRecent()[0]).toMatchObject({group:'Sessions',to:'/s/session-7'});
+ });
  it('rejects malformed storage, external URLs, control characters and unknown groups',()=>{
   const item={id:'1',group:'Cards',title:'Card',to:'/cards/1'};
   for(const value of ['{','null','{}']){localStorage.setItem(ROOM_RECENT_KEY,value);expect(readRoomRecent()).toEqual([]);}

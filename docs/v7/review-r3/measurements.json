@@ -1,0 +1,328 @@
+[
+  {
+    "file": "phone-calendar-day-before.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell"
+    ],
+    "overflow": 0,
+    "title": "Calendar",
+    "gridShare": 0.6199829680094787
+  },
+  {
+    "file": "phone-calendar-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Mon 9 Nov",
+    "gridShare": 0.7819905213270142
+  },
+  {
+    "file": "phone-path-day-before.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "phone-path-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "phone-tasks-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Tasks",
+    "gridShare": null
+  },
+  {
+    "file": "phone-atlas-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Atlas",
+    "gridShare": null
+  },
+  {
+    "file": "phone-search-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Why does a finite intersection of open neighborhoods remain open?",
+    "gridShare": null
+  },
+  {
+    "file": "phone-welcome-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "What are you studying?",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-today-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Good afternoon",
+    "gridShare": 0.75
+  },
+  {
+    "file": "desktop-review-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "gridShare": null
+  },
+  {
+    "file": "desktop-path-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-calendar-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Mon 9 Nov",
+    "gridShare": 0.865
+  },
+  {
+    "file": "desktop-inbox-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Inbox",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-progress-day-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Overview",
+    "gridShare": null
+  },
+  {
+    "file": "phone-calendar-night-before.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell"
+    ],
+    "overflow": 0,
+    "title": "Calendar",
+    "gridShare": 0.6199829680094787
+  },
+  {
+    "file": "phone-calendar-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Mon 9 Nov",
+    "gridShare": 0.7819905213270142
+  },
+  {
+    "file": "phone-path-night-before.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "phone-path-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "phone-tasks-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Tasks",
+    "gridShare": null
+  },
+  {
+    "file": "phone-atlas-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Atlas",
+    "gridShare": null
+  },
+  {
+    "file": "phone-search-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "Why does a finite intersection of open neighborhoods remain open?",
+    "gridShare": null
+  },
+  {
+    "file": "phone-welcome-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room"
+    ],
+    "overflow": 0,
+    "title": "What are you studying?",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-today-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Good afternoon",
+    "gridShare": 0.75
+  },
+  {
+    "file": "desktop-review-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "gridShare": null
+  },
+  {
+    "file": "desktop-path-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Real Analysis",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-calendar-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Mon 9 Nov",
+    "gridShare": 0.865
+  },
+  {
+    "file": "desktop-inbox-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Inbox",
+    "gridShare": null
+  },
+  {
+    "file": "desktop-progress-night-after.png",
+    "flags": [
+      "v7Shell",
+      "v6Shell",
+      "v7Room",
+      "v7Margin",
+      "v7Spread"
+    ],
+    "overflow": 0,
+    "title": "Overview",
+    "gridShare": null
+  }
+]

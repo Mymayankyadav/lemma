@@ -4,6 +4,7 @@ import {useSettings,useUpdateSettings} from '../../../data/hooks';
 import {useNewPath} from '../../new-project/useNewPath';
 import {Button,Field,Stepper} from '../../../ui/v7/components';
 import {useToast} from '../../../ui/Toast';
+import {getMode} from '../../../data/mode';
 import '../../../ui/v7/room.css';
 
 const steps=['What are you studying?','Your rhythm','Connect your tutor'] as const;
@@ -19,7 +20,7 @@ export default function RoomWelcome(){
  },[step,connected,settings.refetch]);
  async function finish(){
   if(busy)return;setBusy(true);
-  try{await update.mutateAsync({ui:{...(data?.ui??{}),welcomed:true}});navigate('/',{replace:true});}
+  try{if(getMode()!=='demo')await update.mutateAsync({ui:{...(data?.ui??{}),welcomed:true}});navigate('/',{replace:true});}
   catch{notify('Could not save. Try again.',{tone:'danger'});}
   finally{setBusy(false);}
  }

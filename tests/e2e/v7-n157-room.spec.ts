@@ -24,13 +24,18 @@ test('Calendar gives at least 75% of a normal phone to the grid; now opens in th
  }
 });
 
-test('Calendar accepts exactly one suggested block',async({page})=>{
+test('Calendar accepts suggestions one by one on the same day, without duplicating a task',async({page})=>{
  await open(page,'/calendar?view=day&date='+DATE);
  const suggested=page.getByRole('button',{name:/^Add suggested block /});
  await expect(suggested.first()).toBeAttached();
+ await expect(suggested.first()).toHaveCSS('border-top-style','dashed');
+ expect((await suggested.first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
  const before=await page.locator('[data-calendar-block]').count();
  await suggested.first().click();
  await expect(page.locator('[data-calendar-block]')).toHaveCount(before+1);
+ await expect(suggested.first()).toBeAttached();
+ await suggested.first().click();
+ await expect(page.locator('[data-calendar-block]')).toHaveCount(before+2);
  // Demo has no action journal. The real receipt's Undo is covered by n157-room-interactions.test.tsx.
 });
 
@@ -68,7 +73,7 @@ test('Search shows the three last opened things, action chips and keyboard navig
   await page.waitForLoadState('networkidle');
   await expect(page.locator('main h1').first()).toBeVisible();
  }
- await page.getByRole('button',{name:'Search',exact:true}).first().click();
+ await page.keyboard.press('Control+k');
  const recent=page.getByRole('region',{name:'Jump back in'});
  await expect(recent.getByRole('option')).toHaveCount(3);
  await expect(page.locator('.v7-search-actions')).toBeVisible();
@@ -124,4 +129,16 @@ test('Flag off retains the original first-run order, Calendar controls and heade
  await expect(page.getByRole('combobox',{name:'Calendar view'})).toHaveCount(0);
  await expect(page.locator('.v7-hub-title')).toHaveText('Calendar');
  await expect(page.locator('html')).not.toHaveAttribute('data-v7-room');
+});
+
+for(const colorScheme of ['light','dark'] as const)test('Room layouts fit at 200% phone text and on desktop in '+colorScheme,async({page})=>{
+ await page.emulateMedia({colorScheme,reducedMotion:'reduce'});
+ for(const profile of [{width:360,text:200},{width:1728,text:100}]){
+  for(const route of ['/calendar?view=day&date='+DATE,'/tasks','/p/real-analysis','/atlas?view=list','/welcome','/insights?tab=learning']){
+   await open(page,route,profile.width);
+   await page.evaluate(text=>{document.documentElement.style.fontSize=text+'%';},profile.text);
+   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth),{message:route+' horizontal overflow'}).toBeLessThanOrEqual(1);
+   await expect(page.locator('main h1').first()).toBeVisible();
+  }
+ }
 });

@@ -1,5 +1,6 @@
 import type {LayoutResult} from './layout';
 import type {AtlasModel,StarState} from './model';
+import {roomLabelSpot} from './roomLabels';
 
 /**
  * Canvas renderer for the v7 Atlas sky (PLAN §6.12). It draws only what is in view,
@@ -259,9 +260,14 @@ export class AtlasScene{
    const w=ctx.measureText(text).width,gap=star.radius*1.6*scale+6;
    // Try right, left, above and below the star before giving up on a label.
    const spots:[number,number,CanvasTextAlign][]=[[sx+gap,sy,'left'],[sx-gap-w,sy,'left'],[sx-w/2,sy-gap-size/2,'left'],[sx-w/2,sy+gap+size/2,'left']];
-   const spot=spots.find(([x,y])=>fits(x,y-size/2-1,w,size+2))??(force?spots[0]:null);
+   const room=force&&this.labelCluster!==null,bounds={x:this.insets.left+8,y:this.insets.top+12,width:this.width-this.insets.left-this.insets.right-16,height:this.height-this.insets.top-this.insets.bottom-24};
+   const natural=spots.find(([x,y])=>fits(x,y-size/2-1,w,size+2)&&(!room||(y-size/2>=bounds.y&&y+size/2<=bounds.y+bounds.height)));
+   const packed=!natural&&room?roomLabelSpot(spots.map(([x,y])=>[x,y-size/2-1]),w,size+2,bounds,[...placed,...stars].map(([x,y,width,height])=>({x,y,width,height}))):null;
+   const spot=natural??(packed?[packed[0],packed[1]+size/2+1] as const:force&&!room?spots[0]:null);
    if(!spot)return;
-   const [x,y]=spot;placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,y);
+   const [x,y]=spot;
+   if(packed){const alpha=ctx.globalAlpha;ctx.globalAlpha=alpha*.25;ctx.strokeStyle=colour;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(Math.max(x,Math.min(x+w,sx)),y);ctx.stroke();ctx.globalAlpha=alpha;}
+   placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,y);
   };
   if(this.selected!==null&&visible.includes(this.selected))label(this.selected,16,600,palette.text,true);
   // Constellation names in wide capitals, above each cluster.

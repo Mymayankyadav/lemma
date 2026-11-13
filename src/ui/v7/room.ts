@@ -1,7 +1,7 @@
 import type {SearchItem} from '../../app/v7/searchModel';
 
 export const ROOM_RECENT_KEY='lemma.v7.room.recent';
-const groups=new Set(['Paths','Checkpoints','Cards','Concepts','Tasks']);
+const groups=new Set(['Paths','Checkpoints','Sessions','Cards','Concepts','Tasks']);
 /** Device-local navigation history. Treat stored JSON as untrusted and keep only app destinations. */
 export function readRoomRecent():SearchItem[]{
  try{
@@ -9,7 +9,7 @@ export function readRoomRecent():SearchItem[]{
   if(!Array.isArray(value))return [];
   return value.filter((item):item is SearchItem=>!!item&&typeof item==='object'&&typeof item.id==='string'&&
    groups.has(item.group)&&typeof item.title==='string'&&item.title.length>0&&item.title.length<=300&&
-   typeof item.to==='string'&&/^\/(?:p\/|cards\/|atlas(?:\?|$)|tasks(?:\?|$))/.test(item.to)&&
+   typeof item.to==='string'&&/^\/(?:p\/|s\/|cards\/|atlas(?:\?|$)|tasks(?:\?|$))/.test(item.to)&&
    !/[\u0000-\u001f\\]/.test(item.to)&&item.to.length<=2048).slice(0,3);
  }catch{return [];}
 }

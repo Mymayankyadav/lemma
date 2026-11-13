@@ -130,7 +130,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] **V05** Rail: the count badge covers "Review" — N157
 - [x] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it — N157
-- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move belongs to V26 (S8, U3), now included in N157
+- [x] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — N157, the U3 move behind default-off `v7Room`
 - [x] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px — N157
 - [x] **V09** Reading measure ≤ 34 em; the review spread from 840 px — N157 (the spread behind `v7Spread`)
 - [x] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast — N157
@@ -138,7 +138,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] Settings: index left, section right, from 840 px — N157
 - [x] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer) — N157
 - [x] The margin (S11), flag `v7Margin` — N157
-- [ ] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress
+- [ ] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress — Day/Night review candidates in `docs/v7/review-r3/README.md` (N157)
 
 ### G1 · Pipeline (assets, M) — `04` §3
 
@@ -153,17 +153,19 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U3 · Room and rhythm (web, M) — `02` §5 · flag `v7Room`, each part after its sheet is approved
 
-U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. Implementation remains behind default-off `v7Room`; browser checks and Calendar Day / Path review are in progress. See `docs/current/N157.md`.
+U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. All nine code items are implemented and browser-verified behind default-off `v7Room`. Calendar Day / Path phone re-approval remains below; review candidates are in `docs/v7/review-r3/README.md`. See `docs/current/N157.md`.
 
-- [ ] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
-- [ ] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
-- [ ] V26 Path spine: every checkpoint as a star by stage; opens at the current one (S8)
-- [ ] V28 Search: the field is the header; "Jump back in"; actions as chips (S9)
-- [ ] V29 *(needs E11)* First run: subject, then rhythm, then the tutor connection
-- [ ] V27 Atlas on a phone: fitted to the last constellation; grouped list with an index (S10)
-- [ ] V19 One header voice: serif titles; a hub's title is the selected tab
-- [ ] V30 "Reviews by day": one ink ramp; colour only for Again
-- [ ] V41 Hero emblem: whole or absent, never a fragment
+- [x] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
+- [x] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
+- [x] V26 Path spine: every checkpoint as a star by stage; opens at the current one (S8)
+- [x] V28 Search: the field is the header; "Jump back in"; actions as chips (S9)
+- [x] V29 *(needs E11)* First run: subject, then rhythm, then the tutor connection
+- [x] V27 Atlas on a phone: fitted to the last constellation; grouped list with an index (S10)
+- [x] V19 One header voice: serif titles; a hub's title is the selected tab
+- [x] V30 "Reviews by day": one ink ramp; colour only for Again
+- [x] V41 Hero emblem: whole or absent, never a fragment
+
+- [ ] Owner re-approves the Calendar Day and Path phone candidates — `docs/v7/review-r3/README.md`; `v7Room` stays default off
 
 ### AN4 · Large screens and postures (Android, M) — `03` §4 · *(needs U1)*
 

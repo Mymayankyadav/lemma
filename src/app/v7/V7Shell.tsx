@@ -127,7 +127,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  useEffect(()=>{
   if(!isFlagOn('v7Room'))return;
   const path=location.pathname,to=path+location.search;
-  const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':null;
+  const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
   if(!group)return;
   const record=()=>{
    const main=document.querySelector('main'),title=main?.querySelector('h1')?.textContent?.trim();
@@ -151,10 +151,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
  const due=home.data?.due??0,active=tabs.findIndex(tab=>tab.match(location.pathname));
  useEffect(()=>{
-  if(!wide)return;
   const keys=(event:KeyboardEvent)=>{
    if(event.target instanceof HTMLElement&&event.target.closest('input,textarea,select,[contenteditable],dialog'))return;
    if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setSearching(true);return;}
+   if(!wide)return;
    if(event.ctrlKey||event.metaKey||event.altKey)return;
    if(event.key==='?'){event.preventDefault();setShortcuts(true);}
    else if(!immersive&&/^[1-5]$/.test(event.key)){event.preventDefault();navigate(tabs[Number(event.key)-1].to);}

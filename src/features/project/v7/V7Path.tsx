@@ -20,7 +20,7 @@ import {formatMinutes} from '../../../lib/text';
 import {groupCheckpointStages} from '../../../ui/timeline/progress';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
-import {dueTotal,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
+import {dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
 import './path.css';
 import {isFlagOn} from '../../../flags';
 
@@ -99,7 +99,11 @@ export default function V7Path(){
  const step=current?(detail.data?.steps??[])[Math.max(0,current.currentStep-1)]??null:null;
  useEffect(()=>{
   if(!room||!data||tab!=='Map'||!current)return;
-  const frame=requestAnimationFrame(()=>document.querySelector<HTMLElement>('.v7-path-row[data-state="current"]')?.scrollIntoView({block:'start',behavior:'instant'}));
+  const frame=requestAnimationFrame(()=>{
+   const row=document.querySelector<HTMLElement>('.v7-path-row[data-state="current"]'),box=row?.getBoundingClientRect();
+   // Keep the whole-path spine visible when the current checkpoint already fits below it.
+   if(row&&box&&(box.top<56||box.bottom>innerHeight-92))row.scrollIntoView({block:'nearest',behavior:'instant'});
+  });
   return()=>cancelAnimationFrame(frame);
  },[room,!!data,slug,tab,current?.id]);
  if(query.isPending)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/><Skeleton/><Skeleton/></main>;
@@ -166,7 +170,7 @@ export default function V7Path(){
   {room&&cps.length>0&&<nav className="v7-room-spine" aria-label="Path checkpoints">{stages.map(stage=><section key={stage.key} aria-label={stageLabel(stage.name,stage.checkpoints)}>
    <h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2><ul>{stage.checkpoints.map(cp=><li key={cp.id}><a href={'#room-'+cp.code} aria-label={cp.title} aria-current={cp.id===current?.id?'step':undefined}
     onClick={event=>{event.preventDefault();const node=document.querySelector<HTMLElement>('[data-checkpoint-code="'+cp.code+'"]');const folded=node?.closest('details');if(folded)folded.open=true;node?.scrollIntoView({block:'start',behavior:'instant'});node?.querySelector<HTMLAnchorElement>('a')?.focus({preventScroll:true});}}>
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d={star} fill={cp.ui==='done'?'currentColor':'none'} stroke="currentColor" strokeWidth="1.75"/></svg>
+    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d={star} fill={isDemonstrated(cp.ui)?'currentColor':'none'} stroke="currentColor" strokeWidth="1.75"/></svg>
    </a></li>)}</ul>
   </section>)}</nav>}
   {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
@@ -178,7 +182,7 @@ export default function V7Path(){
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>setPrompt(true):undefined}/>;})}</ol>;
-     return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>cp.ui==='done')?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
+     return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>isDemonstrated(cp.ui))?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
    </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense>}

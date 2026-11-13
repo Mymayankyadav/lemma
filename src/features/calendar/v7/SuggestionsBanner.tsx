@@ -13,6 +13,7 @@ import {selectPlannerPlacements} from '../../planner/selection';
 import {loadSuggestions,type Suggestions} from './suggestions';
 import {suggestionLabel} from './quickAddModel';
 import type {SuggestedBlock} from './DayGrid';
+import {acceptSuggestion} from './acceptSuggestion';
 
 /** PLAN §6.6: the planner's one-day preview as a banner. Add all commits it atomically; Adjust opens the planner. */
 export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPlannerClosed,onSuggest,inline=false}:{
@@ -39,6 +40,14 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
   if(!data||locked.current||!count)return;
   locked.current=true;setBusy(true);
   try{
+   if(only){
+    const study=getStudyApi(),done=await acceptSuggestion(data,only,date,zone,study,getTaskApi());
+    setData({...data,result:{...data.result,placements:data.result.placements.filter(place=>place.taskId+':'+place.part!==only)}});onChanged();
+    notify(done.created?'Added 1 block to your calendar':'This block is already planned',{tone:'success',...(done.created?{action:{label:'Undo',onClick:()=>{
+     void study.deleteCalendarBlock(done.record.id,done.record.version).then(()=>{onChanged();void loadSuggestions(date,zone).then(setData,()=>setData(null));},()=>notify('Could not undo the block. It may have changed.',{tone:'danger'}));
+    }}}:{})});
+    return;
+   }
    const key=date+':'+(only??'all'),plans=getDayPlanApi(),id=operation.current?.key===key?operation.current.id:crypto.randomUUID();operation.current={key,id};
    const selected=selectPlannerPlacements(data.result,new Set(only?[only]:data.result.placements.map(place=>place.taskId+':'+place.part)));
    const done=await commitPlannerSelection({from:date,through:date,zone,selection:selected,tasks:data.tasks,blocks:data.blocks,entries:data.entries},{tasks:getTaskApi(),study:getStudyApi(),plans},id);

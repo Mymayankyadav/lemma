@@ -59,7 +59,8 @@ describe('S2–S4 · S6 · S14 · S16 · S15', () => {
     expect(stars).toHaveLength(7);
     expect(stars.filter(star => star.lit)).toHaveLength(3);
     expect(stars[5].r).toBe(6);
-    expect(readFileSync('src/app/routes.tsx', 'utf8')).toContain("{path: '/week', element:");
+    expect(readFileSync('src/app/weekRoute.tsx', 'utf8')).toContain("{path: '/week', element:");
+    expect(readFileSync('src/app/App.tsx', 'utf8')).toContain(' weekRoute,');
   });
 });
 

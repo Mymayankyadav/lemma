@@ -14,4 +14,4 @@ Build on N157 with a separate, default-off `v7Room` flag. The approved boards 07
 - Review chart: a single ink ramp except Again.
 - Hero emblems: whole or absent.
 
-Verify the flag-off path, both themes, keyboard interactions, 360/390 px phones, raised text and desktop widths. Device and owner visual sign-off remain explicit checks.
+Verify the flag-off path, both themes, keyboard interactions, 360/390 px phones, raised text and desktop widths. Device and owner visual sign-off remain explicit checks. Review candidates and reproduction steps: `../../review-r3/README.md`.

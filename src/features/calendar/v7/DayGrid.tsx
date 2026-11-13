@@ -11,6 +11,7 @@ import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinute
 // This grid is also lazy-loaded by Today; it owns its presentation at either entry.
 import type {EnterMark} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
+import {isFlagOn} from '../../../flags';
 
 export const HOUR_PX=64;
 const MINUTE=60_000;
@@ -42,6 +43,8 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  return Math.max(0,target);
 }
 export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf}:Props){
+ // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
+ const HOUR_PX=isFlagOn('v7Room')?96:64;
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -51,7 +54,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const saved=useMemo(()=>entries.filter(entry=>entry.status==='saved').flatMap(entry=>entry.intervals
   .filter(interval=>interval.kind==='focus'&&interval.end!==null).map(interval=>({id:'saved:'+entry.id+':'+interval.id,start:interval.start,end:interval.end!}))),[entries]);
  const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...saved],[visible,saved]);
- const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range]);
+ const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
  const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60));
  const height=(whole-first)*HOUR_PX/60;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
