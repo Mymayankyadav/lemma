@@ -8,8 +8,6 @@ import {kitSubject} from '../../atlas/v7/model';
 import {formatClock,formatShortDate} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {DEFAULT_LENGTH,QUICK_LENGTHS,quickInput,quickStart,startLabel} from './quickAddModel';
-import {isFlagOn} from '../../../flags';
-import {RulerSlider} from '../../../ui/v7/RulerSlider';
 
 /** Tap an empty slot, type a title, pick a length. Everything else lives under More options. */
 export default function QuickAddSheet({open,date,zone,start,taskId,length,projects,onClose,onSaved,onMore}:{
@@ -48,10 +46,10 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
    <Button variant="primary" loading={busy} onClick={()=>{void save();}}>Add block</Button></>}>
   <form className="v7-qa" onSubmit={event=>{event.preventDefault();void save();}}>
    <Field label="Title" value={title} autoFocus maxLength={200} error={error||undefined} onChange={event=>setTitle(event.target.value)}/>
-   {isFlagOn('v7Ruler')?<RulerSlider label="Length" min={5} max={600} value={minutes} onChange={setMinutes} format={value=>value+' min'} tickFormat={value=>value/60+'h'}/>:<div className="v7-qa-row" role="group" aria-label="Length">
+   <div className="v7-qa-row" role="group" aria-label="Length">
     {QUICK_LENGTHS.map(length=><Chip key={length} selected={minutes===length} onClick={()=>setMinutes(length)}>{length} min</Chip>)}
     {!(QUICK_LENGTHS as readonly number[]).includes(minutes)&&<Chip selected onClick={()=>{}}>{minutes} min</Chip>}
-   </div>}
+   </div>
    {/* QA2: a form that is submitted later uses a segmented control, not a switch. */}
    <Segmented label="Block type" options={['Study','Busy']} value={study?'Study':'Busy'} onChange={value=>setStudy(value==='Study')}/>
    {/* QA1/KC2: the path chips carry their subject glyph in the subject colour. */}

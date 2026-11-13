@@ -67,7 +67,7 @@ test("E16 · AW4 · in the app only cards due and study blocks have switches; th
  const kinds=page.getByRole("region",{name:"Remind me about"});
  await expect(kinds.getByRole("switch")).toHaveCount(2);
  await expect(kinds.getByRole("switch",{name:"Cards due"})).toBeVisible();
- await expect(kinds.getByRole("switch",{name:"Time blocks"})).toBeVisible();
+ await expect(kinds.getByRole("switch",{name:"Study blocks"})).toBeVisible();
  const inbox=page.getByRole("region",{name:"In your Inbox on this phone"});
  await expect(inbox).toBeVisible();
  await expect(inbox.getByRole("switch")).toHaveCount(0);

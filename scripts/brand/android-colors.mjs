@@ -20,14 +20,10 @@ export const ANDROID_COLOURS = {
     ['colorPrimary', 'action.bg', 'theme primary'],
     ['colorPrimaryDark', 'text.primary', 'theme primary dark (status bar on old Android)'],
     ['colorAccent', 'action.bg', 'theme accent'],
-    ['lemma_tint', 'selection.subtle', 'launcher shortcut background (P7: as selected items look in the app)'],
-    ['lemma_tint_ink', 'selection.fg', 'launcher shortcut glyph'],
   ],
   night: [
     ['lemma_paper', 'surface.page', 'the Night page'],
     ['lemma_ink', 'action.bg', 'the Night brand indigo'],
-    ['lemma_tint', 'selection.subtle', 'the Night shortcut background'],
-    ['lemma_tint_ink', 'selection.fg', 'the Night shortcut glyph'],
   ],
 };
 

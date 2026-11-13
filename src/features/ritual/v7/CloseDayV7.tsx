@@ -1,4 +1,3 @@
-import {isFlagOn} from '../../../flags';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,Share2,X} from 'lucide-react';
@@ -26,7 +25,6 @@ import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
 import {playSound,soundsOn} from '../../../ui/v7/sounds';
 import './close.css';
 import {Loader} from '../../../ui/v7/Loader';
-import {ProofEnd} from '../../../ui/v7/ProofEnd';
 
 /** LT3 (v7 UX audit r3, Owner decision E20): how long Day closed stays before Today, unless Done is pressed first. The
  *  same with or without motion: reduced motion means less movement, not less time to read the day's ending. */
@@ -52,9 +50,6 @@ export default function CloseDayV7(){
  const zone=ownerZone(settings.data),today=useMemo(()=>ownerCivilDate(new Date(),zone),[zone]);
  const given=params.get('date');
  const {date,invalid}=useMemo(()=>{if(given===null)return {date:today,invalid:false};try{return {date:civilPlanDate(given),invalid:false};}catch{return {date:today,invalid:true};}},[given,today]);
- // N157 · U4 S3 / V25 (flag v7Qed): Close the day as one page written like a proof: Given and shown, Left open, Tomorrow
- // opens with, and one button "Close the day ∎". Without the flag, the three steps as before.
- const page=isFlagOn('v7Qed');
  const [step,setStep]=useState<CloseStep>(0),[data,setData]=useState<DayData|null>(null),[error,setError]=useState(''),[reload,setReload]=useState(0);
  const [busy,setBusy]=useState(false),[closed,setClosed]=useState(false),[aim,setAim]=useState(''),[first,setFirst]=useState('');
  const timer=useRef<number|null>(null);
@@ -87,7 +82,7 @@ export default function CloseDayV7(){
    setAim(typeof ritual.tomorrowAim==='string'?ritual.tomorrowAim:'');
    setData({plan,tasks,thoughts,saved:entries.filter(entry=>savedFocusTouchesOwnerDay(entry,date,tz)),blocks,tomorrow,reviewsDone,practice});
    setError('');
-  })().catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Erratum: the day didn’t load. Try again.');});
+  })().catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Could not load the day.');});
   return()=>{live=false;};
  },[date,zone,invalid,settings.isPending,reload]);
  const tz=data?.plan?.timeZone??zone;
@@ -148,27 +143,25 @@ export default function CloseDayV7(){
  const leave=<Link className="v7-icon-button" to="/" aria-label="Close"><X aria-hidden="true"/></Link>;
  const dots=<ol className="v7-cd-dots" aria-label={'Step '+(step+1)+' of 3: '+STEPS[step]}>{STEPS.map((name,index)=><li key={name} data-state={index<step?'done':index===step?'now':'next'}><span className="v7-sr-only">{name}</span></li>)}</ol>;
  if(closed)return <main id="main-content" className="v7-cd v7-cd-closed" aria-label="Day closed"><ImmersiveHeader leave={leave} center={dots}/>
-  {page?<ProofEnd large/>:<LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art" feel/>}<h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
-  {page&&<div className="v7-progress-stats" aria-label="Day statistics">{[[String(Math.round(studied)),'Minutes'],[String(data?.reviewsDone??0),'Reviews'],[String(data?.practice?.done??0),'Practice topics']].map(([value,label])=><div key={label}><p className="v7-figure-m">{value}</p><p className="v7-meta">{label}</p></div>)}</div>}
+  <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art" feel/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
   <Button variant="ghost" className="v7-cd-share" onClick={()=>{void shareDay();}}><Share2 aria-hidden="true"/>Share the page</Button>
   <Button variant="primary" className="v7-cd-done" onClick={()=>{if(timer.current)window.clearTimeout(timer.current);navigate('/');}}>Done</Button></main>;
  const already=data?.plan?.status==='closed';
  return <main id="main-content" className="v7-cd" aria-label="Close the day">
-  <ImmersiveHeader leave={leave} center={page?<span className="v7-meta">{dayName}</span>:dots}/>
-  {page&&data&&<h1 className="v7-hub-title v7-cd-page-title">Close the day</h1>}
+  <ImmersiveHeader leave={leave} center={dots}/>
   {invalid&&<p role="alert" className="v7-alert">Choose a real YYYY-MM-DD date.</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
   {!invalid&&!data&&!error&&<Loader className="v7-meta" label="Loading your day…"/>}
-  {data&&(page||step===0)&&<section className="v7-cd-step" aria-label={page?'Given and shown':'Today'}>
+  {data&&step===0&&<section className="v7-cd-step" aria-label="Today">
    <p className="v7-eyebrow">{date===today?'Today · ':''}{dayName}</p>
-   {page?<h2 className="v7-subhead">Given and shown</h2>:<h1 className="v7-hub-title">Today</h1>}
+   <h1 className="v7-hub-title">Today</h1>
    <p className="v7-cd-figure" aria-label={lead.value+' '+lead.unit+' '+lead.line}>{lead.value}<small>{'\u00a0'+lead.unit}</small></p>
    <p className="v7-meta">{lead.line}</p>
    {rows.length>0&&<div className="v7-cd-meters">{rows.map(row=><MeterRow key={row.key} label={row.label} value={row.value} max={row.max}/>)}</div>}
    {data.saved.length>0&&<ul className="v7-cd-sessions" aria-label="Sessions">{data.saved.map(entry=><li key={entry.id}><span>{entry.intent||'Study session'}</span><span className="v7-meta">{formatDuration(focusMinutes(entry))}</span></li>)}</ul>}
   </section>}
-  {data&&(page||step===1)&&<section className="v7-cd-step" aria-label={page?'Left open':'Loose ends'}>
-   {page?<h2 className="v7-subhead">Left open</h2>:<h1 className="v7-hub-title">Loose ends</h1>}
+  {data&&step===1&&<section className="v7-cd-step" aria-label="Loose ends">
+   <h1 className="v7-hub-title">Loose ends</h1>
    {ends.length===0?<p className="v7-cd-clear"><span className="v7-qed" aria-hidden="true">∎</span>Nothing left open</p>:<>
     {ends.some(end=>end.kind!=='thought')&&<div className="v7-cd-row-actions"><Button variant="ghost" small disabled={busy} onClick={()=>{void moveAll();}}>Move all to tomorrow</Button></div>}
     <ul className="v7-cd-ends" aria-label="Loose ends">{ends.map(end=><li key={end.kind+end.id}>
@@ -179,8 +172,8 @@ export default function CloseDayV7(){
       <Button small disabled={busy} aria-label={'Move '+end.title+' to tomorrow'} onClick={()=>{void settle(end,'tomorrow');}}>Tomorrow</Button>
       <Button small variant="ghost" disabled={busy} aria-label={'Drop '+end.title} onClick={()=>{void settle(end,'drop');}}>Drop</Button></>}</div></li>)}</ul></>}
   </section>}
-  {data&&(page||step===2)&&<section className="v7-cd-step" aria-label={page?'Tomorrow opens with':'Tomorrow'}>
-   {page?<h2 className="v7-subhead">Tomorrow opens with</h2>:<h1 className="v7-hub-title">Tomorrow</h1>}
+  {data&&step===2&&<section className="v7-cd-step" aria-label="Tomorrow">
+   <h1 className="v7-hub-title">Tomorrow</h1>
    <div className="v7-cd-hero">{data.tomorrow?<><p className="v7-eyebrow">{data.tomorrow.suggested?'Suggested first block':'First block'}</p><p className="v7-cd-title">{data.tomorrow.title}</p>
      <p className="v7-meta">{formatClock(data.tomorrow.startsAt,{zone:tz})}–{formatClock(data.tomorrow.endsAt,{zone:tz})}</p></>:
      <><p className="v7-cd-title">Nothing planned yet</p><Link className="v7-button v7-secondary v7-small" to={'/calendar?view=day&date='+tomorrowDate}><span>Start a plan for tomorrow</span></Link></>}</div>
@@ -189,10 +182,7 @@ export default function CloseDayV7(){
     options={['Not chosen yet',...data.tasks.map(task=>task.title)]} onChange={title=>setFirst(data.tasks.find(task=>task.title===title)?.id??'')}/>}
    {already&&<p className="v7-meta" role="status"><Check aria-hidden="true"/> This day is closed.</p>}
   </section>}
-  {data&&page&&<footer className="v7-cd-footer v7-cd-footer-page">
-   <Button variant="primary" loading={busy} disabled={already} onClick={()=>{void finish();}}>{already?'Day already closed':<>Close the day<span className="v7-qed-mark" aria-hidden="true"> ∎</span></>}</Button>
-  </footer>}
-  {data&&!page&&<footer className="v7-cd-footer">
+  {data&&<footer className="v7-cd-footer">
    {step>0?<Button variant="ghost" onClick={()=>setStep((step-1) as CloseStep)}>Back</Button>:<span/>}
    {step<2?<Button variant="primary" onClick={()=>setStep((step+1) as CloseStep)}>Next</Button>
     :<Button variant="primary" loading={busy} disabled={already} onClick={()=>{void finish();}}>{already?'Day already closed':'Close the day'}</Button>}

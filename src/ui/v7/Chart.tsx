@@ -38,29 +38,8 @@ export function visibleTicks(labels: string[], group: number, preferred: boolean
   });
   return out;
 }
-/**
- * N157 · V08 (v7 UX audit r3): the plot is drawn in as many units as it has CSS pixels (between 280 and 640), so its
- * text stays at the chart's 12 px caption size and its lines at their weight at every width; before, a 360-unit
- * drawing was stretched (axis text 19 px on a 460 px chart, 38 px on a 936 px one). 360 until measured (tests, SSR).
- */
-export const PLOT_MIN = 280, PLOT_MAX = 640;
-export const plotWidth = (measured: number) => measured > 0 ? Math.round(Math.min(PLOT_MAX, Math.max(PLOT_MIN, measured))) : 360;
-function usePlotWidth() {
-  const ref = useRef<HTMLElement>(null), [width, setWidth] = useState(360);
-  useLayoutEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const measure = () => setWidth(plotWidth(node.getBoundingClientRect().width));
-    measure();
-    if (typeof ResizeObserver !== "function") return;
-    const observer = new ResizeObserver(measure); observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-  return [ref, width] as const;
-}
 export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false, totalFormat = format }: ChartProps) {
   const [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null), id = useId();
-  const [measureRef, width] = usePlotWidth();
   const percentage = /%/.test(format(100));
   const observed = Math.max(1, target ?? 0, ...(kind === "stacked" ? data.map(row => sum(row.values)) : data.flatMap(row => row.values).map(finite)));
   const scale = 10 ** Math.floor(Math.log10(observed));
@@ -78,7 +57,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     `${format(total)} ${title.toLowerCase().replace(/ (by|over|per) .*$/, "")} in this range, most on ${data[peak].label}.`);
   // N125: the axis gutter fits its widest tick label ("40 min" was clipped to "0 min" in a fixed 40-unit gutter).
   const left = Math.max(40, Math.ceil(Math.max(...ticks.map(tick => labelWidth(format(tick)))) * 1.15) + 12);
-  const height = compact ? 150 : 224, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
+  const width = 360, height = compact ? 150 : 224, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
   const direct=series.length>1&&series.length<=3;
   // F06: a target line is labelled at the right edge, outside the data, so it never overprints a value.
   const targetShown = target !== undefined && target >= 0 && target <= maximum;
@@ -108,7 +87,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     labels[labels.length-1].labelY=bottom-8;
     for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
   }
-  return <section ref={measureRef} className="v7-chart" data-chart="plot" aria-labelledby={id} aria-describedby={`${id}-summary`}>
+  return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
     {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {
@@ -118,7 +97,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     {/* F04/F46: the selection readout is pinned above the plot, so it never lands under a bar or a sticky bar. */}
     {selectedRow && !table && <p className="v7-chart-tooltip" role="status">{selectedRow.values.map((value, index) => `${format(value)} ${series[index]?.label ?? ""}`).join(" · ")} · {selectedRow.label}</p>}
     {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
-      <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} data-plot-width={width} role="group" aria-label={title}>
+      <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} role="group" aria-label={title}>
         {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
         {targetShown && <g className="v7-chart-target-group"><line x1={left} x2={plotRight + 4} y1={y(target!)} y2={y(target!)} className="v7-chart-target" /><text x={plotRight + 8} y={y(target!) - 2} textAnchor="start" className="v7-chart-data-label"><tspan x={plotRight + 8}>Goal</tspan><tspan x={plotRight + 8} dy="12">{format(target!)}</tspan></text></g>}
         {kind === "line" && area && !!data.length && series.map((item, index) => <polygon key={item.label} fill={color(index)} opacity=".08" points={`${point(0)},${bottom} ${data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} ${point(data.length - 1)},${bottom}`} />)}

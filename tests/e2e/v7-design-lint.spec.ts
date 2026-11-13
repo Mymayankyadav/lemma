@@ -2,7 +2,7 @@ import {test,expect} from "@playwright/test";
 import {openScene,shots} from "./v7-scenes";
 // PA11 (Night critique v2): the rendered half of the v7 design lint. It opens every v7 scene in Day and Night at 390 and
 // 320 px and fails on what the static check in scripts/v7/check-kit.mjs cannot see:
-//  - a button that is not 48 px (44 px small, 40 px for a fine pointer from 700 px);
+//  - a button that is not 48 px (44 px small, 40 px from 700 px);
 //  - a visible native select, date or time control;
 //  - a status Badge without its icon;
 //  - a subject colour used as a bare dot (no glyph within 8 px);
@@ -11,15 +11,14 @@ import {openScene,shots} from "./v7-scenes";
 //  - a horizontal page scroll;
 //  - an emblem over its tier's stroke budget (R2) or a textarea with a resize grip (R1).
 test.use({deviceScaleFactor:1,locale:"en-IN",timezoneId:"Asia/Kolkata"});
-// N157 (V11, definition of done): also 360 px at 130% and 200% text, and a 1280 px desktop.
-const sizes:{width:number;height:number;text?:number}[]=[{width:390,height:844},{width:320,height:640},{width:360,height:740,text:130},{width:360,height:740,text:200},{width:1280,height:800}];
+const sizes=[{width:390,height:844},{width:320,height:640}];
 
 for(const scheme of ["light","dark"] as const){
  for(const shot of shots){
   for(const size of sizes){
-   test(`lint ${shot.name} ${scheme==="light"?"day":"night"} ${size.width}${size.text?" at "+size.text+"%":""}`,async({page})=>{
+   test(`lint ${shot.name} ${scheme==="light"?"day":"night"} ${size.width}`,async({page})=>{
     await openScene(page,shot,scheme,size);
-    const problems=await page.evaluate(text=>{
+    const problems=await page.evaluate(()=>{
      const out:string[]=[];
      const root=getComputedStyle(document.documentElement),token=(name:string)=>{
       const probe=document.createElement("i");probe.style.color=`var(${name})`;document.body.append(probe);const value=getComputedStyle(probe).color;probe.remove();return value;
@@ -33,13 +32,12 @@ for(const scheme of ["light","dark"] as const){
      };
      const where=(node:Element)=>node.tagName.toLowerCase()+(node.className&&typeof node.className==="string"?"."+node.className.trim().split(/\s+/).slice(0,2).join("."):"")+" “"+(node.textContent??"").trim().slice(0,24)+"”";
      const inClosedDialog=(node:Element)=>{const dialog=node.closest("dialog");return !!dialog&&!dialog.open;};
-     // Buttons: 48, 44 small; 40 only for a fine pointer from 700 px (N157 · V23: the pointer decides, not the width).
-     const allowed=innerWidth>=700&&matchMedia("(pointer:fine)").matches?[40,44]:[44,48];
+     // Buttons: 48, 44 small, 40 from 700 px.
+     const allowed=innerWidth>=700?[40,44]:[44,48];
      for(const node of document.querySelectorAll(".v7-button")){
       if(!visible(node)||inClosedDialog(node))continue;
       const height=Math.round(node.getBoundingClientRect().height);
-      // N157: with raised text a button may grow with its words (never shrink below its size); at 100% it is exact.
-      if(text>100?height<Math.min(...allowed):!allowed.includes(height))out.push("button height "+height+": "+where(node));
+      if(!allowed.includes(height))out.push("button height "+height+": "+where(node));
      }
      // Native controls.
      for(const node of document.querySelectorAll("select,input[type=date],input[type=time],input[type=datetime-local]")){
@@ -85,7 +83,7 @@ for(const scheme of ["light","dark"] as const){
      }
      if(document.documentElement.scrollWidth>innerWidth+1)out.push("horizontal page scroll: "+document.documentElement.scrollWidth+" > "+innerWidth);
      return out;
-    },size.text??100);
+    });
     expect(problems,shot.name).toEqual([]);
    });
   }

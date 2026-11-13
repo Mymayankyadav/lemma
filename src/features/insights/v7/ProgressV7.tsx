@@ -20,7 +20,6 @@ import {almanacPeriod,asRange,changeChip,coveringSpan,currentPeriod,goalView,gro
 import {Share2} from 'lucide-react';
 import {useToast} from '../../../ui/Toast';
 import './progress.css';
-import {isFlagOn} from '../../../flags';
 
 
 type Tab='overview'|'learning'|'time';
@@ -130,10 +129,10 @@ export default function ProgressV7(){
  const nothing=<section className="v7-progress-nothing" aria-label="Focused time"><Illustration name="progress" width={160} className="v7-progress-art"/>
   <p className="v7-progress-empty">No study time in this range yet.</p></section>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
-  <HubHeader title={isFlagOn('v7Room')?tabWords[tab]:'Progress'}><ProgressTabs current={tab}/></HubHeader>
+  <HubHeader title="Progress"><ProgressTabs current={tab}/></HubHeader>
   <Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>
   {status==='loading'&&<Skeleton/>}
-  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load your saved study time.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&summary&&tab==='overview'&&total<=0&&<>{nothing}
    <Heatmap title="Study almanac" format={minutes} data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/></>}
   {status==='ready'&&summary&&tab==='overview'&&total>0&&<>
@@ -154,7 +153,7 @@ export default function ProgressV7(){
   {status==='ready'&&tab==='learning'&&(learn?<>
    <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
    <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
-    series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:isFlagOn('v7Room')&&index>0?'color-mix(in srgb, var(--v7-role-text-primary) '+[0,35,60,85][index]+'%, var(--v7-role-surface-page))':gradeColors[index]}))}/>
+    series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:gradeColors[index]}))}/>
    <section className="v7-chart" aria-label="When you said"><h3 className="v7-headline">When you said</h3>
     {learn.calibration.map(row=><Meter key={row.confidence} label={confidenceWord[row.confidence]+(row.total?' · '+row.total+' answers':' · no answers')} value={row.rate==null?0:Math.round(row.rate*100)} max={100}/>)}
     {learn.calibrationMessage&&<p className="v7-meta">{learn.calibrationMessage}</p>}

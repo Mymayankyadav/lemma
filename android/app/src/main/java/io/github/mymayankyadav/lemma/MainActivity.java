@@ -16,7 +16,6 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         applyOrientation(getResources().getConfiguration());
         applyPaper();
-        applyTextZoom(getResources().getConfiguration());
         keepRunningOnBack();
         Channels.create(this);
         ShareIntake.capture(this, getIntent());
@@ -33,14 +32,6 @@ public class MainActivity extends BridgeActivity {
         super.onConfigurationChanged(configuration);
         applyOrientation(configuration);
         applyPaper();
-        applyTextZoom(configuration);
-    }
-
-    /** AW1 (E5): the system font size, capped at 200% (TextZoomPolicy). A font-scale change recreates the activity, so
-     *  onCreate also applies it. */
-    private void applyTextZoom(Configuration configuration) {
-        if (getBridge() == null || getBridge().getWebView() == null) return;
-        getBridge().getWebView().getSettings().setTextZoom(TextZoomPolicy.textZoom(configuration.fontScale));
     }
 
     /**

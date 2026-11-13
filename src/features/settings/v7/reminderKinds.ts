@@ -5,8 +5,7 @@ export const REMINDER_KINDS=[['due','Cards due'],['deadline','Checkpoint deadlin
  ['tutor','Tutor proposals'],['digest','Weekly digest'],['plan','Plans'],['rhythm','Study rhythm']] as const;
 export type ReminderKind=typeof REMINDER_KINDS[number][0];
 /** In the app the planner kind is what the phone posts: a planned study block starting (the channel's own name). */
-// N157 (AW15): one word for a planned block, the app's own ("New time block"); the phone's channel has the same name.
-const APP_LABEL:Partial<Record<ReminderKind,string>>={plan:'Time blocks'};
+const APP_LABEL:Partial<Record<ReminderKind,string>>={plan:'Study blocks'};
 
 /**
  * AW4 (v7 UX audit r3, Owner decision E16): on the web every kind has a switch. In the Android app only the kinds the

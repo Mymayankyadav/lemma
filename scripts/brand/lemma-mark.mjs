@@ -27,8 +27,6 @@ export const MARK_THEMES = {
 export const LAYOUTS = {
  full: {grid: 48 / 1024, gridAlpha: 0.12, margin: 0.215, ellHeight: 0.4, ellCentre: [0.5, 0.49], qed: [0.66, 0.632, 0.072]},
  simple: {grid: 0.25, gridAlpha: 0.22, margin: null, ellHeight: 0.66, ellCentre: [0.5, 0.5], qed: null},
- // N157 (IC6, E23): the themed (monochrome) launcher icon, ℓ and ∎ only, both inside the launcher's 66 dp safe circle.
- themed: {grid: null, gridAlpha: 0, margin: null, ellHeight: 0.56, ellCentre: [0.46, 0.47], qed: [0.64, 0.64, 0.1]},
 };
 
 /** Line widths in unit coordinates: the grid never thinner than 1 px, the margin rule never thinner than 1.5 px. */
@@ -79,13 +77,6 @@ export function ellPathData(layout = 'full', box = 1024) {
   for (let k = 0; k < n.length; k += 2) out.push(f((tx + n[k] * s) * box), f((ty - n[k + 1] * s) * box));
   return c + out.join(' ');
  });
-}
-/** SVG path data for the ∎ of a layout in a `box` viewBox (empty when the layout has none). */
-export function qedPathData(layout = 'full', box = 1024) {
- const q = LAYOUTS[layout].qed;
- if (!q) return '';
- const [x, y, size] = q.map(v => f(v * box));
- return `M${x} ${y}h${size}v${size}h${-size}Z`;
 }
 const gridLines = (step) => {const out = []; for (let v = step; v < 1 - 1e-9; v += step) out.push(v); return out;};
 

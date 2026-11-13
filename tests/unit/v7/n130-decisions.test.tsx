@@ -123,7 +123,7 @@ describe('E16 · AW4 · reminder kinds the phone cannot deliver have no switch i
   });
   it('in the app only cards due and study blocks are switches; the rest wait in the Inbox', () => {
     const rows = reminderKindRows(true);
-    expect(rows.switches).toEqual([{key: 'due', label: 'Cards due'}, {key: 'plan', label: 'Time blocks'}]);
+    expect(rows.switches).toEqual([{key: 'due', label: 'Cards due'}, {key: 'plan', label: 'Study blocks'}]);
     expect(rows.proposalsSwitch).toBe(false);
     expect(rows.inbox).toEqual(['Checkpoint deadlines', 'Falling behind', 'Resuming a session', 'Tutor proposals', 'Weekly digest', 'Study rhythm', 'New card proposals']);
   });

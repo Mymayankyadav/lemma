@@ -2058,7 +2058,7 @@
       },
       "reading": {
         "$type": "string",
-        "$value": "34em"
+        "$value": "68ch"
       },
       "regular": {
         "$type": "number",
@@ -2451,7 +2451,8 @@
         "$description": "Shared button foundation.",
         "$extensions": {
           "lemma.viewport": {
-            "fine": "40px"
+            "tablet": "40px",
+            "desktop": "40px"
           }
         }
       },
@@ -2466,7 +2467,8 @@
         "$description": "Shared field foundation.",
         "$extensions": {
           "lemma.viewport": {
-            "fine": "40px"
+            "tablet": "40px",
+            "desktop": "40px"
           }
         }
       },

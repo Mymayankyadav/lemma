@@ -61,7 +61,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   finally{setBusy(false);}
  }
  function more(){
-  const target=kind==='task'?'/tasks?new=1':kind==='block'?'/calendar?view=day&date='+start.date+'&new=block&start='+encodeURIComponent(instantAt(start.date,start.time,zone)):kind==='card'?'/cards':null;
+  const target=kind==='task'?'/tasks':kind==='block'?'/calendar?view=day&date='+start.date+'&new=block&start='+encodeURIComponent(instantAt(start.date,start.time,zone)):kind==='card'?'/cards':null;
   close();if(target)navigate(target);
  }
  return <Sheet open={open} onClose={close} title="Capture" eyebrow="Add something"
