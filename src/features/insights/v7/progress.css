@@ -4,7 +4,7 @@
  :where(html[data-v7]) .v7-progress {display:grid;gap:var(--v7-space-4);align-content:start;}
  :where(html[data-v7]) .v7-progress-hero {display:grid;gap:var(--v7-space-1);justify-items:start;}
  :where(html[data-v7]) .v7-progress-figure {margin:0;font:500 var(--v7-type-numeric-xl)/1 var(--v7-sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
- :where(html[data-v7]) .v7-progress-stats {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-progress-stats {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,5.5rem),1fr));gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-progress-stats .v7-figure-m {font-size:var(--v7-type-subhead);line-height:1.2;}
  :where(html[data-v7]) .v7-progress-insight {margin:0;padding:var(--v7-space-3) var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
  :where(html[data-v7]) .v7-progress-empty {color:var(--v7-role-text-secondary);}
