@@ -30,6 +30,8 @@
         document.documentElement.dataset.density='compact';
         document.documentElement.dataset.effects='calm';
         document.querySelectorAll('meta[name="theme-color"]').forEach(function(meta){meta.setAttribute('content',colors[actual]);});
+        /* incident #1376: the splash (below) paints this same build paper, so index.html carries no fixed paper hex. */
+        document.documentElement.style.setProperty('--lemma-paper',colors[actual]);
         try{localStorage.setItem('lemma.ui',JSON.stringify({mode:mode}))}catch(_){}
       })();
     </script>
@@ -63,8 +65,8 @@
   <body><div id="root"><!-- N131 · L-20 splash (plan r3: a still on the web): the ℓ in a compass circle on the page colour until React replaces #root. -->
     <div class="lemma-splash" aria-hidden="true"><svg viewBox="0 0 1024 1024" width="72" height="72"><circle cx="512" cy="512" r="440"/><path d="M364.12 550.55Q377.98 547.54 393.04 544.23Q408.09 540.91 423.76 536.7Q440.02 494.53 460.2 452.07Q480.38 409.6 503.57 374.66Q526.76 339.73 552.96 318.34Q579.16 296.96 606.87 296.96Q633.37 296.96 646.63 312.92Q659.88 328.88 659.88 355.99Q659.88 393.94 643.01 423.76Q626.15 453.57 598.14 476.16Q570.13 498.75 535.79 515.01Q501.46 531.28 466.52 542.12Q456.28 568.62 449.05 593.92Q441.83 619.22 441.83 642.11Q441.83 657.17 449.05 669.82Q456.28 682.47 471.34 682.47Q494.23 682.47 515.92 658.97Q537.6 635.48 571.33 586.09L585.79 596.33Q549.65 652.95 522.84 679.76Q496.04 706.56 462.91 706.56Q448.45 706.56 433.69 700.84Q418.94 695.12 409.3 679.45Q399.66 663.79 399.66 633.07Q399.66 616.21 404.48 596.63Q409.3 577.05 416.53 556.57Q388.22 563.2 366.53 566.81ZM602.65 324.07Q588.2 324.07 574.04 336.11Q559.89 348.16 547.24 367.44Q534.59 386.71 523.75 408.4Q512.9 430.08 504.47 449.96Q496.04 469.84 490.62 483.09L475.56 520.43Q515.92 505.98 551.15 484.29Q586.39 462.61 608.68 432.49Q630.96 402.37 630.96 362.01Q630.96 340.33 622.53 332.2Q614.1 324.07 602.65 324.07Z"/></svg></div>
     <style>
-      .lemma-splash{position:fixed;inset:0;display:grid;place-items:center;background:#FAFAF6;color:#121B31}html[data-v7] .lemma-splash{background:#F8F5F0}
-      html[data-theme="graph-night"] .lemma-splash{background:#13171D;color:#EEF2FA}html[data-v7][data-theme="graph-night"] .lemma-splash{background:#091023}
+      .lemma-splash{position:fixed;inset:0;display:grid;place-items:center;background:var(--lemma-paper);color:#121B31}
+      html[data-theme="graph-night"] .lemma-splash{color:#EEF2FA}
       .lemma-splash svg{overflow:visible}.lemma-splash circle{fill:none;stroke:currentColor;stroke-width:14;opacity:.22}
       .lemma-splash path{fill:currentColor}
     </style></div><script type="module" src="/src/main.tsx"></script></body>
