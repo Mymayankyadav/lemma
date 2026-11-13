@@ -25,7 +25,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | G0 Refresh what is stale | 0 | 2 | none |
 | AN3 Feel | 0 | 6 | E17 |
 | U1 Large screens | 0 | 11 | E2 |
-| G1 Pipeline | 0 | 4 | none |
+| G1 Pipeline | 2 | 2 | E23 for the themed ∎ |
 | U3 Room and rhythm | 0 | 9 | sheets, E11 |
 | AN4 Large screens and postures | 0 | 4 | U1 |
 | A5′ Share and release pages | 0 | 2 | none |
@@ -139,10 +139,10 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### G1 · Pipeline (assets, M) — `04` §3
 
-- [ ] `assets.manifest.json` and the asset lint in `postbuild` (wiring it into CI is an Owner `rules:` PR)
-- [ ] Android colours generated from `design-tokens.json`
-- [ ] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers
-- [ ] Emblem exporter (SVG, PNG, stroke order) and the scene camera
+- [x] `assets.manifest.json` and the asset lint in `postbuild` (wiring it into CI is an Owner `rules:` PR) — N137
+- [x] Android colours generated from `design-tokens.json` — N137
+- [ ] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(needs E23)* the ∎ in the themed layer
+- [ ] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera is open (builds on N133's `scripts/v7/install-shots.mjs`)
 
 ---
 
