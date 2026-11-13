@@ -19,6 +19,7 @@ import {isFlagOn} from '../../../flags';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {ImmersiveHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
+import {ScratchPad} from './ScratchPad';
 import {kitSubject} from '../../atlas/v7/model';
 import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,undoLast,unpauseRun,type DurableRun} from '../v6/adapter';
 import {clearPendingGrade,pendingGrade,writePendingGrade,type PendingGrade} from '../v6/pending';
@@ -188,6 +189,7 @@ export default function ReviewRoundV7(){
        {confidence&&<span className="v7-meta">You: {confidence[0].toUpperCase()+confidence.slice(1)}</span>}</p></div>}
      {swiping&&choices&&<p className="v7-review-swipe-label" aria-hidden="true">{gradeNames[swiping-1]} · {formatInterval(choices[swiping].delay/86_400_000)}</p>}
     </article>
+    {isFlagOn('v7Scratch')&&<ScratchPad cardKey={item.id}/>}
     {revealed&&run.progress.graded<3&&<p className="v7-review-hint">Swipe right for Good, left for Again, up for Easy.</p>}
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}

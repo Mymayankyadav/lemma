@@ -58,4 +58,12 @@
   :where(html[data-v7]) .v7-review[data-spread] .v7-review-key {display:inline-block;margin-inline-start:var(--v7-space-2);padding:0 var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-xs);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1.4 var(--v7-sans);}
   :where(html[data-v7]) .v7-review[data-spread] .v7-review-grades .v7-review-key {margin:0;}
  }
+ /* N157 · U4 S6 scratch paper (flag v7Scratch): graph paper at 7% ink under the card; nothing is stored. */
+ :where(html[data-v7]) .v7-scratch-open,:where(html[data-v7]) .v7-scratch-link {justify-self:center;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-link-fg);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-scratch {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-scratch-sheet {display:block;width:100%;height:clamp(140px,28dvh,320px);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);touch-action:none;color:var(--v7-role-text-primary);
+  background:var(--v7-role-surface-raised) linear-gradient(color-mix(in srgb,var(--v7-role-text-primary) 7%,transparent) 1px,transparent 1px) 0 0/16px 16px,linear-gradient(90deg,color-mix(in srgb,var(--v7-role-text-primary) 7%,transparent) 1px,transparent 1px) 0 0/16px 16px;}
+ :where(html[data-v7]) .v7-scratch-typed {min-height:var(--v7-touch);}
+ :where(html[data-v7]) .v7-scratch-actions {display:flex;align-items:center;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-review-stage:has(.v7-scratch) {align-content:start;overflow-y:auto;}
 }
