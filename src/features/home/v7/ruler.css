@@ -1,6 +1,15 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* N157 · U4 S1 the ruler (flag v7Ruler). */
 @layer v7-components {
+ html[data-v7] .v7-cal-scrubber {position:absolute;bottom:12px;left:60px;right:12px;z-index:5;padding:8px 12px 0;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);box-shadow:var(--v7-shadow-1);}
+ :where(html[data-v7]) .v7-ruler-control {display:grid;gap:4px;min-width:0;}
+ :where(html[data-v7]) .v7-ruler-control > label {display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font:600 var(--v7-type-supporting)/1.4 var(--v7-sans);}
+ :where(html[data-v7]) .v7-ruler-control output {color:var(--v7-role-selection-fg);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-ruler-input-track {height:36px;margin:0 24px 24px;}
+ :where(html[data-v7]) .v7-ruler-input-track input {appearance:none;position:absolute;inset:0;width:100%;min-height:44px;margin:0;background:transparent;cursor:ew-resize;}
+ :where(html[data-v7]) .v7-ruler-input-track input::-webkit-slider-runnable-track {height:2px;background:transparent;}
+ :where(html[data-v7]) .v7-ruler-input-track input::-webkit-slider-thumb {appearance:none;width:18px;height:32px;margin-top:-15px;border:2px solid var(--v7-role-surface-page);border-radius:4px;background:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-ruler-input-track input::-moz-range-thumb {width:14px;height:28px;border:2px solid var(--v7-role-surface-page);border-radius:4px;background:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-ruler-card {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-ruler-card .v7-card-heading a {color:var(--v7-role-text-secondary);font-size:var(--v7-type-supporting);}
  :where(html[data-v7]) .v7-ruler-preview {margin:0;min-height:var(--v7-leading-supporting);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}

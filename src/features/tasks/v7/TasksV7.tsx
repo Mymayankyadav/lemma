@@ -2,7 +2,7 @@ import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
-import {Link,useNavigate} from 'react-router';
+import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getTaskApi} from '../../../data/tasks';
@@ -39,6 +39,8 @@ const merge=(old:TaskRecord[],next:readonly TaskRecord[])=>{
 export default function TasksV7(){
  const room=isFlagOn('v7Room');
  const navigate=useNavigate(),notify=useToast(),home=useHome(),settings=useSettings();
+ const [params,setParams]=useSearchParams(),creating=params.get('new')==='1';
+ const closeNew=()=>{const next=new URLSearchParams(params);next.delete('new');setParams(next,{replace:true});};
  const zone=ownerZone(settings.data);
  const [rows,setRows]=useState<TaskRecord[]>([]),[total,setTotal]=useState(0),[cursor,setCursor]=useState<string|null>(null);
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[busy,setBusy]=useState(false);
@@ -169,6 +171,7 @@ export default function TasksV7(){
   </Sheet>
   {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={()=>setEditing(null)} onSaved={put}
    onConflict={()=>{setMessage('Task changed elsewhere. The latest version was loaded.');setReload(value=>value+1);setEditing(null);}}/>}
+  {creating&&<TaskSheet onDismiss={closeNew} onSaved={record=>{put(record);setTotal(value=>value+1);closeNew();}}/>}
  </main>;
 }
 

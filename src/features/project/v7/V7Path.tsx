@@ -1,4 +1,5 @@
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {ProofEnd} from '../../../ui/v7/ProofEnd';
 import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
@@ -87,9 +88,9 @@ function ProgressRing({done,total}:{done:number;total:number}){
  return <svg className="v7-progress-ring" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" className="v7-progress-ring-track"/>
   <circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-share)} transform="rotate(-90 10 10)" className="v7-progress-ring-fill"/></svg>;
 }
-export default function V7Path(){
+export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const room=isFlagOn('v7Room');
- const {slug:raw}=useParams(),slug=raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
+ const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
  const [prompt,setPrompt]=useState(false),[switcher,setSwitcher]=useState(false);
  const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Map';
@@ -166,6 +167,7 @@ export default function V7Path(){
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
    <div className="v7-path-chips">{target&&<MetaChip kind="target">{'Target '+target}</MetaChip>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
+   {isFlagOn('v7Qed')&&(project.status==='done'||data.total>0&&data.done>=data.total)&&<p className="v7-subhead"><ProofEnd/> Q.E.D.</p>}
   </header>
   {room&&cps.length>0&&<nav className="v7-room-spine" aria-label="Path checkpoints">{stages.map(stage=><section key={stage.key} aria-label={stageLabel(stage.name,stage.checkpoints)}>
    <h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2><ul>{stage.checkpoints.map(cp=><li key={cp.id}><a href={'#room-'+cp.code} aria-label={cp.title} aria-current={cp.id===current?.id?'step':undefined}

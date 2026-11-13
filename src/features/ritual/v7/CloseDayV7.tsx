@@ -26,6 +26,7 @@ import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
 import {playSound,soundsOn} from '../../../ui/v7/sounds';
 import './close.css';
 import {Loader} from '../../../ui/v7/Loader';
+import {ProofEnd} from '../../../ui/v7/ProofEnd';
 
 /** LT3 (v7 UX audit r3, Owner decision E20): how long Day closed stays before Today, unless Done is pressed first. The
  *  same with or without motion: reduced motion means less movement, not less time to read the day's ending. */
@@ -147,7 +148,8 @@ export default function CloseDayV7(){
  const leave=<Link className="v7-icon-button" to="/" aria-label="Close"><X aria-hidden="true"/></Link>;
  const dots=<ol className="v7-cd-dots" aria-label={'Step '+(step+1)+' of 3: '+STEPS[step]}>{STEPS.map((name,index)=><li key={name} data-state={index<step?'done':index===step?'now':'next'}><span className="v7-sr-only">{name}</span></li>)}</ol>;
  if(closed)return <main id="main-content" className="v7-cd v7-cd-closed" aria-label="Day closed"><ImmersiveHeader leave={leave} center={dots}/>
-  <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art" feel/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
+  {page?<ProofEnd large/>:<LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art" feel/>}<h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
+  {page&&<div className="v7-progress-stats" aria-label="Day statistics">{[[String(Math.round(studied)),'Minutes'],[String(data?.reviewsDone??0),'Reviews'],[String(data?.practice?.done??0),'Practice topics']].map(([value,label])=><div key={label}><p className="v7-figure-m">{value}</p><p className="v7-meta">{label}</p></div>)}</div>}
   <Button variant="ghost" className="v7-cd-share" onClick={()=>{void shareDay();}}><Share2 aria-hidden="true"/>Share the page</Button>
   <Button variant="primary" className="v7-cd-done" onClick={()=>{if(timer.current)window.clearTimeout(timer.current);navigate('/');}}>Done</Button></main>;
  const already=data?.plan?.status==='closed';

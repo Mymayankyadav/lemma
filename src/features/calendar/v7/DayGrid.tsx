@@ -31,6 +31,8 @@ type Props={
  suggested?:readonly SuggestedBlock[];
  /** QA4: the block quick-add is drafting, drawn on the grid and scrolled to sit just above the sheet. */
  draft?:{start:string;minutes:number}|null;
+ /** Owner-selected elapsed minute of this local day, including 23/25-hour DST days. */
+ scrubTo?:number|null;
 };
 export interface SuggestedBlock{id:string;title:string;start:string;end:string;onAccept?:()=>void;busy?:boolean}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
@@ -42,7 +44,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
  // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
  const HOUR_PX=isFlagOn('v7Room')?96:64;
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
@@ -55,7 +57,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   .filter(interval=>interval.kind==='focus'&&interval.end!==null).map(interval=>({id:'saved:'+entry.id+':'+interval.id,start:interval.start,end:interval.end!}))),[entries]);
  const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...saved],[visible,saved]);
  const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
- const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60));
+ const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
  const height=(whole-first)*HOUR_PX/60;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const sameDay=now>=from&&now<until,nowY=(now-from)/(60*MINUTE)*HOUR_PX-first/60*HOUR_PX;
@@ -65,6 +67,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   // Only on navigation: clock ticks must not steal the reader's scroll.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[date,zone]);
+ useEffect(()=>{
+  const node=scroll.current;if(!node||scrubTo===null)return;
+  node.scrollTop=Math.max(0,(scrubTo-first)*HOUR_PX/60-node.clientHeight/3);
+ },[scrubTo,first,HOUR_PX]);
  useEffect(()=>()=>{if(drag.current?.timer)window.clearTimeout(drag.current.timer);},[]);
  const draftTop=draft?(Date.parse(draft.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60:null;
  useEffect(()=>{

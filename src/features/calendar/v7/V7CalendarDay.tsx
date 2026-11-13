@@ -33,6 +33,7 @@ import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
 import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
 import {isFlagOn} from '../../../flags';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
 
 const views=['Day','Week','Month','Agenda'] as const;
 /** PLAN §6.5: the shape of the day, with a week strip above and a time grid below. */
@@ -51,6 +52,7 @@ export default function V7CalendarDay(){
  const [reload,setReload]=useState(0),[saving,setSaving]=useState(false),[actionError,setActionError]=useState('');
  const [now,setNow]=useState(()=>Date.now());
  const [suggested,setSuggested]=useState<SuggestedBlock[]>([]);
+ const [scrub,setScrub]=useState<{date:string;minute:number}|null>(null);
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
@@ -207,7 +209,10 @@ export default function V7CalendarDay(){
     {dueToday.length>0&&<details className="v7-room-due"><summary className="v7-meta">{dueToday.length} due today</summary><ul>{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul></details>}
     {date>=today&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
    </div>}
-   <DayGrid enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
+   {isFlagOn('v7Ruler')&&<div className="v7-cal-scrubber"><RulerSlider label="Browse day" min={0} max={Math.round((Date.parse(dayRange.end)-Date.parse(dayRange.start))/60000)-5}
+    value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
+    onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/></div>}
+   <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}

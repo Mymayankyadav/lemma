@@ -2,6 +2,8 @@
 /* N157 · U4 S2–S4 the ∎ as the one ending (flag v7Qed, set on <html> as data-v7-qed). Indigo only, one per screen, only for
    something the learner finished, spoken as "done". */
 @layer v7-components {
+ :where(html[data-v7]) .v7-proof-end {color:var(--v7-role-selection-fg);font:600 var(--v7-type-body)/1 var(--v7-serif);}
+ :where(html[data-v7]) .v7-proof-end-large {display:grid;place-items:center;width:160px;height:160px;margin-inline:auto;font-size:96px;}
  /* Tick → ∎: a done task's box shrinks from a rounded box to the end-of-proof square and stays (240 ms; final frame only
     under reduced motion). */
  :where(html[data-v7][data-v7-qed]) .v7-tk-check > span {transition:width 240ms var(--v7-ease-out),height 240ms var(--v7-ease-out),border-radius 240ms var(--v7-ease-out);}

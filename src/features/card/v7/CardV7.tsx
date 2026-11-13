@@ -29,8 +29,8 @@ const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
 
 /** PLAN §6.11 Card detail: the card as in a review, Memory (three stats over a real recall chart), History, notes for the tutor,
  *  and a sticky bar: "Review now" when the card is due, and "Edit card" (V38). */
-export default function CardV7(){
- const {no='0'}=useParams(),number=Number(no),query=useCard(number),projects=useProjects(),settings=useSettings(),notify=useToast(),navigate=useNavigate();
+export default function CardV7({selectedNo}:{selectedNo?:number}={}){
+ const {no='0'}=useParams(),number=selectedNo??Number(no),query=useCard(number),projects=useProjects(),settings=useSettings(),notify=useToast(),navigate=useNavigate();
  const update=useUpdateNote(),status=useSetNoteStatus(),add=useAddComment(),dismiss=useDismissComment();
  const [editing,setEditing]=useState(false),[more,setMore]=useState(false),[deleting,setDeleting]=useState(false),[message,setMessage]=useState('');
  const zone=ownerZone(settings.data),now=useMemo(()=>Date.now(),[]);

@@ -8,6 +8,8 @@ import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
+import {isFlagOn} from '../../../flags';
+import {ProofEnd} from '../../../ui/v7/ProofEnd';
 import {subjectClass} from '../../../ui/v7/Subject';
 import {MathText} from '../../../ui/MathText';
 import {FastTex as Tex} from '../../../ui/FastTex';
@@ -56,7 +58,7 @@ export default function CheckpointV7(){
   <header className="v7-learn-head">
    <p className="v7-eyebrow">{'Checkpoint '+view.code.replace(/^\D+/,'')+' · '+title}</p>
    <h1 className="v7-learn-title"><Tex source={view.title}/></h1>
-   <div className="v7-learn-chips"><StatusBadge tone={stateTone(view.ui)}>{stateText(view.ui)}</StatusBadge>{view.stage&&<span className="v7-learn-chip">{view.stage}</span>}</div>
+   <div className="v7-learn-chips"><StatusBadge tone={stateTone(view.ui)}>{isFlagOn('v7Qed')&&view.ui==='done'&&<ProofEnd/>}{stateText(view.ui)}</StatusBadge>{view.stage&&<span className="v7-learn-chip">{view.stage}</span>}</div>
   </header>
   <section className="v7-statement" aria-label="Statement">
    <p className="v7-eyebrow">To demonstrate</p>

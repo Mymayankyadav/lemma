@@ -169,7 +169,7 @@ U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it
 
 ### AN4 · Large screens and postures (Android, M) — `03` §4 · *(needs U1)*
 
-- [ ] List beside detail from 600 dp — the Inbox queue beside its card from 600 px and Settings' index from 840 px in N157; Cards and Paths still open their detail as a page
+- [x] List beside detail from 600 dp — N157; Cards and Paths keep list beside detail under `v7Room`, with phone navigation below 600 px; Inbox and Settings retain their split layouts
 - [x] Review spread from 840 dp and in book posture — N157 (behind `v7Spread`)
 - [x] Focus as a clock in tabletop posture — N157
 - [x] 48 px at every width; nothing interactive across a hinge — N157
@@ -187,7 +187,7 @@ A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N
 
 ### U4 · Signature (web, L) — `02` §6 · one flag at a time, each with an Owner-approved sheet
 
-- [x] S1 The ruler, flag `v7Ruler` — N157 (on Today; the New block, Calendar Day and widget uses follow)
+- [x] S1 The ruler, flag `v7Ruler` — N157 (Today, New block duration and Calendar Day scrubber; widgets remain parked)
 - [x] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page — N157 (the task ∎, the round's closing ∎, Inbox zero's ∎, and Close the day as one page)
 - [x] S5 Review as an open notebook, flag `v7Spread` — N157
 - [x] S6 Scratch paper, flag `v7Scratch` *(needs E10)* — N157

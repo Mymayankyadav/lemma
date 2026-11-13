@@ -80,7 +80,7 @@ function validTime(value:string){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value
 /** The kit's Time range field (§7.3): Start and End side by side with an en dash, 25 / 50 / 90 / Custom presets as filter
  *  chips that move End, and a summary line ("50 min session · 09:00–09:50 · 24-hour time"). Controlled when `start`, `end` and
  *  `onChange` are given; the gallery specimen keeps its own state. */
-export function TimeRange({start,end,onChange,legend="Time range",disabled=false}:{start:string;end:string;onChange:(start:string,end:string)=>void;legend?:string;disabled?:boolean}){
+export function TimeRange({start,end,onChange,legend="Time range",disabled=false,durationControls=true}:{start:string;end:string;onChange:(start:string,end:string)=>void;legend?:string;disabled?:boolean;durationControls?:boolean}){
  const id=useId(),[draftStart,setDraftStart]=useState(start),[draftEnd,setDraftEnd]=useState(end),[error,setError]=useState("");
  const duration=(timeMinutes(end)-timeMinutes(start)+1440)%1440;
  const [custom,setCustom]=useState(()=>![25,50,90].includes(duration));
@@ -92,8 +92,8 @@ export function TimeRange({start,end,onChange,legend="Time range",disabled=false
   <label>Start<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftStart} placeholder="09:00" aria-describedby={id} aria-invalid={!!error&&!validTime(draftStart)||undefined} onChange={e=>setDraftStart(e.target.value)} onBlur={commitStart}/><Clock3 size={20} aria-hidden="true"/></span></label>
   <span className="v7-range-dash" aria-hidden="true">–</span>
   <label>End<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftEnd} placeholder="09:50" aria-describedby={id} aria-invalid={!!error&&!validTime(draftEnd)||undefined} onChange={e=>setDraftEnd(e.target.value)} onBlur={commitEnd}/><Clock3 size={20} aria-hidden="true"/></span></label>
- </div><div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);onChange(start,toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>
- {custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>onChange(start,toTime(timeMinutes(start)+n))}/>}
+ </div>{durationControls&&<div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);onChange(start,toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>}
+ {durationControls&&custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>onChange(start,toTime(timeMinutes(start)+n))}/>}
  <p id={id} className={error?"v7-field-error":"v7-field-hint"}>{error||`${duration} min session · ${start}–${end}${end<start?" · Ends the next day":""} · 24-hour time`}</p></fieldset>;
 }
 export function TimeRangeField(){

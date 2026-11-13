@@ -6,6 +6,8 @@ import type {ProjectSummary,CheckpointView} from '../../../data/types';
 import Dialog from '../../../ui/v6/Dialog';
 import {Button,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
 import {TimeRange} from '../../../ui/v7/KitPrimitives';
+import {isFlagOn} from '../../../flags';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {getStudyApi} from '../../../data/study';
 import type {
   CalendarBlockKind, CalendarBlockPatch, CalendarBlockRecord, CalendarBlockStatus,
@@ -271,9 +273,12 @@ const day=start.slice(0,10);
     <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>setTitle(event.target.value)}/>
     <Segmented label="Calendar block type" options={['Study','Busy']} value={kind==='study'?'Study':'Busy'} onChange={value=>setKind(value==='Study'?'study':'busy')}/>
     {/^\d{4}-\d\d-\d\d$/.test(day)&&<DatePicker label="Date" value={day} onChange={value=>setPart('day',value)}/>}
-    <TimeRange legend="Time" start={start.slice(11,16)} end={end.slice(11,16)} disabled={saving} onChange={(from,to)=>{
+    <TimeRange durationControls={!isFlagOn('v7Ruler')} legend="Time" start={start.slice(11,16)} end={end.slice(11,16)} disabled={saving} onChange={(from,to)=>{
      if(from!==start.slice(11,16)){setStart(day+'T'+from);const overnight=to<=from;setEnd((overnight?new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10):day)+'T'+to);}
      else setPart('end',to);setError('');}}/>
+    {isFlagOn('v7Ruler')&&<RulerSlider label="Length" min={5} max={Math.max(600,Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||50)}
+     value={Math.max(5,Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||50)} format={value=>value+' min'} tickFormat={value=>value/60+'h'}
+     onChange={minutes=>{const first=instantInZone(start,zone);if(first){setEnd(zonedInput(new Date(Date.parse(first)+minutes*60000).toISOString(),zone));setError('');}}}/>}
     <Picker optional label="Path" value={pathLabel(projectId)} options={paths.options} disabled={saving} onChange={text=>{setProjectId(paths.idOf(text));setCheckpointId('');}}/>
     {projectId&&<Picker optional label="Checkpoint" value={cpLabel(checkpointId)} options={cps.options} disabled={saving} onChange={text=>setCheckpointId(cps.idOf(text))}/>}
     <Picker optional label="Task" value={taskLabel(taskId)} options={tks.options} disabled={saving} onChange={text=>setTaskId(tks.idOf(text))}/>
