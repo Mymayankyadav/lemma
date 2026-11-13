@@ -1,4 +1,5 @@
 import {Illustration} from '../../../ui/v7/Illustration';
+import {fromEdge} from '../../../ui/v7/edges';
 import {nameCodes} from '../../../lib/codeNames';
 import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
 import {useHapticsSetting} from '../../../ui/v7/useHapticsSetting';
@@ -40,7 +41,7 @@ function TopCard({proposal,project,onDecide,onSkip,haptics,stamped}:{proposal:Pr
  const [drag,setDrag]=useState({dx:0,dy:0}),start=useRef<{x:number;y:number;t:number}|null>(null),ref=useRef<HTMLElement>(null),dragged=useRef(false);
  const face=faces(proposal),subject=kitSubject(project?.subject.name??''),citations=proposalCitations(proposal);
  const width=ref.current?.offsetWidth??340,style=swipeStyle(drag.dx,width);
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if((event.target as HTMLElement).closest('button,a'))return;dragged.current=false;start.current={x:event.clientX,y:event.clientY,t:performance.now()};event.currentTarget.setPointerCapture(event.pointerId);};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{if((event.target as HTMLElement).closest('button,a')||fromEdge(event.clientX))return;dragged.current=false;start.current={x:event.clientX,y:event.clientY,t:performance.now()};event.currentTarget.setPointerCapture(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{const origin=start.current;if(origin)setDrag({dx:event.clientX-origin.x,dy:Math.min(0,event.clientY-origin.y)});};
  const up=(event:ReactPointerEvent<HTMLElement>)=>{
   const origin=start.current;start.current=null;if(!origin)return;

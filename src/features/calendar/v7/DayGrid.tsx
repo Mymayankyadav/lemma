@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,type MouseEvent,type PointerEvent} from 'react';
+import {fromEdge} from '../../../ui/v7/edges';
 import {Check} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
@@ -85,7 +86,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  const blockTouchMove=(event:TouchEvent)=>{if(drag.current?.lifted&&event.cancelable)event.preventDefault();};
  function startDrag(event:PointerEvent<HTMLElement>,block:CalendarBlockRecord,mode:'move'|'resize'){
-  if(busy||event.button!==0)return;
+  if(busy||event.button!==0||fromEdge(event.clientX))return;
   const touch=event.pointerType==='touch',target=event.target as HTMLElement;
   // The bottom handle resizes at once; the body lifts after 300 ms of holding (PLAN §6.5).
   event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -168,7 +169,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const ghosts=suggested.filter(item=>Date.parse(item.start)>=from&&Date.parse(item.end)<=until&&Date.parse(item.start)>=from+first*MINUTE);
  return <section className="v7-cal-grid" aria-label="Day calendar" data-day-minutes={whole}>
   <div ref={scroll} role="region" aria-label="Day time grid" tabIndex={0} className="v7-cal-scroll"
-   onTouchStart={event=>{const t=event.touches[0];swipe.current={x:t.clientX,y:t.clientY};}}
+   onTouchStart={event=>{const t=event.touches[0];swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};}}
    onTouchEnd={event=>{const start=swipe.current,t=event.changedTouches[0];swipe.current=null;
     if(!start||drag.current?.lifted)return;const dx=t.clientX-start.x,dy=t.clientY-start.y;
     if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)*2)onSwipe(dx<0?1:-1);}}>

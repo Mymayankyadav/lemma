@@ -15,7 +15,7 @@ import {FOCUS_CHANGED, announceFocusChange} from '../app/v7/focus';
 import {toast} from '../ui/Toast';
 import type {LemmaNativePlugin} from './bridge';
 import {lemmaNative} from './bridge';
-import {DEVICE_PREFS_CHANGED, readDevicePref} from './device';
+import {DEVICE_PREFS_CHANGED, checkForUpdate, readDevicePref} from './device';
 import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
 import {whenRootPainted} from './splash';
@@ -243,6 +243,8 @@ export async function startNative(): Promise<void> {
   whenRootPainted(document.getElementById('root'), () => void splash.then(plugin => plugin?.SplashScreen.hide()).catch(() => undefined));
   void followTheme().catch(() => undefined);
   void connectSession();
+  // AW3 (E15): one quiet check a day for a newer APK; Settings shows a dot when there is one.
+  void App.getInfo().then(info => checkForUpdate(info.version)).catch(() => undefined);
 
   await App.addListener('appUrlOpen', ({url}) => {
     void (async () => {

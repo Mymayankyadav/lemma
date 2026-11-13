@@ -11,6 +11,8 @@ import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import {Button,Sheet} from '../../ui/v7/components';
 import {EllMark} from '../../ui/v7/marks';
+import {SyncMark} from '../../ui/v7/SyncMark';
+import {useDevicePrefValue} from '../../platform/useDevicePref';
 import {useMinWidth} from './useMinWidth';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
@@ -170,6 +172,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  *  Settings only on Today (SH4). */
 export function HubHeader({title,date,settings=false,display=false,children}:{title:string;date?:string;settings?:boolean;display?:boolean;children?:ReactNode}){
  const pending=useHome().data?.pendingProposals??0;
+ // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
+ const update=useDevicePrefValue<number|null>('updateAvailable',null);
  // CD1: on hubs other than Today the title row is a sticky solid bar whose Title 32 shrinks to Subhead 20 once the page
  // scrolls, so content gets the room back (the tabs and controls below scroll away).
  const [collapsed,setCollapsed]=useState(false);
@@ -181,7 +185,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
-    {settings&&<Link to="/settings" aria-label="Settings" title="Settings"><Settings aria-hidden="true"/></Link>}
+    {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
    </nav>;
  if(!display)return <>
   <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 className="v7-hub-title">{title}</h1>{actions}</div></header>
@@ -189,7 +193,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
  </>;
  return <header className="v7-hub-header" data-display="true">
   <div className="v7-hub-row">
-   {date?<p className="v7-hub-date"><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span>{date}</p>:<span/>}
+   {date?<p className="v7-hub-date"><SyncMark/>{date}</p>:<span/>}
    {actions}
   </div>
   <h1 className="v7-hub-title v7-display">{title}</h1>

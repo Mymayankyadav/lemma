@@ -98,14 +98,14 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] **AW2** *(E14)* "Save a backup" in the app goes to Android's share sheet (Files, Drive, email) and says so — N130 (#1363)
 - [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130 (#1363)
-- [ ] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page
+- [x] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page — N157
 - [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130 (#1363)
 - [x] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note — N133
 - [x] AW9 Study mode in one trip (the request is remembered for ten minutes across system settings) — N133
 - [x] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast — N133
 - [x] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details — N157
 - [x] **IC4** IC6 *(P7, E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon — N157
-- [ ] AW17 *(verify on a device)* Sign-in failure says something useful
+- [x] AW17 *(verify on a device: check 7)* Sign-in failure says something useful — N157
 
 ### G0 · Refresh what is stale (S) — `04` §2
 
@@ -122,8 +122,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **AW7** Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour — N136
 - [x] **AW8** Back preview on Today: release the back handler at the root with no sheet open — N136
 - [x] Offline made visible: "as of 14:05" chips on Today and the Review hub — N151
-- [ ] Offline made visible: the header ℓ as the sync light
-- [ ] Edges: no Lemma gesture within 24 dp of a screen edge
+- [x] Offline made visible: the header ℓ as the sync light — N157
+- [x] Edges: no Lemma gesture within 24 dp of a screen edge — N157
 - [x] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers) — N152
 
 ### U1 · Large screens (web, L) — `02` §3 · *(needs E2 for the direction)*

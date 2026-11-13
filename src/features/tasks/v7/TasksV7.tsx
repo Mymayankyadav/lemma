@@ -1,4 +1,5 @@
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useNavigate} from 'react-router';
@@ -173,7 +174,7 @@ function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,on
   setDrawn(true);drawTimer.current=window.setTimeout(()=>{haptic('check');save();},Math.round(motionV1.base*1000));
  };
  const reopen=()=>{void onChange(task,{status:'backlog'},{message:'Task reopened',undo:{status:task.status}});};
- const down=(event:ReactPointerEvent<HTMLDivElement>)=>{if(closed||(event.target as HTMLElement).closest('button,a,[role=menu]'))return;start.current={x:event.clientX,y:event.clientY};};
+ const down=(event:ReactPointerEvent<HTMLDivElement>)=>{if(closed||(event.target as HTMLElement).closest('button,a,[role=menu]')||fromEdge(event.clientX))return;start.current={x:event.clientX,y:event.clientY};};
  const move=(event:ReactPointerEvent<HTMLDivElement>)=>{const origin=start.current;if(!origin)return;const x=event.clientX-origin.x,y=event.clientY-origin.y;if(Math.abs(x)>8&&Math.abs(x)>Math.abs(y))setDx(Math.max(-140,Math.min(140,x)));};
  const up=(event:ReactPointerEvent<HTMLDivElement>)=>{
   const origin=start.current;start.current=null;if(!origin)return;

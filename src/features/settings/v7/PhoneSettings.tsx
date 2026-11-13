@@ -4,6 +4,7 @@
  * one is opt-in and off by default (Owner decision D13). AW3 adds "About this app" (Data and account).
  */
 import {useCallback,useEffect,useState} from 'react';
+import {useDevicePrefValue} from '../../../platform/useDevicePref';
 import {Sheet} from '../../../ui/v7/components';
 import {useToast} from '../../../ui/Toast';
 import {Group,InfoRow,LinkRow,SwitchRow,ValueRow} from './SettingsLists';
@@ -93,17 +94,18 @@ export function PhonePlanning(){
 /**
  * AW3 (v7 UX audit r3, Owner decision E15): the app has no store and no updater, and every web fix reaches the phone
  * only with a new APK on GitHub Releases. This group shows the installed version, opens the newest release ("Check for
- * updates") and this version's release ("What changed"). A later step adds one quiet check a day, with a line in the
- * privacy page.
+ * updates") and this version's release ("What changed"). N157 adds the second stage: one quiet check a day, whose
+ * result names the newer version here and puts a dot on Settings (privacy page: "Updates in the Android app").
  */
 export function PhoneAbout(){
  const read=useCallback(async()=>{const {App}=await import('@capacitor/app');return App.getInfo();},[]);
  const [info]=useStatus(read);
- const links=releaseLinks(info?.version);
+ const links=releaseLinks(info?.version),update=useDevicePrefValue<number|null>('updateAvailable',null);
  const open=(url:string)=>{void import('@capacitor/browser').then(({Browser})=>Browser.open({url})).catch(()=>window.open(url,'_blank','noopener'));};
  return <Group title="About this app" note="Lemma for Android is installed from GitHub Releases. A newer Lemma.apk installs over this one and keeps your data.">
   <InfoRow label="Version" value={info?.version??'…'}/>
-  <LinkRow label="Check for updates" hint="Opens the newest release" onOpen={()=>open(links.latest)}/>
+  {/* AW3 second stage (E15): the day's quiet check found a newer APK. */}
+  <LinkRow label="Check for updates" hint={update?'Lemma 2.0.'+update+' is available':'Opens the newest release'} onOpen={()=>open(links.latest)}/>
   {links.thisVersion&&<LinkRow label={'What changed in '+info!.version} onOpen={()=>open(links.thisVersion!)}/>}
  </Group>;
 }

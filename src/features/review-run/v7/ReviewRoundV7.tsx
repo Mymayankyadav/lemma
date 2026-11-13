@@ -1,6 +1,7 @@
 // PLAN §6.4 B: the v7 review round. The durable-run engine is the N83 one used by v6:
 // a grade's committed reviewId is stored BEFORE any advance, so a retry never records it twice.
 import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
+import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {warmMoment} from '../../../ui/v7/LottieMoment';
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
@@ -138,7 +139,7 @@ export default function ReviewRoundV7(){
  // N132: a mouse swipe that starts on text the previous swipe selected would drag that text (the browser's own drag and
  // drop cancels the gesture), so the card never graded. Clear the selection when a swipe starts and after one is read.
  const clearSelection=()=>{try{window.getSelection()?.removeAllRanges();}catch{/* no selection API */}};
- const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button'))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
+ const down=(event:ReactPointerEvent<HTMLElement>)=>{if(busy||(event.target as HTMLElement).closest('a,button')||fromEdge(event.clientX))return;if(event.pointerType==='mouse')clearSelection();dragStart.current={x:event.clientX,y:event.clientY};event.currentTarget.setPointerCapture?.(event.pointerId);};
  const move=(event:ReactPointerEvent<HTMLElement>)=>{if(!dragStart.current)return;setDrag({dx:event.clientX-dragStart.current.x,dy:event.clientY-dragStart.current.y});};
  const up=()=>{const start=dragStart.current;dragStart.current=null;if(!start||!drag){setDrag(null);return;}const rating=swipeGrade(drag.dx,drag.dy);setDrag(null);if(rating){clearSelection();if(!revealed)reveal();else void grade(rating);}};
  const swiping=drag&&revealed?swipeGrade(drag.dx,drag.dy,48):null;
