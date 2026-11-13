@@ -29,6 +29,16 @@ export const FLAG_DEFAULTS = {
   v7Margin: false,
   /** N157 · U1 V09 / U4 S5 Review as an open notebook: from 840 px (and in book posture) question left, answer right. */
   v7Spread: false,
+  /** N157 · U4 S1 the ruler: Today's day as a ruler with a needle for now (a slider with spoken times). */
+  v7Ruler: false,
+  /** N157 · U4 S2–S4 the ∎ as the one ending: a task's tick becomes the square; Close the day as one page (V25). */
+  v7Qed: false,
+  /** N157 · U4 S6 scratch paper: a sheet of graph paper for an attempt before the reveal; nothing is stored. */
+  v7Scratch: false,
+  /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
+  v7Paper: false,
+  /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */
+  v7DeskClock: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

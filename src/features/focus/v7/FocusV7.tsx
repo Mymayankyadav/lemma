@@ -3,7 +3,7 @@ import {haptic} from '../../../ui/v7/haptics';
 import {playPhaseChime} from '../../../ui/v7/chime';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {Check,ChevronDown,CircleAlert,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
+import {Check,ChevronDown,CircleAlert,Clock3,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
@@ -20,6 +20,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
 import {useToast} from '../../../ui/Toast';
 import {isFlagOn} from '../../../flags';
+import {useDeskLandscape,useWakeLock} from './deskClock';
 import './focus.css';
 import {Loader} from '../../../ui/v7/Loader';
 
@@ -115,6 +116,12 @@ export default function FocusV7(){
   try{await getStudyEventApi().recordEvent({entryId:entry.id,kind:'drift',durationMinutes:1});setNoted('Noted');}
   catch{setError('We couldn’t note that. Try again.');}
  };
+ // N157 · U4 S16 (flag v7DeskClock): the desk clock in landscape or with one tap; the screen stays awake while it runs;
+ // a tap anywhere shows the controls for a while.
+ const deskFlag=isFlagOn('v7DeskClock'),landscape=useDeskLandscape(),[deskChosen,setDeskChosen]=useState(false),[deskControls,setDeskControls]=useState(false);
+ const desk=deskFlag&&!!entry&&(deskChosen||landscape);
+ useWakeLock(desk&&entry?.status==='running');
+ useEffect(()=>{if(!deskControls)return;const timer=window.setTimeout(()=>setDeskControls(false),4000);return ()=>window.clearTimeout(timer);},[deskControls]);
  // N123: "Finish" on the Android lock screen pauses the session and opens this screen with ?finish=1 to log it.
  const [params,setParams]=useSearchParams();
  useEffect(()=>{if(params.get('finish')!=='1'||!entry)return;openFinish();const next=new URLSearchParams(params);next.delete('finish');setParams(next,{replace:true});// eslint-disable-line react-hooks/exhaustive-deps
@@ -140,13 +147,17 @@ export default function FocusV7(){
  </main>;
  const word=focusWord(entry),clock=focusClock(entry,now),eyebrow=focusEyebrow(entry),onBreak=word==='Break';
  const offset=clock.progress===null?0:CIRCUMFERENCE*(1-clock.progress),angle=-Math.PI/2+2*Math.PI*(clock.progress??0);
- return <main id="main-content" className={'v7-focus '+subjectClass(subject)} aria-label="Focus" data-word={word}>
+ return <main id="main-content" className={'v7-focus '+subjectClass(subject)} aria-label="Focus" data-word={word}
+  data-desk={desk?'':undefined} data-desk-controls={desk&&deskControls?'':undefined}
+  onClick={desk?event=>{if(!(event.target as HTMLElement).closest('button,a,input,form,[role="dialog"]'))setDeskControls(value=>!value);}:undefined}>
+  {desk&&<p className="v7-sr-only" role="status">Desk clock. Tap anywhere for the controls.</p>}
   <ImmersiveHeader leave={<Link className="v7-icon-button" to="/" aria-label="Minimise"><ChevronDown aria-hidden="true"/></Link>}
    center={project?<span className="v7-focus-subject"><span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{subject==='Other'?project.subject.name:subject}</span></span><span className="v7-meta">{project.title}</span></span>:<span className="v7-meta">Focus</span>}
    more={<div className="v7-focus-more"><button type="button" className="v7-icon-button" aria-label="Timer details" aria-haspopup="menu" aria-expanded={menu} onClick={()=>setMenu(true)}><MoreHorizontal aria-hidden="true"/></button>
     {menu&&<ActionSheet open onClose={()=>setMenu(false)} title="Timer" label="Timer details"
      note={clock.endsAt?'This phase ends at '+clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)+'.':undefined}
      items={[
+      ...(deskFlag?[{label:desk&&deskChosen?'Leave the desk clock':'Desk clock',hint:'Large digits and the intention; the screen stays awake',icon:<Clock3 aria-hidden="true"/>,onClick:()=>{setMenu(false);setDeskChosen(value=>!value);}}]:[]),
       ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().nextPhase(fresh.id,fresh.version));}}]:[]),
       {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
      ]}/>}</div>}/>
