@@ -1,5 +1,4 @@
 import {Illustration} from '../../../ui/v7/Illustration';
-import {nameCodes} from '../../../lib/codeNames';
 import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useSearchParams} from 'react-router';
@@ -59,7 +58,7 @@ function TopCard({proposal,project,onDecide,onSkip,haptics}:{proposal:Proposal;p
   <hr/>
   <div className="v7-inbox-back"><MathText source={face.back}/></div>
   {(proposal.reason||citations.length>0)&&<details className="v7-inbox-why"><summary>Why this card?</summary>
-   {proposal.reason&&<p>{nameCodes(proposal.reason)}</p>}
+   {proposal.reason&&<p>{proposal.reason}</p>}
    {citations.length>0&&<p className="v7-meta">{citations.map(item=>item.source+(item.pages?' · p. '+item.pages:'')).join('; ')}</p>}
   </details>}
  </article>;
@@ -89,7 +88,7 @@ function PlanCard({proposal,project,onDecide}:{proposal:Proposal;project:Project
   {rows.length?<ul className="v7-inbox-changes">{rows.map((row,index)=>{const Icon=changeIcon[row.icon];return <li key={index}><Icon aria-hidden="true"/><span>{row.text}</span></li>;})}</ul>
    :<p className="v7-meta">{count?count+' checkpoints in a new plan':'No checkpoint changes'}</p>}
   <MiniMap proposal={proposal}/>
-  {proposal.reason&&<><h3 className="v7-eyebrow">Why</h3><p className="v7-inbox-reason">{nameCodes(proposal.reason)}</p></>}
+  {proposal.reason&&<><h3 className="v7-eyebrow">Why</h3><p className="v7-inbox-reason">{proposal.reason}</p></>}
   <div className="v7-inbox-plan-actions">
    <Button onClick={()=>onDecide('reject')}>Reject</Button>
    <Button variant="primary" onClick={()=>onDecide('approve')}>Approve</Button>

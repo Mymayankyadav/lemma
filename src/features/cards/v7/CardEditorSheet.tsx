@@ -6,7 +6,7 @@ import {MathText} from '../../../ui/MathText';
 import {cardTypeText,noteKindText} from '../../../lib/labels';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
 import type {EditorValue} from '../Editor';
-import {editorKeys,insertAt} from './editorModel';
+import {insertAt,macroKeys,symbolKeys} from './editorModel';
 import './cards.css';
 
 const types:NoteType[]=['basic','cloze','reverse'];
@@ -34,7 +34,7 @@ export function CardEditorSheet({open,onClose,initial,busy,onSubmit,submitLabel,
  const [mode,setMode]=useState<'Write'|'Preview'>('Write'),[error,setError]=useState('');
  const target=useRef<'front'|'back'>('front'),frontRef=useRef<HTMLTextAreaElement>(null),backRef=useRef<HTMLTextAreaElement>(null);
  const paths=useMemo(()=>(projects.data??[]).filter(row=>!row.system&&row.status!=='archived'),[projects.data]);
- const keys=useMemo(()=>editorKeys(settings.data?.macros??''),[settings.data?.macros]);
+ const keys=useMemo(()=>[...macroKeys(settings.data?.macros??''),...symbolKeys],[settings.data?.macros]);
  const creating=!initial&&!lockPath,pathTitle=paths.find(row=>row.slug===slug)?.title??'';
  function key(text:string){
   const field=target.current==='front'?frontRef.current:backRef.current;

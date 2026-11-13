@@ -6,7 +6,7 @@ import type {FocusDefaultsPrefs,NotifyPrefs,PlanningPrefs,ReviewBudgetPrefs,Sett
 import {mergeNotifyPrefs} from '../../../data/notify';
 import {useToast} from '../../../ui/Toast';
 import {Button,Field,Sheet,Slider,Stepper,Switch} from '../../../ui/v7/components';
-import {formatDuration,zoneLongName} from '../../../lib/format';
+import {formatDuration} from '../../../lib/format';
 import {validateFocusValues,validateReviewBudgetValues} from '../v6/Focus';
 import {validatePlanningValues} from '../v6/Planning';
 import {isNative} from '../../../platform/native';
@@ -200,7 +200,7 @@ export function ReminderLists({settings}:{settings:Settings}){
  const app=isNative(),rows=reminderKindRows(app);
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};
  return <div className="v7-settings-body">
-  <Group title="Reminders" note={'Times are in '+(settings.timeZone?zoneLongName(settings.timeZone):'your device’s time zone')+'.'}>
+  <Group title="Reminders" note={'Times are in '+(settings.timeZone?settings.timeZone.split('/').pop()!.replace(/_/g,' ')+' time':'your device’s time zone')+'.'}>
    <SwitchRow label="Reminders" checked={value.enabled===true} disabled={busy} onChange={enabled=>{put({enabled});if(enabled)void requestNotificationPermission();}}/>
    <ValueRow label="Schedule" value={scheduleWord[mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Schedule',value:mode,options:(Object.keys(scheduleWord) as (keyof typeof scheduleWord)[]).map(key=>({value:key,label:scheduleWord[key]})),onPick:((next:NotifyPrefs['mode'])=>put({mode:next})) as (value:never)=>void})}/>
    <ValueRow label="Preferred study time" value={value.studyTime??'09:00'} onOpen={()=>editor.setOpen({kind:'time',title:'Preferred study time',value:value.studyTime??'09:00',onSave:studyTime=>put({studyTime})})}/>

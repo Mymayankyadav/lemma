@@ -19,7 +19,8 @@ import StudyDefaults from '../v6/StudyDefaults';
 import Activities from '../v6/Activities';
 import Focus from '../v6/Focus';
 import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
-import {DataAccount} from './DataAccount';
+import ExportSettings from '../v6/Export';
+import DeleteAccount from '../v6/DeleteAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
 // AW3: the app's version and updates, only inside the Android app.
@@ -118,7 +119,7 @@ function Subjects({settings}:{settings:Settings}){
  return <div className="v7-settings-body"><ul className="v7-settings-card v7-subject-rows">{(list.data??[]).map(row=><li key={row.id}>
   <button type="button" className={'v7-settings-row '+subjectClass(colourOf(row))} onClick={()=>setOpen(row)}>
    <span className="v7-subject-dot" aria-hidden="true"><SubjectMark subject={colourOf(row)}/></span>
-   <span><strong>{row.name}</strong><small>{colourOf(row)+' · '+row.glyph}</small></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
+   <span><strong>{row.name}</strong><small>{colourOf(row)+' · glyph '+row.glyph}</small></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
   {open&&<SubjectSheet subject={open} taken={taken} current={colourOf(open)} onClose={()=>setOpen(null)}/>}
  </div>;
 }
@@ -168,10 +169,13 @@ export default function SettingsV7(){
     :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
    {section==='planning'&&<PlanningLists settings={data}/>}
    {section==='reminders'&&<ReminderLists settings={data}/>}
-   {section==='data'&&<>
-    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>
-    {isNative()&&<div className="v7-settings-body"><Suspense fallback={null}><PhoneAbout/></Suspense></div>}
-   </>}
+   {section==='data'&&<div className="v7-settings-body">
+    <div className="v7-settings-card"><p>{getMode()==='demo'?'You are exploring the example workspace.':'Your study record.'}</p>
+     <Button onClick={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}><LogOut aria-hidden="true"/>Sign out</Button></div>
+    <Legacy><ExportSettings/></Legacy>
+    {isNative()&&<Suspense fallback={null}><PhoneAbout/></Suspense>}
+    <section className="v7-settings-card v7-settings-danger" aria-label="Delete account"><DeleteAccount onExport={()=>navigate('/settings?section=data')}/></section>
+   </div>}
   </>}
  </main>;
 }

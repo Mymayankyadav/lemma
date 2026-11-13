@@ -15,7 +15,6 @@ import {proposalComparison} from '../v6/comparison';
 import {changeSummary} from '../v6/PlanProposalV6';
 import {payloadText,useProposalDraft} from '../useProposalDraft';
 import type {ReviewNode} from '../nodes';
-import {nameCodes} from '../../../lib/codeNames';
 import '../../project/v7/path.css';
 import '../../project/v7/learning.css';
 import '../../proposals/v7/inbox.css';
@@ -34,8 +33,7 @@ function PlanMap({title,nodes,existing,adds,changed}:{title:string;nodes:readonl
       :state==='proposed'?<circle cx="10" cy="10" r="7" className="v7-path-dashed"/>:state==='current'?<circle cx="10" cy="10" r="6.5" className="v7-path-ring"/>
       :state==='locked'?<circle cx="10" cy="10" r="4" className="v7-path-dim"/>:<circle cx="10" cy="10" r="6.5" className="v7-path-hollow"/>}
     </svg>
-    {/* V18: the row names its stage and state, never the internal code ("CP1 · Foundations" read as jargon). */}
-    <span className="v7-path-body"><strong>{node.title}</strong><small>{[node.stage,cp&&!added?nodeWord[nodeStateOf(cp.ui)]:''].filter(Boolean).join(' · ')}</small></span>
+    <span className="v7-path-body"><strong>{node.title}</strong><small>{node.code}{node.stage?' · '+node.stage:''}{cp&&!added?' · '+nodeWord[nodeStateOf(cp.ui)]:''}</small></span>
     {added?<MetaChip kind="added">Added</MetaChip>:edit?<MetaChip kind="changed">Changed</MetaChip>:<span/>}
    </li>;})}</ol>:<p className="v7-learn-empty">No checkpoints.</p>}
  </section>;
@@ -79,7 +77,7 @@ export default function PlanProposalV7(){
   {project.isError&&<div role="alert" className="v7-learn-empty"><p>The current plan is unavailable, so the comparison is incomplete.</p><Button onClick={()=>{void project.refetch();}}>Try again</Button></div>}
   {rows.length>0&&<ul className="v7-inbox-changes v7-learn-card" aria-label="Changes">{rows.map((row,index)=>{const Icon=changeIcon[row.icon];return <li key={index}><Icon aria-hidden="true"/><span>{row.text}</span></li>;})}</ul>}
   {comparison&&comparison.removes.length>0&&<p className="v7-meta">{'Removed: '+comparison.removes.map(code=>existing.get(code)?.title??code).join(', ')}</p>}
-  {p.reason&&<section className="v7-learn-card" aria-label="Why"><p className="v7-eyebrow">Why</p><p>{nameCodes(p.reason,code=>existing.get(code)?.title??comparison?.after.find(node=>node.code===code)?.title)}</p></section>}
+  {p.reason&&<section className="v7-learn-card" aria-label="Why"><p className="v7-eyebrow">Why</p><p>{p.reason}</p></section>}
   {comparison&&<div className={wide?'v7-planp-split':'v7-planp-stack'}>
    {wide&&<PlanMap title="Before" nodes={comparison.before} existing={existing} adds={[]} changed={[]}/>}
    <PlanMap title={wide?'After':'The whole plan'} nodes={comparison.after} existing={existing} adds={comparison.adds} changed={comparison.changed}/>

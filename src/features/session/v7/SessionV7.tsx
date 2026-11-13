@@ -61,7 +61,7 @@ export default function SessionV7(){
   {open.length>0&&<section aria-label="Things to revisit"><h2 className="v7-learn-h2">Things to revisit</h2>
    <ul className="v7-learn-list">{open.map(item=><li key={item.id} className="v7-learn-card v7-learn-revisit">
     <StatusBadge tone="warning">{item.times+'×'}</StatusBadge><MathText source={item.label}/>
-    <Button small disabled={resolve.isPending} onClick={()=>resolve.mutate(item.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Could not save. Try again.',{tone:'danger'})})}>Mark resolved</Button>
+    <Button small disabled={resolve.isPending} onClick={()=>resolve.mutate(item.id,{onSuccess:()=>notify('Marked resolved',{tone:'success'}),onError:()=>notify('Could not save. Try again.',{tone:'danger'})})}>Resolved</Button>
    </li>)}</ul></section>}
   <section aria-label="Timeline"><h2 className="v7-learn-h2">Timeline</h2>
    {events.length?<ol className="v7-evidence v7-evidence-flat">{events.slice(0,shown).map(event=><EvidenceEntry key={event.id} event={event} time zone={zone}/>)}</ol>

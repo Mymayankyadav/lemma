@@ -10,9 +10,6 @@
  :where(html[data-v7]) .v7-signin-tag {margin:0 0 var(--v7-space-6);color:var(--v7-role-text-secondary);font:italic 400 1.125rem/1.4 var(--v7-serif);}
  :where(html[data-v7]) .v7-signin-actions {display:grid;gap:var(--v7-space-2);width:100%;}
  :where(html[data-v7]) .v7-signin-actions .v7-button {width:100%;text-decoration:none;}
- /* V39 (v7 UX audit r3): the construction drawing passes behind the title, never through the links or the note: they sit
-    on the page colour, with an 8 px margin of paper around them. */
- :where(html[data-v7]) :is(.v7-signin-actions,.v7-signin-content > .v7-meta) {position:relative;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-page);box-shadow:0 0 0 var(--v7-space-2) var(--v7-role-surface-page);}
  :where(html[data-v7]) .v7-welcome {display:grid;gap:var(--v7-space-5,20px);align-content:start;width:min(100%,560px);min-height:100dvh;margin-inline:auto;padding:var(--v7-space-8) var(--v7-page-margin) var(--v7-space-8);}
  :where(html[data-v7]) .v7-welcome-head {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-welcome-dots {display:flex;gap:var(--v7-space-1);margin:0;padding:0;list-style:none;}

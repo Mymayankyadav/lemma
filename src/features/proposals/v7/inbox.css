@@ -31,12 +31,12 @@
  :where(html[data-v7]) .v7-inbox-decide {display:flex;align-items:flex-start;justify-content:center;gap:var(--v7-space-8);}
  :where(html[data-v7]) .v7-inbox-decide > span {display:grid;justify-items:center;gap:var(--v7-space-1);}
  :where(html[data-v7]) .v7-inbox-decide small {color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/1 var(--v7-sans);}
- /* V37 (v7 UX audit r3): the three triage buttons are one size on one line, so their labels share a baseline (they were
-    56, 48 and 64 px with offsets). Approve is the filled one; Reject keeps its danger outline. */
- :where(html[data-v7]) .v7-inbox-round {display:grid;place-items:center;width:56px;height:56px;border-radius:var(--v7-round);border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);cursor:pointer;}
+ :where(html[data-v7]) .v7-inbox-round {display:grid;place-items:center;width:48px;height:48px;border-radius:var(--v7-round);border:var(--v7-hairline) solid var(--v7-role-border-default);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);cursor:pointer;}
  :where(html[data-v7]) .v7-inbox-round svg {width:24px;height:24px;}
- :where(html[data-v7]) .v7-inbox-round[data-kind="reject"] {border:2px solid var(--v7-role-status-danger);background:transparent;color:var(--v7-role-status-danger);}
- :where(html[data-v7]) .v7-inbox-round[data-kind="approve"] {border:0;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-inbox-round[data-kind="reject"] {width:56px;height:56px;margin-top:4px;border:2px solid var(--v7-role-status-danger);background:transparent;color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-inbox-round[data-kind="edit"] {margin-top:8px;}
+ :where(html[data-v7]) .v7-inbox-round[data-kind="approve"] {width:64px;height:64px;border:0;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:var(--v7-shadow-2);}
+ :where(html[data-v7]) .v7-inbox-round[data-kind="approve"] svg {width:28px;height:28px;}
  :where(html[data-v7]) .v7-inbox-all {justify-self:center;}
  :where(html[data-v7]) .v7-inbox-empty {display:grid;gap:var(--v7-space-2);justify-items:center;text-align:center;padding:var(--v7-space-10) var(--v7-space-4);color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-inbox-empty h2 {margin:0;color:var(--v7-role-text-primary);font:600 var(--v7-type-subhead)/1.25 var(--v7-sans);}

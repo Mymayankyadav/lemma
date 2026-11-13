@@ -42,12 +42,6 @@ export function loggedCaption(minutes:number):string{
 export const WEEK_TITLE_MIN_WIDTH=600;
 export const weekGlyphMinHeight=28;
 export const showWeekGlyph=(heightPx:number)=>heightPx>=weekGlyphMinHeight;
-/** V42 (v7 UX audit r3): a week block on a phone shows its title's first two words, one per line. */
-export function weekShortTitle(title:string):[string]|[string,string]{
- const words=title.trim().split(/\s+/).filter(word=>/[\p{L}\p{N}]/u.test(word));
- if(!words.length)return [title.trim()||'Study'];
- return words.length===1?[words[0]]:[words[0],words[1]];
-}
 /** PA7/CA4: runs of empty days in Agenda become one line ("Thu 12 – Sat 14 Nov · Nothing planned · Add"). */
 export function collapseEmptyRuns(days:readonly {day:string;empty:boolean}[]):{from:string;to:string;empty:boolean}[]{
  const out:{from:string;to:string;empty:boolean}[]=[];

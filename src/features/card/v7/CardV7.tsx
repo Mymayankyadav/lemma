@@ -24,7 +24,7 @@ import '../../cards/v7/cards.css';
 const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
 
 /** PLAN §6.11 Card detail: the card as in a review, Memory (three stats over a real recall chart), History, notes for the tutor,
- *  and a sticky bar: "Review now" when the card is due, and "Edit card" (V38). */
+ *  and "Edit card" / "Pause" in a sticky bar. */
 export default function CardV7(){
  const {no='0'}=useParams(),number=Number(no),query=useCard(number),projects=useProjects(),settings=useSettings(),notify=useToast(),navigate=useNavigate();
  const update=useUpdateNote(),status=useSetNoteStatus(),add=useAddComment(),dismiss=useDismissComment();
@@ -37,7 +37,6 @@ export default function CardV7(){
  if(query.isError||!note)return <main id="main-content" className="v7-page v7-learn" aria-label="Card"><DetailHeader title="Card" back="/cards"/>
   <div role="alert" className="v7-learn-empty"><p>This card could not be loaded.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
  const paused=note.status==='suspended';
- const due=!paused&&!!card&&!!card.due&&Date.parse(card.due)<=now;
  const recall=recallNow(card,settings.data,now),target=settings.data?.desiredRetention??.9;
  const intervals=new Map(series?.dots.map(dot=>[dot.at,dot.intervalDays])??[]);
  async function setNoteStatus(next:'active'|'suspended'|'deleted'){
@@ -102,11 +101,9 @@ export default function CardV7(){
    <label className="v7-field-group"><span>Note for your tutor</span><textarea className="v7-field" rows={2} value={message} onChange={event=>setMessage(event.target.value)} placeholder="What is unclear or wrong on this card?"/></label>
    <Button small loading={add.isPending} disabled={!message.trim()} onClick={()=>{void comment();}}>Save note</Button>
   </section>
-  {/* V38 (v7 UX audit r3): the pinned primary is "Review now" when the card is due (its path's round, which includes it);
-      editing is a secondary action, and Pause / Resume live in the ⋯ menu. */}
-  <div className={'v7-learn-bar'+(due?'':' v7-learn-bar-single')} role="group" aria-label="Card actions">
-   {due&&<Link className="v7-button v7-primary" to={'/review?path='+encodeURIComponent(note.projectSlug)}><span>Review now</span></Link>}
-   <Button onClick={()=>setEditing(true)}>Edit card</Button>
+  <div className="v7-learn-bar" role="group" aria-label="Card actions">
+   <Button variant="primary" onClick={()=>setEditing(true)}>Edit card</Button>
+   <Button loading={status.isPending} onClick={()=>{void setNoteStatus(paused?'active':'suspended');}}>{paused?'Resume':'Pause'}</Button>
   </div>
   <ActionSheet open={more} onClose={()=>setMore(false)} title="This card" label="Card actions" items={[
    {label:paused?'Resume card':'Pause card',hint:paused?'Bring it back into reviews':'Keep it out of reviews until you resume',icon:paused?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>,onClick:()=>{void setNoteStatus(paused?'active':'suspended');}},

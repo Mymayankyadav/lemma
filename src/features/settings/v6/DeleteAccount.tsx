@@ -8,8 +8,7 @@ export const DELETE_CONFIRMATION='DELETE MY ACCOUNT';
 export function canDeleteAccount(confirm:string,exported:boolean,busy:boolean,mode:string){
  return mode==='live'&&!busy&&exported&&confirm===DELETE_CONFIRMATION;
 }
-/** V43: the deletion request, shared by this (v6) section and the v7 Data and account sheet. Backend owns all deletion. */
-export function useAccountDeletion(){
+export default function DeleteAccount({onExport}:{onExport:()=>void}){
  const mode=getMode(),navigate=useNavigate(),notify=useToast();
  const [confirmation,setConfirmation]=useState('');
  const [exported,setExported]=useState(false);
@@ -32,10 +31,6 @@ export function useAccountDeletion(){
    setError(e instanceof Error?e.message:'Account deletion could not be verified');
   }finally{setBusy(false)}
  }
- return {mode,confirmation,setConfirmation,exported,setExported,busy,error,requestDeletion,allowed:canDeleteAccount(confirmation,exported,busy,mode)};
-}
-export default function DeleteAccount({onExport}:{onExport:()=>void}){
- const {mode,confirmation,setConfirmation,exported,setExported,busy,error,requestDeletion}=useAccountDeletion();
  return <section aria-label="Delete account" className="mt-5 border-t border-edge pt-4">
   <h3 className="text-body font-semibold text-[var(--danger)]">Delete account</h3>
   <p className="mt-2 text-label text-ink-2">
