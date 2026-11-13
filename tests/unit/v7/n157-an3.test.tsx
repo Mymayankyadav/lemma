@@ -37,7 +37,7 @@ describe('AN3 · the header ℓ is the sync light', () => {
     expect(syncState(true, 2, 0)).toBe('syncing');
     expect(syncState(true, 0, 1)).toBe('syncing');
     expect(syncState(false, 3, 1)).toBe('offline');
-    expect(source('src/app/v7/V7Shell.tsx')).toContain('<SyncMark/>');
+    expect(source('src/app/v7/V7Shell.tsx')).toContain('<SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>');
     const css = source('src/app/v7/shell.css');
     expect(css).toContain('.v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:300ms;}');
     expect(css).toContain('.v7-sync-mark[data-sync="offline"] svg path {fill:none;');
@@ -46,7 +46,7 @@ describe('AN3 · the header ℓ is the sync light', () => {
     Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
     const host = document.createElement('div'); document.body.append(host);
     const root = createRoot(host), client = new QueryClient();
-    await act(async () => root.render(<QueryClientProvider client={client}><SyncMark/></QueryClientProvider>));
+    await act(async () => root.render(<QueryClientProvider client={client}><SyncMark><span className="v7-hub-mark"/></SyncMark></QueryClientProvider>));
     const mark = () => host.querySelector('.v7-sync-mark')!;
     expect(mark().getAttribute('data-sync')).toBe('synced');
     expect(mark().querySelector('[role="status"]')!.textContent).toBe('');

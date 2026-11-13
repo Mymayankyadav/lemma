@@ -756,6 +756,21 @@
    "budget": 4096,
    "use": "Quick Settings tile glyph (capture), monochrome",
    "generated": "committed"
+  },
+  {
+   "path": "docs/release/android-release.png",
+   "source": "the app (Today, example workspace, fixed clock)",
+   "generator": "scripts/v7/scene-camera.mjs",
+   "size": [
+    2400,
+    1260
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 400000,
+   "use": "Android release page image (A5′)",
+   "generated": "committed"
   }
  ]
 }

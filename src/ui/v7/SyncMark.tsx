@@ -1,5 +1,5 @@
 import {useIsFetching, useIsMutating} from '@tanstack/react-query';
-import {EllMark} from './marks';
+import type {ReactNode} from 'react';
 import {useOnline} from './savedCopy';
 
 /**
@@ -17,10 +17,11 @@ const LABEL: Record<SyncState, string> = {
   syncing: 'Syncing',
   offline: 'Offline: working from your notebook',
 };
-export function SyncMark({size = 18}: {size?: number}) {
+/** Wraps the header's ℓ (`children`, the `.v7-hub-mark`); the ring and the hollow state are drawn from here. */
+export function SyncMark({children}: {children: ReactNode}) {
   const state = syncState(useOnline(), useIsFetching(), useIsMutating());
-  return <span className="v7-hub-mark v7-sync-mark" data-sync={state} title={LABEL[state]}>
-    <EllMark size={size}/>
+  return <span className="v7-sync-mark" data-sync={state} title={LABEL[state]}>
+    {children}
     <span className="v7-sr-only" role="status">{state === 'offline' ? LABEL.offline : ''}</span>
   </span>;
 }

@@ -145,7 +145,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] `assets.manifest.json` and the asset lint in `postbuild` (wiring it into CI is an Owner `rules:` PR) — N137
 - [x] Android colours generated from `design-tokens.json` — N137
 - [x] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(E23)* the ∎ in the themed layer — N157
-- [ ] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera is open (builds on N133's `scripts/v7/install-shots.mjs`)
+- [x] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera in N157 (`scripts/v7/scene-camera.mjs`)
 
 ---
 
@@ -172,7 +172,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### A5′ · Share and release pages — `04` §8
 
-- [ ] Release page per APK (plain words, the APK, one image)
+- [ ] Release page per APK (plain words, the APK, one image) — the notes (`scripts/release/android-notes.mjs`) and the image (`docs/release/android-release.png`) are in N157; *(needs an Owner `rules:` PR)* to use them in `.github/workflows/android.yml`
 - [x] "Share the page" images: Day closed, the week page, a finished path — N131 (#1364)
 
 A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N127, N128): the illustrated set stays and G2 refines it.
