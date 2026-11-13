@@ -127,6 +127,20 @@
       "mcpPath": "supabase/functions/mcp/tools/study.ts",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "series_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tasks/live.ts (read); recurrence written only by task_series_command and lemma_run_task_series",
+      "mcpPath": "MCP get(tasks); written only by registered task_series_command / scheduler",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+    },
+    "occurrence_date": {
+      "classification": "command-managed",
+      "appPath": "src/data/tasks/live.ts (read); recurrence written only by task_series_command and lemma_run_task_series",
+      "mcpPath": "MCP get(tasks); written only by registered task_series_command / scheduler",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
     }
   }
 }

@@ -1686,6 +1686,42 @@ try{
  assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-undo-create'"))[0].n,0);
  mark('notify_holds','create','update','delete');
  await role('service_role');
+ // N160 recurring tasks: MCP lifecycle, replay, stale version, foreign owner and undo.
+ const seriesCreate=command('task_series','create',{patch:{title:'N160 parity drill',freq:'daily'}});
+ const seriesCreated=status(await mcp(seriesCreate),'task_series','create');
+ const seriesId=seriesCreated.changed[0].id;
+ assert.equal(seriesCreated.generated,15,'a daily series fills 15 days');
+ assert.deepEqual(await mcp(seriesCreate),seriesCreated,'N160 series replay');
+ assert.equal((await mcp({...seriesCreate,patch:{title:'Other',freq:'daily'}})).status,'conflict');
+ await role(null);
+ const seriesSkipDate=(await q('select (public.task_series_today($1)+2)::text d',[owner]))[0].d;
+ await role('service_role');
+ const seriesStep=async(operation,version,patch={})=>status(await mcp(command('task_series',operation,{
+  target:{id:seriesId},expectedVersion:version,patch})),'task_series',operation);
+ const seriesEdited=await seriesStep('update',1,{title:'N160 parity drill v2'});
+ assert.equal(seriesEdited.changed[0].version,2);
+ assert.equal((await mcp(command('task_series','update',{target:{id:seriesId},expectedVersion:1,
+  patch:{title:'stale'}}))).status,'conflict','N160 stale series version accepted');
+ const seriesSkipped=await seriesStep('skip',2,{date:seriesSkipDate});
+ const seriesUnskipped=await seriesStep('unskip',3,{date:seriesSkipDate});
+ const seriesStopped=await seriesStep('stop',4);
+ const seriesResumed=await seriesStep('resume',5);
+ assert.equal(seriesResumed.changed[0].version,6);
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('task_series','stop',{
+   target:{id:seriesId},expectedVersion:6,patch:{}}))]),/not found/i);
+ await as(owner);
+ assert.equal((await undo(seriesResumed.actionNo)).undone,seriesResumed.actionNo);
+ assert.equal((await q('select status from public.task_series where id=$1',[seriesId]))[0].status,'stopped');
+ await role('service_role');
+ const seriesOnly=status(await mcp(command('task_series','create',{
+  patch:{title:'N160 undo create',freq:'weekdays'}})),'task_series','create');
+ await as(owner);
+ assert.equal((await undo(seriesOnly.actionNo)).undone,seriesOnly.actionNo);
+ assert.equal((await q('select count(*)::int n from public.task_series where id=$1',[seriesOnly.changed[0].id]))[0].n,0);
+ void seriesSkipped;void seriesUnskipped;void seriesStopped;
+ mark('task_series','create','update','skip','unskip','stop','resume');
+ await role('service_role');
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

@@ -1,5 +1,23 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+
+## N160 Chat connector and app: the Owner's 30-area checklist (Owner task)
+
+Owner task: "Implement these" (the 30-area MCP and app checklist, recorded in `docs/mcp/OWNER_CHECKLIST.md`)
+Stage: Build · Status: open · Needs: — · Assigned: chat-73194#k4x9
+Done = every one of the 30 areas of `docs/mcp/capability-map.json` is `supported`, each with a test, and the map test fails if one is not. Every action uses the app's rules (the same command functions), shows in the app after it runs, detects conflicting edits (`expectedVersion`) and undoes where the app can; device permission prompts stay on the device. Delivered by the PR that added this item: the map and its test (area 1 started), recurring tasks end to end (area 4) and the background scheduler for them (area 30, first half); see `docs/current/N160.md`. Still open, one cluster per later PR (the first of them splits this item into these sub-items):
+- N160.2 areas 5: `get what=calendar_overlaps` for a proposed block, with move, resize and cancel proved through the `study` tool.
+- N160.3 areas 7, 8, 30: a `period_plans` resource that plans a week or month from deadlines, working hours, breaks and goals, previews before writing, and replans missed tasks; a verified background run for it and for reminders.
+- N160.4 areas 2, 24, 27: `get what=today`, `what=progress`, `what=export`, and redo of an undone action.
+- N160.5 area 13: split, void and restore of a logged interval, the same on the Time log screen.
+- N160.6 areas 17, 21: move, suspend, restore and tag a card; upload a file attached in chat as a source of a Path.
+- N160.7 areas 26, 29: test notification, upcoming reminders, connection health, disconnect and account actions, each needing a repeated `confirm` token.
+- N160.8 area 28: a `device_commands` resource (select a device, open a screen or record, timer controls) that the app runs and confirms back with `delivered` and `applied` or `rejected`.
+- N160.9 area 1: instructions and descriptions for every area inside the 15,000-character `tools/list` budget, and selftest and smoke checks of the deployed connector against `TOOL_NAMES`.
+Tests: `tests/mcp/sql/task-series.mjs`, `tests/mcp/sql/parity.mjs` (the `task_series` round trip), `tests/unit/mcp/capability-map.test.ts`; each later cluster adds its own SQL and unit tests, existing suites unchanged.
+Scope: `supabase/migrations/` (additive only), `supabase/functions/{mcp,notify}/**` (additions), `src/data/**`, `src/platform/**` and the screens named by each cluster, `docs/mcp/**`, `docs/v6/capability-registry/**`, tests, `docs/current/N160*.md`.
+Not: replacing an existing command function without a `Replaces function:` claim, new MCP tools beyond the 24 unless a cluster says so, new dependencies, flag defaults, Android native code, the push service.
+
 ## N156 v7 UX audit r3 · one meaning per glyph, one line weight (IC1, IC2, IC3, IC5) (Owner task)
 
 Owner task: "Now you're the only agent working on the task so whatever is left you have to do it"

@@ -1,0 +1,622 @@
+{
+ "version": 1,
+ "source": "Owner checklist of 13 Nov 2026 (Owner task N160): the 30 areas the chat connector must cover",
+ "rules": "A `supported` area has every action reachable through the connector today and lists the registered resources and operations that prove it. A `partial` or `missing` area names its gap and the NEXT.md sub-item that closes it. tests/unit/mcp/capability-map.test.ts checks every resource, operation and tool named here against the registry and server.ts, and fails when a registered resource belongs to no area.",
+ "areas": [
+  {
+   "n": 1,
+   "title": "Complete MCP access",
+   "status": "partial",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [],
+   "gap": "The map and its test exist (N160); every other area below is routed through the generic study/get tools, and the sub-items add the actions that have no registered command yet.",
+   "item": "N160.9"
+  },
+  {
+   "n": 2,
+   "title": "Read current context (Today, tasks, calendar, timer, deadlines, reviews, availability)",
+   "status": "partial",
+   "tools": [
+    "resume",
+    "get",
+    "review"
+   ],
+   "covers": [
+    {
+     "resource": "tasks",
+     "operations": [
+      "create"
+     ]
+    },
+    {
+     "resource": "calendar_blocks",
+     "operations": [
+      "create"
+     ]
+    },
+    {
+     "resource": "study_entries",
+     "operations": [
+      "start"
+     ]
+    },
+    {
+     "resource": "deadlines",
+     "operations": [
+      "create"
+     ]
+    }
+   ],
+   "gap": "No single read returns Today with the running timer and free time between blocks; callers must assemble it from several get calls.",
+   "item": "N160.4"
+  },
+  {
+   "n": 3,
+   "title": "Manage tasks",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "tasks",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    }
+   ],
+   "note": "Complete, reopen and cancel are update patches of status; prioritize is priority; reorder is position."
+  },
+  {
+   "n": 4,
+   "title": "Recurring tasks",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "task_series",
+     "operations": [
+      "create",
+      "update",
+      "skip",
+      "unskip",
+      "stop",
+      "resume"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "title": "Manage calendar blocks",
+   "status": "partial",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "calendar_blocks",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    },
+    {
+     "resource": "overlap_acknowledgements",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    }
+   ],
+   "note": "Move, resize and cancel are update patches (starts_at, ends_at, status).",
+   "gap": "There is no read that lists the overlaps a proposed block would create.",
+   "item": "N160.2"
+  },
+  {
+   "n": 6,
+   "title": "Plan my day",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "day_plans",
+     "operations": [
+      "create",
+      "update",
+      "preview",
+      "commit",
+      "commit_placements"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 7,
+   "title": "Plan my week and month",
+   "status": "missing",
+   "tools": [],
+   "covers": [],
+   "gap": "Only a single day can be planned; nothing distributes work across dates from deadlines, working hours and goals.",
+   "item": "N160.3"
+  },
+  {
+   "n": 8,
+   "title": "Replan unfinished work",
+   "status": "partial",
+   "tools": [
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "day_plans",
+     "operations": [
+      "close",
+      "reopen"
+     ]
+    }
+   ],
+   "gap": "Carry-over exists for one day; there is no command that reschedules missed tasks or adjusts a period when availability changes.",
+   "item": "N160.3"
+  },
+  {
+   "n": 9,
+   "title": "Manage deadlines",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "deadlines",
+     "operations": [
+      "create",
+      "update",
+      "complete",
+      "reopen",
+      "cancel",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 10,
+   "title": "Manage study goals",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_goals",
+     "operations": [
+      "create",
+      "update",
+      "archive",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 11,
+   "title": "Control timers",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_entries",
+     "operations": [
+      "start",
+      "pause",
+      "resume",
+      "break",
+      "next_phase",
+      "save",
+      "discard",
+      "take_lease",
+      "exclude_minutes"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 12,
+   "title": "Manage timer presets",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "presets",
+     "operations": [
+      "create",
+      "update",
+      "reorder",
+      "archive",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 13,
+   "title": "Manage time logs",
+   "status": "partial",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_intervals",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    },
+    {
+     "resource": "study_events",
+     "operations": [
+      "record",
+      "edit",
+      "void",
+      "restore"
+     ]
+    }
+   ],
+   "gap": "Splitting one logged interval into two, and voiding or restoring a logged interval (as study events can be), have no command.",
+   "item": "N160.5"
+  },
+  {
+   "n": 14,
+   "title": "Quick capture",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "parked_thoughts",
+     "operations": [
+      "create",
+      "edit",
+      "dismiss",
+      "reopen",
+      "delete",
+      "convert_to_task"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 15,
+   "title": "Daily routines",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "day_plans",
+     "operations": [
+      "create",
+      "update",
+      "close",
+      "reopen"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 16,
+   "title": "Subjects, Paths and checkpoints",
+   "status": "supported",
+   "tools": [
+    "create_project",
+    "add",
+    "edit",
+    "delete",
+    "get",
+    "undo"
+   ],
+   "covers": []
+  },
+  {
+   "n": 17,
+   "title": "Manage cards",
+   "status": "partial",
+   "tools": [
+    "add",
+    "edit",
+    "delete",
+    "propose_cards",
+    "propose_card_edits",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "card_schedule",
+     "operations": [
+      "reschedule",
+      "reset"
+     ]
+    }
+   ],
+   "gap": "Suspend, restore and tag are edits through the generic edit tool; moving a card between decks has no checked command.",
+   "item": "N160.6"
+  },
+  {
+   "n": 18,
+   "title": "Control review sessions",
+   "status": "supported",
+   "tools": [
+    "review",
+    "grade",
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "review_runs",
+     "operations": [
+      "start",
+      "pause",
+      "resume",
+      "advance",
+      "abandon",
+      "complete"
+     ]
+    },
+    {
+     "resource": "review_corrections",
+     "operations": [
+      "correct",
+      "void"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 19,
+   "title": "Manage practice",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "practice_topics",
+     "operations": [
+      "create",
+      "update",
+      "archive",
+      "restore",
+      "delete",
+      "record",
+      "void_event"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 20,
+   "title": "Manage the Atlas",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "concepts",
+     "operations": [
+      "create",
+      "update",
+      "reparent",
+      "link",
+      "unlink",
+      "preview_merge",
+      "merge"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 21,
+   "title": "Manage sources",
+   "status": "partial",
+   "tools": [
+    "read_pages",
+    "save_pages",
+    "search",
+    "get"
+   ],
+   "covers": [],
+   "gap": "Pages can be read, searched and corrected, but a file attached in chat cannot be uploaded and attached to a Path.",
+   "item": "N160.6"
+  },
+  {
+   "n": 22,
+   "title": "Manage proposals",
+   "status": "supported",
+   "tools": [
+    "proposals",
+    "decide",
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "proposal_drafts",
+     "operations": [
+      "create",
+      "save",
+      "submit",
+      "discard"
+     ]
+    },
+    {
+     "resource": "proposals",
+     "operations": [
+      "withdraw",
+      "revise",
+      "reopen"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 23,
+   "title": "Manage tutor sessions",
+   "status": "supported",
+   "tools": [
+    "start_session",
+    "save_progress",
+    "end_session",
+    "resume",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "session_event_corrections",
+     "operations": [
+      "correct",
+      "void"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 24,
+   "title": "Read progress reports",
+   "status": "missing",
+   "tools": [],
+   "covers": [],
+   "gap": "The insights RPC behind the Progress screen is not reachable from the connector.",
+   "item": "N160.4"
+  },
+  {
+   "n": 25,
+   "title": "Change settings",
+   "status": "supported",
+   "tools": [
+    "edit",
+    "get",
+    "set_prompt",
+    "undo"
+   ],
+   "covers": []
+  },
+  {
+   "n": 26,
+   "title": "Manage notifications",
+   "status": "partial",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "push_devices",
+     "operations": [
+      "rename",
+      "disable",
+      "restore"
+     ]
+    },
+    {
+     "resource": "notify_holds",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    }
+   ],
+   "gap": "No command sends a test notification or lists upcoming reminders.",
+   "item": "N160.7"
+  },
+  {
+   "n": 27,
+   "title": "History, undo and exports",
+   "status": "partial",
+   "tools": [
+    "history",
+    "undo",
+    "get"
+   ],
+   "covers": [],
+   "gap": "The owner export (lemma_export_page) is not reachable from the connector, and redo of an undone action has no tool.",
+   "item": "N160.4"
+  },
+  {
+   "n": 28,
+   "title": "Control the connected app",
+   "status": "missing",
+   "tools": [],
+   "covers": [],
+   "gap": "No table or command lets chat select a device, open a screen or record, or sync timer controls with delivery confirmation.",
+   "item": "N160.8"
+  },
+  {
+   "n": 29,
+   "title": "Account and connection controls",
+   "status": "missing",
+   "tools": [],
+   "covers": [],
+   "gap": "Connection health, disconnecting the connector and account actions are not reachable, and none yet asks for explicit confirmation.",
+   "item": "N160.7"
+  },
+  {
+   "n": 30,
+   "title": "Background scheduling",
+   "status": "partial",
+   "tools": [
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "task_series",
+     "operations": [
+      "create"
+     ]
+    }
+   ],
+   "gap": "Recurring tasks are generated by a database job (lemma_run_task_series, every 10 minutes, no duplicates). Reminders and week/month plans still need a verified background run.",
+   "item": "N160.3"
+  }
+ ]
+}

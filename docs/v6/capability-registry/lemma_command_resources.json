@@ -493,6 +493,39 @@
           "until"
         ]
       }
+    },
+    {
+      "resource": "task_series",
+      "command_fn": "task_series_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "skip",
+          "unskip",
+          "stop",
+          "resume"
+        ],
+        "fields": [
+          "title",
+          "body",
+          "subject_id",
+          "project_id",
+          "checkpoint_id",
+          "estimate_minutes",
+          "priority",
+          "freq",
+          "interval_n",
+          "by_weekday",
+          "by_monthday",
+          "start_date",
+          "until_date",
+          "skipped_dates",
+          "status",
+          "materialized_through"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

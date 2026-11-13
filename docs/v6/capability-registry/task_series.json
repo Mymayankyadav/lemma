@@ -1,0 +1,160 @@
+{
+  "table": "task_series",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "title": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "body": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "subject_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "checkpoint_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "estimate_minutes": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "priority": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "freq": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "interval_n": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "by_weekday": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "by_monthday": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "start_date": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "until_date": {
+      "classification": "owner-editable",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "skipped_dates": {
+      "classification": "command-managed",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "stopped_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "materialized_through": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/tasks (read); owner-visible through generated tasks",
+      "mcpPath": "MCP get(task_series); registered task_series_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "account purge via owner cascade; versioned domain undo (task_series is a registered undo table)"
+    }
+  }
+}
