@@ -20,7 +20,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 |---|:-:|:-:|---|
 | U0 Truth | 20 | 0 | none (E1) |
 | G2 Illustration, motion, icon polish | 9 | 5 | E19, E21, E22 for some |
-| U2 Resilience (= AN2) | 4 | 5 | E12; device check 1 |
+| U2 Resilience (= AN2) | 5 | 4 | E12; device check 1 |
 | AN1 Make the built app right | 6 | 4 | E23, a device |
 | G0 Refresh what is stale | 2 | 0 | none |
 | AN3 Feel | 2 | 4 | E17 |
@@ -87,7 +87,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **V11** Dock at large text: icons, with only the selected tab's label shown — N134
 - [x] **V11** Gutters (calendar times, tiles; chart gutters were N125) sized from their content; rows that wrap (Focus, segmented controls: a menu above three options) — N134
 - [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
-- [ ] V36 The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days)
+- [x] **V36** The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days) — N138
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
 - [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
 - [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand

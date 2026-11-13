@@ -15,7 +15,8 @@
 :where(html[data-v7]) .v7-cal-cell[aria-pressed="true"] > span {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
 :where(html[data-v7]) .v7-cal-cell > i {height:12px;display:flex;gap:1px;}
 :where(html[data-v7]) .v7-cal-cell > i .v7-mark-glyph,:where(html[data-v7]) .v7-cal-cell > i .v7-mark-glyph > svg,:where(html[data-v7]) .v7-mo-grid i .v7-mark-glyph,:where(html[data-v7]) .v7-mo-grid i .v7-mark-glyph > svg {width:12px;height:12px;}
- :where(html[data-v7]) .v7-cal-lane {display:flex;gap:var(--v7-space-2);overflow-x:auto;padding-bottom:var(--v7-space-1);}
+ /* V36: a scroller clips both ways, so the lane leaves room for its badges' invisible 44 px hit areas (kit-system.css). */
+ :where(html[data-v7]) .v7-cal-lane {--v7-lane-room:max(0px,calc(var(--v7-touch) / 2 - 12px));display:flex;gap:var(--v7-space-2);overflow-x:auto;padding:var(--v7-lane-room) 4px calc(var(--v7-lane-room) + var(--v7-space-1));margin:calc(-1 * var(--v7-lane-room)) -4px;}
  :where(html[data-v7]) .v7-cal-lane > * {flex:none;text-decoration:none;}
  :where(html[data-v7]) .v7-cal-capacity {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-cal-capacity strong {color:var(--v7-role-text-primary);font-weight:600;}
@@ -127,7 +128,7 @@
  :where(html[data-v7]) .v7-ag-day {display:grid;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-ag-heading {position:sticky;top:0;z-index:2;margin:0;padding:var(--v7-space-2) var(--v7-space-1);background:var(--v7-role-surface-page);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-ag-empty {margin:0;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
-:where(html[data-v7]) .v7-ag-empty button {border:0;background:transparent;color:var(--v7-role-link-fg);font-weight:600;text-decoration:underline;min-height:var(--v7-touch);}
+:where(html[data-v7]) .v7-ag-empty button {border:0;background:transparent;color:var(--v7-role-link-fg);font-weight:600;text-decoration:underline;min-height:var(--v7-touch);min-width:var(--v7-touch);}
  :where(html[data-v7]) .v7-ag ul,:where(html[data-v7]) .v7-ag-list {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-ag-row {position:relative;display:grid;grid-template-columns:92px minmax(0,1fr);gap:var(--v7-space-3);padding:var(--v7-space-3) var(--v7-space-3) var(--v7-space-3) var(--v7-space-4);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-raised);}
 :where(html[data-v7]) .v7-ag-row::before {content:"";position:absolute;inset-block:var(--v7-space-2);left:var(--v7-space-2);width:4px;border-radius:var(--v7-round);background:var(--v7-subject,var(--v7-role-border-default));}
@@ -166,7 +167,9 @@
  :where(html[data-v7]) .v7-cal-suggested[data-kind="draft"] > div {border-color:var(--v7-role-focus-ring);}
  :where(html[data-v7]) .v7-cal-suggest {display:flex;align-items:center;gap:var(--v7-space-2);min-height:var(--v7-touch);padding:0 var(--v7-space-1) 0 var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cal-suggest > p {flex:1;min-width:0;margin:0;font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);color:var(--v7-role-text-primary);}
- :where(html[data-v7]) .v7-cal-suggest .v7-link-button {color:var(--v7-role-link-fg);min-height:auto;}
+ :where(html[data-v7]) .v7-cal-suggest .v7-link-button {position:relative;z-index:1;color:var(--v7-role-link-fg);min-height:auto;}
+ /* V36: "Adjust" keeps the banner's one 44 px row; its hit area fills the row's height invisibly. */
+ :where(html[data-v7]) .v7-cal-suggest .v7-link-button::after {content:"";position:absolute;left:-4px;right:-4px;top:50%;height:max(100%,var(--v7-touch));transform:translateY(-50%);}
 
  /* The v7 block sheet and planner sheet bodies. */
  :where(html[data-v7]) .v7-bs {display:grid;gap:var(--v7-space-5);}

@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N138 v7 UX audit r3: every control takes a 44 px tap (U2 · V36) (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = at 360 and 390 px the six kinds of control the audit measured under 44 px (almanac cells, "Adjust", "1 overdue · Triage", "14 due" on path cards, the narrow hub tabs, the time-log days) and Agenda's "Add" take a tap 21 px from their centre in every direction (48 px in the app where the hit area follows the touch token), the almanac is one touch target that picks the day under the finger, and the time log names its week above a full-width day strip; ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` and recorded in `docs/current/N138.md`.
+Tests: `tests/unit/v7/n138-touch.test.ts`, `tests/e2e/v7-n138-touch.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/{Chart.tsx,chart.css,kit-system.css}`, `src/app/v7/shell.css`, `src/features/time-log/v7/{TimeLogV7.tsx,log.css,weekLabel.ts}`, `src/features/calendar/v7/calendar.css`, `src/features/projects/v7/paths.css`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N138.md`.
+Not: Calendar Week's day headers and blocks at 360 px (a layout of their own, U1/U3), the Inbox list's checkboxes, the design lint's every-scene pass, new dependencies.
+
 ## N151 v7 UX audit r3 · AN3 offline made visible: "as of HH:MM" on Today and the Review hub (Owner task)
 
 Owner task: "Work on the v7 audit items the other agent is not doing"
@@ -13,6 +22,7 @@ Done = when Today's or the Review hub's numbers come from the saved copy rather 
 Tests: `tests/unit/v7/n151-as-of.test.tsx`, `tests/e2e/v7-n151-as-of.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/{savedCopy.ts,AsOf.tsx,Status.tsx}` (a `saved` meta chip), `src/features/home/v7/V7Today.tsx`, `src/features/review/v7/ReviewHubV7.tsx`, tests, `docs/current/N151.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (the AN3 offline line).
 Not: the header ℓ sync light, wiring `src/lib/offline-cache.ts` (a snapshot kept across launches), other screens, server changes, new dependencies.
+
 ## N136 v7 UX audit r3: launch and back feel like Android (AN3 · AW7, AW8) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
