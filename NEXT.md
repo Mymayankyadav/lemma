@@ -5,9 +5,9 @@
 
 Owner task: "The bottom bar is not aligned. And in second buttons are not visible" … "This one just comes in a way maybe it could have better if it was part of the dock in some way." … "In peek hide those buttons or lower the dock further so they are not visible as they make it look broken"
 Stage: Harden · Status: open · Needs: — · Assigned: chat-73194#k4x9
-Done = at 360 and 390 px, at normal and large text: Today's Continue cards share one bottom edge and one meter line; the Atlas concept sheet's peek shows only whole rows (no buttons) and never clips its content, and both buttons show above the tab bar when it is pulled up; on a phone the Calendar Day ruler is part of the dock (resting on the tab bar, as wide as it) and the page leaves the day's last hour clear; recorded in `docs/current/N161.md`.
+Done = at 360 and 390 px, at normal and large text: Today's Continue cards share one bottom edge and one meter line; the Atlas concept sheet's peek shows only whole rows (no buttons) and never clips its content, and both buttons show above the tab bar when it is pulled up; on a phone the Calendar Day ruler is part of the dock (resting on the tab bar, as wide as it, at most 72 px tall) and the page leaves the day's last hour clear; Today's ruler labels never overlap and stay inside the card; recorded in `docs/current/N161.md`.
 Tests: `tests/e2e/v7-n161-layout.spec.ts` (fails before the change), `tests/e2e/v7-atlas.spec.ts` and the other existing suites unchanged.
-Scope: `src/features/home/v7/{today.css,ruler.css}`, `src/features/atlas/v7/{AtlasV7.tsx,atlas.css}`, `src/features/calendar/v7/{V7CalendarDay.tsx,useDockedRuler.ts}`, tests, `docs/current/N161.md`.
+Scope: `src/features/home/v7/{today.css,ruler.css,Ruler.tsx}`, `src/features/atlas/v7/{AtlasV7.tsx,atlas.css}`, `src/features/calendar/v7/{V7CalendarDay.tsx,useDockedRuler.ts}`, tests, `docs/current/N161.md`.
 Not: the dock itself (`src/app/v7/**`), wide-screen layouts, other screens, server changes, new dependencies.
 
 ## N160 Chat connector and app: the Owner's 30-area checklist, last open part (Owner task)

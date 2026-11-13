@@ -15,8 +15,14 @@
    border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-bottom:0;border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;
    background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);clip-path:inset(-32px -32px 0 -32px);}
   html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]) .v7-cal-scrubber {--v7-dock-top:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom));}
-  /* The labels under the ticks grow with the text size, so the space under the track does too. */
-  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track {margin-bottom:calc(var(--v7-type-caption) + 14px);}
+  /* Compact in the dock: a caption-sized title row, a thinner track (the 44 px touch area stays on the input) and labels
+     whose space grows with the text size. */
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber {padding-top:var(--v7-space-1);}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-control {gap:0;}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-control > label {font-size:var(--v7-type-caption);line-height:1.3;}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track {height:26px;margin:0 20px calc(var(--v7-type-caption) + 8px);}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track input::-webkit-slider-thumb {height:22px;margin-top:-10px;}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track input::-moz-range-thumb {height:18px;}
   html[data-v7] .v7-shell:not([data-immersive="true"]):has(.v7-cal-scrubber) > .v7-dock {border-top-left-radius:0;border-top-right-radius:0;}
   html[data-v7]:has(dialog.v7-sheet[open]) .v7-cal-scrubber {visibility:hidden;}
  }
@@ -35,6 +41,9 @@
  :where(html[data-v7]) .v7-ruler-tick {position:absolute;bottom:0;width:var(--v7-hairline);height:8px;background:var(--v7-role-border-default);}
  :where(html[data-v7]) .v7-ruler-tick[data-hour] {height:14px;background:var(--v7-role-text-tertiary);}
  :where(html[data-v7]) .v7-ruler-label {position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);color:var(--v7-role-text-tertiary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;white-space:nowrap;}
+ /* N161: the first and last labels sit inside the card instead of half outside it. */
+ :where(html[data-v7]) .v7-ruler-tick[data-edge="start"] .v7-ruler-label {left:0;transform:none;}
+ :where(html[data-v7]) .v7-ruler-tick[data-edge="end"] .v7-ruler-label {left:auto;right:0;transform:none;}
  :where(html[data-v7]) .v7-ruler-block {position:absolute;bottom:18px;height:20px;border-radius:var(--v7-radius-xs);background:var(--v7-subject,var(--v7-role-viz-neutral));}
  :where(html[data-v7]) .v7-ruler-block[data-past] {background:var(--v7-role-border-default);}
  :where(html[data-v7]) .v7-ruler-needle {position:absolute;top:0;bottom:-4px;width:var(--v7-touch);margin-left:calc(var(--v7-touch) / -2);display:grid;justify-items:center;outline-offset:2px;}

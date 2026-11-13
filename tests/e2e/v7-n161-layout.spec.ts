@@ -73,11 +73,29 @@ for(const [width,scale] of sizes){
   const labels=await ruler.locator(".v7-ruler-label").evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().bottom));
   expect(labels.length).toBeGreaterThan(0);
   expect(Math.max(...labels)).toBeLessThanOrEqual(r.y+r.height+0.5);
+  // Compact: at most 72 px tall at normal text, and the slider keeps a 44 px touch area.
+  if(scale===1)expect(r.height).toBeLessThanOrEqual(72);
+  expect((await page.getByRole("slider",{name:"Browse day"}).boundingBox())!.height).toBeGreaterThanOrEqual(44);
   // It opens on now.
   await expect(page.getByRole("slider",{name:"Browse day"})).toHaveAttribute("aria-valuetext","23:35");
   // Scrolled to the end, the whole day grid is above the ruler.
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
   const grid=(await page.locator(".v7-cal-grid").boundingBox())!,after=(await ruler.boundingBox())!;
   expect(grid.y+grid.height).toBeLessThanOrEqual(after.y+1);
+ });
+}
+
+for(const [width,scale] of sizes){
+ test("Today's ruler labels never overlap and stay inside the card at "+width+" px, text x"+scale,async({page})=>{
+  await open(page,"",width,scale);
+  const card=page.getByRole("region",{name:"Today",exact:true});
+  await expect(card.locator(".v7-ruler")).toBeVisible();
+  const box=(await card.boundingBox())!;
+  const labels=await card.locator(".v7-ruler-label").evaluateAll(nodes=>nodes.map(node=>{const r=node.getBoundingClientRect();return {left:r.left,right:r.right,text:node.textContent}}));
+  expect(labels.length).toBeGreaterThanOrEqual(3);
+  labels.sort((a,b)=>a.left-b.left);
+  for(let i=1;i<labels.length;i++)expect(labels[i].left,labels[i-1].text+" runs into "+labels[i].text).toBeGreaterThanOrEqual(labels[i-1].right+4);
+  expect(labels[0].left).toBeGreaterThanOrEqual(box.x);
+  expect(labels[labels.length-1].right).toBeLessThanOrEqual(box.x+box.width);
  });
 }
