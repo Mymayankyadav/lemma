@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N136 v7 UX audit r3: launch and back feel like Android (AN3 · AW7, AW8) (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = in the app the splash lifts when the page has drawn (the 800 ms auto-hide stays the cap), the WebView's background is the Day/Night page colour from start and on a theme change, and on Today with nothing open Lemma releases the back gesture so Android plays its back-to-home preview (a sheet or any other screen takes it back; below Android 12 a native fallback still leaves the app running); ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` and recorded in `docs/current/N136.md`.
+Tests: `tests/unit/v7/n136-android-feel.test.ts`, `tests/e2e/v7-n136-back.spec.ts`, `android/app/src/test/java/io/github/mymayankyadav/lemma/BackPolicyTest.java`, existing suites unchanged.
+Scope: `src/platform/start.ts`, `src/platform/links.ts`, `src/platform/splash.ts`, `android/app/src/main/java/io/github/mymayankyadav/lemma/MainActivity.java`, `android/app/src/main/java/io/github/mymayankyadav/lemma/BackPolicy.java`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N136.md`.
+Not: haptics (AW6, decision E17), the "as of" offline chips, edge gesture margins, the back gesture's shrink animation for sheets, new dependencies.
+
 ## N150 Inbox: a key pressed just after the Inbox opens is not lost (bug #1375) (Owner task)
 
 Owner task: "Work on the v7 audit items the other agent is not doing"
@@ -13,6 +22,7 @@ Done = bug #1375 fixed with a regression test, as follows.
 Tests: `tests/unit/v7/n150-inbox-keys.test.tsx`, `tests/e2e/v7-n150-inbox-keys.spec.ts`, existing suites unchanged.
 Scope: `src/features/proposals/v7/{InboxV7.tsx (keyboard only),useInboxKeys.ts,inboxEarlyKeys.ts}`, `src/app/routes.tsx` (one side-effect import), tests, `docs/current/N150.md`.
 Not: InboxV7's pointer handlers, other screens' keys, server changes, new dependencies.
+
 ## N134 v7 UX audit r3: large text holds (U2 · V11) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
