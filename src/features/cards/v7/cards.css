@@ -33,7 +33,9 @@
   @container (max-width: 19em) {:where(html[data-v7]) .v7-card-history {grid-template-columns:auto 1fr;} :where(html[data-v7]) .v7-card-history small {grid-column:1 / -1;text-align:left;}}}
  /* Recall chart. Grade colours follow the review grade dock. */
  :where(html[data-v7]) .v7-recall {position:relative;margin:0;display:grid;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-recall svg {display:block;width:100%;height:auto;aspect-ratio:340 / 180;overflow:visible;}
+ :where(html[data-v7]) .v7-recall svg {display:block;width:100%;max-width:640px;height:auto;overflow:visible;}
+ /* N157 · V08: an empty full-width line the chart measures itself against (the drawing is at most 640 px). */
+ :where(html[data-v7]) .v7-recall-measure {position:absolute;inset:0 0 auto 0;height:0;}
  :where(html[data-v7]) .v7-recall-grid {stroke:var(--v7-role-border-subtle);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-mid {stroke:var(--v7-role-border-default);stroke-width:1;}
  :where(html[data-v7]) .v7-recall-target {stroke:var(--v7-role-text-secondary);stroke-width:1;stroke-dasharray:4 3;}
@@ -44,7 +46,7 @@
  :where(html[data-v7]) :is(.v7-recall-dot,.v7-recall-legend li,.v7-card-history)[data-grade="good"] {--v7-grade:var(--v7-role-status-success);}
  :where(html[data-v7]) :is(.v7-recall-dot,.v7-recall-legend li,.v7-card-history)[data-grade="easy"] {--v7-grade:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-recall-dot {fill:var(--v7-grade);stroke:var(--v7-role-surface-page);stroke-width:2;}
- :where(html[data-v7]) .v7-recall-hits {position:absolute;inset:0 0 auto 0;aspect-ratio:340 / 180;pointer-events:none;}
+ :where(html[data-v7]) .v7-recall-hits {position:absolute;inset:0 auto auto 0;pointer-events:none;}
  /* N153 · V36: RecallChart places and sizes each target (side-by-side, never overlapping); square-ish corners keep a dot
     near a target's corner inside its own hit area. */
  :where(html[data-v7]) .v7-recall-hits button {position:absolute;border:0;border-radius:var(--v7-radius-xs);background:transparent;pointer-events:auto;cursor:pointer;}

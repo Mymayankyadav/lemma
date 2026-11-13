@@ -11,6 +11,8 @@
 :where(html[data-v7] :is(main,section,article,header,ul,ol,li,form,dialog,.v7-sheet-body,.v7-card,[role="group"]) > *) {min-width:0;}
 /* Headings break a word that is wider than its column at a syllable (200% text: "after-noon"), never past the edge. */
 :where(html[data-v7] :is(h1,h2,h3)) {overflow-wrap:break-word;hyphens:auto;}
+/* N157 · V09: any block of prose or mathematics is at most 34 em of its own text wide, at every window width. */
+:where(html[data-v7] main .lemma-math) {max-width:var(--v7-reading);}
 /* A text field is never wider than its column (its default width is about 20 characters of the raised text). */
 :where(html[data-v7] input:not([type="checkbox"],[type="radio"],[type="range"]),html[data-v7] textarea) {max-width:100%;min-width:0;}
 :where(html[data-v7]) body {

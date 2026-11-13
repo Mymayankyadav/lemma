@@ -9,6 +9,7 @@ import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../..
 import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
+import {Margin} from '../../../app/v7/Margin';
 import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
 import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
@@ -141,6 +142,12 @@ export default function V7Path(){
     :{label:'Pause path',hint:'Hide it from Today until you resume',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},
    {label:'Archive path',hint:'You can restore it from Paths',destructive:true,icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
   ]}/></>}/>
+  {/* N157 · U1 S11 (flag v7Margin): the path's sources and its last sessions, beside the page. */}
+  <Margin notes={[
+   ...(data.sources.length?[{title:'Sources',body:<ul>{data.sources.slice(0,6).map(source=><li key={source.id}>{source.short||source.title}{source.pageCount?' · '+source.pageCount+' pages':''}</li>)}</ul>}]:[]),
+   ...(data.sessions.length?[{title:'Last sessions',body:<ul>{[...data.sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,3).map(session=>
+    <li key={session.id}><Link to={'/s/'+encodeURIComponent(slug)+'/'+session.number}>{'Session '+session.number}</Link> · {shortDate(session.startedAt)}</li>)}</ul>}]:[]),
+  ]}/>
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={164} animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>

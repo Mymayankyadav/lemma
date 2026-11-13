@@ -24,6 +24,7 @@ import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
 import {DataAccount} from './DataAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
 // AW3: the app's version and updates, only inside the Android app.
 const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
 
@@ -152,31 +153,50 @@ export default function SettingsV7(){
  const section=sectionOf(params.get('section'));
  const mode=((settings.data?.ui?.mode as Mode|undefined)??readAppearance().mode);
  const systemNight=typeof matchMedia!=='undefined'&&matchMedia('(prefers-color-scheme: dark)').matches;
- if(!section)return <main id="main-content" className="v7-page v7-settings" aria-label="Settings">
-  <HubHeader title="Settings"/>
+ // N157 · U1: from 840 px the index stays on the left and the section opens on the right (the first one when none is chosen).
+ const split=useMinWidth(840);
+ const data=settings.data;
+ const index=(current:Section|null)=><>
   {settings.isPending&&<Skeleton/>}
   {settings.isError&&<div role="alert" className="v7-progress-error"><p>Could not load your settings.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
   {settings.data&&groups.map((group,index)=><ul key={index} className="v7-settings-card">{group.map(item=>{const Icon=icons[item];return <li key={item}>
-   <Link className="v7-settings-row" to={'/settings?section='+item}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
+   <Link className="v7-settings-row" to={'/settings?section='+item} aria-current={item===current?'page':undefined}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
     <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
+ </>;
+ const content=(section:Section)=>!data?<Skeleton/>:<>
+  {section==='appearance'&&<Appearance settings={data}/>}
+  {section==='subjects'&&<Subjects settings={data}/>}
+  {section==='tutor'&&<Tutor settings={data}/>}
+  {section==='study'&&(params.get('advanced')==='1'
+   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
+   :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
+  {section==='planning'&&<PlanningLists settings={data}/>}
+  {section==='reminders'&&<ReminderLists settings={data}/>}
+  {section==='data'&&<>
+   <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>
+   {isNative()&&<div className="v7-settings-body"><Suspense fallback={null}><PhoneAbout/></Suspense></div>}
+  </>}
+ </>;
+ if(split){
+  const shown=section??groups[0][0];
+  return <main id="main-content" className="v7-page v7-settings" data-split="" aria-label="Settings">
+   <HubHeader title="Settings"/>
+   <div className="v7-settings-split">
+    <nav className="v7-settings-index" aria-label="Settings sections">{index(shown)}</nav>
+    <section className="v7-settings-pane" aria-labelledby="v7-settings-pane-title">
+     <h2 id="v7-settings-pane-title" className="v7-settings-pane-title">{sectionTitle[shown]}</h2>
+     {content(shown)}
+    </section>
+   </div>
+  </main>;
+ }
+ if(!section)return <main id="main-content" className="v7-page v7-settings" aria-label="Settings">
+  <HubHeader title="Settings"/>
+  {index(null)}
  </main>;
- const data=settings.data;
  return <main id="main-content" className="v7-page v7-settings" aria-label={sectionTitle[section]}>
   <DetailHeader title={sectionTitle[section]} back="/settings"/>
   <h1 className="v7-learn-title">{sectionTitle[section]}</h1>
-  {!data?<Skeleton/>:<>
-   {section==='appearance'&&<Appearance settings={data}/>}
-   {section==='subjects'&&<Subjects settings={data}/>}
-   {section==='tutor'&&<Tutor settings={data}/>}
-   {section==='study'&&(params.get('advanced')==='1'
-    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
-    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
-   {section==='planning'&&<PlanningLists settings={data}/>}
-   {section==='reminders'&&<ReminderLists settings={data}/>}
-   {section==='data'&&<>
-    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>
-    {isNative()&&<div className="v7-settings-body"><Suspense fallback={null}><PhoneAbout/></Suspense></div>}
-   </>}
-  </>}
+  {content(section)}
  </main>;
 }

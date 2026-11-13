@@ -25,6 +25,10 @@ export const FLAG_DEFAULTS = {
   v7Shell: true,
   /** N131 · A4 the focus orbit (an SVG prototype, plan r3 §7): open-mode sessions trace a ring once a minute; paused and drifted states show on it. */
   focusOrbit: false,
+  /** N157 · U1 S11 the margin: a 292 px notes column beside Path, Checkpoint, Session, Card and Review (a sheet below 1100 px). */
+  v7Margin: false,
+  /** N157 · U1 V09 / U4 S5 Review as an open notebook: from 840 px (and in book posture) question left, answer right. */
+  v7Spread: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

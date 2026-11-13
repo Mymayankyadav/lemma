@@ -5,6 +5,7 @@ import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useCheckpoint,useProject,useSettings} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
+import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
@@ -45,6 +46,13 @@ export default function CheckpointV7(){
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>
+  {/* N157 · U1 S11 (flag v7Margin): sources and pages, prerequisites and the recheck, beside the page. */}
+  <Margin notes={[
+   ...(detail.sourceShort||detail.pages?[{title:'Sources',body:<p><Link to={back+'?tab=sources'}>{detail.sourceShort??'Source'}</Link>{detail.pages?', p. '+detail.pages:''}</p>}]:[]),
+   ...(detail.prereqs.length?[{title:'Before this',body:<ul>{detail.prereqs.map(code=><li key={code}><Link to={back+'/cp/'+encodeURIComponent(code)}>{project.data?.checkpoints.find(item=>item.code===code)?.title??code}</Link></li>)}</ul>}]:[]),
+   ...(detail.sessions.length?[{title:'Sessions',body:<ul>{[...detail.sessions].sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,3).map(session=>
+    <li key={session.id}><Link to={'/s/'+encodeURIComponent(slug)+'/'+session.number}>{'Session '+session.number}</Link></li>)}</ul>}]:[]),
+  ]}/>
   <header className="v7-learn-head">
    <p className="v7-eyebrow">{'Checkpoint '+view.code.replace(/^\D+/,'')+' · '+title}</p>
    <h1 className="v7-learn-title"><Tex source={view.title}/></h1>

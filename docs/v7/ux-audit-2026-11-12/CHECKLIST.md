@@ -128,16 +128,16 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U1 · Large screens (web, L) — `02` §3 · *(needs E2 for the direction)*
 
-- [ ] **V05** Rail: the count badge covers "Review"
-- [ ] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it
-- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card
-- [ ] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px
-- [ ] **V09** Reading measure ≤ 34 em; the review spread from 840 px
-- [ ] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast
-- [ ] Tasks: three columns from 900 px (S12)
-- [ ] Settings: index left, section right, from 840 px
-- [ ] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer)
-- [ ] The margin (S11), flag `v7Margin`
+- [x] **V05** Rail: the count badge covers "Review" — N157
+- [x] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it — N157
+- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move comes with V26 (S8)
+- [x] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px — N157
+- [x] **V09** Reading measure ≤ 34 em; the review spread from 840 px — N157 (the spread behind `v7Spread`)
+- [x] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast — N157
+- [x] Tasks: three columns from 900 px (S12) — N157
+- [x] Settings: index left, section right, from 840 px — N157
+- [x] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer) — N157
+- [x] The margin (S11), flag `v7Margin` — N157
 - [ ] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress
 
 ### G1 · Pipeline (assets, M) — `04` §3

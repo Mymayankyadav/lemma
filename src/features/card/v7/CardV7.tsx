@@ -3,6 +3,7 @@ import {useNavigate,useParams,Link} from 'react-router';
 import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
 import {useAddComment,useCard,useDismissComment,useProjects,useSetNoteStatus,useSettings,useUpdateNote} from '../../../data/hooks';
 import {DetailHeader} from '../../../app/v7/V7Shell';
+import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Sheet,Skeleton,StatTile} from '../../../ui/v7/components';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {StatusBadge} from '../../../ui/v7/Status';
@@ -20,6 +21,7 @@ import {RecallChart} from './RecallChart';
 import {gradeKey,recallNow,recallSeries} from './recallModel';
 import '../../project/v7/learning.css';
 import '../../cards/v7/cards.css';
+const gradeWord=['Again','Hard','Good','Easy'];
 
 const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
 
@@ -62,6 +64,14 @@ export default function CardV7(){
  const comments=detail.comments.filter(item=>item.status!=='dismissed');
  return <main id="main-content" className={'v7-page v7-learn v7-card-page '+subjectClass(subject)} aria-label="Card">
   <DetailHeader title="Card" back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
+  {/* N157 · U1 S11 (flag v7Margin): why this card, its source and its last reviews, beside the page. */}
+  <Margin notes={[
+   ...(project?[{title:'Why this card',body:<p><Link to={'/p/'+encodeURIComponent(project.slug)+(note.checkpointCode?'/cp/'+encodeURIComponent(note.checkpointCode):'')}>{project.title}</Link>
+    {note.sessionNumber!==null&&<> · <Link to={'/s/'+encodeURIComponent(note.projectSlug)+'/'+note.sessionNumber}>{'Session '+note.sessionNumber}</Link></>}{note.origin!=='user'?' · from '+clientName(note.origin):''}</p>}]:[]),
+   ...(note.sourceShort?[{title:'Source',body:<p>{note.sourceShort}{note.pageLabel?', p. '+note.pageLabel:''}</p>}]:[]),
+   ...(detail?.history.length?[{title:'Last reviews',body:<ul>{[...detail.history].sort((a,b)=>Date.parse(b.reviewedAt)-Date.parse(a.reviewedAt)).slice(0,5).map((row,index)=>
+    <li key={row.reviewedAt+index}>{formatShortDate(row.reviewedAt,{zone})} · {gradeWord[row.rating-1]}</li>)}</ul>}]:[]),
+  ]}/>
   <h1 className="v7-sr-only">{'Card in '+(project?.title??'your library')}</h1>
   <article className="v7-card-face" aria-label="Card">
    <div className="v7-card-face-head"><Tag subject={subject}/>{paused&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>

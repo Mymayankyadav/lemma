@@ -20,6 +20,7 @@ import {ownerZone} from '../../../lib/format';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {useOverdueSummary} from '../../calendar/v7/overdue';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
 import TaskSheet from './TaskSheetV7';
 import {applyFilter,civilDay,dayWord,dueChip,estimateText,groupTodo,isOverdue,noFilter,reorderedTasks,segmentOf,segments,swipeIntent,type Segment,type TaskFilter} from './tasksModel';
 import './tasks.css';
@@ -103,14 +104,22 @@ export default function TasksV7(){
  const visible=useMemo(()=>applyFilter(rows,filter,now,zone),[rows,filter,now,zone]);
  // B3: the same predicate as the shared overdue count (open tasks past their due day or instant).
  const overdueCount=useMemo(()=>rows.filter(task=>isOverdue(task,now,zone)).length,[rows,now,zone]);
- const groups=useMemo(()=>groupTodo(visible,now,zone),[visible,now,zone]);
+ const board=useMinWidth(900);
+ // On the board an overdue task that was started stays in Doing only (it is not shown twice); the Overdue group is To do's.
+ const groups=useMemo(()=>groupTodo(board?visible.filter(task=>task.status==='backlog'):visible,now,zone),[visible,now,zone,board]);
  const doing=visible.filter(task=>task.status==='in_progress'),done=visible.filter(task=>task.status==='completed'),cancelled=visible.filter(task=>task.status==='cancelled');
  const unscheduled=rows.some(task=>task.status==='backlog'&&task.due.kind==='none');
  // A1: a task added after the list loaded rises in; the loaded list itself never animates.
  const enter=useEnterMarks(rows.map(task=>task.id),phase==='ready');
  const rowFor=(task:TaskRecord,list:readonly TaskRecord[])=><TaskRow key={task.id} enter={enter(task.id)} task={task} list={list} now={now} zone={zone} busy={busy} look={task.projectId?look.get(task.projectId)??null:null}
-  onChange={change} onEdit={setEditing} onDelete={remove} onReorder={reorder}
+  onChange={change} onEdit={setEditing} onDelete={remove} onReorder={reorder} board={board} onMove={move}
   onSchedule={()=>navigate('/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:''))}/>;
+ // N157 · U1 (S12): from 900 px the three states are three columns; a task moves between them by dragging its handle or
+ // with Left and Right on the handle (and still from its ⋯ menu).
+ const move=(task:TaskRecord,status:TaskRecord['status'])=>{
+  if(status===task.status)return;
+  void change(task,{status},status==='completed'?{message:'Task completed',undo:{status:task.status}}:undefined);
+ };
  const filterTitle=filter.projectId?look.get(filter.projectId)?.title??'Path':'All paths';
  return <main id="main-content" className="v7-page v7-tk" aria-label="Tasks">
   <HubHeader title="Calendar">
@@ -120,27 +129,32 @@ export default function TasksV7(){
    <StatusBadge tone="warning">{overdue.total} overdue</StatusBadge><span className="v7-meta">Tasks, deadlines and practice · Triage</span>
   </Link>}
   <div className="v7-tk-bar">
-   <Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>
+   {!board&&<Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>}
   </div>
   <div className="v7-tk-filters" role="group" aria-label="Filters">
    <Chip selected={!!filter.projectId} onClick={()=>setPicker(true)}>{filterTitle}</Chip>
    {(overdueCount>0||filter.overdueOnly)&&<Chip selected={filter.overdueOnly} onClick={()=>setFilter(old=>({...old,overdueOnly:!old.overdueOnly}))}>{'Overdue '+overdueCount}</Chip>}
    <Chip selected={filter.highOnly} onClick={()=>setFilter(old=>({...old,highOnly:!old.highOnly}))}>High priority</Chip>
    {/* TK3/KC10: "Plan these" sits in the filter row, not alone and centred. */}
-   {unscheduled&&segment==='To do'&&<Button variant="ghost" small className="v7-tk-plan" onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
+   {unscheduled&&(board||segment==='To do')&&<Button variant="ghost" small className="v7-tk-plan" onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
   </div>
   {!!message&&<p role="alert" className="v7-alert">{message}</p>}
   {phase==='loading'&&<><Skeleton/><Skeleton/></>}
   {phase==='error'&&<div role="alert" className="v7-tk-empty"><p>{message||'Could not load tasks.'}</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {phase==='ready'&&<>
-   {segment==='To do'&&(groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>
+   {(()=>{
+    const todoBlock=groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2><ul>{group.items.map(task=>rowFor(task,group.items))}</ul></section>)
-     :<EmptyMoment art={total===0?undefined:'tasks'} title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>)}
-   {segment==='Doing'&&(doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<EmptyMoment title="Nothing in progress">Move a task here from its ⋯ menu when you start it.</EmptyMoment>)}
-   {segment==='Done'&&<>
-    {done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<EmptyMoment title="Nothing completed yet">Finished tasks gather here.</EmptyMoment>}
-    {cancelled.length>0&&<details className="v7-tk-cancelled"><summary>Cancelled ({cancelled.length})</summary><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></details>}
-   </>}
+     :<EmptyMoment art={total===0?undefined:'tasks'} title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>;
+    const doingBlock=doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<EmptyMoment title="Nothing in progress">Move a task here from its ⋯ menu when you start it.</EmptyMoment>;
+    const doneBlock=<>{done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<EmptyMoment title="Nothing completed yet">Finished tasks gather here.</EmptyMoment>}
+    {cancelled.length>0&&<details className="v7-tk-cancelled"><summary>Cancelled ({cancelled.length})</summary><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></details>}</>;
+    return board?<div className="v7-tk-board">
+     <div className="v7-tk-column" data-tk-column="backlog"><h2 className="v7-tk-column-title">To do</h2>{todoBlock}</div>
+     <div className="v7-tk-column" data-tk-column="in_progress"><h2 className="v7-tk-column-title">Doing</h2>{doingBlock}</div>
+     <div className="v7-tk-column" data-tk-column="completed"><h2 className="v7-tk-column-title">Done</h2>{doneBlock}</div>
+    </div>:<>{segment==='To do'&&todoBlock}{segment==='Doing'&&doingBlock}{segment==='Done'&&doneBlock}</>;
+   })()}
    {cursor&&<div className="v7-tk-more"><span>{rows.length} of {total} tasks shown</span><Button variant="secondary" small loading={busy} onClick={()=>{void more();}}>Load more</Button></div>}
   </>}
   <Sheet open={picker} onClose={()=>setPicker(false)} title="Filter by path" footer={<Button variant="primary" onClick={()=>setPicker(false)}>Done</Button>}>
@@ -157,8 +171,9 @@ export default function TasksV7(){
 
 interface RowProps{enter:EnterMark;task:TaskRecord;list:readonly TaskRecord[];now:Date;zone:string;busy:boolean;look:{title:string;klass:string}|null;
  onChange:(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>Promise<void>;onEdit:(task:TaskRecord)=>void;onDelete:(task:TaskRecord)=>Promise<void>;onSchedule:()=>void;
- onReorder:(list:readonly TaskRecord[],from:string,to:string)=>Promise<void>}
-function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule,onReorder}:RowProps){
+ onReorder:(list:readonly TaskRecord[],from:string,to:string)=>Promise<void>;board?:boolean;onMove?:(task:TaskRecord,status:TaskRecord['status'])=>void}
+const columns:TaskRecord['status'][]=['backlog','in_progress','completed'];
+function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,onSchedule,onReorder,board=false,onMove}:RowProps){
  const done=task.status==='completed',closed=done||task.status==='cancelled',chip=closed?null:dueChip(task,now,zone),estimate=estimateText(task.estimateMinutes);
  const [dx,setDx]=useState(0),[revealed,setRevealed]=useState(false),start=useRef<{x:number;y:number}|null>(null);
  const index=list.findIndex(item=>item.id===task.id);
@@ -209,10 +224,21 @@ function TaskRow({enter,task,list,now,zone,busy,look,onChange,onEdit,onDelete,on
       {look&&<span className="v7-tk-path">{(done&&task.completedAt)||(task.priority==='high'&&!closed)||estimate?' · ':''}<SubjectGlyph klass={look.klass}/>{look.title}</span>}</span>
     </p>
    </div>
-   {!closed&&list.length>1&&<button type="button" className="v7-tk-reorder" disabled={busy} aria-label={'Reorder '+task.title} title="Drag to reorder; Up/Down also move this task"
+   {!closed&&(list.length>1||board)&&<button type="button" className="v7-tk-reorder" disabled={busy} aria-label={(board?'Move ':'Reorder ')+task.title}
+    title={board?'Drag to reorder or to another column; Up/Down reorder, Left/Right change column':'Drag to reorder; Up/Down also move this task'}
     onPointerDown={event=>{event.currentTarget.setPointerCapture(event.pointerId);}}
-    onPointerUp={event=>{const target=document.elementFromPoint(event.clientX,event.clientY)?.closest<HTMLElement>('[data-task-id]')?.dataset.taskId;if(target)void onReorder(list,task.id,target);}}
-    onKeyDown={event=>{if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();swap(event.key==='ArrowUp');}}}><GripVertical aria-hidden="true"/></button>}
+    onPointerUp={event=>{
+     const under=document.elementFromPoint(event.clientX,event.clientY),column=under?.closest<HTMLElement>('[data-tk-column]')?.dataset.tkColumn as TaskRecord['status']|undefined;
+     if(board&&column&&column!==task.status){onMove?.(task,column);return;}
+     const target=under?.closest<HTMLElement>('[data-task-id]')?.dataset.taskId;if(target)void onReorder(list,task.id,target);
+    }}
+    onKeyDown={event=>{
+     if(event.key==='ArrowUp'||event.key==='ArrowDown'){event.preventDefault();swap(event.key==='ArrowUp');return;}
+     if(board&&(event.key==='ArrowLeft'||event.key==='ArrowRight')){
+      const next=columns[columns.indexOf(task.status)+(event.key==='ArrowLeft'?-1:1)];
+      if(next){event.preventDefault();onMove?.(task,next);}
+     }
+    }}><GripVertical aria-hidden="true"/></button>}
    <RowMenu label={'More actions for '+task.title} title={task.title} items={items}/>
   </div>
   {revealed&&!closed&&<div className="v7-tk-reveal" role="group" aria-label={'Quick actions for '+task.title}>

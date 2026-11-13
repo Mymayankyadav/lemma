@@ -15,8 +15,10 @@ import {formatInterval} from '../../../lib/format';
 import {noteKindText} from '../../../lib/labels';
 import {MathText} from '../../../ui/MathText';
 import {Button} from '../../../ui/v7/components';
+import {isFlagOn} from '../../../flags';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {ImmersiveHeader} from '../../../app/v7/V7Shell';
+import {Margin} from '../../../app/v7/Margin';
 import {kitSubject} from '../../atlas/v7/model';
 import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,undoLast,unpauseRun,type DurableRun} from '../v6/adapter';
 import {clearPendingGrade,pendingGrade,writePendingGrade,type PendingGrade} from '../v6/pending';
@@ -152,12 +154,17 @@ export default function ReviewRoundV7(){
    <Button variant="primary" onClick={()=>navigate('/review')}>Start review</Button></div>
  </main>;
  const total=Math.max(1,run.progress.total),shown=Math.min(run.progress.total,run.progress.position+1);
- return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'}>
+ return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'} data-spread={isFlagOn('v7Spread')?'':undefined}>
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>{void leave();}}><X aria-hidden="true"/></button>}
    center={<p className="v7-review-count" role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={run.progress.position}>{shown} of {run.progress.total}</p>}
    more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={busy||!!pending||!lastGraded(run)} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
   <ol className="v7-review-progress" aria-hidden="true">{run.items.map(entry=><li key={entry.id} data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>)}</ol>
   {message&&<p role="alert" className="v7-review-message">{message}</p>}
+  {/* N157 · U1 S11 (flag v7Margin): why this card and its source, beside the round; never the answer. */}
+  {card&&revealed&&<Margin notes={[
+   ...(project?[{title:'Why this card',body:<p>{project.title}{card.checkpointTitle?' · '+card.checkpointTitle:''}</p>}]:[]),
+   ...(card.sourceShort?[{title:'Source',body:<p>{card.sourceShort}{card.pageLabel?', p. '+card.pageLabel:''}</p>}]:[]),
+  ]} sheet={false}/>}
   {run.status==='paused'&&<Button onClick={()=>{setBusy(true);void unpauseRun(run).then(setRun).catch(error=>setMessage(String(error))).finally(()=>setBusy(false));}}>Resume this round</Button>}
   {run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
@@ -185,11 +192,11 @@ export default function ReviewRoundV7(){
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
   {item&&card&&!pending&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
-   {!revealed?<Button variant="primary" onClick={reveal}>Show answer</Button>
+   {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
      aria-label={label+(choice?', next in '+formatInterval(choice.delay/86_400_000):'')+' ('+(index+1)+')'}>
-     <span><GradeGlyph grade={label.toLowerCase() as GradeKey} size={14}/>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small></button>;})}</div>}
+     <span><GradeGlyph grade={label.toLowerCase() as GradeKey} size={14}/>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small><kbd className="v7-review-key" aria-hidden="true">{index+1}</kbd></button>;})}</div>}
   </div>}
  </main>;
 }
