@@ -69,10 +69,8 @@ export const shots:Shot[]=[
 ];
 
 /** Load a scene the way a person would: fixed clock, colour scheme, reduced motion, then its own preparation. */
-export async function openScene(page:Page,shot:Shot,scheme:"light"|"dark",size:{width:number;height:number;text?:number}){
- await page.setViewportSize({width:size.width,height:size.height});
- // N157 (V11): a raised system text size, as the root font size (130% is the audit's "Android large text" profile).
- if(size.text&&size.text!==100)await page.addInitScript(scale=>{document.addEventListener("DOMContentLoaded",()=>{document.documentElement.style.fontSize=scale+"%";});},size.text);
+export async function openScene(page:Page,shot:Shot,scheme:"light"|"dark",size:{width:number;height:number}){
+ await page.setViewportSize(size);
  await page.clock.setFixedTime(NOW);
  await page.emulateMedia({colorScheme:scheme,reducedMotion:"reduce"});
  await page.goto(at(shot.hash));

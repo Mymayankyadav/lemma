@@ -11,7 +11,6 @@ import {setShellRoot} from './shellRoot';
 import {v7Screen} from './v7Kit';
 // Lazy, so flag-off builds never load the v7 shell or its styles on first paint.
 const V7Shell=lazy(()=>import('./v7/V7Shell'));
-const LibrarySplit=lazy(()=>import('./v7/LibrarySplit'));
 import '../ui/v6/tokens.css';
 import '../ui/v6/mockup.css';
 import '../ui/v6/mockup-bindings.css';
@@ -27,13 +26,12 @@ export default function AppShell(){
  const notFound=useMatches().some(match=>(match.handle as {notFound?:boolean}|undefined)?.notFound===true);
  const screen=notFound&&isFlagOn('v7Shell')?'not-found':v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
- useLayoutEffect(()=>{document.documentElement.toggleAttribute('data-v7-room',v7&&isFlagOn('v7Room'));return()=>document.documentElement.removeAttribute('data-v7-room');},[v7]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
  // The kit, sign-in and first run stand alone: no tab bar or capture.
  if(screen==='kit'||screen==='sign-in'||screen==='welcome')return <>{outlet}</>;
- if(v7)return <Suspense fallback={null}><V7Shell immersive={screen==='focus'||screen==='review-run'||screen==='close-day'} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='session'&&screen!=='card'}>{isFlagOn('v7Room')&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<LibrarySplit>{outlet}</LibrarySplit>:outlet}</V7Shell></Suspense>;
+ if(v7)return <Suspense fallback={null}><V7Shell immersive={screen==='focus'||screen==='review-run'||screen==='close-day'} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='session'&&screen!=='card'}>{outlet}</V7Shell></Suspense>;
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&!v6&&<DemoChip floating/>}
  <main id="main-content" className={fullBleed?(v6?'v6-atlas-shell relative flex h-dvh w-full flex-col overflow-hidden pb-[calc(var(--tab)+env(safe-area-inset-bottom))] [&>div]:min-h-0 [&>div]:flex-1 [&>div>main]:!h-full':'relative min-h-dvh w-full overflow-hidden'):'relative mx-auto min-h-dvh max-w-[528px] px-6 pt-[calc(max(env(safe-area-inset-top),12px)+16px)] '+(inboxActions?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+112px)]':showTabs?'pb-[calc(var(--tab)+env(safe-area-inset-bottom)+24px)]':'pb-6')}>

@@ -88,7 +88,7 @@ export default function ReviewHubV7(){
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
   {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
-  {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Erratum: your review decks didn’t load. Try again.</p>
+  {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Could not load your review decks.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
   {!loading&&!failed&&<>
    <section className="v7-rv-hero" aria-label="Review counts">
@@ -117,7 +117,7 @@ export default function ReviewHubV7(){
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
    <div className="v7-rv-section">
-    {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Erratum: the forecast didn’t load. Try again.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
+    {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Could not load the forecast.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
      :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
       series={outlook.series} format={value=>String(Math.round(value))}
       summary={'Cards due over the next 14 days: '+(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' in all. Stacked by subject; includes overdue cards today.'}/>

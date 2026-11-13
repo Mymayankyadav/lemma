@@ -33,7 +33,7 @@ export default function PracticeV7(){
  useEffect(()=>{
   let live=true;
   void loadAllPracticeTopics().then(rows=>{if(live){setItems(rows);setError('');setLoading(false);}})
-   .catch(failure=>{if(live){setError(failure instanceof Error?failure.message:'Erratum: practice topics didn’t load. Try again.');setLoading(false);}});
+   .catch(failure=>{if(live){setError(failure instanceof Error?failure.message:'Could not load practice topics');setLoading(false);}});
   return()=>{live=false;};
  },[reload]);
  const active=items.filter(item=>item.archivedAt===null),archived=items.filter(item=>item.archivedAt!==null);

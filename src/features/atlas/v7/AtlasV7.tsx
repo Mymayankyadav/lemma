@@ -3,7 +3,7 @@ import {Illustration} from '../../../ui/v7/Illustration';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight,Crosshair,Minus,Plus,Search,X} from 'lucide-react';
-import {useAtlas,useHome} from '../../../data/hooks';
+import {useAtlas} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {FastTex} from '../../../ui/FastTex';
 import {Button,IconButton,Segmented} from '../../../ui/v7/components';
@@ -17,8 +17,6 @@ import {computeLayout,layoutInput,type LayoutSource} from './layoutClient';
 import type {LayoutResult} from './layout';
 import {alphabetical,atlasSummary,buildAtlasModel,checkpointName,searchStars,starCounts,stateLabel,type AtlasModel,type StarState} from './model';
 import './atlas.css';
-import {isFlagOn} from '../../../flags';
-import {rememberRoomItem} from '../../../ui/v7/room';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
 const PAGE=200,PEEK=180,DOCK=92;
@@ -107,19 +105,9 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
- const room=isFlagOn('v7Room'),home=useHome();
- const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
  const reduced=useReducedMotion();
  const model=useMemo(()=>query.data?buildAtlasModel(query.data):null,[query.data]);
- const focusCluster=useMemo(()=>{
-  if(!room||!model)return null;
-  return model.stars.find(star=>star.checkpoints.some(cp=>cp.projectSlug===home.data?.resume?.projectSlug))?.cluster??model.stars.find(star=>star.state==='in_progress')?.cluster??model.clusters[0]?.index??null;
- },[room,model,home.data?.resume?.projectSlug]);
- const highlighted=useMemo(()=>!room||subset==='All'||!model?null:model.stars.flatMap((star,index)=>{
-  const matches=subset==='Tonight'?star.due>0||star.state==='in_progress'||star.state==='up_next':subset==='Shaky'?star.state==='revisit':star.state==='demonstrated';
-  return matches?[index]:[];
- }),[room,subset,model]);
  // R2 · F12: a sky too dense to read opens as the list; the map stays one tap away (?view=map).
  const dense=!!model&&atlasTooDense(model.stars.length,model.edges.length);
  const view=params.get('view')==='list'||(dense&&params.get('view')!=='map')?'list':'map';
@@ -152,7 +140,6 @@ export default function AtlasV7(){
  };
  const select=(index:number|null,fly=false)=>{
   if(!model)return;setExpanded(false);
-  if(room&&index!==null)rememberRoomItem({id:'concept:'+model.stars[index].id,group:'Concepts',title:model.stars[index].name,to:'/atlas?id='+encodeURIComponent(model.stars[index].id)});
   update({id:index===null?null:model.stars[index].id});
   if(index!==null&&fly&&view==='map')map.current?.flyTo(index);
  };
@@ -162,7 +149,7 @@ export default function AtlasV7(){
   document.getElementById('v7-atlas-row-'+model.stars[selected].id)?.scrollIntoView({block:'nearest'});
  },[view,selected,model]);
  const results=useMemo(()=>model?searchStars(model,term):[],[model,term]);
- const rows=useMemo(()=>model?alphabetical(model).filter(index=>!highlighted||highlighted.includes(index)):[],[model,highlighted]);
+ const rows=useMemo(()=>model?alphabetical(model):[],[model]);
  const back=()=>{if(location.key!=='default')navigate(-1);else navigate('/');};
  const refetch=async()=>{await query.refetch();};
 
@@ -186,7 +173,6 @@ export default function AtlasV7(){
  const selectedStar=selected===null?null:model.stars[selected];
  return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}
-  {room&&<nav className="v7-room-atlas-subsets" aria-label="Concept subsets">{(['All','Tonight','Shaky','Demonstrated'] as const).map(label=><button key={label} className="v7-filter-chip" type="button" aria-pressed={subset===label} onClick={()=>{setSubset(label);setShown(PAGE);}}>{label}</button>)}</nav>}
   <p className="v7-sr-only" data-testid="atlas-summary">{summary}</p>
   {searching&&<div id="v7-atlas-search" className="v7-atlas-search" role="search" onKeyDown={event=>{if(event.key==='Escape'){setSearching(false);}}}>
    <label className="v7-atlas-search-field"><span className="v7-sr-only">Find a concept</span>
@@ -199,8 +185,8 @@ export default function AtlasV7(){
   </div>}
   {view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
-   {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} focusCluster={focusCluster} highlighted={highlighted}
-     insets={{top:room?120:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
+   {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced}
+     insets={{top:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
       <Button onClick={()=>update({view:'list'})}>Show the list</Button></div>
     :<p role="status" className="v7-atlas-state">Arranging the sky…</p>}
@@ -219,14 +205,12 @@ export default function AtlasV7(){
   :<section className="v7-atlas-list" aria-label="Concept list">
    <p className="v7-atlas-meta">{summary}</p>
    {dense&&params.get('view')!=='list'&&<p className="v7-atlas-meta" role="note">Your sky has {model.stars.length.toLocaleString('en-GB')} concepts, so it opens as a list. Choose Map to see the whole sky.</p>}
-   {room&&<nav className="v7-room-atlas-index" aria-label="Subject index">{model.clusters.filter(cluster=>rows.some(index=>model.stars[index].cluster===cluster.index)).map(cluster=><button type="button" key={cluster.id} aria-label={'Jump to '+cluster.name} onClick={()=>{setShown(rows.length);requestAnimationFrame(()=>document.getElementById('room-atlas-'+cluster.index)?.scrollIntoView({block:'start'}));}}>{cluster.name[0]}</button>)}</nav>}
-   {room?model.clusters.map(cluster=>{const members=rows.slice(0,shown).filter(index=>model.stars[index].cluster===cluster.index);return members.length>0&&<section key={cluster.id} id={'room-atlas-'+cluster.index} className="v7-room-atlas-subject" aria-label={cluster.name}><h2 className="v7-headline">{cluster.name}</h2><ul>{members.map(i=>{const star=model.stars[i];return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}><StarMark state={star.state} subjectClassName={subjectClass(cluster.subject)}/><span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span><small>{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}</small></span><ChevronRight aria-hidden="true"/></button></li>;})}</ul></section>;}):<ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
+   <ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
     return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}>
      <StarMark state={star.state} subjectClassName={subjectClass(cluster?.subject??'Other')}/>
      <span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span>
       <span className="v7-atlas-meta">{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}{cluster?' · '+cluster.name:''}</span></span>
-     <ChevronRight aria-hidden="true"/></button></li>;})}</ul>}
-   {room&&rows.length===0&&<p role="status">No concepts in this subset.</p>}
+     <ChevronRight aria-hidden="true"/></button></li>;})}</ul>
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>
   </section>}

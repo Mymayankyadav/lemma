@@ -1,6 +1,6 @@
 /** PLAN §6.1 G. Pure ranking and grouping for search, so the order is testable without the data layer. */
-export type SearchGroupName='Paths'|'Checkpoints'|'Sessions'|'Cards'|'Concepts'|'Tasks'|'Settings'|'Actions';
-export const groupOrder:readonly SearchGroupName[]=['Paths','Checkpoints','Sessions','Cards','Concepts','Tasks','Settings','Actions'];
+export type SearchGroupName='Paths'|'Checkpoints'|'Cards'|'Concepts'|'Tasks'|'Settings'|'Actions';
+export const groupOrder:readonly SearchGroupName[]=['Paths','Checkpoints','Cards','Concepts','Tasks','Settings','Actions'];
 export interface SearchItem{id:string;group:SearchGroupName;title:string;parent?:string;to:string;glyph?:string}
 export interface Matched extends SearchItem{before:string;match:string;after:string}
 /** Title split around the first (case-insensitive) occurrence of the query; null when it does not occur. */

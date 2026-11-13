@@ -83,29 +83,29 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U2 · Resilience = AN2 (web, M) — `02` §4 · the most urgent web phase
 
-- [x] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%" (the key screens are checked by `v7-n134-text-scale.spec.ts`, N134) — N157 (the lint also runs 360 at 200% and 1280)
+- [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%" (the key screens are checked by `v7-n134-text-scale.spec.ts`, N134)
 - [x] **V11** Dock at large text: icons, with only the selected tab's label shown — N134
 - [x] **V11** Gutters (calendar times, tiles; chart gutters were N125) sized from their content; rows that wrap (Focus, segmented controls: a menu above three options) — N134
 - [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
 - [x] **V36** The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days) — N138
 - [x] V36 leftovers: the Inbox list's checkboxes (20 px) and the card's recall-chart review dots (34 px tall at 360 px) take a tap within 44 px — N153
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
-- [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted — one-row headers and full-height sheets in N157, the desk clock behind `v7DeskClock`; the phone lock (`OrientationPolicy`) stays until that flag is on
-- [ ] V21 *(E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand — measured in N157 (582 KB, 87 requests in the demo); open, see `docs/current/N157.md`
-- [x] **AW1** *(E5 approved; after the three V11 items; device check 1 confirms it)* Honour the system font size, capped at 200% — N157
+- [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted
+- [ ] V21 *(needs E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand
+- [ ] **AW1** *(E5 approved; after the three V11 items and device check 1)* Honour the system font size, capped at 200%
 
 ### AN1 · Make the built app right (Android, M) — `03` §4
 
 - [x] **AW2** *(E14)* "Save a backup" in the app goes to Android's share sheet (Files, Drive, email) and says so — N130 (#1363)
 - [x] **AW3** *(E15, first stage)* About this app: version, "Check for updates", "What changed in …" (release pages) — N130 (#1363)
-- [x] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page — N157
+- [ ] AW3 *(E15, second stage)* One quiet check a day for a newer release, a dot on Settings, and a line in the privacy page
 - [x] **AW4** *(E16)* In the app only Cards due and Study blocks are switches; the rest are listed under "In your Inbox on this phone" — N130 (#1363)
 - [x] AW5 Welcome sheet: three rows with glyphs, no focus ring on open, notification note — N133
 - [x] AW9 Study mode in one trip (the request is remembered for ten minutes across system settings) — N133
 - [x] AW13 The drift question as a card on Focus with Yes / No, not a 10 s toast — N133
-- [x] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details — N157
-- [x] **IC4** IC6 *(P7, E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon — N157
-- [x] AW17 *(verify on a device: check 7)* Sign-in failure says something useful — N157
+- [ ] AW14 AW15 AW16 Names ("Study blocks" vs "time block") and icon details
+- [ ] **IC4** IC6 *(P7, needs E23)* One shortcut recipe; "Resume *path*" not the Atlas star; distinct tile glyphs; ∎ in the themed icon
+- [ ] AW17 *(verify on a device)* Sign-in failure says something useful
 
 ### G0 · Refresh what is stale (S) — `04` §2
 
@@ -122,30 +122,30 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **AW7** Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour — N136
 - [x] **AW8** Back preview on Today: release the back handler at the root with no sheet open — N136
 - [x] Offline made visible: "as of 14:05" chips on Today and the Review hub — N151
-- [x] Offline made visible: the header ℓ as the sync light — N157
-- [x] Edges: no Lemma gesture within 24 dp of a screen edge — N157
+- [ ] Offline made visible: the header ℓ as the sync light
+- [ ] Edges: no Lemma gesture within 24 dp of a screen edge
 - [x] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers) — N152
 
 ### U1 · Large screens (web, L) — `02` §3 · *(needs E2 for the direction)*
 
-- [x] **V05** Rail: the count badge covers "Review" — N157
-- [x] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it — N157
-- [x] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — N157, the U3 move behind default-off `v7Room`
-- [x] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px — N157
-- [x] **V09** Reading measure ≤ 34 em; the review spread from 840 px — N157 (the spread behind `v7Spread`)
-- [x] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast — N157
-- [x] Tasks: three columns from 900 px (S12) — N157
-- [x] Settings: index left, section right, from 840 px — N157
-- [x] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer) — N157
-- [x] The margin (S11), flag `v7Margin` — N157
-- [x] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress — approved 13 Nov 2026: "everything else looks fine so merge it after green ci", with the compact almanac correction in N157
+- [ ] **V05** Rail: the count badge covers "Review"
+- [ ] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it
+- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card
+- [ ] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px
+- [ ] **V09** Reading measure ≤ 34 em; the review spread from 840 px
+- [ ] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast
+- [ ] Tasks: three columns from 900 px (S12)
+- [ ] Settings: index left, section right, from 840 px
+- [ ] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer)
+- [ ] The margin (S11), flag `v7Margin`
+- [ ] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress
 
 ### G1 · Pipeline (assets, M) — `04` §3
 
 - [x] `assets.manifest.json` and the asset lint in `postbuild` (wiring it into CI is an Owner `rules:` PR) — N137
 - [x] Android colours generated from `design-tokens.json` — N137
-- [x] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(E23)* the ∎ in the themed layer — N157
-- [x] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera in N157 (`scripts/v7/scene-camera.mjs`)
+- [ ] Icon layers split: grid and margin in the background; ℓ and ∎ in the foreground and themed layers — background and foreground split in N137; *(needs E23)* the ∎ in the themed layer
+- [ ] Emblem exporter (SVG, PNG, stroke order) and the scene camera — the exporter in N137 (`src/ui/v7/emblemExport.ts`, `npm run emblem`); the scene camera is open (builds on N133's `scripts/v7/install-shots.mjs`)
 
 ---
 
@@ -153,30 +153,26 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U3 · Room and rhythm (web, M) — `02` §5 · flag `v7Room`, each part after its sheet is approved
 
-U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. All nine code items are implemented and browser-verified behind default-off `v7Room`. The Owner approved the visual review on 13 Nov 2026 after requesting removal of the shared Path star overview and compact almanac cells. See `docs/current/N157.md`.
-
-- [x] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
-- [x] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
-- [x] V26 Path spine: every checkpoint as a star by stage; opens at the current one (S8)
-- [x] V28 Search: the field is the header; "Jump back in"; actions as chips (S9)
-- [x] V29 *(needs E11)* First run: subject, then rhythm, then the tutor connection
-- [x] V27 Atlas on a phone: fitted to the last constellation; grouped list with an index (S10)
-- [x] V19 One header voice: serif titles; a hub's title is the selected tab
-- [x] V30 "Reviews by day": one ink ramp; colour only for Again
-- [x] V41 Hero emblem: whole or absent, never a fragment
-
-- [x] Owner re-approves the Calendar Day and Path phone candidates — approved 13 Nov 2026 after the Path star-overview removal; `v7Room` stays default off
+- [ ] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
+- [ ] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
+- [ ] V26 Path spine: every checkpoint as a star by stage; opens at the current one (S8)
+- [ ] V28 Search: the field is the header; "Jump back in"; actions as chips (S9)
+- [ ] V29 *(needs E11)* First run: subject, then rhythm, then the tutor connection
+- [ ] V27 Atlas on a phone: fitted to the last constellation; grouped list with an index (S10)
+- [ ] V19 One header voice: serif titles; a hub's title is the selected tab
+- [ ] V30 "Reviews by day": one ink ramp; colour only for Again
+- [ ] V41 Hero emblem: whole or absent, never a fragment
 
 ### AN4 · Large screens and postures (Android, M) — `03` §4 · *(needs U1)*
 
-- [x] List beside detail from 600 dp — N157; Cards and Paths keep list beside detail under `v7Room`, with phone navigation below 600 px; Inbox and Settings retain their split layouts
-- [x] Review spread from 840 dp and in book posture — N157 (behind `v7Spread`)
-- [x] Focus as a clock in tabletop posture — N157
-- [x] 48 px at every width; nothing interactive across a hinge — N157
+- [ ] List beside detail from 600 dp
+- [ ] Review spread from 840 dp and in book posture
+- [ ] Focus as a clock in tabletop posture
+- [ ] 48 px at every width; nothing interactive across a hinge
 
 ### A5′ · Share and release pages — `04` §8
 
-- [ ] Release page per APK (plain words, the APK, one image) — the notes (`scripts/release/android-notes.mjs`) and the image (`docs/release/android-release.png`) are in N157; *(needs an Owner `rules:` PR)* to use them in `.github/workflows/android.yml`
+- [ ] Release page per APK (plain words, the APK, one image)
 - [x] "Share the page" images: Day closed, the week page, a finished path — N131 (#1364)
 
 A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N127, N128): the illustrated set stays and G2 refines it.
@@ -187,14 +183,14 @@ A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N
 
 ### U4 · Signature (web, L) — `02` §6 · one flag at a time, each with an Owner-approved sheet
 
-- [x] S1 The ruler, flag `v7Ruler` — N157 (Today, New block duration and Calendar Day scrubber; widgets remain parked)
-- [x] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page — N157 (the task ∎, the round's closing ∎, Inbox zero's ∎, and Close the day as one page)
-- [x] S5 Review as an open notebook, flag `v7Spread` — N157
-- [x] S6 Scratch paper, flag `v7Scratch` *(needs E10)* — N157
-- [x] S14 Paper and sky, flag `v7Paper` *(needs E9)* — N157
-- [x] S15 The week page — N157 (flag `v7Week`; the Sunday notification still opens Progress)
-- [x] S16 Desk clock, flag `v7DeskClock` — N157
-- [x] Errata and empty-state copy ("Erratum: …", "as of", ∅) — N157 ("as of" in N151)
+- [ ] S1 The ruler, flag `v7Ruler`
+- [ ] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page
+- [ ] S5 Review as an open notebook, flag `v7Spread`
+- [ ] S6 Scratch paper, flag `v7Scratch` *(needs E10)*
+- [ ] S14 Paper and sky, flag `v7Paper` *(needs E9)*
+- [ ] S15 The week page
+- [ ] S16 Desk clock, flag `v7DeskClock`
+- [ ] Errata and empty-state copy ("Erratum: …", "as of", ∅)
 
 A4 (the Atlas sky, the drawn path map) follows U3's path spine and phone Atlas.
 
@@ -248,5 +244,5 @@ Lapsed or superseded: E4 "coded first" (superseded by D7 for the three shipped m
 
 - [ ] A re-audit with the same method: phone ≥ 8.5, desktop ≥ 8, Android conditions ≥ 8, no Major open
 - [ ] In the app: a backup saves; the version and an update path are visible; every reminder switch does what it says; the largest system font leaves every screen usable
-- [x] The rendered design lint covers 360 px at 130% text and 1280 px — N157 (and 360 px at 200%)
+- [ ] The rendered design lint covers 360 px at 130% text and 1280 px
 - [ ] Every ending in the product is the same small square

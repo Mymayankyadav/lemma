@@ -8,7 +8,7 @@
  :where(html[data-v7]) .v7-pr-card {display:grid;gap:var(--v7-space-2);padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
  :where(html[data-v7]) .v7-pr-card h2 {margin:0;overflow-wrap:anywhere;}
 :where(html[data-v7]) .v7-pr-badges {display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-2);margin:0;}
- :where(html[data-v7]) .v7-pr-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-pr-actions {display:flex;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-pr-archived summary {min-height:var(--v7-row);display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);list-style:none;border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);color:var(--v7-role-text-primary);font:500 var(--v7-type-body)/1 var(--v7-sans);cursor:pointer;}
  :where(html[data-v7]) .v7-pr-archived summary::-webkit-details-marker {display:none;}
  :where(html[data-v7]) .v7-pr-archived summary svg {width:18px;height:18px;color:var(--v7-role-text-secondary);transition:transform var(--v7-fast) var(--v7-ease-standard);}

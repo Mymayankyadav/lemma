@@ -15,7 +15,7 @@ import {FOCUS_CHANGED, announceFocusChange} from '../app/v7/focus';
 import {toast} from '../ui/Toast';
 import type {LemmaNativePlugin} from './bridge';
 import {lemmaNative} from './bridge';
-import {DEVICE_PREFS_CHANGED, checkForUpdate, readDevicePref} from './device';
+import {DEVICE_PREFS_CHANGED, readDevicePref} from './device';
 import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
 import {whenRootPainted} from './splash';
@@ -91,9 +91,8 @@ async function scheduleReminders(): Promise<void> {
     const blocks = settings.notify?.kinds?.plan ? await getStudyApi().listCalendarBlocks({start: new Date(now).toISOString(), end: new Date(now + 49 * 3600_000).toISOString()}) : [];
     await native.remindersSet({items: planReminders({prefs: settings.notify, due: home.due, blocks, now, zone, clock24h: settings.clock24h ?? true})});
     const shortcuts: {id: string; label: string; route: string}[] = [];
-    // N157 (P7): Review is always here (it replaced the static Review), with its count when cards are due.
-    shortcuts.push({id: 'review-due', label: (home.due > 0 ? 'Review ' + home.due : 'Review').slice(0, 25), route: '/review'});
     if (home.resume) shortcuts.push({id: 'resume', label: ('Resume ' + home.resume.projectTitle).slice(0, 25), route: '/p/' + encodeURIComponent(home.resume.projectSlug)});
+    if (home.due > 0) shortcuts.push({id: 'review-due', label: ('Review ' + home.due).slice(0, 25), route: '/review'});
     await native.shortcutsSet({items: shortcuts});
   } catch {/* keep the previous schedule */}
 }
@@ -243,8 +242,6 @@ export async function startNative(): Promise<void> {
   whenRootPainted(document.getElementById('root'), () => void splash.then(plugin => plugin?.SplashScreen.hide()).catch(() => undefined));
   void followTheme().catch(() => undefined);
   void connectSession();
-  // AW3 (E15): one quiet check a day for a newer APK; Settings shows a dot when there is one.
-  void App.getInfo().then(info => checkForUpdate(info.version)).catch(() => undefined);
 
   await App.addListener('appUrlOpen', ({url}) => {
     void (async () => {

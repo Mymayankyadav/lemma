@@ -4,7 +4,6 @@
  * one is opt-in and off by default (Owner decision D13). AW3 adds "About this app" (Data and account).
  */
 import {useCallback,useEffect,useState} from 'react';
-import {useDevicePrefValue} from '../../../platform/useDevicePref';
 import {Sheet} from '../../../ui/v7/components';
 import {useToast} from '../../../ui/Toast';
 import {Group,InfoRow,LinkRow,SwitchRow,ValueRow} from './SettingsLists';
@@ -26,7 +25,7 @@ const permissionWord=(value:PermissionWord|undefined)=>value==='granted'?'Allowe
 export function PhoneReminders(){
  const read=useCallback(async()=>(await lemmaNative()).notificationStatus(),[]);
  const [status,refresh]=useStatus(read);
- return <Group title="On this phone" note="Lemma reminds you from this phone about cards due at your study time and about planned time blocks. Tutor and digest messages stay in the Inbox. Each kind has its own channel in Android settings.">
+ return <Group title="On this phone" note="Lemma reminds you from this phone about cards due at your study time and about planned study blocks. Tutor and digest messages stay in the Inbox. Each kind has its own channel in Android settings.">
   <ValueRow label="Notifications" value={status?permissionWord(status.permission):'…'} hint={status?.channelsBlocked.length?'Some kinds are off in Android settings':undefined}
    onOpen={()=>{void (async()=>{
     if(status?.permission==='prompt'){await requestNotificationPermission();refresh();return;}
@@ -65,7 +64,7 @@ export function PhonePlanning(){
   if(on){
    const permission=calendar?.permission==='granted'?'granted':(await native.calendarRequest()).permission;
    if(permission!=='granted'){notify('Lemma needs calendar access to show your blocks there. Nothing changed.',{tone:'danger'});return;}
-   writeDevicePref('calendarSync',true);setSync(true);notify('Your time blocks will appear in a “Lemma” calendar.',{tone:'success'});
+   writeDevicePref('calendarSync',true);setSync(true);notify('Your study blocks will appear in a “Lemma” calendar.',{tone:'success'});
   }else{
    writeDevicePref('calendarSync',false);setSync(false);
    const {deleted}=await native.calendarRemoveAll().catch(()=>({deleted:0}));
@@ -82,7 +81,7 @@ export function PhonePlanning(){
  }
  return <Group title="On this phone" note="Study mode turns on Do Not Disturb while you focus and off when you pause or finish. Calendar sync writes your Lemma blocks to a “Lemma” calendar here; busy times you choose are read on this phone only and never uploaded.">
   <SwitchRow label="Study mode during focus" checked={!!mode?.enabled&&!!mode.access} onChange={on=>{void studyMode(on);}}/>
-  <SwitchRow label="Show time blocks in this phone’s calendar" checked={sync} onChange={on=>{void calendarSync(on);}}/>
+  <SwitchRow label="Show study blocks in this phone’s calendar" checked={sync} onChange={on=>{void calendarSync(on);}}/>
   {sync&&<ValueRow label="Avoid busy times from" value={busy.length?busy.length+(busy.length===1?' calendar':' calendars'):'None'} onOpen={()=>{void pick();}}/>}
   {picking&&<Sheet open onClose={()=>setPicking(null)} eyebrow="Planning" title="Avoid busy times from">
    {picking.length?<ul className="v7-settings-card v7-set-list">{picking.map(item=><SwitchRow key={item.id} label={item.name+(item.account&&item.account!==item.name?' · '+item.account:'')}
@@ -94,18 +93,17 @@ export function PhonePlanning(){
 /**
  * AW3 (v7 UX audit r3, Owner decision E15): the app has no store and no updater, and every web fix reaches the phone
  * only with a new APK on GitHub Releases. This group shows the installed version, opens the newest release ("Check for
- * updates") and this version's release ("What changed"). N157 adds the second stage: one quiet check a day, whose
- * result names the newer version here and puts a dot on Settings (privacy page: "Updates in the Android app").
+ * updates") and this version's release ("What changed"). A later step adds one quiet check a day, with a line in the
+ * privacy page.
  */
 export function PhoneAbout(){
  const read=useCallback(async()=>{const {App}=await import('@capacitor/app');return App.getInfo();},[]);
  const [info]=useStatus(read);
- const links=releaseLinks(info?.version),update=useDevicePrefValue<number|null>('updateAvailable',null);
+ const links=releaseLinks(info?.version);
  const open=(url:string)=>{void import('@capacitor/browser').then(({Browser})=>Browser.open({url})).catch(()=>window.open(url,'_blank','noopener'));};
  return <Group title="About this app" note="Lemma for Android is installed from GitHub Releases. A newer Lemma.apk installs over this one and keeps your data.">
   <InfoRow label="Version" value={info?.version??'…'}/>
-  {/* AW3 second stage (E15): the day's quiet check found a newer APK. */}
-  <LinkRow label="Check for updates" hint={update?'Lemma 2.0.'+update+' is available':'Opens the newest release'} onOpen={()=>open(links.latest)}/>
+  <LinkRow label="Check for updates" hint="Opens the newest release" onOpen={()=>open(links.latest)}/>
   {links.thisVersion&&<LinkRow label={'What changed in '+info!.version} onOpen={()=>open(links.thisVersion!)}/>}
  </Group>;
 }

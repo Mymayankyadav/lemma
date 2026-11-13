@@ -1,5 +1,4 @@
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type KeyboardEvent,type MouseEvent,type PointerEvent} from 'react';
-import {fromEdge} from '../../../ui/v7/edges';
 import {Check} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
@@ -11,7 +10,6 @@ import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinute
 // This grid is also lazy-loaded by Today; it owns its presentation at either entry.
 import type {EnterMark} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
-import {isFlagOn} from '../../../flags';
 
 export const HOUR_PX=64;
 const MINUTE=60_000;
@@ -31,10 +29,8 @@ type Props={
  suggested?:readonly SuggestedBlock[];
  /** QA4: the block quick-add is drafting, drawn on the grid and scrolled to sit just above the sheet. */
  draft?:{start:string;minutes:number}|null;
- /** Owner-selected elapsed minute of this local day, including 23/25-hour DST days. */
- scrubTo?:number|null;
 };
-export interface SuggestedBlock{id:string;title:string;start:string;end:string;onAccept?:()=>void;busy?:boolean}
+export interface SuggestedBlock{id:string;title:string;start:string;end:string}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
 export function layoutKind(height:number):'full'|'line'|'title'{return height>=60?'full':height>=30?'line':'title';}
 export function quarterHour(elapsedMinutes:number,wholeMinutes:number):number{
@@ -44,9 +40,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
- // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
- const HOUR_PX=isFlagOn('v7Room')?96:64;
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf}:Props){
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -56,8 +50,8 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const saved=useMemo(()=>entries.filter(entry=>entry.status==='saved').flatMap(entry=>entry.intervals
   .filter(interval=>interval.kind==='focus'&&interval.end!==null).map(interval=>({id:'saved:'+entry.id+':'+interval.id,start:interval.start,end:interval.end!}))),[entries]);
  const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...saved],[visible,saved]);
- const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
- const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
+ const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range]);
+ const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60));
  const height=(whole-first)*HOUR_PX/60;
  const ticks=Array.from({length:Math.ceil((whole-first)/60)+1},(_,index)=>first+index*60).filter(minute=>minute<whole);
  const sameDay=now>=from&&now<until,nowY=(now-from)/(60*MINUTE)*HOUR_PX-first/60*HOUR_PX;
@@ -67,10 +61,6 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   // Only on navigation: clock ticks must not steal the reader's scroll.
   // eslint-disable-next-line react-hooks/exhaustive-deps
  },[date,zone]);
- useEffect(()=>{
-  const node=scroll.current;if(!node||scrubTo===null)return;
-  node.scrollTop=Math.max(0,(scrubTo-first)*HOUR_PX/60-node.clientHeight/3);
- },[scrubTo,first,HOUR_PX]);
  useEffect(()=>()=>{if(drag.current?.timer)window.clearTimeout(drag.current.timer);},[]);
  const draftTop=draft?(Date.parse(draft.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60:null;
  useEffect(()=>{
@@ -95,7 +85,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  const blockTouchMove=(event:TouchEvent)=>{if(drag.current?.lifted&&event.cancelable)event.preventDefault();};
  function startDrag(event:PointerEvent<HTMLElement>,block:CalendarBlockRecord,mode:'move'|'resize'){
-  if(busy||event.button!==0||fromEdge(event.clientX))return;
+  if(busy||event.button!==0)return;
   const touch=event.pointerType==='touch',target=event.target as HTMLElement;
   // The bottom handle resizes at once; the body lifts after 300 ms of holding (PLAN §6.5).
   event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -178,7 +168,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const ghosts=suggested.filter(item=>Date.parse(item.start)>=from&&Date.parse(item.end)<=until&&Date.parse(item.start)>=from+first*MINUTE);
  return <section className="v7-cal-grid" aria-label="Day calendar" data-day-minutes={whole}>
   <div ref={scroll} role="region" aria-label="Day time grid" tabIndex={0} className="v7-cal-scroll"
-   onTouchStart={event=>{const t=event.touches[0];swipe.current=fromEdge(t.clientX)?null:{x:t.clientX,y:t.clientY};}}
+   onTouchStart={event=>{const t=event.touches[0];swipe.current={x:t.clientX,y:t.clientY};}}
    onTouchEnd={event=>{const start=swipe.current,t=event.changedTouches[0];swipe.current=null;
     if(!start||drag.current?.lifted)return;const dx=t.clientX-start.x,dy=t.clientY-start.y;
     if(Math.abs(dx)>80&&Math.abs(dx)>Math.abs(dy)*2)onSwipe(dx<0?1:-1);}}>
@@ -191,11 +181,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ticks.map(minute=><i key={minute} aria-hidden="true" style={{top:(minute-first)*HOUR_PX/60}}/>)}
      {sameDay&&nowY>=0&&nowY<=height&&<b className="v7-cal-now" data-calendar-now="" aria-hidden="true" style={{top:nowY}}/>}
      {items.map(card)}
-     {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" data-accept={item.onAccept?'':undefined} role={item.onAccept?undefined:'img'}
+     {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" role="img"
       aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
       style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
-      {item.onAccept?<button type="button" disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title+', '+clock(item.start)+'–'+clock(item.end)}><strong>{item.title}</strong><small>{item.busy?'Adding…':'Suggested · Tap to add'}</small></button>
-       :<div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div>}</div>)}
+      <div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div></div>)}
      {draft&&draftTop!==null&&<div className="v7-cal-block v7-cal-suggested" data-kind="draft" role="img" aria-label={'New block at '+clock(draft.start)}
       style={{top:draftTop,height:Math.max(15,draft.minutes*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
       <div><strong>New block · {clock(draft.start)}</strong></div></div>}

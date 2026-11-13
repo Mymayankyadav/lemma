@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- N123 · N3 static launcher shortcuts; each opens an App Link route in MainActivity. N157 (P7): Review is a dynamic
-     shortcut ("Review" or "Review 12", Shortcuts.java), so it is never listed twice; every icon follows one recipe. -->
+<!-- N123 · N3 static launcher shortcuts; each opens an App Link route in MainActivity. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="review" android:enabled="true" android:icon="@drawable/shortcut_review" android:shortcutShortLabel="@string/shortcut_review">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/review"/>
+    </shortcut>
     <shortcut android:shortcutId="focus" android:enabled="true" android:icon="@drawable/shortcut_focus" android:shortcutShortLabel="@string/shortcut_focus">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/?quick=1"/>
     </shortcut>
     <shortcut android:shortcutId="capture" android:enabled="true" android:icon="@drawable/shortcut_capture" android:shortcutShortLabel="@string/shortcut_capture">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/?capture=1"/>
     </shortcut>
-    <shortcut android:shortcutId="inbox" android:enabled="true" android:icon="@drawable/shortcut_inbox" android:shortcutShortLabel="@string/shortcut_inbox">
+    <shortcut android:shortcutId="inbox" android:enabled="true" android:icon="@drawable/shortcut_approve" android:shortcutShortLabel="@string/shortcut_inbox">
         <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/proposals"/>
     </shortcut>
 </shortcuts>

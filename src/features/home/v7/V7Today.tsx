@@ -30,8 +30,6 @@ import {kitSubject} from '../../atlas/v7/model';
 import {practiceProgress} from '../../practice/progress';
 import {useReviewEstimate} from '../../review/v6/estimate';
 import {QUICK_NO_TIMER,needsRows,offerClose,practiceToday,presetLine,targetDone,targetRows,tasksDueToday} from './needsModel';
-import {isFlagOn} from '../../../flags';
-import {Ruler} from './Ruler';
 import {clockTime,heroState,localDay,localMinute,minutesLabel,nextStudyBlock,startsIn,stripSegment,stripTicks,stripWindow,todayBriefing,todayGreeting,type HeroState} from './todayModel';
 import './today.css';
 
@@ -202,9 +200,6 @@ export default function V7Today(){
     <h2>Three ways to begin</h2>
     <ol><li>Start a path for what you want to prove.</li><li>Connect your tutor and approve its plan in the Inbox.</li><li>Put a study block on today's calendar.</li></ol>
    </section>:<>
-   {isFlagOn('v7Ruler')?<Ruler window={windowMinutes} now={localMinute(date,zone)} summary={minutesLabel(planned)+' planned · '+minutesLabel(logged)+' done'}
-    blocks={blocks.map(block=>{const start=localMinute(block.startsAt,zone);return {id:block.id,start,end:start+(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000,
-     klass:subjectClass(subjectOf(block.projectId).subject),past:Date.parse(block.endsAt)<=now,title:block.title};})}/>:
    <Link to="/calendar?view=day" className="v7-card v7-today-strip-card" aria-label={'Today: '+minutesLabel(planned)+' planned, '+minutesLabel(logged)+' done. Open Calendar Day.'}>
     <span className="v7-card-heading"><h2>Today</h2><span>{minutesLabel(planned)} planned · {minutesLabel(logged)} done<ChevronRight aria-hidden="true"/></span></span>
     <span className="v7-today-strip" aria-hidden="true">
@@ -214,7 +209,7 @@ export default function V7Today(){
      <span className="v7-today-now" style={{left:nowLeft+'%'}}/>
     </span>
     <span className="v7-today-hours" aria-hidden="true">{stripTicks(windowMinutes).map(tick=><span key={tick.label} style={{left:tick.left+'%'}}>{tick.label}</span>)}</span>
-   </Link>}
+   </Link>
    {targets.length>0&&<section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
      {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}{row.key==='reviews'&&row.max>row.value?' · '+(row.max-row.value)+' left':''}</span>}

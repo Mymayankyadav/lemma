@@ -17,40 +17,7 @@ export function releaseLinks(version: string | null | undefined): {latest: strin
   return {latest: RELEASES_URL + '/latest', thisVersion: build ? RELEASES_URL + '/tag/android-build-' + build : null};
 }
 
-/**
- * N157 · AW3 second stage (Owner decision E15): one quiet request a day to the public releases feed (no account, no
- * data sent beyond the request itself; the privacy page says so). When a newer APK exists, Settings shows a dot and
- * About this app names the version.
- */
-export const LATEST_RELEASE_API = 'https://api.github.com/repos/Mymayankyadav/lemma/releases/latest';
-export const UPDATE_CHECK_MS = 24 * 60 * 60 * 1000;
-/** The build number of a version name (2.0.N) or a release tag (android-build-N); null for local builds. */
-export function buildNumber(value: string | null | undefined): number | null {
-  const match = /^(?:2\.0\.|android-build-)([1-9]\d{0,8})$/.exec(String(value ?? '').trim());
-  return match ? Number(match[1]) : null;
-}
-/** The newer build, when the latest release is newer than this one; null otherwise (or when either is unknown). */
-export function newerBuild(installed: string | null | undefined, latestTag: string | null | undefined): number | null {
-  const have = buildNumber(installed), latest = buildNumber(latestTag);
-  return have !== null && latest !== null && latest > have ? latest : null;
-}
-export const dueForUpdateCheck = (lastAt: number | null, now: number) => lastAt === null || !(now - lastAt < UPDATE_CHECK_MS) || now < lastAt;
-/** Run the day's check if it is due: records when it ran and the newer build (or null). Never throws. */
-export async function checkForUpdate(installed: string | null, now = Date.now(), get: typeof fetch = fetch): Promise<number | null> {
-  if (!dueForUpdateCheck(readDevicePref<number | null>('updateCheckedAt', null), now)) return readDevicePref<number | null>('updateAvailable', null);
-  try {
-    const response = await get(LATEST_RELEASE_API, {headers: {Accept: 'application/vnd.github+json'}});
-    if (!response.ok) return readDevicePref<number | null>('updateAvailable', null);
-    const latest = newerBuild(installed, ((await response.json()) as {tag_name?: string}).tag_name);
-    writeDevicePref('updateCheckedAt', now);
-    writeDevicePref('updateAvailable', latest);
-    return latest;
-  } catch {
-    return readDevicePref<number | null>('updateAvailable', null);
-  }
-}
-
-export type DevicePrefKey = 'studyMode' | 'studyModeRequestedAt' | 'calendarSync' | 'busyCalendars' | 'welcomeSeen' | 'notificationsAsked' | 'updateCheckedAt' | 'updateAvailable';
+export type DevicePrefKey = 'studyMode' | 'studyModeRequestedAt' | 'calendarSync' | 'busyCalendars' | 'welcomeSeen' | 'notificationsAsked';
 export const DEVICE_PREFS_CHANGED = 'lemma:device-prefs-changed';
 const prefKey = (key: DevicePrefKey) => 'lemma.android.' + key;
 export function readDevicePref<T>(key: DevicePrefKey, fallback: T): T {
