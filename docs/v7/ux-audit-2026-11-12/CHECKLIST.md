@@ -120,7 +120,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [ ] AW6 *(needs E17)* Haptic vocabulary: reveal, grades, Again, task tick, endings (with LT8), pomodoro end
 - [x] **AW7** Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour — N136
 - [x] **AW8** Back preview on Today: release the back handler at the root with no sheet open — N136
-- [ ] Offline made visible: "as of 14:05" chips; the header ℓ as the sync light
+- [x] Offline made visible: "as of 14:05" chips on Today and the Review hub — N151
+- [ ] Offline made visible: the header ℓ as the sync light
 - [ ] Edges: no Lemma gesture within 24 dp of a screen edge
 - [ ] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers)
 

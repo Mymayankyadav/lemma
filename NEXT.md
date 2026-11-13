@@ -1,5 +1,18 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N151 v7 UX audit r3 · AN3 offline made visible: "as of HH:MM" on Today and the Review hub (Owner task)
+
+Owner task: "Work on the v7 audit items the other agent is not doing"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = when Today's or the Review hub's numbers come from the saved copy rather than the server, "as of HH:MM" (the learner's time zone) sits beside them, as follows.
+- The saved copy means: the device is offline, a refresh is paused waiting for the network, or the latest refresh failed while the older numbers stay on screen. The chip shows the time of the oldest such number. With fresh numbers nothing is shown.
+- Today shows the chip in its briefing. When its day cannot load, Today shows the last day it loaded in this tab, with the chip, instead of "Couldn't load Today". Back online it loads the day again.
+- The Review hub shows the chip beside its count. A failed refresh keeps the hub's numbers and the forecast on screen, with the chip, instead of the load error.
+- The header ℓ sync light is not part of this item.
+- Recorded in `docs/current/N151.md`, with the AN3 line of `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` split and its "as of" half ticked.
+Tests: `tests/unit/v7/n151-as-of.test.tsx`, `tests/e2e/v7-n151-as-of.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/{savedCopy.ts,AsOf.tsx,Status.tsx}` (a `saved` meta chip), `src/features/home/v7/V7Today.tsx`, `src/features/review/v7/ReviewHubV7.tsx`, tests, `docs/current/N151.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (the AN3 offline line).
+Not: the header ℓ sync light, wiring `src/lib/offline-cache.ts` (a snapshot kept across launches), other screens, server changes, new dependencies.
 ## N136 v7 UX audit r3: launch and back feel like Android (AN3 · AW7, AW8) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
