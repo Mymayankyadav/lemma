@@ -382,7 +382,7 @@
   {
    "n": 17,
    "title": "Manage cards",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "add",
     "edit",
@@ -400,8 +400,7 @@
      ]
     }
    ],
-   "gap": "Suspend, restore and tag are edits through the generic edit tool; moving a card between decks has no checked command.",
-   "item": "N160.6"
+   "note": "Tag, suspend (status), restore (status) and reschedule are edit fields; set {\"project\":\"<path>\"} moves a card to another Path and clears links into the old one; delete removes it; card_schedule reschedules or resets."
   },
   {
    "n": 18,
@@ -483,7 +482,7 @@
   {
    "n": 21,
    "title": "Manage sources",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "read_pages",
     "save_pages",
@@ -491,8 +490,7 @@
     "get"
    ],
    "covers": [],
-   "gap": "Pages can be read, searched and corrected, but a file attached in chat cannot be uploaded and attached to a Path.",
-   "item": "N160.6"
+   "note": "save_pages creates a source in a Path from an attached file's text (or fixes a page with replace); get(what=source_upload,id=<short>) returns a signed URL for the original PDF, confirmed with edit set {\"uploaded\":true}; read_pages and search read it back."
   },
   {
    "n": 22,

@@ -8,12 +8,14 @@ import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.t
 import {projectEditFields,isLearningEditTable,learningEditCommand,validateProjectEditPatch} from './learning-edit.ts';
 import {assertValidAtlasParent,assertNoPrerequisiteCycle} from './learning-graph.ts';
 import {slug,cut} from '../text.ts';
+import {cardMovePatch} from './card-move.ts';
+import {confirmedSourceUpload,pageCount} from './source-upload.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
  projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
- sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
- concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position',settings:ownerEditableSettingsFields.join(' ')
+ sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due project',card_comments:'body status',
+ concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position uploaded',settings:ownerEditableSettingsFields.join(' ')
 };
 const enqueue=(c:Context,table:string,where:any,values:any)=>c.batch!.push({op:'update',table,where,values});
 async function find(c:Context,table:string,key:string,value:any){const {data,error}=await scoped(c,table).eq(key,value).maybeSingle();if(error)throw Error(error.message);if(!data)throw Error('No '+table+' '+value);return data;}
@@ -143,7 +145,22 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
    await find(c,'subjects','id',patch.subject_id);
   }
  }
- const p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
+ let p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
+ // N160: a card moves to another Path (deck). Links into the old Path are cleared.
+ if(table==='notes'&&patch.project!==undefined){
+  const dest=await project(c,String(patch.project));
+  Object.assign(patch,cardMovePatch(row,p,dest,{checkpoint_id:patch.checkpoint,source_id:patch.book,concept_id:patch.idea}));
+  delete patch.project;
+  p=dest;
+ }
+ // N160: the original PDF of a source, checked in storage before the row says so.
+ if(table==='sources'&&patch.uploaded!==undefined){
+  if(patch.uploaded!==true)throw Error('uploaded can only be set to true');
+  const stored=await confirmedSourceUpload(c,row);
+  patch.storage_path=stored.storage_path;patch.bytes=stored.bytes;patch.filename=patch.filename??row.filename??'';
+  patch.status=(await pageCount(c,row.id))>0?'ready':'extracting';
+  delete patch.uploaded;
+ }
  if(table==='notes'&&patch.status!==undefined&&!['active','suspended'].includes(patch.status))throw Error('Card status must be active or suspended');
  if(patch.subject!==undefined){
   if(patch.subject===null){if(table!=='projects')throw Error('Only project subjects can be unset');patch.subject_id=null;}
