@@ -53,6 +53,15 @@ export function closeTopLayer(doc: Document = document): boolean {
   target.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
   return true;
 }
+/**
+ * AW8 (v7 UX audit r3): whether Lemma should take the back gesture. On Today with nothing open it should not: Android
+ * then plays its own predictive "back to home" preview and leaves the app as Lemma's own handler did (a root activity
+ * is moved to the back, not finished). Everywhere else Lemma's order applies (close the layer, go back, go home).
+ */
+export function wantsBackHandler({layerOpen, route}: {layerOpen: boolean; route: string}): boolean {
+  return layerOpen || (route.split('?')[0] || '/') !== '/';
+}
+
 export function hasOpenLayer(doc: Document = document): boolean {
   return !!doc.querySelector('dialog[open],[role="dialog"][aria-modal="true"],[role="menu"]');
 }

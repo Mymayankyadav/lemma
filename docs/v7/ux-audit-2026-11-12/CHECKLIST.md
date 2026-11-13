@@ -23,7 +23,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | U2 Resilience (= AN2) | 4 | 5 | E12; device check 1 |
 | AN1 Make the built app right | 6 | 4 | E23, a device |
 | G0 Refresh what is stale | 2 | 0 | none |
-| AN3 Feel | 0 | 6 | E17 |
+| AN3 Feel | 2 | 4 | E17 |
 | U1 Large screens | 0 | 11 | E2 |
 | G1 Pipeline | 2 | 2 | E23 for the themed ∎ |
 | U3 Room and rhythm | 0 | 9 | sheets, E11 |
@@ -118,8 +118,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 ### AN3 · Feel (Android, M) — `03` §4
 
 - [ ] AW6 *(needs E17)* Haptic vocabulary: reveal, grades, Again, task tick, endings (with LT8), pomodoro end
-- [ ] AW7 Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour
-- [ ] AW8 Back preview on Today: release the back handler at the root with no sheet open
+- [x] **AW7** Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour — N136
+- [x] **AW8** Back preview on Today: release the back handler at the root with no sheet open — N136
 - [ ] Offline made visible: "as of 14:05" chips; the header ℓ as the sync light
 - [ ] Edges: no Lemma gesture within 24 dp of a screen edge
 - [ ] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers)

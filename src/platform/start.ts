@@ -16,8 +16,9 @@ import {toast} from '../ui/Toast';
 import type {LemmaNativePlugin} from './bridge';
 import {lemmaNative} from './bridge';
 import {DEVICE_PREFS_CHANGED, readDevicePref} from './device';
-import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl} from './links';
+import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
+import {whenRootPainted} from './splash';
 import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
 import {holdCaptureText, holdSharedSources, routeShare, sharedItems} from './share';
@@ -236,7 +237,9 @@ export async function startNative(): Promise<void> {
   void welcome().catch(() => undefined);
   const {App} = await import('@capacitor/app');
 
-  void import('@capacitor/splash-screen').then(({SplashScreen}) => SplashScreen.hide()).catch(() => undefined);
+  // AW7: the splash lifts on the first paint, not when the native layer starts; launchShowDuration (800 ms) is the cap.
+  const splash = import('@capacitor/splash-screen').catch(() => null);
+  whenRootPainted(document.getElementById('root'), () => void splash.then(plugin => plugin?.SplashScreen.hide()).catch(() => undefined));
   void followTheme().catch(() => undefined);
   void connectSession();
 
@@ -258,6 +261,20 @@ export async function startNative(): Promise<void> {
     else if (step === 'home') go('/');
     else void App.minimizeApp();
   });
+
+  // AW8: release the back handler on Today with nothing open, so Android shows its back-to-home preview.
+  let handling: boolean | null = null;
+  const syncBack = () => {
+    const wanted = wantsBackHandler({layerOpen: hasOpenLayer(), route: route()});
+    if (wanted === handling) return;
+    handling = wanted;
+    void App.toggleBackButtonHandler({enabled: wanted}).catch(() => {handling = null;});
+  };
+  let queued = 0;
+  const queueBack = () => {if (!queued) queued = window.requestAnimationFrame(() => {queued = 0; syncBack();});};
+  window.addEventListener('hashchange', queueBack);
+  new MutationObserver(queueBack).observe(document.body, {subtree: true, childList: true, attributes: true, attributeFilter: ['open', 'aria-modal', 'role']});
+  syncBack();
 
   await App.addListener('appStateChange', ({isActive}) => {
     if (!isActive) {
