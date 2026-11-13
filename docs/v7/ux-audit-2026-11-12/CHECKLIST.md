@@ -83,7 +83,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U2 · Resilience = AN2 (web, M) — `02` §4 · the most urgent web phase
 
-- [ ] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%" (the key screens are checked by `v7-n134-text-scale.spec.ts`, N134)
+- [x] **V11** Every v7 scene clean at 100%, 130% and 200% text at 360 and 390 px; the design lint gains "360 at 130%" (the key screens are checked by `v7-n134-text-scale.spec.ts`, N134) — N157 (the lint also runs 360 at 200% and 1280)
 - [x] **V11** Dock at large text: icons, with only the selected tab's label shown — N134
 - [x] **V11** Gutters (calendar times, tiles; chart gutters were N125) sized from their content; rows that wrap (Focus, segmented controls: a menu above three options) — N134
 - [x] V36 / AW12 *(E6)* Touch token 48 px in the app (44 px on the web) — N130 (#1363)
@@ -244,5 +244,5 @@ Lapsed or superseded: E4 "coded first" (superseded by D7 for the three shipped m
 
 - [ ] A re-audit with the same method: phone ≥ 8.5, desktop ≥ 8, Android conditions ≥ 8, no Major open
 - [ ] In the app: a backup saves; the version and an update path are visible; every reminder switch does what it says; the largest system font leaves every screen usable
-- [ ] The rendered design lint covers 360 px at 130% text and 1280 px
+- [x] The rendered design lint covers 360 px at 130% text and 1280 px — N157 (and 360 px at 200%)
 - [ ] Every ending in the product is the same small square

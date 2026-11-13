@@ -60,7 +60,7 @@ export default function CardV7(){
   catch{notify('Could not save your note.',{tone:'danger'});}
  }
  const comments=detail.comments.filter(item=>item.status!=='dismissed');
- return <main id="main-content" className={'v7-page v7-learn v7-card '+subjectClass(subject)} aria-label="Card">
+ return <main id="main-content" className={'v7-page v7-learn v7-card-page '+subjectClass(subject)} aria-label="Card">
   <DetailHeader title="Card" back="/cards" action={<IconButton label="More card actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>}/>
   <h1 className="v7-sr-only">{'Card in '+(project?.title??'your library')}</h1>
   <article className="v7-card-face" aria-label="Card">

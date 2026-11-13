@@ -11,14 +11,15 @@ import {openScene,shots} from "./v7-scenes";
 //  - a horizontal page scroll;
 //  - an emblem over its tier's stroke budget (R2) or a textarea with a resize grip (R1).
 test.use({deviceScaleFactor:1,locale:"en-IN",timezoneId:"Asia/Kolkata"});
-const sizes=[{width:390,height:844},{width:320,height:640}];
+// N157 (V11, definition of done): also 360 px at 130% and 200% text, and a 1280 px desktop.
+const sizes:{width:number;height:number;text?:number}[]=[{width:390,height:844},{width:320,height:640},{width:360,height:740,text:130},{width:360,height:740,text:200},{width:1280,height:800}];
 
 for(const scheme of ["light","dark"] as const){
  for(const shot of shots){
   for(const size of sizes){
-   test(`lint ${shot.name} ${scheme==="light"?"day":"night"} ${size.width}`,async({page})=>{
+   test(`lint ${shot.name} ${scheme==="light"?"day":"night"} ${size.width}${size.text?" at "+size.text+"%":""}`,async({page})=>{
     await openScene(page,shot,scheme,size);
-    const problems=await page.evaluate(()=>{
+    const problems=await page.evaluate(text=>{
      const out:string[]=[];
      const root=getComputedStyle(document.documentElement),token=(name:string)=>{
       const probe=document.createElement("i");probe.style.color=`var(${name})`;document.body.append(probe);const value=getComputedStyle(probe).color;probe.remove();return value;
@@ -37,7 +38,8 @@ for(const scheme of ["light","dark"] as const){
      for(const node of document.querySelectorAll(".v7-button")){
       if(!visible(node)||inClosedDialog(node))continue;
       const height=Math.round(node.getBoundingClientRect().height);
-      if(!allowed.includes(height))out.push("button height "+height+": "+where(node));
+      // N157: with raised text a button may grow with its words (never shrink below its size); at 100% it is exact.
+      if(text>100?height<Math.min(...allowed):!allowed.includes(height))out.push("button height "+height+": "+where(node));
      }
      // Native controls.
      for(const node of document.querySelectorAll("select,input[type=date],input[type=time],input[type=datetime-local]")){
@@ -83,7 +85,7 @@ for(const scheme of ["light","dark"] as const){
      }
      if(document.documentElement.scrollWidth>innerWidth+1)out.push("horizontal page scroll: "+document.documentElement.scrollWidth+" > "+innerWidth);
      return out;
-    });
+    },size.text??100);
     expect(problems,shot.name).toEqual([]);
    });
   }

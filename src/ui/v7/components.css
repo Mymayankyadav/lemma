@@ -12,7 +12,9 @@
  :where(html[data-v7]) :is(button,input):disabled {cursor:not-allowed;}
 }
 @layer v7-components {
- :where(html[data-v7]) .v7-button {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-2) var(--v7-space-4);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font-weight:600;}
+ /* N157 (V11, V23): 4 px of vertical padding, so min-height alone sets the height (48, or 40 on wide screens; a 24 px line
+    plus 8 px padding and the border made desktop buttons 42) and a 130% line still fits in 48 without growing. */
+ :where(html[data-v7]) .v7-button {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);min-height:var(--v7-button);padding:var(--v7-space-1) var(--v7-space-4);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font-weight:600;}
  :where(html[data-v7]) .v7-button > span {display:inline-flex;align-items:center;justify-content:center;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-primary {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
  :where(html[data-v7]) .v7-ghost {background:transparent;color:var(--v7-role-link-fg);}

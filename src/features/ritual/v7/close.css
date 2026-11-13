@@ -8,7 +8,7 @@
 :where(html[data-v7]) .v7-cd-dots [data-state="now"] {background:var(--v7-role-action-bg);}
  :where(html[data-v7]) .v7-cd-dots [data-state="done"] {background:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cd-step {display:grid;gap:var(--v7-space-4);align-content:start;}
-:where(html[data-v7]) .v7-cd-figure {margin:0;font:500 var(--v7-type-numeric-xl)/1 var(--v7-sans);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
+:where(html[data-v7]) .v7-cd-figure {display:flex;flex-wrap:wrap;align-items:baseline;margin:0;font:500 var(--v7-type-numeric-xl)/1 var(--v7-sans);font-variant-numeric:tabular-nums;letter-spacing:-.02em;}
  :where(html[data-v7]) .v7-cd-figure small {font-size:60%;font-weight:500;color:var(--v7-role-text-secondary);letter-spacing:0;}
  :where(html[data-v7]) .v7-cd-meters {display:grid;gap:var(--v7-space-3);padding:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);}
  :where(html[data-v7]) .v7-cd-sessions,:where(html[data-v7]) .v7-cd-ends {list-style:none;margin:0;padding:0;display:grid;gap:var(--v7-space-2);}
