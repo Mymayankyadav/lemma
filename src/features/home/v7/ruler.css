@@ -1,0 +1,16 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* N157 · U4 S1 the ruler (flag v7Ruler). */
+@layer v7-components {
+ :where(html[data-v7]) .v7-ruler-card {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-ruler-card .v7-card-heading a {color:var(--v7-role-text-secondary);font-size:var(--v7-type-supporting);}
+ :where(html[data-v7]) .v7-ruler-preview {margin:0;min-height:var(--v7-leading-supporting);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-ruler {position:relative;height:56px;margin:0 var(--v7-space-3) var(--v7-space-5);border-bottom:var(--v7-hairline) solid var(--v7-role-border-default);touch-action:none;cursor:ew-resize;}
+ :where(html[data-v7]) .v7-ruler-tick {position:absolute;bottom:0;width:var(--v7-hairline);height:8px;background:var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-ruler-tick[data-hour] {height:14px;background:var(--v7-role-text-tertiary);}
+ :where(html[data-v7]) .v7-ruler-label {position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);color:var(--v7-role-text-tertiary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;white-space:nowrap;}
+ :where(html[data-v7]) .v7-ruler-block {position:absolute;bottom:18px;height:20px;border-radius:var(--v7-radius-xs);background:var(--v7-subject,var(--v7-role-viz-neutral));}
+ :where(html[data-v7]) .v7-ruler-block[data-past] {background:var(--v7-role-border-default);}
+ :where(html[data-v7]) .v7-ruler-needle {position:absolute;top:0;bottom:-4px;width:var(--v7-touch);margin-left:calc(var(--v7-touch) / -2);display:grid;justify-items:center;outline-offset:2px;}
+ :where(html[data-v7]) .v7-ruler-needle::before {content:"";width:var(--v7-ring);height:100%;background:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-ruler-needle::after {content:"";position:absolute;top:-2px;width:10px;height:10px;border-radius:50%;background:var(--v7-role-selection-fg);}
+}
