@@ -4,6 +4,8 @@
 import type {Context} from '../db.ts';
 
 const RESOURCE=/^[a-z][a-z0-9_]{0,60}$/;
+export const SAVED_TIME_OPERATIONS:Record<string,string[]>={
+ study_entries:['create_manual','correct','split','void','restore']};
 // Reject both flat and nested service metadata. A registered write-field is
 // not automatically a safe output field (e.g. connectorSecret or access_token).
 const HIDDEN=/(?:secret|token|password|credential|api_?key|private_?key)|^(?:user_id|userId|owner_id|ownerId)$/i;
@@ -69,7 +71,14 @@ export async function registeredResources(c:Context):Promise<string>{
   .order('resource',{ascending:true}).limit(100);
  if(error)throw Error(error.message);
  if(!Array.isArray(data))throw Error('Invalid registered resource inventory');
- return JSON.stringify({resources:data.map(x=>readSchema(x as RecordMap))});
+ // N160: saved-time corrections run through study_command (N91) and are not in
+ // the registry row, which is seeded and cannot be edited by a migration. They are
+ // listed here so chat can discover them; study_command enforces them.
+ return JSON.stringify({resources:data.map(x=>{
+  const meta=readSchema(x as RecordMap);
+  const extra=SAVED_TIME_OPERATIONS[meta.resource];
+  return extra?{...meta,operations:[...meta.operations,...extra.filter(o=>!meta.operations.includes(o))]}:meta;
+ })});
 }
 const safeLike=(s:string)=>s.replace(/[\\%_]/g,'\\$&');
 function pageLimit(raw:unknown,mode:GenericMode):number{

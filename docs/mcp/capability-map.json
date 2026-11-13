@@ -287,12 +287,22 @@
   {
    "n": 13,
    "title": "Manage time logs",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "study",
     "get"
    ],
    "covers": [
+    {
+     "resource": "study_entries",
+     "operations": [
+      "create_manual",
+      "correct",
+      "split",
+      "void",
+      "restore"
+     ]
+    },
     {
      "resource": "study_intervals",
      "operations": [
@@ -311,8 +321,7 @@
      ]
     }
    ],
-   "gap": "Splitting one logged interval into two, and voiding or restoring a logged interval (as study events can be), have no command.",
-   "item": "N160.5"
+   "note": "Saved time is corrected a whole entry at a time (study_command, N91): create_manual records time, correct replaces its intervals, split cuts it at an instant, void removes it from every total and restore brings it back. Proof: tests/mcp/sql/time-log-mcp.mjs."
   },
   {
    "n": 14,

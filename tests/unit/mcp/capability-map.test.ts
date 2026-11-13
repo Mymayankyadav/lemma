@@ -11,6 +11,9 @@ const manifest=JSON.parse(readFileSync('docs/v6/capability-registry/lemma_comman
  {resources:{resource:string;mcp_ok:boolean;schema:{operations:string[]}}[]};
 const server=readFileSync('supabase/functions/mcp/server.ts','utf8');
 const next=readFileSync('NEXT.md','utf8');
+// Saved-time corrections (study_command) are advertised from registry.ts, not the seeded row.
+const registrySource=readFileSync('supabase/functions/mcp/tools/registry.ts','utf8');
+const savedTimeOps=[...(/SAVED_TIME_OPERATIONS[^=]*=\{\s*study_entries:\[([^\]]*)\]/.exec(registrySource)?.[1]??'').matchAll(/'([^']+)'/g)].map(m=>m[1]);
 function toolNames():string[]{
  const start=server.indexOf('export const TOOL_NAMES=[');
  return [...server.slice(start,server.indexOf(']',start)).matchAll(/'([^']+)'/g)].map(m=>m[1]);
@@ -37,7 +40,7 @@ describe('N160 capability map of the 30 chat-connector areas',()=>{
    expect(r,`area ${a.n}: resource ${c.resource} is not registered`).toBeDefined();
    expect(r!.mcp_ok).toBe(true);
    for(const op of c.operations)
-    expect(r!.schema.operations,`area ${a.n}: ${c.resource}.${op}`).toContain(op);
+    expect([...r!.schema.operations,...(c.resource==='study_entries'?savedTimeOps:[])],`area ${a.n}: ${c.resource}.${op}`).toContain(op);
   }
  });
  it('maps every registered resource to an area',()=>{
