@@ -17,9 +17,7 @@ import {announceFocusChange,focusClock,focusEyebrow,focusWord,useActiveFocus,use
 import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
 import {useToast} from '../../../ui/Toast';
-import {isFlagOn} from '../../../flags';
 import './focus.css';
-import {Loader} from '../../../ui/v7/Loader';
 
 const RING=280,STROKE=6,RADIUS=(RING-STROKE*2-10)/2,CIRCUMFERENCE=2*Math.PI*RADIUS;
 const draftKey=(id:string)=>'lemma.v7.focus-intention.'+id;
@@ -40,23 +38,6 @@ export function focusError(reason:unknown,action:'save'|'other'='other'):string{
  return action==='save'?'We couldn’t save this session. It is still running, so nothing is lost; try again.':'That didn’t work. Your session is still running; try again.';
 }
 
-/** Milliseconds focused so far (focus intervals only). */
-export function focusedMs(entry:StudyEntryRecord,now:number):number{
- let total=0;for(const interval of entry.intervals)if(interval.kind==='focus')total+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));
- return total;
-}
-/** N131 · L-04 / A4 focus orbit: where the orbiting point is, as a fraction of the ring (one turn per focused minute). */
-export const orbitTurn=(ms:number)=>(Math.max(0,ms)%60_000)/60_000;
-/** The orbit for an open-mode session: a ring the point traces once a minute; it rests when paused and ripples on Drifted. */
-function FocusOrbit({entry,now,paused,drifted,reduced}:{entry:StudyEntryRecord;now:number;paused:boolean;drifted:boolean;reduced:boolean}){
- const turn=orbitTurn(focusedMs(entry,now)),angle=-Math.PI/2+2*Math.PI*turn;
- return <svg className="v7-focus-orbit" viewBox={'0 0 '+RING+' '+RING} aria-hidden="true" data-paused={paused?'true':undefined} data-drifted={drifted?'true':undefined} data-turn={turn.toFixed(3)} data-wrap={turn<1/30?'true':undefined}>
-  <circle cx={RING/2} cy={RING/2} r={RADIUS} className="v7-focus-track"/>
-  <circle cx={RING/2} cy={RING/2} r={RADIUS} className="v7-focus-arc" strokeDasharray={CIRCUMFERENCE} strokeDashoffset={CIRCUMFERENCE*(1-turn)} transform={'rotate(-90 '+RING/2+' '+RING/2+')'}/>
-  {!reduced&&<circle cx={RING/2+Math.cos(angle)*RADIUS} cy={RING/2+Math.sin(angle)*RADIUS} r={5} className="v7-focus-head"/>}
-  {drifted&&!reduced&&<circle cx={RING/2} cy={RING/2} r={RADIUS} className="v7-focus-ripple"/>}
- </svg>;
-}
 /** PLAN §6.3: one session, nothing else on screen. */
 export default function FocusV7(){
  const {entry,loading,refresh}=useActiveFocus(),now=useNow(1000),navigate=useNavigate(),home=useHome(),notify=useToast();
@@ -120,7 +101,7 @@ export default function FocusV7(){
   };
   window.addEventListener('keydown',handler);return ()=>window.removeEventListener('keydown',handler);
  },[navigate]);
- if(loading)return <main id="main-content" className="v7-focus" aria-label="Focus"><Loader className="v7-focus-empty" label="Opening your session…"/></main>;
+ if(loading)return <main id="main-content" className="v7-focus" aria-label="Focus"><p role="status" className="v7-focus-empty">Opening your session…</p></main>;
  if(!entry)return <main id="main-content" className="v7-focus" aria-label="Focus">
   <ImmersiveHeader leave={<Link className="v7-icon-button" to="/" aria-label="Back to Today"><ChevronDown aria-hidden="true"/></Link>} center={<span className="v7-meta">Focus</span>}/>
   <div className="v7-focus-empty"><h1 className="v7-hub-title">No session running</h1><p className="v7-meta">Start one from Today, from a study block, or with Quick focus.</p>
@@ -154,10 +135,6 @@ export default function FocusV7(){
     <div className="v7-focus-readout"><p className="v7-eyebrow" aria-live="polite">{eyebrow}</p>
      <time className="v7-focus-time" aria-label={clock.label+' left'} data-testid="focus-clock">{clock.label}</time>
      {clock.endsAt&&<p className="v7-meta">ends {clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)}</p>}</div>
-   </div>:isFlagOn('focusOrbit')?<div className="v7-focus-ring" data-word={word} data-orbit="">
-    <FocusOrbit entry={entry} now={now} paused={entry.status==='paused'} drifted={noted==='Noted'} reduced={reduced}/>
-    <div className="v7-focus-readout"><p className="v7-eyebrow" aria-live="polite">{eyebrow}</p>
-     <time className="v7-focus-time" aria-label={clock.label+' focused'} data-testid="focus-clock">{clock.label}</time></div>
    </div>:<div className="v7-focus-open"><p className="v7-eyebrow" aria-live="polite">{eyebrow}</p>
     <time className="v7-focus-time" aria-label={clock.label+' focused'} data-testid="focus-clock">{clock.label}</time></div>}
    {editing?<form className="v7-focus-intention-form" onSubmit={event=>{event.preventDefault();writeDraft(entry.id,draft.trim()&&draft.trim()!==entry.intent?draft.trim():null);setEditing(false);}}>

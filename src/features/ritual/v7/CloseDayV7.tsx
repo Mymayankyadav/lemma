@@ -1,6 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {Check,Share2,X} from 'lucide-react';
+import {Check,X} from 'lucide-react';
 import {getApi} from '../../../data';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getDayPlanApi,type DayPlanRecord} from '../../../data/day-plans';
@@ -22,9 +22,7 @@ import {ownerCivilDate,savedFocusTouchesOwnerDay} from '../model';
 import {civilDay} from '../../tasks/v7/tasksModel';
 import {STEPS,blockTomorrow,closeDayRecord,focusMinutes,looseEnds,meters,nextDay,type CloseStep,type LooseEnd} from './closeModel';
 import {LottieMoment} from '../../../ui/v7/LottieMoment';
-import {playSound,soundsOn} from '../../../ui/v7/sounds';
 import './close.css';
-import {Loader} from '../../../ui/v7/Loader';
 
 /** LT3 (v7 UX audit r3, Owner decision E20): how long Day closed stays before Today, unless Done is pressed first. The
  *  same with or without motion: reduced motion means less movement, not less time to read the day's ending. */
@@ -116,8 +114,6 @@ export default function CloseDayV7(){
   try{
    await closeDayRecord(getDayPlanApi(),{plan:data.plan,date,zone:tz,aim,first,taskIds:data.tasks.map(task=>task.id)},plan=>setData(previous=>previous?{...previous,plan}:previous));
    setClosed(true);
-   // N131 · A5: the low chime, when Sounds is on.
-   void playSound('chime',soundsOn(settings.data?.ui));
    // LT3 (E20): Day closed stays until Done, or DAY_CLOSED_MS, the same with or without motion.
    timer.current=window.setTimeout(()=>navigate('/'),DAY_CLOSED_MS);
   }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
@@ -129,27 +125,17 @@ export default function CloseDayV7(){
   :(data?.reviewsDone??0)>0?{value:String(data!.reviewsDone),unit:data!.reviewsDone===1?'review':'reviews',line:'answered today'}
   :(data?.practice?.done??0)>0?{value:String(data!.practice!.done),unit:data!.practice!.done===1?'topic':'topics',line:'practised today'}
   :{value:'0',unit:'min',line:'of focus saved — a rest day counts too'};
- /** N131 · A5′ "Share the page": the closed day as a 1200 × 630 notebook page (the drawing module loads only now). Sharing
-  *  stops the walk back to Today, since the learner is still here. */
- async function shareDay(){
-  if(timer.current){window.clearTimeout(timer.current);timer.current=0;}
-  try{
-   const {shareCard}=await import('../../../ui/v7/shareImage');
-   if(await shareCard({kind:'day',date:dayName||date,figure:lead.value+' '+lead.unit,line:lead.line,aim})==='saved')notify('Image saved',{tone:'success'});
-  }catch{notify('Could not make the image',{tone:'danger'});}
- }
  const leave=<Link className="v7-icon-button" to="/" aria-label="Close"><X aria-hidden="true"/></Link>;
  const dots=<ol className="v7-cd-dots" aria-label={'Step '+(step+1)+' of 3: '+STEPS[step]}>{STEPS.map((name,index)=><li key={name} data-state={index<step?'done':index===step?'now':'next'}><span className="v7-sr-only">{name}</span></li>)}</ol>;
  if(closed)return <main id="main-content" className="v7-cd v7-cd-closed" aria-label="Day closed"><ImmersiveHeader leave={leave} center={dots}/>
   <LottieMoment name="closed" animation="day-closed" width={160} className="v7-cd-art"/><h1 className="v7-hub-title">Day closed</h1><p className="v7-meta" role="status">See you tomorrow.</p>
-  <Button variant="ghost" className="v7-cd-share" onClick={()=>{void shareDay();}}><Share2 aria-hidden="true"/>Share the page</Button>
   <Button variant="primary" className="v7-cd-done" onClick={()=>{if(timer.current)window.clearTimeout(timer.current);navigate('/');}}>Done</Button></main>;
  const already=data?.plan?.status==='closed';
  return <main id="main-content" className="v7-cd" aria-label="Close the day">
   <ImmersiveHeader leave={leave} center={dots}/>
   {invalid&&<p role="alert" className="v7-alert">Choose a real YYYY-MM-DD date.</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
-  {!invalid&&!data&&!error&&<Loader className="v7-meta" label="Loading your day…"/>}
+  {!invalid&&!data&&!error&&<p role="status" className="v7-meta">Loading your day…</p>}
   {data&&step===0&&<section className="v7-cd-step" aria-label="Today">
    <p className="v7-eyebrow">{date===today?'Today · ':''}{dayName}</p>
    <h1 className="v7-hub-title">Today</h1>

@@ -31,12 +31,6 @@
  :where(html[data-v7]) .v7-proof {font-family:var(--v7-glyph);}
  :where(html[data-v7]) .v7-segmented {display:flex;gap:var(--v7-space-1);padding:var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-muted);}
  :where(html[data-v7]) .v7-segmented button {flex:1;min-width:0;min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);font-size:var(--v7-type-supporting);font-weight:600;}
- /* V11 (v7 UX audit r3): a label never wraps inside a segment by accident; when the labels do not fit, up to three wrap
-    on purpose (two lines, centred) and more become a menu (Segmented / useSegmentsFit). */
- :where(html[data-v7]) .v7-segmented button {white-space:nowrap;}
- :where(html[data-v7]) .v7-segmented[data-wrap] button {white-space:normal;line-height:1.2;overflow-wrap:anywhere;}
- :where(html[data-v7]) .v7-segmented-menu {position:relative;}
- :where(html[data-v7]) .v7-segmented-measure {position:absolute;inset:0 0 auto;visibility:hidden;pointer-events:none;overflow:hidden;}
  :where(html[data-v7]) .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);border-color:var(--v7-role-border-default);font-weight:600;box-shadow:var(--v7-shadow-1);}
  /* K1/KA1: in Night the thumb is lighter than the track (kit plan §7.4), in the app and not only inside the kit page. */
  :where(html[data-v7][data-theme="graph-night"]) .v7-segmented [aria-checked="true"],:where(html[data-v7]) .v7-split-panel[data-theme="graph-night"] .v7-segmented [aria-checked="true"] {background:var(--v7-role-surface-muted-hover);}
@@ -173,17 +167,6 @@
 :where(html[data-v7]) :is(.v7-cards-front,.v7-paths-title,.v7-tk-title,.v7-learn-front) {display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;overflow-wrap:anywhere;}
 }
 
-@layer v7-components {
-/* N131 · L-09 loader: an emblem glyph draws itself in construction order, holds, and lifts again (1.6 s a cycle). */
-:where(html[data-v7]) .v7-loader {display:inline-flex;align-items:center;gap:var(--v7-space-2);}
-:where(html[data-v7]) .v7-loader-mark {flex:none;display:inline-flex;width:20px;height:20px;color:var(--v7-subject,var(--v7-role-selection-fg));}
-@media (prefers-reduced-motion: no-preference) {
- :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-loader-mark .v7-emblem-draw path {animation:v7-loader-draw 1.6s var(--v7-ease-draw,cubic-bezier(.65,0,.35,1)) infinite;}
-}
-@keyframes v7-loader-draw {0%{stroke-dashoffset:1;opacity:1}55%{stroke-dashoffset:0;opacity:1}85%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:0;opacity:0}}
-}
-
 /* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
    website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
 html[data-v7][data-native-app] {--v7-touch:48px;}
-
