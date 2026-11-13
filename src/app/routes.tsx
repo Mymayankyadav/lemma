@@ -1,5 +1,7 @@
 import {lazy,Suspense} from "react";
 import RouteError, {RouteFallback} from "./RouteError";
+// N150 (bug #1375): keeps an E pressed on the Inbox before its code has loaded (a few hundred bytes, no dependencies).
+import "../features/proposals/v7/inboxEarlyKeys";
 import Page0 from '../features/home/Page'
 import Page1 from '../features/projects/Page'
 const Page2=lazy(()=>import('../features/new-project/Page'))

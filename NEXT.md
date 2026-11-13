@@ -9,6 +9,20 @@ Tests: `tests/unit/v7/n136-android-feel.test.ts`, `tests/e2e/v7-n136-back.spec.t
 Scope: `src/platform/start.ts`, `src/platform/links.ts`, `src/platform/splash.ts`, `android/app/src/main/java/io/github/mymayankyadav/lemma/MainActivity.java`, `android/app/src/main/java/io/github/mymayankyadav/lemma/BackPolicy.java`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N136.md`.
 Not: haptics (AW6, decision E17), the "as of" offline chips, edge gesture margins, the back gesture's shrink animation for sheets, new dependencies.
 
+## N150 Inbox: a key pressed just after the Inbox opens is not lost (bug #1375) (Owner task)
+
+Owner task: "Work on the v7 audit items the other agent is not doing"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = bug #1375 fixed with a regression test, as follows.
+- The Inbox's keys (A, R, arrows, E) are handled from the Inbox's first commit; one listener is attached synchronously in `useInboxKeys`.
+- An E pressed while the stack is loading, or before the Inbox's code has loaded (kept by `inboxEarlyKeys.ts`, which the app's routes load from the start), opens the editor when the first card shows, within 5 s.
+- A decision key is never replayed on a card the learner has not seen.
+- `tests/e2e/v7-inbox.spec.ts` "keys alone … E opens the editor" holds under load. That test is unchanged.
+- Recorded in `docs/current/N150.md`.
+Tests: `tests/unit/v7/n150-inbox-keys.test.tsx`, `tests/e2e/v7-n150-inbox-keys.spec.ts`, existing suites unchanged.
+Scope: `src/features/proposals/v7/{InboxV7.tsx (keyboard only),useInboxKeys.ts,inboxEarlyKeys.ts}`, `src/app/routes.tsx` (one side-effect import), tests, `docs/current/N150.md`.
+Not: InboxV7's pointer handlers, other screens' keys, server changes, new dependencies.
+
 ## N134 v7 UX audit r3: large text holds (U2 · V11) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
