@@ -14,8 +14,9 @@
     "check": "npm run typecheck && npm run test && npm run build",
     "format": "prettier --write .",
     "prebuild": "node scripts/generate-icons.mjs",
-    "postbuild": "node scripts/check-pwa.mjs",
-    "build:android": "node scripts/generate-icons.mjs && node scripts/android-icons.mjs && tsc -b && vite build --mode android --outDir dist-android/lemma --emptyOutDir && node scripts/android-web.mjs && cap sync android"
+    "postbuild": "node scripts/check-pwa.mjs && node scripts/brand/asset-lint.mjs",
+    "emblem": "tsx scripts/brand/emblem-export.mjs",
+    "build:android": "node scripts/generate-icons.mjs && node scripts/brand/android-colors.mjs && node scripts/android-icons.mjs && tsc -b && vite build --mode android --outDir dist-android/lemma --emptyOutDir && node scripts/android-web.mjs && cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "8.6.0",

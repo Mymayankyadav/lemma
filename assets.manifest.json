@@ -1,0 +1,540 @@
+{
+ "$comment": "N137 · G1 (v7 UX plan r3, `04` §3.3): every generated asset, its source, generator, size, themes, byte budget and place of use. scripts/brand/asset-lint.mjs checks each entry after every build (npm run build → postbuild). Add an entry with every new generated asset.",
+ "checks": {
+  "markContrast": {
+   "ellOnPage": 7,
+   "qedOnPage": 3
+  }
+ },
+ "assets": [
+  {
+   "path": "public/icons/lemma-192.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    192,
+    192
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 20480,
+   "use": "PWA install icon",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/lemma-512.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    512,
+    512
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 20480,
+   "use": "PWA install icon, splash",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/lemma-maskable-512.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    512,
+    512
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 20480,
+   "use": "PWA maskable icon",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/apple-touch-icon.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    180,
+    180
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 20480,
+   "use": "iOS home screen",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/favicon-32.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    32,
+    32
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 4096,
+   "use": "browser tab",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/favicon.svg",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": null,
+   "themes": [
+    "day",
+    "night"
+   ],
+   "budget": 4096,
+   "use": "browser tab (follows Day/Night)",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/favicon.ico",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "legacy browser tab",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/shortcut-review.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    96,
+    96
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 4096,
+   "use": "PWA shortcut",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/shortcut-approve.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    96,
+    96
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 4096,
+   "use": "PWA shortcut",
+   "generated": "build"
+  },
+  {
+   "path": "public/icons/shortcut-atlas.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/generate-icons.mjs",
+   "size": [
+    96,
+    96
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 4096,
+   "use": "PWA shortcut",
+   "generated": "build"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    108,
+    108
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: the ℓ and ∎",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    108,
+    108
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: paper, grid and margin",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    48,
+    48
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    48,
+    48
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy round launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    162,
+    162
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: the ℓ and ∎",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    162,
+    162
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: paper, grid and margin",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    72,
+    72
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    72,
+    72
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy round launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    216,
+    216
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: the ℓ and ∎",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    216,
+    216
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: paper, grid and margin",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    96,
+    96
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    96,
+    96
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy round launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    324,
+    324
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: the ℓ and ∎",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    324,
+    324
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: paper, grid and margin",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    144,
+    144
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    144,
+    144
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy round launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    432,
+    432
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: the ℓ and ∎",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    432,
+    432
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "adaptive icon: paper, grid and margin",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    192,
+    192
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": [
+    192,
+    192
+   ],
+   "themes": [
+    "day"
+   ],
+   "budget": 24576,
+   "use": "legacy round launcher icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "adaptive icon layers",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "adaptive icon layers",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/ic_launcher_monochrome.xml",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "themed icon (Android 13+): the ℓ",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/drawable/ic_stat_lemma.xml",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "notification small icon",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/values/ic_launcher_background.xml",
+   "source": "scripts/brand/lemma-mark.mjs",
+   "generator": "scripts/android-icons.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 8192,
+   "use": "adaptive icon paper colour",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/values/colors.xml",
+   "source": "src/ui/v7/design-tokens.json",
+   "generator": "scripts/brand/android-colors.mjs",
+   "size": null,
+   "themes": [
+    "day"
+   ],
+   "budget": 4096,
+   "use": "native window, splash and notification colours",
+   "generated": "committed"
+  },
+  {
+   "path": "android/app/src/main/res/values-night/colors.xml",
+   "source": "src/ui/v7/design-tokens.json",
+   "generator": "scripts/brand/android-colors.mjs",
+   "size": null,
+   "themes": [
+    "night"
+   ],
+   "budget": 4096,
+   "use": "native window, splash and notification colours",
+   "generated": "committed"
+  }
+ ]
+}
