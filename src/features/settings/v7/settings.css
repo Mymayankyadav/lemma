@@ -65,19 +65,19 @@
  /* R2 · F31: hosted Advanced forms sit flat inside their one card, never card-in-card. */
  :where(html[data-v7]) .v7-settings-legacy :is(.rounded-slab,section[class*="border"]) {border:0;padding-inline:0;background:transparent;}
  :where(html[data-v7]) .v7-set-switch .v7-switch-choice > span {font:500 var(--v7-type-body)/1.3 var(--v7-sans);}
+ /* N157 · U1: from 840 px the index stays on the left (280 px) and the chosen section opens on the right. */
+ :where(html[data-v7]) .v7-settings-split {display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:var(--v7-space-6);align-items:start;}
+ :where(html[data-v7]) .v7-settings-index {position:sticky;top:var(--v7-space-4);display:grid;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-settings-index .v7-settings-row[aria-current="page"] {color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-settings-index li:has(> [aria-current="page"]) {margin-inline:calc(-1 * var(--v7-space-3));padding-inline:var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-selection-subtle);}
+ :where(html[data-v7]) .v7-settings-pane-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
+ :where(html[data-v7]) .v7-settings-pane {display:grid;gap:var(--v7-space-4);align-content:start;min-width:0;}
+  /* Row values stay within 320 px of their labels: the section is read at most 560 px wide. */
+ :where(html[data-v7]) .v7-settings-pane > :not(h2) {max-width:560px;}
+ @media (min-width:840px) {:where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page.v7-settings[data-split] {max-width:1200px;}}
 }
 
 /* N125: the connector address actions in a tidy grid (Show and Copy side by side, New address below), not a wrapped row. */
 :where(html[data-v7]) .v7-connector-actions {display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-space-3);margin-top:var(--v7-space-3);}
 :where(html[data-v7]) .v7-connector-actions > .v7-button {justify-content:center;width:100%;}
 :where(html[data-v7]) .v7-connector-actions > .v7-button:last-child {grid-column:1 / -1;}
-/* N157 · U1: from 840 px the index stays on the left (280 px) and the chosen section opens on the right. */
-:where(html[data-v7]) .v7-settings-split {display:grid;grid-template-columns:minmax(240px,280px) minmax(0,1fr);gap:var(--v7-space-6);align-items:start;}
-:where(html[data-v7]) .v7-settings-index {position:sticky;top:var(--v7-space-4);display:grid;gap:var(--v7-space-3);}
-:where(html[data-v7]) .v7-settings-index .v7-settings-row[aria-current="page"] {color:var(--v7-role-selection-fg);}
-:where(html[data-v7]) .v7-settings-index li:has(> [aria-current="page"]) {margin-inline:calc(-1 * var(--v7-space-3));padding-inline:var(--v7-space-3);border-radius:var(--v7-radius-2);background:var(--v7-role-selection-subtle);}
-:where(html[data-v7]) .v7-settings-pane-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
-:where(html[data-v7]) .v7-settings-pane {display:grid;gap:var(--v7-space-4);align-content:start;min-width:0;}
- /* Row values stay within 320 px of their labels: the section is read at most 560 px wide. */
-:where(html[data-v7]) .v7-settings-pane > :not(h2) {max-width:560px;}
-@media (min-width:840px) {:where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page.v7-settings[data-split] {max-width:1200px;}}

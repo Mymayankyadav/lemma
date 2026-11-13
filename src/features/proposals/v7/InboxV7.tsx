@@ -117,7 +117,7 @@ export default function InboxV7(){
  const onUndo=useCallback((ids:string[])=>setOrder(previous=>[...ids,...previous.filter(id=>!ids.includes(id))]),[]);
  const onSettled=useCallback(()=>{void query.refetch();},[query]);
  const {held,decide}=useInboxDecisions({onUndo,onSettled});
- const desk=useMinWidth(1100);
+ const desk=useMinWidth(600);
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const all=useMemo(()=>(query.data??[]).filter(p=>!held.has(p.id)),[query.data,held]);
  const cards=useMemo(()=>all.filter(isCardProposal),[all]),plans=useMemo(()=>all.filter(isPlanProposal),[all]);

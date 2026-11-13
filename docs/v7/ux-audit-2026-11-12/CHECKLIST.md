@@ -130,7 +130,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 - [x] **V05** Rail: the count badge covers "Review" — N157
 - [x] **V10** Rail: Settings pinned to the bottom, the Library scrolls above it — N157
-- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move comes with V26 (S8)
+- [ ] **V06** Floating actions sit in the content column; Path's "Continue" moves onto the checkpoint card — the bars are in the content column in N157; the Continue move belongs to V26 (S8, U3), which is not in N157
 - [x] **V07** Detail header no wider than the content; no sideways scroll from 320 to 1728 px — N157
 - [x] **V09** Reading measure ≤ 34 em; the review spread from 840 px — N157 (the spread behind `v7Spread`)
 - [x] **V08** Chart text 12 px at every width; strokes do not scale; charts ≤ 640 px, two abreast — N157
@@ -165,10 +165,10 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### AN4 · Large screens and postures (Android, M) — `03` §4 · *(needs U1)*
 
-- [ ] List beside detail from 600 dp
-- [ ] Review spread from 840 dp and in book posture
-- [ ] Focus as a clock in tabletop posture
-- [ ] 48 px at every width; nothing interactive across a hinge
+- [ ] List beside detail from 600 dp — the Inbox queue beside its card from 600 px and Settings' index from 840 px in N157; Cards and Paths still open their detail as a page
+- [x] Review spread from 840 dp and in book posture — N157 (behind `v7Spread`)
+- [x] Focus as a clock in tabletop posture — N157
+- [x] 48 px at every width; nothing interactive across a hinge — N157
 
 ### A5′ · Share and release pages — `04` §8
 
