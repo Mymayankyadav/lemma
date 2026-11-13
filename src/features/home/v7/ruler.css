@@ -2,6 +2,22 @@
 /* N157 · U4 S1 the ruler (flag v7Ruler). */
 @layer v7-components {
  html[data-v7] .v7-cal-scrubber {position:absolute;bottom:12px;left:60px;right:12px;z-index:5;padding:8px 12px 0;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);box-shadow:var(--v7-shadow-1);}
+ /* N161: on a phone the Calendar ruler is part of the dock: it rests on the tab bar, as wide as it and joined to it,
+    and the page makes room for it, so it never lies over the day's last hours. Wide screens keep it in the grid. */
+ @media (max-width:699px) {
+  html[data-v7] .v7-shell:not([data-immersive="true"]):has(.v7-cal-scrubber) {--v7-dock-ruler:92px;
+   --v7-dock-height:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom) + var(--v7-dock-ruler));}
+  html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]):has(.v7-cal-scrubber) {
+   --v7-dock-height:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom) + var(--v7-dock-ruler));}
+  html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber {position:fixed;left:var(--v7-space-3);right:var(--v7-space-3);z-index:20;
+   bottom:var(--v7-dock-top,calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom)));box-sizing:border-box;height:var(--v7-dock-ruler,92px);overflow:hidden;
+   max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;padding:var(--v7-space-2) var(--v7-space-3) 0;
+   border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-bottom:0;border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;
+   background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);clip-path:inset(-32px -32px 0 -32px);}
+  html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]) .v7-cal-scrubber {bottom:var(--v7-dock-top,calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom)));}
+  html[data-v7] .v7-shell:not([data-immersive="true"]):has(.v7-cal-scrubber) > .v7-dock {border-top-left-radius:0;border-top-right-radius:0;}
+  html[data-v7]:has(dialog.v7-sheet[open]) .v7-cal-scrubber {visibility:hidden;}
+ }
  :where(html[data-v7]) .v7-ruler-control {display:grid;gap:4px;min-width:0;}
  :where(html[data-v7]) .v7-ruler-control > label {display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;font:600 var(--v7-type-supporting)/1.4 var(--v7-sans);}
  :where(html[data-v7]) .v7-ruler-control output {color:var(--v7-role-selection-fg);font-variant-numeric:tabular-nums;}

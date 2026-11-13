@@ -20,7 +20,7 @@
  :where(html[data-v7]) .v7-atlas-sky canvas {display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
  :where(html[data-v7]) .v7-atlas-sky canvas:active {cursor:grabbing;}
  :where(html[data-v7]) .v7-atlas-legend {position:absolute;left:var(--v7-space-4);bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);justify-items:start;}
- :where(html[data-v7]) .v7-atlas[data-sheet="peek"] :is(.v7-atlas-legend,.v7-atlas-controls) {bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4) + 180px);}
+ :where(html[data-v7]) .v7-atlas[data-sheet="peek"] :is(.v7-atlas-legend,.v7-atlas-controls) {bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4) + var(--v7-atlas-sheet-h,180px));}
  :where(html[data-v7]) .v7-atlas-chip {min-height:var(--v7-touch);padding-inline:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);
   background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-atlas-legend ul {order:-1;list-style:none;margin:0;padding:var(--v7-space-3);display:grid;gap:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);
@@ -68,12 +68,12 @@
  :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] .v7-atlas-meta {color:var(--v7-role-selection-fg);}
 
- /* The concept sheet peeks 180 px up from the bottom and pulls up to show neighbours and actions. */
+ /* The concept sheet peeks up from the tab bar and pulls up to show its actions and neighbours. */
  :where(html[data-v7]) .v7-atlas-sheet {position:fixed;left:0;right:0;bottom:var(--v7-dock-height,0px);z-index:21;display:grid;gap:var(--v7-space-3);max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;
   min-height:180px;max-height:var(--v7-sheet-max);overflow:auto;padding:0 var(--v7-space-4) var(--v7-space-4);
   border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);
   background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);transition:transform var(--v7-fast) var(--v7-ease-out);}
- :where(html[data-v7]) .v7-atlas-sheet:not([data-expanded="true"]) {max-height:180px;overflow:hidden;}
+ /* N161: the peek shows title, chips and counts (at least 180 px, taller with large text, never clipped); the actions come with the pulled-up sheet. */
  :where(html[data-v7]) .v7-atlas-handle {justify-self:center;display:grid;place-items:center;width:calc(var(--v7-touch) * 2);min-height:var(--v7-space-6);border:0;background:transparent;touch-action:none;}
  :where(html[data-v7]) .v7-atlas-handle span {width:calc(var(--v7-space-10));height:var(--v7-space-1);border-radius:var(--v7-round);background:var(--v7-role-border-default);}
  :where(html[data-v7]) .v7-atlas-sheet-head {display:flex;align-items:flex-start;justify-content:space-between;gap:var(--v7-space-2);margin-top:calc(var(--v7-space-2) * -1);}

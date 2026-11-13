@@ -53,6 +53,16 @@ export default function V7CalendarDay(){
  const [now,setNow]=useState(()=>Date.now());
  const [suggested,setSuggested]=useState<SuggestedBlock[]>([]);
  const [scrub,setScrub]=useState<{date:string;minute:number}|null>(null);
+ // N161: on a phone the ruler rests on the tab bar; it reads where the bar really starts (its height varies with text size).
+ const scrubberRef=useRef<HTMLDivElement|null>(null);
+ useEffect(()=>{
+  const node=scrubberRef.current,dock=document.querySelector<HTMLElement>('.v7-dock');
+  if(!node||!dock||typeof ResizeObserver==='undefined')return;
+  const place=()=>node.style.setProperty('--v7-dock-top',Math.max(0,Math.round(window.innerHeight-dock.getBoundingClientRect().top))+'px');
+  place();
+  const observer=new ResizeObserver(place);observer.observe(dock);window.addEventListener('resize',place);
+  return ()=>{observer.disconnect();window.removeEventListener('resize',place);node.style.removeProperty('--v7-dock-top');};
+ });
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
@@ -209,7 +219,7 @@ export default function V7CalendarDay(){
     {dueToday.length>0&&<details className="v7-room-due"><summary className="v7-meta">{dueToday.length} due today</summary><ul>{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul></details>}
     {date>=today&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
    </div>}
-   {isFlagOn('v7Ruler')&&<div className="v7-cal-scrubber"><RulerSlider label="Browse day" min={0} max={Math.round((Date.parse(dayRange.end)-Date.parse(dayRange.start))/60000)-5}
+   {isFlagOn('v7Ruler')&&<div ref={scrubberRef} className="v7-cal-scrubber"><RulerSlider label="Browse day" min={0} max={Math.round((Date.parse(dayRange.end)-Date.parse(dayRange.start))/60000)-5}
     value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
     onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/></div>}
    <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
