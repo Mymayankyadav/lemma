@@ -30,7 +30,7 @@
 :where(html[data-v7]) .v7-heatmap-weeks {grid-column:2;display:grid;grid-template-columns:repeat(var(--v7-heat-weeks),minmax(0,1fr));gap:var(--v7-ring);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);color:var(--v7-role-text-tertiary);white-space:nowrap;}
 :where(html[data-v7]) .v7-heatmap-days {grid-column:1;grid-row:2;display:grid;grid-template-rows:repeat(7,minmax(0,1fr));align-items:center;gap:var(--v7-ring);color:var(--v7-role-text-tertiary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
 :where(html[data-v7]) .v7-heatmap {grid-column:2;grid-row:2;display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,minmax(0,1fr));grid-template-columns:repeat(var(--v7-heat-weeks),minmax(0,1fr));gap:var(--v7-ring);aspect-ratio:var(--v7-heat-weeks) / 7;width:100%;}
-:where(html[data-v7]) .v7-heatmap button {width:100%;min-width:0;min-height:0;aspect-ratio:1;padding:0;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-xs);background:var(--v7-heat-color);}
+:where(html[data-v7]) .v7-heatmap button {pointer-events:none;width:100%;min-width:0;min-height:0;aspect-ratio:1;padding:0;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-xs);background:var(--v7-heat-color);}
 :where(html[data-v7]) .v7-heatmap [aria-current="date"] {outline:var(--v7-icon-stroke) solid var(--v7-role-text-primary);outline-offset:var(--v7-hairline);}
 :where(html[data-v7]) .v7-heat-swatches {display:flex;gap:var(--v7-space-3);flex-wrap:wrap;font-size:var(--v7-type-caption);}
 :where(html[data-v7]) .v7-heat-swatches span {display:inline-flex;align-items:center;gap:var(--v7-space-1);color:var(--v7-role-text-secondary);}

@@ -114,7 +114,7 @@
  :where(html[data-v7]) .v7-search-row [data-rest] {color:var(--v7-role-text-secondary);}
  /* Hub sections (Calendar: Schedule | Tasks). */
 :where(html[data-v7]) .v7-hub-tabs {display:flex;gap:var(--v7-space-4);border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
-:where(html[data-v7]) .v7-hub-tabs a {min-height:var(--v7-touch);display:inline-flex;align-items:center;padding:0 var(--v7-space-1);margin-bottom:-1px;border-bottom:var(--v7-ring) solid transparent;color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);text-decoration:none;}
+:where(html[data-v7]) .v7-hub-tabs a {min-height:var(--v7-touch);min-width:var(--v7-touch);display:inline-flex;align-items:center;justify-content:center;padding:0 var(--v7-space-1);margin-bottom:-1px;border-bottom:var(--v7-ring) solid transparent;color:var(--v7-role-text-secondary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);text-decoration:none;}
 :where(html[data-v7]) .v7-hub-tabs [aria-current="page"] {border-bottom-color:var(--v7-role-action-bg);color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-sr-only {position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;}
  /* Static specimens in the kit gallery. */

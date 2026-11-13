@@ -76,7 +76,8 @@
 :where(html[data-v7]) .v7-tone-danger {--v7-tone:var(--v7-role-status-danger);--v7-tone-bg:var(--v7-role-status-danger-subtle);}
 :where(html[data-v7]) .v7-badge[class*="v7-tone-"] {background:var(--v7-tone-bg);color:var(--v7-tone);}
 :where(html[data-v7]) .v7-badge-action {position:relative;border:0;cursor:pointer;text-decoration:none;}
-:where(html[data-v7]) .v7-badge-action::after {content:"";position:absolute;inset:-10px -4px;}
+/* V36: the invisible hit area is the touch size tall (44 px, 48 in the app), centred, whatever the badge's border. */
+:where(html[data-v7]) .v7-badge-action::after {content:"";position:absolute;left:-4px;right:-4px;top:50%;height:max(100%,var(--v7-touch));transform:translateY(-50%);}
 :where(html[data-v7]) .v7-live-chip svg {width:14px;height:14px;flex:none;}
 :where(html[data-v7]) .v7-proof-conjecture,:where(html[data-v7]) .v7-proof-progress {background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-proof-progress {color:var(--v7-role-text-primary);}

@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { bounded } from "../charts/types";
 import { formatDay } from "../../lib/format";
 import { SubjectMark, subjects, type Subject } from "./KitPrimitives";
@@ -160,6 +160,17 @@ export function heatmapDays<T extends { date: string; value: number }>(data: rea
   const weekday = (new Date(`${data[from].date}T12:00:00Z`).getUTCDay() + 6) % 7;
   return data.slice(Math.max(0, from - weekday));
 }
+/**
+ * V36: the day under a point of the almanac grid (columns are weeks, rows Monday to Sunday), or null before the first
+ * day or after the last. A point in a gap between two cells goes to the nearer one.
+ */
+export function heatmapIndexAt({x, y, width, height, gapX = 0, gapY = 0, weeks, offset, days}: {x: number; y: number; width: number; height: number; gapX?: number; gapY?: number; weeks: number; offset: number; days: number}): number | null {
+  if (!(width > 0 && height > 0 && weeks > 0)) return null;
+  const column = Math.min(weeks - 1, Math.max(0, Math.floor((x + gapX / 2) / ((width + gapX) / weeks))));
+  const row = Math.min(6, Math.max(0, Math.floor((y + gapY / 2) / ((height + gapY) / 7))));
+  const index = column * 7 + row - offset;
+  return index >= 0 && index < days ? index : null;
+}
 export function Heatmap({ title, data: all, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
   const data = heatmapDays(all), scroller = useRef<HTMLDivElement>(null);
@@ -174,6 +185,14 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
     const from = view.getBoundingClientRect(), at = cell.getBoundingClientRect();
     if (at.right > from.right || at.left < from.left) view.scrollLeft += at.right - from.right + 8;
   }, [table, home, data.length]);
+  // V36: the almanac is one touch target, like a slider: a tap anywhere on the grid (gaps included) picks the day under
+  // the finger, and a mouse picks as it moves. The 24 px cells keep their roving focus for keys and screen readers.
+  const pick = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const box = event.currentTarget.getBoundingClientRect(), style = getComputedStyle(event.currentTarget);
+    if (!box.width || !box.height) return;
+    const index = heatmapIndexAt({x: event.clientX - box.left, y: event.clientY - box.top, width: box.width, height: box.height, gapX: parseFloat(style.columnGap) || 0, gapY: parseFloat(style.rowGap) || 0, weeks, offset, days: data.length});
+    if (index !== null) setSelected(index);
+  };
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
@@ -181,12 +200,12 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
       <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>
         <div className="v7-heatmap-days" aria-hidden="true">{["M", "T", "W", "T", "F", "S", "S"].map((day, index) => <span key={index}>{day}</span>)}</div>
-        <div className="v7-heatmap" role="group" aria-label={title}>
+        <div className="v7-heatmap" role="group" aria-label={title} onPointerDown={pick} onPointerMove={event => { if (event.pointerType === "mouse") pick(event); }}>
           {Array.from({ length: offset }, (_, index) => <span key={`pad-${index}`} aria-hidden="true" />)}
           {data.map((item, index) => <button type="button" key={item.date} data-chart-point="" tabIndex={selected === index || selected === null && index === home ? 0 : -1}
             aria-current={item.date === today ? "date" : undefined} aria-label={`${displayHeatmapDate(item.date)}: ${format(item.value)}`}
             style={{ "--v7-heat-color": item.value <= 0 ? "transparent" : `var(--v7-role-viz-heat${item.value <= 15 ? 1 : item.value <= 30 ? 2 : item.value <= 60 ? 3 : 4})` } as CSSProperties}
-            onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onKeyDown={event => { movePoint(event, index, data.length, 7); }}><span aria-hidden="true" /></button>)}
+            onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onKeyDown={event => { movePoint(event, index, data.length, 7); }}><span aria-hidden="true" /></button>)}
         </div>
       </div></div>
       <p className="v7-caption">Last {weeks} weeks, today ringed.</p>
