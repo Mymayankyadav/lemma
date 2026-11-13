@@ -16,7 +16,9 @@ export function rulerTicks([from, to]: [number, number], labelEvery = 120) {
 }
 /** N161: the closest label spacing (a multiple of two hours) at which every "HH:MM" label, as wide as `labelWidth`, fits beside the next one. */
 export function rulerLabelEvery(width: number, [from, to]: [number, number], labelWidth = 39): number {
-  const slot = labelWidth + 12, slots = Math.max(1, Math.floor(width / slot));
+  // The first and last labels sit flush with the card's edges, not centred on their tick, so a step needs
+  // one and a half labels plus a gap.
+  const slot = labelWidth * 1.5 + 12, slots = Math.max(1, Math.floor(width / slot));
   return 120 * Math.max(1, Math.ceil((to - from) / 120 / slots));
 }
 /** Snap to five minutes inside the window. */
