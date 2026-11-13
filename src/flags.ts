@@ -39,6 +39,8 @@ export const FLAG_DEFAULTS = {
   v7Paper: false,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */
   v7DeskClock: false,
+  /** N157 · U4 S15 the week page: the weekly digest as a page (/week), the Sunday notification's destination. */
+  v7Week: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

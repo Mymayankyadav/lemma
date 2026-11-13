@@ -20,6 +20,7 @@ const Page14=lazy(()=>import('../features/insights/Page'))
 const Page15=lazy(()=>import('../features/settings/Page'))
 const Page16=lazy(()=>import('../features/sign-in/Page'))
 const Page17=lazy(()=>import('../features/kit/Page'))
+const WeekPage=lazy(()=>import('../features/week/v7/WeekV7'))
 /** The canonical route inventory from design.md §6. */
 export const screenRoutes = [
  {path: '/', element: <Suspense fallback={<RouteFallback/>}><Page0 /></Suspense>, errorElement: <RouteError/> },
@@ -37,6 +38,7 @@ export const screenRoutes = [
  {path: '/cards/:no', element: <Suspense fallback={<RouteFallback/>}><Page12 /></Suspense>, errorElement: <RouteError/> },
  {path: '/atlas', element: <Suspense fallback={<RouteFallback/>}><Page13 /></Suspense>, errorElement: <RouteError/> },
  {path: '/insights', element: <Suspense fallback={<RouteFallback/>}><Page14 /></Suspense>, errorElement: <RouteError/> },
+ {path: '/week', element: <Suspense fallback={<RouteFallback/>}><WeekPage /></Suspense>, errorElement: <RouteError/> },
  {path: '/settings', element: <Suspense fallback={<RouteFallback/>}><Page15 /></Suspense>, errorElement: <RouteError/> },
  {path: '/sign-in', element: <Suspense fallback={<RouteFallback/>}><Page16 /></Suspense>, errorElement: <RouteError/> },
  {path: '/kit', element: <Suspense fallback={<RouteFallback/>}><Page17 /></Suspense>, errorElement: <RouteError/> },
