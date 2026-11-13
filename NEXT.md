@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N137 v7 UX plan r3 · G1 the asset pipeline: manifest and lint, Android colours from tokens, icon layers, emblem exporter (Owner task)
+
+Owner task: "Your pr is done next work on things not picked by the other agenr"
+Stage: Build · Status: open · Needs: — · Assigned: owner-setup-assets
+Done = G1 of plan r3 (`docs/v7/ux-audit-2026-11-12/04_ASSETS_AND_MOTION_PLAN.md` §3) as far as no Owner decision gates it, each with a test, and ticked in `CHECKLIST.md`: `assets.manifest.json` lists every generated asset (source, generator, size, themes, byte budget, use) and `scripts/brand/asset-lint.mjs` checks it after every build (exists, budget, PNG size, committed outputs byte-equal to their generators, the mark's ℓ ≥ 7 : 1 and ∎ ≥ 3 : 1 on paper in Day and Night); Android `colors.xml` (Day, Night) generated from `design-tokens.json`; the adaptive icon split into a background layer (paper, grid, margin) and a foreground layer (ℓ, ∎) that compose to the same picture; the emblem exporter (SVG with the component's geometry, stroke order with lengths and draw-in timing, a browser PNG); recorded in `docs/current/N137.md`.
+Tests: `tests/unit/v7/g1-pipeline.test.tsx`, existing suites unchanged.
+Scope: `assets.manifest.json`, `scripts/brand/{asset-lint.mjs,android-colors.mjs,emblem-export.mjs,lemma-mark.mjs}`, `scripts/android-icons.mjs`, `package.json` (scripts only), `android/app/src/main/res/{values,values-night}/colors.xml`, `android/app/src/main/res/mipmap-*/ic_launcher_*`, `src/ui/v7/emblemExport.ts`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (G1 lines), `docs/current/N137.md`.
+Not: the ∎ in the themed icon (E23), the scene camera (after N133's install shots land), wiring the lint into CI (an Owner `rules:` PR), new dependencies, server changes.
+
 ## N130 v7 UX audit r3: the tracking checklist, the first fixes and the Owner's decisions (Owner task)
 
 Owner task: "Start working on it maybe create a branch and checklist to Collaborate and track completed task." … "I approve each of them."
@@ -62,6 +71,7 @@ Done = phase A1 of the release and assets plan (`03_LATER_ASSETS_SPEC.md` §A1, 
 Tests: `tests/unit/v7/motion-v1.test.tsx`, `tests/e2e/v7-motion.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/**`, the v7 screens that use the new marks (Tasks, Calendar Day, Settings, Focus, Close the day, Atlas, Toast), `src/main.tsx`, `src/app/v7/V7Shell.tsx`, tests, `docs/current/N124.md`.
 Not: new dependencies, Lottie or Rive (A3), illustrations (A2), flag defaults, server changes.
+
 ## N123 Lemma for Android: the Capacitor app (Owner task, one PR)
 
 Owner task: "Start working on Android app complete the taskd"
@@ -117,7 +127,5 @@ Done = #1299 (undo the last answer in the durable v6 review run), #1300 (Kit at 
 Tests: `tests/e2e/v6-g7-fixes.spec.ts`, `tests/mcp/sql/review_runs_undo_last.mjs`, `tests/e2e/v6-release-audit.spec.ts` (no known-defect exemptions left), the unit tests listed in `docs/current/N119.md`.
 Scope: v6 screens and shell under src/**, one additive migration under supabase/migrations/, tests, docs/v6/release-captures/**, docs/current/N119.md.
 Not: turning v6 on (N102); flag-off screens.
-
-
 
 (Next priority run: after the Owner's device checks and N102, or when a lane runs dry. Excluded from v6 on purpose: real third-party calendar connections and native surfaces (previews stay labelled per contract §5), recurring blocks. Next free ID: N119.)

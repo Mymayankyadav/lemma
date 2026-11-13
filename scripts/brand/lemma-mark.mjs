@@ -133,8 +133,15 @@ export function polygonCoverage(polys, size, sub = 8) {
  return cov;
 }
 
-/** A pixel-accurate RGBA raster of `markSvg` with the same options; 'rounded' leaves the corners transparent. */
-export function rasterMark({size, theme = 'day', layout = 'full', background = 'square'}) {
+/** Every part of the mark; `rasterMark({parts})` can draw a subset (N137 · G1: the adaptive icon's two layers). */
+export const MARK_PARTS = {page: true, grid: true, margin: true, ell: true, qed: true};
+
+/**
+ * A pixel-accurate RGBA raster of `markSvg` with the same options; 'rounded' leaves the corners transparent. `parts`
+ * picks what to draw: without `page` the paper is transparent and the other parts keep their own coverage as alpha.
+ */
+export function rasterMark({size, theme = 'day', layout = 'full', background = 'square', parts = MARK_PARTS}) {
+ const want = {...MARK_PARTS, ...parts};
  const l = LAYOUTS[layout], w = strokes(size, layout), t = MARK_THEMES[theme];
  const page = hex(t.page), ink = hex(t.ink), brand = hex(t.brand), margin = hex(t.margin);
  const glyph = polygonCoverage(ellPolygons(layout), size);
@@ -142,23 +149,29 @@ export function rasterMark({size, theme = 'day', layout = 'full', background = '
  const near = (v) => Math.min(...lines.map((g) => Math.abs(v - g)));
  for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) {
   const x = (i + 0.5) * px, y = (j + 0.5) * px;
-  let rgb = [...page], alpha = 1;
+  // Without the page, start from transparent and composite each part over it ("over", premultiplied).
+  let rgb = want.page ? [...page] : [0, 0, 0], cover = want.page ? 1 : 0, alpha = 1;
   if (background === 'rounded') {
    const r = 0.18, qx = Math.max(Math.abs(x - 0.5) - (0.5 - r), 0), qy = Math.max(Math.abs(y - 0.5) - (0.5 - r), 0);
    alpha = clamp((r - Math.hypot(qx, qy)) / px + 0.5);
   }
-  const paint = (colour, a) => {if (a > 0) rgb = rgb.map((c, k) => colour[k] * a + c * (1 - a));};
+  const paint = (colour, a) => {
+   if (a <= 0) return;
+   const next = a + cover * (1 - a);
+   rgb = rgb.map((c, k) => (colour[k] * a + c * cover * (1 - a)) / next);
+   cover = next;
+  };
   const gridCover = Math.max(clamp((w.grid / 2 - near(x)) / px + 0.5), clamp((w.grid / 2 - near(y)) / px + 0.5));
-  paint(brand, l.gridAlpha * gridCover);
-  if (l.margin !== null) paint(margin, 0.55 * clamp((w.margin / 2 - Math.abs(x - l.margin)) / px + 0.5));
-  paint(ink, clamp(glyph[j * size + i]));
-  if (l.qed) {
+  if (want.grid) paint(brand, l.gridAlpha * gridCover);
+  if (want.margin && l.margin !== null) paint(margin, 0.55 * clamp((w.margin / 2 - Math.abs(x - l.margin)) / px + 0.5));
+  if (want.ell) paint(ink, clamp(glyph[j * size + i]));
+  if (want.qed && l.qed) {
    const [qx0, qy0, q] = l.qed;
-   const cover = clamp(Math.min(x - qx0, qx0 + q - x) / px + 0.5) * clamp(Math.min(y - qy0, qy0 + q - y) / px + 0.5);
-   paint(brand, cover);
+   const qedCover = clamp(Math.min(x - qx0, qx0 + q - x) / px + 0.5) * clamp(Math.min(y - qy0, qy0 + q - y) / px + 0.5);
+   paint(brand, qedCover);
   }
   const o = (j * size + i) * 4;
-  out[o] = Math.round(rgb[0]); out[o + 1] = Math.round(rgb[1]); out[o + 2] = Math.round(rgb[2]); out[o + 3] = Math.round(alpha * 255);
+  out[o] = Math.round(rgb[0]); out[o + 1] = Math.round(rgb[1]); out[o + 2] = Math.round(rgb[2]); out[o + 3] = Math.round(alpha * cover * 255);
  }
  return out;
 }

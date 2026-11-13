@@ -87,8 +87,11 @@ async function render(api:StudyApi){
   await act(async()=>root.unmount());host.remove();setStudyApiForTests(null);
  }};
 }
-beforeEach(()=>{Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});});
-afterEach(()=>{setStudyApiForTests(null);});
+// S0 #1368 (bug #1367): the saved entry runs from 10 to 2 minutes ago, so in the first minutes after midnight part of it
+// fell on yesterday and "Logged today" read 4 min. Pin the date to mid-day; only Date is faked, timers stay real.
+const FIXED_NOW=Date.parse('2026-11-10T07:00:00.000Z');
+beforeEach(()=>{vi.useFakeTimers({toFake:['Date'],now:FIXED_NOW});Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});});
+afterEach(()=>{setStudyApiForTests(null);vi.useRealTimers();});
 
 describe('N14.3 v6 Today Focus UI and StudyApi contract',()=>{
  it('starts, pauses, resumes, finishes and saves through exactly one write each',async()=>{
