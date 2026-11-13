@@ -35,4 +35,7 @@
  /* N131 · A5′: "Share the page" above Done on Day closed. */
  :where(html[data-v7]) .v7-cd-closed .v7-cd-share {margin-top:var(--v7-space-3);}
  :where(html[data-v7]) .v7-cd-closed .v7-cd-share + .v7-cd-done {margin-top:var(--v7-space-2);}
+ /* N157 · V25 (flag v7Qed): the one-page close. */
+ :where(html[data-v7]) .v7-cd-page-title {margin:var(--v7-space-2) 0 0;}
+ :where(html[data-v7]) .v7-cd-footer-page {justify-content:center;}
 }
