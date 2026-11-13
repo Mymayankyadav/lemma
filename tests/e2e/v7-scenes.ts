@@ -3,7 +3,8 @@ import {expect,type Page} from "@playwright/test";
 // Audit seed, clock frozen at Mon 9 Nov 2026, 13:43 IST (en-IN, Asia/Kolkata), as in v7 PLAN §8.
 export const NOW=new Date("2026-11-09T13:43:00+05:30");
 export const DATE="2026-11-09";
-export const at=(hash:string)=>"/lemma/?demo=1&flags=v7Shell,v6Shell#"+hash;
+// Keep the audit's original scenarios explicit after N159 releases U4; individual U4 cases opt back in last.
+export const at=(hash:string)=>"/lemma/?demo=1&flags=-v7Ruler,-v7Qed,-v7Spread,-v7Scratch,-v7Paper,-v7DeskClock,-v7Week,v7Shell,v6Shell#"+hash;
 export type Shot={name:string;hash:string;prepare?:(page:Page)=>Promise<void>;frames?:number;wide?:boolean};
 export const open=async(page:Page,name:string)=>{
  await page.getByRole("button",{name,exact:true}).first().click({timeout:5000});

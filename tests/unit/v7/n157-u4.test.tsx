@@ -6,10 +6,10 @@ import {weekStars} from '../../../src/features/week/v7/WeekV7';
 import {PAPERS, SKIES} from '../../../src/ui/v7/paper';
 import {DESK_QUERY} from '../../../src/features/focus/v7/deskClock';
 
-// N157 · v7 UX audit r3, U4 (signature): each idea behind its own flag, off by default; errata and ∅ copy.
+// N157 implementation; N159 Owner release: each U4 idea retains a flag and now defaults on.
 describe('U4 flags', () => {
-  it('every signature idea has its own flag, off by default', () => {
-    for (const flag of ['v7Ruler', 'v7Qed', 'v7Spread', 'v7Scratch', 'v7Paper', 'v7DeskClock', 'v7Week'] as const) expect(FLAG_DEFAULTS[flag], flag).toBe(false);
+  it('every approved signature idea has its own production-enabled flag', () => {
+    for (const flag of ['v7Ruler', 'v7Qed', 'v7Spread', 'v7Scratch', 'v7Paper', 'v7DeskClock', 'v7Week'] as const) expect(FLAG_DEFAULTS[flag], flag).toBe(true);
   });
 });
 

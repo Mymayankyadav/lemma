@@ -1,10 +1,10 @@
 import {test, expect, type Page} from '@playwright/test'
-import {NOW} from './v7-scenes'
+import {NOW,at as auditAt} from './v7-scenes'
 
 // N131 · the rest of the release and assets plan as v7 UX plan r3 keeps it, end to end on the demo: the coded stamp
 // (and its reduced-motion fallback), the emblem loader, the focus orbit behind its flag, and "Share the page".
 test.use({locale: 'en-IN', timezoneId: 'Asia/Kolkata', colorScheme: 'dark'})
-const at = (hash: string, flags = '') => '/lemma/?demo=1&flags=v7Shell,v6Shell' + flags + '#' + hash
+const at = (hash: string, flags = '') => auditAt(hash).replace('v7Shell,v6Shell','v7Shell,v6Shell'+flags)
 async function open(page: Page, hash: string, flags = '', motion = false) {
   await page.emulateMedia({reducedMotion: motion ? 'no-preference' : 'reduce'})
   await page.clock.setFixedTime(NOW)

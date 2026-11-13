@@ -90,7 +90,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] **V36** The six controls whose hit area is under 44 px (almanac cells, "Adjust", "3 overdue · Triage", "14 due", narrow tabs, time-log days) — N138
 - [x] V36 leftovers: the Inbox list's checkboxes (20 px) and the card's recall-chart review dots (34 px tall at 360 px) take a tap within 44 px — N153
 - [x] V22 / AW10 *(E8)* Phones held in portrait in the app (tablets and unfolded foldables rotate) — N130 (#1363)
-- [ ] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted — one-row headers and full-height sheets in N157, the desk clock behind `v7DeskClock`; the phone lock (`OrientationPolicy`) stays until that flag is on
+- [x] V22 Landscape designed (one-row headers, full-height sheets, the desk clock), then the phone lock lifted — layouts in N157; Owner-authorized N159 enables `v7DeskClock` and returns phone rotation to the system setting
 - [ ] V21 *(E12)* First load ≤ 350 KB and ≤ 30 requests on Today cold; review, atlas, calendar and KaTeX on demand — measured in N157 (582 KB, 87 requests in the demo); open, see `docs/current/N157.md`
 - [x] **AW1** *(E5 approved; after the three V11 items; device check 1 confirms it)* Honour the system font size, capped at 200% — N157
 
@@ -186,6 +186,10 @@ A2′ "marks, not illustrations" is **superseded** by the Owner's decision D6 (N
 ## Later
 
 ### U4 · Signature (web, L) — `02` §6 · one flag at a time, each with an Owner-approved sheet
+
+**Production rollout authorized by the Owner, 13 Nov 2026 (N159):** `v7Ruler`, `v7Qed`, `v7Spread`, `v7Scratch`,
+`v7Paper`, `v7DeskClock`, `v7Week` default on. Review captures and N157 approval preceded this separate release.
+The Week page is linked from Progress; phones follow the system rotation setting for the desk clock.
 
 - [x] S1 The ruler, flag `v7Ruler` — N157 (Today, New block duration and Calendar Day scrubber; widgets remain parked)
 - [x] S2–S4 The ∎ as the one ending, flag `v7Qed` *(needs E3, narrowed by E19)*; V25 Close the day as one page — N157 (the task ∎, the round's closing ∎, Inbox zero's ∎, and Close the day as one page)

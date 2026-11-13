@@ -33,8 +33,8 @@ describe('V09 · the reading measure', () => {
     expect(tokens).toContain('--v7-reading: 34em;');
     expect(readFileSync('src/ui/v7/kit-system.css', 'utf8')).toContain(':where(html[data-v7] main .lemma-math) {max-width:var(--v7-reading);}');
   });
-  it('the spread and the margin are flags, off by default', () => {
-    expect(FLAG_DEFAULTS.v7Spread).toBe(false);
+  it('the released U4 spread is on while the separate margin remains opt-in', () => {
+    expect(FLAG_DEFAULTS.v7Spread).toBe(true);
     expect(FLAG_DEFAULTS.v7Margin).toBe(false);
     expect(readFileSync('src/features/review-run/v7/review.css', 'utf8')).toContain('@media (min-width:840px), (horizontal-viewport-segments:2)');
   });

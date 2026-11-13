@@ -2,7 +2,7 @@ import {test,expect,type Page} from '@playwright/test';
 import {NOW,DATE} from './v7-scenes';
 test.use({locale:'en-IN',timezoneId:'Asia/Kolkata'});
 const flags='v6Shell,v7Shell,v7Room,v7Ruler,v7Qed,v7Spread,v7Margin,v7Scratch,v7Paper,v7Week,v7DeskClock,focusOrbit';
-const url=(route:string,on=true)=>'/lemma/?demo=1&flags='+(on?flags:'v6Shell,v7Shell')+'#'+route;
+const url=(route:string,on=true)=>'/lemma/?demo=1&flags='+(on?flags:'v6Shell,v7Shell,'+flags.split(',').filter(flag=>!['v6Shell','v7Shell'].includes(flag)).map(flag=>'-'+flag).join(','))+'#'+route;
 async function go(page:Page,route:string,width=1280){
  await page.setViewportSize({width,height:844});await page.clock.setFixedTime(NOW);await page.goto(url(route));await page.waitForLoadState('networkidle');
 }
@@ -50,7 +50,7 @@ for(const width of [600,900,1280,1728])test('Cards and Paths keep list beside de
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
  }
 });
-test('Phone and flag-off navigation retain one page; all visual flags remain opt-in',async({page})=>{
+test('Phone and explicit flag-off navigation retain one page and the original controls',async({page})=>{
  await go(page,'/cards/1',390);await expect(page.locator('.v7-library-split')).toHaveCount(0);
  await page.setViewportSize({width:1280,height:844});await page.goto(url('/cards/1',false));await expect(page.locator('.v7-library-split')).toHaveCount(0);
  await page.goto(url('/calendar?view=day&date='+DATE,false));await expect(page.getByRole('slider',{name:'Browse day'})).toHaveCount(0);
