@@ -102,7 +102,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   if(!room||!data||tab!=='Map'||!current)return;
   const frame=requestAnimationFrame(()=>{
    const row=document.querySelector<HTMLElement>('.v7-path-row[data-state="current"]'),box=row?.getBoundingClientRect();
-   // Keep the whole-path spine visible when the current checkpoint already fits below it.
+   // Keep the current checkpoint in view without scrolling when it already fits.
    if(row&&box&&(box.top<56||box.bottom>innerHeight-92))row.scrollIntoView({block:'nearest',behavior:'instant'});
   });
   return()=>cancelAnimationFrame(frame);
@@ -169,12 +169,6 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    <div className="v7-path-chips">{target&&<MetaChip kind="target">{'Target '+target}</MetaChip>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
    {isFlagOn('v7Qed')&&(project.status==='done'||data.total>0&&data.done>=data.total)&&<p className="v7-subhead"><ProofEnd/> Q.E.D.</p>}
   </header>
-  {room&&cps.length>0&&<nav className="v7-room-spine" aria-label="Path checkpoints">{stages.map(stage=><section key={stage.key} aria-label={stageLabel(stage.name,stage.checkpoints)}>
-   <h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2><ul>{stage.checkpoints.map(cp=><li key={cp.id}><a href={'#room-'+cp.code} aria-label={cp.title} aria-current={cp.id===current?.id?'step':undefined}
-    onClick={event=>{event.preventDefault();const node=document.querySelector<HTMLElement>('[data-checkpoint-code="'+cp.code+'"]');const folded=node?.closest('details');if(folded)folded.open=true;node?.scrollIntoView({block:'start',behavior:'instant'});node?.querySelector<HTMLAnchorElement>('a')?.focus({preventScroll:true});}}>
-    <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d={star} fill={isDemonstrated(cp.ui)?'currentColor':'none'} stroke="currentColor" strokeWidth="1.75"/></svg>
-   </a></li>)}</ul>
-  </section>)}</nav>}
   {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
    <p className="v7-eyebrow">Tell your tutor</p>
    <p>Ask your tutor to read the sources and plan this path with you.</p>

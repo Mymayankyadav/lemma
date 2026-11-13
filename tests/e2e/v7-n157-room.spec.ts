@@ -49,11 +49,16 @@ test('Tasks controls fit in 200 px and overdue copy names its parts',async({page
  await expect(page.locator('.v7-tk-overdue .v7-meta')).toContainText(/\d+ (task|deadline|practice)/);
 });
 
-test('Path spine opens at the current card and finished stages can be unfolded by keyboard',async({page})=>{
+test('Path tabs follow the header without a star overview; Map keeps current and finished checkpoints',async({page})=>{
+ await open(page,'/p/real-analysis?tab=sources');
+ await expect(page.getByRole('heading',{name:'Study sources'})).toBeVisible();
+ await expect(page.getByRole('navigation',{name:'Path checkpoints'})).toHaveCount(0);
+ const head=page.locator('.v7-path-head'),tabs=page.getByRole('tablist',{name:'Path sections'});
+ const headBox=(await head.boundingBox())!,tabsBox=(await tabs.boundingBox())!;
+ expect(tabsBox.y-headBox.y-headBox.height).toBeLessThanOrEqual(24);
+ await expect(page.getByRole('heading',{name:'Study sources'})).toBeInViewport();
  await open(page,'/p/real-analysis');
- const spine=page.getByRole('navigation',{name:'Path checkpoints'});
- await expect(spine).toBeAttached();
- expect(await spine.locator('a').count()).toBeGreaterThan(3);
+ await expect(page.getByRole('navigation',{name:'Path checkpoints'})).toHaveCount(0);
  const current=page.locator('.v7-path-row[data-state="current"]');
  await expect(current).toBeInViewport();
  await expect(current.getByRole('button',{name:'Continue with tutor'})).toBeVisible();
