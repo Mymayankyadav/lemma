@@ -35,7 +35,11 @@ const ordered=(a:TaskRecord,b:TaskRecord)=>
 let host:HTMLDivElement,root:Root,records:TaskRecord[];
 let list:ReturnType<typeof vi.fn>,update:ReturnType<typeof vi.fn>;
 let create:ReturnType<typeof vi.fn>,notify:ReturnType<typeof vi.fn>;
+// S0 #1368: task 0 is due 2026-11-12, and overdue tasks lead their group (N121 F10). Pin the date so the fixture stays
+// in the future and the expected order holds on every calendar day. Only Date is faked: real timers keep act() working.
+const FIXED_NOW=Date.parse('2026-11-10T07:00:00.000Z');
 beforeEach(()=>{
+ vi.useFakeTimers({toFake:['Date'],now:FIXED_NOW});
  Object.assign(globalThis,{IS_REACT_ACT_ENVIRONMENT:true});
  vi.mocked(isFlagOn).mockReturnValue(true);
  host=document.createElement('div');document.body.append(host);root=createRoot(host);
@@ -70,6 +74,7 @@ beforeEach(()=>{
 afterEach(async()=>{
  await act(async()=>root.unmount());
  host.remove();setTaskApiForTests(null);vi.clearAllMocks();
+ vi.useRealTimers();
 });
 async function render(url='/tasks',withHeader=false){
  await act(async()=>root.render(<MemoryRouter initialEntries={[url]}><Routes>
