@@ -132,7 +132,7 @@ export default function ProgressV7(){
   <HubHeader title="Progress"><ProgressTabs current={tab}/></HubHeader>
   <Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>
   {status==='loading'&&<Skeleton/>}
-  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load your saved study time.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&summary&&tab==='overview'&&total<=0&&<>{nothing}
    <Heatmap title="Study almanac" format={minutes} data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/></>}
   {status==='ready'&&summary&&tab==='overview'&&total>0&&<>

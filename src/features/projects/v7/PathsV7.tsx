@@ -89,7 +89,7 @@ export default function PathsV7(){
     onClick={()=>{setFilter(item);setLimit(PAGE);}}>{filterWord[item]}{counts[item]>0?' '+counts[item]:''}</button>)}
   </div>
   {projects.isPending&&<><Skeleton/><Skeleton/></>}
-  {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Could not load your paths.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
+  {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Erratum: your paths didn’t load. Try again.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
   {projects.isSuccess&&<>
    <p className="v7-sr-only" aria-live="polite">{visible.length} {visible.length===1?'path':'paths'} shown</p>
    {visible.length===0?(all.length===0

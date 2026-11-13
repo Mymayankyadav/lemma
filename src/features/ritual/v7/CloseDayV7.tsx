@@ -82,7 +82,7 @@ export default function CloseDayV7(){
    setAim(typeof ritual.tomorrowAim==='string'?ritual.tomorrowAim:'');
    setData({plan,tasks,thoughts,saved:entries.filter(entry=>savedFocusTouchesOwnerDay(entry,date,tz)),blocks,tomorrow,reviewsDone,practice});
    setError('');
-  })().catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Could not load the day.');});
+  })().catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Erratum: the day didn’t load. Try again.');});
   return()=>{live=false;};
  },[date,zone,invalid,settings.isPending,reload]);
  const tz=data?.plan?.timeZone??zone;

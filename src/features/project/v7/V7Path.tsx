@@ -71,7 +71,7 @@ function PathCards({slug}:{slug:string}){
  // V18: a card names its checkpoint by title, never its code.
  const cpTitle=(code:string)=>project.data?.checkpoints.find(cp=>cp.code===code)?.title;
  if(cards.isPending)return <Skeleton/>;
- if(cards.error)return <p className="v7-path-cards-empty" role="alert">Could not load cards.</p>;
+ if(cards.error)return <p className="v7-path-cards-empty" role="alert">Erratum: cards didn’t load. Try again.</p>;
  const rows=cards.data??[];
  if(!rows.length)return <p className="v7-path-cards-empty">No cards on this path yet.</p>;
  return <ul className="v7-path-cardlist" aria-label="Cards on this path">{rows.slice(0,12).map(card=><li key={card.noteNo}>

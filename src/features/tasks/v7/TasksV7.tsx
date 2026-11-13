@@ -49,7 +49,7 @@ export default function TasksV7(){
   void getTaskApi().listTasks({limit:PAGE,status:statuses}).then(page=>{
    if(!live||epoch.current!==mine)return;
    setRows(merge([],page.items));setTotal(page.total);setCursor(page.nextCursor);setPhase('ready');
-  }).catch(error=>{if(!live||epoch.current!==mine)return;setMessage(error instanceof Error?error.message:'Could not load tasks.');setPhase('error');});
+  }).catch(error=>{if(!live||epoch.current!==mine)return;setMessage(error instanceof Error?error.message:'Erratum: tasks didn’t load. Try again.');setPhase('error');});
   return()=>{live=false;};
  },[reload]);
  useEffect(()=>{const again=()=>setReload(value=>value+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
@@ -84,7 +84,7 @@ export default function TasksV7(){
   if(!cursor||busy)return;
   setBusy(true);
   try{const page=await getTaskApi().listTasks({limit:PAGE,status:statuses,cursor});setRows(old=>merge(old,page.items));setCursor(page.nextCursor);setTotal(page.total);}
-  catch(error){setMessage(error instanceof Error?error.message:'Could not load more tasks.');}
+  catch(error){setMessage(error instanceof Error?error.message:'Erratum: more tasks didn’t load. Try again.');}
   finally{setBusy(false);}
  }
  async function reorder(list:readonly TaskRecord[],from:string,to:string){
@@ -140,7 +140,7 @@ export default function TasksV7(){
   </div>
   {!!message&&<p role="alert" className="v7-alert">{message}</p>}
   {phase==='loading'&&<><Skeleton/><Skeleton/></>}
-  {phase==='error'&&<div role="alert" className="v7-tk-empty"><p>{message||'Could not load tasks.'}</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {phase==='error'&&<div role="alert" className="v7-tk-empty"><p>{message||'Erratum: tasks didn’t load. Try again.'}</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {phase==='ready'&&<>
    {(()=>{
     const todoBlock=groups.length?groups.map(group=><section key={group.key} className="v7-tk-card" aria-label={group.label}>

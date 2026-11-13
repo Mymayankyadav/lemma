@@ -74,7 +74,7 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
    </>:results.groups.length?results.groups.map(group=><section key={group.name} className="v7-search-group" aria-label={group.name}>
     <h2 className="v7-eyebrow">{group.name}</h2><ul>{group.items.map(item=>row(item,cursor++,item))}</ul>
     {group.total>group.items.length&&<button type="button" className="v7-button v7-ghost v7-small" onClick={()=>setExpanded(new Set([...expanded,group.name]))}><span>Show all {group.total}</span></button>}
-   </section>):<p className="v7-meta" role="status">No results for “{query.trim()}”.</p>}
+   </section>):<p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>}
   </div>
   <span className="v7-sr-only" role="status">{idle?'':results.flat.length+' results in '+results.groups.length+' groups'}</span>
  </Sheet>;

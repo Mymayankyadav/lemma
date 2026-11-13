@@ -81,7 +81,7 @@ export default function TimeLogV7(){
    <span className="v7-log-actions"><Button small onClick={()=>setAdding(true)}>Add time</Button>
     <RowMenu label="More time log actions" title="Time log" items={[{label:'Export CSV',icon:<Download aria-hidden="true"/>,onClick:exportCsv}]}/></span></div>
   {status==='loading'&&<Skeleton/>}
-  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load the time log.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: the time log didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&(rows.length?days.slice().reverse().filter(item=>byDay.has(item)).map(item=><section key={item} id={'log-'+item} className="v7-log-group" aria-label={formatLongDate(item,{zone})}>
    <h2 className="v7-eyebrow">{formatLongDate(item,{zone})}</h2>
    <ul>{byDay.get(item)!.map(entry=>{const span=spanOf(entry),{klass,path}=look(entry);return <li key={entry.id} className={'v7-log-row '+klass} data-voided={entry.voidedAt?'true':undefined}>

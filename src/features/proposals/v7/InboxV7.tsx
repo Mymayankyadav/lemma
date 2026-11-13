@@ -161,7 +161,7 @@ export default function InboxV7(){
   <Segmented label="Proposal types" tabs panelId="v7-inbox-panel" options={tabs} value={tab==='plan'?tabs[1]:tabs[0]} onChange={setTab}/>
   <section id="v7-inbox-panel" role="tabpanel" aria-label={tab==='plan'?'Plans':'Cards'} className="v7-inbox-panel">
    {query.isPending&&<Skeleton/>}
-   {query.isError&&<div role="alert" className="v7-inbox-empty"><p>Could not load proposals.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}
+   {query.isError&&<div role="alert" className="v7-inbox-empty"><p>Erratum: proposals didn’t load. Try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}
    {query.isSuccess&&tab==='cards'&&!list&&(top?<div className={desk?'v7-inbox-desk':'v7-inbox-panel'}>
     {desk&&<ol className="v7-inbox-queue" aria-label="Queue">{queue.map(p=><li key={p.id}><button type="button" aria-current={p.id===top.id?'true':undefined}
      onClick={()=>setOrder(previous=>[p.id,...mergeOrder(previous,cards.map(item=>item.id)).filter(id=>id!==p.id)])}>

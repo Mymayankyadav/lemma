@@ -59,7 +59,7 @@ export default function V7CalendarDay(){
   const range=loadRange(view,date,zone,firstDay),api=getStudyApi();
   void Promise.all([api.listStudyEntries(range),api.listCalendarBlocks(range),loadCalendarDues().catch(()=>emptyCalendarDues)])
    .then(([nextEntries,nextBlocks,nextDues])=>{if(!live)return;setEntries(nextEntries);setBlocks(nextBlocks);setDues(nextDues);setPhase('ready');})
-   .catch(error=>{if(!live)return;setMessage((error as Error).message||'Could not load the calendar.');setPhase('error');});
+   .catch(error=>{if(!live)return;setMessage((error as Error).message||'Erratum: the calendar didn’t load. Try again.');setPhase('error');});
   return()=>{live=false;};
  // Day and Week load the week; Month its grid; Agenda two weeks from the date.
  // eslint-disable-next-line react-hooks/exhaustive-deps

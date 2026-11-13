@@ -158,7 +158,7 @@ export default function SettingsV7(){
  const data=settings.data;
  const index=(current:Section|null)=><>
   {settings.isPending&&<Skeleton/>}
-  {settings.isError&&<div role="alert" className="v7-progress-error"><p>Could not load your settings.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
+  {settings.isError&&<div role="alert" className="v7-progress-error"><p>Erratum: your settings didn’t load. Try again.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
   {settings.data&&groups.map((group,index)=><ul key={index} className="v7-settings-card">{group.map(item=>{const Icon=icons[item];return <li key={item}>
    <Link className="v7-settings-row" to={'/settings?section='+item} aria-current={item===current?'page':undefined}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
     <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
