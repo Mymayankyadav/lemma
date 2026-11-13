@@ -1,5 +1,6 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
+import {useDockedRuler} from './useDockedRuler';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
@@ -53,21 +54,9 @@ export default function V7CalendarDay(){
  const [now,setNow]=useState(()=>Date.now());
  const [suggested,setSuggested]=useState<SuggestedBlock[]>([]);
  const [scrub,setScrub]=useState<{date:string;minute:number}|null>(null);
- // N161: on a phone the ruler rests on the tab bar; it reads where the bar really starts (its height varies with text size).
+ // N161: on a phone the ruler is part of the dock (useDockedRuler).
  const scrubberRef=useRef<HTMLDivElement|null>(null);
- useEffect(()=>{
-  const node=scrubberRef.current,dock=document.querySelector<HTMLElement>('.v7-dock');
-  if(!node||!dock||typeof ResizeObserver==='undefined')return;
-  // The shell's dock height grows by the ruler's own height, so the page keeps the whole day above it.
-  const shell=node.closest<HTMLElement>('.v7-shell');
-  const place=()=>{
-   node.style.setProperty('--v7-dock-top',Math.max(0,Math.round(window.innerHeight-dock.getBoundingClientRect().top))+'px');
-   shell?.style.setProperty('--v7-dock-ruler',Math.ceil(node.getBoundingClientRect().height)+'px');
-  };
-  place();
-  const observer=new ResizeObserver(place);observer.observe(dock);observer.observe(node);window.addEventListener('resize',place);
-  return ()=>{observer.disconnect();window.removeEventListener('resize',place);node.style.removeProperty('--v7-dock-top');shell?.style.removeProperty('--v7-dock-ruler');};
- });
+ useDockedRuler(scrubberRef);
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);

@@ -20,7 +20,9 @@
  :where(html[data-v7]) .v7-atlas-sky canvas {display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
  :where(html[data-v7]) .v7-atlas-sky canvas:active {cursor:grabbing;}
  :where(html[data-v7]) .v7-atlas-legend {position:absolute;left:var(--v7-space-4);bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);justify-items:start;}
- :where(html[data-v7]) .v7-atlas[data-sheet="peek"] :is(.v7-atlas-legend,.v7-atlas-controls) {bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4) + var(--v7-atlas-sheet-h,180px));}
+ /* N161: the concept sheet's measured height (set by AtlasV7), 180 px until it is measured. */
+ :where(html[data-v7]) .v7-atlas {--v7-atlas-sheet-h:180px;}
+ :where(html[data-v7]) .v7-atlas[data-sheet="peek"] :is(.v7-atlas-legend,.v7-atlas-controls) {bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4) + var(--v7-atlas-sheet-h));}
  :where(html[data-v7]) .v7-atlas-chip {min-height:var(--v7-touch);padding-inline:var(--v7-space-4);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);
   background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-atlas-legend ul {order:-1;list-style:none;margin:0;padding:var(--v7-space-3);display:grid;gap:var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-subtle);

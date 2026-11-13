@@ -10,11 +10,11 @@
   html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]):has(.v7-cal-scrubber) {
    --v7-dock-height:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom) + var(--v7-dock-ruler));}
   html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber {position:fixed;left:var(--v7-space-3);right:var(--v7-space-3);z-index:20;
-   bottom:var(--v7-dock-top,calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom)));box-sizing:border-box;
+   --v7-dock-top:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom));bottom:var(--v7-dock-top);box-sizing:border-box;
    max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;padding:var(--v7-space-2) var(--v7-space-3) 0;
    border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-bottom:0;border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;
    background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);clip-path:inset(-32px -32px 0 -32px);}
-  html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]) .v7-cal-scrubber {bottom:var(--v7-dock-top,calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom)));}
+  html[data-v7] .v7-shell[data-session="true"]:not([data-immersive="true"]) .v7-cal-scrubber {--v7-dock-top:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom));}
   /* The labels under the ticks grow with the text size, so the space under the track does too. */
   html[data-v7] .v7-shell:not([data-immersive="true"]) .v7-cal-scrubber .v7-ruler-input-track {margin-bottom:calc(var(--v7-type-caption) + 14px);}
   html[data-v7] .v7-shell:not([data-immersive="true"]):has(.v7-cal-scrubber) > .v7-dock {border-top-left-radius:0;border-top-right-radius:0;}
