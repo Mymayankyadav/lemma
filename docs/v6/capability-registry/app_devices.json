@@ -1,0 +1,62 @@
+{
+  "table": "app_devices",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "device_key": {
+      "classification": "command-managed",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "label": {
+      "classification": "command-managed",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "platform": {
+      "classification": "command-managed",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "last_seen_at": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(devices); written by the app through register_app_device",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    }
+  }
+}

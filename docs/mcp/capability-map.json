@@ -1,0 +1,671 @@
+{
+ "version": 1,
+ "source": "Owner checklist of 13 Nov 2026 (Owner task N160): the 30 areas the chat connector must cover",
+ "rules": "A `supported` area has every action reachable through the connector today and lists the registered resources and operations that prove it. A `partial` or `missing` area names its gap and the NEXT.md sub-item that closes it. tests/unit/mcp/capability-map.test.ts checks every resource, operation and tool named here against the registry and server.ts, and fails when a registered resource belongs to no area.",
+ "areas": [
+  {
+   "n": 1,
+   "title": "Complete MCP access",
+   "status": "supported",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [],
+   "note": "docs/mcp/capability-map.json is checked against the server by tests/unit/mcp/capability-map.test.ts; INSTRUCTIONS names every registered resource (tests/unit/mcp/instructions-coverage.test.ts); the deploy smoke compares the deployed tools/list and registered resources with this repository."
+  },
+  {
+   "n": 2,
+   "title": "Read current context (Today, tasks, calendar, timer, deadlines, reviews, availability)",
+   "status": "supported",
+   "tools": [
+    "resume",
+    "get",
+    "review"
+   ],
+   "covers": [
+    {
+     "resource": "tasks",
+     "operations": [
+      "create"
+     ]
+    },
+    {
+     "resource": "calendar_blocks",
+     "operations": [
+      "create"
+     ]
+    },
+    {
+     "resource": "study_entries",
+     "operations": [
+      "start"
+     ]
+    },
+    {
+     "resource": "deadlines",
+     "operations": [
+      "create"
+     ]
+    }
+   ],
+   "note": "get(what=today) returns tasks due and overdue, the day's blocks, the running timer, deadlines due within 14 days, the Today review summary, the review budget and free minutes inside working hours."
+  },
+  {
+   "n": 3,
+   "title": "Manage tasks",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "tasks",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    }
+   ],
+   "note": "Complete, reopen and cancel are update patches of status; prioritize is priority; reorder is position."
+  },
+  {
+   "n": 4,
+   "title": "Recurring tasks",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "task_series",
+     "operations": [
+      "create",
+      "update",
+      "skip",
+      "unskip",
+      "stop",
+      "resume"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 5,
+   "title": "Manage calendar blocks",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "calendar_blocks",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    },
+    {
+     "resource": "overlap_acknowledgements",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    }
+   ],
+   "note": "Move, resize and cancel are update patches (starts_at, ends_at, status). get(what=calendar_overlaps,start,end) lists the overlaps before a block is created or moved."
+  },
+  {
+   "n": 6,
+   "title": "Plan my day",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "day_plans",
+     "operations": [
+      "create",
+      "update",
+      "preview",
+      "commit",
+      "commit_placements"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 7,
+   "title": "Plan my week and month",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "period_plans",
+     "operations": [
+      "preview",
+      "create",
+      "update",
+      "commit",
+      "archive"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 8,
+   "title": "Replan unfinished work",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "period_plans",
+     "operations": [
+      "replan"
+     ]
+    },
+    {
+     "resource": "day_plans",
+     "operations": [
+      "close",
+      "reopen"
+     ]
+    }
+   ],
+   "note": "A replan can be scheduled with pending_commands so it runs while the app is closed."
+  },
+  {
+   "n": 9,
+   "title": "Manage deadlines",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "deadlines",
+     "operations": [
+      "create",
+      "update",
+      "complete",
+      "reopen",
+      "cancel",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 10,
+   "title": "Manage study goals",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_goals",
+     "operations": [
+      "create",
+      "update",
+      "archive",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 11,
+   "title": "Control timers",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_entries",
+     "operations": [
+      "start",
+      "pause",
+      "resume",
+      "break",
+      "next_phase",
+      "save",
+      "discard",
+      "take_lease",
+      "exclude_minutes"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 12,
+   "title": "Manage timer presets",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "presets",
+     "operations": [
+      "create",
+      "update",
+      "reorder",
+      "archive",
+      "restore",
+      "delete"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 13,
+   "title": "Manage time logs",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "study_entries",
+     "operations": [
+      "create_manual",
+      "correct",
+      "split",
+      "void",
+      "restore"
+     ]
+    },
+    {
+     "resource": "study_intervals",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    },
+    {
+     "resource": "study_events",
+     "operations": [
+      "record",
+      "edit",
+      "void",
+      "restore"
+     ]
+    }
+   ],
+   "note": "Saved time is corrected a whole entry at a time (study_command, N91): create_manual records time, correct replaces its intervals, split cuts it at an instant, void removes it from every total and restore brings it back. Proof: tests/mcp/sql/time-log-mcp.mjs."
+  },
+  {
+   "n": 14,
+   "title": "Quick capture",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "parked_thoughts",
+     "operations": [
+      "create",
+      "edit",
+      "dismiss",
+      "reopen",
+      "delete",
+      "convert_to_task"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 15,
+   "title": "Daily routines",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "day_plans",
+     "operations": [
+      "create",
+      "update",
+      "close",
+      "reopen"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 16,
+   "title": "Subjects, Paths and checkpoints",
+   "status": "supported",
+   "tools": [
+    "create_project",
+    "add",
+    "edit",
+    "delete",
+    "get",
+    "undo"
+   ],
+   "covers": []
+  },
+  {
+   "n": 17,
+   "title": "Manage cards",
+   "status": "supported",
+   "tools": [
+    "add",
+    "edit",
+    "delete",
+    "propose_cards",
+    "propose_card_edits",
+    "undo"
+   ],
+   "covers": [
+    {
+     "resource": "card_schedule",
+     "operations": [
+      "reschedule",
+      "reset"
+     ]
+    }
+   ],
+   "note": "Tag, suspend (status), restore (status) and reschedule are edit fields; set {\"project\":\"<path>\"} moves a card to another Path and clears links into the old one; delete removes it; card_schedule reschedules or resets."
+  },
+  {
+   "n": 18,
+   "title": "Control review sessions",
+   "status": "supported",
+   "tools": [
+    "review",
+    "grade",
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "review_runs",
+     "operations": [
+      "start",
+      "pause",
+      "resume",
+      "advance",
+      "abandon",
+      "complete"
+     ]
+    },
+    {
+     "resource": "review_corrections",
+     "operations": [
+      "correct",
+      "void"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 19,
+   "title": "Manage practice",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "practice_topics",
+     "operations": [
+      "create",
+      "update",
+      "archive",
+      "restore",
+      "delete",
+      "record",
+      "void_event"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 20,
+   "title": "Manage the Atlas",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "concepts",
+     "operations": [
+      "create",
+      "update",
+      "reparent",
+      "link",
+      "unlink",
+      "preview_merge",
+      "merge"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 21,
+   "title": "Manage sources",
+   "status": "supported",
+   "tools": [
+    "read_pages",
+    "save_pages",
+    "search",
+    "get"
+   ],
+   "covers": [],
+   "note": "save_pages creates a source in a Path from an attached file's text (or fixes a page with replace); get(what=source_upload,id=<short>) returns a signed URL for the original PDF, confirmed with edit set {\"uploaded\":true}; read_pages and search read it back."
+  },
+  {
+   "n": 22,
+   "title": "Manage proposals",
+   "status": "supported",
+   "tools": [
+    "proposals",
+    "decide",
+    "study",
+    "get"
+   ],
+   "covers": [
+    {
+     "resource": "proposal_drafts",
+     "operations": [
+      "create",
+      "save",
+      "submit",
+      "discard"
+     ]
+    },
+    {
+     "resource": "proposals",
+     "operations": [
+      "withdraw",
+      "revise",
+      "reopen"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 23,
+   "title": "Manage tutor sessions",
+   "status": "supported",
+   "tools": [
+    "start_session",
+    "save_progress",
+    "end_session",
+    "resume",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "session_event_corrections",
+     "operations": [
+      "correct",
+      "void"
+     ]
+    }
+   ]
+  },
+  {
+   "n": 24,
+   "title": "Read progress reports",
+   "status": "supported",
+   "tools": [
+    "get"
+   ],
+   "covers": [],
+   "note": "get(what=progress, start=YYYY-MM-DD) returns the insights report the Progress screen shows."
+  },
+  {
+   "n": 25,
+   "title": "Change settings",
+   "status": "supported",
+   "tools": [
+    "edit",
+    "get",
+    "set_prompt",
+    "undo"
+   ],
+   "covers": []
+  },
+  {
+   "n": 26,
+   "title": "Manage notifications",
+   "status": "supported",
+   "tools": [
+    "study",
+    "get",
+    "edit"
+   ],
+   "covers": [
+    {
+     "resource": "push_devices",
+     "operations": [
+      "rename",
+      "disable",
+      "restore"
+     ]
+    },
+    {
+     "resource": "notify_holds",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
+    },
+    {
+     "resource": "account_controls",
+     "operations": [
+      "test_notification"
+     ]
+    }
+   ],
+   "note": "Reminders are get(what=notifications); quiet hours and reminder kinds are settings edits; test_notification queues a test for one device and the notification's status shows delivery."
+  },
+  {
+   "n": 27,
+   "title": "History, undo and exports",
+   "status": "supported",
+   "tools": [
+    "history",
+    "undo",
+    "get"
+   ],
+   "covers": [],
+   "note": "get(what=export) pages the owner export; undo with redo:true redoes an undone action."
+  },
+  {
+   "n": 28,
+   "title": "Control the connected app",
+   "status": "supported",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "device_commands",
+     "operations": [
+      "send",
+      "cancel"
+     ]
+    }
+   ],
+   "note": "get(what=devices) lists the account's registered app devices; send an open (screen or record) or timer command to one; the app reports delivered, then applied or rejected with a reason; read it with get(what=device_commands, id). Commands expire in 1 to 10 minutes and are never run late. Permission prompts stay on the device."
+  },
+  {
+   "n": 29,
+   "title": "Account and connection controls",
+   "status": "supported",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "account_controls",
+     "operations": [
+      "request",
+      "confirm"
+     ]
+    }
+   ],
+   "note": "get(what=connection) reports connection health. Disconnecting the connector (a new link only the owner reads in Settings) and disabling every device each need request, then confirm with its token after the owner says yes. Deleting the account stays in the app's guarded flow."
+  },
+  {
+   "n": 30,
+   "title": "Background scheduling",
+   "status": "partial",
+   "tools": [
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "task_series",
+     "operations": [
+      "create"
+     ]
+    }
+   ],
+   "gap": "Recurring tasks and scheduled period-plan replans run inside the database (pg_cron, no duplicates) while chat and the app are closed. Reminder notifications are queued by the notify code, which has no deployed entry point in this repository, so their background delivery could not be verified or built here.",
+   "item": "N160.10"
+  }
+ ]
+}

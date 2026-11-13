@@ -98,7 +98,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','account_controls']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1685,6 +1685,98 @@ try{
  assert.equal((await undo(n89CreateOnly.actionNo)).undone,n89CreateOnly.actionNo);
  assert.equal((await q("select count(*)::int n from public.notify_holds where scope='n94-undo-create'"))[0].n,0);
  mark('notify_holds','create','update','delete');
+ await role('service_role');
+ // N160 recurring tasks: MCP lifecycle, replay, stale version, foreign owner and undo.
+ const seriesCreate=command('task_series','create',{patch:{title:'N160 parity drill',freq:'daily'}});
+ const seriesCreated=status(await mcp(seriesCreate),'task_series','create');
+ const seriesId=seriesCreated.changed[0].id;
+ assert.equal(seriesCreated.generated,15,'a daily series fills 15 days');
+ assert.deepEqual(await mcp(seriesCreate),seriesCreated,'N160 series replay');
+ assert.equal((await mcp({...seriesCreate,patch:{title:'Other',freq:'daily'}})).status,'conflict');
+ await role(null);
+ const seriesSkipDate=(await q('select (public.task_series_today($1)+2)::text d',[owner]))[0].d;
+ await role('service_role');
+ const seriesStep=async(operation,version,patch={})=>status(await mcp(command('task_series',operation,{
+  target:{id:seriesId},expectedVersion:version,patch})),'task_series',operation);
+ const seriesEdited=await seriesStep('update',1,{title:'N160 parity drill v2'});
+ assert.equal(seriesEdited.changed[0].version,2);
+ assert.equal((await mcp(command('task_series','update',{target:{id:seriesId},expectedVersion:1,
+  patch:{title:'stale'}}))).status,'conflict','N160 stale series version accepted');
+ const seriesSkipped=await seriesStep('skip',2,{date:seriesSkipDate});
+ const seriesUnskipped=await seriesStep('unskip',3,{date:seriesSkipDate});
+ const seriesStopped=await seriesStep('stop',4);
+ const seriesResumed=await seriesStep('resume',5);
+ assert.equal(seriesResumed.changed[0].version,6);
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('task_series','stop',{
+   target:{id:seriesId},expectedVersion:6,patch:{}}))]),/not found/i);
+ await as(owner);
+ assert.equal((await undo(seriesResumed.actionNo)).undone,seriesResumed.actionNo);
+ assert.equal((await q('select status from public.task_series where id=$1',[seriesId]))[0].status,'stopped');
+ await role('service_role');
+ const seriesOnly=status(await mcp(command('task_series','create',{
+  patch:{title:'N160 undo create',freq:'weekdays'}})),'task_series','create');
+ await as(owner);
+ assert.equal((await undo(seriesOnly.actionNo)).undone,seriesOnly.actionNo);
+ assert.equal((await q('select count(*)::int n from public.task_series where id=$1',[seriesOnly.changed[0].id]))[0].n,0);
+ void seriesSkipped;void seriesUnskipped;void seriesStopped;
+ mark('task_series','create','update','skip','unskip','stop','resume');
+ await role('service_role');
+ // N160 period plans: every operation through MCP, then the app boundary and undo.
+ await role(null);
+ const ppStart=(await q('select (public.task_series_today($1)+1)::text d',[owner]))[0].d;
+ await role('service_role');
+ status(await mcp(command('tasks','create',{patch:{title:'N160 plan me',estimate_minutes:60}})),'tasks','create');
+ const ppPreview=await mcp(command('period_plans','preview',{patch:{period:'week',start_date:ppStart}}));
+ assert.equal(ppPreview.status,'ok');assert.equal(ppPreview.actionNo,null);
+ assert.ok(ppPreview.planned_minutes>=60,'preview places the task');
+ const ppCreate=command('period_plans','create',{patch:{period:'week',start_date:ppStart}});
+ const ppCreated=status(await mcp(ppCreate),'period_plans','create');
+ assert.deepEqual(await mcp(ppCreate),ppCreated,'N160 plan replay');
+ const ppId=ppCreated.changed[0].id;
+ const ppStep=async(operation,version,patch={})=>status(await mcp(command('period_plans',operation,{
+  target:{id:ppId},expectedVersion:version,patch})),'period_plans',operation);
+ assert.equal((await mcp(command('period_plans','update',{target:{id:ppId},expectedVersion:9,patch:{}}))).status,'conflict');
+ await ppStep('update',1,{daily_cap_minutes:180});
+ await role(null);
+ const ppIds=(await q('select placements from public.period_plans where id=$1',[ppId]))[0].placements.map(x=>x.id);
+ await role('service_role');
+ await ppStep('commit',2,{placement_ids:ppIds});
+ await ppStep('replan',3);
+ const ppArchived=await ppStep('archive',4,{cancel_blocks:true});
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [other,'chatgpt',JSON.stringify(command('period_plans','archive',{target:{id:ppId},expectedVersion:5,patch:{}}))]),/not found/i);
+ await as(owner);
+ assert.equal((await undo(ppArchived.actionNo)).undone,ppArchived.actionNo);
+ assert.equal((await q('select status from public.period_plans where id=$1',[ppId]))[0].status,'committed');
+ mark('period_plans','create','update','preview','commit','replan','archive');
+ await role('service_role');
+ // N160 account controls: a test notification, and a confirmation token for disabling devices.
+ const acTest=await mcp(command('account_controls','test_notification',{patch:{}}));
+ assert.equal(acTest.status,'ok');assert.ok(acTest.notification_id);
+ const acRequest=await mcp(command('account_controls','request',{patch:{action:'disable_devices'}}));
+ assert.equal(acRequest.status,'ok');assert.ok(acRequest.confirm.token);
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [owner,'chatgpt',JSON.stringify(command('account_controls','confirm',{patch:{action:'disable_devices',token:'00000000-0000-4000-8000-000000000000'}}))]),/missing, used, expired/);
+ const acConfirm=await mcp(command('account_controls','confirm',{patch:{action:'disable_devices',token:acRequest.confirm.token}}));
+ assert.equal(acConfirm.status,'ok');assert.equal(acConfirm.done,'disable_devices');
+ mark('account_controls','request','confirm','test_notification');
+ await role('service_role');
+ // N160 device commands: register a device as the app does, then send, cancel and report.
+ await as(owner);
+ const dcDevice=(await q("select public.register_app_device('parity-device-01','Parity phone','android') r"))[0].r;
+ await role('service_role');
+ const dcSend=command('device_commands','send',{patch:{device_id:dcDevice.id,kind:'timer',payload:{action:'pause'}}});
+ const dcSent=await mcp(dcSend);
+ assert.equal(dcSent.status,'ok');assert.ok(dcSent.command_id);
+ assert.deepEqual(await mcp(dcSend),dcSent,'N160 device command replay');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',[other,'chatgpt',JSON.stringify(command('device_commands','send',{patch:{device_id:dcDevice.id,kind:'open',payload:{screen:'today'}}}))]),/Device not found/);
+ await as(owner);
+ assert.equal((await q("select public.device_command_report($1,'delivered') r",[dcSent.command_id]))[0].r.accepted,true);
+ await role('service_role');
+ const dcCancelled=await mcp(command('device_commands','cancel',{target:{id:dcSent.command_id},expectedVersion:2,patch:{}}));
+ assert.equal(dcCancelled.status,'ok');
+ mark('device_commands','send','cancel');
  await role('service_role');
 
  // For the *actually completed* resource operation families, never allow a

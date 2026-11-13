@@ -1,5 +1,6 @@
 import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
+import {useDeviceCommands} from '../../platform/useDeviceCommands';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
@@ -142,6 +143,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const reduceEffects=settings.data?.ui?.reduceEffects;
  // AW6: haptic() follows Lemma's Haptics switch everywhere in v7.
  useHapticsSetting();
+ useDeviceCommands();
  useEffect(()=>{if(typeof reduceEffects==='boolean')applyReduceEffects(reduceEffects);},[reduceEffects]);
  useEffect(()=>{
   if(location.pathname!=='/'||!settings.data||!home.data)return;

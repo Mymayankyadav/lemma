@@ -8,15 +8,21 @@ import {readStudyRecords} from './study-read.ts';
 import {readTaskRecords} from './task-read.ts';
 import {registeredResources,readRegisteredResource} from './registry.ts';
 import {readNotificationRecords} from './notification-read.ts';
+import {readCalendarOverlaps} from './calendar-read.ts';
+import {readContext,CONTEXT_WHAT} from './context-read.ts';
+import {signedSourceUpload} from './source-upload.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
+  if(a.what==='calendar_overlaps')return readCalendarOverlaps(c,a);
+  if(a.what==='source_upload')return signedSourceUpload(c,a);
+  if((CONTEXT_WHAT as readonly string[]).includes(a.what))return readContext(c,a);
   if(['push_devices','notify_holds','notifications'].includes(a.what))
     return readNotificationRecords(c,a,'get');
   if(a.what&&/^[a-z][a-z0-9_]{0,60}$/.test(a.what)&&
     !['plan','plan_revisions','checkpoint','session','sources','outline',
       'cards','feedback','concepts','projects','prompt','diagnostics',
-      'study_entries','calendar_blocks','tasks'].includes(a.what))
+      'study_entries','calendar_blocks','tasks','calendar_overlaps','today','progress','export','connection','devices','source_upload'].includes(a.what))
     return readRegisteredResource(c,a,'get');
   if(a.what==='tasks')return readTaskRecords(c,a,'get');
   if(a.what==='study_entries'||a.what==='calendar_blocks')return readStudyRecords(c,a,'get');

@@ -8,12 +8,14 @@ import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.t
 import {projectEditFields,isLearningEditTable,learningEditCommand,validateProjectEditPatch} from './learning-edit.ts';
 import {assertValidAtlasParent,assertNoPrerequisiteCycle} from './learning-graph.ts';
 import {slug,cut} from '../text.ts';
+import {cardMovePatch} from './card-move.ts';
+import {confirmedSourceUpload,pageCount} from './source-upload.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
  projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
- sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due',card_comments:'body status',
- concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position',settings:ownerEditableSettingsFields.join(' ')
+ sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due project',card_comments:'body status',
+ concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position uploaded',settings:ownerEditableSettingsFields.join(' ')
 };
 const enqueue=(c:Context,table:string,where:any,values:any)=>c.batch!.push({op:'update',table,where,values});
 async function find(c:Context,table:string,key:string,value:any){const {data,error}=await scoped(c,table).eq(key,value).maybeSingle();if(error)throw Error(error.message);if(!data)throw Error('No '+table+' '+value);return data;}
@@ -106,7 +108,17 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
  for(let i=0;i<ordered.length;i++){const x=ordered[i];if(x.source==='app'&&['record_review','grade'].includes(x.tool)&&!x.undone_by){let end=i;while(end+1<ordered.length&&ordered[end+1].source==='app'&&['record_review','grade'].includes(ordered[end+1].tool)&&!ordered[end+1].undone_by&&ordered[end+1].created_at.slice(0,10)===x.created_at.slice(0,10))end++;if(end>i){lines.push('A'+ordered[end].no+'–A'+x.no+' app '+(end-i+1)+' reviews');i=end;continue;}}
  lines.push('A'+x.no+' '+x.created_at.slice(0,16).replace('T',' ')+' '+x.source+' '+(x.tool||'app')+': '+x.summary+(x.undone_by?' (undone by A'+x.undone_by+')':''));}
  return lines.join('\n')||'No changes.';}
-export async function undo(c:Context,a:any){await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
+export async function undo(c:Context,a:any){
+ if(a.redo){
+  // N160: redo is the undo of the undo. A<action> must already be undone.
+  const {data,error}=await scoped(c,'actions','no,undone_by').eq('no',a.action).maybeSingle();
+  if(error)throw Error(error.message);
+  if(!data)throw Error('A'+a.action+' is not yours');
+  if(!data.undone_by)throw Error('A'+a.action+' has not been undone, so there is nothing to redo');
+  await rpc(c,'undo_action',{p_no:data.undone_by,p_force:!!a.force});
+  return 'redid A'+a.action;
+ }
+ await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
 export async function edit(c:Context,a:any){const {table,row,p:given}=await target(c,a);if(!row)throw Error('Target not found');
  if(table==='settings'){
   c.batch!.push(settingsEditCommand(row,a.set,c.userId,a.expectedVersion));
@@ -133,7 +145,22 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
    await find(c,'subjects','id',patch.subject_id);
   }
  }
- const p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
+ let p=given||(row.project_id?await find(c,'projects','id',row.project_id):null);
+ // N160: a card moves to another Path (deck). Links into the old Path are cleared.
+ if(table==='notes'&&patch.project!==undefined){
+  const dest=await project(c,String(patch.project));
+  Object.assign(patch,cardMovePatch(row,p,dest,{checkpoint_id:patch.checkpoint,source_id:patch.book,concept_id:patch.idea}));
+  delete patch.project;
+  p=dest;
+ }
+ // N160: the original PDF of a source, checked in storage before the row says so.
+ if(table==='sources'&&patch.uploaded!==undefined){
+  if(patch.uploaded!==true)throw Error('uploaded can only be set to true');
+  const stored=await confirmedSourceUpload(c,row);
+  patch.storage_path=stored.storage_path;patch.bytes=stored.bytes;patch.filename=patch.filename??row.filename??'';
+  patch.status=(await pageCount(c,row.id))>0?'ready':'extracting';
+  delete patch.uploaded;
+ }
  if(table==='notes'&&patch.status!==undefined&&!['active','suspended'].includes(patch.status))throw Error('Card status must be active or suspended');
  if(patch.subject!==undefined){
   if(patch.subject===null){if(table!=='projects')throw Error('Only project subjects can be unset');patch.subject_id=null;}

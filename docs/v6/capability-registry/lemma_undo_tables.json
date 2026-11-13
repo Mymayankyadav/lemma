@@ -95,6 +95,12 @@
     },
     {
       "table_name": "notify_holds"
+    },
+    {
+      "table_name": "task_series"
+    },
+    {
+      "table_name": "period_plans"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

@@ -1,5 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N160 Chat connector and app: the Owner's 30-area checklist, last open part (Owner task)
+
+Owner task: "Implement these" (the 30-area MCP and app checklist, recorded in `docs/mcp/OWNER_CHECKLIST.md`)
+Stage: Build · Status: open · Needs: — · Assigned: chat-73194#k4x9
+Done = every one of the 30 areas of `docs/mcp/capability-map.json` is `supported`. 29 are, each with a test (see `docs/current/N160.md`). The one still open:
+- N160.10 area 30: reminder notifications are generated and delivered while the app and chat are closed, without duplicates. The notify code (`supabase/functions/notify/*`, `notify_candidates`) has no deployed entry point in this repository, so this needs an Owner decision on where the delivery tick runs (a `pg_cron` job calling an Edge function with the push keys, or a GitHub schedule) before it can be built and verified.
+Tests: the delivery tick's SQL and unit tests, plus the existing `tests/unit/mcp/capability-map.test.ts` (which turns green only when area 30 is supported).
+Scope: `supabase/migrations/` (additive only), `supabase/functions/notify/**`, `docs/mcp/capability-map.json`, tests, `docs/current/N160.md`.
+Not: replacing an existing command function without a `Replaces function:` claim, new dependencies, flag defaults, the Android native code.
+
 ## N159 Ship the approved U4 signature features in Android (Owner task)
 
 Owner task: "Ok do it"
