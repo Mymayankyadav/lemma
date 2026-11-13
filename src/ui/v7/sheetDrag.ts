@@ -1,5 +1,6 @@
 import {dismissSheet} from './motion';
 import {motionReduced} from './effects';
+import {haptic} from './haptics';
 import './sheet-drag.css';
 
 /**
@@ -14,7 +15,7 @@ const HANDLE='.v7-grabber, .v7-sheet-header';
 const INTERACTIVE='button, a, input, select, textarea, label, [role="button"], [contenteditable]';
 const SAMPLE_MS=100;
 
-interface Drag {dialog:HTMLDialogElement;id:number;startY:number;height:number;distance:number;samples:[number,number][]}
+interface Drag {dialog:HTMLDialogElement;id:number;startY:number;height:number;distance:number;samples:[number,number][];past:boolean}
 
 /** The downward speed in px/s over the last 100 ms of samples ending at (y, time). */
 export function releaseVelocity(samples:readonly [number,number][],y:number,time:number):number{
@@ -39,13 +40,16 @@ export function installSheetDrag(doc:Document=document):()=>void{
   if(!handle||!dialog?.open||target!.closest(INTERACTIVE))return;
   const box=dialog.getBoundingClientRect(),bottom=doc.defaultView?.innerHeight??0;
   if(box.height<=0||box.bottom<bottom-1)return;
-  drag={dialog,id:event.pointerId,startY:event.clientY,height:box.height,distance:0,samples:[[event.clientY,event.timeStamp]]};
+  drag={dialog,id:event.pointerId,startY:event.clientY,height:box.height,distance:0,samples:[[event.clientY,event.timeStamp]],past:false};
   dialog.style.transition='none';
  };
  const move=(event:PointerEvent)=>{
   if(!drag||event.pointerId!==drag.id)return;
   drag.distance=Math.max(0,event.clientY-drag.startY);
   drag.dialog.style.transform=drag.distance?`translateY(${drag.distance}px)`:'';
+  // AW6: a light tick when the pull passes the point where letting go closes the sheet (and again if it comes back).
+  const past=dismissSheet(drag.distance,drag.height,0);
+  if(past!==drag.past){drag.past=past;if(past)haptic('sheetThreshold');}
   drag.samples.push([event.clientY,event.timeStamp]);
   if(drag.samples.length>8)drag.samples.shift();
  };

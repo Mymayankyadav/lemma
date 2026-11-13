@@ -1,9 +1,11 @@
 import {useEffect,useRef,useState} from 'react';
+import {haptic} from '../../../ui/v7/haptics';
+import {playPhaseChime} from '../../../ui/v7/chime';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronDown,CircleAlert,Coffee,MoreHorizontal,Pause,Play,SkipForward,Smartphone,Waves} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
-import {useHome} from '../../../data/hooks';
+import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import {getThoughtApi} from '../../../data/parked-thoughts';
 import {getStudyEventApi} from '../../../data/study-events';
@@ -65,6 +67,16 @@ export default function FocusV7(){
  const [finishing,setFinishing]=useState(false),[minutes,setMinutes]=useState(25),[rating,setRating]=useState<number|null>(null),[learned,setLearned]=useState('');
  const [confirmDiscard,setConfirmDiscard]=useState(false);
  const reduced=useMotionReduced();
+ // AW6: a pomodoro phase that ends while Focus is open is felt (rise, pause, rise) and, with the chime on, heard; once
+ // per phase. The app's own notification still announces it when Focus is not on screen.
+ const chime=useSettings().data?.ui?.chime===true,endedPhase=useRef<string|null>(null);
+ const phaseEnds=entry&&entry.status!=='paused'&&entry.mode&&entry.mode!=='open'?entry.phaseEndsAt??null:null;
+ useEffect(()=>{
+  if(!phaseEnds||endedPhase.current===phaseEnds||now<Date.parse(phaseEnds))return;
+  const fresh=now-Date.parse(phaseEnds)<5000;
+  endedPhase.current=phaseEnds;
+  if(fresh){haptic('pomodoro');void playPhaseChime(chime);}
+ },[phaseEnds,now,chime]);
  const intention=entry?(readDraft(entry.id)??entry.intent):'';
  const project=home.data?.projects.find(item=>item.id===entry?.projectId);
  const subject=kitSubject(project?.subject.name??'');

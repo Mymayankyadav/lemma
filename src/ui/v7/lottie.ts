@@ -6,6 +6,18 @@
 export type LottieRole = 'bg' | 'ink' | 'muted' | 'paper' | 'accent' | 'onAccent';
 export type Rgb = [number, number, number];
 export type LottieName = 'inbox-zero' | 'round-complete' | 'day-closed';
+/** LT8: the frame each ending lands on (its ✓ or ∎ finishes), where `haptic('complete')` is felt. */
+export const LOTTIE_LANDS: Readonly<Record<LottieName, number>> = {'inbox-zero': 66, 'round-complete': 72, 'day-closed': 80};
+
+type Connection = {saveData?: boolean; effectiveType?: string} | undefined;
+/**
+ * LT7 (Owner decision E22, 13 Nov 2026): the player (about 0.5 MB compressed) is skipped when the browser asks to save
+ * data or the connection is 2G; the still shows instead.
+ */
+export function lottieAllowed(connection: Connection = typeof navigator === 'undefined' ? undefined : (navigator as {connection?: Connection}).connection): boolean {
+  if (!connection) return true;
+  return !connection.saveData && !/^(slow-)?2g$/.test(connection.effectiveType ?? '');
+}
 
 type Json = unknown;
 /** A deep copy of the animation with every role-named fill (`fl`) and stroke (`st`) coloured from `colours`. */

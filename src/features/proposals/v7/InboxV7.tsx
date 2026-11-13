@@ -1,6 +1,7 @@
 import {Illustration} from '../../../ui/v7/Illustration';
 import {nameCodes} from '../../../lib/codeNames';
-import {LottieMoment} from '../../../ui/v7/LottieMoment';
+import {LottieMoment,warmMoment} from '../../../ui/v7/LottieMoment';
+import {useHapticsSetting} from '../../../ui/v7/useHapticsSetting';
 import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Link,useSearchParams} from 'react-router';
 import {Check,LayoutList,Layers,Link as LinkIcon,Unlink,Minus,MoveRight,Pencil,Plus,X} from 'lucide-react';
@@ -110,7 +111,8 @@ export default function InboxV7(){
  const [params,setParams]=useSearchParams(),tab=params.get('tab')==='plan'?'plan':'cards',list=params.get('view')==='list';
  const [order,setOrder]=useState<string[]>([]),[editing,setEditing]=useState<Proposal|null>(null),[batch,setBatch]=useState<Proposal[]|null>(null);
  const [selected,setSelected]=useState<ReadonlySet<string>>(()=>new Set());
- const haptics=(settings.data as {haptics?:boolean}|undefined)?.haptics!==false;
+ // AW6: Lemma's Haptics switch lives in settings.ui (this read settings.haptics, which is never set, so the switch was ignored).
+ const haptics=useHapticsSetting();
  const onUndo=useCallback((ids:string[])=>setOrder(previous=>[...ids,...previous.filter(id=>!ids.includes(id))]),[]);
  const onSettled=useCallback(()=>{void query.refetch();},[query]);
  const {held,decide}=useInboxDecisions({onUndo,onSettled});
@@ -121,6 +123,11 @@ export default function InboxV7(){
  useEffect(()=>{setOrder(previous=>mergeOrder(previous,cards.map(p=>p.id)));},[cards]);
  const queue=useMemo(()=>{const byId=new Map(cards.map(p=>[p.id,p]));return mergeOrder(order,cards.map(p=>p.id)).map(id=>byId.get(id)!).filter(Boolean);},[order,cards]);
  const top=queue[0],peers=sameSession(top,queue);
+ // LT7: one card left, so Inbox zero is one decision away: fetch its player in idle time. LT8: the ending is felt only
+ // when it happens here (the last card decided), not when an empty Inbox is opened.
+ const hadCards=useRef(false);
+ if(queue.length>0)hadCards.current=true;
+ useEffect(()=>{if(tab==='cards'&&queue.length===1)warmMoment('inbox-zero');},[tab,queue.length]);
  const reduced=useMotionReduced();
  const [stamp,setStamp]=useState<{id:string;word:'Approve'|'Reject'}|null>(null),stampTimer=useRef(0);
  useEffect(()=>()=>window.clearTimeout(stampTimer.current),[]);
@@ -171,7 +178,7 @@ export default function InboxV7(){
     </div>
     {peers.length>1&&<Button variant="ghost" className="v7-inbox-all" onClick={()=>setBatch(peers)}>{'Approve all '+peers.length+' from Session '+top.sessionNumber}</Button>}
     <p className="v7-sr-only">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
-   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
    {query.isSuccess&&tab==='cards'&&list&&(queue.length?<>
     {groupBySession(queue,titleOf).map(group=><section key={group.key} className="v7-inbox-group" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2>
@@ -183,7 +190,7 @@ export default function InboxV7(){
      <Button disabled={!selected.size} onClick={()=>{act('reject',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Reject '+selected.size}</Button>
      <Button variant="primary" disabled={!selected.size} onClick={()=>{act('approve',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Approve '+selected.size}</Button>
     </div>
-   </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art"/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
    {query.isSuccess&&tab==='plan'&&(plans.length?<ul className="v7-inbox-plans">{plans.map(p=><PlanCard key={p.id} proposal={p} project={bySlug.get(p.projectSlug)} onDecide={action=>act(action,[p])}/>)}</ul>
     :<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>No plan changes</h2><p>When your tutor proposes a plan or a change, it appears here.</p></div>)}
   </section>

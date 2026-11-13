@@ -1,4 +1,5 @@
 import {Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
@@ -113,6 +114,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const settings=useSettings();
  // A1: Reduce effects follows the account (set on another device) once settings load; the device copy applied at start.
  const reduceEffects=settings.data?.ui?.reduceEffects;
+ // AW6: haptic() follows Lemma's Haptics switch everywhere in v7.
+ useHapticsSetting();
  useEffect(()=>{if(typeof reduceEffects==='boolean')applyReduceEffects(reduceEffects);},[reduceEffects]);
  useEffect(()=>{
   if(location.pathname!=='/'||!settings.data||!home.data)return;

@@ -72,9 +72,9 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] LT6 *(P4)* Round complete: stroke before fill, so the cards end at full line weight — N130 (#1363)
 - [x] LT10 *(P5)* Theme change after play shows the still in the new colours — N130 (#1363)
 - [x] **LT3** *(P5, E20)* Day closed stays until Done or 5 s, with or without motion (was 2.6 s, or 0.4 s under reduced motion) — N130 (#1363)
-- [ ] LT7 *(P5, needs E22)* Skip the player on Save-Data and 2G; warm it in idle time near an ending
-- [ ] LT8 *(P5, with AN3)* `haptic('complete')` on the frame the ✓ or ∎ lands (Inbox 66, Round 72, Day closed 80)
-- [ ] LT9 Stars fade in from 70%; a badge's ring draws before it fills
+- [x] LT7 *(P5, E22)* Skip the player on Save-Data and 2G; warm it in idle time near an ending — N154
+- [x] LT8 *(P5, with AN3)* `haptic('complete')` on the frame the ✓ or ∎ lands (Inbox 66, Round 72, Day closed 80) — N154
+- [x] LT9 Stars fade in from 70%; a badge's ring draws before it fills — N154
 - [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130 (#1363)
 - [x] **IL2** IL8 IL3 *(P2)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred with its animation — N135
 - [ ] IL6 *(P2, needs E19)* Round complete gets its own still and ending with ∎. Markup: `visuals/src/r3/r3-art.json` (`round`)
@@ -118,7 +118,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### AN3 · Feel (Android, M) — `03` §4
 
-- [ ] AW6 *(needs E17)* Haptic vocabulary: reveal, grades, Again, task tick, endings (with LT8), pomodoro end
+- [x] AW6 *(E17)* Haptic vocabulary: reveal, grades, Again, task tick, endings (with LT8), pomodoro end — N154
 - [x] **AW7** Splash released on first paint (cap 800 ms); WebView background from the Day/Night colour — N136
 - [x] **AW8** Back preview on Today: release the back handler at the root with no sheet open — N136
 - [x] Offline made visible: "as of 14:05" chips on Today and the Review hub — N151
@@ -202,28 +202,28 @@ Not open work: home-screen widgets (board 09), server-sent notifications, docume
 
 ## Owner decisions — `05` §3 and §8
 
-Recommendations are the plan's. Tick a decision and add the date when the Owner takes it. On 12 Nov 2026 the Owner approved E5, E6, E8, E14, E15, E16, E18 and E20 as recommended ("I approve each of them.").
+Recommendations are the plan's. Tick a decision and add the date when the Owner takes it. On 12 Nov 2026 the Owner approved E5, E6, E8, E14, E15, E16, E18 and E20 as recommended ("I approve each of them."). On 13 Nov 2026 the Owner approved every remaining decision as recommended ("Approve all as recommended"), and allowed U3 and U4 to be built from the existing boards, each behind its own flag that defaults off (recorded in N154).
 
-- [ ] E1 U0, G0 and AN1 are fixes that need no new visual approval — *recommended: yes* (N130 started U0 on the Owner's "start working on it")
-- [ ] E2 Desktop direction: page and margin, review spread, task columns (board 08); six desktop goldens at the end of U1
-- [ ] E3 The ∎ as the single mark of completion, behind `v7Qed` (board 05)
+- [x] E1 U0, G0 and AN1 are fixes that need no new visual approval — *recommended: yes* (N130 started U0 on the Owner's "start working on it") — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E2 Desktop direction: page and margin, review spread, task columns (board 08); six desktop goldens at the end of U1 — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E3 The ∎ as the single mark of completion, behind `v7Qed` (board 05) — **approved by the Owner, 13 Nov 2026** (as recommended)
 - [x] E5 Honour the system font size in the app, capped at 200% (after device check 1) — **approved by the Owner, 12 Nov 2026** (built after U2's large-text layouts, as the plan orders it)
 - [x] E6 Touch size 48 px in the app, 44 px on the web — **approved by the Owner, 12 Nov 2026**
 - [x] E8 Phone landscape: lock to portrait now, landscape with the desk clock later — **approved by the Owner, 12 Nov 2026**
-- [ ] E9 Paper and sky in Appearance, as a small flag after U0–U2
-- [ ] E10 Scratch paper in review, behind `v7Scratch`
-- [ ] E11 First-run order: subject, rhythm, then the tutor connection
-- [ ] E12 Targets: app readable in 1 s and live in 2 s; web first load ≤ 350 KB (CI budgets stay an Owner `rules:` PR)
+- [x] E9 Paper and sky in Appearance, as a small flag after U0–U2 — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E10 Scratch paper in review, behind `v7Scratch` — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E11 First-run order: subject, rhythm, then the tutor connection — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E12 Targets: app readable in 1 s and live in 2 s; web first load ≤ 350 KB (CI budgets stay an Owner `rules:` PR) — **approved by the Owner, 13 Nov 2026** (as recommended)
 - [x] E14 Backup in the app: the share sheet (recommended) or straight to Downloads — **approved by the Owner, 12 Nov 2026**: the share sheet
 - [x] E15 "Check for updates": the release-page link first, then one quiet daily check with a privacy-page line — **approved by the Owner, 12 Nov 2026**
 - [x] E16 Undeliverable reminder kinds: shown, grouped, without switches — **approved by the Owner, 12 Nov 2026**
-- [ ] E17 Haptic vocabulary on by default, following the system and Lemma's Haptics switch
+- [x] E17 Haptic vocabulary on by default, following the system and Lemma's Haptics switch — **approved by the Owner, 13 Nov 2026** (as recommended)
 - [x] E18 Night: illustration objects lighter than their disc (one token) — **approved by the Owner, 12 Nov 2026**
-- [ ] E19 ✓ means nothing is waiting; ∎ means you finished something; Round complete gets a ∎ still
+- [x] E19 ✓ means nothing is waiting; ∎ means you finished something; Round complete gets a ∎ still — **approved by the Owner, 13 Nov 2026** (as recommended)
 - [x] E20 Day closed stays until Done (or 5 s), the same with or without motion — **approved by the Owner, 12 Nov 2026**
-- [ ] E21 Icons: 1.75 px at every size, one meaning per glyph, six new drawn marks (review on one sheet)
-- [ ] E22 Lottie guard rails: skip on Save-Data and 2G; warm in idle time
-- [ ] E23 Android: one shortcut recipe, distinct tile glyphs, ∎ in the themed icon
+- [x] E21 Icons: 1.75 px at every size, one meaning per glyph, six new drawn marks (review on one sheet) — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E22 Lottie guard rails: skip on Save-Data and 2G; warm in idle time — **approved by the Owner, 13 Nov 2026** (as recommended)
+- [x] E23 Android: one shortcut recipe, distinct tile glyphs, ∎ in the themed icon — **approved by the Owner, 13 Nov 2026** (as recommended)
 
 Lapsed or superseded: E4 "coded first" (superseded by D7 for the three shipped moments), E7 widgets (parked), E13 store listing (no Play Console).
 

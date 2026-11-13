@@ -79,7 +79,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  function blockOf(id:string){return byId.get(id);}
  function lift(active:Drag){
-  active.lifted=true;haptic('snap',true);
+  active.lifted=true;haptic('snap');
   setPreview({id:active.id,delta:0,mode:active.mode,lifted:true});
  }
  const blockTouchMove=(event:TouchEvent)=>{if(drag.current?.lifted&&event.cancelable)event.preventDefault();};
@@ -103,7 +103,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    lift(active);
   }
   const delta=snapDragMinutes(dy,HOUR_PX);
-  if(delta!==active.lastStep){active.lastStep=delta;haptic('snap',true);}
+  if(delta!==active.lastStep){active.lastStep=delta;haptic('snap');}
   active.delta=delta;setPreview({id:active.id,delta,mode:active.mode,lifted:true});
   const rect=scroll.current?.getBoundingClientRect();
   if(scroll.current&&rect){if(event.clientY>rect.bottom-36)scroll.current.scrollTop+=18;else if(event.clientY<rect.top+36)scroll.current.scrollTop-=18;}
