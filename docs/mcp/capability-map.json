@@ -18,7 +18,7 @@
   {
    "n": 2,
    "title": "Read current context (Today, tasks, calendar, timer, deadlines, reviews, availability)",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "resume",
     "get",
@@ -50,8 +50,7 @@
      ]
     }
    ],
-   "gap": "No single read returns Today with the running timer and free time between blocks; callers must assemble it from several get calls.",
-   "item": "N160.4"
+   "note": "get(what=today) returns tasks due and overdue, the day's blocks, the running timer, deadlines due within 14 days, the Today review summary, the review budget and free minutes inside working hours."
   },
   {
    "n": 3,
@@ -540,11 +539,12 @@
   {
    "n": 24,
    "title": "Read progress reports",
-   "status": "missing",
-   "tools": [],
+   "status": "supported",
+   "tools": [
+    "get"
+   ],
    "covers": [],
-   "gap": "The insights RPC behind the Progress screen is not reachable from the connector.",
-   "item": "N160.4"
+   "note": "get(what=progress, start=YYYY-MM-DD) returns the insights report the Progress screen shows."
   },
   {
    "n": 25,
@@ -590,15 +590,14 @@
   {
    "n": 27,
    "title": "History, undo and exports",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "history",
     "undo",
     "get"
    ],
    "covers": [],
-   "gap": "The owner export (lemma_export_page) is not reachable from the connector, and redo of an undone action has no tool.",
-   "item": "N160.4"
+   "note": "get(what=export) pages the owner export; undo with redo:true redoes an undone action."
   },
   {
    "n": 28,

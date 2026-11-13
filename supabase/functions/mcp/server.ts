@@ -179,7 +179,7 @@ export function buildServer(c:Context):McpServer{
   }),false,(a,ctx)=>decide(ctx,a));
   register('set_prompt',"Set prompt.",z.object({scope:S(),text:S().max(2000),mode:z.enum(['replace','append','clear']).optional()}),false,(a,ctx)=>setPrompt(ctx,a));
   register('history',"History.",z.object({project:optProject,limit:z.number().int().min(1).max(30).optional()}),true,(a,ctx)=>history(ctx,a));
-  register('undo',"Undo.",z.object({action:z.number().int().positive(),force:z.boolean().optional()}),false,(a,ctx)=>undo(ctx,a));
+  register('undo',"Undo.",z.object({action:z.number().int().positive(),force:z.boolean().optional(),redo:z.boolean().optional()}),false,(a,ctx)=>undo(ctx,a));
   register('edit',"Edit.",z.object({target:S(),project:optProject,set:z.record(S(),z.unknown()),expectedVersion:z.number().int().positive().optional()}),false,(a,ctx)=>edit(ctx,a));
   register('add',"Add.",z.object({kind:z.enum(['checkpoint','card','subject','idea','style','comment','book']),project:optProject,fields:z.record(S(),z.unknown())}),false,(a,ctx)=>add(ctx,a));
   register('delete',"Delete.",z.object({target:S(),project:optProject,confirm:z.boolean()}),false,(a,ctx)=>remove(ctx,a));

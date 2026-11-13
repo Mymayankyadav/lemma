@@ -106,7 +106,17 @@ export async function history(c:Context,a:any){const fetched=await scoped(c,'v_h
  for(let i=0;i<ordered.length;i++){const x=ordered[i];if(x.source==='app'&&['record_review','grade'].includes(x.tool)&&!x.undone_by){let end=i;while(end+1<ordered.length&&ordered[end+1].source==='app'&&['record_review','grade'].includes(ordered[end+1].tool)&&!ordered[end+1].undone_by&&ordered[end+1].created_at.slice(0,10)===x.created_at.slice(0,10))end++;if(end>i){lines.push('A'+ordered[end].no+'–A'+x.no+' app '+(end-i+1)+' reviews');i=end;continue;}}
  lines.push('A'+x.no+' '+x.created_at.slice(0,16).replace('T',' ')+' '+x.source+' '+(x.tool||'app')+': '+x.summary+(x.undone_by?' (undone by A'+x.undone_by+')':''));}
  return lines.join('\n')||'No changes.';}
-export async function undo(c:Context,a:any){await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
+export async function undo(c:Context,a:any){
+ if(a.redo){
+  // N160: redo is the undo of the undo. A<action> must already be undone.
+  const {data,error}=await scoped(c,'actions','no,undone_by').eq('no',a.action).maybeSingle();
+  if(error)throw Error(error.message);
+  if(!data)throw Error('A'+a.action+' is not yours');
+  if(!data.undone_by)throw Error('A'+a.action+' has not been undone, so there is nothing to redo');
+  await rpc(c,'undo_action',{p_no:data.undone_by,p_force:!!a.force});
+  return 'redid A'+a.action;
+ }
+ await rpc(c,'undo_action',{p_no:a.action,p_force:!!a.force});return 'undid A'+a.action;}
 export async function edit(c:Context,a:any){const {table,row,p:given}=await target(c,a);if(!row)throw Error('Target not found');
  if(table==='settings'){
   c.batch!.push(settingsEditCommand(row,a.set,c.userId,a.expectedVersion));
