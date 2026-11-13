@@ -33,29 +33,13 @@ export function routeMotion(reduced: boolean) {
     : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -8 }, transition: { duration: durations.fast, ease: easings.standard } };
 }
 
-/** Reusable transition definitions for the eight v7 interaction moments. */
-export function transitionPresets(reduced: boolean) {
- const fade={initial:{opacity:0},animate:{opacity:1},exit:{opacity:0},transition:{duration:durations.fast}};
- if(reduced) return {tab:fade,detail:fade,sheet:fade,focus:fade,grade:fade,completion:fade,drag:fade,numbers:fade};
- return {
-  tab:routeMotion(false),
-  detail:{initial:{opacity:0,scale:.98},animate:{opacity:1,scale:1},exit:{opacity:0,scale:.98},transition:{duration:durations.base,ease:easings.out}},
-  sheet:{initial:{opacity:0,y:'100%'},animate:{opacity:1,y:0},exit:{opacity:0,y:'100%'},transition:springs.gentle},
-  focus:{initial:{opacity:0,scale:.96},animate:{opacity:1,scale:1},transition:{duration:durations.slow,ease:easings.out}},
-  grade:{initial:{opacity:0,y:8},animate:{opacity:1,y:0},exit:{opacity:0,x:100},transition:{duration:durations.base,ease:easings.standard}},
-  completion:{initial:{opacity:0,scale:.8},animate:{opacity:1,scale:1},transition:springs.lively},
-  drag:{whileDrag:{scale:1.02},transition:springs.snappy},
-  numbers:{initial:{opacity:0},animate:{opacity:1},transition:{duration:durations.slow}},
- };
-}
-
-/** Meter/figure interpolation skips counting for reduced-motion users. */
+/** Meter/figure interpolation skips counting for reduced-motion users (used by useAnimatedNumber). */
 export function interpolateNumber(from:number,to:number,progress:number,reduced=false):number {
  if(reduced)return to;
  const amount=Math.max(0,Math.min(1,Number.isFinite(progress)?progress:0));
  return from+(to-from)*amount;
 }
-/** A downward swipe closes after 30% travel or a decisive downward flick. */
+/** A downward swipe closes after 30% travel or a decisive downward flick (used by sheetDrag). */
 export function dismissSheet(distance:number,height:number,velocity:number):boolean {
  return height>0&&(distance/height>=.3||velocity>600);
 }

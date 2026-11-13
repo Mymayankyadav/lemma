@@ -12,6 +12,7 @@ import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {StatMeasure} from '../../../ui/v7/KitPrimitives';
 import {AsOf} from '../../../ui/v7/AsOf';
 import {useSavedCopyAt} from '../../../ui/v7/savedCopy';
+import {useAnimatedNumber} from '../../../ui/v7/useAnimatedNumber';
 import {ChevronRight} from 'lucide-react';
 import {kitSubject} from '../../atlas/v7/model';
 import {resumeRun,type DurableRun} from '../../review-run/v6/adapter';
@@ -78,6 +79,8 @@ export default function ReviewHubV7(){
   setSelected(next);
  }
  const count=result.batch.length,totalDue=result.allDue,fresh=result.batch.filter(card=>card.state.state===0).length;
+ // V20: the count counts to its new value when the round changes (a subject, a deck, a refresh); shown at once on load.
+ const shownCount=useAnimatedNumber(count,!loading&&!failed);
  const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):totalDue>0?'Choose decks to review in Customise this round':'Nothing is due right now';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
   <HubHeader title="Review">
@@ -91,7 +94,7 @@ export default function ReviewHubV7(){
    <section className="v7-rv-hero" aria-label="Review counts">
     {/* A2 · IL-03: all caught up. */}
     {count===0&&totalDue===0&&<Illustration name="review" width={150} className="v7-rv-art"/>}
-    <p className="v7-rv-figure"><strong aria-label="Cards in this round">{count}</strong><span>{count===1?'card':'cards'} today</span></p>
+    <p className="v7-rv-figure"><strong aria-label="Cards in this round">{shownCount}</strong><span>{count===1?'card':'cards'} today</span></p>
     {/* R0 · F05: when the round includes new cards, the hero says so, so it agrees with Today's and the tab's due count. */}
     {fresh>0&&<p className="v7-rv-note" data-split="">{roundSplit(count,fresh)}</p>}
     <p className="v7-rv-note">{note}{totalDue>count?' · '+(totalDue-count).toLocaleString()+' more due later':''}{asOf!==null&&<> <AsOf at={asOf} zone={settings.data?.timeZone}/></>}</p>

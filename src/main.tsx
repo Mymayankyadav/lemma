@@ -7,8 +7,11 @@ import {isV7Route} from './app/v7Kit'
 import {loadShellFonts} from './app/shellFonts'
 import {markNativeApp} from './platform/native'
 import {bootReduceEffects} from './ui/v7/effects'
+import {installSheetDrag} from './ui/v7/sheetDrag'
 if(isV7Route())setShellRoot('v7')
 bootReduceEffects()
+// V20: every v7 bottom sheet can be dragged down to dismiss (one delegated listener).
+installSheetDrag()
 const nativeApp=markNativeApp()
 loadShellFonts(isV7Route())
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>)
