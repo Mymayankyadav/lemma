@@ -7,6 +7,7 @@ import {getApi} from '../../../data';
 import {useCreateNote,useHome,useProject,useProjects,useSettings} from '../../../data/hooks';
 import type {CardRow,ProjectSummary} from '../../../data/types';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {isFlagOn} from '../../../flags';
 import {Button,Sheet,Skeleton} from '../../../ui/v7/components';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {MathText} from '../../../ui/MathText';
@@ -30,10 +31,10 @@ function CheckpointChoice({slug,value,onChange,open,onClose}:{slug:string;value:
  return <Choice title="Checkpoint" open={open} onClose={onClose} value={value} onChange={onChange}
   options={[{value:'',label:'All checkpoints'},...(project.data?.checkpoints??[]).filter(cp=>cp.ui!=='proposed').map(cp=>({value:cp.code,label:cp.title}))]}/>;
 }
-function Row({row,project,now,zone}:{row:CardRow;project:ProjectSummary|undefined;now:Date;zone:string}){
+function Row({row,project,now,zone,selected}:{row:CardRow;project:ProjectSummary|undefined;now:Date;zone:string;selected?:number}){
  const subject=kitSubject(project?.subject.name??''),due=row.status!=='suspended'&&isDueToday(row,now,zone);
  return <li className={'v7-cards-row '+subjectClass(subject)}>
-  <Link to={'/cards/'+row.noteNo}>
+  <Link to={'/cards/'+row.noteNo} aria-current={selected===row.noteNo?'page':undefined}>
    <span className="v7-cards-glyph" aria-hidden="true"><SubjectMark subject={subject}/></span>
    <span className="v7-cards-text"><span className="v7-cards-front"><MathText source={row.front}/></span>
     <small>{cardMeta(row,now,zone,project?.title)}</small></span>
@@ -54,7 +55,7 @@ export function cardCountLabel({shown,more,exact}:{shown:number;more:boolean;exa
  if(total!==null)return n(total)+(total===1?' card':' cards');
  return n(shown)+' cards shown · more as you scroll';
 }
-export default function CardsV7(){
+export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boolean;selected?:number;onFirst?:(noteNo:number|null)=>void}={}){
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),notify=useToast();
  const projects=useProjects(),home=useHome(),settings=useSettings(),create=useCreateNote();
  const zone=ownerZone(settings.data),now=useMemo(()=>new Date(),[]);
@@ -73,6 +74,7 @@ export default function CardsV7(){
  });
  const loaded=useMemo(()=>cards.data?.pages.flatMap(page=>page.rows)??[],[cards.data]);
  const rows=useMemo(()=>sortCards(state==='due'?loaded.filter(row=>row.status!=='suspended'&&isDueToday(row,now,zone)):loaded,sort),[loaded,state,sort,now,zone]);
+ useEffect(()=>{if(cards.isSuccess)onFirst?.(rows[0]?.noteNo??null);},[cards.isSuccess,rows,onFirst]);
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const paths=(projects.data??[]).filter(row=>!row.system);
  useEffect(()=>{
@@ -93,8 +95,9 @@ export default function CardsV7(){
  const pathTitle=slug?bySlug.get(slug)?.title??slug:'';
  const active=!!(slug||checkpoint||state!=='all'||comments||search);
  const due=home.data?.due??0;
- return <main id="main-content" className="v7-page v7-cards" aria-label="Cards">
-  <HubHeader title="Paths"><PathsTabs current="cards"/></HubHeader>
+ const Tag=embedded?'section':'main';
+ return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-cards" aria-label="Cards">
+  <HubHeader title={isFlagOn('v7Room')?'Cards':'Paths'}><PathsTabs current="cards"/></HubHeader>
   <label className="v7-cards-search"><span className="v7-sr-only">Search cards</span>
    <input type="search" className="v7-search-field" placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/></label>
   <div className="v7-cards-filters" role="group" aria-label="Card filters">
@@ -109,9 +112,9 @@ export default function CardsV7(){
    {active&&<Button variant="ghost" small onClick={()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}>Clear filters</Button>}
   </div>
   {cards.isPending&&<><Skeleton/><Skeleton/></>}
-  {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Could not load cards.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
-  {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone}/>)}</ul>
-   :active?<EmptyMoment art="cards" title="No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
+  {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Erratum: cards didn’t load. Try again.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
+  {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone} selected={selected}/>)}</ul>
+   :active?<EmptyMoment art="cards" title="∅ No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
    :<EmptyMoment title="No cards yet">Your tutor proposes cards after each session, or use Capture to write one.</EmptyMoment>)}
   {cards.isFetchingNextPage&&<Skeleton/>}
   <div ref={sentinel} aria-hidden="true"/>
@@ -124,5 +127,5 @@ export default function CardsV7(){
   <Choice title="Sort" open={sheet==='sort'} onClose={()=>setSheet(null)} value={sort} onChange={value=>setSort(value as CardSort)}
    options={[{value:'due',label:'Due first'},{value:'newest',label:'Newest'}]}/>
   {creating&&<CardEditorSheet open onClose={closeEditor} busy={create.isPending} onSubmit={value=>{void save(value);}}/>}
- </main>;
+ </Tag>;
 }

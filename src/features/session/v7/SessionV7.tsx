@@ -3,6 +3,9 @@ import {Link,useParams} from 'react-router';
 import {ChevronRight,Copy} from 'lucide-react';
 import {useProject,useResolveMisconception,useSession,useSettings} from '../../../data/hooks';
 import {DetailHeader} from '../../../app/v7/V7Shell';
+import {isFlagOn} from '../../../flags';
+import {plainMath} from '../../../lib/plain-math';
+import {Margin} from '../../../app/v7/Margin';
 import {Button,Skeleton} from '../../../ui/v7/components';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {subjectClass} from '../../../ui/v7/Subject';
@@ -41,7 +44,12 @@ export default function SessionV7(){
  const open=session.misconceptions.filter(item=>!item.resolvedAt);
  const pending=session.pendingProposals.cards+session.pendingProposals.planChanges;
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Session">
-  <DetailHeader title={'Session '+summary.number} back={back}/>
+  <DetailHeader title={isFlagOn('v7Room')?plainMath(summary.goal):'Session '+summary.number} back={back}/>
+  {/* N157 · U1 S11 (flag v7Margin): where this session sits on its path, and its pages. */}
+  <Margin notes={[
+   {title:'Path',body:<p><Link to={'/p/'+encodeURIComponent(slug)}>{title}</Link>{summary.checkpointCode&&<> · <Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(summary.checkpointCode)}>{project.data?.checkpoints.find(item=>item.code===summary.checkpointCode)?.title??summary.checkpointCode}</Link></>}</p>},
+   ...(session.pages?[{title:'Pages',body:<p>{session.pages}</p>}]:[]),
+  ]}/>
   <header className="v7-learn-head">
    <p className="v7-eyebrow">{'Session '+summary.number+' · '+title}</p>
    <h1 className="v7-learn-title"><Tex source={summary.goal}/></h1>

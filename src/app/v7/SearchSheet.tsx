@@ -7,12 +7,15 @@ import {Sheet} from '../../ui/v7/components';
 import {FastTex} from '../../ui/FastTex';
 import {search,type Matched,type SearchGroupName,type SearchItem} from './searchModel';
 import {searchActionIcon,searchGroupIcon} from './searchIcons';
+import {isFlagOn} from '../../flags';
+import {readRoomRecent,rememberRoomItem} from '../../ui/v7/room';
 
 const recentKey='lemma.v7.recent';
 const readRecent=():SearchItem[]=>{try{return (JSON.parse(localStorage.getItem(recentKey)??'[]') as SearchItem[]).slice(0,5);}catch{return [];}};
 const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
 /** PLAN §6.1 G: search or jump to a path, checkpoint, card, concept, task, setting or action from the data the screens already load. */
 export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>void}){
+ const room=isFlagOn('v7Room');
  const home=useHome(),atlas=useAtlas(),navigate=useNavigate();
  const [query,setQuery]=useState(''),[active,setActive]=useState(0),[expanded,setExpanded]=useState<ReadonlySet<SearchGroupName>>(new Set());
  const [checkpoints,setCheckpoints]=useState<SearchItem[]>([]),[tasks,setTasks]=useState<SearchItem[]>([]),[cards,setCards]=useState<SearchItem[]>([]);
@@ -45,12 +48,12 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
   ...actions(home.data?.due??0),
  ],[projects,checkpoints,cards,atlas.data,tasks,home.data]);
  const results=useMemo(()=>search(items,query,expanded),[items,query,expanded]);
- const recent=useMemo(()=>open?readRecent():[],[open]);
+ const recent=useMemo(()=>open?(room?readRoomRecent():readRecent()):[],[open,room]);
  const idle=!query.trim(),list:SearchItem[]=idle?[...recent,...items.filter(item=>item.group==='Actions')]:results.flat;
  useEffect(()=>setActive(0),[query]);
  function reset(){setQuery('');setExpanded(new Set());setActive(0);}
  function close(){reset();onClose();}
- function openItem(item:SearchItem){writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});close();navigate(item.to);}
+ function openItem(item:SearchItem){if(room)rememberRoomItem(item);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});close();navigate(item.to);}
  const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=(item.group==='Actions'?searchActionIcon[item.id]:undefined)??searchGroupIcon[item.group];
   return <li key={item.id+index} role="presentation"><button type="button" role="option" id={'v7-search-'+index} aria-selected={index===active} data-active={index===active?'true':'false'} className="v7-search-row"
    onClick={()=>openItem(item)} onMouseEnter={()=>setActive(index)}>
@@ -63,18 +66,18 @@ export default function SearchSheet({open,onClose}:{open:boolean;onClose:()=>voi
   <input data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
    aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>setQuery(event.target.value)}
    onKeyDown={event=>{
-    if(event.key==='ArrowDown'){event.preventDefault();setActive(value=>Math.min(list.length-1,value+1));}
+    if(event.key==='ArrowDown'){event.preventDefault();setActive(value=>Math.max(0,Math.min(list.length-1,value+1)));}
     else if(event.key==='ArrowUp'){event.preventDefault();setActive(value=>Math.max(0,value-1));}
     else if(event.key==='Enter'&&list[active]){event.preventDefault();openItem(list[active]);}
    }}/>
   <div id="v7-search-results" role="listbox" aria-label="Results" className="v7-search-groups">
    {idle?<>
-    {recent.length>0&&<section className="v7-search-group" aria-label="Recent"><h2 className="v7-eyebrow">Recent</h2><ul>{recent.map(item=>row(item,cursor++))}</ul></section>}
-    <section className="v7-search-group" aria-label="Actions"><h2 className="v7-eyebrow">Actions</h2><ul>{items.filter(item=>item.group==='Actions').map(item=>row(item,cursor++))}</ul></section>
+    {recent.length>0&&<section className="v7-search-group" aria-label={room?'Jump back in':'Recent'}><h2 className="v7-eyebrow">{room?'Jump back in':'Recent'}</h2><ul>{recent.map(item=>row(item,cursor++))}</ul></section>}
+    <section className="v7-search-group" aria-label="Actions"><h2 className="v7-eyebrow">Actions</h2><ul className={room?'v7-search-actions':undefined}>{items.filter(item=>item.group==='Actions').map(item=>row(item,cursor++))}</ul></section>
    </>:results.groups.length?results.groups.map(group=><section key={group.name} className="v7-search-group" aria-label={group.name}>
     <h2 className="v7-eyebrow">{group.name}</h2><ul>{group.items.map(item=>row(item,cursor++,item))}</ul>
     {group.total>group.items.length&&<button type="button" className="v7-button v7-ghost v7-small" onClick={()=>setExpanded(new Set([...expanded,group.name]))}><span>Show all {group.total}</span></button>}
-   </section>):<p className="v7-meta" role="status">No results for “{query.trim()}”.</p>}
+   </section>):<p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>}
   </div>
   <span className="v7-sr-only" role="status">{idle?'':results.flat.length+' results in '+results.groups.length+' groups'}</span>
  </Sheet>;

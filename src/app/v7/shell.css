@@ -67,6 +67,13 @@
  :where(html[data-v7]) .v7-hub-date {display:flex;align-items:center;gap:var(--v7-space-2);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
 :where(html[data-v7]) .v7-hub-mark {display:grid;place-items:center;width:28px;height:28px;border-radius:var(--v7-radius-1);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
 :where(html[data-v7]) .v7-hub-mark svg,:where(html[data-v7]) .v7-rail-brand svg {display:block;flex:none;}
+/* N157 · AN3: the header ℓ as the sync light. A ring while fetching or saving (shown only after 300 ms, so a quick
+   refresh does not flicker), a hollow ℓ when offline. */
+:where(html[data-v7]) .v7-sync-mark {position:relative;display:inline-grid;}
+:where(html[data-v7]) .v7-sync-mark::after {content:"";position:absolute;inset:-3px;border-radius:calc(var(--v7-radius-1) + 3px);border:var(--v7-ring) solid var(--v7-role-selection-fg);opacity:0;transition:opacity var(--v7-m-quick,.16s) linear;pointer-events:none;}
+:where(html[data-v7]) .v7-sync-mark[data-sync="syncing"]::after {opacity:1;transition-delay:300ms;}
+:where(html[data-v7]) .v7-sync-mark[data-sync="offline"] .v7-hub-mark {background:transparent;box-shadow:inset 0 0 0 var(--v7-hairline) var(--v7-role-border-default);}
+:where(html[data-v7]) .v7-sync-mark[data-sync="offline"] svg path {fill:none;stroke:currentColor;stroke-width:1.5px;vector-effect:non-scaling-stroke;}
 :where(html[data-v7]) .v7-hub-title {min-width:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
  :where(html[data-v7]) .v7-hub-title.v7-display {font-size:var(--v7-type-display);line-height:1.1;}
  :where(html[data-v7]) .v7-detail-header,:where(html[data-v7]) .v7-immersive-header {min-width:0;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-2);
@@ -195,3 +202,7 @@
 :where(html[data-v7]) .v7-not-found-path {display:block;margin-top:var(--v7-space-1);color:var(--v7-role-text-secondary);overflow-wrap:anywhere;}
 :where(html[data-v7]) .v7-not-found-actions {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-not-found-actions svg {width:18px;height:18px;}
+
+/* N157 · AW3: a newer Lemma.apk exists (the app's daily check). */
+:where(html[data-v7]) .v7-page-actions a {position:relative;}
+:where(html[data-v7]) .v7-update-dot {position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:var(--v7-round);background:var(--v7-role-selection-fg);box-shadow:0 0 0 2px var(--v7-role-surface-page);}

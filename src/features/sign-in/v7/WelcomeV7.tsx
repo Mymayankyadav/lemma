@@ -9,11 +9,16 @@ import {useNewPath} from '../../new-project/useNewPath';
 import {useToast} from '../../../ui/Toast';
 import {formatDuration} from '../../../lib/format';
 import './welcome.css';
+import {isFlagOn} from '../../../flags';
+import RoomWelcome from './RoomWelcome';
 
 const steps=['Connect your tutor','Start your first path','Your day'] as const;
 
 /** PLAN §6.15 First run: three steps, each skippable, never blocking; it ends on Today. */
 export default function WelcomeV7(){
+ return isFlagOn('v7Room')?<RoomWelcome/>:<LegacyWelcome/>;
+}
+function LegacyWelcome(){
  const navigate=useNavigate(),settings=useSettings(),update=useUpdateSettings(),notify=useToast(),path=useNewPath();
  const [step,setStep]=useState(0),[hours,setHours]=useState(2),[dayEnd,setDayEnd]=useState('17:00'),[remind,setRemind]=useState(true),[busy,setBusy]=useState(false);
  const data=settings.data;

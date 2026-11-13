@@ -27,7 +27,7 @@ export function PathsTabs({current}:{current:'paths'|'cards'|'atlas'}){
  </nav>;
 }
 
-function PathCard({project,due,pinnedCount}:{project:ProjectSummary;due:number;pinnedCount:number}){
+function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due:number;pinnedCount:number;selected?:string}){
  const subject=kitSubject(project.subject?.name??''),klass=subjectClass(subject),update=useUpdateProject(),notify=useToast();
  const schedule=scheduleTone(project.scheduleHeadline),href='/p/'+encodeURIComponent(project.slug);
  async function change(patch:{pinned?:boolean;status?:ProjectStatus},message:string,undo:{pinned?:boolean;status?:ProjectStatus}){
@@ -51,7 +51,7 @@ function PathCard({project,due,pinnedCount}:{project:ProjectSummary;due:number;p
   <Link className="v7-paths-cover" to={href} tabIndex={-1} aria-hidden="true"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></Link>
   <div className="v7-paths-body">
    <div className="v7-paths-title-row">
-    <Link className="v7-paths-title" to={href}>{project.title}</Link>
+    <Link className="v7-paths-title" to={href} aria-current={selected===project.slug?'page':undefined}>{project.title}</Link>
     <RowMenu label={'More for '+project.title} title={project.title} items={items}/>
    </div>
    <p className="v7-paths-subject"><SubjectMark subject={subject}/><span>{project.subject?.name??'Unassigned'}</span>{project.pinned&&<span className="v7-paths-pinned"> · Pinned</span>}</p>
@@ -69,7 +69,7 @@ function PathCard({project,due,pinnedCount}:{project:ProjectSummary;due:number;p
 }
 
 /** PLAN §6.8: the Paths hub. Search, status chips, path cards with cover, meter and chips, and "Start a new path". */
-export default function PathsV7(){
+export default function PathsV7({embedded=false,selected}:{embedded?:boolean;selected?:string}={}){
  const projects=useProjects(),decks=useDeckTree(),location=useLocation(),navigate=useNavigate();
  const [filter,setFilter]=useState<PathFilter>('active'),[query,setQuery]=useState(''),[limit,setLimit]=useState(PAGE);
  const all=useMemo(()=>ownPaths(projects.data),[projects.data]);
@@ -79,7 +79,8 @@ export default function PathsV7(){
  const shown=visible.slice(0,limit),groups=groupBySubject(shown);
  const pinned=all.filter(row=>row.pinned&&row.status!=='archived').length;
  const creating=location.pathname==='/projects/new';
- return <main id="main-content" className="v7-page v7-paths" aria-label="Paths">
+ const Tag=embedded?'section':'main';
+ return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-paths" aria-label="Paths">
   <HubHeader title="Paths"><PathsTabs current="paths"/></HubHeader>
   <label className="v7-paths-search"><span className="v7-sr-only">Search paths and checkpoints</span>
    <input type="search" className="v7-search-field" placeholder="Search paths and checkpoints" value={query}
@@ -89,7 +90,7 @@ export default function PathsV7(){
     onClick={()=>{setFilter(item);setLimit(PAGE);}}>{filterWord[item]}{counts[item]>0?' '+counts[item]:''}</button>)}
   </div>
   {projects.isPending&&<><Skeleton/><Skeleton/></>}
-  {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Could not load your paths.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
+  {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Erratum: your paths didn’t load. Try again.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
   {projects.isSuccess&&<>
    <p className="v7-sr-only" aria-live="polite">{visible.length} {visible.length===1?'path':'paths'} shown</p>
    {visible.length===0?(all.length===0
@@ -98,11 +99,11 @@ export default function PathsV7(){
      :<EmptyMoment title={'No '+filterWord[filter].toLowerCase()+' paths'}>Paths you mark this way will gather here.</EmptyMoment>)
    :<div className="v7-paths-groups">{groups.map(group=><section key={group.key} className="v7-paths-group" aria-label={group.subject+' paths'}>
      {group.heading&&<h2 className={'v7-eyebrow v7-paths-heading '+subjectClass(kitSubject(group.subject))}><SubjectMark subject={kitSubject(group.subject)}/>{group.subject}</h2>}
-     <ul className="v7-paths-list">{group.items.map(project=><PathCard key={project.id} project={project} due={due.get(project.slug)??0} pinnedCount={pinned}/>)}</ul>
+     <ul className="v7-paths-list">{group.items.map(project=><PathCard key={project.id} project={project} due={due.get(project.slug)??0} pinnedCount={pinned} selected={selected}/>)}</ul>
     </section>)}</div>}
    {shown.length<visible.length&&<Button className="v7-paths-moreButton" onClick={()=>setLimit(value=>value+PAGE)}>Show {Math.min(PAGE,visible.length-shown.length)} more</Button>}
   </>}
   <Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>
   {creating&&<Suspense fallback={null}><NewPathSheet onClose={()=>navigate('/projects')}/></Suspense>}
- </main>;
+ </Tag>;
 }

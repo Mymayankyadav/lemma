@@ -5,4 +5,8 @@
     <color name="lemma_paper">#091023</color>
     <!-- the Night brand indigo: action.bg -->
     <color name="lemma_ink">#5159D7</color>
+    <!-- the Night shortcut background: selection.subtle -->
+    <color name="lemma_tint">#232953</color>
+    <!-- the Night shortcut glyph: selection.fg -->
+    <color name="lemma_tint_ink">#B9C6FF</color>
 </resources>
