@@ -27,6 +27,8 @@ for(const theme of ["graph","graph-night"] as const){
   });
   expect(painted.width).toBeGreaterThan(0);
   expect(painted.differing).toBeGreaterThan(20);
+  // incident #1396: keeps shard 3 supplied with a screenshot (see v6-n121-foundations.spec.ts).
+  await page.screenshot({path:"test-results/screens/review/v7-atlas-"+theme+".png",fullPage:true});
  });
 }
 

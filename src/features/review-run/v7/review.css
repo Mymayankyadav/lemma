@@ -37,4 +37,33 @@
   border-radius:14px;background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-review-grades small {color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);font-variant-numeric:tabular-nums;}
  @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-review-card {transition:none;}}
+ /* N157 · V09: the card is a page at the reading measure (34 em of its text), centred, never the window's width. */
+ :where(html[data-v7]) .v7-review-key {display:none;}
+ @media (min-width:700px) {
+  :where(html[data-v7]) .v7-review-stage {width:min(100%,calc(34em * 1.25 + var(--v7-space-6) * 2));justify-self:center;}
+ }
+ /* N157 · V09 / S5 (flag v7Spread): from 840 px, and in book posture, the round is an open notebook: question on the
+    left page, answer on the right, each at most 34 em; before the reveal the right page is blank paper. The grades sit
+    under the spread with their keys. */
+ @media (min-width:840px), (horizontal-viewport-segments:2) {
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-stage {width:min(100%,calc(34em * 2.5 + var(--v7-space-6) * 4 + var(--v7-hairline)));}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-card {grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto auto 1fr;column-gap:calc(var(--v7-space-6) * 2);align-content:stretch;min-height:min(60dvh,100%);}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-card-meta {grid-column:1 / -1;}
+  :where(html[data-v7]) .v7-review[data-spread] :is(.v7-review-front,.v7-review-confidence) {grid-column:1;}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-back {grid-column:2;grid-row:2 / span 2;align-content:start;padding-top:0;border-top:0;}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-card::after {content:"";grid-column:2;grid-row:2 / span 2;}
+  :where(html[data-v7]) .v7-review[data-spread][data-revealed="true"] .v7-review-card::after {display:none;}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-card {background-image:linear-gradient(var(--v7-role-border-subtle),var(--v7-role-border-subtle));background-size:var(--v7-hairline) calc(100% - var(--v7-space-6) * 2);background-position:50% 50%;background-repeat:no-repeat;}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-dock {max-width:calc(var(--v7-space-20) * 8);}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-key {display:inline-block;margin-inline-start:var(--v7-space-2);padding:0 var(--v7-space-1);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-xs);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1.4 var(--v7-sans);}
+  :where(html[data-v7]) .v7-review[data-spread] .v7-review-grades .v7-review-key {margin:0;}
+ }
+ /* N157 · U4 S6 scratch paper (flag v7Scratch): graph paper at 7% ink under the card; nothing is stored. */
+ :where(html[data-v7]) .v7-scratch-open,:where(html[data-v7]) .v7-scratch-link {justify-self:center;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-link-fg);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
+ :where(html[data-v7]) .v7-scratch {display:grid;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-scratch-sheet {display:block;width:100%;height:clamp(140px,28dvh,320px);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);touch-action:none;color:var(--v7-role-text-primary);
+  background:var(--v7-role-surface-raised) linear-gradient(color-mix(in srgb,var(--v7-role-text-primary) 7%,transparent) 1px,transparent 1px) 0 0/16px 16px,linear-gradient(90deg,color-mix(in srgb,var(--v7-role-text-primary) 7%,transparent) 1px,transparent 1px) 0 0/16px 16px;}
+ :where(html[data-v7]) .v7-scratch-typed {min-height:var(--v7-touch);}
+ :where(html[data-v7]) .v7-scratch-actions {display:flex;align-items:center;gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-review-stage:has(.v7-scratch) {align-content:start;overflow-y:auto;}
 }

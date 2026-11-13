@@ -11,4 +11,8 @@
     <color name="colorPrimaryDark">#121B31</color>
     <!-- theme accent: action.bg -->
     <color name="colorAccent">#4246C2</color>
+    <!-- launcher shortcut background (P7: as selected items look in the app): selection.subtle -->
+    <color name="lemma_tint">#E2E8FF</color>
+    <!-- launcher shortcut glyph: selection.fg -->
+    <color name="lemma_tint_ink">#3738AC</color>
 </resources>

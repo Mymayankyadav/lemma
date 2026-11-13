@@ -6,6 +6,7 @@ import {AtlasScene,MAX_ZOOM,MIN_ZOOM,type Camera,type Insets,type ScenePalette} 
 
 export interface AtlasMapHandle{recentre():void; zoomBy(factor:number):void; flyTo(index:number):void}
 interface Props{
+ focusCluster?:number|null;highlighted?:readonly number[]|null;
  model:AtlasModel; layout:LayoutResult; source:LayoutSource; selected:number|null; reduced:boolean; insets:Insets;
  onSelect:(index:number|null)=>void; ref?:Ref<AtlasMapHandle>;
 }
@@ -23,7 +24,7 @@ function readPalette(element:Element,model:AtlasModel):ScenePalette{
 const ease=(t:number)=>1-Math.pow(1-t,3);
 
 /** The Atlas sky: canvas only, hidden from assistive technology (the List view is the accessible path). */
-export default function AtlasMap({model,layout,source,selected,reduced,insets,onSelect,ref}:Props){
+export default function AtlasMap({model,layout,source,selected,reduced,insets,onSelect,ref,focusCluster=null,highlighted=null}:Props){
  const wrap=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),scene=useRef<AtlasScene|null>(null);
  const frame=useRef(0),animation=useRef<{from:Camera;to:Camera;start:number;duration:number}|null>(null);
  const [zoom,setZoom]=useState(1);
@@ -48,7 +49,7 @@ export default function AtlasMap({model,layout,source,selected,reduced,insets,on
   paint();
  };
  useImperativeHandle(ref,()=>({
-  recentre:()=>{const current=scene.current;if(current)moveTo(current.fitCamera(),ZOOM_MS*2);},
+  recentre:()=>{const current=scene.current;if(current)moveTo(focusCluster!==null?current.clusterCamera(focusCluster):current.fitCamera(),ZOOM_MS*2);},
   zoomBy:factor=>{const current=scene.current,box=wrap.current?.getBoundingClientRect();if(current&&box)moveTo(current.zoomCamera(box.width/2,box.height/2,factor),ZOOM_MS);},
   flyTo:index=>{const current=scene.current;if(current)moveTo(current.focusCamera(index),FLY_MS);},
  }));
@@ -56,15 +57,16 @@ export default function AtlasMap({model,layout,source,selected,reduced,insets,on
  useEffect(()=>{
   const element=canvas.current,box=wrap.current;if(!element||!box)return;
   const created=new AtlasScene(element,model,layout,readPalette(box,model));
-  scene.current=created;created.setInsets(insets);created.select(selected);
+  scene.current=created;created.setInsets(insets);created.select(selected);created.labelCluster=focusCluster;created.highlighted=highlighted?new Set(highlighted):null;
   const measure=()=>{const rect=box.getBoundingClientRect();created.setSize(rect.width,rect.height,Math.min(2,window.devicePixelRatio||1));};
-  measure();created.camera=selected!==null?created.focusCamera(selected,1.4):created.fitCamera();paint();
+  measure();created.camera=selected!==null?created.focusCamera(selected,1.4):focusCluster!==null?created.clusterCamera(focusCluster):created.fitCamera();paint();
   const resize=new ResizeObserver(()=>{measure();paint();});resize.observe(box);
   const theme=new MutationObserver(()=>{created.setPalette(readPalette(box,model));paint();});
   theme.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-contrast']});
   return ()=>{resize.disconnect();theme.disconnect();cancelAnimationFrame(frame.current);frame.current=0;scene.current=null;};
   // Selection and insets are applied by their own effects below.
- },[model,layout]);
+ },[model,layout,focusCluster]);
+ useEffect(()=>{if(scene.current){scene.current.highlighted=highlighted?new Set(highlighted):null;paint();}},[highlighted]);
  useEffect(()=>{scene.current?.setInsets(insets);paint();},[insets.top,insets.right,insets.bottom,insets.left]);
  useEffect(()=>{scene.current?.select(selected);paint();},[selected]);
  // Pointer gestures: drag to pan, pinch to zoom, tap to select, double tap to zoom in.

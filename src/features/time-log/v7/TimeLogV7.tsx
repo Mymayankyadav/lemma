@@ -5,6 +5,7 @@ import {getStudyApi} from '../../../data/study';
 import type {StudyEntryRecord} from '../../../data/study/contract';
 import {useProjects,useSettings} from '../../../data/hooks';
 import {HubHeader} from '../../../app/v7/V7Shell';
+import {isFlagOn} from '../../../flags';
 import {Button,DatePicker,Field,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
 import {TimeRange} from '../../../ui/v7/KitPrimitives';
 import {RowMenu} from '../../../ui/v7/RowMenu';
@@ -65,7 +66,7 @@ export default function TimeLogV7(){
  }
  const weekTotal=rows.filter(entry=>!entry.voidedAt).reduce((sum,entry)=>sum+focusMinutes(entry),0);
  return <main id="main-content" className="v7-page v7-log" aria-label="Time log">
-  <HubHeader title="Progress"><ProgressTabs current="log"/></HubHeader>
+  <HubHeader title={isFlagOn('v7Room')?'Log':'Progress'}><ProgressTabs current="log"/></HubHeader>
   {/* V36: the arrows sit beside the week's name, as in Calendar, so the seven days have the whole width (44 px each at 360). */}
   <div className="v7-log-week">
    <div className="v7-log-weekRow">
@@ -81,7 +82,7 @@ export default function TimeLogV7(){
    <span className="v7-log-actions"><Button small onClick={()=>setAdding(true)}>Add time</Button>
     <RowMenu label="More time log actions" title="Time log" items={[{label:'Export CSV',icon:<Download aria-hidden="true"/>,onClick:exportCsv}]}/></span></div>
   {status==='loading'&&<Skeleton/>}
-  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Could not load the time log.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
+  {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: the time log didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&(rows.length?days.slice().reverse().filter(item=>byDay.has(item)).map(item=><section key={item} id={'log-'+item} className="v7-log-group" aria-label={formatLongDate(item,{zone})}>
    <h2 className="v7-eyebrow">{formatLongDate(item,{zone})}</h2>
    <ul>{byDay.get(item)!.map(entry=>{const span=spanOf(entry),{klass,path}=look(entry);return <li key={entry.id} className={'v7-log-row '+klass} data-voided={entry.voidedAt?'true':undefined}>

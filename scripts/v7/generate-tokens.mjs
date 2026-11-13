@@ -24,8 +24,10 @@ const generate=function generate(document){
   css+=`  --v7-${key}: ${foundations.raw[name].$value};\n`;
  }
  css+=`  color:var(--v7-role-text-primary);background:var(--v7-role-surface-page);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);font-variant-numeric:tabular-nums lining-nums;\n}\n[data-v7][data-theme="graph"]{color-scheme:light;}[data-v7][data-theme="graph-night"]{color-scheme:dark;}\n`;
- for(const [viewport,width] of [["tablet",700],["desktop",1100]]) {
-  css+=`@media(min-width:${width}px){[data-v7]{\n`;
+ // N157 · V23: control heights follow the pointer, not the width. The full touch size at every width; 40 px only for a
+ // fine pointer (a mouse or trackpad) on a window of 700 px or more.
+ for(const [viewport,query] of [["tablet","min-width:700px"],["desktop","min-width:1100px"],["fine","min-width:700px) and (pointer:fine"]]) {
+  css+=`@media(${query}){[data-v7]{\n`;
   for(const [key,role] of Object.entries(foundations.role)) {
    const value=role.$extensions?.["lemma.viewport"]?.[viewport];
    if(value)css+=`  --v7-${key}: ${value};\n`;

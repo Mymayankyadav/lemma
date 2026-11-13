@@ -5,6 +5,19 @@
     view carries every value in full). Neither changes anything at normal text sizes. */
  :where(html[data-v7]) .v7-hub-tabs {flex-wrap:wrap;column-gap:var(--v7-space-4);row-gap:0;}
  :where(html[data-v7]) .v7-chart {overflow-x:clip;}
+ /* N157 · AN4: list beside detail from 600 px (Android's medium window class: tablets, an unfolded phone). The Inbox
+    queue on the left, the decision on the right; from 1100 px the queue takes its full 260 px. */
+ @media (min-width:600px) {
+  /* Inbox: the queue on the left, the decision on the right. */
+  :where(html[data-v7]) .v7-inbox-desk {display:grid;grid-template-columns:minmax(200px,1fr) minmax(0,1.6fr);gap:var(--v7-space-6);align-items:start;}
+  :where(html[data-v7]) .v7-inbox-queue {position:sticky;top:96px;display:grid;gap:var(--v7-space-1);max-height:calc(100dvh - 140px);overflow:auto;margin:0;padding:0;list-style:none;}
+  :where(html[data-v7]) .v7-inbox-queue button {display:grid;gap:2px;width:100%;min-height:56px;padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:transparent;color:var(--v7-role-text-primary);text-align:left;cursor:pointer;}
+  :where(html[data-v7]) .v7-inbox-queue button[aria-current="true"] {border-color:var(--v7-role-border-default);background:var(--v7-role-selection-subtle);}
+  :where(html[data-v7]) .v7-inbox-queue small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1.2 var(--v7-sans);}
+ }
+ @media (min-width:1100px) {
+  :where(html[data-v7]) .v7-inbox-desk {grid-template-columns:minmax(260px,1fr) minmax(0,2fr);}
+ }
  @media (min-width:700px) {
   /* Sticky action bars sit in the content column, clear of the rail, at the bottom edge (there is no tab bar). */
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar,.v7-path-bar) {left:calc(var(--v7-rail-width,0px) + var(--v7-page-margin));bottom:var(--v7-space-4);max-width:calc(720px - var(--v7-page-margin) * 2);}
@@ -29,12 +42,59 @@
   :where(html[data-v7]) .v7-cards-row > a {grid-template-columns:40px minmax(0,2fr) minmax(0,1fr) 20px;}
   :where(html[data-v7]) .v7-cards-text {display:contents;}
   :where(html[data-v7]) .v7-cards-text small {white-space:normal;}
-  /* Inbox: the queue on the left, the decision on the right. */
-  :where(html[data-v7]) .v7-inbox-desk {display:grid;grid-template-columns:minmax(260px,1fr) minmax(0,2fr);gap:var(--v7-space-6);align-items:start;}
-  :where(html[data-v7]) .v7-inbox-queue {position:sticky;top:96px;display:grid;gap:var(--v7-space-1);max-height:calc(100dvh - 140px);overflow:auto;margin:0;padding:0;list-style:none;}
-  :where(html[data-v7]) .v7-inbox-queue button {display:grid;gap:2px;width:100%;min-height:56px;padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-2);background:transparent;color:var(--v7-role-text-primary);text-align:left;cursor:pointer;}
-  :where(html[data-v7]) .v7-inbox-queue button[aria-current="true"] {border-color:var(--v7-role-border-default);background:var(--v7-role-selection-subtle);}
-  :where(html[data-v7]) .v7-inbox-queue small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/1.2 var(--v7-sans);}
   :where(html[data-v7]) .v7-settings {max-width:720px;}
+  /* N157 · V05: the count sits at the row's end, where it cannot cover "Review". */
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab {position:relative;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab-icon {position:static;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-tab-pip {top:50%;left:auto;right:var(--v7-space-3);transform:translateY(-50%);}
+  /* N157 · V10: Settings is pinned to the rail's bottom; only the Library list scrolls above it. */
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-dock {overflow:hidden;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-rail-library {flex:1 1 auto;min-height:0;overflow-y:auto;align-content:start;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-rail-settings {flex:none;margin-top:0;border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ }
+ @media (min-width:700px) {
+  /* N157 · V06: a floating action is centred on the content column, never on the window (it slid under the rail). */
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) .v7-path-bar {left:calc(var(--v7-rail-width,0px) + (100vw - var(--v7-rail-width,0px)) / 2);transform:translateX(-50%);max-width:calc(100vw - var(--v7-rail-width,0px) - var(--v7-page-margin) * 2);}
+ }
+}
+/* N157 · AN4 foldables. Book posture (a vertical hinge, two side-by-side screens): nothing interactive lies across the
+   hinge. A one-pane page sits on the right screen, beside the rail; a list-beside-detail page puts its list on the left
+   screen and its detail on the right, with the hinge as the gutter; the review spread (v7Spread) splits at the hinge.
+   Tabletop posture (a horizontal hinge, half folded): Focus is a clock on the upper screen and its controls on the lower. */
+@layer v7-components {
+ @media (horizontal-viewport-segments:2) {
+  :where(html[data-v7]) {--v7-hinge-start:env(viewport-segment-right 0 0,50vw);--v7-hinge-end:env(viewport-segment-left 1 0,50vw);}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page:not(:has(.v7-inbox-desk,.v7-settings-split)) {max-width:none;margin-inline:calc(var(--v7-hinge-end) - var(--v7-rail-width,0px)) 0;width:auto;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page:has(.v7-inbox-desk,.v7-settings-split) {max-width:none;margin-inline:0;}
+  :where(html[data-v7]) .v7-page :is(.v7-inbox-desk,.v7-settings-split) {grid-template-columns:calc(var(--v7-hinge-start) - var(--v7-rail-width,0px) - var(--v7-page-margin) * 2) minmax(0,1fr);column-gap:calc(var(--v7-hinge-end) - var(--v7-hinge-start) + var(--v7-page-margin) * 2);}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar,.v7-path-bar) {left:calc(var(--v7-hinge-end) + var(--v7-page-margin));right:var(--v7-page-margin);max-width:none;transform:none;margin-inline:0;width:auto;}
+  :where(html[data-v7]) main.v7-review[data-spread] {padding-inline:0;}
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-stage {width:100%;}
+  /* The grades split at the hinge: Again and Hard on the left screen, Good and Easy on the right; Show answer on the right. */
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-dock {left:var(--v7-page-margin);right:var(--v7-page-margin);max-width:none;margin:0;}
+  :where(html[data-v7]) main.v7-review[data-spread][data-revealed="false"] .v7-review-dock {left:calc(var(--v7-hinge-end) + var(--v7-page-margin));}
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-grades {grid-template-columns:1fr 1fr calc(var(--v7-hinge-end) - var(--v7-hinge-start) + var(--v7-page-margin) * 2 - var(--v7-space-2) * 2) 1fr 1fr;}
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-grades > :nth-child(3) {grid-column:4;}
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-grades > :nth-child(4) {grid-column:5;}
+  :where(html[data-v7]) main.v7-review[data-spread] .v7-review-card {border-radius:0;border-inline:0;padding-inline:var(--v7-page-margin);grid-template-columns:calc(var(--v7-hinge-start) - var(--v7-page-margin) * 2) minmax(0,1fr);column-gap:calc(var(--v7-hinge-end) - var(--v7-hinge-start) + var(--v7-page-margin) * 2);}
+ }
+ @media (vertical-viewport-segments:2) {
+  :where(html[data-v7]) .v7-focus {--v7-fold-top:env(viewport-segment-bottom 0 0,50dvh);--v7-fold-bottom:env(viewport-segment-top 1 0,50dvh);grid-template-rows:auto calc(var(--v7-fold-top) - 64px) auto;row-gap:calc(var(--v7-fold-bottom) - var(--v7-fold-top));}
+  :where(html[data-v7]) .v7-focus-centre {min-height:0;overflow:hidden;gap:var(--v7-space-2);}
+  :where(html[data-v7]) .v7-focus-emblem,:where(html[data-v7]) .v7-focus-intention {display:none;}
+  :where(html[data-v7]) .v7-focus .v7-focus-ring {width:min(100%,calc(var(--v7-fold-top) - 96px));height:auto;aspect-ratio:1;}
+  :where(html[data-v7]) .v7-focus-bottom {align-self:start;}
+ }
+}
+/* N157 · V22 landscape on a phone (a window under 480 px tall): headers collapse to one row, a sheet takes the full
+   height, and the page gives its vertical room to content. The desk clock (v7DeskClock) is Focus's landscape layout. */
+@layer v7-components {
+ @media (orientation:landscape) and (max-height:480px) {
+  :where(html[data-v7]) .v7-hub-header {grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:var(--v7-space-4);padding-top:var(--v7-space-1);}
+  :where(html[data-v7]) .v7-hub-header :is(h1,.v7-hub-title) {font-size:var(--v7-type-headline);line-height:1.2;}
+  :where(html[data-v7]) .v7-hub-header > :not(:first-child) {grid-row:1;}
+  :where(html[data-v7]) .v7-detail-header {min-height:var(--v7-touch);}
+  :where(html[data-v7]) .v7-sheet {inset:0 0 0 auto;width:min(100%,560px);height:100dvh;max-height:none;border-radius:0;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-dock {overflow-y:auto;}
  }
 }

@@ -1,0 +1,18 @@
+@layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
+/* N157 · U4 S2–S4 the ∎ as the one ending (flag v7Qed, set on <html> as data-v7-qed). Indigo only, one per screen, only for
+   something the learner finished, spoken as "done". */
+@layer v7-components {
+ :where(html[data-v7]) .v7-proof-end {color:var(--v7-role-selection-fg);font:600 var(--v7-type-body)/1 var(--v7-serif);}
+ :where(html[data-v7]) .v7-proof-end-large {display:grid;place-items:center;width:160px;height:160px;margin-inline:auto;font-size:96px;}
+ /* Tick → ∎: a done task's box shrinks from a rounded box to the end-of-proof square and stays (240 ms; final frame only
+    under reduced motion). */
+ :where(html[data-v7][data-v7-qed]) .v7-tk-check > span {transition:width 240ms var(--v7-ease-out),height 240ms var(--v7-ease-out),border-radius 240ms var(--v7-ease-out);}
+ :where(html[data-v7][data-v7-qed]) .v7-tk-check[aria-checked="true"] > span {width:14px;height:14px;border-radius:0;background:var(--v7-role-selection-fg);border-color:var(--v7-role-selection-fg);}
+ :where(html[data-v7][data-v7-qed]) .v7-tk-check[aria-checked="true"] svg {display:none;}
+ /* The review round's progress line closes with a ∎ once every card is answered. */
+ :where(html[data-v7][data-v7-qed]) .v7-review-progress {position:relative;padding-inline-end:12px;}
+ :where(html[data-v7][data-v7-qed]) .v7-review-progress:not(:has(li:not([data-grade]))):not(:has(li[data-grade="stale"]))::after {content:"";position:absolute;right:0;top:-3px;width:10px;height:10px;background:var(--v7-role-selection-fg);}
+ /* Inbox zero: the heading ends on a ∎. */
+ :where(html[data-v7][data-v7-qed]) .v7-inbox-zero h2::after {content:" ∎";color:var(--v7-role-selection-fg);speak:never;}
+ @media (prefers-reduced-motion:reduce) {:where(html[data-v7][data-v7-qed]) .v7-tk-check > span {transition:none;}}
+}

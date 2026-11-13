@@ -10,7 +10,8 @@ import java.util.List;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/** N123 · N3 dynamic launcher shortcuts ("Resume Real analysis", "Review 12"), next to the static ones in shortcuts.xml. */
+/** N123 · N3 dynamic launcher shortcuts ("Review 12", "Resume Real analysis"), next to the three static ones in shortcuts.xml.
+ *  N157 (P7): Review is only here (it replaces a static Review), and Resume shows a route, never the Atlas star. */
 public final class Shortcuts {
     private Shortcuts() {}
 
@@ -19,7 +20,7 @@ public final class Shortcuts {
         ShortcutManager manager = context.getSystemService(ShortcutManager.class);
         if (manager == null) return;
         List<ShortcutInfo> shortcuts = new ArrayList<>();
-        int limit = Math.min(2, Math.max(0, manager.getMaxShortcutCountPerActivity() - 4));
+        int limit = Math.min(2, Math.max(0, manager.getMaxShortcutCountPerActivity() - 3));
         for (int i = 0; i < items.length() && shortcuts.size() < limit; i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null || item.optString("id").isEmpty()) continue;
@@ -27,7 +28,7 @@ public final class Shortcuts {
             shortcuts.add(new ShortcutInfo.Builder(context, "dynamic-" + item.optString("id"))
                 .setShortLabel(label.length() > 25 ? label.substring(0, 25) : label)
                 .setLongLabel(label)
-                .setIcon(Icon.createWithResource(context, item.optString("id").startsWith("review") ? R.drawable.shortcut_review : R.drawable.shortcut_atlas))
+                .setIcon(Icon.createWithResource(context, item.optString("id").startsWith("review") ? R.drawable.shortcut_review : R.drawable.shortcut_resume))
                 .setIntent(Links.intent(context, item.optString("route", "/")))
                 .setRank(i)
                 .build());

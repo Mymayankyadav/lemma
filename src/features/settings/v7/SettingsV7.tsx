@@ -24,6 +24,9 @@ import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
 import {DataAccount} from './DataAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
+import {useMinWidth} from '../../../app/v7/useMinWidth';
+import {isFlagOn} from '../../../flags';
+import {PAPERS,SKIES,choosePaper,chooseSky,readPaper,readSky,type Paper,type Sky} from '../../../ui/v7/paper';
 // AW3: the app's version and updates, only inside the Android app.
 const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
 
@@ -57,6 +60,18 @@ function ThemeCard({mode,selected,onSelect}:{mode:Mode;selected:boolean;onSelect
   <strong>{modeWord[mode]}</strong><small>{mode==='auto'?'Follows your device':mode==='day'?'Light paper':'Dark sky'}</small>
  </button>;
 }
+/** N157 · U4 S14 (flag v7Paper): one paper by day and one sky by night, kept on this device. */
+function PaperChoice(){
+ const [paper,setPaper]=useState<Paper>(readPaper),[sky,setSky]=useState<Sky>(readSky);
+ const word=(value:string)=>value[0].toUpperCase()+value.slice(1);
+ return <div className="v7-settings-card">
+  <p className="v7-set-label">Paper</p>
+  <div className="v7-tk-picker" role="radiogroup" aria-label="Paper by day">{PAPERS.map(item=><button key={item} type="button" role="radio" aria-checked={paper===item} className="v7-filter-chip" onClick={()=>{setPaper(item);choosePaper(item);}}>{word(item)}</button>)}</div>
+  <p className="v7-set-label">Sky</p>
+  <div className="v7-tk-picker" role="radiogroup" aria-label="Sky by night">{SKIES.map(item=><button key={item} type="button" role="radio" aria-checked={sky===item} className="v7-filter-chip" onClick={()=>{setSky(item);chooseSky(item);}}>{word(item)}</button>)}</div>
+  <p className="v7-meta">Drawn at 7% ink, under your text. Off when Reduce effects is on.</p>
+ </div>;
+}
 function Appearance({settings}:{settings:Settings}){
  const update=useUpdateSettings(),notify=useToast();
  const [mode,setMode]=useState<Mode>(()=>(settings.ui?.mode as Mode|undefined)??readAppearance().mode);
@@ -88,6 +103,7 @@ function Appearance({settings}:{settings:Settings}){
    <Switch label="Sounds" checked={flag('sounds')} onChange={value=>{void toggle('sounds',value);}}/>
    <p className="v7-meta">A pencil tick when you grade, a page turn when a round ends, a low chime when you close the day.</p>
   </div>
+  {isFlagOn('v7Paper')&&<PaperChoice/>}
  </div>;
 }
 function SubjectSheet({subject,taken,current,onClose}:{subject:DataSubject;taken:Map<Subject,string>;current:Subject;onClose:()=>void}){
@@ -152,31 +168,50 @@ export default function SettingsV7(){
  const section=sectionOf(params.get('section'));
  const mode=((settings.data?.ui?.mode as Mode|undefined)??readAppearance().mode);
  const systemNight=typeof matchMedia!=='undefined'&&matchMedia('(prefers-color-scheme: dark)').matches;
+ // N157 · U1: from 840 px the index stays on the left and the section opens on the right (the first one when none is chosen).
+ const split=useMinWidth(840);
+ const data=settings.data;
+ const index=(current:Section|null)=><>
+  {settings.isPending&&<Skeleton/>}
+  {settings.isError&&<div role="alert" className="v7-progress-error"><p>Erratum: your settings didn’t load. Try again.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
+  {settings.data&&groups.map((group,index)=><ul key={index} className="v7-settings-card">{group.map(item=>{const Icon=icons[item];return <li key={item}>
+   <Link className="v7-settings-row" to={'/settings?section='+item} aria-current={item===current?'page':undefined}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
+    <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
+ </>;
+ const content=(section:Section)=>!data?<Skeleton/>:<>
+  {section==='appearance'&&<Appearance settings={data}/>}
+  {section==='subjects'&&<Subjects settings={data}/>}
+  {section==='tutor'&&<Tutor settings={data}/>}
+  {section==='study'&&(params.get('advanced')==='1'
+   ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
+   :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
+  {section==='planning'&&<PlanningLists settings={data}/>}
+  {section==='reminders'&&<ReminderLists settings={data}/>}
+  {section==='data'&&<>
+   <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>
+   {isNative()&&<div className="v7-settings-body"><Suspense fallback={null}><PhoneAbout/></Suspense></div>}
+  </>}
+ </>;
+ if(split){
+  const shown=section??groups[0][0];
+  return <main id="main-content" className="v7-page v7-settings" data-split="" aria-label="Settings">
+   <HubHeader title="Settings"/>
+   <div className="v7-settings-split">
+    <nav className="v7-settings-index" aria-label="Settings sections">{index(shown)}</nav>
+    <section className="v7-settings-pane" aria-labelledby="v7-settings-pane-title">
+     <h2 id="v7-settings-pane-title" className="v7-settings-pane-title">{sectionTitle[shown]}</h2>
+     {content(shown)}
+    </section>
+   </div>
+  </main>;
+ }
  if(!section)return <main id="main-content" className="v7-page v7-settings" aria-label="Settings">
   <HubHeader title="Settings"/>
-  {settings.isPending&&<Skeleton/>}
-  {settings.isError&&<div role="alert" className="v7-progress-error"><p>Could not load your settings.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
-  {settings.data&&groups.map((group,index)=><ul key={index} className="v7-settings-card">{group.map(item=>{const Icon=icons[item];return <li key={item}>
-   <Link className="v7-settings-row" to={'/settings?section='+item}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
-    <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
+  {index(null)}
  </main>;
- const data=settings.data;
  return <main id="main-content" className="v7-page v7-settings" aria-label={sectionTitle[section]}>
   <DetailHeader title={sectionTitle[section]} back="/settings"/>
   <h1 className="v7-learn-title">{sectionTitle[section]}</h1>
-  {!data?<Skeleton/>:<>
-   {section==='appearance'&&<Appearance settings={data}/>}
-   {section==='subjects'&&<Subjects settings={data}/>}
-   {section==='tutor'&&<Tutor settings={data}/>}
-   {section==='study'&&(params.get('advanced')==='1'
-    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
-    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
-   {section==='planning'&&<PlanningLists settings={data}/>}
-   {section==='reminders'&&<ReminderLists settings={data}/>}
-   {section==='data'&&<>
-    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>
-    {isNative()&&<div className="v7-settings-body"><Suspense fallback={null}><PhoneAbout/></Suspense></div>}
-   </>}
-  </>}
+  {content(section)}
  </main>;
 }
