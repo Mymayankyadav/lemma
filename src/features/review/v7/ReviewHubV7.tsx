@@ -10,6 +10,8 @@ import {Button,Sheet,Switch} from '../../../ui/v7/components';
 import {Chart} from '../../../ui/v7/Chart';
 import {SubjectMark,subjectClass,type Subject} from '../../../ui/v7/Subject';
 import {StatMeasure} from '../../../ui/v7/KitPrimitives';
+import {AsOf} from '../../../ui/v7/AsOf';
+import {useSavedCopyAt} from '../../../ui/v7/savedCopy';
 import {ChevronRight} from 'lucide-react';
 import {kitSubject} from '../../atlas/v7/model';
 import {resumeRun,type DurableRun} from '../../review-run/v6/adapter';
@@ -60,7 +62,10 @@ export default function ReviewHubV7(){
  const memory=useMemo(()=>memoryStats(insights.data?.reviews??[]),[insights.data]);
  const outlook=useMemo(()=>subjectForecast(forecast.data??[]),[forecast.data]);
  const loading=decks.isPending||cards.isPending||settings.isPending;
- const failed=!!(decks.error||cards.error||settings.error);
+ // N151: a failed refresh with older numbers still in hand shows them with "as of", not the error.
+ const failed=[decks,cards,settings].some(query=>query.isError&&query.data===undefined);
+ // N151 · AN3: "as of HH:MM" beside the hub's numbers when any of them come from the saved copy, not the server.
+ const asOf=useSavedCopyAt([decks,cards,settings,home,insights,forecast]);
  function toggleProject(node:DeckNode,value:boolean){
   const next=new Set(enabled);
   for(const key of keysFor(node))value?next.add(key):next.delete(key);
@@ -89,7 +94,7 @@ export default function ReviewHubV7(){
     <p className="v7-rv-figure"><strong aria-label="Cards in this round">{count}</strong><span>{count===1?'card':'cards'} today</span></p>
     {/* R0 · F05: when the round includes new cards, the hero says so, so it agrees with Today's and the tab's due count. */}
     {fresh>0&&<p className="v7-rv-note" data-split="">{roundSplit(count,fresh)}</p>}
-    <p className="v7-rv-note">{note}{totalDue>count?' · '+(totalDue-count).toLocaleString()+' more due later':''}</p>
+    <p className="v7-rv-note">{note}{totalDue>count?' · '+(totalDue-count).toLocaleString()+' more due later':''}{asOf!==null&&<> <AsOf at={asOf} zone={settings.data?.timeZone}/></>}</p>
     {/* B5: a 6 px meter split into subject segments with 2 px page-colour gaps, then a wrapping legend of glyph, subject and
         count. Nothing is cut at 320 px, and the parts add up to the hero number. Each legend item narrows the round. */}
     {segments.length>0&&<div className="v7-rv-split">
@@ -109,7 +114,7 @@ export default function ReviewHubV7(){
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
    <div className="v7-rv-section">
-    {forecast.isError?<div role="alert"><p className="v7-rv-note">Could not load the forecast.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
+    {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Could not load the forecast.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
      :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
       series={outlook.series} format={value=>String(Math.round(value))}
       summary={'Cards due over the next 14 days: '+(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' in all. Stacked by subject; includes overdue cards today.'}/>

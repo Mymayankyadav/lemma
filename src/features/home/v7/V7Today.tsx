@@ -14,6 +14,8 @@ import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/con
 import {dayBounds,loggedMinutes} from '../../../lib/effort';
 import {Button,Sheet} from '../../../ui/v7/components';
 import {LiveChip,MetaChip,StatusBadge} from '../../../ui/v7/Status';
+import {AsOf} from '../../../ui/v7/AsOf';
+import {useSavedCopyAt} from '../../../ui/v7/savedCopy';
 import {overdueSummary} from '../../calendar/v7/overdue';
 import {readTasks} from '../../planner/readTasks';
 import {DEFAULT_PLANNING} from '../../planner/model';
@@ -31,6 +33,8 @@ import './today.css';
 
 const DesktopDayGrid=lazy(()=>import('../../calendar/v7/DayGrid'));
 interface DayData{blocks:CalendarBlockRecord[];entries:StudyEntryRecord[];logged:number;closed:boolean;overdue:number;tasks:TaskRecord[];topics:PracticeTopicRecord[];answered:number}
+/** N151: the last day Today loaded, so a load that fails (offline, or the server is down) shows it with "as of". */
+let savedDay:{key:string;data:DayData;at:number}|null=null;
 function SubjectChip({subject,name}:{subject:Subject;name:string}){
  return <span className={'v7-tag '+subjectClass(subject)}><SubjectMark subject={subject}/><span>{name}</span></span>;
 }
@@ -42,7 +46,7 @@ export default function V7Today(){
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const day=localDay(zone,date);
- const [data,setData]=useState<DayData|null>(null),[error,setError]=useState(false),[version,setVersion]=useState(0);
+ const [data,setData]=useState<DayData|null>(null),[dataAt,setDataAt]=useState(0),[error,setError]=useState(false),[version,setVersion]=useState(0);
  const [busy,setBusy]=useState(false),[actionError,setActionError]=useState(''),[quick,setQuick]=useState(false);
  const [intention,setIntention]=useState(''),[pathId,setPathId]=useState<string|null>(null);
  const [presets,setPresets]=useState<PresetRecord[]>([]),[presetId,setPresetId]=useState<string|null>(null),[showAll,setShowAll]=useState(false);
@@ -63,10 +67,20 @@ export default function V7Today(){
    if(!live)return;
    const saved=entries.filter(item=>item.status==='saved').map(item=>({id:item.id,status:'saved' as const,subjectId:item.subjectId,
     intervals:item.intervals.filter(interval=>interval.end!==null).map(interval=>({start:interval.start,end:interval.end!,kind:interval.kind}))}));
-   setData({blocks:blocks.filter(block=>block.status!=='cancelled'),entries,logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount});
-  },()=>{if(live)setError(true);});
+   const loaded={blocks:blocks.filter(block=>block.status!=='cancelled'),entries,logged:Math.max(0,loggedMinutes(saved,range,zone,new Date().toISOString()).minutes),closed:isClosed,overdue:dueInfo.overdue,tasks:taskRows,topics:dueInfo.topics,answered:answeredCount};
+   const at=Date.now();savedDay={key:day+'|'+zone,data:loaded,at};
+   setData(loaded);setDataAt(at);
+  },()=>{
+   if(!live)return;
+   setError(true);
+   // N151: with nothing on screen yet, show the saved copy of this day (it carries its "as of" time).
+   const copy=savedDay?.key===day+'|'+zone?savedDay:null;
+   if(copy){setData(current=>current??copy.data);setDataAt(current=>current||copy.at);}
+  });
   return ()=>{live=false;};
  },[day,zone,version]);
+ // N151: back online, load the day again so the numbers (and their "as of") are the server's.
+ useEffect(()=>{window.addEventListener('online',reload);return()=>window.removeEventListener('online',reload);},[reload]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived'),[home.data]);
  const projectOf=(id:string|null|undefined)=>projects.find(project=>project.id===id);
  const subjectOf=(id:string|null|undefined)=>{const project=projectOf(id);return {subject:kitSubject(project?.subject.name??''),name:project?.subject.name??''};};
@@ -75,6 +89,8 @@ export default function V7Today(){
  const left=blocks.filter(block=>block.kind==='study'&&block.status==='planned'&&Date.parse(block.endsAt)>now).length;
  const due=home.data?.due??0,pending=home.data?.pendingProposals??0;
  const ready=!!home.data&&!!data;
+ // N151 · AN3: "as of HH:MM" beside the briefing when any of its numbers come from the saved copy, not the server.
+ const asOf=useSavedCopyAt([home,settings,{data,dataUpdatedAt:dataAt,isError:error}]);
  // V03: the same estimate the Review hub prints ("About n min at your pace"); asked for after first paint.
  const reviewMinutes=useReviewEstimate(due,ready);
  const state:HeroState=heroState({session:!!entry,next,now,closed:!!data?.closed,hasPaths:projects.length>0});
@@ -145,7 +161,7 @@ export default function V7Today(){
  const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone),windowMinutes).left;
  return <main id="main-content" className="v7-page v7-today" aria-label="Today">
   <HubHeader title={todayGreeting(date,zone)} date={todayLabel} settings display>
-   <p className="v7-today-briefing">{ready?briefing:' '}</p>
+   <p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>
   </HubHeader>
   {!ready?<div className="v7-today-skeleton" role="status" aria-label="Today loading">
    {error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
