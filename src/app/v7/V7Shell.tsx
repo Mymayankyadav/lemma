@@ -66,20 +66,12 @@ function Capture(){
  const onCalendar=location.pathname.startsWith('/calendar');
  // On the card library Capture writes a new card (PLAN §6.11).
  const onCards=location.pathname==='/cards';
- // PA2: the button slides away on scroll down. Its dock slot stays reserved;
- // keyboard focus always reveals it again.
- const [hidden,setHidden]=useState(false);
- useEffect(()=>{
-  let last=window.scrollY;
-  const onScroll=()=>{const y=window.scrollY,delta=y-last;if(Math.abs(delta)<6)return;setHidden(delta>0&&y>48);last=y;};
-  window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll);
- },[]);
- useEffect(()=>setHidden(false),[location.pathname]);
+ // V14 (v7 UX audit r3): Capture sits in the dock row, so it no longer fades on scroll. Fading kept its slot and left
+ // the bar lopsided; hiding the slot would make the tabs jump while scrolling.
  // R0 · F13: an error toast belongs to the screen that raised it.
  useEffect(()=>clearToasts(item=>item.tone==='danger'),[location.pathname]);
  return <>
-  <button type="button" className="v7-capture" data-hidden={hidden&&mode==='closed'?'true':'false'} aria-label="Capture" title="Capture" aria-haspopup="dialog"
-   onFocus={()=>setHidden(false)}
+  <button type="button" className="v7-capture" aria-label="Capture" title="Capture" aria-haspopup="dialog"
    onPointerDown={down} onPointerUp={up} onPointerCancel={up} onPointerLeave={up}
    onClick={()=>{if(long.current){long.current=false;return;}if(onCards){window.dispatchEvent(new Event('v7:new-card'));return;}setMode('sheet');}}
    onKeyDown={event=>{if(event.key==='ContextMenu'||(event.key==='F10'&&event.shiftKey)){event.preventDefault();setMode('picker');}}}><Plus aria-hidden="true"/></button>

@@ -1,5 +1,5 @@
 import {lazy,Suspense,useLayoutEffect} from 'react';
-import {useOutlet,useLocation,useNavigationType} from 'react-router';
+import {useOutlet,useLocation,useMatches,useNavigationType} from 'react-router';
 import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
 import TabBar from './TabBar';
 import V6Header from './V6Header';
@@ -22,7 +22,9 @@ import './v6-atlas-shell.css';
 const tabPaths=new Set(['/','/projects','/review','/insights']);
 export default function AppShell(){
  const outlet=useOutlet(),location=useLocation(),navigation=useNavigationType(),reduce=!!useReducedMotion();
- const screen=v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
+ // V32: the catch-all route (an address Lemma does not know) is a v7 page of its own when v7 is on.
+ const notFound=useMatches().some(match=>(match.handle as {notFound?:boolean}|undefined)?.notFound===true);
+ const screen=notFound&&isFlagOn('v7Shell')?'not-found':v7Screen(location.pathname,location.search),v7=screen!==null,v6=isFlagOn('v6Shell')&&!v7;
  useLayoutEffect(()=>{setShellRoot(v7?'v7':v6?'v6':'legacy');if(!v7)setV6Root(v6);loadShellFonts(v7);return ()=>setShellRoot('legacy');},[v6,v7]);
  const showTabs=v6?location.pathname!=='/sign-in':tabPaths.has(location.pathname),fullBleed=location.pathname==='/atlas'&&(!v6||new URLSearchParams(location.search).get('view')==='map');
  const inboxActions=v6&&location.pathname==='/proposals';

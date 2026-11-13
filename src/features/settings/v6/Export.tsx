@@ -5,8 +5,9 @@ import {useToast} from '../../../ui/Toast';
 import {isNative} from '../../../platform/native';
 
 /** N28.2.2: the same authenticated exportAll download as legacy Settings. AW2 (v7 UX audit r3, E14): inside the
- *  Android app a download cannot be saved, so the same file goes to Android's share sheet (Files, Drive, email). */
-export default function ExportSettings(){
+ *  Android app a download cannot be saved, so the same file goes to Android's share sheet (Files, Drive, email).
+ *  V43: the logic is shared by this (v6) section and the v7 Data and account page. */
+export function useBackup(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [shared,setShared]=useState(false);
@@ -50,6 +51,10 @@ export default function ExportSettings(){
    setBusy(false);
   }
  }
+ return {app,busy,error,shared,run:()=>app?share():download(),label:app?'Save a backup':'Download a backup'};
+}
+export default function ExportSettings(){
+ const {app,busy,error,shared,run}=useBackup();
  return <section aria-labelledby="v6-export-title" className="flex flex-col gap-4 pb-8">
   <h2 id="v6-export-title" className="text-title-s font-semibold text-ink">Export</h2>
   <p className="text-body text-ink-2">Save a JSON backup of your existing study record.</p>
@@ -59,7 +64,7 @@ export default function ExportSettings(){
     ?'Android asks where to keep it: Files keeps it on this phone; Drive or email keeps a copy elsewhere. Keep it somewhere only you can access.'
     :'Keep the downloaded file somewhere only you can access. No data is shared from this screen.'}</p>
    <button type="button" className="flex min-h-11 w-full items-center justify-center gap-2 rounded-ctl border border-edge px-4 py-2 text-body font-semibold text-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-amber"
-    disabled={busy} aria-busy={busy||undefined} onClick={()=>{void (app?share():download())}}>
+    disabled={busy} aria-busy={busy||undefined} onClick={()=>{void run()}}>
     <Download size={18} aria-hidden="true"/>{busy?'Preparing backup…':app?'Save a backup':'Download a backup'}
    </button>
    {shared&&<p role="status" className="mt-3 text-label text-ink-2">Your backup is in Android's share sheet. Choose Files to keep it on this phone.</p>}

@@ -65,14 +65,16 @@ function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
 }
 /** The path's own cards, first twelve by number; the library has the rest. */
 function PathCards({slug}:{slug:string}){
- const cards=useSearchCards('',slug);
+ const cards=useSearchCards('',slug),project=useProject(slug);
+ // V18: a card names its checkpoint by title, never its code.
+ const cpTitle=(code:string)=>project.data?.checkpoints.find(cp=>cp.code===code)?.title;
  if(cards.isPending)return <Skeleton/>;
  if(cards.error)return <p className="v7-path-cards-empty" role="alert">Could not load cards.</p>;
  const rows=cards.data??[];
  if(!rows.length)return <p className="v7-path-cards-empty">No cards on this path yet.</p>;
  return <ul className="v7-path-cardlist" aria-label="Cards on this path">{rows.slice(0,12).map(card=><li key={card.noteNo}>
   <Link to={'/cards/'+card.noteNo}><span className="v7-path-card-front"><MathText source={card.front}/></span>
-   <small>{card.checkpointCode?card.checkpointCode+' · ':''}{card.due?'due '+shortDate(card.due):'new'}</small></Link></li>)}
+   <small>{card.checkpointCode&&cpTitle(card.checkpointCode)?cpTitle(card.checkpointCode)+' · ':''}{card.due?'due '+shortDate(card.due):'new'}</small></Link></li>)}
   {rows.length>12&&<li className="v7-path-cards-empty">{rows.length-12} more in the card library.</li>}</ul>;
 }
 /** PLAN §6.9: the path as a constellation, with the primary action in a sticky bar. */
@@ -152,7 +154,7 @@ export default function V7Path(){
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense>}
    {tab==='Cards'&&<ul className="v7-path-cards" aria-label="Cards by checkpoint">
     <li className="v7-path-cards-total"><strong>{cards} {cards===1?'card':'cards'}</strong><Link className="v7-button v7-secondary v7-small" to="/cards"><span>Browse cards</span></Link></li>
-    {cps.filter(cp=>cp.dueCards>0).map(cp=><li key={cp.id}><Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>{cp.code} · {cp.title}</span><small>{cp.dueCards} due</small></Link></li>)}
+    {cps.filter(cp=>cp.dueCards>0).map(cp=><li key={cp.id}><Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>{cp.title}</span><small>{cp.dueCards} due</small></Link></li>)}
     {due===0&&<li className="v7-path-cards-empty">Nothing due on this path.</li>}
    </ul>}
    {tab==='Cards'&&<PathCards slug={slug}/>}
