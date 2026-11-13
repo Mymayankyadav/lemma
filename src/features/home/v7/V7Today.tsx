@@ -1,7 +1,8 @@
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {Check,ChevronRight,Layers,Pause,Play} from 'lucide-react';
+import {Check,ChevronRight,Pause,Play} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {getStudyApi} from '../../../data/study';
@@ -220,11 +221,11 @@ export default function V7Today(){
     <h2>Needs you</h2>
     {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><StatusBadge tone="warning">{row.count} overdue</StatusBadge><span/>
       <Link className="v7-button v7-ghost v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
-     :row.kind==='review'?<div key="review" className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong>{reviewMinutes!==null&&reviewMinutes>0&&<small>about {reviewMinutes} min</small>}</span>
+     :row.kind==='review'?<div key="review" className="v7-today-need"><MEANING_ICON.review aria-hidden="true"/><span><strong>{row.count} {row.count===1?'card':'cards'} due</strong>{reviewMinutes!==null&&reviewMinutes>0&&<small>about {reviewMinutes} min</small>}</span>
       <Link className="v7-button v7-secondary v7-small" to="/review"><span>Review</span></Link></div>
      :row.kind==='task'?<div key={row.task.id} className="v7-today-need"><span className="v7-check-choice v7-today-check"><input type="checkbox" aria-label={'Complete '+row.task.title} disabled={busy} checked={false} onChange={()=>{void completeTask(row.task);}}/></span>
       <span><strong>{row.task.title}</strong><small>{row.task.priority==='high'?'High · ':row.task.priority==='low'?'Low · ':''}due today{row.task.estimateMinutes?' · '+minutesLabel(row.task.estimateMinutes):''}</small></span><span/></div>
-     :<div key={row.topic.id} className="v7-today-need"><Layers aria-hidden="true"/><span><strong>{row.topic.title}</strong><small>Practice due today</small></span>
+     :<div key={row.topic.id} className="v7-today-need"><MEANING_ICON.practice aria-hidden="true"/><span><strong>{row.topic.title}</strong><small>Practice due today</small></span>
       <Link className="v7-button v7-secondary v7-small" to={'/practice#topic-'+row.topic.id}><span>Practice</span></Link></div>)}
     {needs.hidden>0&&<Button variant="ghost" small onClick={()=>setShowAll(true)}>{'Show all ('+needs.total+')'}</Button>}
     {pending>0&&<Link className="v7-today-need" to="/proposals"><span className="v7-today-fan" aria-hidden="true"><i/><i/><i/></span><span><strong>{pending} {pending===1?'proposal':'proposals'} from your tutor</strong><small>Decide in the Inbox.</small></span><ChevronRight aria-hidden="true"/></Link>}

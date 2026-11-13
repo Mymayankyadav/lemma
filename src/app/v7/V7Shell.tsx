@@ -2,7 +2,8 @@ import {Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CS
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {Link,useLocation,useNavigate} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
-import {CalendarDays,ChartColumn,House,Layers,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
+import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
+import {MEANING_ICON} from '../../ui/v7/meanings';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
 import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
@@ -25,7 +26,7 @@ const SearchSheet=lazy(()=>import('./SearchSheet'));
 export const tabs=[
  {to:'/',label:'Today',Icon:House,match:(path:string)=>path==='/'},
  {to:'/projects',label:'Paths',Icon:Route,match:(path:string)=>path.startsWith('/projects')||path.startsWith('/p/')||path.startsWith('/s/')||path==='/atlas'||path.startsWith('/cards')},
- {to:'/review',label:'Review',Icon:Layers,match:(path:string)=>path.startsWith('/review')||path.startsWith('/practice')},
+ {to:'/review',label:'Review',Icon:MEANING_ICON.review,match:(path:string)=>path.startsWith('/review')||path.startsWith('/practice')},
  {to:'/calendar',label:'Calendar',Icon:CalendarDays,match:(path:string)=>path.startsWith('/calendar')||path.startsWith('/tasks')},
  {to:'/insights',label:'Progress',Icon:ChartColumn,match:(path:string)=>path.startsWith('/insights')||path.startsWith('/log')},
 ] as const;

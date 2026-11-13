@@ -62,7 +62,7 @@
 
 :where(html[data-v7]) .v7-segmented:has(button:disabled),:where(html[data-v7]) .v7-tabs:has(button:disabled) {background:transparent;border-color:var(--v7-role-border-subtle);}
 :where(html[data-v7]) .v7-kit :is(.v7-segmented,.v7-tabs) button:disabled {background:transparent;box-shadow:none;color:var(--v7-role-text-disabled);border-color:var(--v7-role-border-subtle);}
-:where(html[data-v7]) .v7-kit .lucide {width:var(--v7-space-5);height:var(--v7-space-5);stroke-width:1.5;}
+:where(html[data-v7]) .v7-kit .lucide {width:var(--v7-space-5);height:var(--v7-space-5);}
 :where(html[data-v7]) .v7-kit .v7-switch-visual .lucide {width:var(--v7-space-4);height:var(--v7-space-4);}
 :where(html[data-v7]) .v7-menu-content {display:grid;gap:var(--v7-space-1);}
 :where(html[data-v7]) .v7-menu-content button {display:flex;align-items:center;gap:var(--v7-space-3);min-height:var(--v7-touch);width:100%;padding:var(--v7-space-2);border:0;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-primary);text-align:left;}

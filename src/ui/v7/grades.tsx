@@ -17,13 +17,14 @@ export const GRADES:Readonly<Record<GradeKey,{label:string;rating:1|2|3|4;colour
 };
 export const gradeOf=(rating:number):GradeKey=>GRADE_KEYS[Math.max(1,Math.min(4,Math.round(rating)))-1];
 
-/** The grade glyph, 16 px by default, in the grade's colour. */
+/** The grade glyph, 16 px by default, in the grade's colour. N156 (IC3): drawn on the icon set's 24-unit grid with its
+ *  1.75 px line (it was a 16-unit grid at 1.6, so 2 px when shown at 20 px). */
 export function GradeGlyph({grade,size=16,...props}:{grade:GradeKey;size?:number}&SVGProps<SVGSVGElement>){
- const common={width:size,height:size,viewBox:'0 0 16 16','aria-hidden':true as const,className:'v7-grade-glyph',style:{color:GRADES[grade].colour},...props};
- if(grade==='again')return <svg {...common} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 6.5A5 5 0 1 1 4 11"/><path d="M3 3v3.5h3.5"/></svg>;
- if(grade==='hard')return <svg {...common}><circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" strokeWidth="1.6"/><path d="M8 2.4a5.6 5.6 0 0 1 0 11.2Z" fill="currentColor"/></svg>;
- if(grade==='good')return <svg {...common}><circle cx="8" cy="8" r="6" fill="currentColor"/></svg>;
- return <svg {...common}><path d="M8 1.6l1.9 4 4.4.5-3.3 3 .9 4.3L8 11.2l-3.9 2.2.9-4.3-3.3-3 4.4-.5Z" fill="currentColor"/></svg>;
+ const common={width:size,height:size,viewBox:'0 0 24 24','aria-hidden':true as const,className:'v7-grade-glyph',style:{color:GRADES[grade].colour},...props};
+ if(grade==='again')return <svg {...common} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M5.25 9.75A7.5 7.5 0 1 1 6 16.5"/><path d="M4.5 4.5v5.25h5.25"/></svg>;
+ if(grade==='hard')return <svg {...common}><circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" strokeWidth="1.75"/><path d="M12 3.6a8.4 8.4 0 0 1 0 16.8Z" fill="currentColor"/></svg>;
+ if(grade==='good')return <svg {...common}><circle cx="12" cy="12" r="9" fill="currentColor"/></svg>;
+ return <svg {...common}><path d="M12 2.4l2.85 6 6.6.75-4.95 4.5 1.35 6.45L12 16.8l-5.85 3.3 1.35-6.45-4.95-4.5 6.6-.75Z" fill="currentColor"/></svg>;
 }
 /** A grade badge: glyph and name, on the grade's subtle surface (never a status icon). */
 export function GradeBadge({grade}:{grade:GradeKey}){

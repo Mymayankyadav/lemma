@@ -1,7 +1,8 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {Link,useSearchParams} from 'react-router';
-import {ChevronLeft,ChevronRight,Flag,Target} from 'lucide-react';
+import {ChevronLeft,ChevronRight} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
@@ -178,7 +179,7 @@ export default function V7CalendarDay(){
   <Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/>
   {phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
    {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
-   {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<Flag aria-hidden="true"/>:<Target aria-hidden="true"/>}<span>{item.value.title}</span></span>)}
+   {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<MEANING_ICON.deadline aria-hidden="true"/>:<MEANING_ICON.practice aria-hidden="true"/>}<span>{item.value.title}</span></span>)}
   </div>}
   {phase==='loading'&&<div className="v7-cal-skeleton" role="status" aria-label="Loading calendar"><span/><span/><span/></div>}
   {phase==='error'&&<div role="alert" className="v7-alert"><p>{message}</p><button type="button" className="v7-button v7-secondary v7-small" onClick={()=>setReload(value=>value+1)}><span>Reload</span></button></div>}

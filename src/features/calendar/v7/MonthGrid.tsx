@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {Flag} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {monthDays} from '../model';
 import {dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
@@ -29,14 +29,14 @@ export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,
      aria-label={long+(day.day===today?', today':'')+(parts.length?', '+parts.join(', '):'')} onClick={()=>onPick(day.day)}>
      <span>{Number(day.day.slice(-2))}</span>
      <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
-     {due>0&&<Flag className="v7-mo-flag" aria-hidden="true"/>}
+     {due>0&&<MEANING_ICON.deadline className="v7-mo-flag" aria-hidden="true"/>}
     </button>;
    })}
   </div>
   {/* KC6: the kit's five labelled swatches; glyphs, not dots, mark planned study (KC2). */}
   <div className="v7-mo-legend" aria-label="Legend">
    <span className="v7-mo-swatches">Logged {heatLegend.map((label,index)=><span key={label}><i data-tint={index} aria-hidden="true"/>{label}</span>)}</span>
-   <span>Glyphs mark planned study · <Flag aria-hidden="true"/> something due</span>
+   <span>Glyphs mark planned study · <MEANING_ICON.deadline aria-hidden="true"/> something due</span>
   </div>
  </section>;
 }

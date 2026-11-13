@@ -1,5 +1,5 @@
 import {useMemo} from 'react';
-import {Flag,Target} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import type {ProjectSummary} from '../../../data/types';
 import {formatDuration,formatShortDate,formatTimeLeft} from '../../../lib/format';
@@ -22,14 +22,14 @@ export function DueRow({item,zone,projects=[],now}:{item:DueItem;zone:string;pro
   const subject=project?kitSubject(project.subject.name):null;
   return <li className={'v7-ag-row'+(subject?' '+subjectClass(subject):'')} data-kind="due">
    <span className="v7-ag-time">{formatTimeLeft(row.due,options)}</span>
-   <span className="v7-ag-body"><strong><Flag aria-hidden="true" className="v7-ag-icon"/>{row.title}</strong>
+   <span className="v7-ag-body"><strong><MEANING_ICON.deadline aria-hidden="true" className="v7-ag-icon"/>{row.title}</strong>
     <small>{origin(row.origin)}{project?' · '+project.title:''}{row.remainingMinutes!==null?' · about '+formatDuration(row.remainingMinutes)+' of work':''}</small></span>
   </li>;
  }
  const row=item.value;
  return <li className="v7-ag-row" data-kind="due">
   <span className="v7-ag-time">{formatTimeLeft({kind:'date',date:row.nextDueDate!},options)}</span>
-  <span className="v7-ag-body"><strong><Target aria-hidden="true" className="v7-ag-icon"/>{row.title}</strong><small>Practice due</small></span>
+  <span className="v7-ag-body"><strong><MEANING_ICON.practice aria-hidden="true" className="v7-ag-icon"/>{row.title}</strong><small>Practice due</small></span>
  </li>;
 }
 

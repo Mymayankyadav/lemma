@@ -1,6 +1,7 @@
 import {useMemo,useState} from 'react';
 import {useNavigate} from 'react-router';
-import {Clock3,Layers,CheckSquare,MessageSquareText,Mic,X} from 'lucide-react';
+import {Clock3,MessageSquareText,Mic,X} from 'lucide-react';
+import {MEANING_ICON} from '../../ui/v7/meanings';
 import {getApi} from '../../data';
 import {useHome,useSettings} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
@@ -14,7 +15,7 @@ import {addLabel,captureKinds,defaultStart,kindLabel,parseCapture,type CaptureKi
 import {takeCaptureText} from '../../platform/share';
 import {useNativeVoice} from '../../platform/voice';
 
-const icons={task:CheckSquare,block:Clock3,card:Layers,thought:MessageSquareText} as const;
+const icons={task:MEANING_ICON.task,block:Clock3,card:MEANING_ICON.card,thought:MessageSquareText} as const;
 /** Local date and time in a zone to an instant: midnight of that civil day plus the elapsed minutes. */
 export function instantAt(date:string,time:string,zone:string):string{
  const [hour,minute]=time.split(':').map(Number);

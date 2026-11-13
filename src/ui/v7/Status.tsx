@@ -1,6 +1,7 @@
 import type {ReactNode} from 'react';
 import {Link} from 'react-router';
-import {CalendarDays,CircleDashed,Clock3,Flag,History,Plus,Sparkle,Triangle} from 'lucide-react';
+import {CalendarDays,CircleDashed,Clock3,History,Plus} from 'lucide-react';
+import {MEANING_ICON} from './meanings';
 import {StatusIcon,type Tone} from './KitPrimitives';
 
 /** KC1: the kit's one Badge — 8 px corners, 24 px tall, a filled status icon, "Label · meaning" in the status colour on its
@@ -21,7 +22,7 @@ export function StatusBadge({tone='info',children,onClick,to,label,className=''}
  * stay for success, warning, danger and info only.
  */
 export type MetaKind='target'|'date'|'next'|'added'|'changed'|'suggested'|'saved';
-const metaIcon={target:Flag,date:CalendarDays,next:CircleDashed,added:Plus,changed:Triangle,suggested:Sparkle,saved:History} as const;
+const metaIcon={target:MEANING_ICON.targetDate,date:CalendarDays,next:CircleDashed,added:Plus,changed:MEANING_ICON.changed,suggested:MEANING_ICON.suggested,saved:History} as const;
 export function MetaChip({kind,children,to,className=''}:{kind:MetaKind;children:ReactNode;to?:string;className?:string}){
  const Icon=metaIcon[kind],klass='v7-meta-chip'+(className?' '+className:'');
  const body=<><Icon aria-hidden="true"/><span>{children}</span></>;

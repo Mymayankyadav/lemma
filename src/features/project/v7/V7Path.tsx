@@ -3,7 +3,8 @@ import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
-import {Archive,Copy,Layers,Pause,Play,Share2,Waypoints} from 'lucide-react';
+import {Archive,Copy,Pause,Play,Share2} from 'lucide-react';
+import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
 import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
@@ -132,8 +133,8 @@ export default function V7Path(){
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
    action={<><Link className="v7-header-pill" to={'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
-   {label:'Switch path',hint:'Open another path in the same place',icon:<Layers aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
-   {label:'View in Atlas',icon:<Waypoints aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
+   {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
+   {label:'View in Atlas',icon:<MEANING_ICON.concepts aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),
    project.status==='paused'
     ?{label:'Resume path',hint:'Bring it back into Today and reviews',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
