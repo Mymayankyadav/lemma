@@ -91,6 +91,18 @@ for(const t of tools.tools){
   }
 }
 console.log('PASS tools/list: 24 tools, '+JSON.stringify(tools).length+' characters');
+// N160: the deployed registry and reads must match this repository's manifest.
+import {readFile} from 'node:fs/promises';
+const manifestResources=JSON.parse(await readFile(new URL('../../docs/v6/capability-registry/lemma_command_resources.json',import.meta.url),'utf8')).resources.map(r=>r.resource).sort();
+const listed=await call('tools/call',{name:'get',arguments:{what:'resources'}});
+const deployedResources=JSON.parse((listed.content||[]).map(item=>item.text||'').join('')).resources.map(r=>r.resource).sort();
+assert.deepEqual(deployedResources,manifestResources,'deployed registered resources differ from docs/v6/capability-registry/lemma_command_resources.json');
+for(const what of ['today','connection','devices']){
+  const read=await call('tools/call',{name:'get',arguments:{what}});
+  assert.notEqual(read.isError,true,'get '+what+' failed');
+  assert.equal(JSON.parse((read.content||[]).map(item=>item.text||'').join('')).what,what,'get '+what+' returned the wrong report');
+}
+console.log('PASS registered resources match the manifest ('+manifestResources.length+') and the context reads answer');
 const resumed=await call('tools/call',{name:'resume',arguments:{}});
 const resumeText=(resumed.content||[]).map(item=>item.text||'').join('\n');
 assert.doesNotMatch(resumeText,/zz-selftest/i,'self-test leaked into owner resume packet');
