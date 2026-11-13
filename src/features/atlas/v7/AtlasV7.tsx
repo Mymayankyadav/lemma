@@ -55,6 +55,16 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 }){
  const star=model.stars[index],checkpoint=star.checkpoints[0];
  const drag=useRef<{y:number;moved:boolean}|null>(null),dragged=useRef(false),[offset,setOffset]=useState(0);
+ const sheetRef=useRef<HTMLElement|null>(null);
+ // The map's legend and controls sit above the sheet: tell them how tall it really is.
+ useEffect(()=>{
+  const node=sheetRef.current,root=node?.closest<HTMLElement>('.v7-atlas');
+  if(!node||!root||typeof ResizeObserver==='undefined')return;
+  const apply=()=>root.style.setProperty('--v7-atlas-sheet-h',Math.ceil(node.getBoundingClientRect().height)+'px');
+  apply();
+  const observer=new ResizeObserver(apply);observer.observe(node);
+  return ()=>{observer.disconnect();root.style.removeProperty('--v7-atlas-sheet-h');};
+ },[]);
  const needs=model.edges.filter(edge=>edge.to===index&&edge.kind==='prereq').map(edge=>edge.from);
  const opens=model.edges.filter(edge=>edge.from===index&&edge.kind==='prereq').map(edge=>edge.to);
  const related=model.neighbours[index].filter(other=>!needs.includes(other)&&!opens.includes(other));
@@ -72,7 +82,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
    <StarMark state={model.stars[other].state} subjectClassName={subjectClass(model.clusters.find(c=>c.index===model.stars[other].cluster)?.subject??'Other')}/>
    <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
  </div>;
- return <section className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
+ return <section ref={sheetRef} className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
   <button type="button" className="v7-atlas-handle" aria-expanded={expanded} aria-controls="v7-atlas-sheet-more"
    aria-label={expanded?'Show less':'Show neighbours and actions'} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp}
@@ -84,13 +94,14 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   </div>
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className="v7-atlas-counts" data-testid="atlas-counts">{starCounts(model,index)}</p>
-  <div className="v7-atlas-actions">
+  {/* N161: the actions show when the sheet is pulled up; a peek shows only whole rows, never half-hidden buttons. */}
+  {expanded&&<div className="v7-atlas-actions">
    {checkpoint?<Link className="v7-button v7-primary" to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}
      aria-label={'Open '+checkpointName(checkpoint.code)}><span>Open checkpoint</span></Link>
     :<StateButton variant="primary" disabledReason="Unavailable · No checkpoint uses this concept yet.">Open checkpoint</StateButton>}
    {star.due>0?<Link className="v7-button v7-secondary" to={'/review/run?concept='+encodeURIComponent(star.slug)}><span>Review cards</span></Link>
     :<StateButton disabledReason="Unavailable · No cards are due.">Review cards</StateButton>}
-  </div>
+  </div>}
   {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
    {group('Needs',needs)}{group('Opens up',opens)}{group('Related',related)}
    {model.neighbours[index].length===0&&<p className="v7-atlas-meta">No connections yet.</p>}

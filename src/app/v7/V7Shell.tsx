@@ -195,7 +195,9 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
 /** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
-export function HubHeader({title,date,settings=false,display=false,children}:{title:string;date?:string;settings?:boolean;display?:boolean;children?:ReactNode}){
+export function HubHeader({title,date,settings=false,display=false,control,children}:{title:string;date?:string;settings?:boolean;display?:boolean;
+ /** N161: one compact control beside the title (Calendar's view menu on a phone). */
+ control?:ReactNode;children?:ReactNode}){
  const findSelected=(nodes:ReactNode):string|undefined=>{
   for(const node of Children.toArray(nodes)){
    if(!isValidElement<{children?:ReactNode;'aria-current'?:string}>(node))continue;
@@ -221,7 +223,7 @@ export function HubHeader({title,date,settings=false,display=false,children}:{ti
     {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
    </nav>;
  if(!display)return <>
-  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 className="v7-hub-title">{title}</h1>{actions}</div></header>
+  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 className="v7-hub-title">{title}</h1>{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
   {children&&<div className="v7-hub-extra">{children}</div>}
  </>;
  return <header className="v7-hub-header" data-display="true">

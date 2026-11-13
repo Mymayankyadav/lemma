@@ -31,7 +31,8 @@ test("B3 · Today, Calendar and Tasks show the same overdue count",async({page})
 });
 
 test("K1/KC13 · in Night the selected segment is lighter than its track",async({page})=>{
- await open(page,"/calendar?view=day&date=2026-11-09");
+ // N161: on a phone the view choice is a header menu; the segmented control (this check) is from 700 px.
+ await open(page,"/calendar?view=day&date=2026-11-09",1024);
  const group=page.getByRole("radiogroup",{name:"Calendar view"});
  const track=await group.evaluate(node=>getComputedStyle(node).backgroundColor);
  const thumb=await group.locator('[aria-checked="true"]').evaluate(node=>getComputedStyle(node).backgroundColor);

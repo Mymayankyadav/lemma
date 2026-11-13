@@ -134,7 +134,8 @@ test("Close the day walks three steps: Today, Loose ends, Tomorrow",async({page}
 // Part 7c: Calendar Week, Month, Agenda.
 test("Calendar Week shows a seven-day grid with the strip as its header",async({page})=>{
  await page.goto(at("/calendar?view=week"));
- await expect(page.getByRole("radio",{name:"Week"})).toHaveAttribute("aria-checked","true");
+ // N161: on a phone the view is the header menu button.
+ await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeVisible();
  await expect(page.getByRole("region",{name:"Week time grid"})).toBeVisible();
  await expect(page.locator("[data-strip-day]")).toHaveCount(7);
  await expect(page.getByRole("button",{name:"Next week"})).toBeVisible();
@@ -146,7 +147,7 @@ test("Calendar Month tints days, offers Open day, and never prints a zero",async
  await expect(page.getByText(/\b0 blocks\b/)).toHaveCount(0);
  await expect(page.getByRole("button",{name:"Open day"})).toBeVisible();
  await page.getByRole("button",{name:"Open day"}).click();
- await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
+ await expect(page.getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
 });
 test("Calendar Agenda lists days with headings and switches back to Day",async({page})=>{
  await page.goto(at("/calendar?view=agenda"));
@@ -155,8 +156,9 @@ test("Calendar Agenda lists days with headings and switches back to Day",async({
  const sections=await page.locator(".v7-ag-day").evaluateAll(nodes=>nodes.map(node=>!!node.querySelector(".v7-ag-empty")));
  expect(sections.length).toBeGreaterThan(1);expect(sections.length).toBeLessThanOrEqual(14);
  expect(sections.some((empty,index)=>empty&&sections[index+1])).toBe(false);
- await page.getByRole("radio",{name:"Day"}).click();
- await expect(page.getByRole("radio",{name:"Day"})).toHaveAttribute("aria-checked","true");
+ await page.getByRole("button",{name:"Calendar view: Agenda"}).click();
+ await page.getByRole("menuitemradio",{name:"Day"}).click();
+ await expect(page.getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
 });
 
 // Part 7d: quick-add, suggestions banner, overdue sheet.
