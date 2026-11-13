@@ -19,7 +19,7 @@ Legend: `- [x]` merged · `- [ ]` open · *(gate)* in italics · **Major** in bo
 | Phase | Done | Open | Gate |
 |---|:-:|:-:|---|
 | U0 Truth | 20 | 0 | none (E1) |
-| G2 Illustration, motion, icon polish | 8 | 6 | E19, E21, E22 for some |
+| G2 Illustration, motion, icon polish | 9 | 6 | E19, E21, E22 for some |
 | U2 Resilience (= AN2) | 4 | 5 | E12; device check 1 |
 | AN1 Make the built app right | 6 | 4 | E23, a device |
 | G0 Refresh what is stale | 2 | 0 | none |
@@ -76,7 +76,8 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [ ] LT8 *(P5, with AN3)* `haptic('complete')` on the frame the ✓ or ∎ lands (Inbox 66, Round 72, Day closed 80)
 - [ ] LT9 Stars fade in from 70%; a badge's ring draws before it fills
 - [x] **IL1** *(P1, E18)* Night: object fill lighter than the disc (`--v7-il-paper`, also in `lottie.ts`) — N130 (#1363)
-- [ ] **IL2** IL8 IL6 *(P2, needs E19 for Round complete)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred, Round complete with ∎. Markup: `visuals/src/r3/r3-art.json`
+- [x] **IL2** IL8 IL3 *(P2)* Redraws: Cards (no "zoom out"), Progress (hourglass), Day closed re-centred with its animation — N135
+- [ ] IL6 *(P2, needs E19)* Round complete gets its own still and ending with ∎. Markup: `visuals/src/r3/r3-art.json` (`round`)
 - [ ] IL3 IL4 IL5 IL7 *(P3)* Rules: live area 80 units, two sizes (160 and 120 px), empty state in the first viewport (Calendar Day, Progress), accent ≥ 3 : 1 on the disc
 - [ ] **IC1** IC2 IC3 IC5 *(P6, needs E21)* 1.75 px strokes at every size (`LucideProvider`), one meaning per glyph, six drawn marks
 

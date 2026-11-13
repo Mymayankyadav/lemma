@@ -52,9 +52,9 @@ const group = (nm, items, tr = transform()) => ({ty: 'gr', nm, it: [...items, tr
 
 // ---- layers and composition ----------------------------------------------------------------------------------------
 let index = 0;
-function layer(nm, shapes, op) {
+function layer(nm, shapes, op, offset = [0, 0]) {
   return {ddd: 0, ind: ++index, ty: 4, nm, sr: 1, ao: 0, ip: 0, op, st: 0, bm: 0,
-    ks: {o: still(100), r: still(0), p: still([0, 0, 0]), a: still([0, 0, 0]), s: still([100, 100, 100])}, shapes};
+    ks: {o: still(100), r: still(0), p: still([offset[0], offset[1], 0]), a: still([0, 0, 0]), s: still([100, 100, 100])}, shapes};
 }
 function composition(nm, op, layers) {
   index = 0;
@@ -109,18 +109,21 @@ function star(x, y, r) {
   const q = r * 0.2;
   return path([[x, y - r, -q, q * 3, q, q * 3], [x + r, y, -q * 3, -q, -q * 3, q], [x, y + r, q, -q * 3, -q, -q * 3], [x - r, y, q * 3, q, q * 3, -q]], true);
 }
+// P2 (v7 UX audit r3): the drawing sits on the disc's centre, 4 right and 8 up of where it was drawn (its ∎ hung low);
+// the still "closed" in Illustration.tsx moves by the same amount, so the last frame still equals it.
+const CLOSED_OFFSET = [4, -8];
 const dayClosed = composition('day-closed', 96, op => [
   backdrop(op),
   layer('moon', [
     group('moon-outline', [crescent, stroke('ink'), trim(4, 44)]),
     group('moon-fill', [crescent, fill('paper')], transform({opacity: anim([34, 0], [46, 100])})),
-  ], op),
+  ], op, CLOSED_OFFSET),
   layer('stars', [
     group('star-1', [star(94, 70, 9), fill('accent')], transform({anchor: [94, 70], scale: anim([40, [0, 0]], [58, [100, 100]])})),
     group('star-2', [star(100, 104, 6), fill('accent')], transform({anchor: [100, 104], scale: anim([50, [0, 0]], [66, [100, 100]])})),
-  ], op),
+  ], op, CLOSED_OFFSET),
   layer('qed', [group('qed', [rect(120, 134, 10, 10, 1.5), fill('accent')],
-    transform({anchor: [120, 134], scale: anim([64, [0, 0]], [80, [100, 100]])}))], op),
+    transform({anchor: [120, 134], scale: anim([64, [0, 0]], [80, [100, 100]])}))], op, CLOSED_OFFSET),
 ]);
 
 mkdirSync(out, {recursive: true});
