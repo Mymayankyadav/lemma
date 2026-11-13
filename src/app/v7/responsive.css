@@ -86,3 +86,15 @@
   :where(html[data-v7]) .v7-focus-bottom {align-self:start;}
  }
 }
+/* N157 · V22 landscape on a phone (a window under 480 px tall): headers collapse to one row, a sheet takes the full
+   height, and the page gives its vertical room to content. The desk clock (v7DeskClock) is Focus's landscape layout. */
+@layer v7-components {
+ @media (orientation:landscape) and (max-height:480px) {
+  :where(html[data-v7]) .v7-hub-header {grid-template-columns:auto minmax(0,1fr);align-items:center;column-gap:var(--v7-space-4);padding-top:var(--v7-space-1);}
+  :where(html[data-v7]) .v7-hub-header :is(h1,.v7-hub-title) {font-size:var(--v7-type-headline);line-height:1.2;}
+  :where(html[data-v7]) .v7-hub-header > :not(:first-child) {grid-row:1;}
+  :where(html[data-v7]) .v7-detail-header {min-height:var(--v7-touch);}
+  :where(html[data-v7]) .v7-sheet {inset:0 0 0 auto;width:min(100%,560px);height:100dvh;max-height:none;border-radius:0;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-dock {overflow-y:auto;}
+ }
+}
