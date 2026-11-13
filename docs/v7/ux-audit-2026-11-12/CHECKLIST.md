@@ -123,7 +123,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] Offline made visible: "as of 14:05" chips on Today and the Review hub — N151
 - [ ] Offline made visible: the header ℓ as the sync light
 - [ ] Edges: no Lemma gesture within 24 dp of a screen edge
-- [ ] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers)
+- [x] V20 Adopt or delete `transitionPresets`, `dismissSheet`, `interpolateNumber` (no callers) — N152
 
 ### U1 · Large screens (web, L) — `02` §3 · *(needs E2 for the direction)*
 

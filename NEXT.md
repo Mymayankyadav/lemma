@@ -1,5 +1,17 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N152 v7 UX audit r3 · V20 motion in use: drag a sheet to dismiss, a count that counts (Owner task)
+
+Owner task: "Work on the v7 audit items the other agent is not doing"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux2
+Done = V20's three helpers in `src/ui/v7/motion.ts` are used or gone, as follows.
+- `dismissSheet` decides a drag on a bottom sheet. Dragging the grabber or header down moves the sheet. Letting go past 30% of its height, or after a flick over 600 px/s, closes it through the dialog's cancel path (as Escape does); otherwise it settles back. Buttons, the body and centred dialogs (wide screens) do not drag. One delegated listener (`sheetDrag.ts`, installed in `src/main.tsx`) serves every v7 sheet without a change to the Sheet component.
+- `interpolateNumber` drives `useAnimatedNumber`: the Review hub's "cards today" counts to its new value in 240 ms when the round changes. The first value after loading shows at once, and with reduced motion or Reduce effects the number jumps.
+- `transitionPresets`, which nothing used, is deleted. The existing tests of the other two are unchanged.
+- Recorded in `docs/current/N152.md`, with the V20 line of `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` ticked.
+Tests: `tests/unit/v7/n152-motion.test.tsx`, `tests/e2e/v7-n152-motion.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/{motion.ts,useAnimatedNumber.ts,sheetDrag.ts,sheet-drag.css}`, `src/main.tsx` (one install call), `src/features/review/v7/ReviewHubV7.tsx` (the count), tests, `docs/current/N152.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (the V20 line).
+Not: `src/ui/v7/components.tsx` (owned by another item until its PRs merge), haptics, other numbers, server changes, new dependencies.
 ## N138 v7 UX audit r3: every control takes a 44 px tap (U2 · V36) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"

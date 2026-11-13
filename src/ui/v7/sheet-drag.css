@@ -1,0 +1,4 @@
+/* V20 · the sheet's grabber and header take a downward drag (src/ui/v7/sheetDrag.ts) instead of a browser pan. */
+@media (max-width: 699px) {
+  :where(html[data-v7]) dialog.v7-sheet :is(.v7-grabber, .v7-sheet-header) {touch-action: none;}
+}
