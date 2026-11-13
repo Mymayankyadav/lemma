@@ -138,7 +138,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 - [x] Settings: index left, section right, from 840 px — N157
 - [x] V23 Control heights follow the pointer, not the width (40 px only for a fine pointer) — N157
 - [x] The margin (S11), flag `v7Margin` — N157
-- [ ] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress — Day/Night review candidates in `docs/v7/review-r3/README.md` (N157)
+- [x] Owner approves desktop goldens: Today, Review, Path, Calendar, Inbox, Progress — approved 13 Nov 2026: "everything else looks fine so merge it after green ci", with the compact almanac correction in N157
 
 ### G1 · Pipeline (assets, M) — `04` §3
 
@@ -153,7 +153,7 @@ Fixes with no design decision. Each gets a regression test that fails without th
 
 ### U3 · Room and rhythm (web, M) — `02` §5 · flag `v7Room`, each part after its sheet is approved
 
-U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. All nine code items are implemented and browser-verified behind default-off `v7Room`. Calendar Day / Path phone re-approval remains below; review candidates are in `docs/v7/review-r3/README.md`. See `docs/current/N157.md`.
+U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it. All nine code items are implemented and browser-verified behind default-off `v7Room`. The Owner approved the visual review on 13 Nov 2026 after requesting removal of the shared Path star overview and compact almanac cells. See `docs/current/N157.md`.
 
 - [x] **V13** Calendar Day: the grid gets ≥ 75% of the screen (now 46%) (S7)
 - [x] V31 Tasks: banner, switch and filters in ≤ 200 px; "3 overdue" names its parts
@@ -165,7 +165,7 @@ U3 is included in **N157 (#1392)** after the Owner consolidated PR #1393 into it
 - [x] V30 "Reviews by day": one ink ramp; colour only for Again
 - [x] V41 Hero emblem: whole or absent, never a fragment
 
-- [ ] Owner re-approves the Calendar Day and Path phone candidates — `docs/v7/review-r3/README.md`; `v7Room` stays default off
+- [x] Owner re-approves the Calendar Day and Path phone candidates — approved 13 Nov 2026 after the Path star-overview removal; `v7Room` stays default off
 
 ### AN4 · Large screens and postures (Android, M) — `03` §4 · *(needs U1)*
 

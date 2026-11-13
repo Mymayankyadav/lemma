@@ -6,6 +6,20 @@ const url=(route:string,on=true)=>'/lemma/?demo=1&flags='+(on?flags:'v6Shell,v7S
 async function go(page:Page,route:string,width=1280){
  await page.setViewportSize({width,height:844});await page.clock.setFixedTime(NOW);await page.goto(url(route));await page.waitForLoadState('networkidle');
 }
+for(const width of [390,1440])for(const scheme of ['light','dark'] as const)test(`Study almanac keeps short-history days compact at ${width} in ${scheme}`,async({page})=>{
+ await page.emulateMedia({colorScheme:scheme});await go(page,'/insights',width);
+ const almanac=page.locator('section.v7-chart',{hasText:'Study almanac'}),grid=almanac.locator('.v7-heatmap');
+ await expect(grid).toBeVisible();
+ const first=grid.locator('[data-chart-point]').first(),cell=(await first.boundingBox())!,box=(await grid.boundingBox())!;
+ expect(cell.width).toBeLessThanOrEqual(25);expect(cell.height).toBeLessThanOrEqual(25);
+ expect(cell.width).toBeGreaterThanOrEqual(23);expect(Math.abs(cell.width-cell.height)).toBeLessThanOrEqual(1);
+ expect(box.height).toBeLessThanOrEqual(182);
+ const count=await grid.locator('[data-chart-point]').count();
+ await almanac.getByRole('button',{name:'Show as table'}).click();
+ await expect(almanac.locator('tbody tr')).toHaveCount(count);
+ await almanac.getByRole('button',{name:'Show chart'}).click();
+ await expect(grid.locator('[data-chart-point][tabindex="0"]')).toHaveCount(1);
+});
 test('New block ruler changes the saved duration, with keyboard access and exact-version Undo',async({page})=>{
  await go(page,'/calendar?view=day&date='+DATE+'&quick=1',390);
  const sheet=page.getByRole('dialog',{name:'New block',exact:true}),slider=sheet.getByRole('slider',{name:'Length'});
