@@ -98,7 +98,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','account_controls']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1750,6 +1750,17 @@ try{
  assert.equal((await undo(ppArchived.actionNo)).undone,ppArchived.actionNo);
  assert.equal((await q('select status from public.period_plans where id=$1',[ppId]))[0].status,'committed');
  mark('period_plans','create','update','preview','commit','replan','archive');
+ await role('service_role');
+ // N160 account controls: a test notification, and a confirmation token for disabling devices.
+ const acTest=await mcp(command('account_controls','test_notification',{patch:{}}));
+ assert.equal(acTest.status,'ok');assert.ok(acTest.notification_id);
+ const acRequest=await mcp(command('account_controls','request',{patch:{action:'disable_devices'}}));
+ assert.equal(acRequest.status,'ok');assert.ok(acRequest.confirm.token);
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',
+  [owner,'chatgpt',JSON.stringify(command('account_controls','confirm',{patch:{action:'disable_devices',token:'00000000-0000-4000-8000-000000000000'}}))]),/missing, used, expired/);
+ const acConfirm=await mcp(command('account_controls','confirm',{patch:{action:'disable_devices',token:acRequest.confirm.token}}));
+ assert.equal(acConfirm.status,'ok');assert.equal(acConfirm.done,'disable_devices');
+ mark('account_controls','request','confirm','test_notification');
  await role('service_role');
 
  // For the *actually completed* resource operation families, never allow a

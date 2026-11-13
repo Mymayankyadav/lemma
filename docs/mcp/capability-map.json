@@ -568,10 +568,11 @@
   {
    "n": 26,
    "title": "Manage notifications",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "study",
-    "get"
+    "get",
+    "edit"
    ],
    "covers": [
     {
@@ -589,10 +590,15 @@
       "update",
       "delete"
      ]
+    },
+    {
+     "resource": "account_controls",
+     "operations": [
+      "test_notification"
+     ]
     }
    ],
-   "gap": "No command sends a test notification or lists upcoming reminders.",
-   "item": "N160.7"
+   "note": "Reminders are get(what=notifications); quiet hours and reminder kinds are settings edits; test_notification queues a test for one device and the notification's status shows delivery."
   },
   {
    "n": 27,
@@ -618,11 +624,21 @@
   {
    "n": 29,
    "title": "Account and connection controls",
-   "status": "missing",
-   "tools": [],
-   "covers": [],
-   "gap": "Connection health, disconnecting the connector and account actions are not reachable, and none yet asks for explicit confirmation.",
-   "item": "N160.7"
+   "status": "supported",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "account_controls",
+     "operations": [
+      "request",
+      "confirm"
+     ]
+    }
+   ],
+   "note": "get(what=connection) reports connection health. Disconnecting the connector (a new link only the owner reads in Settings) and disabling every device each need request, then confirm with its token after the owner says yes. Deleting the account stays in the app's guarded flow."
   },
   {
    "n": 30,

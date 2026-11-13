@@ -1,0 +1,48 @@
+{
+  "table": "account_confirmations",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    },
+    "action": {
+      "classification": "command-managed",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    },
+    "token": {
+      "classification": "credential",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    },
+    "expires_at": {
+      "classification": "command-managed",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    },
+    "used_at": {
+      "classification": "command-managed",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "service and command only; browsers have no grant on confirmation tokens",
+      "mcpPath": "registered account_controls_command (request, confirm)",
+      "exportPolicy": "not exported: short-lived confirmation secrets",
+      "deletionPolicy": "account purge via owner cascade; rows expire after 5 minutes"
+    }
+  }
+}

@@ -10,6 +10,7 @@ const OWNER='11111111-1111-1111-1111-111111111111';
 describe('N160 context reads (Today, progress, export)',()=>{
  it('builds bounded arguments and never takes an owner',()=>{
   expect(contextArgs({what:'today'})).toEqual({what:'today',args:{}});
+  expect(contextArgs({what:'connection'})).toEqual({what:'connection',args:{}});
   expect(contextArgs({what:'progress'})).toEqual({what:'progress',args:{days:30}});
   const now=Date.parse('2026-11-13T12:00:00Z');
   expect(contextArgs({what:'progress',start:'2026-11-07'},now).args).toEqual({days:7});

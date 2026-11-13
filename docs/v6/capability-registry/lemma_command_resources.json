@@ -552,6 +552,23 @@
           "committed_at"
         ]
       }
+    },
+    {
+      "resource": "account_controls",
+      "command_fn": "account_controls_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "request",
+          "confirm",
+          "test_notification"
+        ],
+        "fields": [
+          "action",
+          "token",
+          "device_id"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

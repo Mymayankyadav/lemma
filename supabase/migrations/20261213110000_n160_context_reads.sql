@@ -104,6 +104,22 @@ begin
   v_page := public.lemma_export_page_for(p_user,nullif(p_args->>'table',''),nullif(p_args->>'cursor',''),
    coalesce((p_args->>'limit')::integer,100));
   return pg_catalog.jsonb_build_object('what','export','page',v_page);
+ elsif p_what = 'connection' then
+  -- Health of the chat connection and the owner's devices. Never a secret, endpoint or key.
+  return pg_catalog.jsonb_build_object('what','connection',
+   'connector',pg_catalog.jsonb_build_object('last_seen_at',v_s.connector_last_seen_at,'last_client',v_s.connector_last_client,
+    'minutes_since_seen',case when v_s.connector_last_seen_at is null then null
+     else floor(extract(epoch from (pg_catalog.now() - v_s.connector_last_seen_at)) / 60)::integer end),
+   'devices',(select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id',d.id,'label',d.label,
+      'platform',d.platform,'last_ok_at',d.last_ok_at,'failures',d.failures,'disabled_at',d.disabled_at,
+      'disabled_reason',d.disabled_reason,'version',d.version) order by d.created_at),'[]'::jsonb)
+     from public.push_devices d where d.user_id = p_user),
+   'notifications',pg_catalog.jsonb_build_object(
+    'queued',(select count(*) from public.notifications n where n.user_id = p_user and n.status = 'queued'),
+    'sent_24h',(select count(*) from public.notifications n where n.user_id = p_user and n.status = 'sent' and n.sent_at > pg_catalog.now() - interval '24 hours'),
+    'failed_24h',(select count(*) from public.notifications n where n.user_id = p_user and n.status = 'failed' and n.created_at > pg_catalog.now() - interval '24 hours')),
+   'pending_confirmations',(select coalesce(pg_catalog.jsonb_agg(c.action),'[]'::jsonb)
+     from public.account_confirmations c where c.user_id = p_user and c.used_at is null and c.expires_at > pg_catalog.now()));
  elsif p_what <> 'today' then
   raise exception 'Unknown read';
  end if;

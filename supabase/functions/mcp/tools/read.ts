@@ -22,7 +22,7 @@ export async function get(c: Context, a:any):Promise<string>{
   if(a.what&&/^[a-z][a-z0-9_]{0,60}$/.test(a.what)&&
     !['plan','plan_revisions','checkpoint','session','sources','outline',
       'cards','feedback','concepts','projects','prompt','diagnostics',
-      'study_entries','calendar_blocks','tasks','calendar_overlaps','today','progress','export','source_upload'].includes(a.what))
+      'study_entries','calendar_blocks','tasks','calendar_overlaps','today','progress','export','connection','source_upload'].includes(a.what))
     return readRegisteredResource(c,a,'get');
   if(a.what==='tasks')return readTaskRecords(c,a,'get');
   if(a.what==='study_entries'||a.what==='calendar_blocks')return readStudyRecords(c,a,'get');
