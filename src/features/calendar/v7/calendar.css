@@ -26,7 +26,8 @@
  /* Grid: gutter 44 px, hour lines are hairlines, 64 px per hour. */
  :where(html[data-v7]) .v7-cal-grid {min-width:0;}
 :where(html[data-v7]) .v7-cal-scroll {max-height:62dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--v7-radius-3);padding-top:var(--v7-space-2);}
- :where(html[data-v7]) .v7-cal-plane {position:relative;display:grid;grid-template-columns:44px minmax(0,1fr);}
+ /* V11 (v7 UX audit r3): the gutters grow with the text (they were fixed, so "12:00" lost a digit at 130%); 44 and 36 px at 100%. */
+ :where(html[data-v7]) .v7-cal-plane {position:relative;display:grid;grid-template-columns:max(44px,calc(2.2rem + var(--v7-space-2))) minmax(0,1fr);}
  :where(html[data-v7]) .v7-cal-gutter {position:relative;}
  :where(html[data-v7]) .v7-cal-gutter time {position:absolute;right:var(--v7-space-2);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
 :where(html[data-v7]) .v7-cal-gutter .v7-cal-now-pill {position:absolute;right:2px;padding:3px var(--v7-space-2);border-radius:var(--v7-round);background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);font:600 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;z-index:3;}
@@ -56,7 +57,7 @@
  :where(html[data-v7]) .v7-cal-block [data-grid-resize] {position:absolute;inset-inline:0;bottom:0;height:10px;cursor:ns-resize;touch-action:none;}
  /* Week: the strip is the column header; 36 px gutter, 48 px hours; bars on a phone, titles from 600 px. */
  :where(html[data-v7]) .v7-wk {min-width:0;display:grid;gap:var(--v7-space-1);}
- :where(html[data-v7]) .v7-wk-head {display:grid;grid-template-columns:36px repeat(7,minmax(0,1fr));align-items:end;gap:2px;}
+ :where(html[data-v7]) .v7-wk-head {display:grid;grid-template-columns:max(36px,calc(1.9rem + var(--v7-space-1))) repeat(7,minmax(0,1fr));align-items:end;gap:2px;}
  :where(html[data-v7]) .v7-wk-day {min-height:var(--v7-touch);display:grid;justify-items:center;align-content:center;gap:2px;border:0;background:transparent;color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-wk-day small {color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);}
  :where(html[data-v7]) .v7-wk-day > span {width:32px;height:32px;display:grid;place-items:center;border-radius:var(--v7-round);font:600 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
@@ -64,7 +65,7 @@
 :where(html[data-v7]) .v7-wk-day[data-selected="true"] > span {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
 :where(html[data-v7]) .v7-wk-day em {min-height:12px;color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-style:normal;white-space:nowrap;}
  :where(html[data-v7]) .v7-wk-scroll {max-height:62dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--v7-radius-3);}
- :where(html[data-v7]) .v7-wk-plane {position:relative;display:grid;grid-template-columns:36px minmax(0,1fr);}
+ :where(html[data-v7]) .v7-wk-plane {position:relative;display:grid;grid-template-columns:max(36px,calc(1.9rem + var(--v7-space-1))) minmax(0,1fr);}
  :where(html[data-v7]) .v7-wk-gutter {position:relative;}
 :where(html[data-v7]) .v7-wk-gutter time {position:absolute;right:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-wk-cols {position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}

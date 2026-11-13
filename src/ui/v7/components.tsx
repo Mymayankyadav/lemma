@@ -7,6 +7,7 @@ export function pickerDate(value: string): string {
 import {
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -101,6 +102,32 @@ export function Chip({
    <span className={kind==="subject"?"v7-tag "+subjectClass(name):"v7-badge "+(kind==="gold"?"v7-tone-warning":kind==="mastery"||kind==="status"?"v7-tone-success":"v7-tone-info")}>{content}</span>;
 }
 
+/** V11 (v7 UX audit r3): whether every option's label fits its segment at the current width and text size. */
+export function useSegmentsFit(ref: { current: HTMLElement | null }, key: string): boolean {
+  const [fit, setFit] = useState(true);
+  useLayoutEffect(() => {
+    const box = ref.current;
+    if (!box) return;
+    // The label's own width (it may use the button's padding), against the button's: overlapping text is what matters.
+    const range = typeof document.createRange === "function" ? document.createRange() : null;
+    const textWidth = (button: HTMLElement) => {
+      if (!range) return button.scrollWidth;
+      range.selectNodeContents(button);
+      return range.getBoundingClientRect?.().width ?? button.scrollWidth;
+    };
+    const check = () => {
+      // Not laid out yet (a closed sheet): keep the last answer instead of reading zero widths.
+      if (!box.isConnected || box.clientWidth === 0) return;
+      setFit([...box.querySelectorAll<HTMLElement>("button")].every((button) => textWidth(button) <= button.clientWidth - 2));
+    };
+    check();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    observer?.observe(box);
+    void document.fonts?.ready.then(check).catch(() => undefined);
+    return () => observer?.disconnect();
+  }, [ref, key]);
+  return fit;
+}
 export function Segmented({
   label,
   options,
@@ -120,11 +147,21 @@ export function Segmented({
 }) {
   const tabSemantics=tabs&&!!panelId;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
-  return (
+  // V11: labels never overlap. When they do not fit (large text, a narrow phone), a choice of more than three becomes
+  // the kit's Picker menu and up to three wrap onto two lines. A hidden copy keeps measuring, so it switches back.
+  const box = useRef<HTMLDivElement>(null), [mode, setMode] = useState("segments");
+  // The measured element moves when the mode flips, so the key includes the mode and the observer follows it.
+  const fit = useSegmentsFit(box, options.join("\u0000") + "|" + mode), menu = !tabs && !fit && options.length > 3;
+  useEffect(() => setMode(menu ? "menu" : "segments"), [menu]);
+  const control = (measure: boolean) => (
     <div
-      className={tabs ? "v7-tabs" : "v7-segmented"}
-      role={tabSemantics ? "tablist" : "radiogroup"}
-      aria-label={label}
+      ref={measure ? box : undefined}
+      className={(tabs ? "v7-tabs" : "v7-segmented") + (measure && menu ? " v7-segmented-measure" : "")}
+      role={measure && menu ? undefined : tabSemantics ? "tablist" : "radiogroup"}
+      aria-label={measure && menu ? undefined : label}
+      aria-hidden={measure && menu ? true : undefined}
+      inert={measure && menu ? true : undefined}
+      data-wrap={!tabs && !fit && !menu ? "" : undefined}
     >
       {options.map((option, index) => (
         <button
@@ -159,6 +196,8 @@ export function Segmented({
       ))}
     </div>
   );
+  if (!menu) return control(true);
+  return <div className="v7-segmented-menu">{control(true)}<Picker label={label} value={value} options={options} onChange={onChange} disabled={disabled} /></div>;
 }
 export function Field({
   label,
