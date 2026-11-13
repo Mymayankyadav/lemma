@@ -18,6 +18,7 @@ import {weekStartDay} from '../../calendar/model';
 import {civilDay,addDays} from '../../progress-v6/model';
 import {ProgressTabs} from '../../insights/v7/ProgressV7';
 import {csvLog,logDate,visibleLogRange,visibleLogRecords} from '../Page';
+import {weekRangeLabel} from './weekLabel';
 import {manualFocusInterval} from '../local-time';
 import '../../insights/v7/progress.css';
 import './log.css';
@@ -65,12 +66,16 @@ export default function TimeLogV7(){
  const weekTotal=rows.filter(entry=>!entry.voidedAt).reduce((sum,entry)=>sum+focusMinutes(entry),0);
  return <main id="main-content" className="v7-page v7-log" aria-label="Time log">
   <HubHeader title="Progress"><ProgressTabs current="log"/></HubHeader>
+  {/* V36: the arrows sit beside the week's name, as in Calendar, so the seven days have the whole width (44 px each at 360). */}
   <div className="v7-log-week">
-   <IconButton label="Previous week" onClick={()=>setWeek(addDays(week,-7))}><ChevronLeft aria-hidden="true"/></IconButton>
+   <div className="v7-log-weekRow">
+    <IconButton label="Previous week" onClick={()=>setWeek(addDays(week,-7))}><ChevronLeft aria-hidden="true"/></IconButton>
+    <h2 className="v7-log-range" aria-live="polite">{weekRangeLabel(week,today)}</h2>
+    <IconButton label="Next week" onClick={()=>setWeek(addDays(week,7))}><ChevronRight aria-hidden="true"/></IconButton>
+   </div>
    <div className="v7-log-strip" role="list" aria-label={'Week of '+formatShortDate(week,{zone})}>{days.map(item=>{const total=(byDay.get(item)??[]).filter(entry=>!entry.voidedAt).reduce((sum,entry)=>sum+focusMinutes(entry),0);
     return <a key={item} role="listitem" href={'#log-'+item} className="v7-log-day" data-today={item===today||undefined} aria-label={formatLongDate(item,{zone})+': '+formatDuration(total)}>
      <small>{formatShortDate(item,{zone}).slice(0,1)}</small><span>{Number(item.slice(8,10))}</span><i style={{opacity:total?Math.min(1,.3+total/180):0}}/></a>;})}</div>
-   <IconButton label="Next week" onClick={()=>setWeek(addDays(week,7))}><ChevronRight aria-hidden="true"/></IconButton>
   </div>
   <div className="v7-log-summary"><span>{formatDuration(weekTotal)} this week</span>
    <span className="v7-log-actions"><Button small onClick={()=>setAdding(true)}>Add time</Button>

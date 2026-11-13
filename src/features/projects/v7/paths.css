@@ -25,7 +25,7 @@
  :where(html[data-v7]) .v7-paths-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);margin-top:var(--v7-space-1);}
  :where(html[data-v7]) .v7-paths-chips:empty {display:none;}
  :where(html[data-v7]) .v7-paths-due {position:relative;display:inline-flex;align-items:center;min-height:24px;padding:0 var(--v7-space-2);border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-1);color:var(--v7-role-text-primary);font:600 var(--v7-type-caption)/1 var(--v7-sans);text-decoration:none;font-variant-numeric:tabular-nums;}
- :where(html[data-v7]) .v7-paths-due::after {content:"";position:absolute;inset:-10px -4px;}
+ :where(html[data-v7]) .v7-paths-due::after {content:"";position:absolute;left:-4px;right:-4px;top:50%;height:max(100%,var(--v7-touch));transform:translateY(-50%);}
  :where(html[data-v7]) .v7-paths-empty {display:grid;gap:var(--v7-space-3);justify-items:start;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-paths-moreButton {justify-self:center;}
  /* "Start a new path": a solid-edge card (dashed edges are reserved for drop zones). */
