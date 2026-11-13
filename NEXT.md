@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N135 v7 UX audit r3: three drawings redrawn (G2 · P2) (Owner task)
+
+Owner task: "Ok continue working. Make significant progress"
+Stage: Harden · Status: open · Needs: — · Assigned: owner-setup-v7ux
+Done = the Cards "no match" drawing no longer reads "zoom out", Progress "no time yet" is an hourglass, and Day closed sits on the disc's centre with its animation moved to match (its last frame still equals the still), as drawn in the r3 proposals; ticked in `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` and recorded in `docs/current/N135.md`.
+Tests: `tests/unit/v7/n135-redraws.test.ts`, `tests/e2e/v7-n135-redraws.spec.ts`, existing suites unchanged.
+Scope: `src/ui/v7/Illustration.tsx`, `scripts/lottie/build.mjs`, `src/ui/v7/lottie/day-closed.json`, tests, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md`, `docs/current/N135.md`.
+Not: Round complete's ∎ still (decision E19), P3's rules, new dependencies.
+
 ## N137 v7 UX plan r3 · G1 the asset pipeline: manifest and lint, Android colours from tokens, icon layers, emblem exporter (Owner task)
 
 Owner task: "Your pr is done next work on things not picked by the other agenr"

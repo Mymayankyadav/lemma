@@ -28,26 +28,29 @@ const art: Record<IllustrationName, string> = {
   // IL-04 Inbox zero: an empty tray with a tick.
   inbox: `<circle class="bg" cx="120" cy="90" r="66"/>
     <path class="i page" d="M80 92 94 62H146L160 92V112a6 6 0 0 1-6 6H86a6 6 0 0 1-6-6Z"/><path class="i" d="M80 92H104l6 10H130l6-10H160"/><circle class="f" cx="156" cy="114" r="13"/><path class="w" d="M150 114l4 4 8-8"/>`,
-  // IL-05 Cards, no match: a magnifier that found nothing.
+  // IL-05 Cards, no match (P2, v7 UX audit r3): the lens over an empty, dashed card. The lens with a minus read "zoom out".
   cards: `<circle class="bg" cx="120" cy="90" r="66"/>
-    <circle class="i page" cx="112" cy="82" r="27"/><path class="m" d="M100 82H124"/><path class="a thick" d="M131 101 152 122"/>`,
+  <rect class="m" x="78" y="50" width="64" height="46" rx="7" stroke-dasharray="5 7"/>
+  <circle class="i page" cx="126" cy="90" r="24"/><path class="a thick" d="M143 107 160 124"/>`,
   // IL-06 Atlas, an empty sky: one bright star at the centre, two small ones balanced about it.
   atlas: `<circle class="bg" cx="120" cy="90" r="66"/>
     <path class="f" d="M120 60C124 86 124 86 150 90C124 94 124 94 120 120C116 94 116 94 90 90C116 86 116 86 120 60Z"/>
     <path class="i" d="M84 52C86 60 86 60 94 62C86 64 86 64 84 72C82 64 82 64 74 62C82 60 82 60 84 52Z"/>
     <path class="i" d="M156 108C158 116 158 116 166 118C158 120 158 120 156 128C154 120 154 120 146 118C154 116 154 116 156 108Z"/>`,
-  // IL-07 Progress, no time yet: a clock waiting at twelve.
+  // IL-07 Progress, no time yet (P2): an hourglass whose sand has not started to fall. The clock read about 12:20 and
+  // drew at two thirds the size of its neighbours.
   progress: `<circle class="bg" cx="120" cy="90" r="66"/>
-    <circle class="i page" cx="120" cy="90" r="34"/><path class="m" d="M120 62v6M148 90h-6M120 118v-6M92 90h6"/>
-    <path class="a" d="M120 74V90l10 8"/><circle class="f" cx="120" cy="90" r="3"/>`,
+  <path class="i page" d="M100 60H140C140 82 124 84 124 90C124 96 140 98 140 120H100C100 98 116 96 116 90C116 84 100 82 100 60Z"/>
+  <path class="f" d="M105 64H135C135 77 125 81 120 86C115 81 105 77 105 64Z"/><path class="i" d="M92 56H148M92 124H148"/>`,
   // IL-08 Tasks, all done: a clipboard with a tick.
   tasks: `<circle class="bg" cx="120" cy="90" r="66"/>
     <rect class="i page" x="86" y="56" width="68" height="72" rx="8"/><rect class="i page" x="104" y="48" width="32" height="14" rx="5"/>
     <path class="m" d="M100 80H140M100 94H140M100 108H126"/><circle class="f" cx="150" cy="124" r="13"/><path class="w" d="M144 124l4 4 8-8"/>`,
-  // Day closed (N129, the still of the L-12 animation): a crescent moon, two small stars in its hollow, and ∎.
-  closed: `<circle class="bg" cx="120" cy="90" r="66"/>
+  // Day closed (N129, the still of the L-12 animation): a crescent moon, two small stars in its hollow, and ∎. P2: moved
+  // up 8 and right 4 to sit on the disc's centre (its ∎ hung below the moon); the animation moves with it.
+  closed: `<circle class="bg" cx="120" cy="90" r="66"/><g transform="translate(4 -8)">
     <path class="i page" d="M116 58A30 30 0 0 1 116 118C129.3 98 129.3 78 116 58Z"/>
-    <path class="f" d="M94 61C95.8 66.4 97.6 68.2 103 70C97.6 71.8 95.8 73.6 94 79C92.2 73.6 90.4 71.8 85 70C90.4 68.2 92.2 66.4 94 61Z"/><path class="f" d="M100 98C101.2 101.6 102.4 102.8 106 104C102.4 105.2 101.2 106.4 100 110C98.8 106.4 97.6 105.2 94 104C97.6 102.8 98.8 101.6 100 98Z"/><rect class="f" x="115" y="129" width="10" height="10" rx="1.5"/>`,
+    <path class="f" d="M94 61C95.8 66.4 97.6 68.2 103 70C97.6 71.8 95.8 73.6 94 79C92.2 73.6 90.4 71.8 85 70C90.4 68.2 92.2 66.4 94 61Z"/><path class="f" d="M100 98C101.2 101.6 102.4 102.8 106 104C102.4 105.2 101.2 106.4 100 110C98.8 106.4 97.6 105.2 94 104C97.6 102.8 98.8 101.6 100 98Z"/><rect class="f" x="115" y="129" width="10" height="10" rx="1.5"/></g>`,
 };
 
 export const ILLUSTRATIONS = Object.keys(art) as IllustrationName[];
