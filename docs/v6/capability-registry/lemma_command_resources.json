@@ -569,6 +569,27 @@
           "device_id"
         ]
       }
+    },
+    {
+      "resource": "device_commands",
+      "command_fn": "device_commands_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "send",
+          "cancel"
+        ],
+        "fields": [
+          "device_id",
+          "kind",
+          "payload",
+          "status",
+          "reason",
+          "expires_at",
+          "delivered_at",
+          "applied_at"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

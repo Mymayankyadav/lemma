@@ -104,6 +104,11 @@ begin
   v_page := public.lemma_export_page_for(p_user,nullif(p_args->>'table',''),nullif(p_args->>'cursor',''),
    coalesce((p_args->>'limit')::integer,100));
   return pg_catalog.jsonb_build_object('what','export','page',v_page);
+ elsif p_what = 'devices' then
+  return pg_catalog.jsonb_build_object('what','devices','devices',
+   (select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object('id',d.id,'label',d.label,'platform',d.platform,
+     'last_seen_at',d.last_seen_at,'minutes_since_seen',floor(extract(epoch from (pg_catalog.now() - d.last_seen_at)) / 60)::integer)
+     order by d.last_seen_at desc),'[]'::jsonb) from public.app_devices d where d.user_id = p_user));
  elsif p_what = 'connection' then
   -- Health of the chat connection and the owner's devices. Never a secret, endpoint or key.
   return pg_catalog.jsonb_build_object('what','connection',

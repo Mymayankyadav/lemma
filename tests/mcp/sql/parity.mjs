@@ -1762,6 +1762,22 @@ try{
  assert.equal(acConfirm.status,'ok');assert.equal(acConfirm.done,'disable_devices');
  mark('account_controls','request','confirm','test_notification');
  await role('service_role');
+ // N160 device commands: register a device as the app does, then send, cancel and report.
+ await as(owner);
+ const dcDevice=(await q("select public.register_app_device('parity-device-01','Parity phone','android') r"))[0].r;
+ await role('service_role');
+ const dcSend=command('device_commands','send',{patch:{device_id:dcDevice.id,kind:'timer',payload:{action:'pause'}}});
+ const dcSent=await mcp(dcSend);
+ assert.equal(dcSent.status,'ok');assert.ok(dcSent.command_id);
+ assert.deepEqual(await mcp(dcSend),dcSent,'N160 device command replay');
+ await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb)',[other,'chatgpt',JSON.stringify(command('device_commands','send',{patch:{device_id:dcDevice.id,kind:'open',payload:{screen:'today'}}}))]),/Device not found/);
+ await as(owner);
+ assert.equal((await q("select public.device_command_report($1,'delivered') r",[dcSent.command_id]))[0].r.accepted,true);
+ await role('service_role');
+ const dcCancelled=await mcp(command('device_commands','cancel',{target:{id:dcSent.command_id},expectedVersion:2,patch:{}}));
+ assert.equal(dcCancelled.status,'ok');
+ mark('device_commands','send','cancel');
+ await role('service_role');
 
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

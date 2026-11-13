@@ -615,11 +615,21 @@
   {
    "n": 28,
    "title": "Control the connected app",
-   "status": "missing",
-   "tools": [],
-   "covers": [],
-   "gap": "No table or command lets chat select a device, open a screen or record, or sync timer controls with delivery confirmation.",
-   "item": "N160.8"
+   "status": "supported",
+   "tools": [
+    "get",
+    "study"
+   ],
+   "covers": [
+    {
+     "resource": "device_commands",
+     "operations": [
+      "send",
+      "cancel"
+     ]
+    }
+   ],
+   "note": "get(what=devices) lists the account's registered app devices; send an open (screen or record) or timer command to one; the app reports delivered, then applied or rejected with a reason; read it with get(what=device_commands, id). Commands expire in 1 to 10 minutes and are never run late. Permission prompts stay on the device."
   },
   {
    "n": 29,

@@ -5,14 +5,14 @@ import type {Context} from '../db.ts';
  * never by an argument. Read-only and bounded. */
 export type ContextReadArgs={what?:string;start?:string;end?:string;limit?:number;
  cursor?:string;id?:string;project?:string;status?:string};
-export const CONTEXT_WHAT=['today','progress','export','connection'] as const;
+export const CONTEXT_WHAT=['today','progress','export','connection','devices'] as const;
 const TABLE=/^[a-z][a-z0-9_]{0,60}$/;
 
 export function contextArgs(a:ContextReadArgs,now=Date.now()):{what:string;args:Record<string,unknown>}{
  const raw=a as unknown as Record<string,unknown>;
  if(['owner','ownerId','user_id','userId'].some(k=>k in raw))
   throw new Error('Context reads use the authenticated owner; omit owner arguments');
- if(a.what==='today'||a.what==='connection')return {what:a.what,args:{}};
+ if(a.what==='today'||a.what==='connection'||a.what==='devices')return {what:a.what,args:{}};
  if(a.what==='progress'){
   // The report covers the last N days up to today. `start` (YYYY-MM-DD) sets N.
   let days=30;
