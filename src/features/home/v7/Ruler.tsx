@@ -7,11 +7,18 @@ export type RulerBlock = {id: string; start: number; end: number; klass: string;
 const pad = (value: number) => String(value).padStart(2, '0');
 /** Minutes after midnight as "17:05". */
 export const rulerTime = (minute: number) => pad(Math.floor(minute / 60) % 24) + ':' + pad(Math.round(minute % 60));
-/** A tick every half hour, a label every second hour (or every `labelEvery` minutes), positioned by value across the window. */
+/**
+ * A tick every half hour, a label every second hour (or every `labelEvery` minutes), positioned by value across the window.
+ * Labels fall on multiples of the step from midnight. Only when that would leave fewer than three labels in a window
+ * that has room for three (a 14-hour window with a six-hour step can hold just 12:00 and 18:00) do they start at the
+ * window's own start instead, so a ruler is never reduced to a pair of labels by the time of day (incident #1404).
+ */
 export function rulerTicks([from, to]: [number, number], labelEvery = 120) {
+  const first = Math.ceil(from / labelEvery) * labelEvery, onGrid = first > to ? 0 : Math.floor((to - first) / labelEvery) + 1;
+  const anchor = onGrid < 3 && to - from >= 2 * labelEvery ? from : 0;
   const ticks: {minute: number; left: number; label: string | null; hour: boolean}[] = [];
   for (let minute = Math.ceil(from / 30) * 30; minute <= to; minute += 30)
-    ticks.push({minute, left: (minute - from) / (to - from) * 100, hour: minute % 60 === 0, label: minute % labelEvery === 0 ? rulerTime(minute) : null});
+    ticks.push({minute, left: (minute - from) / (to - from) * 100, hour: minute % 60 === 0, label: (minute - anchor) % labelEvery === 0 ? rulerTime(minute) : null});
   return ticks;
 }
 /** N161: the closest label spacing (a multiple of two hours) at which every "HH:MM" label, as wide as `labelWidth`, fits beside the next one. */
