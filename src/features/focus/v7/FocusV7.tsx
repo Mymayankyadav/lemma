@@ -15,6 +15,7 @@ import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {ImmersiveHeader} from '../../../app/v7/V7Shell';
 import {DriftCard} from './DriftCard';
+import {timedPhase} from '../../../data/study/phase';
 import {announceFocusChange,focusClock,focusEyebrow,focusWord,useActiveFocus,useNow} from '../../../app/v7/focus';
 import {kitSubject} from '../../atlas/v7/model';
 import {clockTime} from '../../home/v7/todayModel';
@@ -71,7 +72,7 @@ export default function FocusV7(){
  // AW6: a pomodoro phase that ends while Focus is open is felt (rise, pause, rise) and, with the chime on, heard; once
  // per phase. The app's own notification still announces it when Focus is not on screen.
  const chime=useSettings().data?.ui?.chime===true,endedPhase=useRef<string|null>(null);
- const phaseEnds=entry&&entry.status!=='paused'&&entry.mode&&entry.mode!=='open'?entry.phaseEndsAt??null:null;
+ const timed=entry?timedPhase(entry,now):null,phaseEnds=timed&&!timed.paused?new Date(timed.endsAtMs).toISOString():null;
  useEffect(()=>{
   if(!phaseEnds||endedPhase.current===phaseEnds||now<Date.parse(phaseEnds))return;
   const fresh=now-Date.parse(phaseEnds)<5000;

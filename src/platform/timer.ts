@@ -3,6 +3,7 @@
  * to what the ongoing notification, lock screen and Quick Settings tile show, and replays actions the user took there.
  */
 import type {StudyEntryRecord, StudyApi} from '../data/study/contract';
+import {timedPhase} from '../data/study/phase';
 import type {LemmaNativePlugin, NativeTimerState, PendingTimerAction} from './bridge';
 
 function phaseMs(entry: StudyEntryRecord): number {
@@ -24,7 +25,8 @@ export function nativeTimerState(entry: StudyEntryRecord | null, now: number, co
     focusedMs += Math.max(0, end - Date.parse(interval.start));
   }
   const mode = entry.mode ?? 'open';
-  const timed = mode !== 'open' && !!entry.phaseEndsAt && entry.status === 'running';
+  // N162: the end counts the phase's pauses, and a paused phase has none (the notification shows it stopped).
+  const phase = timedPhase(entry, now), timed = !!phase && !phase.paused && entry.status === 'running';
   const config = entry.config ?? {};
   return {
     entryId: entry.id,
@@ -35,7 +37,7 @@ export function nativeTimerState(entry: StudyEntryRecord | null, now: number, co
     mode,
     focusedMs,
     asOf: now,
-    phaseEndsAt: timed ? Date.parse(entry.phaseEndsAt!) : 0,
+    phaseEndsAt: timed ? phase!.endsAtMs : 0,
     phaseMs: timed ? phaseMs(entry) : 0,
     cycle: Math.max(1, entry.cycle ?? 1),
     cycles: Math.max(1, Number(config.cycles) || 4),
