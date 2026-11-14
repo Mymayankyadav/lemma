@@ -1,15 +1,6 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
 
-## N163 FCM 1/2: a timer started, paused, resumed or finished from chat shows on the phone within seconds (Owner task)
-
-Owner task: "Ok let's setup fcm" (after: "when I start timer from claude it does not create a notification right away. I have to open the app to have time in notification.", issue #1408)
-Stage: Build · Status: open · Needs: — · Assigned: chat-61835#w2fz
-Done = with the Owner's Firebase project configured, a focus timer started from the chat connector appears in the phone's notification and lock screen within 10 seconds with the app closed, and pause, resume, break and finish from chat (or another device) update or clear it the same way; recorded in `docs/current/N163.md`, which also lists the Owner's setup steps. Owner decision (14 Nov 2026): Firebase Cloud Messaging only, no google-services plugin: the app starts Firebase from four public values in `android/app/firebase.properties` (blank = FCM off; the app builds and runs as before). Server: `device_push_tokens` (owner-scoped; writes only through a command function), a `push_outbox` fed by a trigger on study_entries changes, `pg_net` to the `push` Edge function (shared-secret header; FCM HTTP v1; service account in the function secret `FCM_SERVICE_ACCOUNT`), a high-priority data message `{type:"timer", state}`, retry from `pg_cron`, token cleanup on UNREGISTERED. App: `LemmaMessagingService` applies the state to the native timer (the same code as `timerUpdate` and `timerClear`), the web layer registers the token. Duplicates and out-of-order messages are harmless (state carries the entry id and version).
-Tests: unit tests for the sender (JWT, FCM v1 request, error handling), the outbox and the message-to-state mapping; Java unit tests for `LemmaMessagingService`'s mapping; SQL tests for the token table, the trigger and the command function.
-Scope: `supabase/migrations/` (additive only), `supabase/functions/push/**`, `android/app/**` (the Firebase Messaging dependency is approved by the rules PR above), `src/platform/**`, tests, `docs/current/N163.md`.
-Not: the ten notify kinds (N164), widgets, other Firebase libraries, the google-services plugin, changing an existing command function without a `Replaces function:` claim.
-
 ## N164 FCM 2/2: every notify kind is delivered over FCM while the app and chat are closed (N160.10) (Owner task)
 
 Owner task: "Ok let's setup fcm" (chosen scope: "Timer and all notify kinds")
