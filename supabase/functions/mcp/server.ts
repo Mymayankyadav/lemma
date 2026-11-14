@@ -2,6 +2,7 @@ import { McpServer, z } from './deps.ts';
 import { Context, scoped, commitBatch } from './db.ts';
 import {setPrompt,history,undo,edit,add,remove,review,grade} from './tools/control.ts';
 import {cut} from './text.ts';
+import {isMachineRead} from './machine-reads.ts';
 import { INSTRUCTIONS } from './rules.ts';
 import { packet } from './packet.ts';
 import { get, readPages, search } from './tools/read.ts';
@@ -51,7 +52,7 @@ export function buildServer(c:Context):McpServer{
         }
         if(!action)await c.db.rpc('mcp_seen',{p_user:c.userId});
         const next=n==='resume'?'start_session, then WARM questions':n==='start_session'?'pretest or continue; save_progress at each step':n==='save_progress'?(a.next_question||'continue; save again within ~6 messages'):n.startsWith('propose_')?'tell the user it waits for approval':n==='end_session'?'stop':n==='review'?'show only the first front':n==='grade'?'next card or review again':n==='delete'&&!a.confirm?'ask the user to confirm the listed deletion':'continue with the user';
-        const suffix='\nNEXT: '+next.slice(0,100)+(action?'\nUndo: A'+action:'');
+        const suffix=isMachineRead(n,a)?'':'\nNEXT: '+next.slice(0,100)+(action?'\nUndo: A'+action:'');
         if(!readOnly&&!(n==='delete'&&!a.confirm))result=cut(result,Math.max(20,160-suffix.length));
         result+=suffix;
         return {content:[{type:'text' as const,text:result}]};
