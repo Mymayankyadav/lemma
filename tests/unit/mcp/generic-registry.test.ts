@@ -72,4 +72,23 @@ describe('N37 registered MCP metadata and generic command',()=>{
   expect(source.match(/registerTool\('study'/g)).toHaveLength(1);
   expect(source).not.toContain("registerTool('resources'");
  });
+ // Incident #1402: the deployed registry has camelCase command fields (reviewedAt, hintLevel, ...); listing the
+ // resources threw "Malformed registered resource field or operation" and failed the deploy's MCP smoke test.
+ it('lists every registered resource of the repository manifest, camelCase fields included',async()=>{
+  const manifest=JSON.parse(readFileSync('docs/v6/capability-registry/lemma_command_resources.json','utf8')).resources as
+   {resource:string;mcp_ok:boolean;schema:unknown}[];
+  const rows=manifest.filter(row=>row.mcp_ok);
+  const db={from:()=>({select:()=>({eq:()=>({order:()=>({limit:async()=>({data:rows,error:null})})})})})};
+  const result=JSON.parse(await registeredResources({userId:OWNER,db} as unknown as Context));
+  expect(result.resources.map((x:{resource:string})=>x.resource).sort()).toEqual(rows.map(row=>row.resource).sort());
+  const review=result.resources.find((x:{resource:string})=>x.resource==='review_corrections');
+  expect(review.fields).toEqual(expect.arrayContaining(['reviewedAt','durationMs','replacementState','schedulerParams']));
+  const session=result.resources.find((x:{resource:string})=>x.resource==='session_event_corrections');
+  expect(session.fields).toEqual(expect.arrayContaining(['hintLevel','occurredAt']));
+ });
+ it('still rejects a malformed field or operation name',async()=>{
+  const bad=(schema:unknown)=>({from:()=>({select:()=>({eq:()=>({order:()=>({limit:async()=>({data:[{resource:'x',mcp_ok:true,schema},],error:null})})})})})});
+  for(const schema of [{fields:['a;b'],operations:['create']},{fields:['ok'],operations:['Create']},{fields:['1x'],operations:['create']}])
+   await expect(registeredResources({userId:OWNER,db:bad(schema)} as unknown as Context)).rejects.toThrow(/Malformed/);
+ });
 });
