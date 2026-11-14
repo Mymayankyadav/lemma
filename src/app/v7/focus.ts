@@ -1,6 +1,7 @@
 import {useCallback,useEffect,useState} from 'react';
 import {getStudyApi} from '../../data/study';
 import type {StudyEntryRecord} from '../../data/study/contract';
+import {timedPhase} from '../../data/study/phase';
 
 /**
  * One source for the focus session's state word and clock, so Today's hero, the
@@ -30,9 +31,11 @@ function phaseMinutes(entry:StudyEntryRecord):number{
 }
 /** Reads stored timestamps only (never a tick counter), so a reload shows the same time. */
 export function focusClock(entry:StudyEntryRecord,now:number):FocusClock{
- if(entry.phaseEndsAt&&entry.mode!=='open'){
-  const seconds=Math.max(0,Math.ceil((Date.parse(entry.phaseEndsAt)-now)/1000)),span=phaseMinutes(entry)*60;
-  return {seconds,mode:'remaining',progress:Math.min(1,Math.max(0,1-seconds/span)),endsAt:entry.phaseEndsAt,label:formatClock(seconds)};
+ const phase=timedPhase(entry,now);
+ if(phase){
+  // N162: a paused phase is frozen at what was left and promises no end time; a resumed one counts its pauses.
+  const seconds=Math.ceil(phase.remainingMs/1000),span=phaseMinutes(entry)*60;
+  return {seconds,mode:'remaining',progress:Math.min(1,Math.max(0,1-seconds/span)),endsAt:phase.paused?null:new Date(phase.endsAtMs).toISOString(),label:formatClock(seconds)};
  }
  let focused=0;
  for(const interval of entry.intervals)if(interval.kind==='focus')focused+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));

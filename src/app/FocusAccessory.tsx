@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {useLocation,useNavigate} from 'react-router';
 import {getStudyApi} from '../data/study';
 import type {StudyEntryRecord} from '../data/study/contract';
+import {timedPhase} from '../data/study/phase';
 import {useFocusContext} from '../features/focus/focusContext';
 import {focusEntryStatus} from '../lib/focus/status';
 
@@ -43,7 +44,7 @@ export default function FocusAccessory(){
  const context=useFocusContext(entry);
  if(!entry||!['running','paused'].includes(entry.status))return null;
  const paused=entry.status==='paused';
- const remaining=entry.phaseEndsAt?Math.max(0,Date.parse(entry.phaseEndsAt)-now):null;
+ const timed=timedPhase(entry,now),remaining=timed?timed.remainingMs:entry.phaseEndsAt?Math.max(0,Date.parse(entry.phaseEndsAt)-now):null;
  const minutes=remaining===null?null:Math.ceil(remaining/60_000);
  const clock=remaining===null?null:formatClock(remaining);
  const state=focusEntryStatus(entry);

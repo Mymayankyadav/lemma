@@ -1,6 +1,7 @@
 import {useEffect,useRef,type ReactNode} from 'react';
 import type {StudyEntryRecord} from '../../data/study/contract';
 import {cycleCaption,emptyFocusContext,type FocusContext} from './focusContext';
+import {timedPhase} from '../../data/study/phase';
 import {inProgressFocusMinutes,remainingFocusMinutes,type FocusState} from '../../lib/focus/machine';
 import {focusStatus} from '../../lib/focus/status';
 import {formatTime} from '../../lib/format';
@@ -65,7 +66,8 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
  if(!session)return <dialog ref={dialog} aria-label="Focus session"/>;
  const context=props.context??emptyFocusContext;
  const mode=props.entry.mode??'open';
- const remaining=deadline?Math.max(0,Math.ceil((Date.parse(deadline)-Date.parse(now))/1000)):null;
+ const timed=timedPhase(props.entry,Date.parse(now));
+ const remaining=timed?Math.ceil(timed.remainingMs/1000):deadline?Math.max(0,Math.ceil((Date.parse(deadline)-Date.parse(now))/1000)):null;
  const elapsed=Math.max(0,Math.floor(inProgressFocusMinutes(state,now)*60));
  const seconds=remaining??elapsed;
  const clock=(seconds>=3600?Math.floor(seconds/3600)+':':'')+String(Math.floor(seconds%3600/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
@@ -133,7 +135,7 @@ export default function V6FocusDialog(props:V6FocusDialogProps){
      <summary className="flex min-h-11 items-center justify-center">Timer details</summary>
      <section aria-label="Timer phase and controls" className="flex flex-col gap-2 pt-2">
       <p>Mode: {mode} · {phaseLabel} · Cycle {props.entry.cycle??1}</p>
-      <p>{deadline?'Phase ends at '+formatTime(deadline,{clock24h:true})+' · '+Math.ceil(remainingFocusMinutes(state,now))+' min left':
+      <p>{deadline&&!timed?.paused?'Phase ends at '+formatTime(timed?new Date(timed.endsAtMs).toISOString():deadline,{clock24h:true})+' · '+Math.ceil(remainingFocusMinutes(state,now))+' min left':
        'No set end for this phase · '+Math.ceil(remainingFocusMinutes(state,now))+' min left'}</p>
       <div className="flex flex-wrap justify-center gap-2">
        <button type="button" disabled={busy} onClick={props.onTakeLease} className="cr-button lemma-focus-secondary">

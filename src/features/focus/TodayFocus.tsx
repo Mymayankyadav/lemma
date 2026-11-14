@@ -4,6 +4,7 @@ import {formatDuration} from '../../lib/format';
 import {getStudyApi} from '../../data/study';
 import {getPresetApi} from '../../data/presets';
 import type {StudyEntryRecord,StudyRange,StudyTimerMode} from '../../data/study/contract';
+import {timedPhase} from '../../data/study/phase';
 import {dayBounds,loggedMinutes} from '../../lib/effort';
 import {idleFocus,inProgressFocusMinutes,remainingFocusMinutes,transitionFocus,type FocusState} from '../../lib/focus/machine';
 import FocusDialog from '../../ui/v6/focus/FocusDialog';
@@ -346,7 +347,8 @@ export default function TodayFocus(){
 /** mm:ss shown on the study card: time left in a timed phase, otherwise time focused so far. */
 function clockText(active:StudyEntryRecord|null,focus:FocusState,now:string){
  if(!active)return '';
- const seconds=active.phaseEndsAt?Math.max(0,Math.ceil((Date.parse(active.phaseEndsAt)-Date.parse(now))/1000)):
+ const timed=timedPhase(active,Date.parse(now));
+ const seconds=timed?Math.ceil(timed.remainingMs/1000):active.phaseEndsAt?Math.max(0,Math.ceil((Date.parse(active.phaseEndsAt)-Date.parse(now))/1000)):
   Math.max(0,Math.floor(inProgressFocusMinutes(focus,now)*60));
  const h=Math.floor(seconds/3600),m=Math.floor(seconds%3600/60),sec=seconds%60;
  return (h?h+':':'')+String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0');
