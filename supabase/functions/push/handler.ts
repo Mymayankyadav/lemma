@@ -26,11 +26,17 @@ const safeEqual = (a: string, b: string) => {
   return diff === 0;
 };
 
-export async function handlePush(request: {method: string; secret: string | null}, deps: {db: PushDb; sender: Sender; secret: string; now: () => number}): Promise<{status: number; body: Record<string, unknown>}> {
+/** The database calls the function with a shared secret; a short or missing secret means it is not set up. */
+export function checkCaller(request: {method: string; secret: string | null}, secret: string): {status: number; body: Record<string, unknown>} | null {
   if (request.method !== 'POST') return {status: 405, body: {error: 'POST only'}};
-  // The database calls this with a shared secret; a short or missing secret means the function is not set up.
-  if (deps.secret.length < 32) return {status: 503, body: {error: 'not configured'}};
-  if (!request.secret || !safeEqual(request.secret, deps.secret)) return {status: 401, body: {error: 'unauthorized'}};
+  if (secret.length < 32) return {status: 503, body: {error: 'not configured'}};
+  if (!request.secret || !safeEqual(request.secret, secret)) return {status: 401, body: {error: 'unauthorized'}};
+  return null;
+}
+
+export async function handlePush(request: {method: string; secret: string | null}, deps: {db: PushDb; sender: Sender; secret: string; now: () => number}): Promise<{status: number; body: Record<string, unknown>}> {
+  const refused = checkCaller(request, deps.secret);
+  if (refused) return refused;
   const rows = await deps.db.claim(BATCH);
   const groups = new Map<string, OutboxRow[]>();
   for (const row of rows) {

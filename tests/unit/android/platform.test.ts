@@ -131,6 +131,13 @@ describe('N123 · N1 reminders the phone computes', () => {
     expect(inQuietHours(Date.parse('2026-11-12T12:30:00Z'), zone, {start: '22:00', end: '07:00'})).toBe(false)
     expect(inQuietHours(Date.parse('2026-11-12T12:30:00Z'), zone, {start: '09:00', end: '09:00'})).toBe(false)
   })
+  it('N164: schedules no due reminder when the server delivers it over FCM, and keeps the block reminders', () => {
+    const input = {prefs: {...prefs, kinds: {...prefs.kinds, due: true}}, due: 40, blocks: [block()], now: T0, zone, clock24h: true}
+    expect(planReminders(input).map(item => item.id)).toContain('due')
+    const server = planReminders({...input, serverDue: true})
+    expect(server.map(item => item.id)).not.toContain('due')
+    expect(server.length).toBe(planReminders(input).length - 1)
+  })
   it('schedules nothing when reminders are off', () => {
     expect(planReminders({prefs: {...prefs, enabled: false}, due: 40, blocks: [block()], now: T0, zone, clock24h: true})).toEqual([])
     expect(planReminders({prefs: {...prefs, mode: 'off'}, due: 40, blocks: [block()], now: T0, zone, clock24h: true})).toEqual([])

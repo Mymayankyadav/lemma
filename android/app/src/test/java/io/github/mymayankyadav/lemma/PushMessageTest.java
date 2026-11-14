@@ -96,4 +96,48 @@ public class PushMessageTest {
         assertFalse(PushMessage.parse(new HashMap<>()).appliesTo(null));
         assertFalse(PushMessage.parse(new HashMap<>()).appliesTo(current("e1", 1, false)));
     }
+
+    static Map<String, String> notice(String id) {
+        Map<String, String> data = new HashMap<>();
+        data.put("type", "notice"); data.put("id", id); data.put("kind", "due"); data.put("title", "34 cards due");
+        data.put("body", "About 12 min. Start with 5?"); data.put("url", "#/review");
+        return data;
+    }
+
+    @Test public void parsesAReminderNoticeIntoTheShapeRemindersShows() throws JSONException {
+        PushMessage push = PushMessage.parse(notice("7"));
+        assertEquals(PushMessage.Kind.NOTICE, push.kind);
+        assertEquals("push-7", push.notice.getString("id"));
+        assertEquals("34 cards due", push.notice.getString("title"));
+        assertEquals("/review", push.notice.getString("route"));
+        assertEquals("review", push.notice.getString("channel"));
+        assertEquals("Lemma", push.notice.getString("publicTitle"));
+        assertEquals("open", push.notice.getJSONArray("actions").getJSONObject(0).getString("id"));
+        assertTrue(push.appliesTo(null));
+        assertTrue(push.appliesTo(current("e1", 3, true)));
+    }
+
+    @Test public void routesOfNoticeLinks() {
+        assertEquals("/review", PushMessage.routeOf("#/review"));
+        assertEquals("/proposals", PushMessage.routeOf("/lemma/#/proposals"));
+        assertEquals("/p/algebra", PushMessage.routeOf("https://mymayankyadav.github.io/lemma/#/p/algebra"));
+        assertNull(PushMessage.routeOf("https://evil.example/#/review"));
+        assertNull(PushMessage.routeOf("https://evil.example/"));
+        assertNull(PushMessage.routeOf("javascript:alert(1)"));
+        assertNull(PushMessage.routeOf(""));
+        assertNull(PushMessage.routeOf(null));
+    }
+
+    @Test public void ignoresMalformedNotices() {
+        for (String field : new String[] {"id", "title", "body", "url"}) {
+            Map<String, String> data = notice("7"); data.remove(field);
+            assertEquals(field, PushMessage.Kind.IGNORE, PushMessage.parse(data).kind);
+        }
+        Map<String, String> badId = notice("7"); badId.put("id", "7; drop");
+        assertEquals(PushMessage.Kind.IGNORE, PushMessage.parse(badId).kind);
+        Map<String, String> blank = notice("7"); blank.put("title", "   ");
+        assertEquals(PushMessage.Kind.IGNORE, PushMessage.parse(blank).kind);
+        Map<String, String> foreign = notice("7"); foreign.put("url", "https://evil.example/#/review");
+        assertEquals(PushMessage.Kind.IGNORE, PushMessage.parse(foreign).kind);
+    }
 }

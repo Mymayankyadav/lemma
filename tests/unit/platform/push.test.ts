@@ -1,5 +1,5 @@
 import {beforeEach,describe,expect,it,vi} from 'vitest';
-import {createPushRegistrar,resetPushRegistration,syncPushToken} from '../../../src/platform/push';
+import {createPushRegistrar,resetPushRegistration,serverDelivers,syncPushToken} from '../../../src/platform/push';
 
 // N163: the phone's FCM token reaches the server once per token, and never when Firebase is off.
 const registrar=()=>({register:vi.fn().mockResolvedValue(undefined),unregister:vi.fn().mockResolvedValue(undefined)});
@@ -41,5 +41,14 @@ describe('N163 push token sync',()=>{
   expect(rpc.mock.calls).toEqual([['register_push_token',{p_key:'phone-key-0001',p_token:'tok-a',p_app_version:'2.0.1'}],['unregister_push_token',{p_key:'phone-key-0001'}]]);
   rpc.mockResolvedValueOnce({error:{message:'Authenticated owner required'}});
   await expect(live.register('phone-key-0001','tok-a','2.0.1')).rejects.toThrow('Authenticated owner required');
+ });
+ it('says the server delivers reminders only while a token is registered',async()=>{
+  expect(serverDelivers()).toBe(false);
+  await syncPushToken(plugin(false,null),registrar(),'phone-key-0001','2.0.1');
+  expect(serverDelivers()).toBe(false);
+  await syncPushToken(plugin(true,'tok-a'),registrar(),'phone-key-0001','2.0.1');
+  expect(serverDelivers()).toBe(true);
+  resetPushRegistration();
+  expect(serverDelivers()).toBe(false);
  });
 });

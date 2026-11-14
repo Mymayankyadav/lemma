@@ -113,7 +113,8 @@ public class Reminders extends BroadcastReceiver {
         else if (ACTION_DO.equals(intent.getAction())) act(context, item, intent.getStringExtra("action"));
     }
 
-    private static void post(Context context, JSONObject item) {
+    /** Shows a reminder now: the alarm path and N164's push messages both end here. */
+    static void post(Context context, JSONObject item) {
         String id = item.optString("id");
         if (suppressed(object(prefs(context).getString("notToday", "{}")), id, today())) return;
         Notification.Builder b = builder(context, Channels.forReminder(item.optString("channel")))

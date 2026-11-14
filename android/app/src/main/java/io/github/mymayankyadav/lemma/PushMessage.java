@@ -13,22 +13,49 @@ import org.json.JSONObject;
  * is the same JSON the web layer sends to `timerUpdate`.
  */
 public final class PushMessage {
-    public enum Kind { SHOW, CLEAR, IGNORE }
+    public enum Kind { SHOW, CLEAR, NOTICE, IGNORE }
 
     public final Kind kind;
     public final TimerState state;
     public final String entryId;
     public final int version;
+    /** For NOTICE: the reminder in the shape `Reminders.post` shows (id, title, body, route, channel, actions). */
+    public final JSONObject notice;
 
-    private PushMessage(Kind kind, TimerState state, String entryId, int version) {
-        this.kind = kind; this.state = state; this.entryId = entryId; this.version = version;
+    private PushMessage(Kind kind, TimerState state, String entryId, int version, JSONObject notice) {
+        this.kind = kind; this.state = state; this.entryId = entryId; this.version = version; this.notice = notice;
     }
 
-    private static final PushMessage IGNORED = new PushMessage(Kind.IGNORE, null, "", 0);
+    private static final PushMessage IGNORED = new PushMessage(Kind.IGNORE, null, "", 0, null);
+
+    /** The in-app route of a notice link: "#/review" or "/lemma/#/review" or the App Link become "/review"; anything else is null. Pure. */
+    public static String routeOf(String url) {
+        if (url == null || url.length() > 2048) return null;
+        int hash = url.indexOf("#/");
+        if (hash < 0) return null;
+        boolean local = hash == 0 || url.startsWith("/lemma/#/") || url.startsWith("https://mymayankyadav.github.io/lemma/#/");
+        return local ? url.substring(hash + 1) : null;
+    }
+
+    private static PushMessage notice(Map<String, String> data) {
+        String id = data.get("id"), title = data.get("title"), body = data.get("body"), route = routeOf(data.get("url"));
+        if (id == null || !id.matches("[1-9][0-9]{0,18}") || title == null || title.trim().isEmpty() || title.length() > 200
+            || body == null || body.length() > 600 || route == null) return IGNORED;
+        try {
+            JSONObject action = new JSONObject().put("id", "open").put("label", "Open").put("route", route);
+            JSONObject item = new JSONObject().put("id", "push-" + id).put("title", title).put("body", body).put("route", route)
+                .put("channel", "review").put("publicTitle", "Lemma").put("actions", new org.json.JSONArray().put(action));
+            return new PushMessage(Kind.NOTICE, null, "", 0, item);
+        } catch (JSONException impossible) {
+            return IGNORED;
+        }
+    }
 
     /** Anything that is not a well-formed timer message is ignored: a push must never crash the app or show nothing useful. */
     public static PushMessage parse(Map<String, String> data) {
-        if (data == null || !"timer".equals(data.get("type"))) return IGNORED;
+        if (data == null) return IGNORED;
+        if ("notice".equals(data.get("type"))) return notice(data);
+        if (!"timer".equals(data.get("type"))) return IGNORED;
         String entryId = data.get("entryId");
         if (entryId == null || entryId.isEmpty()) return IGNORED;
         int version;
@@ -38,12 +65,12 @@ public final class PushMessage {
             return IGNORED;
         }
         String op = data.get("op");
-        if ("clear".equals(op)) return new PushMessage(Kind.CLEAR, null, entryId, version);
+        if ("clear".equals(op)) return new PushMessage(Kind.CLEAR, null, entryId, version, null);
         if (!"show".equals(op) || data.get("state") == null) return IGNORED;
         try {
             TimerState state = TimerState.fromJson(new JSONObject(data.get("state")));
             if (!state.entryId.equals(entryId)) return IGNORED;
-            return new PushMessage(Kind.SHOW, state, entryId, state.version);
+            return new PushMessage(Kind.SHOW, state, entryId, state.version, null);
         } catch (JSONException e) {
             return IGNORED;
         }
@@ -58,6 +85,8 @@ public final class PushMessage {
      */
     public boolean appliesTo(TimerState current) {
         switch (kind) {
+            case NOTICE:
+                return true;
             case SHOW:
                 if (current == null || !current.entryId.equals(entryId)) return true;
                 if (version > current.version) return true;

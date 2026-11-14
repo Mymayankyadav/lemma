@@ -18,7 +18,7 @@ import {lemmaNative} from './bridge';
 import {DEVICE_PREFS_CHANGED, checkForUpdate, readDevicePref} from './device';
 import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
-import {createPushRegistrar, resetPushRegistration, syncPushToken} from './push';
+import {createPushRegistrar, resetPushRegistration, serverDelivers, syncPushToken} from './push';
 import {whenRootPainted} from './splash';
 import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
@@ -78,7 +78,9 @@ async function syncPush(): Promise<void> {
   try {
     const [{liveClient}, {deviceKey}, {App}] = await Promise.all([import('../data/live/client'), import('./deviceCommands'), import('@capacitor/app')]);
     const version = (await App.getInfo().catch(() => ({version: ''}))).version || '0';
-    await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version);
+    const outcome = await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version);
+    // N164: the server now delivers `due` to this phone; drop the one the phone had scheduled itself.
+    if (outcome === 'registered') void scheduleReminders();
   } catch {/* offline, signed out or FCM off: tried again on the next token, sign-in or return to the app */}
 }
 
@@ -100,7 +102,7 @@ async function scheduleReminders(): Promise<void> {
     const [settings, home] = await Promise.all([getApi().getSettings(), getApi().getHome()]);
     const zone = settings.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC', now = Date.now();
     const blocks = settings.notify?.kinds?.plan ? await getStudyApi().listCalendarBlocks({start: new Date(now).toISOString(), end: new Date(now + 49 * 3600_000).toISOString()}) : [];
-    await native.remindersSet({items: planReminders({prefs: settings.notify, due: home.due, blocks, now, zone, clock24h: settings.clock24h ?? true})});
+    await native.remindersSet({items: planReminders({prefs: settings.notify, due: home.due, blocks, now, zone, clock24h: settings.clock24h ?? true, serverDue: serverDelivers()})});
     const shortcuts: {id: string; label: string; route: string}[] = [];
     // N157 (P7): Review is always here (it replaced the static Review), with its count when cards are due.
     shortcuts.push({id: 'review-due', label: (home.due > 0 ? 'Review ' + home.due : 'Review').slice(0, 25), route: '/review'});
