@@ -1,24 +1,6 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
 
-## N164.2 FCM: the other six reminder kinds (deadline, behind, resume, digest, plan, rhythm) reach the phone while the app is closed (Owner task)
-
-Owner task: "Ok let's setup fcm" (chosen scope: "Timer and all notify kinds"); "Complete N164"
-Stage: Build · Status: open · Needs: — · Assigned: chat-61835#w2fz
-Done = `supabase/functions/push/notice.ts` maps the facts of `notify_candidates` to the rules engine's candidates, the shared copy, a stable key and a link for `deadline` (tomorrow's checkpoints), `behind` (late checkpoints), `resume` (a paused session), `digest` (daily and weekly, with the owner's weekday and time), `plan` (a target date passed) and `rhythm` (quiet days with cards due), each switched by `settings.notify.kinds` as in Settings, and the tick sends them over FCM like N164.1's `due` and `tutor`; recorded in `docs/current/N164.2.md`.
-Tests: unit tests in `tests/unit/push/notice.test.ts` for every kind (candidate, key, copy, link, and the rules' verdict at the boundaries: study time, quiet hours, cap, spacing, a live session, once a day, the dismissal streak), and the tick test with each kind.
-Scope: `supabase/functions/push/{notice,tick}.ts`, tests, `docs/current/N164.2.md`.
-Not: new migrations unless a fact is missing from `notify_candidates` (then one additive migration that adds a new function), action buttons (N164.3), web push, other Firebase libraries.
-
-## N164.3 FCM: notification actions, web-push parity and Settings, closing N160.10 (Owner task)
-
-Owner task: "Ok let's setup fcm" (chosen scope: "Timer and all notify kinds"); "Complete N164"
-Stage: Build · Status: open · Needs: N164.2 · Assigned: chat-61835#w2fz
-Done = a notification can carry up to two action buttons whose signed tokens (`notify/action-token.ts`, 48 hours) the phone sends to an authenticated action route that calls `notify_act` (Later, Not today, Approve cards with the owner's opt-in, Undo for a confirmation, Open), recorded on the row; `confirm` is sent after an approval; an owner with a browser subscription and no phone is sent Web Push by the same tick (`sendPushBatch`), and an owner with both gets only FCM; Settings in the app has a switch for every kind and a "Send a test" button that queues a `test` row; area 30 of `docs/mcp/capability-map.json` is `supported` and N160.10 is closed; recorded in `docs/current/N164.3.md`.
-Tests: the action route and token round trip, the web-push branch and the no-duplicate rule in the tick test, a SQL test for each action, `tests/unit/mcp/capability-map.test.ts`, and the Settings component test.
-Scope: `supabase/functions/push/**`, `supabase/functions/notify/**`, `supabase/migrations/` (additive only), `android/app/**`, `src/features/settings/**`, `src/platform/**`, `docs/mcp/capability-map.json`, tests, `docs/current/N164.3.md`.
-Not: replacing an existing command function without a `Replaces function:` claim, other Firebase libraries, flag defaults.
-
 ## N161 Phone layout fixes from the Owner's screenshots: Today's Continue cards, the Atlas sheet, the Calendar ruler (Owner task)
 
 Owner task: "The bottom bar is not aligned. And in second buttons are not visible" … "This one just comes in a way maybe it could have better if it was part of the dock in some way." … "In peek hide those buttons or lower the dock further so they are not visible as they make it look broken"
@@ -27,16 +9,6 @@ Done = at 360 and 390 px, at normal and large text: Today's Continue cards share
 Tests: `tests/e2e/v7-n161-layout.spec.ts` (fails before the change); `v7-part6.spec.ts` and `v7-night-critique.spec.ts` updated for the view menu with the Owner's OK; `v7-atlas.spec.ts` and the other suites unchanged.
 Scope: `src/features/home/v7/{today.css,ruler.css,Ruler.tsx}`, `src/features/atlas/v7/{AtlasV7.tsx,atlas.css}`, `src/features/calendar/v7/{V7CalendarDay.tsx,useDockedRuler.ts,ViewMenu.tsx,calendar.css}`, `src/app/v7/V7Shell.tsx` (`HubHeader`'s `control` slot only), tests, `docs/current/N161.md`.
 Not: the dock itself, wide-screen layouts (beyond keeping the segmented control there), other screens, server changes, new dependencies.
-
-## N160 Chat connector and app: the Owner's 30-area checklist, last open part (Owner task)
-
-Owner task: "Implement these" (the 30-area MCP and app checklist, recorded in `docs/mcp/OWNER_CHECKLIST.md`)
-Stage: Build · Status: open · Needs: — · Assigned: chat-73194#k4x9
-Done = every one of the 30 areas of `docs/mcp/capability-map.json` is `supported`. 29 are, each with a test (see `docs/current/N160.md`). The one still open:
-- N160.10 area 30: reminder notifications are generated and delivered while the app and chat are closed, without duplicates. Now N164 (Owner decision 14 Nov 2026: FCM, with the tick run by `pg_cron` calling the `push` function). The notify code (`supabase/functions/notify/*`, `notify_candidates`) had no deployed entry point in this repository; the open question was where the delivery tick runs (a `pg_cron` job calling an Edge function with the push keys, or a GitHub schedule) before it can be built and verified.
-Tests: the delivery tick's SQL and unit tests, plus the existing `tests/unit/mcp/capability-map.test.ts` (which turns green only when area 30 is supported).
-Scope: `supabase/migrations/` (additive only), `supabase/functions/notify/**`, `docs/mcp/capability-map.json`, tests, `docs/current/N160.md`.
-Not: replacing an existing command function without a `Replaces function:` claim, new dependencies, flag defaults, the Android native code.
 
 ## N159 Ship the approved U4 signature features in Android (Owner task)
 

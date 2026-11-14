@@ -37,14 +37,39 @@ public final class PushMessage {
         return local ? url.substring(hash + 1) : null;
     }
 
+    /**
+     * The buttons of a notice, at most two, in the shape `Reminders.post` shows: a link into the app becomes `open`; a
+     * signed token (server-checked when tapped) becomes its action. Anything else is dropped; with none, one Open button.
+     */
+    static org.json.JSONArray buttons(String raw, String fallbackRoute) throws JSONException {
+        org.json.JSONArray out = new org.json.JSONArray();
+        if (raw != null) {
+            try {
+                org.json.JSONArray list = new org.json.JSONArray(raw);
+                for (int i = 0; i < list.length() && out.length() < 2; i++) {
+                    JSONObject item = list.optJSONObject(i);
+                    if (item == null) continue;
+                    String action = item.optString("action"), title = item.optString("title"), token = item.optString("token", null), route = routeOf(item.optString("url", null));
+                    if (title.isEmpty() || title.length() > 40 || !action.matches("[a-z][a-z0-9_]{0,31}")) continue;
+                    if ("open".equals(action) && route != null) out.put(new JSONObject().put("id", "open").put("label", title).put("route", route));
+                    else if (!"open".equals(action) && NoticeActionClient.body(token) != null) out.put(new JSONObject().put("id", action).put("label", title).put("token", token));
+                }
+            } catch (JSONException malformed) {
+                out = new org.json.JSONArray();
+            }
+        }
+        if (out.length() == 0) out.put(new JSONObject().put("id", "open").put("label", "Open").put("route", fallbackRoute));
+        return out;
+    }
+
     private static PushMessage notice(Map<String, String> data) {
         String id = data.get("id"), title = data.get("title"), body = data.get("body"), route = routeOf(data.get("url"));
         if (id == null || !id.matches("[1-9][0-9]{0,18}") || title == null || title.trim().isEmpty() || title.length() > 200
             || body == null || body.length() > 600 || route == null) return IGNORED;
         try {
-            JSONObject action = new JSONObject().put("id", "open").put("label", "Open").put("route", route);
+            org.json.JSONArray actions = buttons(data.get("actions"), route);
             JSONObject item = new JSONObject().put("id", "push-" + id).put("title", title).put("body", body).put("route", route)
-                .put("channel", "review").put("publicTitle", "Lemma").put("actions", new org.json.JSONArray().put(action));
+                .put("channel", "review").put("publicTitle", "Lemma").put("actions", actions);
             return new PushMessage(Kind.NOTICE, null, "", 0, item);
         } catch (JSONException impossible) {
             return IGNORED;

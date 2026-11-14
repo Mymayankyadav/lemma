@@ -11,6 +11,7 @@ import {validateFocusValues,validateReviewBudgetValues} from '../v6/Focus';
 import {validatePlanningValues} from '../v6/Planning';
 import {isNative} from '../../../platform/native';
 import {requestNotificationPermission} from '../../../platform/permissions';
+import {requestTestNotice,serverDelivers} from '../../../platform/push';
 import {reminderKindRows} from './reminderKinds';
 // N123: phone-only rows load only inside the Android app.
 const PhoneReminders=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneReminders})));
@@ -197,7 +198,8 @@ export function ReminderLists({settings}:{settings:Settings}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Reminders');
  const value:NotifyPrefs=settings.notify??{};
  const put=(patch:NotifyPrefs)=>{void save({notify:mergeNotifyPrefs(value,patch)},{notify:value});};
- const app=isNative(),rows=reminderKindRows(app);
+ const app=isNative(),server=app&&serverDelivers(),rows=reminderKindRows(app,server),notify=useToast();
+ const sendTest=()=>{void requestTestNotice().then(()=>notify('Test reminder sent. It should arrive in a few seconds.'),error=>notify(error instanceof Error&&error.message?error.message:'Could not send a test reminder.',{tone:'danger'}));};
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};
  return <div className="v7-settings-body">
   <Group title="Reminders" note={'Times are in '+(settings.timeZone?zoneLongName(settings.timeZone):'your device’s time zone')+'.'}>
@@ -211,8 +213,9 @@ export function ReminderLists({settings}:{settings:Settings}){
    {rows.proposalsSwitch&&<SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>}
    <ValueRow label="When cards due reach" value={(value.dueThreshold??10)+' cards'} onOpen={()=>editor.setOpen({kind:'pick',title:'When cards due reach',value:value.dueThreshold??10,options:[1,10,25,50].map(n=>({value:n,label:n+(n===1?' card':' cards')})),onPick:((dueThreshold:1|10|25|50)=>put({dueThreshold})) as (value:never)=>void})}/>
   </Group>
+  {server&&<Group title="Test"><LinkRow label="Send a test reminder" hint="Arrives on this phone, even with the app closed" onOpen={sendTest}/></Group>}
   {app&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
-  {app&&<Group title="In your Inbox on this phone" note="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">
+  {app&&!server&&<Group title="In your Inbox on this phone" note="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">
    {rows.inbox.map(label=><InfoRow key={label} label={label}/>)}
   </Group>}
   <Group title="Quiet hours">

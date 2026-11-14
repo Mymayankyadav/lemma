@@ -7,7 +7,7 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.118.0';
 import {createSender,parseServiceAccount,type Fetch} from './fcm.ts';
 import {checkCaller,handlePush,type OutboxRow,type PushDb} from './handler.ts';
-import {runNoticeTick,type NoticeDb,type NoticeRow} from './tick.ts';
+import {handleAction,runNoticeTick,sendRow,type NoticeDb,type NoticeOptions,type NoticeRow,type WebDevice} from './tick.ts';
 import type {NoticeFacts,NoticePrefs} from './notice.ts';
 
 function database(): PushDb {
@@ -43,18 +43,48 @@ function noticeDatabase(): NoticeDb {
     record: async (userId, id, reason) => {ok(await admin.rpc('notify_record', {p_user: userId, p_id: id, p_reason: reason}));},
     tokens: async userId => ok(await admin.from('device_push_tokens').select('id,token').eq('user_id', userId)) ?? [],
     deleteToken: async id => {ok(await admin.from('device_push_tokens').delete().eq('id', id));},
+    webDevices: async userId => ((ok(await admin.from('push_devices').select('id,endpoint,p256dh,auth,failures').eq('user_id', userId).is('disabled_at', null).limit(5)) ?? []) as {id: string; endpoint: string; p256dh: string; auth: string; failures: number}[])
+      .map((row): WebDevice => ({id: row.id, subscription: {endpoint: row.endpoint, keys: {p256dh: row.p256dh, auth: row.auth}}, failures: row.failures})),
+    webRecord: async (userId, deviceId, result) => {ok(await admin.rpc('notify_web_record', {p_user: userId, p_device: deviceId, p_result: result}));},
   };
+}
+
+/** The shared secret signs and checks the action buttons; the VAPID keys (optional) enable Web Push for owners with no phone. */
+function noticeOptions(): NoticeOptions {
+  const publicKey = Deno.env.get('VAPID_PUBLIC_KEY'), privateKey = Deno.env.get('VAPID_PRIVATE_KEY'), subject = Deno.env.get('VAPID_SUBJECT');
+  return {secret: Deno.env.get('PUSH_SHARED_SECRET') ?? '', ...(publicKey && privateKey && subject ? {vapid: {publicKey, privateKey, subject}} : {})};
 }
 
 Deno.serve(async request => {
   try {
+    // {"act":{"token"}} is a notification button tap: the signed token is the credential (no shared secret, no JWT).
     // {"tick":true} runs the reminder tick (pg_cron, every five minutes); anything else drains the timer outbox.
-    const body = request.method === 'POST' ? await request.clone().json().catch(() => ({})) as {tick?: unknown} : {};
+    const body = request.method === 'POST' ? await request.clone().json().catch(() => ({})) as {tick?: unknown; act?: unknown} : {};
+    if (body.act !== undefined) {
+      const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {auth: {persistSession: false}});
+      const options = noticeOptions();
+      const result = await handleAction(body.act, {
+        secret: options.secret ?? '', now: Date.now,
+        act: async (userId, id, action, extra) => {
+          const {data, error} = await admin.rpc('notify_act', {p_user: userId, p_notification: id, p_action: action, p_extra: extra});
+          if (error) throw new Error(error.message);
+          return (data ?? {}) as Record<string, unknown>;
+        },
+        confirm: async (userId, outcome) => {
+          const {data} = await admin.from('notifications').select('id,kind,title,body,url,facts').eq('user_id', userId).eq('id', outcome.confirmId as number).maybeSingle();
+          const row = data as (NoticeRow & {facts?: {action?: number}}) | null;
+          if (!row || typeof row.facts?.action !== 'number') return;
+          const sender = createSender(parseServiceAccount(Deno.env.get('FCM_SERVICE_ACCOUNT')), fetch as unknown as Fetch);
+          await sendRow(noticeDatabase(), sender, userId, {...row, facts: {actions: [{action: 'undo', title: 'Undo', x: {action: row.facts.action}}]}}, options);
+        },
+      });
+      return Response.json(result.body, {status: result.status});
+    }
     if (body.tick === true) {
       const secret = Deno.env.get('PUSH_SHARED_SECRET') ?? '';
       const refused = checkCaller({method: request.method, secret: request.headers.get('x-push-secret')}, secret);
       if (refused) return Response.json(refused.body, {status: refused.status});
-      const summary = await runNoticeTick(noticeDatabase(), createSender(parseServiceAccount(Deno.env.get('FCM_SERVICE_ACCOUNT')), fetch as unknown as Fetch), Date.now());
+      const summary = await runNoticeTick(noticeDatabase(), createSender(parseServiceAccount(Deno.env.get('FCM_SERVICE_ACCOUNT')), fetch as unknown as Fetch), Date.now(), noticeOptions());
       return Response.json(summary);
     }
     const result = await handlePush({method: request.method, secret: request.headers.get('x-push-secret')},
