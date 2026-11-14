@@ -11,6 +11,11 @@ public class LemmaMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage message) {
         PushMessage push = PushMessage.parse(message.getData());
+        if (push.kind == PushMessage.Kind.NOTICE) {
+            // N164: a reminder the server decided to send (due, tutor, ...); shown with the same code as a phone-scheduled one.
+            Reminders.post(this, push.notice);
+            return;
+        }
         if (!push.appliesTo(TimerController.load(this))) return;
         if (push.kind == PushMessage.Kind.SHOW) TimerController.show(this, push.state);
         else TimerController.clear(this);

@@ -54,6 +54,8 @@ export interface ReminderInput {
   now: number;
   zone: string;
   clock24h: boolean;
+  /** N164: the server sends `due` over FCM to this phone, so it is not also scheduled here (no duplicate). */
+  serverDue?: boolean;
 }
 
 function clockLabel(ms: number, zone: string, clock24h: boolean): string {
@@ -61,11 +63,11 @@ function clockLabel(ms: number, zone: string, clock24h: boolean): string {
 }
 
 /** Everything the phone should have scheduled right now (the native side replaces its whole schedule with this). */
-export function planReminders({prefs, due, blocks, now, zone, clock24h}: ReminderInput): NativeReminder[] {
+export function planReminders({prefs, due, blocks, now, zone, clock24h, serverDue}: ReminderInput): NativeReminder[] {
   if (!prefs?.enabled || prefs.mode === 'off') return [];
   const quiet = prefs.quiet;
   const out: NativeReminder[] = [];
-  if (prefs.kinds?.due === true && due >= (prefs.dueThreshold ?? 10)) {
+  if (!serverDue && prefs.kinds?.due === true && due >= (prefs.dueThreshold ?? 10)) {
     const today = zonedParts(now, zone).date, time = prefs.studyTime ?? '09:00';
     let at = zonedInstant(today, time, zone);
     if (at <= now + 60_000) at = zonedInstant(addDays(today, 1), time, zone);

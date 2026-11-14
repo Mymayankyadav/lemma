@@ -6,7 +6,9 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.118.0';
 import {createSender,parseServiceAccount,type Fetch} from './fcm.ts';
-import {handlePush,type OutboxRow,type PushDb} from './handler.ts';
+import {checkCaller,handlePush,type OutboxRow,type PushDb} from './handler.ts';
+import {runNoticeTick,type NoticeDb,type NoticeRow} from './tick.ts';
+import type {NoticeFacts,NoticePrefs} from './notice.ts';
 
 function database(): PushDb {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {auth: {persistSession: false}});
@@ -29,8 +31,32 @@ function database(): PushDb {
   };
 }
 
+function noticeDatabase(): NoticeDb {
+  const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {auth: {persistSession: false}});
+  const ok = <T>(result: {data: T | null; error: {message: string} | null}): T | null => {if (result.error) throw new Error(result.error.message); return result.data;};
+  return {
+    owners: async limit => (ok(await admin.rpc('notify_enabled_owners', {p_limit: limit})) ?? []) as string[],
+    facts: async (userId, nowIso) => (ok(await admin.rpc('notify_candidates', {p_user: userId, p_now: nowIso})) ?? {}) as NoticeFacts,
+    prefs: async userId => ((ok(await admin.from('settings').select('notify').eq('user_id', userId).maybeSingle()) as {notify?: Record<string, unknown>} | null)?.notify ?? {}) as NoticePrefs,
+    queue: async (userId, rows) => (ok(await admin.rpc('notify_queue', {p_user: userId, p_rows: rows})) ?? 0) as number,
+    claim: async (userId, limit) => (ok(await admin.rpc('notify_claim', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],
+    record: async (userId, id, reason) => {ok(await admin.rpc('notify_record', {p_user: userId, p_id: id, p_reason: reason}));},
+    tokens: async userId => ok(await admin.from('device_push_tokens').select('id,token').eq('user_id', userId)) ?? [],
+    deleteToken: async id => {ok(await admin.from('device_push_tokens').delete().eq('id', id));},
+  };
+}
+
 Deno.serve(async request => {
   try {
+    // {"tick":true} runs the reminder tick (pg_cron, every five minutes); anything else drains the timer outbox.
+    const body = request.method === 'POST' ? await request.clone().json().catch(() => ({})) as {tick?: unknown} : {};
+    if (body.tick === true) {
+      const secret = Deno.env.get('PUSH_SHARED_SECRET') ?? '';
+      const refused = checkCaller({method: request.method, secret: request.headers.get('x-push-secret')}, secret);
+      if (refused) return Response.json(refused.body, {status: refused.status});
+      const summary = await runNoticeTick(noticeDatabase(), createSender(parseServiceAccount(Deno.env.get('FCM_SERVICE_ACCOUNT')), fetch as unknown as Fetch), Date.now());
+      return Response.json(summary);
+    }
     const result = await handlePush({method: request.method, secret: request.headers.get('x-push-secret')},
       {db: database(), sender: createSender(parseServiceAccount(Deno.env.get('FCM_SERVICE_ACCOUNT')), fetch as unknown as Fetch), secret: Deno.env.get('PUSH_SHARED_SECRET') ?? '', now: Date.now});
     return Response.json(result.body, {status: result.status});

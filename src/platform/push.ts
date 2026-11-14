@@ -12,6 +12,8 @@ export interface PushRegistrar {
 export type PushOutcome = 'registered' | 'unchanged' | 'off' | 'waiting';
 
 let lastSent = '';
+/** N164: true once this phone's FCM token is registered, so the server delivers the reminders it can and the phone must not schedule them too. */
+export const serverDelivers = (): boolean => lastSent !== '';
 /** Forget what was sent (sign-out), so the next sign-in registers again. */
 export function resetPushRegistration(): void {lastSent = '';}
 
