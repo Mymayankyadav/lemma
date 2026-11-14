@@ -652,7 +652,7 @@
   {
    "n": 30,
    "title": "Background scheduling",
-   "status": "partial",
+   "status": "supported",
    "tools": [
     "study"
    ],
@@ -664,8 +664,7 @@
      ]
     }
    ],
-   "gap": "Recurring tasks and scheduled period-plan replans run inside the database (pg_cron, no duplicates) while chat and the app are closed. Reminder notifications are queued by the notify code, which has no deployed entry point in this repository, so their background delivery could not be verified or built here.",
-   "item": "N160.10"
+   "note": "Recurring tasks and scheduled period-plan replans run in the database (pg_cron, no duplicates). Reminder notifications are generated every five minutes by the push function (pg_cron, the existing notify rules), delivered over FCM to the owner's phones (or Web Push to a browser when there is no phone), once per owner and key, with signed Later / Not today / Approve / Undo buttons; nothing needs the app or chat open."
   }
  ]
 }

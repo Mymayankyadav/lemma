@@ -140,4 +140,47 @@ public class PushMessageTest {
         Map<String, String> foreign = notice("7"); foreign.put("url", "https://evil.example/#/review");
         assertEquals(PushMessage.Kind.IGNORE, PushMessage.parse(foreign).kind);
     }
+
+    static final String TOKEN = "eyJ1IjoiYWFhIiwibiI6NywiYSI6ImxhdGVyIn0.AbCdEfGhIjKlMnOpQrStUvWxYz0123456789_-ABCDE";
+
+    @Test public void buttonsAreOpenLinksAndSignedTokensOnly() throws JSONException {
+        String raw = "[{\"action\":\"open\",\"title\":\"Start review\",\"url\":\"#/review\"},"
+            + "{\"action\":\"later\",\"title\":\"Later\",\"token\":\"" + TOKEN + "\"},"
+            + "{\"action\":\"not_today\",\"title\":\"Not today\",\"token\":\"" + TOKEN + "\"}]";
+        org.json.JSONArray out = PushMessage.buttons(raw, "/");
+        assertEquals("at most two", 2, out.length());
+        assertEquals("open", out.getJSONObject(0).getString("id"));
+        assertEquals("/review", out.getJSONObject(0).getString("route"));
+        assertEquals("later", out.getJSONObject(1).getString("id"));
+        assertEquals(TOKEN, out.getJSONObject(1).getString("token"));
+    }
+
+    @Test public void dropsUnsafeButtonsAndFallsBackToOpen() throws JSONException {
+        String raw = "[{\"action\":\"later\",\"title\":\"Later\"},"                          // no token
+            + "{\"action\":\"open\",\"title\":\"Go\",\"url\":\"https://evil.example/\"},"      // not this app
+            + "{\"action\":\"LATER\",\"title\":\"x\",\"token\":\"" + TOKEN + "\"},"           // bad id
+            + "{\"action\":\"later\",\"title\":\"\",\"token\":\"" + TOKEN + "\"}]";            // no title
+        org.json.JSONArray out = PushMessage.buttons(raw, "/review");
+        assertEquals(1, out.length());
+        assertEquals("open", out.getJSONObject(0).getString("id"));
+        assertEquals("/review", out.getJSONObject(0).getString("route"));
+        assertEquals("open", PushMessage.buttons("not json", "/").getJSONObject(0).getString("id"));
+        assertEquals("open", PushMessage.buttons(null, "/").getJSONObject(0).getString("id"));
+    }
+
+    @Test public void aNoticeWithButtonsCarriesThem() throws JSONException {
+        Map<String, String> data = notice("7");
+        data.put("actions", "[{\"action\":\"later\",\"title\":\"Later\",\"token\":\"" + TOKEN + "\"}]");
+        org.json.JSONArray actions = PushMessage.parse(data).notice.getJSONArray("actions");
+        assertEquals(1, actions.length());
+        assertEquals("later", actions.getJSONObject(0).getString("id"));
+    }
+
+    @Test public void theActionRequestBody() throws JSONException {
+        assertEquals("{\"act\":{\"token\":\"" + TOKEN + "\"}}", NoticeActionClient.body(TOKEN));
+        assertNull(NoticeActionClient.body(null));
+        assertNull(NoticeActionClient.body("short"));
+        assertNull(NoticeActionClient.body("no spaces allowed.here and more than forty four characters in all ok"));
+        assertNull(NoticeActionClient.body("a".repeat(5000) + ".b"));
+    }
 }

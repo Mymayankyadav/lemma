@@ -128,7 +128,13 @@ public class Reminders extends BroadcastReceiver {
             JSONObject action = actions.optJSONObject(i);
             if (action == null) continue;
             String kind = action.optString("id");
-            PendingIntent target = ("open".equals(kind) || "start_block".equals(kind))
+            // N164: a button on a server reminder carries a signed token and asks the server to act.
+            PendingIntent target = action.has("token")
+                ? PendingIntent.getBroadcast(context, notificationId(id) + 3 + i * 0x10000,
+                    new Intent(context, NoticeActionReceiver.class).putExtra(NoticeActionReceiver.EXTRA_TOKEN, action.optString("token"))
+                        .putExtra(NoticeActionReceiver.EXTRA_NOTIFICATION, notificationId(id)),
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE)
+                : ("open".equals(kind) || "start_block".equals(kind))
                 ? Links.pending(context, action.optString("route", item.optString("route", "/")), notificationId(id) + 2)
                 : PendingIntent.getBroadcast(context, notificationId(id) + 3 + i * 0x10000,
                     new Intent(context, Reminders.class).setAction(ACTION_DO).putExtra("item", item.toString()).putExtra("action", kind),

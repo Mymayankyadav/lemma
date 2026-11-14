@@ -13,8 +13,9 @@ const APP_LABEL:Partial<Record<ReminderKind,string>>={plan:'Time blocks'};
  * phone delivers keep one; the rest (and new card proposals) are listed under "In your Inbox on this phone" without a
  * switch, so nothing looks like a notification the phone cannot send.
  */
-export function reminderKindRows(app:boolean):{switches:{key:ReminderKind;label:string}[];proposalsSwitch:boolean;inbox:string[]}{
- if(!app)return {switches:REMINDER_KINDS.map(([key,label])=>({key,label})),proposalsSwitch:true,inbox:[]};
+export function reminderKindRows(app:boolean,server=false):{switches:{key:ReminderKind;label:string}[];proposalsSwitch:boolean;inbox:string[]}{
+ // N164: a phone registered for push gets every kind from the server, so it has every switch, like the web.
+ if(!app||server)return {switches:REMINDER_KINDS.map(([key,label])=>({key,label:app&&key==='plan'?'Plans and time blocks':label})),proposalsSwitch:true,inbox:[]};
  const phone=new Set<string>(PHONE_REMINDER_KINDS);
  return {
   switches:REMINDER_KINDS.filter(([key])=>phone.has(key)).map(([key,label])=>({key,label:APP_LABEL[key]??label})),

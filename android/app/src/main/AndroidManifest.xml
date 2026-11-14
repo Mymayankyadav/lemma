@@ -91,6 +91,7 @@
             <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
         </service>
         <receiver android:name=".TimerActionReceiver" android:exported="false" />
+        <receiver android:name=".NoticeActionReceiver" android:exported="false" />
         <receiver android:name=".Reminders" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>

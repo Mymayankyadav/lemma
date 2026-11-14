@@ -24,7 +24,8 @@ describe('N160 the model is told how to reach every area',()=>{
  it('keeps the instructions a sensible size',()=>{
   expect(INSTRUCTIONS.length).toBeLessThan(7000);
  });
- it('leaves no area of the map unsupported except the reminder background run',()=>{
-  expect(map.areas.filter(a=>a.status!=='supported').map(a=>a.n)).toEqual([30]);
+ // N164 (Owner: finish the 30 areas): reminders are generated and delivered in the background, so area 30 is supported too.
+ it('leaves no area of the map unsupported',()=>{
+  expect(map.areas.filter(a=>a.status!=='supported').map(a=>a.n)).toEqual([]);
  });
 });

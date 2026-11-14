@@ -42,3 +42,11 @@ export function createPushRegistrar(client: () => Promise<{rpc(fn: string, args:
     },
   };
 }
+
+/** N164: Settings' "Send a test reminder": queues one for this owner and asks the server to deliver it now (at most one a minute). */
+export async function requestTestNotice(client?: () => Promise<{rpc(fn: string, args: Record<string, unknown>): PromiseLike<{error: {message: string} | null}>}>): Promise<void> {
+  const db = await (client ?? (async () => (await import('../data/live/client')).liveClient() as never))();
+  const {error} = await db.rpc('request_notify_test', {});
+  if (error) throw new Error(error.message);
+}
+
