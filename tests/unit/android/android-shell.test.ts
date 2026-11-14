@@ -59,9 +59,20 @@ describe('N7/N123 Android shell', () => {
       expect(result.stderr).toContain('forbidden permission ' + permission)
     }
   })
-  it('rejects Firebase, which the Owner did not approve', () => {
+  // Owner, 14 Nov 2026 (N163): Firebase Cloud Messaging is approved, and nothing else from Firebase or Google services.
+  it('rejects the google-services plugin, which the Owner did not approve', () => {
     const result = verify(files => { files['android/build.gradle'] = files['android/build.gradle'].replace("classpath 'com.android.tools.build:gradle", "classpath 'com.google.gms:google-services:4.4.4'\n        classpath 'com.android.tools.build:gradle") })
-    expect(result.stderr).toContain('Firebase is not approved')
+    expect(result.stderr).toContain('Firebase is approved only for Cloud Messaging, without the google-services plugin')
+  })
+  it('rejects every Firebase library except Cloud Messaging', () => {
+    for (const artifact of ['firebase-analytics:22.0.0', 'firebase-crashlytics:19.0.0', 'firebase-bom:33.0.0']) {
+      const result = verify(files => { files['android/app/build.gradle'] = files['android/app/build.gradle'].replace('dependencies {', `dependencies {\n    implementation 'com.google.firebase:${artifact}'`) })
+      expect(result.stderr).toContain('Firebase is approved only for Cloud Messaging (com.google.firebase:firebase-messaging)')
+    }
+  })
+  it('accepts Firebase Cloud Messaging', () => {
+    const result = verify(files => { files['android/app/build.gradle'] = files['android/app/build.gradle'].replace('dependencies {', "dependencies {\n    implementation 'com.google.firebase:firebase-messaging:25.0.0'") })
+    expect(result.stderr).not.toContain('Firebase')
   })
   it('keeps the sign-in callback', () => {
     const result = verify(files => { files[manifest] = files[manifest].replace('android:host="auth"', 'android:host="other"') })
