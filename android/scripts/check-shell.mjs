@@ -3,7 +3,7 @@
  * N7 → N123 · invariants of the Android shell, now a Capacitor app (it replaced the Trusted Web Activity):
  * the same package id as the Play listing, the /lemma/ start path, verified App Links for the website, the sign-in
  * callback, and only the permissions the plan allows (no camera, location, contacts, microphone, exact-alarm-clock
- * or usage access; no Firebase). Usage: node android/scripts/check-shell.mjs [root]
+ * or usage access; Firebase only as Cloud Messaging, see below). Usage: node android/scripts/check-shell.mjs [root]
  */
 import {readFileSync} from 'node:fs';
 import {join, resolve} from 'node:path';
@@ -24,7 +24,16 @@ if (config) {
 }
 const gradle = read('android/app/build.gradle');
 if (!gradle.includes(`applicationId "${PACKAGE}"`)) fail('wrong package in android/app/build.gradle');
-if (/google-services|firebase/i.test(gradle + read('android/build.gradle'))) fail('Firebase is not approved (Owner, D11/D12)');
+// Owner, 14 Nov 2026 (N163): Firebase Cloud Messaging only, for the phone's notifications. D11/D12 still hold for everything
+// else: no google-services plugin (the app starts Firebase from its own four public values), no analytics, crash reporting or
+// any other Firebase library.
+const gradleFiles = gradle + '\n' + read('android/build.gradle');
+if (/google-services/i.test(gradleFiles)) fail('Firebase is approved only for Cloud Messaging, without the google-services plugin (Owner, 14 Nov 2026)');
+for (const line of gradleFiles.split('\n')) {
+  if (!/^\s*(classpath|implementation|api|compileOnly|runtimeOnly|id|apply plugin)\b/.test(line) || !/firebase|gms/i.test(line)) continue;
+  if (/com\.google\.firebase:firebase-messaging(:|['"])/.test(line)) continue;
+  fail('Firebase is approved only for Cloud Messaging (com.google.firebase:firebase-messaging): ' + line.trim());
+}
 
 const manifest = read('android/app/src/main/AndroidManifest.xml');
 const appLinks = /<intent-filter android:autoVerify="true">[\s\S]*?<data android:scheme="https" android:host="mymayankyadav\.github\.io" android:pathPrefix="\/lemma"\s*\/>[\s\S]*?<\/intent-filter>/;

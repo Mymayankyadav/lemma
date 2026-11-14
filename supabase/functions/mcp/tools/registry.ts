@@ -4,6 +4,9 @@
 import type {Context} from '../db.ts';
 
 const RESOURCE=/^[a-z][a-z0-9_]{0,60}$/;
+// Incident #1402: registered write-fields are command payload keys, and two registered commands use camelCase
+// (reviewedAt, hintLevel, ...). Resource and operation names stay lower-case; HIDDEN still filters secrets.
+const FIELD=/^[A-Za-z][A-Za-z0-9_]{0,60}$/;
 export const SAVED_TIME_OPERATIONS:Record<string,string[]>={
  study_entries:['create_manual','correct','split','void','restore']};
 // Reject both flat and nested service metadata. A registered write-field is
@@ -20,9 +23,9 @@ export type GenericMode='get'|'search';
 export type GenericReadArgs={what?:string;resource?:string;id?:string;
  limit?:number;cursor?:string;query?:string;status?:string;project?:string;
  start?:string;end?:string;source?:string};
-const safeStrings=(v:unknown):string[]=>
+const safeStrings=(v:unknown,pattern:RegExp=RESOURCE):string[]=>
  Array.isArray(v)?v.filter((x):x is string=>typeof x==='string'&&
-   RESOURCE.test(x)).slice(0,100):[];
+   pattern.test(x)).slice(0,100):[];
 function sanitize(value:unknown,depth=0):unknown{
  if(typeof value==='string')return value.slice(0,4000);
  if(value===null||typeof value!=='object')return value;
@@ -46,10 +49,10 @@ function readSchema(row:RecordMap):Meta{
   throw Error('Malformed resource schema');
  const schema=raw as RecordMap;
  if(!Array.isArray(schema.fields)||!Array.isArray(schema.operations)||
-  schema.fields.some(x=>typeof x!=='string'||!RESOURCE.test(x))||
+  schema.fields.some(x=>typeof x!=='string'||!FIELD.test(x))||
   schema.operations.some(x=>typeof x!=='string'||!RESOURCE.test(x)))
   throw Error('Malformed registered resource field or operation');
- return {resource,fields:safeStrings(schema.fields),
+ return {resource,fields:safeStrings(schema.fields,FIELD),
   operations:safeStrings(schema.operations)};
 }
 async function metadata(c:Context,resource:string):Promise<Meta>{
