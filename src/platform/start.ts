@@ -18,6 +18,7 @@ import {lemmaNative} from './bridge';
 import {DEVICE_PREFS_CHANGED, checkForUpdate, readDevicePref} from './device';
 import {backStep, closeTopLayer, hasOpenLayer, routeFromUrl, wantsBackHandler} from './links';
 import {nativeTimerState, replayTimerActions} from './timer';
+import {createPushRegistrar, resetPushRegistration, syncPushToken} from './push';
 import {whenRootPainted} from './splash';
 import {planReminders} from './reminders';
 import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
@@ -71,6 +72,16 @@ async function syncTimer(): Promise<void> {
 }
 
 let replaying = false;
+/** N163: register this phone's FCM token with the server (live mode, signed in). Quiet: a failure is retried on the next token or sign-in. */
+async function syncPush(): Promise<void> {
+  if (getMode() !== 'live') return;
+  try {
+    const [{liveClient}, {deviceKey}, {App}] = await Promise.all([import('../data/live/client'), import('./deviceCommands'), import('@capacitor/app')]);
+    const version = (await App.getInfo().catch(() => ({version: ''}))).version || '0';
+    await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version);
+  } catch {/* offline, signed out or FCM off: tried again on the next token, sign-in or return to the app */}
+}
+
 async function replayActions(): Promise<void> {
   if (replaying) return;
   replaying = true;
@@ -203,6 +214,15 @@ async function followTheme(): Promise<void> {
   window.setTimeout(apply, 500);
 }
 
+/** Sign-out removes this phone's token from the account, so a signed-out phone is never sent its timer. Best effort: the token also dies with an uninstall. */
+async function unregisterPush(db: Awaited<ReturnType<typeof import('../data/live/client')['liveClient']>>): Promise<void> {
+  resetPushRegistration();
+  try {
+    const {deviceKey} = await import('./deviceCommands');
+    await createPushRegistrar(async () => db).unregister(deviceKey());
+  } catch {/* already signed out: the server drops a token FCM no longer knows */}
+}
+
 async function connectSession(): Promise<void> {
   if (getMode() !== 'live') return;
   try {
@@ -211,8 +231,10 @@ async function connectSession(): Promise<void> {
     db.auth.onAuthStateChange((event, session) => {
       if (session?.access_token && env.supabaseUrl && env.supabasePublishableKey) {
         void native.setSession({url: env.supabaseUrl, key: env.supabasePublishableKey, accessToken: session.access_token, expiresAt: (session.expires_at ?? 0) * 1000});
+        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') void syncPush();
       } else if (event === 'SIGNED_OUT') {
         // Nothing of the account stays on the phone's system surfaces after sign-out.
+        void unregisterPush(db);
         void native.clearSession();
         void native.timerClear();
         void native.remindersSet({items: []});
@@ -297,6 +319,10 @@ export async function startNative(): Promise<void> {
 
   await native.addListener('timerAction', () => {void replayActions();});
   await native.addListener('shareReceived', () => {void takeShares();});
+  // N163: Firebase issued (or changed) this phone's token; a push changed the timer notification while the app was closed.
+  await native.addListener('pushToken', () => {void syncPush();});
+  await native.addListener('timerChanged', () => {announceFocusChange();});
+  void syncPush();
   window.addEventListener(FOCUS_CHANGED, () => {void syncTimer();});
   window.addEventListener(DEVICE_PREFS_CHANGED, () => {void syncCalendar();});
   window.setInterval(() => {if (document.visibilityState === 'visible') void syncTimer();}, 60_000);

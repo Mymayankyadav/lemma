@@ -6,6 +6,12 @@ apply plugin: 'com.android.application'
 def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE')
 def runNumber = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '0')
 
+// N163 · Firebase Cloud Messaging from four public values (no Google services plugin). Blank values turn FCM off.
+def firebase = new Properties()
+def firebaseFile = file('firebase.properties')
+if (firebaseFile.exists()) firebaseFile.withInputStream { firebase.load(it) }
+def firebaseValue = { String key -> (firebase.getProperty(key, '') ?: '').trim().replaceAll('[^A-Za-z0-9:._-]', '') }
+
 android {
     namespace = "io.github.mymayankyadav.lemma"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,11 +22,18 @@ android {
         versionCode 200000 + runNumber
         versionName "2.0." + runNumber
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField 'String', 'FCM_APPLICATION_ID', "\"${firebaseValue('applicationId')}\""
+        buildConfigField 'String', 'FCM_API_KEY', "\"${firebaseValue('apiKey')}\""
+        buildConfigField 'String', 'FCM_PROJECT_ID', "\"${firebaseValue('projectId')}\""
+        buildConfigField 'String', 'FCM_SENDER_ID', "\"${firebaseValue('senderId')}\""
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
+    }
+    buildFeatures {
+        buildConfig = true
     }
     signingConfigs {
         release {
@@ -62,6 +75,8 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // N163: Firebase Cloud Messaging only (Owner, 14 Nov 2026), started from firebase.properties, no Google services plugin.
+    implementation 'com.google.firebase:firebase-messaging:24.1.0'
     testImplementation "junit:junit:$junitVersion"
     // The JVM's real org.json for unit tests (android.jar only has stubs); test-only, never shipped.
     testImplementation "org.json:json:20240303"

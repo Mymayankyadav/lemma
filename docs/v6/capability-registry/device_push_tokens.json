@@ -1,0 +1,55 @@
+{
+  "table": "device_push_tokens",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "device_key": {
+      "classification": "command-managed",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "token": {
+      "classification": "credential",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "app_version": {
+      "classification": "command-managed",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    },
+    "last_seen_at": {
+      "classification": "derived",
+      "appPath": "src/platform/push.ts; written by the app through register_push_token and unregister_push_token",
+      "mcpPath": "not exposed: a device credential, read only by the push function (service role)",
+      "exportPolicy": "not exported: a device credential",
+      "deletionPolicy": "account purge via owner cascade; the row is removed on sign-out and when FCM reports the token unregistered"
+    }
+  }
+}

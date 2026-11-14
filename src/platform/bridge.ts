@@ -89,7 +89,10 @@ export interface LemmaNativePlugin {
   /** AW2: write `text` to the app's cache as `name` and open Android's share sheet with it. */
   shareFile(options: {name: string; mime: string; text: string; title?: string}): Promise<{shared: boolean}>;
 
-  addListener(event: 'timerAction' | 'shareReceived', handler: () => void): Promise<{remove: () => Promise<void>}>;
+  /** N163: this phone's Firebase Cloud Messaging token. `configured` is false when the app has no Firebase values; `token` is null until Firebase issues one (a `pushToken` event follows). */
+  pushToken(): Promise<{configured: boolean; token: string | null}>;
+
+  addListener(event: 'timerAction' | 'shareReceived' | 'pushToken' | 'timerChanged', handler: () => void): Promise<{remove: () => Promise<void>}>;
 }
 
 /**
