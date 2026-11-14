@@ -45,7 +45,9 @@ grant execute on function public.notify_queue(uuid,jsonb) to service_role;
 
 -- Claim due 'queued' rows (a queued test or confirmation counts too) and mark them 'sent' before they are sent, so two
 -- overlapping ticks can never send one row twice. notify_record turns a row nothing could deliver into 'failed'.
-create function public.notify_claim(p_user uuid,p_limit integer default 10) returns setof public.notifications
+-- An explicit result type, not `setof public.notifications`: a function that returns a table's row type depends on the table.
+create function public.notify_claim(p_user uuid,p_limit integer default 10)
+returns table(id bigint,kind text,key text,title text,body text,url text,facts jsonb,status text,sent_at timestamptz)
 language plpgsql security definer set search_path = '' as $claim$
 begin
  if pg_catalog.current_setting('role',true) <> 'service_role' then raise exception 'Service role required'; end if;
@@ -53,7 +55,7 @@ begin
   where n.id in (select q.id from public.notifications q
     where q.user_id = p_user and q.status = 'queued' and q.due_at <= pg_catalog.now()
     order by q.due_at,q.id limit least(greatest(p_limit,1),50) for update skip locked)
-  returning n.*;
+  returning n.id,n.kind,n.key,n.title,n.body,n.url,n.facts,n.status,n.sent_at;
 end
 $claim$;
 revoke all on function public.notify_claim(uuid,integer) from public,anon,authenticated;
