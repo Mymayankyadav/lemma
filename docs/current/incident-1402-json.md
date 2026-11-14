@@ -1,0 +1,7 @@
+## incident #1402 (second cause) — the connector's JSON reads carried the tutor's "NEXT:" line
+
+After #1406 fixed the registry listing, the deploy's MCP smoke test still failed: `JSON.parse` of `get(what=resources)` stopped at "NEXT: continue with the user". `supabase/functions/mcp/server.ts` appends `\nNEXT: <hint>` (and `Undo: A<n>`) to the text of every tool result, so the JSON reports that N160 added could never be parsed by the smoke test, or by any other program. N160's checks had not been run against the deployed server.
+
+- **Fix.** `supabase/functions/mcp/machine-reads.ts` names the N160 JSON reports (`get` with `what` = resources, today, connection, devices, progress, export, calendar_overlaps, source_upload); for those the server returns the document alone. Every other tool result, including every other `get`, keeps its hint.
+- **Test.** `tests/unit/mcp/machine-reads.test.ts`: the set, that `server.ts` uses it, and that every `what` the smoke test parses is in it. The smoke test itself is unchanged.
+- **Also seen in the failing deploy runs (not changed here).** The smoke test's self-test failed on its first or second attempt in each of the last three runs with a 500 ("Undo A79364 first", "deadlock detected", HTTP 546) and passed on a later attempt; each attempt takes 4–6 minutes against a 5-minute limit. It is flaky against production, probably because another writer (a background job or the owner's own use) touches the same owner during the test. If it keeps costing attempts it needs its own issue.
