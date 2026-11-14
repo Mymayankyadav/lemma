@@ -22,6 +22,7 @@
     </queries>
 
     <application
+        android:name=".LemmaApplication"
         android:allowBackup="false"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="false"
@@ -85,6 +86,10 @@
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
+        <!-- N163: the push function's timer messages (Firebase Cloud Messaging). -->
+        <service android:name=".LemmaMessagingService" android:exported="false">
+            <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+        </service>
         <receiver android:name=".TimerActionReceiver" android:exported="false" />
         <receiver android:name=".Reminders" android:exported="false" />
         <receiver android:name=".BootReceiver" android:exported="true">

@@ -1,0 +1,83 @@
+{
+  "table": "push_outbox",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "kind": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "entry_id": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "entry_version": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "attempts": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "claimed_at": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "sent_at": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "failed_at": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "note": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "not shown in the app: queue for the push function",
+      "mcpPath": "not exposed: service-role queue written by a trigger on study_entries",
+      "exportPolicy": "not exported: a transient delivery queue",
+      "deletionPolicy": "account purge via owner cascade; rows are pruned after seven days"
+    }
+  }
+}

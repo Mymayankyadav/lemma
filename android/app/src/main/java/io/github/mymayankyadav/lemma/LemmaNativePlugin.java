@@ -119,6 +119,20 @@ public class LemmaNativePlugin extends Plugin {
         call.resolve();
     }
 
+    // ---- push (N163) ---------------------------------------------------------------------------------------------
+
+    /** Starts Firebase if the app has its four values, and returns this phone's token once it has one (else null: a `pushToken` event follows). */
+    @PluginMethod
+    public void pushToken(PluginCall call) {
+        JSObject out = new JSObject();
+        boolean configured = PushToken.configured();
+        out.put("configured", configured);
+        if (configured) PushToken.request(getContext());
+        String token = configured ? PushToken.saved(getContext()) : null;
+        out.put("token", token == null ? JSObject.NULL : token);
+        call.resolve(out);
+    }
+
     // ---- notifications and reminders ------------------------------------------------------------------------------
 
     private String notificationWord() {
