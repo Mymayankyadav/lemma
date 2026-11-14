@@ -91,6 +91,15 @@ jobs:
           if [[ -f supabase/functions/account-delete/index.ts ]]; then
             supabase functions deploy account-delete --no-verify-jwt
           fi
+      # N163: sends the phone's notifications over Firebase Cloud Messaging. The database calls it with a shared secret
+      # header that the handler checks (PUSH_SHARED_SECRET), so the gateway's JWT check is off; the Firebase service
+      # account is the function secret FCM_SERVICE_ACCOUNT, set in the Supabase dashboard, never in the repo.
+      - name: Deploy push function
+        if: steps.credentials.outputs.ready == 'true'
+        run: |
+          if [[ -f supabase/functions/push/index.ts ]]; then
+            supabase functions deploy push --no-verify-jwt
+          fi
       - name: Set up Node.js for MCP smoke
         if: steps.deploy_mcp.outputs.deployed == 'true'
         uses: actions/setup-node@v4
