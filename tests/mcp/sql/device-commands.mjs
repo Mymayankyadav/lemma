@@ -109,6 +109,8 @@ try{
  await as(owner);
 
  // A rejection carries its reason back to chat.
+ const created=(await q('select public.study_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,resource:'study_entries',operation:'create',operationId:crypto.randomUUID(),patch:{source:'timer',intent:'Target timer'}})]))[0].r;
+ await q('select public.study_command($1::jsonb)',[JSON.stringify({schemaVersion:1,resource:'study_entries',operation:'start',operationId:crypto.randomUUID(),target:{id:created.changed[0].id},expectedVersion:1,patch:{}})]);
  const timer=await run(send(phone.id,'timer',{action:'pause'}));
  await report(timer.command_id,'delivered');
  await report(timer.command_id,'rejected','No timer is running');

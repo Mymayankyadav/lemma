@@ -1,4 +1,6 @@
+import {focusedMilliseconds} from '../../../lib/studyTime';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {useSearchParams} from 'react-router';
 import {useEffect,useMemo,useState} from 'react';
 import {ChevronLeft,ChevronRight,Download,Pencil,Scissors,Ban,RotateCcw} from 'lucide-react';
 import {getStudyApi} from '../../../data/study';
@@ -24,7 +26,7 @@ import {manualFocusInterval} from '../local-time';
 import '../../insights/v7/progress.css';
 import './log.css';
 
-const focusMinutes=(entry:StudyEntryRecord)=>entry.intervals.filter(i=>i.kind==='focus'&&i.end).reduce((sum,i)=>sum+(Date.parse(i.end!)-Date.parse(i.start))/60000,0);
+const focusMinutes=(entry:StudyEntryRecord)=>focusedMilliseconds(entry)/60000;
 const spanOf=(entry:StudyEntryRecord)=>{const closed=entry.intervals.filter(i=>i.end);return closed.length?{start:closed[0].start,end:closed[closed.length-1].end!}:null;};
 
 /** PLAN §6.13 Log: the week strip as navigator, entries grouped by day with a subject bar, the time range, duration and rating
@@ -32,7 +34,9 @@ const spanOf=(entry:StudyEntryRecord)=>{const closed=entry.intervals.filter(i=>i
 export default function TimeLogV7(){
  const settings=useSettings(),projects=useProjects(),notify=useToast(),api=getStudyApi();
  const zone=ownerZone(settings.data),today=civilDay(new Date(),zone);
- const [week,setWeek]=useState(()=>weekStartDay(today)),[rows,setRows]=useState<StudyEntryRecord[]>([]),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[reload,setReload]=useState(0);
+ const [search]=useSearchParams(),candidate=search.get('day');
+ const selected=candidate&&/^\d{4}-\d{2}-\d{2}$/.test(candidate)&&Number.isFinite(Date.parse(candidate+'T12:00:00Z'))?candidate:null;
+ const [week,setWeek]=useState(()=>weekStartDay(selected??today)),[rows,setRows]=useState<StudyEntryRecord[]>([]),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[reload,setReload]=useState(0);
  const [editing,setEditing]=useState<StudyEntryRecord|null>(null),[voiding,setVoiding]=useState<StudyEntryRecord|null>(null),[adding,setAdding]=useState(false),[busy,setBusy]=useState(false);
  const [intent,setIntent]=useState(''),[day,setDay]=useState(today),[start,setStart]=useState('09:00'),[end,setEnd]=useState('09:50'),[problem,setProblem]=useState('');
  const range=useMemo(()=>visibleLogRange(week,zone),[week,zone]);
@@ -41,6 +45,8 @@ export default function TimeLogV7(){
   void api.listStudyEntries(range).then(all=>{if(alive){setRows(visibleLogRecords(all));setStatus('ready');}}).catch(()=>{if(alive)setStatus('error');});
   return()=>{alive=false;};
  },[api,range,reload]);
+ useEffect(()=>{if(selected)setWeek(weekStartDay(selected));},[selected]);
+ useEffect(()=>{if(selected&&status==='ready')document.getElementById('log-'+selected)?.scrollIntoView?.({block:'start'});},[selected,status,rows]);
  const days=Array.from({length:7},(_,index)=>addDays(week,index));
  const byDay=useMemo(()=>{const map=new Map<string,StudyEntryRecord[]>();for(const entry of rows){const key=logDate(entry,zone);map.set(key,[...(map.get(key)??[]),entry]);}return map;},[rows,zone]);
  const look=(entry:StudyEntryRecord)=>{const project=projects.data?.find(row=>row.id===entry.projectId);return {klass:subjectClass(kitSubject(project?.subject.name??'')),path:project?.title??null};};
@@ -75,7 +81,7 @@ export default function TimeLogV7(){
     <IconButton label="Next week" onClick={()=>setWeek(addDays(week,7))}><ChevronRight aria-hidden="true"/></IconButton>
    </div>
    <div className="v7-log-strip" role="list" aria-label={'Week of '+formatShortDate(week,{zone})}>{days.map(item=>{const total=(byDay.get(item)??[]).filter(entry=>!entry.voidedAt).reduce((sum,entry)=>sum+focusMinutes(entry),0);
-    return <a key={item} role="listitem" href={'#log-'+item} className="v7-log-day" data-today={item===today||undefined} aria-label={formatLongDate(item,{zone})+': '+formatDuration(total)}>
+    return <a key={item} role="listitem" href={'#/log?day='+item} className="v7-log-day" data-today={item===today||undefined} aria-label={formatLongDate(item,{zone})+': '+formatDuration(total)}>
      <small>{formatShortDate(item,{zone}).slice(0,1)}</small><span>{Number(item.slice(8,10))}</span><i style={{opacity:total?Math.min(1,.3+total/180):0}}/></a>;})}</div>
   </div>
   <div className="v7-log-summary"><span>{formatDuration(weekTotal)} this week</span>

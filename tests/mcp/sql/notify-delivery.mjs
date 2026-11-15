@@ -75,14 +75,14 @@ try{
  let list=await notifications(owner);
  assert.deepEqual(list.map(x=>[x.key,x.status]),[['due:2026-11-14','queued'],['tutor:2026-11-14T13:00:00Z','queued'],['due:2026-11-15','queued']]);
 
- // Claim: due queued rows of one owner, marked sent first; never twice; a test row queued elsewhere counts.
+ // Claim: due queued rows of one owner, leased while queued; never concurrently claimed twice; a test row queued elsewhere counts.
  await db.exec('reset role');
  await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at) values($1,'test','test:1','Reminders are on','Lemma will write at most 3 times a day.','#/settings',now()-interval '1 minute')",[owner]);
  await q("insert into public.notifications(user_id,kind,key,title,body,url,due_at) values($1,'due','due:later','later','later','#/review',now()+interval '1 hour')",[owner]);
  await role('service_role');
  const first=await q('select * from public.notify_claim($1,2)',[owner]);
  assert.equal(first.length,2);
- assert.ok(first.every(x=>x.status==='sent'&&x.sent_at!==null));
+ assert.ok(first.every(x=>x.status==='queued'&&x.sent_at===null));
  const second=await q('select * from public.notify_claim($1,10)',[owner]);
  assert.equal(second.length,2,'the rest that are due: '+JSON.stringify(second.map(x=>x.key)));
  assert.deepEqual([...first,...second].map(x=>x.key).sort(),['due:2026-11-14','due:2026-11-15','test:1','tutor:2026-11-14T13:00:00Z'].sort());
@@ -95,12 +95,14 @@ try{
  await role('service_role');
  const target=first[0].id;
  await q("select public.notify_record($1,$2,'no_device')",[owner,target]);
- await assert.rejects(q("select public.notify_record($1,$2,'because')",[owner,target]),/reason must be/);
+ await assert.rejects(q("select public.notify_record($1,$2,'because')",[owner,target]),/Invalid delivery result/);
  await q("select public.notify_record($1,$2,'push_error')",[owner,second[0].id]);
  await q("select public.notify_record($1,$2,'push_error')",[other,second[1].id]); // another owner's id: nothing changes
  list=await notifications(owner);
- assert.deepEqual(list.find(x=>x.id===target),{id:target,kind:first[0].kind,key:first[0].key,status:'failed',reason:'no_device',sent:false,due:true});
+ assert.deepEqual(list.find(x=>x.id===target),{id:target,kind:first[0].kind,key:first[0].key,status:'queued',reason:'no_device',sent:false,due:false});
  assert.equal(list.find(x=>x.id===second[0].id).reason,'push_error');
- assert.equal(list.find(x=>x.id===second[1].id).status,'sent','the wrong owner cannot fail it');
+ assert.equal(list.find(x=>x.id===second[1].id).status,'queued','the wrong owner cannot change it');
+ await role('service_role');await q("select public.notify_record($1,$2,'sent')",[owner,second[1].id]);
+ const delivered=await notifications(owner);assert.equal(delivered.find(x=>x.id===second[1].id).status,'sent');assert.equal(delivered.find(x=>x.id===second[1].id).sent,true);
  console.log('PASS N164.1 owners, queue, claim and record');
 }finally{await db.close()}

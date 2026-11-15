@@ -1,5 +1,6 @@
+import {localClockInstant,localWallParts} from '../../time-log/local-time';
 import type {CalendarBlockRecord} from '../../../data/study/contract';
-import {calendarRange,shiftDay} from '../model';
+import {shiftDay} from '../model';
 
 /** Pure rules for the v7 Calendar Day, so the strip, drops and toasts are testable from data. */
 export interface WeekCell{day:string;initial:string;number:number;long:string}
@@ -15,8 +16,11 @@ export function monthLabel(day:string):string{
 }
 /** Dropping on another day keeps the time of day (by elapsed time from that day's start) and any pending 15-minute shift. */
 export function moveToDay(block:Pick<CalendarBlockRecord,'startsAt'|'endsAt'>,from:string,to:string,deltaMinutes:number,zone:string):{startsAt:string;endsAt:string}{
- const shift=Date.parse(calendarRange(to,zone).start)-Date.parse(calendarRange(from,zone).start)+deltaMinutes*60_000;
- return {startsAt:new Date(Date.parse(block.startsAt)+shift).toISOString(),endsAt:new Date(Date.parse(block.endsAt)+shift).toISOString()};
+ void from;
+ const target=localClockInstant(to,localWallParts(block.startsAt,zone).clock,zone);
+ if(!target)throw Error('That local time does not exist on the selected day.');
+ const start=Date.parse(target)+deltaMinutes*60000,duration=Date.parse(block.endsAt)-Date.parse(block.startsAt);
+ return {startsAt:new Date(start).toISOString(),endsAt:new Date(start+duration).toISOString()};
 }
 /** "Moved to 16:00–17:30". */
 export function movedLabel(startsAt:string,endsAt:string,clock:(instant:string)=>string):string{

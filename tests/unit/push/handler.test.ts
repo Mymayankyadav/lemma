@@ -48,7 +48,7 @@ describe('N163 push handler',()=>{
   for(const e of [entry({status:'saved',version:9}),null]){
    const s=setup({entry:e,rows:[row(3,{entry_version:5})]});
    await s.run();
-   expect(s.sent[0].data).toEqual({type:'timer',op:'clear',entryId:'e1',version:String(e?9:5)});
+   expect(s.sent[0].data).toEqual({type:'timer',ownerId:'u1',revision:'3',op:'clear',entryId:'e1',version:String(e?9:5)});
   }
  });
  it('sends one message for several quick changes to one entry',async()=>{

@@ -23,10 +23,13 @@ public final class SessionStore {
     private static final String KEY_ALIAS = "lemma.session.v1";
 
     public static final class Session {
-        public final String url, key, accessToken;
+        public final String url, key, accessToken, ownerId, device;
         public final long expiresAt;
         public Session(String url, String key, String accessToken, long expiresAt) {
-            this.url = url; this.key = key; this.accessToken = accessToken; this.expiresAt = expiresAt;
+            this(url,key,accessToken,expiresAt,"","");
+        }
+        public Session(String url,String key,String accessToken,long expiresAt,String ownerId,String device) {
+            this.url = url; this.key = key; this.accessToken = accessToken; this.expiresAt = expiresAt; this.ownerId=ownerId;this.device=device;
         }
     }
 
@@ -48,7 +51,7 @@ public final class SessionStore {
     public static void save(Context context, Session session) {
         try {
             String plain = new JSONObject().put("url", session.url).put("key", session.key)
-                .put("accessToken", session.accessToken).put("expiresAt", session.expiresAt).toString();
+                .put("device",session.device).put("ownerId",session.ownerId).put("accessToken", session.accessToken).put("expiresAt", session.expiresAt).toString();
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.ENCRYPT_MODE, secret());
             byte[] sealed = cipher.doFinal(plain.getBytes(StandardCharsets.UTF_8));
@@ -69,7 +72,12 @@ public final class SessionStore {
             Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
             cipher.init(Cipher.DECRYPT_MODE, secret(), new GCMParameterSpec(128, Base64.decode(iv, Base64.NO_WRAP)));
             JSONObject json = new JSONObject(new String(cipher.doFinal(Base64.decode(data, Base64.NO_WRAP)), StandardCharsets.UTF_8));
-            return new Session(json.getString("url"), json.getString("key"), json.getString("accessToken"), json.getLong("expiresAt"));
+            String owner=json.optString("ownerId","");
+            if(owner.isEmpty())try{
+                String payload=json.getString("accessToken").split("\\.")[1];
+                owner=new JSONObject(new String(Base64.decode(payload,Base64.URL_SAFE),StandardCharsets.UTF_8)).optString("sub","");
+            }catch(Exception legacyToken){/* An unidentified queue stays retained, never assigned to another account. */}
+            return new Session(json.getString("url"), json.getString("key"), json.getString("accessToken"), json.getLong("expiresAt"),owner,json.optString("device",""));
         } catch (Exception e) {
             return null;
         }

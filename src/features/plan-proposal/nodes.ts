@@ -35,7 +35,7 @@ export function planReviewNodes(
   const provisional = (after?: string) => {
     if (after) {
       for (let i = 0; i < 26; i++) {
-        const candidate = after + String.fromCharCode(97 + i);
+        const candidate = (after.match(/^CP[0-9]+/)?.[0]??after) + String.fromCharCode(97 + i);
         if (!used.has(candidate.toLowerCase())) return reserve(candidate);
       }
     }

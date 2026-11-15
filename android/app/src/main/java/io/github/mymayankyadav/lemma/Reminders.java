@@ -53,11 +53,27 @@ public class Reminders extends BroadcastReceiver {
         for (int i = 0; i < items.length(); i++) {
             JSONObject item = items.optJSONObject(i);
             if (item == null || item.optLong("at", 0) <= now || item.optString("id").isEmpty()) continue;
+            SessionStore.Session owner=SessionStore.load(context);
+            if(owner!=null)try{item.put("ownerId",owner.ownerId);}catch(JSONException invalid){continue;}
             kept.put(item);
         }
         prefs.edit().putString("items", kept.toString()).apply();
         rearm(context);
         return kept.length();
+    }
+
+    /** Account teardown cancels normal alarms, snoozes and already posted notifications. */
+    public static synchronized void reset(Context context){
+        AlarmManager alarms=(AlarmManager)context.getSystemService(Context.ALARM_SERVICE);
+        NotificationManager notices=(NotificationManager)context.getSystemService(Context.NOTIFICATION_SERVICE);
+        for(String key:new String[]{"items","snoozed","posted"}){
+            JSONArray list=array(prefs(context).getString(key,"[]"));
+            for(int i=0;i<list.length();i++){
+                JSONObject item=list.optJSONObject(i);if(item==null)continue;
+                alarms.cancel(fireIntent(context,item));notices.cancel(notificationId(item.optString("id")));
+            }
+        }
+        prefs(context).edit().clear().apply();
     }
 
     /** Re-arm every stored reminder and snooze that is still in the future (after boot or a new schedule). */
@@ -114,8 +130,14 @@ public class Reminders extends BroadcastReceiver {
     }
 
     /** Shows a reminder now: the alarm path and N164's push messages both end here. */
-    static void post(Context context, JSONObject item) {
+    static synchronized void post(Context context, JSONObject item) {
+        SessionStore.Session session=SessionStore.load(context);
+        String owner=item.optString("ownerId","");if(!owner.isEmpty()&&(session==null||!owner.equals(session.ownerId)))return;
         String id = item.optString("id");
+        synchronized(Reminders.class){
+            JSONArray posted=array(prefs(context).getString("posted","[]"));posted.put(item);
+            prefs(context).edit().putString("posted",posted.toString()).apply();
+        }
         if (suppressed(object(prefs(context).getString("notToday", "{}")), id, today())) return;
         Notification.Builder b = builder(context, Channels.forReminder(item.optString("channel")))
             .setContentTitle(item.optString("title"))
@@ -149,6 +171,8 @@ public class Reminders extends BroadcastReceiver {
     }
 
     private static synchronized void act(Context context, JSONObject item, String action) {
+        String owner=item.optString("ownerId","");SessionStore.Session session=SessionStore.load(context);
+        if(!owner.isEmpty()&&(session==null||!owner.equals(session.ownerId)))return;
         String id = item.optString("id");
         ((NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE)).cancel(notificationId(id));
         if ("not_today".equals(action)) {

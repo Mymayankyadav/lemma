@@ -202,11 +202,12 @@ export interface CardState {
  state: SchedulingState; due: IsoDate; stability: number; difficulty: number; lastReview: IsoDate | null; step: number; reps: number; lapses: number
 }
 export interface ReviewItem {
+ version?:number;
  cardId: string; noteId: string; noteNo: number; ord: number; type: NoteType; kind: NoteKind; front: string; back: string
  projectSlug: string; glyph: Glyph; checkpointCode: string | null; checkpointTitle: string | null; sessionNumber: number | null
  sourceShort: string | null; pageLabel: string | null; state: CardState
 }
-export interface RecordReviewInput { cardId: string; rating: Rating; confidence: Confidence; durationMs: number; next: CardState }
+export interface RecordReviewInput { expectedVersion?:number; cardId: string; rating: Rating; confidence: Confidence; durationMs: number; next: CardState }
 export interface CardRow {
  noteNo: number; front: string; type: NoteType; kind: NoteKind; projectSlug: string; glyph: Glyph
  checkpointCode: string | null; due: IsoDate | null; status: NoteStatus; openComments: number

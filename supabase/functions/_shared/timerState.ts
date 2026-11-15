@@ -4,11 +4,14 @@
  * `tests/unit/push/timer-state.test.ts` keeps the two in step on the same fixtures. Pure: no I/O, no Deno APIs.
  */
 export interface EntryRow {
+  created_at?:string;
   id: string; version: number; status: string; intent: string | null; mode: string | null; phase: string | null;
+  excluded_intervals?:{from:string;to:string}[];
   cycle: number | null; config: Record<string, unknown> | null; phase_ends_at: string | null; project_id: string | null;
 }
 export interface IntervalRow {kind: 'focus' | 'break'; started_at: string; ended_at: string | null}
 export interface NativeTimerState {
+  entryStartedAt?:number;
   entryId: string; version: number; status: 'running' | 'paused' | 'break'; intention: string; context: string;
   mode: string; focusedMs: number; asOf: number; phaseEndsAt: number; phaseMs: number; cycle: number; cycles: number;
   breakMinutes: number; focusMinutes: number; clock24h: boolean;
@@ -51,12 +54,14 @@ export function nativeTimerState(row: EntryRow, intervals: IntervalRow[], now: n
   for (const interval of intervals) {
     if (interval.kind !== 'focus') continue;
     const end = interval.ended_at ? ms(interval.ended_at) : now;
-    focusedMs += Math.max(0, end - ms(interval.started_at));
+    const start=ms(interval.started_at);let spans:[number,number][]=[[start,end]];
+    for(const excluded of row.excluded_intervals??[]){const lo=ms(excluded.from),hi=ms(excluded.to);spans=spans.flatMap(([a,b])=>hi<=a||lo>=b?[[a,b]]:([[a,Math.min(b,lo)],[Math.max(a,hi),b]] as [number,number][]).filter(([x,y])=>y>x));}
+    focusedMs += spans.reduce((sum,[a,b])=>sum+Math.max(0,b-a),0);
   }
   const mode = row.mode ?? 'open', config = row.config ?? {};
   const phase = timedPhase(row, intervals, now), timed = !!phase && !phase.paused && row.status === 'running';
   return {
-    entryId: row.id, version: row.version,
+    entryId: row.id,...(row.created_at?{entryStartedAt:ms(row.created_at)}:{}), version: row.version,
     status: onBreak ? 'break' : row.status === 'paused' ? 'paused' : 'running',
     intention: (row.intent ?? '').trim() || 'Focused study', context, mode, focusedMs, asOf: now,
     phaseEndsAt: timed ? phase!.endsAtMs : 0, phaseMs: timed ? phaseMs(row) : 0,

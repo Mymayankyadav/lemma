@@ -8,7 +8,6 @@ import { studyDay } from '../../lib/calendar'
 import { ingest } from '../../pdf/ingest'
 import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, Settings } from '../types'
 import { LemmaError, notImplemented } from '../api'
-import { mergeNotifyPrefs } from '../notify'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 import {pathForecast} from '../path-review-forecast'
 
@@ -44,6 +43,7 @@ function settingsWithV6(row:Row):Settings {
 
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
+ private readonly noteEdits=new Map<string,{operationId:string;expected:number;id:string}>();
  readonly mode = 'live' as const
  /** Uncertain Atlas results must retain the exact command receipt identity. */
  private readonly pendingAtlasEdits=new Map<string,{
@@ -207,6 +207,9 @@ export class LiveAdapter implements LemmaApi {
   if(error) fail(error)
  }
  async signOut(...args: Parameters<LemmaApi['signOut']>): ReturnType<LemmaApi['signOut']> {
+  if(typeof window!=='undefined'&&(window as unknown as {Capacitor?:{isNativePlatform?:()=>boolean}}).Capacitor?.isNativePlatform?.()){
+   try{const {deviceKey}=await import('../../platform/deviceCommands');const {error}=await liveClient().rpc('unregister_push_token',{p_key:deviceKey()});if(error)throw error;}catch{/* Native delivery also validates the stored account, including offline logout. */}
+  }
   const {error}=await liveClient().auth.signOut()
   if(error) fail(error)
   if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('lemma:oauth-return')
@@ -237,12 +240,13 @@ export class LiveAdapter implements LemmaApi {
   const dbPatch=toDb(patch)
   // N39's column is clock_24h, not generic camelCase clock24h.
   if ('clock24h' in patch){dbPatch.clock_24h=patch.clock24h;delete dbPatch.clock24h}
-  if(patch.notify && typeof patch.notify==='object'){
-   const before=await this.getSettings()
-   dbPatch.notify=mergeNotifyPrefs(before.notify,patch.notify)
-  }
   for (const key of ['connector_secret','connector_last_client','connector_last_seen_at','user_id']) delete dbPatch[key]
-  if(!Object.keys(dbPatch).length) return this.getSettings()
+  let notifyResult:Settings|undefined;
+  if(patch.notify&&typeof patch.notify==='object'){
+   notifyResult=settingsWithV6(checked(await db.rpc('patch_notify_settings',{p_patch:patch.notify})) as Row);
+   delete dbPatch.notify;
+  }
+  if(!Object.keys(dbPatch).length)return notifyResult??this.getSettings()
   return settingsWithV6(checked(await db.from('settings').update(dbPatch).eq('user_id',uid).select('*').single()) as Row)
  }
  async rotateConnectorSecret(...args: Parameters<LemmaApi['rotateConnectorSecret']>): ReturnType<LemmaApi['rotateConnectorSecret']> {
@@ -303,7 +307,7 @@ export class LiveAdapter implements LemmaApi {
   }
   const views:CheckpointView[]=forProject.map(view)
   for(const v of views) v.dueCards=due.filter(c=>c.projectSlug===slug&&c.checkpointCode===v.code).length
-  const pending=proposalRows.filter(p=>p.project_id===project.id&&p.status==='pending')
+  const pending=proposalRows.filter(p=>p.project_id===project.id&&p.status==='pending'&&p.withdrawn_at==null)
   for (const proposal of pending.filter(p=>p.kind==='plan_change')){
     for(const op of (proposal.payload?.ops??[]) as Row[]){
       if(op.op!=='add')continue
@@ -407,10 +411,12 @@ export class LiveAdapter implements LemmaApi {
     progress('done',document.pageCount,'Source is ready')
     return sourceRow(completed)
   }catch(error){
-    // An incomplete upload is not a usable source. Clean up only this attempt,
-    // allowing the queue's Retry action to reuse the same content fingerprint.
-    if(!textOnly)await db.storage.from('sources').remove([storagePath]).catch(()=>undefined)
-    await db.from('sources').delete().eq('id',source.id).eq('user_id',uid)
+    const visible=await db.from('sources').select('*').eq('user_id',uid).eq('id',source.id).maybeSingle();
+    if(!visible.error&&visible.data?.status==='ready')return sourceRow(visible.data as Row);
+    if(!visible.error&&visible.data){
+     const cleanup=await db.rpc('abort_source_import',{p_id:source.id,p_sha:sha256,p_version:visible.data.version});
+     if(!cleanup.error&&cleanup.data===true&&!textOnly)await db.storage.from('sources').remove([storagePath]).catch(()=>undefined);
+    }
     progress('failed',0,'Source upload failed')
     throw error
   }
@@ -511,7 +517,7 @@ export class LiveAdapter implements LemmaApi {
   const session=sessions.find(x=>x.project_id===project.id&&x.number===number)
   if(!session) throw new LemmaError('not_found','Session not found')
   const cp=cps.find(x=>x.id===session.checkpoint_id)
-  const pending=proposals.filter(x=>x.session_id===session.id&&x.status==='pending')
+  const pending=proposals.filter(x=>x.session_id===session.id&&x.status==='pending'&&x.withdrawn_at==null)
   const cardProposals=pending.filter(x=>x.kind==='card')
   return {summary:sessionRow(session,slug,cp?.code??null),
     styleName:styles.find(x=>x.key===session.style)?.name??session.style,
@@ -524,7 +530,7 @@ export class LiveAdapter implements LemmaApi {
     })),cards:[
       ...notes.filter(x=>x.session_id===session.id&&x.status==='active').map(x=>({noteNo:Number(x.no),front:x.front,state:'active' as const})),
       ...cardProposals.map(x=>({noteNo:Number(x.no),front:x.payload.front,state:'pending' as const}))
-    ],pendingProposals:{cards:cardProposals.length,planChanges:pending.filter(x=>x.kind==='plan_change'||x.kind==='plan').length},
+    ],pendingProposals:{cards:pending.filter(x=>x.kind==='card'||x.kind==='card_edit').length,planChanges:pending.filter(x=>x.kind==='plan_change'||x.kind==='plan').length},
     pages:cp?.pages??null}
  }
  async listProposals(...args: Parameters<LemmaApi['listProposals']>): ReturnType<LemmaApi['listProposals']> {
@@ -536,7 +542,7 @@ export class LiveAdapter implements LemmaApi {
   const ps=new Map(projects.map(p=>[p.id,p]))
   const ss=new Map(subjects.map(s=>[s.id,s]))
   const ses=new Map(sessions.map(s=>[s.id,s]))
-  return proposals.filter(p=>p.status==='pending').sort((a,b)=>a.created_at.localeCompare(b.created_at))
+  return proposals.filter(p=>p.status==='pending'&&p.withdrawn_at==null).sort((a,b)=>a.created_at.localeCompare(b.created_at))
     .map(p=>{
       const payload=p.payload as Row,project=ps.get(p.project_id)
       const note=notes.find(n=>n.no===payload.note_no)
@@ -602,7 +608,7 @@ export class LiveAdapter implements LemmaApi {
   const [input]=args,db=liveClient()
   await owner(db)
   const result=checked(await db.rpc('record_review',{p_card:input.cardId,p_rating:input.rating,
-    p_confidence:input.confidence,p_duration_ms:input.durationMs,p_next:cardStateDb(input.next)}))
+    p_confidence:input.confidence,p_duration_ms:input.durationMs,p_next:{...cardStateDb(input.next),...(input.expectedVersion!==undefined?{expected_version:input.expectedVersion}:{})}}))
   return {reviewId:Number(result)}
  }
  async undoReview(...args: Parameters<LemmaApi['undoReview']>): ReturnType<LemmaApi['undoReview']> {
@@ -741,24 +747,15 @@ export class LiveAdapter implements LemmaApi {
  async updateNote(...args: Parameters<LemmaApi['updateNote']>): ReturnType<LemmaApi['updateNote']> {
   const [no,patch]=args,db=liveClient(),uid=await owner(db)
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
-  const oldCards=checked(await db.from('cards').select('*').eq('user_id',uid).eq('note_id',note.id)) as Row[]
-  const newOrds=noteOrds(patch.front??note.front,patch.type??note.type)
-  const adding=newOrds.filter(ord=>!oldCards.some(c=>c.ord===ord))
-  const removing=oldCards.filter(c=>!newOrds.includes(c.ord)).map(c=>c.id)
-  // Add first and remove last, so a recoverable failure never loses previously scheduled cards.
-  if(adding.length){
-    const {error}=await db.from('cards').insert(adding.map(ord=>({user_id:uid,note_id:note.id,ord})))
-    if(error) fail(error)
-  }
-  const {error}=await db.from('notes').update(toDb(patch)).eq('no',no).eq('user_id',uid)
-  if(error) {
-    if(adding.length) await db.from('cards').delete().eq('user_id',uid).eq('note_id',note.id).in('ord',adding)
-    fail(error)
-  }
-  if(removing.length) {
-    const {error:removeError}=await db.from('cards').delete().eq('user_id',uid).in('id',removing)
-    if(removeError) fail(removeError)
-  }
+  const key=uid+':'+no+':'+JSON.stringify(patch);
+  const saved=this.noteEdits.get(key)??{operationId:crypto.randomUUID(),expected:Number(note.version),id:String(note.id)};
+  this.noteEdits.set(key,saved);
+  const result=await db.rpc('edit_note_atomic',{p_id:saved.id,p_expected:saved.expected,p_patch:patch,p_operation:saved.operationId});
+  const response=checked(result) as {status:string};
+  if(response.status==='conflict'){this.noteEdits.delete(key);throw new LemmaError('conflict','Note changed on another device');}
+  if(response.status!=='ok')throw new LemmaError('server','Invalid audited note response');
+  this.noteEdits.delete(key);
+
  }
  async setNoteStatus(...args: Parameters<LemmaApi['setNoteStatus']>): ReturnType<LemmaApi['setNoteStatus']> {
   const [no,status]=args,db=liveClient(),uid=await owner(db)
@@ -913,13 +910,15 @@ export class LiveAdapter implements LemmaApi {
   const db=liveClient(),uid=await owner(db)
   // Only the owner-scoped SECURITY DEFINER function reads the private registry.
   // The browser never selects undo metadata or other users' domain tables.
+  const snapshot=checked(await db.rpc('begin_owner_export')) as string
+  try{
   const load=async(table:string|null)=>{
    const accumulated:unknown[]=[]
    const seen=new Set<string>()
    let cursor:string|null=null
    for(let pageNo=0;pageNo<10000;pageNo++){
-    const payload=checked(await db.rpc('lemma_export_page',{
-     p_table:table,p_cursor:cursor,p_limit:100
+    const payload=checked(await db.rpc('owner_export_page',{
+     p_snapshot:snapshot,p_table:table,p_offset:cursor===null?0:Number(cursor),p_limit:100
     })) as unknown
     if(!payload||typeof payload!=='object'||Array.isArray(payload))
      throw new LemmaError('server','Malformed owner export response')
@@ -928,7 +927,7 @@ export class LiveAdapter implements LemmaApi {
        (page.nextCursor!==null&&typeof page.nextCursor!=='string'))
      throw new LemmaError('server','Malformed owner export page')
     accumulated.push(...page.rows)
-    if(page.rows.length<100)return accumulated
+    if(page.nextCursor===null)return accumulated
     if(!page.nextCursor||seen.has(page.nextCursor))
      throw new LemmaError('server','Export cursor did not advance')
     seen.add(page.nextCursor);cursor=page.nextCursor
@@ -961,5 +960,6 @@ export class LiveAdapter implements LemmaApi {
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
    manifest:{registry:'lemma_undo_tables',tables:manifest},tables
   },null,2)],{type:'application/json'})
+  }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}
  }
 }

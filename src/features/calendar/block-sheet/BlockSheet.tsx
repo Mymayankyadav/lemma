@@ -162,6 +162,7 @@ export default function BlockSheet({block,date,zone,initialStart,onClose,onRefre
   setCurrent(record);
   const form=originalInput(record,zone);
   setTitle(form.title);setKind(form.kind);setStart(form.start);setEnd(form.end);setStatus(form.status);
+  setProjectId(record.projectId??'');setCheckpointId(record.checkpointId??'');setTaskId(record.taskId??'');
  }
  async function reloadConflict(api:StudyApi,prior:CalendarBlockRecord) {
   // A moved block can lie outside the displayed day, so reload around the
@@ -218,11 +219,10 @@ export default function BlockSheet({block,date,zone,initialStart,onClose,onRefre
   const prior=current,api=getStudyApi();
   busy.current=true;setSaving(true);setError('');
   try{
-   await api.deleteCalendarBlock(prior.id,prior.version);
+   const deletion=await api.deleteCalendarBlock(prior.id,prior.version);
    notify('Calendar block deleted',{tone:'success',action:{label:'Undo',
     onClick:()=>{void runUndo(async()=>{
-     const recreated=await api.createCalendarBlock(prior);
-     if(prior.status!=='planned')await api.updateCalendarBlock(recreated.record.id,recreated.record.version,{status:prior.status});
+     await api.undoCalendarBlockDeletion(prior.id,deletion.actionNo);
     });}}});
    onRefresh();onClose();
   }catch(e){

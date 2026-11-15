@@ -1,15 +1,5 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
-## N165 Resolve every confirmed bug-hunt issue in one PR (Owner task)
-
-Owner task: "No solve all 44 issues or whatever in one pr"
-Stage: Harden · Status: open · Needs: — · Assigned: chat-927461#b8qz
-Done = all 55 confirmed reports from #1413–#1473 in docs/current/N165.md have a tested correction in this single PR; retracted #1465 excluded.
-Scope: affected src/**, android/**, supabase/functions/**, new additive supabase/migrations/**, tests, docs/current/N165.md; targeted capability registry metadata only when a new audited command is required.
-Not: unrelated UI/design work, protected rules/workflows/budgets, production mutations, additional PRs.
-
-
-
 ## N161 Phone layout fixes from the Owner's screenshots: Today's Continue cards, the Atlas sheet, the Calendar ruler (Owner task)
 
 Owner task: "The bottom bar is not aligned. And in second buttons are not visible" … "This one just comes in a way maybe it could have better if it was part of the dock in some way." … "In peek hide those buttons or lower the dock further so they are not visible as they make it look broken"

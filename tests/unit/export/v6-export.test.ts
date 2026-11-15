@@ -8,20 +8,22 @@ const owner='11111111-1111-4111-8111-111111111111';
 function harness(registered:string[],data:Record<string,Row[]>,error:string|null=null,foreign=false){
  const calls:Array<{table:string|null;cursor:string|null;limit:number}>=[];
  const from=vi.fn();
- const rpc=vi.fn(async(name:string,args:{p_table:string|null;p_cursor:string|null;p_limit:number})=>{
-  if(name!=='lemma_export_page')throw Error('Unexpected RPC: '+name);
-  const {p_table,p_cursor,p_limit}=args;
+ const rpc=vi.fn(async(name:string,args:{p_table:string|null;p_offset:number;p_limit:number}={p_table:null,p_offset:0,p_limit:100})=>{
+  if(name==='begin_owner_export')return {data:'snapshot-id',error:null};
+  if(name==='end_owner_export')return {data:null,error:null};
+  if(name!=='owner_export_page')throw Error('Unexpected RPC: '+name);
+  const {p_table,p_offset,p_limit}=args;const p_cursor=p_offset===0?null:String(p_offset);
   calls.push({table:p_table,cursor:p_cursor,limit:p_limit});
   if(error)return {data:null,error:{message:error}};
   const all=p_table===null
    ?[...registered].sort().map(table_name=>({table_name}))
    :(data[p_table]??[]).filter(row=>foreign||row.user_id===owner);
-  const start=p_cursor===null?0:Number(p_cursor)+1;
+  const start=p_offset;
   const rows=all.slice(start,start+p_limit).map(row=>{
    const {connector_secret:_secret,...safe}=row;void _secret;
    return safe;
   });
-  return {data:{rows,nextCursor:rows.length?String(start+rows.length-1):null},error:null};
+  return {data:{rows,nextCursor:start+rows.length<all.length?String(start+rows.length):null},error:null};
  });
  vi.mocked(liveClient).mockReturnValue({
   auth:{getUser:async()=>({data:{user:{id:owner}},error:null})},rpc,from
@@ -67,8 +69,8 @@ describe('N95 owner-only export RPC and stable keyset pages',()=>{
   const pages=h.calls.filter(c=>c.table==='tasks');
   expect(pages).toHaveLength(13);
   expect(pages[0].cursor).toBeNull();
-  expect(pages[1].cursor).toBe('99');
-  expect(pages[12].cursor).toBe('1199');
+  expect(pages[1].cursor).toBe('100');
+  expect(pages[12].cursor).toBe('1200');
   expect(h.from).not.toHaveBeenCalled();
  });
  it('preserves archived rows and pages more than 100 registry names',async()=>{
@@ -95,9 +97,11 @@ describe('N95 owner-only export RPC and stable keyset pages',()=>{
  });
  it('refuses a stalled cursor instead of hanging or truncating',async()=>{
   const h=harness(['tasks'],{});
-  h.rpc.mockImplementation(async(_name,args)=>{
+  h.rpc.mockImplementation(async(name,args)=>{
+   if(name==='begin_owner_export')return {data:'snapshot-id',error:null};
+   if(name==='end_owner_export')return {data:null,error:null};
    if(args.p_table===null)
-    return {data:{rows:[{table_name:'tasks'}],nextCursor:'tasks'},error:null};
+    return {data:{rows:[{table_name:'tasks'}],nextCursor:null},error:null};
    return {data:{
     rows:Array.from({length:100},()=>({user_id:owner,id:1})),
     nextCursor:'stalled'

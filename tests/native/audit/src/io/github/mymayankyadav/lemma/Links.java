@@ -1,0 +1,1 @@
+package io.github.mymayankyadav.lemma;class Links {static android.app.PendingIntent pending(android.content.Context c,String s,int n){return android.app.PendingIntent.getBroadcast(c,n,new android.content.Intent("open:"+s),0);}}

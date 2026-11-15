@@ -55,10 +55,15 @@ public final class StudyCommandClient {
 
     /** Run one operation; returns the new version or -1. Never throws for network or server errors. */
     public static int run(SessionStore.Session session, String operation, String entryId, int expectedVersion) {
+        // Legacy callers cannot execute without a real device identity and durable action receipt.
+        return -1;
+    }
+
+    public static int runAction(SessionStore.Session session, JSONObject action) {
         HttpURLConnection connection = null;
         try {
-            byte[] payload = body(operation, entryId, expectedVersion, UUID.randomUUID().toString()).toString().getBytes(StandardCharsets.UTF_8);
-            connection = (HttpURLConnection) new URL(session.url.replaceAll("/+$", "") + "/rest/v1/rpc/study_command").openConnection();
+            byte[] payload = new JSONObject().put("p",action).toString().getBytes(StandardCharsets.UTF_8);
+            connection = (HttpURLConnection) new URL(session.url.replaceAll("/+$", "") + "/rest/v1/rpc/replay_timer_action").openConnection();
             connection.setConnectTimeout(TIMEOUT_MS);
             connection.setReadTimeout(TIMEOUT_MS);
             connection.setRequestMethod("POST");
@@ -75,7 +80,8 @@ public final class StudyCommandClient {
                 byte[] chunk = new byte[4096];
                 int read;
                 while ((read = in.read(chunk)) != -1 && buffer.size() < 256 * 1024) buffer.write(chunk, 0, read);
-                return newVersion(buffer.toString(StandardCharsets.UTF_8.name()));
+                JSONObject receipt=new JSONObject(buffer.toString(StandardCharsets.UTF_8.name()));
+                return "applied".equals(receipt.optString("outcome"))||"finish".equals(receipt.optString("outcome"))?receipt.optInt("version",-1):-1;
             }
         } catch (IOException | JSONException | RuntimeException e) {
             return -1;

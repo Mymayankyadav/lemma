@@ -3,7 +3,7 @@ import {SCREEN_ROUTES,deviceKey,drainDeviceCommands,runDeviceCommand,startDevice
 import type {DeviceCommand,DeviceCommandApi} from '../../../src/data/device-commands/contract';
 
 const FUTURE=new Date(Date.now()+60_000).toISOString();
-const cmd=(kind:DeviceCommand['kind'],payload:Record<string,unknown>,expiresAt=FUTURE):DeviceCommand=>({id:'c1',kind,payload,expiresAt});
+const cmd=(kind:DeviceCommand['kind'],payload:Record<string,unknown>,expiresAt=FUTURE):DeviceCommand=>({id:'c1',kind,payload:kind==='timer'&&payload.action!=='start'?{entryId:'e1',entryVersion:3,...payload}:payload,expiresAt});
 const entry=(status='running')=>({id:'e1',version:3,status} as any);
 function deps(active:any=null){
  const calls:string[]=[];
@@ -74,7 +74,7 @@ describe('N160 device commands: delivery confirmation',()=>{
  const fakeApi=(waiting:DeviceCommand[]):{api:DeviceCommandApi;reports:string[]}=>{
   const reports:string[]=[];
   return {reports,api:{mode:'live',register:async()=>({id:'dev1'}),pending:async()=>waiting,
-   report:async(id,stage,reason)=>{reports.push(id+':'+stage+(reason?':'+reason:''))},subscribe:()=>()=>undefined}};
+   report:async(id,stage,reason)=>{reports.push(id+':'+stage+(reason?':'+reason:''));return {accepted:true,status:stage}},subscribe:()=>()=>undefined}};
  };
  it('reports delivered before it acts, then applied or rejected',async()=>{
   const {api,reports}=fakeApi([cmd('open',{screen:'review'}),{...cmd('timer',{action:'pause'}),id:'c2'}]);
@@ -87,7 +87,7 @@ describe('N160 device commands: delivery confirmation',()=>{
   const waiting=[cmd('open',{screen:'today'})];
   const reports:string[]=[];let change=()=>{};let unsubscribed=false;
   const api:DeviceCommandApi={mode:'live',register:async()=>({id:'dev1'}),
-   pending:async()=>waiting.splice(0),report:async(id,stage)=>{reports.push(id+':'+stage)},
+   pending:async()=>waiting.splice(0),report:async(id,stage)=>{reports.push(id+':'+stage);return {accepted:true,status:stage}},
    subscribe:(_id,onChange)=>{change=onChange;return()=>{unsubscribed=true}}};
   const {d,nav}=deps();
   const stop=startDeviceCommandRunner(api,d,{key:'k1234567',label:'Web',platform:'web'},{pollMs:1000});

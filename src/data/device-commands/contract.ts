@@ -12,7 +12,7 @@ export interface DeviceCommandApi{
  register(input:{key:string;label:string;platform:'web'|'android'}):Promise<{id:string}|null>;
  /** Commands waiting for this device, oldest first; expired ones are closed by the server. */
  pending(deviceId:string):Promise<DeviceCommand[]>;
- report(id:string,stage:DeviceStage,reason?:string):Promise<void>;
+ report(id:string,stage:DeviceStage,reason?:string,claimId?:string):Promise<{accepted:boolean;status:string}>;
  /** Live delivery: calls back when this device's commands change. Returns the unsubscribe. */
  subscribe(deviceId:string,onChange:()=>void):()=>void;
 }

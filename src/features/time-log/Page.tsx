@@ -147,7 +147,7 @@ export function EntryDialog({entry,onChange,onClose,busy}:{entry:StudyEntryRecor
      <legend className="sr-only">Split at</legend>
      <label className="min-w-0 text-label">Date<input type="date" className={field} aria-label="Split date"
       value={splitDay} onChange={e=>setSplitDay(e.target.value)}/></label>
-     <label className="min-w-0 text-label">Time<input type="time" className={field} aria-label="Split time"
+     <label className="min-w-0 text-label">Time<input type="time" step="0.001" className={field} aria-label="Split time"
       value={splitTime} onChange={e=>setSplitTime(e.target.value)}/></label>
     </fieldset>
     <button type="button" className={action+' mt-2'} disabled={disabled||!splitTime} onClick={()=>{
@@ -254,9 +254,9 @@ function TimeLogV6(){
     <label className="block text-label">Date<input className={field} type="date" aria-label="Manual date"
      value={mDay} onChange={e=>setMDay(e.target.value)}/></label>
     <div className="grid min-w-0 grid-cols-2 gap-2">
-     <label className="block min-w-0 text-label">Start<input className={field} type="time" aria-label="Manual start"
+     <label className="block min-w-0 text-label">Start<input className={field} type="time" step="0.001" aria-label="Manual start"
       value={mStart} onChange={e=>setMStart(e.target.value)}/></label>
-     <label className="block min-w-0 text-label">End<input className={field} type="time" aria-label="Manual end"
+     <label className="block min-w-0 text-label">End<input className={field} type="time" step="0.001" aria-label="Manual end"
       value={mEnd} onChange={e=>setMEnd(e.target.value)}/></label>
     </div>
     <label className="block text-label">Reflection (optional)<textarea className={field} aria-label="Manual reflection"

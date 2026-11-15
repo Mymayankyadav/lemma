@@ -85,7 +85,7 @@ export default function ReviewRoundV7(){
   try{
    const currentVersion=await cardVersion(item.cardId);
    if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
-   const reviewed=await record.mutateAsync({cardId:item.cardId,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});
+   const reviewed=await record.mutateAsync({cardId:item.cardId,expectedVersion:item.expectedCardVersion,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});
    const receipt={runId:run.id,itemId:item.id,reviewId:reviewed.reviewId};
    setPending(receipt);writePendingGrade(receipt);
    const nextGrades={...grades,[item.id]:rating};setGrades(nextGrades);writeGrades(run.id,nextGrades);

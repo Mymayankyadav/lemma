@@ -1,12 +1,12 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {useApproveProposal,useRejectProposal} from '../../../data/hooks';
-import type {Proposal} from '../../../data/types';
+import type {NoteKind,NoteType,Proposal} from '../../../data/types';
 import {useToast} from '../../../ui/Toast';
 import {applySelectedDecisions} from '../v6/Selection';
 import type {Decision} from './inboxModel';
 
 const WINDOW=6000;
-interface Pending{ids:string[];action:Decision;edit?:{front:string;back:string};timer:number;dismiss:()=>void}
+interface Pending{ids:string[];action:Decision;edit?:{front:string;back:string;type?:NoteType;kind?:NoteKind};timer:number;dismiss:()=>void}
 
 /** PLAN §6.10: every decision waits 6 s with Undo before it is sent; the next card shows at once. A new decision, leaving the
  *  page or closing the tab sends the waiting one immediately (the same contract as the v6 Inbox, N121 A7). */
@@ -39,7 +39,7 @@ export function useInboxDecisions({onUndo,onSettled}:{onUndo:(ids:string[])=>voi
   window.addEventListener('pagehide',leave);
   return()=>{window.removeEventListener('pagehide',leave);leave();};
  },[flush]);
- const decide=useCallback((items:readonly Proposal[],action:Decision,edit?:{front:string;back:string})=>{
+ const decide=useCallback((items:readonly Proposal[],action:Decision,edit?:{front:string;back:string;type?:NoteType;kind?:NoteKind})=>{
   if(!items.length)return;
   flush();
   const ids=items.map(item=>item.id);

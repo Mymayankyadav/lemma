@@ -1,3 +1,5 @@
+import {deviceToken} from '../data/study/live';
+import {authGeneration,publishAuth} from '../data/authBoundary';
 /**
  * N123 · the Android app's start-up: loaded with a dynamic import from main.tsx only when `isNative()`, so none of
  * this (or any `@capacitor/*` module) is in the web bundle's first load.
@@ -30,6 +32,7 @@ const DRIFT_MS = 2 * 60_000;
 let native: LemmaNativePlugin;
 let backgroundedAt: number | null = null;
 let backgroundEntry: string | null = null;
+let nativeOwner:string|null=null;
 
 const route = () => (window.location.hash.replace(/^#/, '') || '/');
 function go(path: string): void {
@@ -49,24 +52,28 @@ function openCapture(): void {
 /** Context strings change rarely; cache them so a timer sync is one study read. */
 let cached: {at: number; projects: Map<string, string>; clock24h: boolean; zone: string} | null = null;
 async function context() {
+  const epoch=authGeneration();
   if (cached && Date.now() - cached.at < 5 * 60_000) return cached;
   const [home, settings] = await Promise.all([getApi().getHome().catch(() => null), getApi().getSettings().catch(() => null)]);
-  cached = {
+  const result = {
     at: Date.now(),
     projects: new Map((home?.projects ?? []).map(project => [project.id, project.title])),
     clock24h: settings?.clock24h ?? true,
     zone: settings?.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC',
   };
-  return cached;
+  if(epoch===authGeneration())cached=result;
+  return result;
 }
 
 async function syncTimer(): Promise<void> {
+  const epoch=authGeneration();
   try {
     const entry = await getStudyApi().activeStudyEntry();
     const ctx = await context();
     const state = nativeTimerState(entry, Date.now(), entry?.projectId ? ctx.projects.get(entry.projectId) ?? '' : '', ctx.clock24h);
+    if(epoch!==authGeneration())return;
     // The lock-screen timer is the payoff of notifications: a first running session is the moment to ask (once).
-    if (state) {await native.timerUpdate({state}); void offerNotificationsOnce();}
+    if (state) {state.device=deviceToken();state.leaseVersion=entry?.leaseVersion;state.ownerId=nativeOwner??undefined;await native.timerUpdate({state}); void offerNotificationsOnce();}
     else await native.timerClear();
   } catch {/* offline: the notification keeps its last state, rebuilt on the next sync */}
 }
@@ -74,11 +81,12 @@ async function syncTimer(): Promise<void> {
 let replaying = false;
 /** N163: register this phone's FCM token with the server (live mode, signed in). Quiet: a failure is retried on the next token or sign-in. */
 async function syncPush(): Promise<void> {
-  if (getMode() !== 'live') return;
+  if (getMode() !== 'live'||!nativeOwner) return;
+  const owner=nativeOwner;
   try {
     const [{liveClient}, {deviceKey}, {App}] = await Promise.all([import('../data/live/client'), import('./deviceCommands'), import('@capacitor/app')]);
     const version = (await App.getInfo().catch(() => ({version: ''}))).version || '0';
-    const outcome = await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version);
+    const outcome = await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version,owner,()=>nativeOwner===owner);
     // N164: the server now delivers `due` to this phone; drop the one the phone had scheduled itself.
     if (outcome === 'registered') void scheduleReminders();
   } catch {/* offline, signed out or FCM off: tried again on the next token, sign-in or return to the app */}
@@ -98,25 +106,29 @@ async function replayActions(): Promise<void> {
 }
 
 async function scheduleReminders(): Promise<void> {
+  const epoch=authGeneration();
   try {
     const [settings, home] = await Promise.all([getApi().getSettings(), getApi().getHome()]);
     const zone = settings.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC', now = Date.now();
     const blocks = settings.notify?.kinds?.plan ? await getStudyApi().listCalendarBlocks({start: new Date(now).toISOString(), end: new Date(now + 49 * 3600_000).toISOString()}) : [];
+    if(epoch!==authGeneration())return;
     await native.remindersSet({items: planReminders({prefs: settings.notify, due: home.due, blocks, now, zone, clock24h: settings.clock24h ?? true, serverDue: serverDelivers()})});
     const shortcuts: {id: string; label: string; route: string}[] = [];
     // N157 (P7): Review is always here (it replaced the static Review), with its count when cards are due.
     shortcuts.push({id: 'review-due', label: (home.due > 0 ? 'Review ' + home.due : 'Review').slice(0, 25), route: '/review'});
     if (home.resume) shortcuts.push({id: 'resume', label: ('Resume ' + home.resume.projectTitle).slice(0, 25), route: '/p/' + encodeURIComponent(home.resume.projectSlug)});
-    await native.shortcutsSet({items: shortcuts});
+    if(epoch===authGeneration())await native.shortcutsSet({items: shortcuts});
   } catch {/* keep the previous schedule */}
 }
 
 export async function syncCalendar(): Promise<void> {
+  const epoch=authGeneration();
   if (!readDevicePref('calendarSync', false)) return;
   try {
     if ((await native.calendarStatus()).permission !== 'granted') return;
     const now = Date.now(), from = now - SYNC_BACK_MS, to = now + SYNC_AHEAD_MS;
     const blocks = await getStudyApi().listCalendarBlocks({start: new Date(from).toISOString(), end: new Date(to).toISOString()});
+    if(epoch!==authGeneration()||!readDevicePref('calendarSync',false))return;
     await native.calendarSync({events: calendarEvents(blocks), from, to});
   } catch {/* retried on the next resume */}
 }
@@ -139,6 +151,7 @@ async function takeShares(): Promise<void> {
           return new File([blob], file.name, {type: file.mime || blob.type});
         }));
         holdSharedSources(files);
+        await native.shareAck({paths:target.files.map(file=>file.path)}).catch(()=>undefined);
         go('/projects/new');
       } else toast(target.reason, {tone: 'danger'});
     } catch {toast('Lemma could not open what was shared. Try again.', {tone: 'danger'});}
@@ -216,27 +229,22 @@ async function followTheme(): Promise<void> {
   window.setTimeout(apply, 500);
 }
 
-/** Sign-out removes this phone's token from the account, so a signed-out phone is never sent its timer. Best effort: the token also dies with an uninstall. */
-async function unregisterPush(db: Awaited<ReturnType<typeof import('../data/live/client')['liveClient']>>): Promise<void> {
-  resetPushRegistration();
-  try {
-    const {deviceKey} = await import('./deviceCommands');
-    await createPushRegistrar(async () => db).unregister(deviceKey());
-  } catch {/* already signed out: the server drops a token FCM no longer knows */}
-}
-
 async function connectSession(): Promise<void> {
   if (getMode() !== 'live') return;
   try {
     const [{liveClient}, env] = await Promise.all([import('../data/live/client'), import('../data/env')]);
     const db = liveClient();
     db.auth.onAuthStateChange((event, session) => {
+      publishAuth(session?.user?{id:session.user.id,email:session.user.email}:null);
+      const changedOwner=nativeOwner!== (session?.user.id??null);
+      nativeOwner=session?.user.id??null;
+      if(changedOwner){cached=null;resetPushRegistration();}
       if (session?.access_token && env.supabaseUrl && env.supabasePublishableKey) {
-        void native.setSession({url: env.supabaseUrl, key: env.supabasePublishableKey, accessToken: session.access_token, expiresAt: (session.expires_at ?? 0) * 1000});
+        void native.setSession({url: env.supabaseUrl, key: env.supabasePublishableKey, accessToken: session.access_token, expiresAt: (session.expires_at ?? 0) * 1000,ownerId:session.user.id,device:deviceToken()});
         if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') void syncPush();
-      } else if (event === 'SIGNED_OUT') {
+      } else if (!session) {
         // Nothing of the account stays on the phone's system surfaces after sign-out.
-        void unregisterPush(db);
+        resetPushRegistration();
         void native.clearSession();
         void native.timerClear();
         void native.remindersSet({items: []});

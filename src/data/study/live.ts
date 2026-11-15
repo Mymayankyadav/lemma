@@ -1,5 +1,6 @@
 // The v6 live StudyApi is lazily attached to the existing authenticated browser client.
 // No owner ID is accepted from callers: all reads and commands run through Supabase RLS.
+import {focusDurationAdjustment} from '../../lib/studyTime';
 import { LemmaError } from '../api';
 import type {
   CalendarBlockPatch, CalendarBlockRecord, ClosedStudyIntervalInput, NewCalendarBlock,
@@ -189,9 +190,14 @@ async function entryWrite(operation: Operation, key: string, expectedVersion: nu
 
 // Stable within this browser tab; no owner token or server credential is stored.
 let tabDevice: string | null = null;
-function deviceToken(): string { return tabDevice ??= id(); }
+export function deviceToken(): string {
+ if(tabDevice)return tabDevice;
+ try{tabDevice=sessionStorage.getItem('lemma.timer-device');if(!tabDevice){tabDevice=id();sessionStorage.setItem('lemma.timer-device',tabDevice);}return tabDevice;}
+ catch{return tabDevice=id();}
+}
 
 export function createLiveStudyApi(): StudyApi {
+  const pendingCreates=new Map<string,string>();
   const device = deviceToken();
   let owned: {id:string;version:number;leaseVersion:number} | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
@@ -245,6 +251,16 @@ export function createLiveStudyApi(): StudyApi {
   };
   const leaseEnvelope = (key:string):ObjectRow =>
     owned?.id===key ? {device,leaseVersion:owned.leaseVersion} : {};
+  const movePhase=async(current:StudyEntryRecord)=>{
+    if(current.leaseDevice&&current.leaseExpiresAt&&Date.parse(current.leaseExpiresAt)>Date.now()&&current.leaseDevice!==device)
+      fail('conflict','Active timer lease belongs to another device');
+    if(owned?.id!==current.id||current.leaseDevice!==device||current.leaseVersion!==owned.leaseVersion||!current.leaseExpiresAt||Date.parse(current.leaseExpiresAt)<=Date.now()){
+      const lease=await command('study_entries','take_lease',{target:{id:current.id},expectedVersion:current.version,patch:{device,lease_minutes:2}});
+      current=await readStudy(current.id);keep(current,lease.changed[0].version);
+    }
+    const response=await command('study_entries','next_phase',{target:{id:current.id},expectedVersion:current.version,patch:{device,lease_version:current.leaseVersion}});
+    const record=await readStudy(current.id);keep(record,response.changed[0].version);return receipt(record,response);
+  };
   const withLease = async (operation:Operation,key:string,expectedVersion:number,patch:ObjectRow={}) => {
     const output=await entryWrite(operation,key,expectedVersion,patch,leaseEnvelope(key));
     if(owned?.id===key){
@@ -255,20 +271,33 @@ export function createLiveStudyApi(): StudyApi {
   };
   return {
     mode: 'live',
+    async replayTimerAction(action){
+      const db=await client();
+      const response=unwrap<{outcome:'applied'|'skipped'|'finish'}>(await db.rpc('replay_timer_action',{p:{...action,device:action.device??device}}));
+      if(!response||!['applied','skipped','finish'].includes(response.outcome))throw Error('Invalid native action receipt');
+      return response.outcome;
+    },
     async listStudyEntries(range) {
       const {start,end} = bounds(range);
       const api = await client();
       // Query interval IDs first; a study entry may start before the selected range.
-      const matching = unwrap<ObjectRow[]>(await api.from('study_intervals').select('entry_id')
-        .lt('started_at', end).or(`ended_at.is.null,ended_at.gt.${start}`).limit(LIMIT));
-      const active = unwrap<ObjectRow[]>(await api.from('study_entries').select('id')
-        .in('status', ['running','paused']).limit(LIMIT));
-      const ids = [...new Set([...matching, ...active].map(row => String(row.entry_id ?? row.id)))];
-      if (!ids.length) return [];
-      if (ids.length > LIMIT) fail('invalid', 'Study range exceeds live page limit');
-      const rows = unwrap<ObjectRow[]>(await api.from('study_entries')
-        .select('*, study_intervals(*)').in('id', ids).order('created_at', {ascending: true}).limit(LIMIT));
-      return rows.map(mapStudy);
+      const ids=new Set<string>();let after:string|null=null;
+      for(;;){
+        let query=api.from('study_intervals').select('id,entry_id').lt('started_at',end).or(`ended_at.is.null,ended_at.gt.${start}`).order('id',{ascending:true}).limit(LIMIT);
+        if(after)query=query.gt('id',after);
+        const page=unwrap<ObjectRow[]>(await query);
+        for(const row of page)ids.add(String(row.entry_id));
+        if(page.length<LIMIT)break;
+        const next=String(page[page.length-1].id);if(next===after)throw Error('Study history page did not advance');after=next;
+      }
+      const active=unwrap<ObjectRow[]>(await api.from('study_entries').select('id').in('status',['running','paused']).limit(LIMIT));
+      for(const row of active)ids.add(String(row.id));
+      const result:StudyEntryRecord[]=[],keys=[...ids];
+      for(let i=0;i<keys.length;i+=LIMIT){
+        const rows=unwrap<ObjectRow[]>(await api.from('study_entries').select('*, study_intervals(*)').in('id',keys.slice(i,i+LIMIT)).order('created_at',{ascending:true}).limit(LIMIT));
+        result.push(...rows.map(mapStudy));
+      }
+      return result;
     },
     async activeStudyEntry() {
       const api = await client();
@@ -377,8 +406,16 @@ export function createLiveStudyApi(): StudyApi {
       void at; // All live interval boundaries use the trusted database clock.
       return withLease('pause',key,expectedVersion);
     },
-    resumeStudyEntry(key, expectedVersion, at) { void at; return withLease('resume',key,expectedVersion); },
-    breakStudyEntry(key, expectedVersion, at) { void at; return withLease('break',key,expectedVersion); },
+    async resumeStudyEntry(key, expectedVersion, at) {
+      void at;const current=await readStudy(key);
+      if(current.phase==='break'||current.phase==='long_break'){if(current.version!==expectedVersion)fail('conflict','Study version changed elsewhere');return movePhase(current);}
+      return withLease('resume',key,expectedVersion);
+    },
+    async breakStudyEntry(key, expectedVersion, at) {
+      void at;const current=await readStudy(key);
+      if(current.mode!==undefined){if(current.version!==expectedVersion)fail('conflict','Study version changed elsewhere');if(current.phase!=='focus'||current.status!=='running')fail('conflict','Timer is already paused or on a break');return movePhase(current);}
+      return withLease('break',key,expectedVersion);
+    },
     async saveStudyEntry(key, expectedVersion, patch = {}) {
       // SQL's save is not idempotent for a new operationId, so guard its terminal state.
       const existing = await readStudy(key);
@@ -391,37 +428,29 @@ export function createLiveStudyApi(): StudyApi {
         // The SQL command accepts interval edits, not a 'minutes' field. Close open
         // intervals using the database clock before constructing the edited duration.
         if (existing.status === 'running') {
-          const paused = await command('study_entries', 'pause', {target:{id:key},expectedVersion:currentVersion,patch:{}});
+          const paused = await command('study_entries', 'pause', {target:{id:key},expectedVersion:currentVersion,patch:{},...leaseEnvelope(key)});
           currentVersion = paused.changed[0].version;
         } else if (existing.status === 'paused' && existing.intervals.some(i => i.kind === 'break' && i.end === null)) {
-          const resumed = await command('study_entries', 'resume', {target:{id:key},expectedVersion:currentVersion,patch:{}});
+          const resumed = await command('study_entries', 'resume', {target:{id:key},expectedVersion:currentVersion,patch:{},...leaseEnvelope(key)});
           currentVersion = resumed.changed[0].version;
-          const paused = await command('study_entries', 'pause', {target:{id:key},expectedVersion:currentVersion,patch:{}});
+          const paused = await command('study_entries', 'pause', {target:{id:key},expectedVersion:currentVersion,patch:{},...leaseEnvelope(key)});
           currentVersion = paused.changed[0].version;
         }
-        const spans = (await readStudy(key)).intervals.filter(i => i.kind === 'focus' && i.end !== null);
-        const duration = spans.reduce((sum, span) => sum + Date.parse(span.end!) - Date.parse(span.start), 0);
-        let difference = Math.round(patch.minutes * 60_000) - duration;
-        if (difference < 0) {
-          for (const span of [...spans].reverse()) {
-            if (difference >= 0) break;
-            const length = Date.parse(span.end!) - Date.parse(span.start);
-            const operation = -difference >= length ? 'delete' : 'update';
-            const change = operation === 'delete' ? {} :
-              {ended_at: new Date(Date.parse(span.end!) + difference).toISOString()};
-            const edited = await command('study_intervals', operation, {
-              target: {id:span.id}, expectedVersion:currentVersion, patch:change,
-            });
-            currentVersion = edited.changed[0].version;
-            difference += Math.min(-difference, length);
+        const closed=await readStudy(key),spans=closed.intervals.filter(i=>i.kind==='focus'&&i.end!==null);
+        const {cutoff,prependMs}=focusDurationAdjustment(closed,patch.minutes);
+        if(cutoff!==null){
+          for(const span of [...spans].reverse()){
+            if(Date.parse(span.end!)<=cutoff)continue;
+            const operation=Date.parse(span.start)>=cutoff?'delete':'update';
+            const edited=await command('study_intervals',operation,{target:{id:span.id},expectedVersion:currentVersion,
+              patch:operation==='delete'?{}:{ended_at:new Date(cutoff).toISOString()},...leaseEnvelope(key)});
+            currentVersion=edited.changed[0].version;
           }
-        } else if (difference > 0) {
-          const anchor = spans.length ? Math.min(...spans.map(i => Date.parse(i.start))) : Date.now();
-          const added = await command('study_intervals','create',{patch:{
-            entry_id:key, kind:'focus', started_at:new Date(anchor - difference).toISOString(),
-            ended_at:new Date(anchor).toISOString(),
-          }});
-          currentVersion = added.changed[0].version;
+        }else if(prependMs>0){
+          const anchor=spans.length?Math.min(...spans.map(i=>Date.parse(i.start))):Date.now();
+          const added=await command('study_intervals','create',{patch:{entry_id:key,kind:'focus',
+            started_at:new Date(anchor-prependMs).toISOString(),ended_at:new Date(anchor).toISOString()},...leaseEnvelope(key)});
+          currentVersion=added.changed[0].version;
         }
       }
       const change: ObjectRow = {};
@@ -475,12 +504,14 @@ export function createLiveStudyApi(): StudyApi {
       if (input.taskId!==undefined && input.taskId!==null &&
          (typeof input.taskId!=='string'||!input.taskId.trim()))
         fail('invalid','Invalid task association');
-      const response = await command('calendar_blocks','create',{patch:{
+      const signature=JSON.stringify(input);
+      const operationId=pendingCreates.get(signature)??id();pendingCreates.set(signature,operationId);
+      const response = await command('calendar_blocks','create',{operationId,patch:{
         kind: input.kind, title: input.title, starts_at: input.startsAt, ends_at: input.endsAt,
         time_zone: input.timeZone, ...linkColumns(input),
         ...(input.taskId!==undefined ? {task_id:input.taskId} : {}),
       }});
-      return receipt(await readBlock(response.changed[0].id), response);
+      const result=receipt(await readBlock(response.changed[0].id),response);pendingCreates.delete(signature);return result;
     },
     async updateCalendarBlock(key, expectedVersion, patch: CalendarBlockPatch) {
       if (patch.taskId!==undefined && patch.taskId!==null &&
@@ -490,6 +521,12 @@ export function createLiveStudyApi(): StudyApi {
         target:{id:key}, expectedVersion, patch:blockPatch(patch),
       });
       return receipt(await readBlock(key), response);
+    },
+    async undoCalendarBlockDeletion(_key,actionNo) {
+      if(!Number.isSafeInteger(actionNo)||!actionNo||actionNo<1)fail('invalid','An audited deletion is required');
+      const api=await client(),auth=await api.auth.getUser();
+      if(auth.error||!auth.data.user)throw new LemmaError('auth','Sign in again to undo');
+      unwrap(await api.rpc('undo_action',{p_user:auth.data.user.id,p_no:actionNo}));
     },
     async deleteCalendarBlock(key, expectedVersion) {
       const response = await command('calendar_blocks','delete',{target:{id:key},expectedVersion,patch:{}});

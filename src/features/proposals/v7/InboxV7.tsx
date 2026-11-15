@@ -203,10 +203,10 @@ export default function InboxV7(){
   {editing&&editing.card&&<CardEditorSheet open onClose={()=>setEditing(null)} busy={false} submitLabel="Save and approve" lockPath
    initial={{noteId:'',noteNo:0,front:editing.card.front,back:editing.card.back,type:editing.card.type,kind:editing.card.kind,tags:editing.card.tags??[],status:'active',origin:editing.origin,
     projectSlug:editing.projectSlug,checkpointCode:editing.card.checkpoint??null,sessionNumber:editing.sessionNumber,sourceShort:editing.card.source??null,pageLabel:editing.card.page??null}}
-   onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back});}}/>}
+   onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back,type:value.type,kind:value.kind});}}/>}
   {editing&&!editing.card&&editing.cardEdit&&<CardEditorSheet open onClose={()=>setEditing(null)} busy={false} submitLabel="Save and approve" lockPath
    initial={{noteId:'',noteNo:editing.cardEdit.note_no,front:faces(editing).front,back:faces(editing).back,type:editing.cardEdit.type??'basic',kind:'other',tags:[],status:'active',origin:editing.origin,
     projectSlug:editing.projectSlug,checkpointCode:null,sessionNumber:editing.sessionNumber,sourceShort:null,pageLabel:null}}
-   onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back});}}/>}
+   onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back,type:value.type,kind:value.kind});}}/>}
  </main>;
 }

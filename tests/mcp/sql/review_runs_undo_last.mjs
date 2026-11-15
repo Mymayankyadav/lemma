@@ -54,11 +54,10 @@ try {
   }
   // Grade through the card/review path the app uses: a review row with the card's previous state, then the card update.
   async function grade(cardId){
-    await db.exec('reset role');
-    const id=(await q("insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) values($1,$2,3,0,1000,$3::jsonb) returning id",
-      [owner,cardId,prev]))[0].id;
-    await q('update public.cards set reps=reps+1,state=2 where id=$1',[cardId]);
     await as(owner);
+    const card=(await q('select * from public.cards where id=$1',[cardId]))[0];
+    const next={expected_version:card.version,state:2,due:'2030-01-01T00:00:00Z',stability:5,difficulty:5,last_review:new Date().toISOString(),step:0,reps:card.reps+1,lapses:card.lapses};
+    const id=(await q('select public.record_review($1,3,null,1000,$2::jsonb) id',[cardId,JSON.stringify(next)]))[0].id;
     return id;
   }
   await as(owner);

@@ -1,0 +1,1 @@
+package android.app;import java.util.*;public class NotificationManager {public final Map<Integer,Notification> posted=new HashMap<>();public void cancel(int n){posted.remove(n);}public void notify(int n,Notification obj){posted.put(n,obj);}}

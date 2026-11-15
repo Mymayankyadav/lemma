@@ -1,6 +1,7 @@
+import {localWallParts} from '../../time-log/local-time';
 import {useMemo,useRef,useState} from 'react';
 import {getTaskApi} from '../../../data/tasks';
-import {useProjects,useSubjects} from '../../../data/hooks';
+import {useProjects,useSubjects,useSettings} from '../../../data/hooks';
 import type {TaskDue,TaskPriority,TaskRecord} from '../../../data/tasks/contract';
 import {useToast} from '../../../ui/Toast';
 import {CircleX} from 'lucide-react';
@@ -24,15 +25,16 @@ export function dueTimes(current?:string):string[]{
  * the right. Validation and saving reuse the v6 sheet's `taskInput` and API calls unchanged.
  */
 export default function TaskSheetV7({onDismiss,task,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
- const notify=useToast(),subjects=useSubjects(),projects=useProjects(),busy=useRef(false);
- const initialInstant=task?.due.kind==='instant'?new Date(task.due.at):null;
+ const notify=useToast(),subjects=useSubjects(),projects=useProjects(),settings=useSettings(),busy=useRef(false);
+ const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone;
+ const initialInstant=task?.due.kind==='instant'?localWallParts(task.due.at,zone):null;
  const [saving,setSaving]=useState(false),[error,setError]=useState('');
  const [title,setTitle]=useState(task?.title??'');
  const [estimate,setEstimate]=useState(task?.estimateMinutes==null?'':String(task.estimateMinutes));
  const [priority,setPriority]=useState<TaskPriority>(task?.priority??'normal');
  const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??'none');
- const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:initialInstant?initialInstant.getFullYear()+'-'+pad(initialInstant.getMonth()+1)+'-'+pad(initialInstant.getDate()):today());
- const [dueTime,setDueTime]=useState(initialInstant?pad(initialInstant.getHours())+':'+pad(initialInstant.getMinutes()):'17:00');
+ const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:initialInstant?initialInstant.day:today());
+ const [dueTime,setDueTime]=useState(initialInstant?initialInstant.clock:'17:00');
  const [subjectId,setSubjectId]=useState(task?.subjectId??'');
  const [projectId,setProjectId]=useState(task?.projectId??'');
  const subjectRows=subjects.data??[],projectRows=useMemo(()=>(projects.data??[]).filter(p=>p.status!=='archived'),[projects.data]);
@@ -41,7 +43,7 @@ export default function TaskSheetV7({onDismiss,task,onSaved,onConflict}:{onDismi
  async function save(){
   if(busy.current)return;
   let input:ReturnType<typeof taskInput>;
-  try{input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant:dueDate+'T'+dueTime,subjectId,projectId});}
+  try{input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant:dueDate+'T'+dueTime,subjectId,projectId},zone);}
   catch(e){setError(e instanceof Error?e.message:'Check the task details.');return;}
   busy.current=true;setSaving(true);setError('');
   try{

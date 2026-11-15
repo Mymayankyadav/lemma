@@ -19,7 +19,7 @@ export interface NoticeDb {
   prefs(userId: string): Promise<NoticePrefs>;
   queue(userId: string, rows: {kind: string; key: string; title: string; body: string; url: string; facts: {actions: ActionSpec[]}}[]): Promise<number>;
   claim(userId: string, limit: number): Promise<NoticeRow[]>;
-  record(userId: string, id: number, reason: 'no_device' | 'push_error'): Promise<void>;
+  record(userId: string, id: number, reason: 'sent' | 'no_device' | 'push_error'): Promise<void>;
   tokens(userId: string): Promise<{id: string; token: string}[]>;
   deleteToken(id: string): Promise<void>;
   webDevices(userId: string): Promise<WebDevice[]>;
@@ -57,7 +57,7 @@ export async function sendRow(db: NoticeDb, sender: Sender, userId: string, row:
   const actions = await buildActions(userId, row.id, row.facts?.actions, options);
   const tokens = await db.tokens(userId);
   if (tokens.length) {
-    const data: Record<string, string> = {type: 'notice', id: String(row.id), kind: row.kind, title: row.title, body: row.body, url: row.url, ...(actions.length ? {actions: JSON.stringify(actions)} : {})};
+    const data: Record<string, string> = {type: 'notice', ownerId:userId, id: String(row.id), kind: row.kind, title: row.title, body: row.body, url: row.url, ...(actions.length ? {actions: JSON.stringify(actions)} : {})};
     const results = await Promise.all(tokens.map(async token => ({token, result: await sender.send(token.token, data, {collapseKey: 'notice-' + row.id, ttlSeconds: TTL[row.kind] ?? 21_600})})));
     for (const {token, result} of results) if (result === 'gone') await db.deleteToken(token.id);
     return results.some(item => item.result === 'sent') ? {ok: true} : {ok: false, reason: 'push_error'};
@@ -104,7 +104,7 @@ export function createNoticeAdapters(db: NoticeDb, sender: Sender, options: Noti
       for (const row of rows) {
         if (signal.aborted) {await db.record(userId, row.id, 'push_error'); failed++; continue;}
         const outcome = await sendRow(db, sender, userId, row, options);
-        if (outcome.ok) sent++;
+        if (outcome.ok) {await db.record(userId,row.id,'sent');sent++;}
         else {await db.record(userId, row.id, outcome.reason ?? 'push_error'); failed++;}
       }
       return {attempted: rows.length, sent, failed};

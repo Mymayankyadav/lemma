@@ -10,15 +10,22 @@ import com.google.firebase.messaging.RemoteMessage;
 public class LemmaMessagingService extends FirebaseMessagingService {
     @Override
     public void onMessageReceived(RemoteMessage message) {
+        SessionStore.Session session=SessionStore.load(this);
+        // A queued token may outlive sign-out. Never display another owner's data, even while offline.
+        if(session==null||!PushMessage.isForOwner(message.getData(),session.ownerId))return;
         PushMessage push = PushMessage.parse(message.getData());
-        if (push.kind == PushMessage.Kind.NOTICE) {
-            // N164: a reminder the server decided to send (due, tutor, ...); shown with the same code as a phone-scheduled one.
-            Reminders.post(this, push.notice);
-            return;
+        synchronized(TimerController.class){
+            if(push.kind==PushMessage.Kind.NOTICE){try{push.notice.put("ownerId",session.ownerId);}catch(org.json.JSONException invalid){return;}Reminders.post(this,push.notice);return;}
+            android.content.SharedPreferences prefs=getSharedPreferences("lemma.push.order",MODE_PRIVATE);
+            try{
+                PushOrder order=new PushOrder(new org.json.JSONObject(prefs.getString("state","{}")));
+                long revision=Long.parseLong(message.getData().get("revision"));
+                boolean apply=order.accept(push,revision,TimerController.load(this));
+                prefs.edit().putString("state",order.toJson().toString()).apply();
+                if(!apply)return;
+                if(push.kind==PushMessage.Kind.SHOW){push.state.device=session.device;push.state.ownerId=session.ownerId;TimerController.show(this,push.state);}else TimerController.clear(this);
+            }catch(org.json.JSONException|NumberFormatException malformed){return;}
         }
-        if (!push.appliesTo(TimerController.load(this))) return;
-        if (push.kind == PushMessage.Kind.SHOW) TimerController.show(this, push.state);
-        else TimerController.clear(this);
         LemmaNativePlugin.signal("timerChanged");
     }
 

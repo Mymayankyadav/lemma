@@ -1,3 +1,4 @@
+import {effectiveFocusSpans} from '../studyTime';
 import type { ActiveEffort, Occupied, Range, StudyEntry } from './types';
 export type { ActiveEffort, Occupied, Range, StudyEntry } from './types';
 
@@ -35,11 +36,8 @@ function entrySpans(entries: StudyEntry[], range: Range, now: string) {
   for (const e of entries) {
     if (seen.has(e.id) || e.status !== 'saved') continue;
     seen.add(e.id);
-    for (const i of e.intervals) {
-      const span: Span = [ms(i.start),ms(i.end)];
-      if (i.kind === 'break') breaks.push(span);
-      else { focus.push(span); future.push(span); }
-    }
+    breaks.push(...e.intervals.filter(i=>i.kind==='break').map(i=>[ms(i.start),ms(i.end)] as Span));
+    const spans=effectiveFocusSpans(e,ms(now));focus.push(...spans);future.push(...spans);
   }
   const a=ms(range.start), b=ms(range.end), t=ms(now);
   return { past: subtract(clip(focus,a,Math.min(b,t)),breaks), future: subtract(clip(future,Math.max(a,t),b),breaks) };
@@ -82,7 +80,7 @@ export function subjectPartition(entries: StudyEntry[], range: Range, zone: stri
     entry.intervals.filter(i => i.kind === 'break').map(i => [ms(i.start), ms(i.end)] as Span)
   );
   for (const entry of saved) {
-    const focus=entry.intervals.filter(i=>i.kind !== 'break').map(i=>[ms(i.start),ms(i.end)] as Span);
+    const focus=effectiveFocusSpans(entry,ms(now));
     const spans=subtract(subtract(clip(focus,ms(range.start),Math.min(ms(range.end),ms(now))),breaks),assigned);
     const key=entry.subjectId || 'unassigned';
     result[key]=(result[key]||0)+duration(spans);

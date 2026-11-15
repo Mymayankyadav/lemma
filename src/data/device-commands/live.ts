@@ -22,14 +22,19 @@ export function createLiveDeviceCommandApi():DeviceCommandApi{
   },
   async pending(deviceId){
    const db=await client();
-   const {data,error}=await db.rpc('device_commands_for',{p_device:deviceId});
+   const {data,error}=await db.rpc('device_commands_recoverable',{p_device:deviceId});
    if(error)throw new Error(error.message);
    return ((data as Row[]|null)??[]).map(command).filter((x):x is DeviceCommand=>x!==null);
   },
-  async report(id,stage,reason){
+  async report(id,stage,reason,claimId){
    const db=await client();
-   const {error}=await db.rpc('device_command_report',{p_id:id,p_stage:stage,p_reason:reason??null});
+   const {data,error}=stage==='delivered'&&claimId
+    ?await db.rpc('device_command_claim',{p_id:id,p_claim:claimId})
+    :await db.rpc('device_command_report',{p_id:id,p_stage:stage,p_reason:reason??null});
    if(error)throw new Error(error.message);
+   const result=data as {accepted?:unknown;status?:unknown}|null;
+   if(typeof result?.accepted!=='boolean'||typeof result.status!=='string')throw Error('Invalid device delivery acknowledgement');
+   return {accepted:result.accepted,status:result.status};
   },
   subscribe(deviceId,onChange){
    let stop=()=>undefined as void;

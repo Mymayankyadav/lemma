@@ -1,9 +1,10 @@
+import {onAccountChange,authSignedOut} from './authBoundary';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { subscribeOwnerChanges, clearOwnerChangesCursor } from './sync'
 import type { LemmaApi } from './api'
 import { getApi } from './index'
-const queryDefaults = { staleTime: 30_000, refetchOnWindowFocus: true }
+const queryDefaults = { enabled:()=>!authSignedOut(), staleTime: 30_000, refetchOnWindowFocus: true }
 export function useHome(...args: Parameters<LemmaApi['getHome']>) {
  return useQuery({ ...queryDefaults, queryKey: ['home'], queryFn: () => getApi().getHome() })
 }
@@ -76,7 +77,12 @@ function useOwnerFeed(owner: string | null | undefined) {
  }, [owner, client])
 }
 export function useAuth(...args: Parameters<LemmaApi['getAuth']>) {
- const auth = useQuery({ ...queryDefaults, queryKey: ['auth'], queryFn: () => getApi().getAuth() })
+ const client=useQueryClient();
+ useEffect(()=>onAccountChange(user=>{
+  void client.cancelQueries();client.removeQueries({predicate:query=>query.queryKey[0]!=='auth'});clearOwnerChangesCursor();
+  client.setQueryData(['auth'],user?.email?{email:user.email}:null);
+ }),[client]);
+ const auth = useQuery({ ...queryDefaults, enabled:true,queryKey: ['auth'], queryFn: () => getApi().getAuth() })
  useOwnerFeed(auth.isSuccess ? auth.data?.email ?? null : undefined)
  return auth
 }
@@ -102,7 +108,7 @@ function useWrite<TVariables, TResult>(write: (api: LemmaApi, variables: TVariab
  return useMutation({
   mutationFn: (variables: TVariables) => write(getApi(), variables),
   onSuccess: async () => {
-   if (prefixes.includes('*')) { client.clear(); return }
+   if (prefixes.includes('*')) {void client.cancelQueries();client.removeQueries({predicate:query=>query.queryKey[0]!=='auth'});client.setQueryData(['auth'],null);return }
    await Promise.all(prefixes.map(prefix => client.invalidateQueries({queryKey: [prefix]})))
   },
  })

@@ -22,7 +22,7 @@ export async function counts(c:Context,s:any):Promise<{due:number;pending:number
     scoped(c,'proposals','id,project_id').eq('status','pending'),
     scoped(c,'card_comments','id,note_id').eq('status','open'),
     scoped(c,'v_due_cards','card_id,state,due').limit(2000),
-    scoped(c,'reviews','id,card_id,reviewed_at,state_before').gte('reviewed_at',new Date(Date.now()-172800000).toISOString()).limit(1000)
+    scoped(c,'reviews','id,card_id,reviewed_at,state_before').is('undone_at',null).gte('reviewed_at',new Date(Date.now()-172800000).toISOString()).limit(1000)
   ]);
   for(const x of [props,comments,rows,reviews])if(x.error)throw new Error(x.error.message);
   const today=day(s);

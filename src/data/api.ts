@@ -12,7 +12,7 @@ export type CreateSubjectInput = Pick<Subject, 'name' | 'glyph' | 'hue'>
 export type ProjectPatch = Partial<Pick<Project, 'title' | 'goal' | 'style' | 'status' | 'subjectId' | 'pinned'>>
 export type SubjectPatch = Partial<Pick<Subject, 'name' | 'glyph' | 'position'>>
 export type SourcePatch = Partial<Pick<Source, 'title' | 'kind'>>
-export interface ProposalEdit { front?: string; back?: string; type?: NoteType }
+export interface ProposalEdit { front?: string; back?: string; type?: NoteType; kind?: NoteKind }
 export interface CreateNoteInput { projectSlug: string; front: string; back: string; type: NoteType; kind: NoteKind; checkpointCode?: string }
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
 export type InsightDays = 7 | 30 | 90
