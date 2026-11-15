@@ -7,13 +7,13 @@ const tiers:EmblemTier[]=['hero','tile','glyph'];
 
 describe('v7 mathematical emblems (emblem system v2)',()=>{
  it('selects one mathematical family per subject',()=>{
-  expect(emblemKind('Real Analysis')).toBe('partial-sums');
-  expect(emblemKind('Linear Algebra')).toBe('mapped-plane');
+  expect(emblemKind('Real Analysis')).toBe('radial-wave');
+  expect(emblemKind('Linear Algebra')).toBe('icosahedron');
   expect(emblemKind('Topology')).toBe('torus-knot');
   expect(emblemKind('Number theory')).toBe('multiplication-circle');
   expect(emblemKind('Logic')).toBe('hasse');
   expect(emblemKind('Geometry')).toBe('euclid');
-  expect(emblemKind('Probability')).toBe('galton');
+  expect(emblemKind('Probability')).toBe('markov');
   expect(emblemKind('Combinatorics')).toBe('complete-graph');
   expect(emblemKind('Other')).toBe('rose');
  });
