@@ -22,7 +22,7 @@ export function routeShare(item: SharedItem): ShareRoute {
 
 /** Files waiting for the New path sheet (read once). */
 let pendingSources: File[] = [];
-export function holdSharedSources(files: File[]): void {pendingSources = files;}
+export function holdSharedSources(files: File[]): void {pendingSources.push(...files);if(typeof window!=='undefined')window.dispatchEvent(new Event('lemma:shared-sources'));}
 export function takeSharedSources(): File[] {const files = pendingSources; pendingSources = []; return files;}
 
 /** Text waiting for the Capture sheet (read once). */

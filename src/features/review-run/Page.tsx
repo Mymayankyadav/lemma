@@ -150,7 +150,7 @@ function LegacyReviewRunPage(){
   const durationMs=Math.max(0,Math.min(600000,Date.now()-startTime));
   beginGrade();
   try{
-   const result=await mutate.mutateAsync({cardId:current.cardId,rating,confidence,durationMs,
+   const result=await mutate.mutateAsync({cardId:current.cardId,expectedVersion:current.version,rating,confidence,durationMs,
     next:intervals[rating].card});
    const note=confidence==='sure'&&rating===1?'You were sure, so this one comes back soon':
     confidence==='guess'&&(rating===3||rating===4)?'A good guess. It will come back a little sooner.':null;

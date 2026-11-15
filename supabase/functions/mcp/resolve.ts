@@ -1,9 +1,13 @@
 import { Context, scoped } from './db.ts';
 import { visibleProjects } from './v3.ts';
 export async function project(c: Context, name?: string): Promise<any> {
-  const {data,error}=await scoped(c,'projects').order('last_activity_at',{ascending:false,nullsFirst:false}).limit(100);
-  if(error) throw new Error(error.message);
-  const items=visibleProjects(data||[]);
+  const data:any[]=[];
+  for(let offset=0;;offset+=100){
+    const page=await scoped(c,'projects').order('id').range(offset,offset+99);
+    if(page.error)throw Error(page.error.message);
+    data.push(...page.data||[]);if((page.data||[]).length<100)break;
+  }
+  const items=visibleProjects(data);
   // The authenticated owner never sees system projects. The internal self-test
   // may resolve only the exact throwaway IDs created in this request.
   if(c.selftestProjectIds)for(const item of data||[])
@@ -48,8 +52,9 @@ export async function session(c: Context,p: any, code: string): Promise<any> {
   return data;
 }
 export async function source(c: Context,p:any,short?:string):Promise<any> {
-  const {data,error}=await scoped(c,'sources').eq('project_id',p.id).order('created_at').limit(100);
-  if(error)throw new Error(error.message);
+  const query=scoped(c,'sources').eq('project_id',p.id);
+  const {data,error}=short?await query.eq('short',short).limit(1):await query.order('created_at').limit(1);
+  if(error)throw Error(error.message);
   const items=data||[];
   const hit=short?items.find((x:any)=>x.short===short):items[0];
   if(!hit)throw new Error('Source not found. Sources: '+items.map((x:any)=>x.short).join(', '));

@@ -14,7 +14,11 @@ public final class TimerState {
     public static final String BREAK = "break";
 
     public String entryId = "";
+    public long entryStartedAt;
     public int version;
+    public String ownerId="";
+    public String device="";
+    public int leaseVersion;
     public String status = RUNNING;
     public String intention = "";
     public String context = "";
@@ -34,7 +38,10 @@ public final class TimerState {
     public static TimerState fromJson(JSONObject json) throws JSONException {
         TimerState s = new TimerState();
         s.entryId = json.getString("entryId");
+        s.entryStartedAt=json.optLong("entryStartedAt",0);
         s.version = json.optInt("version", 0);
+        s.ownerId=json.optString("ownerId","");
+        s.device=json.optString("device","");s.leaseVersion=json.optInt("leaseVersion",0);
         s.status = json.optString("status", RUNNING);
         if (!RUNNING.equals(s.status) && !PAUSED.equals(s.status) && !BREAK.equals(s.status)) throw new JSONException("status");
         s.intention = json.optString("intention", "Focused study");
@@ -56,7 +63,7 @@ public final class TimerState {
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
         try {
-            json.put("entryId", entryId).put("version", version).put("status", status).put("intention", intention)
+            json.put("ownerId",ownerId).put("entryStartedAt",entryStartedAt).put("device",device).put("leaseVersion",leaseVersion).put("entryId", entryId).put("version", version).put("status", status).put("intention", intention)
                 .put("context", context).put("mode", mode).put("focusedMs", focusedMs).put("asOf", asOf)
                 .put("phaseEndsAt", phaseEndsAt).put("phaseMs", phaseMs).put("cycle", cycle).put("cycles", cycles)
                 .put("breakMinutes", breakMinutes).put("focusMinutes", focusMinutes).put("clock24h", clock24h)

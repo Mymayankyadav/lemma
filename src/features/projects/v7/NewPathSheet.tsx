@@ -11,14 +11,19 @@ const statusWord:Record<string,string>={queued:'Waiting',reading:'Reading',uploa
 /** PLAN §6.8 New path: a name, a dashed Sources drop zone, one note and a primary "Create path". The new path then opens
  *  with a "Tell your tutor" card (?new=1). */
 export default function NewPathSheet({onClose}:{onClose:()=>void}){
- const navigate=useNavigate(),notify=useToast(),input=useRef<HTMLInputElement>(null);
+ const navigate=useNavigate(),notify=useToast(),input=useRef<HTMLInputElement>(null),uploading=useRef(false);
  const {name,setName,items,error,saving,created,remaining,enqueue,remove,submit}=useNewPath();
  // N123: files shared to the Android app arrive here as sources; the first one's name suggests the path's name.
- useEffect(()=>{const shared=takeSharedSources();if(!shared.length)return;enqueue(shared);setName(previous=>previous||shared[0].name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').slice(0,100));
+ useEffect(()=>{
+  const consume=()=>{if(uploading.current)return;const shared=takeSharedSources();if(!shared.length)return;enqueue(shared);setName(previous=>previous||shared[0].name.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').slice(0,100));};
+  window.addEventListener('lemma:shared-sources',consume);consume();
+  return()=>window.removeEventListener('lemma:shared-sources',consume);
  },[]);
  async function create(){
-  const result=await submit();
-  if(result.kind==='created')navigate('/p/'+encodeURIComponent(result.project.slug)+'?new=1');
+  uploading.current=true;
+  const result=await submit().finally(()=>{uploading.current=false;});
+  const extra=takeSharedSources();if(extra.length)enqueue(extra);
+  if(result.kind==='created'&&!extra.length)navigate('/p/'+encodeURIComponent(result.project.slug)+'?new=1');
   else if(result.kind==='partial')notify('Path saved. Retry or remove the files that failed.',{tone:'danger'});
   else if(result.kind==='failed')notify('Could not save your path',{tone:'danger'});
  }

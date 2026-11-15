@@ -37,7 +37,9 @@ public final class TimerController {
         String raw = prefs(context).getString("state", null);
         if (raw == null) return null;
         try {
-            return TimerState.fromJson(new JSONObject(raw));
+            TimerState state=TimerState.fromJson(new JSONObject(raw));
+            if(state.ownerId.isEmpty()){SessionStore.Session session=SessionStore.load(context);if(session!=null)state.ownerId=session.ownerId;}
+            return state;
         } catch (JSONException e) {
             return null;
         }
@@ -50,7 +52,9 @@ public final class TimerController {
     }
 
     /** Show (or replace) the timer everywhere: notification, alarm, tile, Study mode. */
-    public static void show(Context context, TimerState state) {
+    public static synchronized void show(Context context, TimerState state) {
+        SessionStore.Session session=SessionStore.load(context);
+        if(!state.ownerId.isEmpty()&&(session==null||!state.ownerId.equals(session.ownerId)))return;
         save(context, state);
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         try {
@@ -63,10 +67,11 @@ public final class TimerController {
         refreshTile(context);
     }
 
-    public static void clear(Context context) {
+    public static synchronized void clear(Context context) {
         save(context, null);
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancel(ONGOING_ID);
+        manager.cancel(ALERT_ID);
         cancelAlarm(context);
         StudyMode.apply(context, false);
         refreshTile(context);

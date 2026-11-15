@@ -1,3 +1,4 @@
+import {focusDurationAdjustment} from '../../lib/studyTime';
 // Tab-local v6 demo study data. All elapsed time comes from persisted interval timestamps.
 import { LemmaError } from '../api';
 import type {
@@ -232,6 +233,7 @@ function freeFocus(entry:StudyEntryRecord,now:number):Array<[number,number]> {
 }
 
 export function createDemoStudyApi(): StudyApi {
+ const deletedBlocks=new Map<string,CalendarBlockRecord>();
   const snapshot = load();
   persist(snapshot);
   const entryById = (key: string): StudyEntryRecord => {
@@ -414,7 +416,13 @@ export function createDemoStudyApi(): StudyApi {
       return storeEntry({ ...entry, status: 'saved', savedAt: at, updatedAt: at,
         reflection: patch.reflection === undefined ? entry.reflection : patch.reflection,
         rating: patch.rating === undefined ? entry.rating : patch.rating,
-        intervals: patch.minutes === undefined ? intervals : withEditedMinutes(intervals, patch.minutes, at),
+        intervals: patch.minutes === undefined ? intervals : entry.excludedIntervals?.length ? (()=>{
+          const {cutoff,prependMs}=focusDurationAdjustment({...entry,intervals},patch.minutes,Date.parse(at));
+          if(cutoff!==null)return intervals.flatMap(span=>span.kind!=='focus'||Date.parse(span.end!)<=cutoff?[span]:Date.parse(span.start)>=cutoff?[]:[{...span,end:new Date(cutoff).toISOString()}]);
+          if(!prependMs)return intervals;
+          const anchor=Math.min(...intervals.filter(span=>span.kind==='focus').map(span=>Date.parse(span.start)));
+          return [{id:id(),kind:'focus' as const,start:new Date(anchor-prependMs).toISOString(),end:new Date(anchor).toISOString()},...intervals];
+        })() : withEditedMinutes(intervals, patch.minutes, at),
         version: entry.version + 1 });
     },
     async discardStudyEntry(key, expectedVersion) {
@@ -545,8 +553,13 @@ export function createDemoStudyApi(): StudyApi {
       catch { fail('invalid', 'Invalid IANA time zone'); }
       return storeBlock(next);
     },
+    async undoCalendarBlockDeletion(key) {
+      const prior=deletedBlocks.get(key);if(!prior||snapshot.blocks.some(b=>b.id===key))fail('conflict','Block cannot be restored');
+      snapshot.blocks.push(clone(prior!));deletedBlocks.delete(key);persist(snapshot);
+    },
     async deleteCalendarBlock(key, expectedVersion) {
       version(blockById(key), expectedVersion);
+      deletedBlocks.set(key,clone(blockById(key)));
       snapshot.blocks = snapshot.blocks.filter(b => b.id !== key);
       persist(snapshot);
       return asReceipt({ id: key });

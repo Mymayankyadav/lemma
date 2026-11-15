@@ -2,11 +2,13 @@
  * N123 · the TypeScript face of the app's own Kotlin-free native plugin (`LemmaNativePlugin.java`).
  * Every method exists only on Android; callers check `isNative()` first.
  */
-export interface NativeSession {url: string; key: string; accessToken: string; expiresAt: number}
+export interface NativeSession {device?:string;ownerId?:string;url: string; key: string; accessToken: string; expiresAt: number}
 
 /** What the lock screen, notification and tile show. Built by `nativeTimerState` from the server study entry. */
 export interface NativeTimerState {
   entryId: string;
+  entryStartedAt?:number;
+  ownerId?:string;
   version: number;
   status: 'running' | 'paused' | 'break';
   intention: string;
@@ -14,6 +16,8 @@ export interface NativeTimerState {
   context: string;
   mode: 'pomodoro' | 'flowtime' | 'open';
   /** Focused milliseconds up to `asOf`. */
+  device?:string;
+  leaseVersion?:number;
   focusedMs: number;
   asOf: number;
   /** End of the current timed phase (epoch ms), or 0 for an open session. */
@@ -34,6 +38,8 @@ export interface PendingTimerAction {
   version: number;
   at: number;
   text?: string;
+  device?:string;
+  ownerId?:string;
 }
 
 export interface NativeReminder {
@@ -82,6 +88,7 @@ export interface LemmaNativePlugin {
   calendarRemoveAll(): Promise<{deleted: number}>;
   calendarBusy(options: {from: number; to: number; calendarIds: string[]}): Promise<{busy: {start: number; end: number}[]}>;
 
+  shareAck(options:{paths:string[]}):Promise<void>;
   shareTake(): Promise<{items: SharedItem[]}>;
   voiceAvailable(): Promise<{available: boolean}>;
   voiceRecognise(options: {prompt: string}): Promise<{text: string | null}>;

@@ -76,6 +76,8 @@ public final class PushMessage {
         }
     }
 
+    public static boolean isForOwner(Map<String,String> data,String owner){return data!=null&&owner!=null&&!owner.isEmpty()&&owner.equals(data.get("ownerId"));}
+
     /** Anything that is not a well-formed timer message is ignored: a push must never crash the app or show nothing useful. */
     public static PushMessage parse(Map<String, String> data) {
         if (data == null) return IGNORED;
@@ -113,6 +115,7 @@ public final class PushMessage {
             case NOTICE:
                 return true;
             case SHOW:
+                if(current!=null&&!current.entryId.equals(entryId)&&state.entryStartedAt>0&&current.entryStartedAt>0&&state.entryStartedAt<=current.entryStartedAt)return false;
                 if (current == null || !current.entryId.equals(entryId)) return true;
                 if (version > current.version) return true;
                 return version == current.version && !current.unsynced;

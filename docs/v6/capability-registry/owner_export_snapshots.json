@@ -1,0 +1,34 @@
+{
+  "table": "owner_export_snapshots",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "not exposed: temporary browser export snapshot",
+      "exportPolicy": "ephemeral export cache, excluded from export",
+      "deletionPolicy": "owner FK cascade, export completion and 15 minute expiry"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "not exposed: temporary browser export snapshot",
+      "exportPolicy": "ephemeral export cache, excluded from export",
+      "deletionPolicy": "owner FK cascade, export completion and 15 minute expiry"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "not exposed: temporary browser export snapshot",
+      "exportPolicy": "ephemeral export cache, excluded from export",
+      "deletionPolicy": "owner FK cascade, export completion and 15 minute expiry"
+    },
+    "data": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "not exposed: temporary browser export snapshot",
+      "exportPolicy": "ephemeral export cache, excluded from export",
+      "deletionPolicy": "owner FK cascade, export completion and 15 minute expiry"
+    }
+  }
+}

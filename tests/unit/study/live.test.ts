@@ -223,3 +223,19 @@ describe('N16 live StudyApi (stubbed owner-scoped Supabase client)', () => {
     expect(fake.client.rpc).not.toHaveBeenCalled();
   });
 });
+
+
+it('orders PostgreSQL interval timestamps chronologically across a zero fractional second',async()=>{
+ fake.rows.study_entries[0]=study({study_intervals:[
+  {...interval('focus'),started_at:'2026-11-06T10:00:00.001+00:00',ended_at:null},
+  {...interval('break','break'),started_at:'2026-11-06T10:00:00+00:00',ended_at:'2026-11-06T10:00:00.001+00:00'},
+ ]});
+ expect((await createLiveStudyApi().activeStudyEntry())?.intervals.map(span=>span.id)).toEqual(['break','focus']);
+});
+it('preserves PostgreSQL microsecond ordering within the same browser millisecond',async()=>{
+ fake.rows.study_entries[0]=study({study_intervals:[
+  {...interval('focus'),started_at:'2026-11-06T10:00:00.000002+00:00',ended_at:null},
+  {...interval('break','break'),started_at:'2026-11-06T10:00:00+00:00',ended_at:'2026-11-06T10:00:00.000002+00:00'},
+ ]});
+ expect((await createLiveStudyApi().activeStudyEntry())?.intervals.map(span=>span.id)).toEqual(['break','focus']);
+});

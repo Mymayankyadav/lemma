@@ -92,6 +92,13 @@
       "mcpPath": "MCP get(device_commands); registered device_commands_command",
       "exportPolicy": "not exported: short-lived device messages",
       "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
+    },
+    "delivery_claim": {
+      "classification": "derived",
+      "appPath": "src/data/device-commands/live.ts; src/platform/deviceCommands.ts",
+      "mcpPath": "MCP get(device_commands); registered device_commands_command",
+      "exportPolicy": "not exported: short-lived device messages",
+      "deletionPolicy": "account purge via owner cascade; rows expire in minutes"
     }
   }
 }

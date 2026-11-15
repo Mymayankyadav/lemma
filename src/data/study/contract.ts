@@ -116,6 +116,8 @@ export interface StudySplitResult { original: StudyEntryRecord; created: StudyEn
 
 export interface StudyApi {
  readonly mode: 'live' | 'demo';
+ /** Durable native action receipt; retry with the same action ID after an uncertain response. */
+ replayTimerAction?(action: import('../../platform/bridge').PendingTimerAction):Promise<'applied'|'skipped'|'finish'>;
  /** Entries with any interval overlapping the range, plus running/paused ones; oldest first. */
  listStudyEntries(range: StudyRange): Promise<StudyEntryRecord[]>;
  /** The one running or paused entry, if any. */
@@ -144,6 +146,7 @@ export interface StudyApi {
  listCalendarBlocks(range: StudyRange): Promise<CalendarBlockRecord[]>;
  createCalendarBlock(input: NewCalendarBlock): Promise<StudyReceipt<CalendarBlockRecord>>;
  updateCalendarBlock(id: string, expectedVersion: number, patch: CalendarBlockPatch): Promise<StudyReceipt<CalendarBlockRecord>>;
+ undoCalendarBlockDeletion(id:string,actionNo:number|null):Promise<void>;
  deleteCalendarBlock(id: string, expectedVersion: number): Promise<StudyReceipt<{ id: string }>>;
 }
 
@@ -177,5 +180,6 @@ export function emptyStudyApi(mode: 'live' | 'demo'): StudyApi {
   createCalendarBlock: refuse('createCalendarBlock'),
   updateCalendarBlock: refuse('updateCalendarBlock'),
   deleteCalendarBlock: refuse('deleteCalendarBlock'),
+  undoCalendarBlockDeletion: refuse('undoCalendarBlockDeletion'),
  };
 }

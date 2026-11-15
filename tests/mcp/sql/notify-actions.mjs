@@ -79,7 +79,7 @@ try{
  await role('service_role');
  const claimed=await q('select * from public.notify_claim($1,5)',[owner]);
  assert.equal(claimed.length,1);
- assert.deepEqual([claimed[0].kind,claimed[0].title,claimed[0].url,claimed[0].status],['test','Reminders are on','#/settings','sent']);
+ assert.deepEqual([claimed[0].kind,claimed[0].title,claimed[0].url,claimed[0].status],['test','Reminders are on','#/settings','queued']);
  assert.ok(claimed[0].body.length<=140);
  console.log('PASS N164 web results and the test reminder');
 }finally{await db.close()}

@@ -81,7 +81,7 @@ describe('N123 · N2 replaying lock-screen actions', () => {
   it('applies an action taken against the current version, then acknowledges it', async () => {
     const s = setup(entry(), [action({})])
     expect(await replayTimerActions(s.native, s.api, s.createThought)).toEqual(['applied'])
-    expect(s.api.pauseStudyEntry).toHaveBeenCalledWith('e1', 3)
+    expect(s.api.pauseStudyEntry).toHaveBeenCalledWith('e1', 3,new Date(T0).toISOString())
     expect(s.acked).toEqual(['a1'])
   })
   it('never applies an action twice: a newer server version means it already happened', async () => {
@@ -111,7 +111,7 @@ describe('N123 · N2 replaying lock-screen actions', () => {
   })
   it('acknowledges an action even when the server refuses it, so it cannot loop', async () => {
     const s = setup(entry(), [action({})])
-    ;(s.api.pauseStudyEntry as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('conflict'))
+    ;(s.api.pauseStudyEntry as ReturnType<typeof vi.fn>).mockRejectedValueOnce(Object.assign(new Error('conflict'),{code:'conflict'}))
     expect(await replayTimerActions(s.native, s.api, s.createThought)).toEqual(['skipped'])
     expect(s.acked).toEqual(['a1'])
   })

@@ -32,7 +32,7 @@ export function periodFor(range: EffortRange, now: Date, zone: string): EffortPe
 
 function closedEntries(entries: StudyEntryRecord[]): EffortEntry[] {
   return entries.map(entry => ({
-    id: entry.id, status: entry.status, subjectId: entry.subjectId,
+    id: entry.id, status: entry.status, subjectId: entry.subjectId, excludedIntervals:entry.excludedIntervals,
     intervals: entry.intervals.filter(interval => interval.end !== null)
       .map(interval => ({ start: interval.start, end: interval.end!, kind: interval.kind })),
   }));

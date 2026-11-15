@@ -87,7 +87,7 @@ export default function ReviewRunV6(){
     setMessage('Changed card skipped; no duplicate grade recorded.');done(result);return;
    }
    const reviewed=await record.mutateAsync({
-    cardId:item.cardId,rating,confidence,
+    cardId:item.cardId,expectedVersion:item.expectedCardVersion,rating,confidence,
     durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),
     next:choices[rating].card,
    });

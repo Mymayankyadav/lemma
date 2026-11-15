@@ -11,6 +11,7 @@ import {useToast} from '../../../src/ui/Toast';
 
 vi.mock('../../../src/flags',()=>({isFlagOn:vi.fn(()=>true)}));
 vi.mock('../../../src/data/hooks',()=>({
+ useSettings:()=>({data:{timeZone:'UTC'}}),
  useHome:()=>({data:{pendingProposals:0}}),
  useProjects:()=>({data:[]}),
  useSubjects:()=>({data:[]}),

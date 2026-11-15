@@ -9,6 +9,7 @@ import {tutorActions,type ReminderCandidate,type ReminderContext,type ReminderKi
  */
 export interface Checkpoint {slug?: string; project: string; code: string; title: string; step?: number; steps?: number}
 export interface NoticeFacts {
+  holds?:Record<string,string>;
   tz?: string; today?: string; studiedToday?: boolean; lastStudyAt?: string | null; live?: boolean; quietDays?: number;
   due?: {count?: number; backlog?: number; minutes?: number};
   tomorrow?: Checkpoint[];
@@ -77,7 +78,10 @@ export function noticePlan(facts: NoticeFacts, prefs: NoticePrefs, now: number):
   };
   if (context.lastSendAt === undefined) delete context.lastSendAt;
   const candidates: ReminderCandidate[] = [], display = new Map<string, Display>();
-  const add = (candidate: ReminderCandidate, shown: Display) => {candidates.push(candidate); display.set(candidate.key, shown);};
+  const add = (candidate: ReminderCandidate, shown: Display) => {
+    const held=['all',candidate.kind,candidate.key].some(scope=>(ms(facts.holds?.[scope])??0)>now);
+    if(held)return;candidates.push(candidate);display.set(candidate.key,shown);
+  };
   const dueAt = zonedInstant(today, studyTime, zone);
   const withSent = (candidate: ReminderCandidate, key: string): ReminderCandidate => {const at = sentOn(key); if (at !== undefined) candidate.lastSentAt = at; return candidate;};
 

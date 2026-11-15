@@ -1,3 +1,4 @@
+import {focusedMilliseconds} from '../../lib/studyTime';
 import {useCallback,useEffect,useState} from 'react';
 import {getStudyApi} from '../../data/study';
 import type {StudyEntryRecord} from '../../data/study/contract';
@@ -37,8 +38,7 @@ export function focusClock(entry:StudyEntryRecord,now:number):FocusClock{
   const seconds=Math.ceil(phase.remainingMs/1000),span=phaseMinutes(entry)*60;
   return {seconds,mode:'remaining',progress:Math.min(1,Math.max(0,1-seconds/span)),endsAt:phase.paused?null:new Date(phase.endsAtMs).toISOString(),label:formatClock(seconds)};
  }
- let focused=0;
- for(const interval of entry.intervals)if(interval.kind==='focus')focused+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));
+ const focused=focusedMilliseconds(entry,now);
  const seconds=Math.floor(focused/1000);
  return {seconds,mode:'elapsed',progress:null,endsAt:null,label:formatClock(seconds)};
 }

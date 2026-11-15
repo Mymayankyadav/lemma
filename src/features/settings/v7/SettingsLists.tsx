@@ -3,7 +3,7 @@ import {Check,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
 import type {SettingsPatch} from '../../../data/api';
 import type {FocusDefaultsPrefs,NotifyPrefs,PlanningPrefs,ReviewBudgetPrefs,Settings} from '../../../data/types';
-import {mergeNotifyPrefs} from '../../../data/notify';
+import {notifyUndo} from '../../../data/notify';
 import {useToast} from '../../../ui/Toast';
 import {Button,Field,Sheet,Slider,Stepper,Switch} from '../../../ui/v7/components';
 import {formatDuration,zoneLongName} from '../../../lib/format';
@@ -197,7 +197,7 @@ const scheduleWord={off:'Off',live:'As things happen',daily:'Daily summary',week
 export function ReminderLists({settings}:{settings:Settings}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Reminders');
  const value:NotifyPrefs=settings.notify??{};
- const put=(patch:NotifyPrefs)=>{void save({notify:mergeNotifyPrefs(value,patch)},{notify:value});};
+ const put=(patch:NotifyPrefs)=>{void save({notify:patch},{notify:notifyUndo(value,patch)});};
  const app=isNative(),server=app&&serverDelivers(),rows=reminderKindRows(app,server),notify=useToast();
  const sendTest=()=>{void requestTestNotice().then(()=>notify('Test reminder sent. It should arrive in a few seconds.'),error=>notify(error instanceof Error&&error.message?error.message:'Could not send a test reminder.',{tone:'danger'}));};
  const mode=value.mode??'off',quiet={start:'22:00',end:'07:00',...value.quiet},digest={weekday:0 as NotifyPrefs extends {digest?:{weekday:infer W}}?W:number,time:'09:00',...value.digest};

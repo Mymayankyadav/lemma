@@ -1,3 +1,5 @@
+import {deviceToken} from '../../../data/study/live';
+import {focusedMilliseconds} from '../../../lib/studyTime';
 import {useEffect,useRef,useState} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {playPhaseChime} from '../../../ui/v7/chime';
@@ -33,8 +35,7 @@ const ratings=['Rough','Hard going','Steady','Good','Great'] as const;
 
 /** Whole focused minutes so far (0 when less than half a minute has been focused). */
 export function focusedMinutes(entry:StudyEntryRecord,now:number):number{
- let total=0;for(const interval of entry.intervals)if(interval.kind==='focus')total+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));
- return Math.round(total/60_000);
+ return Math.round(focusedMilliseconds(entry,now)/60000);
 }
 /** R0 · F09: what a learner reads when a focus action fails: what happened and what is safe, never validation text. */
 export function focusError(reason:unknown,action:'save'|'other'='other'):string{
@@ -46,8 +47,7 @@ export function focusError(reason:unknown,action:'save'|'other'='other'):string{
 
 /** Milliseconds focused so far (focus intervals only). */
 export function focusedMs(entry:StudyEntryRecord,now:number):number{
- let total=0;for(const interval of entry.intervals)if(interval.kind==='focus')total+=Math.max(0,(interval.end?Date.parse(interval.end):now)-Date.parse(interval.start));
- return total;
+ return focusedMilliseconds(entry,now);
 }
 /** N131 · L-04 / A4 focus orbit: where the orbiting point is, as a fraction of the ring (one turn per focused minute). */
 export const orbitTurn=(ms:number)=>(Math.max(0,ms)%60_000)/60_000;
@@ -91,8 +91,9 @@ export default function FocusV7(){
   }catch(reason){setError(focusError(reason));}
   finally{setBusy(false);refresh();announceFocusChange();}
  }
- const pause=()=>act(fresh=>fresh.status==='paused'?getStudyApi().resumeStudyEntry(fresh.id,fresh.version):getStudyApi().pauseStudyEntry(fresh.id,fresh.version));
- const takeBreak=()=>act(fresh=>getStudyApi().breakStudyEntry(fresh.id,fresh.version));
+ const phaseChange=async(fresh:StudyEntryRecord)=>{if(getStudyApi().mode==='live'&&fresh.leaseDevice&&fresh.leaseExpiresAt&&Date.parse(fresh.leaseExpiresAt)>Date.now()&&fresh.leaseDevice!==deviceToken())throw Error('Timer lease belongs to another device');const api=getStudyApi();const leased=await api.takeLease(fresh.id,fresh.version);return api.nextPhase(fresh.id,leased.record.version);};
+ const pause=()=>act(fresh=>fresh.status==='paused'?(fresh.phase==='break'||fresh.phase==='long_break'?phaseChange(fresh):getStudyApi().resumeStudyEntry(fresh.id,fresh.version)):getStudyApi().pauseStudyEntry(fresh.id,fresh.version));
+ const takeBreak=()=>act(phaseChange);
  const openFinish=()=>{if(!entry)return;setMinutes(focusedMinutes(entry,Date.now()));setRating(null);setLearned('');setConfirmDiscard(false);setFinishing(true);};
  const save=()=>act(async fresh=>{
   const saved=await getStudyApi().saveStudyEntry(fresh.id,fresh.version,{minutes,rating:(rating as StudyEntryRecord['rating'])??null,reflection:learned.trim()||null});
@@ -159,7 +160,7 @@ export default function FocusV7(){
      note={clock.endsAt?'This phase ends at '+clockTime(clock.endsAt,Intl.DateTimeFormat().resolvedOptions().timeZone)+'.':undefined}
      items={[
       ...(deskFlag?[{label:desk&&deskChosen?'Leave the desk clock':'Desk clock',hint:'Large digits and the intention; the screen stays awake',icon:<Clock3 aria-hidden="true"/>,onClick:()=>{setMenu(false);setDeskChosen(value=>!value);}}]:[]),
-      ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().nextPhase(fresh.id,fresh.version));}}]:[]),
+      ...(entry.mode&&entry.mode!=='open'?[{label:'Skip to the next phase',hint:'End this phase now',disabled:busy,icon:<SkipForward aria-hidden="true"/>,onClick:()=>{void act(phaseChange);}}]:[]),
       {label:'Take control on this device',hint:'Run the timer here instead of the other device',disabled:busy,icon:<Smartphone aria-hidden="true"/>,onClick:()=>{void act(fresh=>getStudyApi().takeLease(fresh.id,fresh.version));}},
      ]}/>}</div>}/>
   <h1 className="v7-sr-only">Focus · {word}</h1>

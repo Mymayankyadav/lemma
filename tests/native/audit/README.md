@@ -1,0 +1,5 @@
+## N165 native data regressions
+
+`run.mjs` compiles the production calendar, reminder, pending-action, sharing and push-order classes against Android plumbing stubs. The stubs supply preferences, alarms, notification display, encrypted-session storage and a calendar provider; they do not reimplement the production data operations. The real FCM service supplies the owner checks and applies persistent push ordering. The tests cover concurrent initial calendar sync, removal of historical duplicate calendars, logout cleanup of snoozes and posted reminders, retention beyond 20 pending actions, shared-file lifetime, and persistent terminal push watermarks.
+
+Run from the repo root with `NATIVE_TEST_CLASSPATH` pointing to JUnit 4, Hamcrest and an Android-compatible org.json jar. Run `node tests/native/audit/run.mjs` with JDK 17+, or set `ECJ_JAR` when only a Java runtime is available. These are test dependencies already used by the Android project, not app dependencies. `PushOrderTest` also runs in the ordinary Android Gradle unit-test suite.

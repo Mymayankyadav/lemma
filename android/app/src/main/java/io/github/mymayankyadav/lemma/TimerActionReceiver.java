@@ -59,7 +59,7 @@ public class TimerActionReceiver extends BroadcastReceiver {
     /** Also used by the Quick Settings tile. Runs off the main thread (it may make one network call). */
     static void handle(Context context, String op, String entryId, String text, long alarmAt) {
         TimerState state = TimerController.load(context);
-        if (state == null || (entryId != null && !entryId.isEmpty() && !entryId.equals(state.entryId))) return;
+        if (state == null || !accountCurrent(context,state) || (entryId != null && !entryId.isEmpty() && !entryId.equals(state.entryId))) return;
         long now = System.currentTimeMillis();
         switch (op) {
             case PHASE_END:
@@ -86,8 +86,8 @@ public class TimerActionReceiver extends BroadcastReceiver {
                 String pendingId = PendingActions.add(context, op, state.entryId, state.version, null);
                 SessionStore.Session session = SessionStore.load(context);
                 if (StudyCommandClient.usable(session, now)) {
-                    int version = StudyCommandClient.run(session, op, state.entryId, state.version);
-                    if (version >= 0) {
+                    int version = StudyCommandClient.runAction(session, PendingActions.find(context,pendingId));
+                    if (version >= 0 && accountCurrent(context,state)) {
                         PendingActions.remove(context, Collections.singleton(pendingId));
                         next.version = version;
                         next.unsynced = false;
@@ -105,13 +105,14 @@ public class TimerActionReceiver extends BroadcastReceiver {
         TimerState paused = TimerState.RUNNING.equals(state.status) ? state.after(TimerText.PAUSE, now) : state.copy();
         SessionStore.Session session = SessionStore.load(context);
         if (StudyCommandClient.usable(session, now)) {
-            int version = TimerState.RUNNING.equals(state.status) ? StudyCommandClient.run(session, TimerText.PAUSE, state.entryId, state.version) : state.version;
+            int version = TimerState.RUNNING.equals(state.status) ? StudyCommandClient.runAction(session, PendingActions.find(context,pendingId)) : state.version;
             if (version >= 0) {
                 PendingActions.remove(context, Collections.singleton(pendingId));
                 paused.version = version;
                 paused.unsynced = false;
             }
         }
+        if(!accountCurrent(context,state))return;
         TimerController.show(context, paused);
         NotificationManager manager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         manager.cancel(TimerController.ONGOING_ID);
@@ -125,27 +126,35 @@ public class TimerActionReceiver extends BroadcastReceiver {
             "Save " + TimerText.duration(paused.focusedAt(now)), pending(context, SAVE, paused.entryId, 30)).build());
         b.addAction(new Notification.Action.Builder(Icon.createWithResource(context, R.drawable.ic_stat_lemma),
             "Rate and save", Links.pending(context, "/focus?finish=1", 4)).build());
-        notifyAlert(context, b.build());
+        notifyAlert(context, state, b.build());
         LemmaNativePlugin.signal("timerAction");
     }
 
     private static void save(Context context, TimerState state) {
         long now = System.currentTimeMillis();
         SessionStore.Session session = SessionStore.load(context);
-        int version = StudyCommandClient.usable(session, now) ? StudyCommandClient.run(session, SAVE, state.entryId, state.version) : -1;
+        String pendingId=PendingActions.add(context,SAVE,state.entryId,state.version,null);
+        int version = StudyCommandClient.usable(session, now) ? StudyCommandClient.runAction(session,PendingActions.find(context,pendingId)) : -1;
+        if(!accountCurrent(context,state))return;
         if (version >= 0) {
+            PendingActions.remove(context,Collections.singleton(pendingId));
             TimerController.clear(context);
             Notification.Builder b = alertBuilder(context).setContentTitle("Logged " + TimerText.duration(state.focusedAt(now)))
                 .setContentText(TimerText.title(state)).setAutoCancel(true).setOnlyAlertOnce(true);
             if (Build.VERSION.SDK_INT >= 26) b.setTimeoutAfter(6_000L);
-            notifyAlert(context, b.build());
+            notifyAlert(context, state, b.build());
         } else {
-            PendingActions.add(context, SAVE, state.entryId, state.version, null);
-            notifyAlert(context, alertBuilder(context).setContentTitle("Couldn’t log this session yet")
+            // The same receipt remains queued for a retry.
+            notifyAlert(context, state, alertBuilder(context).setContentTitle("Couldn’t log this session yet")
                 .setContentText("Tap to finish logging it in Lemma.").setAutoCancel(true)
                 .setContentIntent(Links.pending(context, "/focus?finish=1", 5)).build());
         }
         LemmaNativePlugin.signal("timerAction");
+    }
+
+    private static boolean accountCurrent(Context context,TimerState state){
+        if(state.ownerId.isEmpty())return true;
+        SessionStore.Session session=SessionStore.load(context);return session!=null&&state.ownerId.equals(session.ownerId);
     }
 
     private static void postPhaseEnd(Context context, TimerState state) {
@@ -163,7 +172,7 @@ public class TimerActionReceiver extends BroadcastReceiver {
         }
         b.addAction(new Notification.Action.Builder(Icon.createWithResource(context, R.drawable.ic_stat_lemma), "Finish",
             pending(context, TimerText.FINISH, state.entryId, 33)).build());
-        notifyAlert(context, b.build());
+        notifyAlert(context, state, b.build());
     }
 
     private static Notification.Builder alertBuilder(Context context) {
@@ -172,11 +181,14 @@ public class TimerActionReceiver extends BroadcastReceiver {
             .setCategory(Notification.CATEGORY_REMINDER).setVisibility(Notification.VISIBILITY_PUBLIC);
     }
 
-    private static void notifyAlert(Context context, Notification notification) {
+    private static void notifyAlert(Context context,TimerState state, Notification notification) {
+        synchronized(TimerController.class){
+        if(!accountCurrent(context,state))return;
         try {
             ((NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE)).notify(TimerController.ALERT_ID, notification);
         } catch (SecurityException noPermission) {
             // Notifications are off; the app shows the same state when opened.
+        }
         }
     }
 

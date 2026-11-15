@@ -1,3 +1,4 @@
+import {publishAuth} from '../authBoundary';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { LemmaError } from '../api'
 import { supabasePublishableKey, supabaseUrl } from '../env'
@@ -18,5 +19,6 @@ export function liveClient(): SupabaseClient {
       detectSessionInUrl: true,
     },
   })
+  instance.auth.onAuthStateChange((_event,session)=>publishAuth(session?.user?{id:session.user.id,email:session.user.email}:null));
   return instance
 }

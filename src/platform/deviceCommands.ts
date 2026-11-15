@@ -49,6 +49,8 @@ export async function runDeviceCommand(cmd:DeviceCommand,deps:RunDeps):Promise<O
     deps.changed?.();return {status:'applied'};
    }
    if(!active)return rejected('No timer is running');
+   if(cmd.payload.entryId!==active.id)return rejected('The timer this command targeted is no longer active');
+   if(cmd.payload.entryVersion!==active.version)return rejected('The timer changed after the command was sent');
    const id=active.id,version=active.version;
    if(action==='pause'){if(active.status==='paused')return rejected('The timer is already paused');await study.pauseStudyEntry(id,version);}
    else if(action==='resume'){if(active.status==='running')return rejected('The timer is already running');await study.resumeStudyEntry(id,version);}
@@ -66,14 +68,27 @@ export async function runDeviceCommand(cmd:DeviceCommand,deps:RunDeps):Promise<O
 }
 
 /** Fetch, mark delivered, run, report. A failed report is retried by the next fetch only for commands still waiting. */
+const commandFlights=new Set<string>();
+const commandReceipts=new Map<string,{claimId:string;outcome?:Outcome}>();
 export async function drainDeviceCommands(api:DeviceCommandApi,deviceId:string,deps:RunDeps):Promise<number>{
- const waiting=await api.pending(deviceId);
- let ran=0;
+ const waiting=await api.pending(deviceId);let ran=0;
  for(const cmd of waiting){
-  await api.report(cmd.id,'delivered');
-  const outcome=await runDeviceCommand(cmd,deps);
-  await api.report(cmd.id,outcome.status,outcome.status==='rejected'?outcome.reason:undefined);
-  ran++;
+  if(commandFlights.has(cmd.id))continue;
+  commandFlights.add(cmd.id);
+  const key='lemma.device-command.'+cmd.id;
+  let saved=commandReceipts.get(cmd.id);
+  if(!saved){try{saved=JSON.parse(sessionStorage.getItem(key)??'null')??undefined;}catch{/* private mode */}}
+  if(!saved){saved={claimId:crypto.randomUUID()};}
+  const persist=()=>{commandReceipts.set(cmd.id,saved!);try{sessionStorage.setItem(key,JSON.stringify(saved));}catch{/* memory remains */}};
+  persist();
+  try{
+   const claim=await api.report(cmd.id,'delivered',undefined,saved.claimId);
+   if(!claim.accepted)continue;
+   if(!saved.outcome){saved.outcome=await runDeviceCommand(cmd,deps);persist();ran++;}
+   const outcome=saved.outcome;
+   await api.report(cmd.id,outcome.status,outcome.status==='rejected'?outcome.reason:undefined,saved.claimId);
+   commandReceipts.delete(cmd.id);try{sessionStorage.removeItem(key);}catch{/* best effort */}
+  }finally{commandFlights.delete(cmd.id);}
  }
  return ran;
 }

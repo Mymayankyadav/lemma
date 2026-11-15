@@ -30,7 +30,7 @@ public final class CalendarSync {
             .appendQueryParameter(CalendarContract.Calendars.ACCOUNT_TYPE, CalendarContract.ACCOUNT_TYPE_LOCAL).build();
     }
 
-    static Long lemmaCalendar(ContentResolver resolver, boolean create) {
+    static synchronized Long lemmaCalendar(ContentResolver resolver, boolean create) {
         try (Cursor c = resolver.query(CalendarContract.Calendars.CONTENT_URI, new String[] {CalendarContract.Calendars._ID},
             CalendarContract.Calendars.ACCOUNT_NAME + "=? AND " + CalendarContract.Calendars.ACCOUNT_TYPE + "=?",
             new String[] {ACCOUNT, CalendarContract.ACCOUNT_TYPE_LOCAL}, null)) {
@@ -52,7 +52,7 @@ public final class CalendarSync {
     }
 
     /** Make the Lemma calendar match `events` between `from` and `to`. Returns {inserted, updated, deleted}. */
-    public static int[] sync(Context context, JSONArray events, long from, long to) throws JSONException {
+    public static synchronized int[] sync(Context context, JSONArray events, long from, long to) throws JSONException {
         ContentResolver resolver = context.getContentResolver();
         Long calendar = lemmaCalendar(resolver, true);
         if (calendar == null) return new int[] {0, 0, 0};
@@ -106,13 +106,19 @@ public final class CalendarSync {
     }
 
     /** Delete the Lemma calendar and everything in it (calendar sync turned off, or sign-out). */
-    public static int removeAll(Context context) {
+    public static synchronized int removeAll(Context context) {
         ContentResolver resolver = context.getContentResolver();
-        Long calendar = lemmaCalendar(resolver, false);
-        if (calendar == null) return 0;
-        int deleted = resolver.delete(asSyncAdapter(CalendarContract.Events.CONTENT_URI), CalendarContract.Events.CALENDAR_ID + "=?",
-            new String[] {String.valueOf(calendar)});
-        resolver.delete(withId(asSyncAdapter(CalendarContract.Calendars.CONTENT_URI), calendar), null, null);
+        int deleted=0;
+        java.util.List<Long> calendars=new java.util.ArrayList<>();
+        try(Cursor c=resolver.query(CalendarContract.Calendars.CONTENT_URI,new String[]{CalendarContract.Calendars._ID},
+            CalendarContract.Calendars.ACCOUNT_NAME+"=? AND "+CalendarContract.Calendars.ACCOUNT_TYPE+"=?",
+            new String[]{ACCOUNT,CalendarContract.ACCOUNT_TYPE_LOCAL},null)){
+            while(c!=null&&c.moveToNext())calendars.add(c.getLong(0));
+        }
+        for(Long calendar:calendars){
+            deleted+=resolver.delete(asSyncAdapter(CalendarContract.Events.CONTENT_URI),CalendarContract.Events.CALENDAR_ID+"=?",new String[]{String.valueOf(calendar)});
+            resolver.delete(withId(asSyncAdapter(CalendarContract.Calendars.CONTENT_URI),calendar),null,null);
+        }
         return deleted;
     }
 

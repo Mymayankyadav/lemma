@@ -127,6 +127,20 @@
       "mcpPath": "MCP owner-filtered read-only get(notifications); existing notify_act for snooze/dismiss; no MCP writes",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "delivery_claimed_at": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "MCP owner-filtered read-only get(notifications); existing notify_act for snooze/dismiss; no MCP writes",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
+    },
+    "delivery_attempts": {
+      "classification": "derived",
+      "appPath": "src/data/live/adapter.ts",
+      "mcpPath": "MCP owner-filtered read-only get(notifications); existing notify_act for snooze/dismiss; no MCP writes",
+      "exportPolicy": "owner-scoped export (N95 planned)",
+      "deletionPolicy": "account purge via owner cascade (N103 planned); domain actions and undo (N36.2)"
     }
   }
 }

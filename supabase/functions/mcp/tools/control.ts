@@ -263,7 +263,7 @@ export async function grade(c:Context,a:any){const s=await settings(c),notes=awa
  for(const ans of a.answers){if(seen.has(ans.card))throw Error('Duplicate card');seen.add(ans.card);const m=ans.card.match(/^N(\d+)\.(\d+)$/i);if(!m)throw Error('Use N7.1');const n=notes.find(x=>x.no===Number(m[1])),card=cards.find(x=>x.note_id===n?.id&&x.ord===Number(m[2]));if(!card||n.status!=='active'||!visibleIds.has(n.project_id))throw Error('Card not found');
  const now=Date.now(),rating=['again','hard','good','easy'].indexOf(ans.rating)+1;const cfg={w:s.fsrs_weights||FSRS.DEFAULT_W,retention:s.desired_retention,maxIvl:s.max_interval_days,learn:FSRS.parseSteps(s.learn_steps),relearn:FSRS.parseSteps(s.relearn_steps),fuzz:s.fuzz,loadBalance:s.load_balance};
  const x=(FSRS.preview({st:card.state,due:Date.parse(card.due),s:card.stability,d:card.difficulty,last:card.last_review?Date.parse(card.last_review):0,step:card.step,reps:card.reps,lapses:card.lapses},now,cfg,{clock:studyClock(s.rollover_hour,s.time_zone)}) as any)[rating];
- const v=x.card,next={state:v.st,due:new Date(v.due).toISOString(),stability:v.s,difficulty:v.d,last_review:new Date(v.last).toISOString(),step:v.step,reps:v.reps,lapses:v.lapses};
+ const v=x.card,next={expected_version:card.version,state:v.st,due:new Date(v.due).toISOString(),stability:v.s,difficulty:v.d,last_review:new Date(v.last).toISOString(),step:v.step,reps:v.reps,lapses:v.lapses};
  await rpc(c,'record_review',{p_card:card.id,p_rating:rating,p_confidence:ans.confidence||null,p_duration_ms:0,p_next:next,expected:{reps:card.reps,due:card.due}});out.push(ans.card+' in '+FSRS.formatIvl(x.delay));}
  return 'graded '+out.length+': next '+out.join(', ');
 }

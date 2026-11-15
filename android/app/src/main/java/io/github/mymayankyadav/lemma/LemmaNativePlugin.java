@@ -72,14 +72,26 @@ public class LemmaNativePlugin extends Plugin {
             call.reject("Invalid session");
             return;
         }
-        SessionStore.save(getContext(), new SessionStore.Session(url, key, token, expiresAt == null ? 0 : expiresAt));
+        String owner=call.getString("ownerId","");
+        if(owner.isEmpty()){call.reject("Owner required");return;}
+        SessionStore.Session previous=SessionStore.load(getContext());
+        if(previous==null||!owner.equals(previous.ownerId)) clearAccountSurfaces();
+        else PendingActions.adoptUnowned(getContext(),owner,call.getString("device",""));
+        SessionStore.save(getContext(), new SessionStore.Session(url, key, token, expiresAt == null ? 0 : expiresAt,owner,call.getString("device","")));
         call.resolve();
     }
 
     @PluginMethod
     public void clearSession(PluginCall call) {
         SessionStore.clear(getContext());
+        clearAccountSurfaces();
         call.resolve();
+    }
+
+    private void clearAccountSurfaces(){
+        TimerController.clear(getContext());Reminders.reset(getContext());
+        getContext().getSharedPreferences("lemma.push.order",android.content.Context.MODE_PRIVATE).edit().clear().apply();
+        try{CalendarSync.removeAll(getContext());}catch(SecurityException noCalendarPermission){/* No calendar access to clear. */}
     }
 
     // ---- focus timer ---------------------------------------------------------------------------------------------
@@ -107,7 +119,7 @@ public class LemmaNativePlugin extends Plugin {
 
     @PluginMethod
     public void timerPendingActions(PluginCall call) {
-        call.resolve(result("actions", PendingActions.all(getContext())));
+        call.resolve(result("actions", PendingActions.forOwner(getContext())));
     }
 
     @PluginMethod
@@ -294,6 +306,9 @@ public class LemmaNativePlugin extends Plugin {
     public void shareTake(PluginCall call) {
         call.resolve(result("items", ShareIntake.take()));
     }
+
+    @PluginMethod
+    public void shareAck(PluginCall call){ShareIntake.ack(getContext(),call.getArray("paths",new JSArray()));call.resolve();}
 
     private Intent recogniser(String prompt) {
         return new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)

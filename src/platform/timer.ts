@@ -1,3 +1,4 @@
+import {focusedMilliseconds} from '../lib/studyTime';
 /**
  * N123 · N2 the native focus timer bridge. The server study entry stays the source of truth: this module only maps it
  * to what the ongoing notification, lock screen and Quick Settings tile show, and replays actions the user took there.
@@ -18,18 +19,13 @@ export function nativeTimerState(entry: StudyEntryRecord | null, now: number, co
   if (!entry || (entry.status !== 'running' && entry.status !== 'paused')) return null;
   const last = entry.intervals[entry.intervals.length - 1];
   const onBreak = (last?.kind === 'break' && last.end === null) || (entry.status === 'running' && (entry.phase === 'break' || entry.phase === 'long_break'));
-  let focusedMs = 0;
-  for (const interval of entry.intervals) {
-    if (interval.kind !== 'focus') continue;
-    const end = interval.end ? Date.parse(interval.end) : now;
-    focusedMs += Math.max(0, end - Date.parse(interval.start));
-  }
+  const focusedMs = focusedMilliseconds(entry,now);
   const mode = entry.mode ?? 'open';
   // N162: the end counts the phase's pauses, and a paused phase has none (the notification shows it stopped).
   const phase = timedPhase(entry, now), timed = !!phase && !phase.paused && entry.status === 'running';
   const config = entry.config ?? {};
   return {
-    entryId: entry.id,
+    entryId: entry.id,entryStartedAt:Date.parse(entry.createdAt),
     version: entry.version,
     status: onBreak ? 'break' : entry.status === 'paused' ? 'paused' : 'running',
     intention: entry.intent.trim() || 'Focused study',
@@ -58,13 +54,23 @@ export async function replayTimerActions(native: Pick<LemmaNativePlugin, 'timerP
   createThought: (text: string, entryId: string) => Promise<unknown>): Promise<ReplayOutcome[]> {
   const {actions} = await native.timerPendingActions();
   const outcomes: ReplayOutcome[] = [];
+  const lineage=new Map<string,{base:number;version:number}>();
   // N126: a missing list (the plugin once sent null) means nothing is pending.
   for (const action of [...(Array.isArray(actions) ? actions : [])].sort((a, b) => a.at - b.at)) {
     let outcome: ReplayOutcome = 'skipped';
     try {
-      outcome = await replayOne(action, api, createThought);
-    } catch {
-      outcome = 'skipped';
+      const previous=lineage.get(action.entryId);
+      const rebased=previous?.base===action.version?{...action,version:previous.version}:action;
+      outcome = api.replayTimerAction?await api.replayTimerAction(action):await replayOne(rebased, api, createThought);
+      if(!api.replayTimerAction&&outcome!=='skipped'){
+        const fresh=await api.activeStudyEntry();if(fresh?.id===action.entryId)lineage.set(action.entryId,{base:action.version,version:fresh.version});
+      }
+    } catch (error) {
+      if(!error||typeof error!=='object'||!('code' in error)||!['conflict','invalid','not_found'].includes(String(error.code))){
+      // Keep this action and its successors in order until the server can acknowledge them.
+      break;
+      }
+      outcome='skipped';
     }
     outcomes.push(outcome);
     await native.timerAckActions({ids: [action.id]});
@@ -85,18 +91,18 @@ async function replayOne(action: PendingTimerAction, api: StudyApi, createThough
   switch (action.action) {
     case 'pause':
       if (fresh.status !== 'running' || onBreak) return 'skipped';
-      await api.pauseStudyEntry(fresh.id, fresh.version);
+      await api.pauseStudyEntry(fresh.id, fresh.version,new Date(action.at).toISOString());
       return 'applied';
     case 'resume':
       if (fresh.status !== 'paused' && !onBreak) return 'skipped';
-      await api.resumeStudyEntry(fresh.id, fresh.version);
+      await api.resumeStudyEntry(fresh.id, fresh.version,new Date(action.at).toISOString());
       return 'applied';
     case 'break':
       if (fresh.status !== 'running' || onBreak) return 'skipped';
-      await api.breakStudyEntry(fresh.id, fresh.version);
+      await api.breakStudyEntry(fresh.id, fresh.version,new Date(action.at).toISOString());
       return 'applied';
     case 'finish':
-      if (fresh.status === 'running' && !onBreak) await api.pauseStudyEntry(fresh.id, fresh.version);
+      if (fresh.status === 'running' && !onBreak) await api.pauseStudyEntry(fresh.id, fresh.version,new Date(action.at).toISOString());
       return 'finish';
     case 'save':
       await api.saveStudyEntry(fresh.id, fresh.version, {});

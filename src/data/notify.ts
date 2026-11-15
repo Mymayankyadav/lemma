@@ -119,3 +119,9 @@ export function nextReminderTime(
    Number.isFinite(Date.parse(row.at))&&Date.parse(row.at)>nowMs)
   .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at))[0]?.at??null;
 }
+
+/** Undo only keys changed by this control, so Undo cannot revert another device's unrelated preferences. */
+export function notifyUndo(before:NotifyPrefs,patch:NotifyPrefs):NotifyPrefs{
+ const pick=(prior:Record<string,unknown>,next:Record<string,unknown>):Record<string,unknown>=>Object.fromEntries(Object.entries(next).map(([key,value])=>[key,value&&typeof value==='object'&&!Array.isArray(value)?pick((prior[key]??{}) as Record<string,unknown>,value as Record<string,unknown>):prior[key]??null]));
+ return pick(before,patch) as NotifyPrefs;
+}

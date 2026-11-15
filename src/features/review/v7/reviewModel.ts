@@ -95,7 +95,7 @@ export interface RoundSummary{cards:number;seconds:number;recalledPct:number|nul
 const names:Record<Rating,keyof GradeSplit>={1:'again',2:'hard',3:'good',4:'easy'};
 /** The reviews recorded between a run's start and end; the durable run itself stores no grades. */
 export function roundSummary(reviews:InsightData['reviews'],run:{startedAt:string;endedAt:string|null;graded:number}):RoundSummary{
- const from=Date.parse(run.startedAt)-1000,to=run.endedAt?Date.parse(run.endedAt)+60_000:Infinity;
+ const from=Date.parse(run.startedAt),to=run.endedAt?Date.parse(run.endedAt):Infinity;
  const inside=reviews.filter(review=>{const at=Date.parse(review.reviewedAt);return at>=from&&at<=to;});
  const grades:GradeSplit={again:0,hard:0,good:0,easy:0};
  for(const review of inside)grades[names[review.rating]]+=1;

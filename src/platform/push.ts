@@ -18,13 +18,15 @@ export const serverDelivers = (): boolean => lastSent !== '';
 export function resetPushRegistration(): void {lastSent = '';}
 
 /** Ask the plugin for the token and register it once per token and device key. A missing token means one is on its way: the plugin signals `pushToken`. */
-export async function syncPushToken(native: Pick<LemmaNativePlugin, 'pushToken'>, registrar: PushRegistrar, key: string, appVersion: string): Promise<PushOutcome> {
+export async function syncPushToken(native: Pick<LemmaNativePlugin, 'pushToken'>, registrar: PushRegistrar, key: string, appVersion: string, ownerId='',isCurrent:()=>boolean=()=>true): Promise<PushOutcome> {
   const {configured, token} = await native.pushToken();
+  if (!isCurrent()) return 'waiting';
   if (!configured) return 'off';
   if (!token) return 'waiting';
-  const stamp = key + '|' + token + '|' + appVersion;
+  const stamp = ownerId+'|'+key + '|' + token + '|' + appVersion;
   if (stamp === lastSent) return 'unchanged';
   await registrar.register(key, token, appVersion);
+  if(!isCurrent())return 'waiting';
   lastSent = stamp;
   return 'registered';
 }

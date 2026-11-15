@@ -18,7 +18,7 @@ export async function savePages(c:Context,a:{
  let src:any;
  if(a.source){
   src=await source(c,p,a.source);
-  if(src.page_count&&a.pages.some(page=>page.page>src.page_count))
+  if(src.filename&&src.page_count&&a.pages.some(page=>page.page>src.page_count))
    throw Error('Page exceeds '+src.page_count+' pages in '+src.short);
  }else{
   if(!a.title?.trim()||a.title.trim().length>120)throw Error('New transcribed source needs a title of at most 120 characters');

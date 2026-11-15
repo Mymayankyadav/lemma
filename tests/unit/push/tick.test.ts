@@ -36,8 +36,8 @@ describe('N164.1 reminder tick',()=>{
   const summary=await runNoticeTick(s.db,s.sender,NOW);
   expect(summary).toMatchObject({owners:1,queued:1,sent:1,failed:0,timedOut:false});
   expect(s.queued).toEqual([{user:A,rows:[{kind:'due',key:'due:2026-11-14',title:'34 cards due',body:expect.stringContaining('12 min'),url:'#/review',facts:{actions:[{action:'open',title:'Start review',url:'#/review'},{action:'later',title:'Later'}]}}]}]);
-  expect(s.sent[0]).toEqual({token:'tok-1',data:{type:'notice',id:'7',kind:'due',title:'34 cards due',body:'About 12 min. Start with 5?',url:'#/review'},options:{collapseKey:'notice-7',ttlSeconds:21600}}); // no secret: no signed buttons
-  expect(s.recorded).toEqual([]);
+  expect(s.sent[0]).toEqual({token:'tok-1',data:{type:'notice',ownerId:A,id:'7',kind:'due',title:'34 cards due',body:'About 12 min. Start with 5?',url:'#/review'},options:{collapseKey:'notice-7',ttlSeconds:21600}}); // no secret: no signed buttons
+  expect(s.recorded).toEqual([[A,7,'sent']]);
  });
  it('queues nothing when the rules defer, suppress or skip',async()=>{
   const few=setup({facts:facts(3)});

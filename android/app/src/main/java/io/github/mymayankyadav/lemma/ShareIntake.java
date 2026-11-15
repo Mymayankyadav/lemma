@@ -19,7 +19,7 @@ import org.json.JSONObject;
 
 /**
  * N123 · N4 "Share to Lemma": text and links, or PDF/.tex/.md files. Files are copied into the app's cache (at most
- * 50 MB each, five at a time) so the web layer can read them; the cache folder is cleared on every new share.
+ * 50 MB each, five at a time) so the web layer can read them; each file remains until the web layer acknowledges copying it.
  */
 public final class ShareIntake {
     private ShareIntake() {}
@@ -84,10 +84,16 @@ public final class ShareIntake {
         return out;
     }
 
+    public static void ack(Context context,JSONArray paths){
+        File dir=new File(context.getCacheDir(),"shared");
+        for(int i=0;i<paths.length();i++)try{
+            File file=new File(paths.optString(i)).getCanonicalFile();
+            if(dir.getCanonicalFile().equals(file.getParentFile()))file.delete();
+        }catch(java.io.IOException ignored){}
+    }
+
     private static JSONArray copy(Context context, List<Uri> uris, String type) throws Exception {
         File dir = new File(context.getCacheDir(), "shared");
-        File[] old = dir.listFiles();
-        if (old != null) for (File f : old) f.delete();
         dir.mkdirs();
         ContentResolver resolver = context.getContentResolver();
         JSONArray files = new JSONArray();

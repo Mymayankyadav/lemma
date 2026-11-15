@@ -15,7 +15,7 @@ function database(): PushDb {
   const ok = <T>(result: {data: T | null; error: {message: string} | null}): T | null => {if (result.error) throw new Error(result.error.message); return result.data;};
   return {
     claim: async limit => (ok(await admin.rpc('push_claim', {p_limit: limit})) ?? []) as OutboxRow[],
-    entry: async (userId, id) => ok(await admin.from('study_entries').select('id,version,status,intent,mode,phase,cycle,config,phase_ends_at,project_id').eq('user_id', userId).eq('id', id).maybeSingle()),
+    entry: async (userId, id) => ok(await admin.from('study_entries').select('created_at,id,version,status,intent,mode,phase,cycle,config,phase_ends_at,project_id,excluded_intervals').eq('user_id', userId).eq('id', id).maybeSingle()),
     intervals: async (userId, id) => ok(await admin.from('study_intervals').select('kind,started_at,ended_at').eq('user_id', userId).eq('entry_id', id).order('started_at', {ascending: true})) ?? [],
     context: async (userId, projectId) => {
       const project = projectId ? ok(await admin.from('projects').select('title').eq('user_id', userId).eq('id', projectId).maybeSingle()) : null;
@@ -36,7 +36,10 @@ function noticeDatabase(): NoticeDb {
   const ok = <T>(result: {data: T | null; error: {message: string} | null}): T | null => {if (result.error) throw new Error(result.error.message); return result.data;};
   return {
     owners: async limit => (ok(await admin.rpc('notify_enabled_owners', {p_limit: limit})) ?? []) as string[],
-    facts: async (userId, nowIso) => (ok(await admin.rpc('notify_candidates', {p_user: userId, p_now: nowIso})) ?? {}) as NoticeFacts,
+    facts: async (userId, nowIso) => {
+      const [facts,holds]=await Promise.all([admin.rpc('notify_candidates',{p_user:userId,p_now:nowIso}),admin.from('notify_holds').select('scope,until').eq('user_id',userId).gt('until',nowIso)]);
+      return {...(ok(facts)??{}),holds:Object.fromEntries((ok(holds)??[]).map((hold:{scope:string;until:string})=>[hold.scope,hold.until]))} as NoticeFacts;
+    },
     prefs: async userId => ((ok(await admin.from('settings').select('notify').eq('user_id', userId).maybeSingle()) as {notify?: Record<string, unknown>} | null)?.notify ?? {}) as NoticePrefs,
     queue: async (userId, rows) => (ok(await admin.rpc('notify_queue', {p_user: userId, p_rows: rows})) ?? 0) as number,
     claim: async (userId, limit) => (ok(await admin.rpc('notify_claim', {p_user: userId, p_limit: limit})) ?? []) as NoticeRow[],

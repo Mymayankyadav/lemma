@@ -35,16 +35,18 @@ function makeFake(records:CalendarBlockRecord[]=[original]){
   rows=rows.map(row=>row.id===id?record:row);
   return {record,actionNo:null};
  });
+ const deleted=new Map<string,CalendarBlockRecord>();
+ const undoCalendarBlockDeletion=vi.fn(async(id:string)=>{const row=deleted.get(id);if(row)rows.push(row);});
  const deleteCalendarBlock=vi.fn(async(id:string,expectedVersion:number)=>{
   const before=rows.find(row=>row.id===id);
   if(!before||before.version!==expectedVersion)throw Object.assign(new Error('stale'),{code:'conflict'});
-  rows=rows.filter(row=>row.id!==id);
+  deleted.set(id,before);rows=rows.filter(row=>row.id!==id);
   return {record:{id},actionNo:null};
  });
  setStudyApiForTests({...emptyStudyApi('demo'),listStudyEntries,listCalendarBlocks,
-   createCalendarBlock,updateCalendarBlock,deleteCalendarBlock});
+   createCalendarBlock,updateCalendarBlock,deleteCalendarBlock,undoCalendarBlockDeletion});
  return {listStudyEntries,listCalendarBlocks,createCalendarBlock,updateCalendarBlock,
-   deleteCalendarBlock,setRows(value:CalendarBlockRecord[]){rows=value;}};
+   deleteCalendarBlock,undoCalendarBlockDeletion,setRows(value:CalendarBlockRecord[]){rows=value;}};
 }
 async function render(path='/calendar?date=2026-11-06&view=day'){
  await act(async()=>{root.render(<MemoryRouter initialEntries={[path]}><Routes>
@@ -148,7 +150,7 @@ describe('N27 calendar owner-zone block editor',()=>{
    startsAt:original.startsAt,endsAt:original.endsAt,timeZone:'UTC'
   });
  });
- it('confirms deletion and Undo re-creates a block with its preserved details',async()=>{
+ it('confirms deletion and Undo restores the original block with its preserved details',async()=>{
   const api=makeFake();
   await render();
   await click('Edit block Work through notes');
@@ -163,9 +165,9 @@ describe('N27 calendar owner-zone block editor',()=>{
   expect(notify.mock.calls[0][0]).toBe('Calendar block deleted');
   const undo=notify.mock.calls[0][1].action;
   await act(async()=>{undo.onClick();await Promise.resolve();});
-  expect(api.createCalendarBlock).toHaveBeenCalledWith(expect.objectContaining({
-   title:original.title,kind:original.kind,startsAt:original.startsAt,endsAt:original.endsAt
-  }));
+  expect(api.undoCalendarBlockDeletion).toHaveBeenCalledWith(original.id,null);
+  expect(await api.listCalendarBlocks()).toContainEqual(original);
+  expect(api.createCalendarBlock).not.toHaveBeenCalled();
  });
  it('blocks invalid reversed times and does not write',async()=>{
   const api=makeFake();

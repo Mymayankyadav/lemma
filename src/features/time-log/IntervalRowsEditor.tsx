@@ -31,13 +31,13 @@ export function IntervalRowsEditor({rows,onChange,zone}:{rows:LocalIntervalRow[]
     <label className="min-w-0 text-label">Start date<input type="date" className={field}
      aria-label={`Interval ${index+1} start date`} value={row.startDay}
      onChange={e=>update(index,'startDay',e.target.value)}/></label>
-    <label className="min-w-0 text-label">Start time<input type="time" className={field}
+    <label className="min-w-0 text-label">Start time<input type="time" step="0.001" className={field}
      aria-label={`Interval ${index+1} start time`} value={row.startTime}
      onChange={e=>update(index,'startTime',e.target.value)}/></label>
     <label className="min-w-0 text-label">End date<input type="date" className={field}
      aria-label={`Interval ${index+1} end date`} value={row.endDay}
      onChange={e=>update(index,'endDay',e.target.value)}/></label>
-    <label className="min-w-0 text-label">End time<input type="time" className={field}
+    <label className="min-w-0 text-label">End time<input type="time" step="0.001" className={field}
      aria-label={`Interval ${index+1} end time`} value={row.endTime}
      onChange={e=>update(index,'endTime',e.target.value)}/></label>
    </div>

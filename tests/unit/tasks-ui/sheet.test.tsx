@@ -9,6 +9,7 @@ import {emptyTaskApi,type TaskRecord} from '../../../src/data/tasks/contract';
 import {useToast} from '../../../src/ui/Toast';
 
 vi.mock('../../../src/data/hooks',()=>({
+ useSettings:()=>({data:{timeZone:'UTC'}}),
  useHome:()=>({data:{pendingProposals:0}}),
  useProjects:()=>({data:[{id:'project-analysis',title:'Real Analysis',status:'active'}]}),
  useSubjects:()=>({data:[{id:'subject-analysis',name:'Analysis'}]}),

@@ -1,7 +1,8 @@
+import {localClockInstant,localWallParts} from '../time-log/local-time';
 import {useId,useRef,useState,type FormEvent} from 'react';
 import Dialog from '../../ui/v6/Dialog';
 import {getTaskApi} from '../../data/tasks';
-import {useProjects, useSubjects} from '../../data/hooks';
+import {useProjects, useSubjects,useSettings} from '../../data/hooks';
 import type {TaskDue, TaskPriority, TaskRecord} from '../../data/tasks/contract';
 import {useToast} from '../../ui/Toast';
 
@@ -9,18 +10,10 @@ const field='min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 
 const label='flex flex-col gap-1.5 text-label font-medium text-ink-2';
 type DueKind = TaskDue['kind'];
 
-function localInstant(value:string):string|null {
-  if (!/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(value)) return null;
-  const date=new Date(value);
-  if (!Number.isFinite(date.getTime())) return null;
-  const pad=(n:number)=>String(n).padStart(2,'0');
-  const roundtrip=`${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-  return roundtrip===value?date.toISOString():null;
-}
 export function taskInput(values:{
   title:string; estimate:string; priority:TaskPriority; dueKind:DueKind; dueDate:string;
   dueInstant:string; subjectId:string; projectId:string;
-}) {
+},zone=Intl.DateTimeFormat().resolvedOptions().timeZone) {
   const title=values.title.trim();
   if (!title) throw new Error('Enter a task title.');
   if (title.length>200) throw new Error('Task title must be 200 characters or fewer.');
@@ -38,7 +31,7 @@ export function taskInput(values:{
       throw new Error('Choose a valid due date.');
     due={kind:'date',date:values.dueDate};
   } else if (values.dueKind==='instant') {
-    const at=localInstant(values.dueInstant);
+    const at=localClockInstant(values.dueInstant.slice(0,10),values.dueInstant.slice(11),zone);
     if (!at) throw new Error('Choose a valid local date and time.');
     due={kind:'instant',at};
   } else if (values.dueKind!=='none') throw new Error('Choose a due type.');
@@ -49,16 +42,16 @@ export function taskInput(values:{
 }
 
 /** Shared create/edit sheet; its opener owns focus restoration. */
-function localDateTime(iso:string):string {
- const d=new Date(iso),pad=(n:number)=>String(n).padStart(2,'0');
- return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function localDateTime(iso:string,zone:string):string {
+ const p=localWallParts(iso,zone);return p.day+'T'+p.clock;
 }
 export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
  onDismiss:()=>void;task?:TaskRecord;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void;
 }) {
   const id=useId();
   const notify=useToast();
-  const subjects=useSubjects(),projects=useProjects();
+  const subjects=useSubjects(),projects=useProjects(),settings=useSettings();
+  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone;
   const busy=useRef(false);
   const [saving,setSaving]=useState(false);
   const [title,setTitle]=useState(task?.title??'');
@@ -66,7 +59,7 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
   const [priority,setPriority]=useState<TaskPriority>(task?.priority??'normal');
   const [dueKind,setDueKind]=useState<DueKind>(task?.due.kind??'none');
   const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:'');
-  const [dueInstant,setDueInstant]=useState(task?.due.kind==='instant'?localDateTime(task.due.at):'');
+  const [dueInstant,setDueInstant]=useState(task?.due.kind==='instant'?localDateTime(task.due.at,zone):'');
   const [subjectId,setSubjectId]=useState(task?.subjectId??'');
   const [projectId,setProjectId]=useState(task?.projectId??'');
   const [error,setError]=useState('');
@@ -75,7 +68,7 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
     event.preventDefault();
     if (busy.current) return;
     let input:ReturnType<typeof taskInput>;
-    try {input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant,subjectId,projectId});}
+    try {input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant,subjectId,projectId},zone);}
     catch (e) {setError(e instanceof Error?e.message:'Invalid task details.');return;}
     busy.current=true;setSaving(true);setError('');
     try {

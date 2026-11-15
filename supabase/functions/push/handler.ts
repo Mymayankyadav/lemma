@@ -59,6 +59,7 @@ export async function handlePush(request: {method: string; secret: string | null
       const data: Record<string, string> = message.op === 'show'
         ? {type: 'timer', op: 'show', entryId, version: String(message.state.version), state: JSON.stringify(message.state)}
         : {type: 'timer', op: 'clear', entryId, version: String(message.version)};
+      data.ownerId=userId;data.revision=String(Math.max(...ids));
       const results = await Promise.all(tokens.map(async token => ({token, result: await deps.sender.send(token.token, data, {collapseKey: 'timer', ttlSeconds: 60})})));
       for (const {token, result} of results) if (result === 'gone') await deps.db.deleteToken(token.id);
       if (results.some(item => item.result === 'sent')) {await deps.db.finish(ids, 'sent'); counts.sent += ids.length;}

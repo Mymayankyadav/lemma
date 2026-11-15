@@ -96,9 +96,16 @@
     "task_id": {
       "classification": "owner-editable",
       "appPath": "N65 study block/task links (planned)",
-      "mcpPath": "supabase/functions/mcp/tools/study.ts → public.study_command (registered MCP owner command)",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts \u2192 public.study_command (registered MCP owner command)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "N51 journalled undo; N103 owner purge (planned)"
+    },
+    "deadline_id": {
+      "classification": "command-managed",
+      "appPath": "owner-visible through calendar blocks written by public.period_plans_command commit/replan via public.period_plan_write_blocks",
+      "mcpPath": "supabase/functions/mcp/tools/study.ts \u2192 public.period_plans_command; supabase/functions/mcp/tools/registry.ts \u2192 get(calendar_blocks)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "N51 journalled undo; owner account purge via cascade"
     }
   }
 }
