@@ -1,5 +1,6 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+
 ## N161 Phone layout fixes from the Owner's screenshots: Today's Continue cards, the Atlas sheet, the Calendar ruler (Owner task)
 
 Owner task: "The bottom bar is not aligned. And in second buttons are not visible" … "This one just comes in a way maybe it could have better if it was part of the dock in some way." … "In peek hide those buttons or lower the dock further so they are not visible as they make it look broken"

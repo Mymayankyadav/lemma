@@ -58,11 +58,17 @@ function linkColumns(input: {subjectId?: string | null; projectId?: string | nul
   ] as const) if (input[from] !== undefined) result[to] = input[from];
   return result;
 }
+// PostgreSQL omits a zero fractional part. Locale collation puts "+00" after ".001+00";
+// compare instants (including the remaining microseconds) so the current phase stays last.
+function intervalOrder(a:StudyInterval,b:StudyInterval):number{
+ const tail=(value:string)=>Number((value.match(/\.(\d+)/)?.[1]??'').padEnd(6,'0').slice(3,6));
+ return Date.parse(a.start)-Date.parse(b.start)||tail(a.start)-tail(b.start);
+}
 function mapIntervals(data: unknown): StudyInterval[] {
   return (Array.isArray(data) ? data : []).map((v: ObjectRow) => ({
     id: String(v.id), kind: v.kind as StudyInterval['kind'],
     start: String(v.started_at), end: v.ended_at == null ? null : String(v.ended_at),
-  })).sort((a: StudyInterval, b: StudyInterval) => a.start.localeCompare(b.start));
+  })).sort(intervalOrder);
 }
 function mapStudy(data: ObjectRow): StudyEntryRecord {
   return {
