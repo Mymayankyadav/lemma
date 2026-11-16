@@ -75,6 +75,31 @@ describe('N54.1 owner changes and targeted invalidation', () => {
   await vi.advanceTimersByTimeAsync(60_000)
   expect(read).toHaveBeenCalledTimes(2)
  })
+ it('drains a cold-start backlog with one invalidation, not one per page', async () => {
+  const client = queryClient()
+  client.setQueryData(['decks'], 1)
+  client.setQueryData(['settings'], 1)
+  const invalidate = vi.spyOn(client, 'invalidateQueries')
+  // Three full pages of journal history, then a short tail: 160 rows from cursor 0.
+  const full = (from: number, resource: string) =>
+   page(Array.from({ length: 50 }, (_, i) => delta(resource, from + i + 1)), from + 50)
+  const read = vi.fn(async (cursor: number) =>
+   cursor === 0 ? full(0, 'cards') : cursor === 50 ? full(50, 'settings') :
+   cursor === 100 ? full(100, 'cards') :
+   cursor === 150 ? page(Array.from({ length: 10 }, (_, i) => delta('tasks', 151 + i)), 160) :
+   page([], 160))
+  const stop = subscribeOwnerChanges('account-a', client, read)
+  await vi.advanceTimersByTimeAsync(0)
+  expect(read.mock.calls.map(call => call[0])).toEqual([0, 50, 100, 150])
+  // Every resource from the backlog is still invalidated, once per prefix.
+  const keys = invalidate.mock.calls.map(call => (call[0] as { queryKey: string[] }).queryKey[0])
+  expect(keys.filter(key => key === 'decks')).toHaveLength(1)
+  expect(keys.filter(key => key === 'settings')).toHaveLength(1)
+  expect(keys).toContain('tasks')
+  expect(client.getQueryState(['decks'])?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['settings'])?.isInvalidated).toBe(true)
+  stop()
+ })
  it('never reuses a cursor from another signed-in owner', async () => {
   const client = queryClient()
   const read = vi.fn(async (cursor: number) => cursor === 0 ?
