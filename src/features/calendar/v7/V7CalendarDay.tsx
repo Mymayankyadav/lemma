@@ -36,6 +36,8 @@ import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
 import {isFlagOn} from '../../../flags';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {LoggedSessionSheet} from './LoggedSessionSheet';
+import {EntrySheetV7} from '../../time-log/v7/EntrySheetV7';
 
 const views=['Day','Week','Month','Agenda'] as const;
 /** PLAN §6.5: the shape of the day, with a week strip above and a time grid below. */
@@ -129,6 +131,14 @@ export default function V7CalendarDay(){
  // eslint-disable-next-line react-hooks/exhaustive-deps
  },[params]);
  const restoreFocus=()=>{const target=opener.current;opener.current=null;if(target?.isConnected)target.focus();};
+ // N168: tapping logged study opens its session; the id rides in the URL so Back closes the sheet.
+ const loggedId=params.get('logged'),loggedEntry=loggedId?entries.find(entry=>entry.id===loggedId)??null:null;
+ const [editingEntry,setEditingEntry]=useState<StudyEntryRecord|null>(null);
+ function openEntry(entry:StudyEntryRecord){
+  opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+  const next=new URLSearchParams(params);next.set('logged',entry.id);setParams(next);
+ }
+ function closeEntry(){const next=new URLSearchParams(params);next.delete('logged');setParams(next,{replace:true});restoreFocus();}
  async function adjust(block:CalendarBlockRecord,patch:Pick<CalendarBlockPatch,'startsAt'|'endsAt'>){
   if(saving)return;
   if(!patch.startsAt||!patch.endsAt||Date.parse(patch.endsAt)<=Date.parse(patch.startsAt)){setActionError('Block must finish after it starts.');return;}
@@ -201,11 +211,11 @@ export default function V7CalendarDay(){
   {phase==='loading'&&<div className="v7-cal-skeleton" role="status" aria-label="Loading calendar"><span/><span/><span/></div>}
   {phase==='error'&&<div role="alert" className="v7-alert"><p>{message}</p><button type="button" className="v7-button v7-secondary v7-small" onClick={()=>setReload(value=>value+1)}><span>Reload</span></button></div>}
   {!!actionError&&<div role="alert" className="v7-alert"><p>{actionError}</p><button type="button" className="v7-button v7-secondary v7-small" onClick={()=>{setActionError('');setReload(value=>value+1);}}><span>Reload</span></button></div>}
-  {phase==='ready'&&view==='week'&&<WeekGrid weekStart={weekStart} date={date} today={today} zone={zone} clock={clock} entries={entries} blocks={blocks} now={now} lookOf={lookOf} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)}/>}
+  {phase==='ready'&&view==='week'&&<WeekGrid weekStart={weekStart} date={date} today={today} zone={zone} clock={clock} entries={entries} blocks={blocks} now={now} lookOf={lookOf} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry}/>}
   {phase==='ready'&&view==='month'&&<MonthSection date={date} today={today} zone={zone} firstDay={firstDay} clock={clock} entries={entries} blocks={blocks} dues={dues} lookOf={lookOf}
    onPick={day=>go('date',day)} onOpen={openDay} onEdit={block=>sheetParams(undefined,block.id)}/>}
   {phase==='ready'&&view==='agenda'&&<AgendaList date={date} today={today} zone={zone} clock={clock} clock24h={clock24h} entries={entries} blocks={blocks} dues={dues} projects={projects}
-   lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onAdd={day=>{
+   lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdd={day=>{
     const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
   {!(room&&view==='day')&&phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
    onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
@@ -220,7 +230,7 @@ export default function V7CalendarDay(){
     value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
     onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/></div>}
    <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
-    onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onAdjust={(block,patch)=>{void adjust(block,patch);}}
+    onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}
    {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={120}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
@@ -228,6 +238,10 @@ export default function V7CalendarDay(){
   <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
    onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={(startsAt,carry)=>moreParams(startsAt,carry)}/>
   <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>
+  {loggedEntry&&<LoggedSessionSheet key={loggedEntry.id+'-'+loggedEntry.version} entry={loggedEntry} look={lookOf({projectId:loggedEntry.projectId} as CalendarBlockRecord)} zone={zone} clock={clock}
+   onClose={closeEntry} onChanged={()=>setReload(value=>value+1)} onEdit={entry=>{const next=new URLSearchParams(params);next.delete('logged');setParams(next,{replace:true});setEditingEntry(entry);}}/>}
+  {editingEntry&&<EntrySheetV7 key={editingEntry.id+'-'+editingEntry.version} entry={editingEntry} busy={false} onClose={()=>{setEditingEntry(null);restoreFocus();}}
+   onChange={async()=>{setEditingEntry(null);setReload(value=>value+1);notify('Session updated',{tone:'success'});}}/>}
   <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
  </main>;
 }

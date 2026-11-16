@@ -11,6 +11,7 @@ import {OverlapMarkers,useCalendarOverlaps} from '../overlaps/OverlapMarkers';
 import {matchingAcknowledgement,overlapWindows} from '../overlaps/model';
 import type {BlockLook} from './DayGrid';
 import {agendaTimeColumn,collapseEmptyRuns,nothingPlanned} from './viewModel';
+import {loggedSessions,sessionCaption} from './loggedSessions';
 
 const origin=(kind:string)=>kind==='owner'?'Deadline':kind==='project_target'?'Path target date':'Checkpoint due';
 /** CA2: deadlines and practice share the block row's design — time column, icon, subject rule, title in Body.
@@ -34,9 +35,11 @@ export function DueRow({item,zone,projects=[],now}:{item:DueItem;zone:string;pro
 }
 
 /** PLAN §6.5 Agenda: sticky day headings, a time column, one row design for every kind of item, runs of empty days as one line. */
-export default function AgendaList({date,today,zone,clock,entries,blocks,dues,projects,lookOf,onEdit,onAdd,clock24h}:{
+export default function AgendaList({date,today,zone,clock,entries,blocks,dues,projects,lookOf,onEdit,onAdd,clock24h,onOpenEntry}:{
  date:string;today:string;zone:string;clock:(instant:string)=>string;clock24h:boolean;entries:StudyEntryRecord[];blocks:CalendarBlockRecord[];dues:CalendarDues;
  projects:readonly ProjectSummary[];lookOf:(block:CalendarBlockRecord)=>BlockLook;onEdit:(block:CalendarBlockRecord)=>void;onAdd:(day:string)=>void;
+ /** N168: tapping logged study opens its session sheet. */
+ onOpenEntry?:(entry:StudyEntryRecord)=>void;
 }){
  const range=useMemo(()=>calendarRange(date,zone,14),[date,zone]);
  const controls=useCalendarOverlaps(range);
@@ -64,9 +67,13 @@ export default function AgendaList({date,today,zone,clock,entries,blocks,dues,pr
     <h2 id={'ag-'+group.day} className="v7-ag-heading">{label(group.day)}</h2>
     {open.length>0&&<OverlapMarkers zone={zone} controls={controls} clock24h={clock24h} windows={open}/>}
     <ul>
-     {group.entries.map((slice,index)=><li key={slice.entry.id+':'+index} className="v7-ag-row" data-kind="logged">
-      <span className="v7-ag-time">{agendaTimeColumn(slice.start,slice.end,clock)}</span>
-      <span className="v7-ag-body"><strong>{slice.entry.intent||'Study'}</strong><small>Logged · {Math.round((Date.parse(slice.end)-Date.parse(slice.start))/60000)} min</small></span></li>)}
+     {/* N168: one row per saved session, pauses included in its span; tap for the session's details. */}
+     {loggedSessions(entries,calendarRange(group.day,zone)).map(session=>{const look=lookOf({projectId:session.entry.projectId} as CalendarBlockRecord);
+      return <li key={session.id} className={'v7-ag-row '+look.subjectClass} data-kind="logged">
+       <button type="button" data-logged-entry={session.entry.id} aria-label={'Logged study '+(session.entry.intent||'Study')+', '+sessionCaption(session,formatDuration)+'. Open for details.'} onClick={()=>onOpenEntry?.(session.entry)}>
+        <span className="v7-ag-time">{agendaTimeColumn(session.start,session.end,clock)}</span>
+        <span className="v7-ag-body"><strong>{session.entry.intent||'Study'}</strong><small>Logged · {sessionCaption(session,formatDuration)}{look.path?' · '+look.path:''}</small></span>
+       </button></li>;})}
      {group.blocks.map(block=>{const look=lookOf(block);
       return <li key={block.id} className={'v7-ag-row '+look.subjectClass} data-kind={block.kind==='busy'?'busy':block.status==='done'?'done':'study'}>
        <button type="button" aria-label={'Edit block '+block.title} onClick={()=>onEdit(block)}>

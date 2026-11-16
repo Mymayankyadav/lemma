@@ -53,7 +53,27 @@
  :where(html[data-v7]) .v7-cal-block small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
  :where(html[data-v7]) .v7-cal-block[data-kind="busy"] > :is(button,div) {background-color:var(--v7-role-surface-muted);background-image:linear-gradient(135deg,var(--v7-role-border-subtle) 25%,transparent 25% 50%,var(--v7-role-border-subtle) 50% 75%,transparent 75%);background-size:8px 8px;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cal-block[data-kind="busy"] > :is(button,div)::before {background:var(--v7-role-border-default);}
- :where(html[data-v7]) .v7-cal-block[data-kind="logged"] > div {background:color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 34%,var(--v7-role-surface-page));}
+ :where(html[data-v7]) .v7-cal-block[data-kind="logged"] > :is(button,div) {--v7-cal-fill:color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 34%,var(--v7-role-surface-page));background:var(--v7-cal-fill);}
+ /* N168: the title and caption sit on the card's own fill, so a gap drawn behind them never strikes through the text. */
+ :where(html[data-v7]) .v7-cal-block[data-kind="logged"] :is(strong,small) {justify-self:start;max-width:100%;background:var(--v7-cal-fill);box-shadow:0 0 0 2px var(--v7-cal-fill);border-radius:3px;}
+ /* N168: a saved session is one card; a pause is a hatched gap, a break a dotted one, at their times inside the card. */
+ :where(html[data-v7]) .v7-cal-gap {position:absolute;inset-inline:0;z-index:0;pointer-events:none;background-color:var(--v7-role-surface-page);
+  background-image:repeating-linear-gradient(135deg,color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 45%,transparent) 0 1.5px,transparent 1.5px 6px);
+  border-block:1px dashed color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 55%,transparent);}
+ :where(html[data-v7]) .v7-cal-gap[data-gap="break"] {background-image:radial-gradient(color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 55%,transparent) 1px,transparent 1.5px);background-size:6px 6px;}
+ :where(html[data-v7]) .v7-cal-block :is(strong,small),:where(html[data-v7]) .v7-wk-block > :is(.v7-wk-glyph,.v7-wk-title,.v7-wk-short) {position:relative;z-index:1;}
+ :where(html[data-v7]) .v7-cal-block .v7-cal-check {z-index:1;}
+ :where(html[data-v7]) .v7-wk-block > .v7-cal-gap {border-block-width:0;}
+ /* N168: under 46 px a card is one centred row, title (ellipsis) then caption; under 26 px the row is set small. */
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"] > :is(button,div) {display:flex;align-items:center;gap:var(--v7-space-2);padding-block:0;}
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"]:is([data-kind="logged"],[data-kind="done"]) > :is(button,div) {padding-right:22px;}
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"] strong {display:block;flex:0 1 auto;min-width:0;white-space:nowrap;text-overflow:ellipsis;}
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"] small {flex:0 0 auto;max-width:55%;}
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"] .v7-cal-check {top:50%;transform:translateY(-50%);}
+ :where(html[data-v7]) .v7-cal-block[data-compact="true"] .v7-cal-link {bottom:auto;top:50%;transform:translateY(-50%);right:22px;}
+ :where(html[data-v7]) .v7-cal-block[data-tiny="true"] :is(strong,small) {font-size:var(--v7-type-caption);line-height:1.1;}
+ :where(html[data-v7]) .v7-cal-block[data-tiny="true"] .v7-cal-check {width:12px;height:12px;}
+ :where(html[data-v7]) .v7-cal-block[data-tiny="true"] > :is(button,div)::before {top:2px;bottom:2px;}
  :where(html[data-v7]) .v7-cal-block[data-kind="done"] strong {color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cal-block[data-past="true"] {opacity:.6;}
  :where(html[data-v7]) .v7-cal-block[data-lifted="true"] {z-index:4;opacity:1;filter:drop-shadow(var(--v7-shadow-2));}
@@ -223,3 +243,17 @@
   :where(html[data-v7]) .v7-hub-control:has(.v7-cal-viewmenu) {display:none;}
  }
 }
+/* N168: the logged session sheet: when, totals, each stretch at its times. */
+:where(html[data-v7]) .v7-session {display:grid;gap:var(--v7-space-3);}
+:where(html[data-v7]) .v7-session-when {margin:0;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+:where(html[data-v7]) :is(.v7-session-totals,.v7-session-notes) {display:grid;gap:var(--v7-space-2);margin:0;}
+:where(html[data-v7]) .v7-session-totals {grid-template-columns:repeat(auto-fit,minmax(88px,1fr));}
+:where(html[data-v7]) :is(.v7-session-totals,.v7-session-notes) dt {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+:where(html[data-v7]) :is(.v7-session-totals,.v7-session-notes) dd {margin:0;font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;}
+:where(html[data-v7]) .v7-session-notes dd {font-weight:400;}
+:where(html[data-v7]) .v7-session-stretches {display:grid;gap:0;margin:0;padding:0;list-style:none;border-block:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-session-stretches li {display:grid;grid-template-columns:7.5em 1fr auto;gap:var(--v7-space-2);align-items:center;min-height:36px;font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
+:where(html[data-v7]) .v7-session-stretches li + li {border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-session-stretches li:not([data-stretch="focus"]) {color:var(--v7-role-text-secondary);}
+:where(html[data-v7]) .v7-session-time {white-space:nowrap;}
+:where(html[data-v7]) .v7-session-minutes {white-space:nowrap;text-align:right;}
