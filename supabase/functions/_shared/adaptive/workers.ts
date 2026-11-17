@@ -38,18 +38,21 @@ export async function runJob<T>(s:JobState,job:string,inputId:string,estimateTok
   const base={job,input_id:inputId,input_tokens:0,output_tokens:0,attempts:0};
   if(!s.enabled)return {telemetry:{...base,status:'skipped_disabled'}};
   if(s.done.has(key))return {telemetry:{...base,status:'skipped_done'}};
-  if(s.tokensToday+estimateTokens>s.tokenCap)return {telemetry:{...base,status:'skipped_cap'}};
-  let last='';
+  // The cap is checked before every model call (a retry included), and tokens spent on a failed write still count.
+  let last='',inTok=0,outTok=0,attempts=0;
   for(let attempt=1;attempt<=2;attempt++){
+    if(s.tokensToday+estimateTokens>s.tokenCap)return {telemetry:{...base,status:attempts?'failed':'skipped_cap',attempts,input_tokens:inTok,output_tokens:outTok,...(attempts?{error:'token cap reached before retry; '+last.slice(0,160)}:{})}};
+    attempts=attempt;
     try{
       const out=await model(prompt);
-      s.tokensToday+=out.input_tokens;
+      const used=(out.input_tokens||0)+(out.output_tokens||0);
+      s.tokensToday+=used;inTok+=out.input_tokens||0;outTok+=out.output_tokens||0;
       const result=write(out.json);                                    // the write is one transaction in the adapter; an exception rolls it back
       s.done.add(key);
-      return {telemetry:{...base,status:'ok',attempts:attempt,input_tokens:out.input_tokens,output_tokens:out.output_tokens},result};
+      return {telemetry:{...base,status:'ok',attempts,input_tokens:inTok,output_tokens:outTok},result};
     }catch(err){last=err instanceof Error?err.message:'failed'}
   }
-  return {telemetry:{...base,status:'failed',attempts:2,error:last.slice(0,200)}};
+  return {telemetry:{...base,status:'failed',attempts,input_tokens:inTok,output_tokens:outTok,error:last.slice(0,200)}};
 }
 /** Candidate concepts for the scribe: the checkpoint's concepts, their prerequisites and children, and the top 20 by text match (§12). */
 export function scribeCandidates(cp:string[],prereqs:Map<string,string[]>,children:Map<string,string[]>,textMatches:string[]):Set<string>{

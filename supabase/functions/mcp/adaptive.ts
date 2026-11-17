@@ -35,14 +35,14 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
   const [settings,projects,checkpoints,prereqs,cpConcepts,concepts,conceptLinks,misc,decisions,baselines,overrides,sessions,items,assumptions,aliases]=await Promise.all([
     scoped(c,'settings').maybeSingle().then(r=>{if(r.error||!r.data)throw new Error('Owner settings not initialized; run bootstrap first');return r.data}),
     all(c,'projects','*'),all(c,'checkpoints','*'),all(c,'checkpoint_prereqs','checkpoint_id,prereq_id'),
-    all(c,'checkpoint_concepts','checkpoint_id,concept_id'),all(c,'concepts','id,name,parent_id'),all(c,'concept_links','from_id,to_id,kind'),
+    all(c,'checkpoint_concepts','checkpoint_id,concept_id'),all(c,'concepts','id,name,slug,parent_id'),all(c,'concept_links','from_id,to_id,kind'),
     all(c,'misconceptions','id,label,concept_id,resolved_at,created_at'),all(c,'recheck_decisions','id,concept_id,level,action,occurred_at'),
     all(c,'plan_baselines','project_id,baseline_version,entries'),all(c,'capacity_overrides','on_date,minutes'),
     all(c,'sessions','id,number,project_id,checkpoint_id,started_at,last_activity_at,minutes,state,abandoned,study_day,time_zone'),
     all(c,'items','id,fingerprint,teaches,holdout,status').catch(()=>[] as any[]),all(c,'assumptions','id,concept_id,level,mean_at,revoked_at,created_at').catch(()=>[] as any[]),
     all(c,'concept_aliases','concept_a,concept_b').catch(()=>[] as any[])]);
   const [evidence,intervals,busy,dueCards,frozen]=await Promise.all([
-    scoped(c,'evidence','id,occurred_at,session_id,concept_id,item_id,level,role,outcome,hint_level,novelty,kind,origin,confidence,ctx,voided_at').is('voided_at',null).order('id').limit(5000).then(must),
+    scoped(c,'evidence','id,occurred_at,session_id,concept_id,item_id,level,role,outcome,hint_level,novelty,kind,origin,confidence,ctx,voided_at').order('id').limit(5000).then(must),
     scoped(c,'study_intervals','kind,started_at,ended_at').gte('started_at',sinceDay).limit(500).then(must),
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),

@@ -24,7 +24,7 @@ function cardOf(s:State,rows:Rows,concept:any):string{
   for(const r of s.rechecks.rechecks)if(r.class_id===cls&&r.state==='open')R[r.level]=retrievabilityOf(r,s.today);
   const open=s.rechecks.rechecks.filter(r=>r.class_id===cls&&(r.state==='open'||r.state==='escalated')).map(r=>'recheck-'+r.level.slice(0,2));
   const mis=(rows.misconceptions??[]).filter((m:any)=>m.concept_id&&s.classOf(m.concept_id)===cls&&!m.resolved_at).map((m:any)=>String(m.label??'misconception').slice(0,24).replace(/\s+/g,'-'));
-  const assume=(rows.assumptions??[]).filter((a:any)=>!a.revoked_at&&s.classOf(a.concept_id)===cls).map((a:any)=>a.level.slice(0,2)+(a.mean_at!=null?'~'+Number(a.mean_at).toFixed(1).replace(/^0/,''):''));
+  const assume=(rows.assumptions??[]).filter((a:any)=>!s.withdrawn.includes(String(a.id))&&s.classOf(a.concept_id)===cls).map((a:any)=>a.level.slice(0,2)+(a.mean_at!=null?'~'+Number(a.mean_at).toFixed(1).replace(/^0/,''):''));
   const seen=s.profEvidence.filter(e=>e.concept_id&&s.classOf(e.concept_id)===cls).map(e=>e.day).sort().pop()??null;
   return nodeCard({name:concept.name,prof,R,seen,gaps:[...mis,...open],assume,lbu:!!prof&&isLBU(prof)});
 }

@@ -27,6 +27,8 @@ export type State={
   deprecatedWarnings:string[];capacityUnset:boolean;absentDays:number;
   /** N170: pooled proficiency per concept class, and its class map */
   prof:Prof;lbu:string[];classOf:(concept:string)=>string;profEvidence:ProfEvidence[];
+  /** assumption ids withdrawn by T5 (revoked, or contradicted by a later fail on that class and level): derived, so undo restores them */
+  withdrawn:string[];
 };
 const asArr=(x:any)=>Array.isArray(x)?x:[];
 const ms=(x:any)=>x?Date.parse(x):NaN;
@@ -127,11 +129,12 @@ export function assemble(r:Rows,now:Date):State{
   const decisions=r.decisions.map((d:any)=>({id:String(d.id),at:ms(d.occurred_at),day:studyDay(st,d.occurred_at),concept_id:d.concept_id,level:d.level as Level,action:d.action}));
   const weights=Array.isArray(st.fsrs_weights)&&st.fsrs_weights.length===21?st.fsrs_weights:undefined;
   // T5: an assumption is withdrawn when the learner revokes it, or when a later gap shows on that class and level (derived, so undo is exact)
+  const withdrawn:string[]=[];
   for(const a of asArr(r.assumptions)){
     const made=ms(a.created_at);const cls=classOf(a.concept_id);
     const gap=evidence.filter(e=>e.concept_id&&classOf(e.concept_id)===cls&&e.level===a.level&&e.outcome==='fail'&&e.at>made).sort((x,y)=>x.at-y.at)[0];
     const at=a.revoked_at?ms(a.revoked_at):gap?.at;
-    if(at)triggers.push({id:'a'+a.id,at,day:studyDay(st,new Date(at)),code:'T5' as const,concept_id:a.concept_id});
+    if(at){withdrawn.push(String(a.id));triggers.push({id:'a'+a.id,at,day:studyDay(st,new Date(at)),code:'T5' as const,concept_id:a.concept_id})}
   }
   const rechecks=replayRechecks({evidence,triggers,decisions,classes,classOf,abandonedSessions:abandoned,weights,retention:st.desired_retention??0.91});
   // --- proficiency (spec §9): Beta per class and level, pooled across subjects
@@ -151,7 +154,7 @@ export function assemble(r:Rows,now:Date):State{
   const proj:Record<string,ProjectView>={};
   const planProjects:PlanProject[]=[...projects].sort((a:any,b:any)=>a.slug<b.slug?-1:a.slug>b.slug?1:0).map((p:any)=>{
     const t=ptime.get(p.id)!;
-    const classIds=new Set(r.cpConcepts.filter((x:any)=>cpById.get(x.checkpoint_id)?.project_id===p.id).map((x:any)=>x.concept_id));
+    const classIds=new Set(r.cpConcepts.filter((x:any)=>cpById.get(x.checkpoint_id)?.project_id===p.id).map((x:any)=>classOf(x.concept_id)));
     const due=rechecks.rechecks.filter(x=>x.state==='open'&&x.due&&classIds.has(x.class_id)&&(!t.lastStudyOn||x.due<=t.lastStudyOn)).length;
     return {id:p.id,slug:p.slug,lastStudyOn:t.lastStudyOn,share:p.share_weight??null,autoPrune:!!p.auto_prune_standard,
       paceSamples:paceSamples(r,p.id),reviewMinutes:due*DEFAULTS.recheckMinutes+(r.dueCards[p.id]??0)*DEFAULTS.cardMinutes};
@@ -182,9 +185,11 @@ export function assemble(r:Rows,now:Date):State{
   const todaysCps=cps.filter(c=>c.status==='in_progress'||(c.status==='not_started'&&c.planState==='active'&&c.prereqs.every(id=>planById.get(id)?.status==='demonstrated'||planById.get(id)?.planState!=='active')));
   const first=new Set<string>();const todays:PlanCp[]=[];
   for(const p of order){const mine=todaysCps.filter(c=>c.project_id===p.id).sort((a,b)=>(a.status==='in_progress'?0:1)-(b.status==='in_progress'?0:1)||a.position-b.position)[0];if(mine&&!first.has(p.id)){first.add(p.id);todays.push(mine)}}
+  // Rechecks are keyed by class (canonical alias), so prerequisite edges are matched and recorded by class too.
   const needed=new Set<string>();
   for(const c of todays)for(const x of r.cpConcepts.filter((x:any)=>x.checkpoint_id===c.id)){
-    for(const l of r.conceptLinks)if(l.kind==='prereq'&&l.to_id===x.concept_id)needed.add(l.from_id);
+    const target=classOf(x.concept_id);
+    for(const l of r.conceptLinks)if(l.kind==='prereq'&&classOf(l.to_id)===target)needed.add(classOf(l.from_id));
   }
   const importance=(cid:string)=>classes[cid]?.core?2:1;
   const reviews:ReviewItem[]=dueRechecks(rechecks.rechecks,today).filter(x=>classes[x.class_id]?.active!==false).map(x=>({
@@ -200,7 +205,7 @@ export function assemble(r:Rows,now:Date):State{
     absentDays,probeConcepts:[...needed].map(id=>concepts.get(id)?.name).filter(Boolean)});
   const deprecatedWarnings:string[]=[];
   for(const p of projects)for(const f of ['prompt','goal','target_label'] as const)if(lintText(p[f]).length)deprecatedWarnings.push(p.slug+'.'+f);
-  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays,prof,lbu,classOf,profEvidence};
+  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays,prof,lbu,classOf,profEvidence,withdrawn};
 }
 export type {Recheck};
 export {studyDaysLeft,isLive,estRemaining,paceFactor};
