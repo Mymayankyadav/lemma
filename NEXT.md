@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N171 Show the adaptive scheduler in the React app (Owner task)
+
+Owner task: "Owner task for mymayankyadav/lemma: make the React app show the adaptive scheduler (N169/N170)."
+Stage: Build · Status: done · Needs: — · Assigned: chat-73158#k9r4
+Done = gated by per-user settings.flags time_block / recheck_v2 / scheduler_v2, show checkpoint and step deferrals with reasons and dates, project and Today due rechecks from rechecks, Today TIME and top-eight QUEUE, and infeasibility linked to the plan; import the shared pure adaptive modules so browser values match MCP resume. All flags off preserves the existing app. N170 is unmerged, so learning profiles are skipped. Recorded in docs/current/N171.md.
+Tests: tests/unit/adaptive-ui/{views,parity}.test.ts[x], existing affected view and adaptive suites, typecheck and Vite production build.
+Scope: src/data/{api.ts,types.ts,adaptive/**,live/{adapter,helpers}.ts,demo/{adapter,model}.ts,sync/keys.ts}, src/features/{adaptive/**,home/{Page.tsx,v7/V7Today.tsx},project/{Page.tsx,PathsView.tsx,v6/V6Project.tsx,v7/V7Path.tsx},checkpoint/{Page.tsx,v6/V6Checkpoint.tsx,v7/CheckpointV7.tsx}}, tests/unit/adaptive-ui/**, tests/unit/project-stage-math.test.tsx, tests/unit/sources-v6/route-wiring.test.tsx, docs/current/N171.md, NEXT.md.
+Not: server changes, migrations, dependencies, production study data, scheduler writes or unrelated fixes.
 
 ## N170 Adaptive pace and Atlas memory: proficiency, items, node cards, worker core, calibration (Owner task)
 
@@ -103,6 +111,7 @@ Done = V20's three helpers in `src/ui/v7/motion.ts` are used or gone, as follows
 Tests: `tests/unit/v7/n152-motion.test.tsx`, `tests/e2e/v7-n152-motion.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/{motion.ts,useAnimatedNumber.ts,sheetDrag.ts,sheet-drag.css}`, `src/main.tsx` (one install call), `src/features/review/v7/ReviewHubV7.tsx` (the count), tests, `docs/current/N152.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (the V20 line).
 Not: `src/ui/v7/components.tsx` (owned by another item until its PRs merge), haptics, other numbers, server changes, new dependencies.
+
 ## N138 v7 UX audit r3: every control takes a 44 px tap (U2 · V36) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"

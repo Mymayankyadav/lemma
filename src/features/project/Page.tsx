@@ -1,3 +1,4 @@
+import {ProjectScheduler} from '../adaptive/Views';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {useQuery} from '@tanstack/react-query';
 import {lazy,Suspense,useEffect,useState} from 'react';
@@ -154,6 +155,7 @@ function LegacyProject(){
    <IconButton icon={Waypoints} label="View in Atlas" to="/atlas"/>
   </header>
   {switcherOpen&&<Suspense fallback={<p role="status" className="text-label text-ink-2">Opening project switcher…</p>}><ProjectSwitcher open onClose={()=>setSwitcherOpen(false)} current={slug}/></Suspense>}
+  <ProjectScheduler projectId={project.id}/>
   <GoalOverview detail={data} variant="metro"/>
   <Segmented value={tab} onChange={setTab} tone="raised" options={[
    {value:'path',label:'Path'},{value:'sessions',label:'Sessions',count:data.sessions.length},

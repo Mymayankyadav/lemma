@@ -11,6 +11,7 @@ vi.mock('../../../src/features/project/SourceTranscriptionView',()=>({
  SourceTranscriptionView:()=> <p>Existing transcription controls</p>,
 }));
 vi.mock('../../../src/data/hooks',()=>({
+ useSettings:()=>({data:null}),
  useSourceTranscriptionStats:()=>({data:[],isPending:false,isError:false}),
  useProject:()=>({isPending:false,isError:false,data:{
   project:{id:'project',title:'Math path',goal:'Understand proof',status:'active'},

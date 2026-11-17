@@ -1,3 +1,4 @@
+import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
 import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
@@ -43,16 +44,17 @@ function NodeMark({state}:{state:NodeState}){
  </svg>;
 }
 function Row({slug,cps,index,step,reached,onContinue}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean;onContinue?:()=>void}){
- const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current';
- return <li className="v7-path-row" data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
+ const settings=useSettings();
+ const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
+ return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
   <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
    <strong>{cp.title}</strong>
-   <small>{text.detail}</small>
+   <small>{checkpointLabel(cp,settings.data?.flags,text.detail)}</small><PlanDisposition view={cp}/>
   </Link>
   {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals">Proposed</StatusBadge>}
   {current&&(onContinue?<Button variant="primary" small onClick={onContinue}>Continue with tutor</Button>:<Link className="v7-button v7-secondary v7-small" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>Continue</span></Link>)}
-  <span className="v7-sr-only">{text.label}</span>
+  <span className="v7-sr-only">{checkpointLabel(cp,settings.data?.flags,text.label)}</span>
  </li>;
 }
 function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
@@ -174,6 +176,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    <p>Ask your tutor to read the sources and plan this path with you.</p>
    <Button variant="primary" onClick={()=>{void navigator.clipboard?.writeText(planPrompt(project.title)).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy prompt</Button>
   </section>}
+  <ProjectScheduler projectId={project.id}/>
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>

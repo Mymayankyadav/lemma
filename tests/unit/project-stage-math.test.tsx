@@ -6,6 +6,7 @@ import type {CheckpointView,ProjectDetail} from '../../src/data/types';
 import {Stages} from '../../src/features/project/PathsView';
 
 vi.mock('../../src/data/hooks',()=>({
+ useSettings:()=>({data:null}),
  useInsightData:()=>({data:{checkpointEvents:[]},isPending:false}),
 }));
 // The Project's deferred query retains the same insight data contract.
