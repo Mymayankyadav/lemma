@@ -134,6 +134,30 @@
       "mcpPath": "N37 generic commands (planned)",
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2"
+    },
+    "study_day": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "read only (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: local study day of started_at, set on insert"
+    },
+    "time_zone": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "read only (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: zone recorded when the session started"
+    },
+    "abandoned": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "start_session / end_session (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: auto-closed session; its evidence counts but makes no T3 rechecks"
     }
   }
 }

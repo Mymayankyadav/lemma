@@ -1,6 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
 
+## N169 Adaptive core: one time block, evidence-driven rechecks, a daily scheduler (Owner task)
+
+Owner task: "20 nov is just few days before exams starts push to max 22nd nov. Repo is public. No antropic api key or any api key for llm rn. Start stint B"
+Stage: Build · Status: open · Needs: — · Assigned: chat-48217#q7w2
+Done = with per-user flags `time_block`, `recheck_v2` and `scheduler_v2` in `settings.flags` (default off, and every behaviour unchanged with them off): `resume` returns a server-computed TIME block as the only source of dates; completing a checkpoint no longer schedules a recheck, and rechecks come only from evidence (T1–T5) scheduled with FSRS; a deterministic daily scheduler produces the queue, feasibility, pruning (never core, pinned, done or in-progress) and restore with hysteresis; `adaptive_migrate` dry-runs and applies the data migration reversibly. Spec: `docs/spec/adaptive-learning-spec.md`, §1 Phases 1–3; recorded in `docs/current/N169.md`.
+Tests: `tests/unit/adaptive/*.test.ts`, `tests/mcp/sql/{adaptive-facts,adaptive-migrate,adaptive-rollback}.mjs`, `tests/mcp/sql/parity.mjs` (three new resources); existing suites unchanged except the added settings family and capability mirrors.
+Scope: `supabase/functions/_shared/adaptive/**`, `supabase/functions/mcp/{adaptive.ts,db.ts,packet.ts,rules.ts,server.ts}` and `tools/{control,learning-edit,read,registry,settings-edit,write}.ts`, `supabase/migrations/20261216*_n169_*.sql`, `supabase/rollback/N169.down.sql`, `docs/spec/adaptive-learning-*.md`, `docs/v6/capability-registry/*`, `docs/mcp/capability-map.json`, tests, `docs/current/N169.md`.
+Not: proficiency, items, Atlas memory, workers or any LLM call (N170), app UI changes, dropping or renaming any column, editing the learner's free text, running the data migration against production.
+
 ## N161 Phone layout fixes from the Owner's screenshots: Today's Continue cards, the Atlas sheet, the Calendar ruler (Owner task)
 
 Owner task: "The bottom bar is not aligned. And in second buttons are not visible" … "This one just comes in a way maybe it could have better if it was part of the dock in some way." … "In peek hide those buttons or lower the dock further so they are not visible as they make it look broken"

@@ -590,6 +590,54 @@
           "applied_at"
         ]
       }
+    },
+    {
+      "resource": "capacity_overrides",
+      "command_fn": "adaptive_facts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "delete"
+        ],
+        "fields": [
+          "on_date",
+          "minutes",
+          "reason"
+        ]
+      }
+    },
+    {
+      "resource": "recheck_decisions",
+      "command_fn": "adaptive_facts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "concept_id",
+          "level",
+          "action",
+          "note"
+        ]
+      }
+    },
+    {
+      "resource": "plan_baselines",
+      "command_fn": "adaptive_facts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "project_id",
+          "reason",
+          "entries"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

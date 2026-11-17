@@ -141,6 +141,14 @@
       "commit",
       "commit_placements"
      ]
+    },
+    {
+     "resource": "capacity_overrides",
+     "operations": [
+      "create",
+      "update",
+      "delete"
+     ]
     }
    ]
   },
@@ -162,6 +170,12 @@
       "update",
       "commit",
       "archive"
+     ]
+    },
+    {
+     "resource": "plan_baselines",
+     "operations": [
+      "create"
      ]
     }
    ]
@@ -451,6 +465,12 @@
       "delete",
       "record",
       "void_event"
+     ]
+    },
+    {
+     "resource": "recheck_decisions",
+     "operations": [
+      "create"
      ]
     }
    ]

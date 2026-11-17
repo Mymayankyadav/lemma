@@ -6,6 +6,7 @@ import { project, checkpoint, checkpoints, session, source } from '../resolve.ts
 import { day, ladder } from '../derive.ts';
 import { settings } from '../packet.ts';
 import { slug, cut, capped, normalizedFront, number } from '../text.ts';
+import { flagOn, lintNotices, applyScheduler } from '../adaptive.ts';
 
 async function origin(c:Context,sess?:any):Promise<string>{
   return sess?.client||(await settings(c)).connector_last_client||'other';
@@ -21,17 +22,20 @@ export async function startSession(c:Context,a:any):Promise<string>{
   if(error)throw new Error(error.message);
   const found=(data||[]).find((x:any)=>x.checkpoint_id===(cp?.id||null)&&now-new Date(x.last_activity_at).getTime()<3*3600000);
   if(found)return 'continuing S'+found.number;
-  for(const x of data||[])if(now-new Date(x.last_activity_at).getTime()>3*3600000)await update(c,'sessions',x.id,{state:'ended',ended_at:new Date().toISOString(),summary:'Interrupted',goal_met:null});
+  const v2=flagOn(await settings(c),'recheck_v2');
+  for(const x of data||[])if(now-new Date(x.last_activity_at).getTime()>3*3600000)await update(c,'sessions',x.id,{state:'ended',ended_at:new Date().toISOString(),summary:'Interrupted',goal_met:null,...(v2?{abandoned:true}:{})});
   // Optimistic compare-and-set avoids assigning the same project-local number twice.
   if(c.batch)c.batch.push({op:'update',table:'projects',where:{id:p.id},expected:{next_session_number:p.next_session_number},values:{next_session_number:p.next_session_number+1}});
   else await update(c,'projects',p.id,{next_session_number:p.next_session_number+1});
   const s=await insert(c,'sessions',{project_id:p.id,number:p.next_session_number,goal:a.goal,style:a.style||p.style,checkpoint_id:cp?.id||null,client:a.client});
   if(cp && cp.status==='not_started')await update(c,'checkpoints',cp.id,{status:'in_progress',current_step:1});
+  try{const line=await applyScheduler(c);if(line)c.notices=[...(c.notices??[]),line]}catch{/* scheduling is advisory: starting the session must not fail */}
   return 'started S'+s.number+(cp?' on '+cp.code+' (step '+(cp.current_step||1)+'/'+cp.steps.length+')':'');
 }
 export async function saveProgress(c:Context,a:any):Promise<string>{
   const p=await project(c,a.project);
   const s=await session(c,p,a.session);
+  if(a.diagnostics?.length)c.notices=[...(c.notices??[]),...lintNotices(a.diagnostics.map((d:any)=>['diagnostic',d.evidence+' '+d.topic] as ['diagnostic',string]))];
   // DB-1 CONTRACT #220 provides an owner-, project-, session-, and checkpoint-scoped
   // Postgres transaction. Never split events and checkpoint updates across REST calls.
   const payload:Record<string,unknown>={};
@@ -48,7 +52,10 @@ export async function endSession(c:Context,a:any):Promise<string>{
   if(s.state!=='open')throw new Error('Session already ended');
   const mins=Math.min(600,Math.max(0,Math.round((Date.now()-Date.parse(s.started_at))/60000)));
   await update(c,'sessions',s.id,{state:'ended',summary:a.summary,goal_met:a.goal_met,ended_at:new Date().toISOString(),minutes:mins,last_activity_at:new Date().toISOString()});
-  if(a.recheck_prompt&&s.checkpoint_id)await update(c,'checkpoints',s.checkpoint_id,{recheck_prompt:a.recheck_prompt});
+  // recheck_v2: a recheck comes only from evidence, so the generic end-of-session prompt is ignored.
+  if(a.recheck_prompt&&s.checkpoint_id&&!flagOn(await settings(c),'recheck_v2'))await update(c,'checkpoints',s.checkpoint_id,{recheck_prompt:a.recheck_prompt});
+  c.notices=[...(c.notices??[]),...lintNotices([['summary',a.summary]])];
+  try{const line=await applyScheduler(c);if(line)c.notices=[...(c.notices??[]),line]}catch{/* advisory */}
   const {data,error}=await scoped(c,'proposals','id').eq('project_id',p.id).eq('status','pending');
   if(error)throw new Error(error.message);
   return 'closed S'+s.number+' ('+mins+' min). '+(data?.length??0)+' proposals wait in Lemma.';

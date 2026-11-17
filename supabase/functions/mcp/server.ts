@@ -51,10 +51,10 @@ export function buildServer(c:Context):McpServer{
           const data=await commitBatch(ctx,n,a,result);action=data?.action;if(n==='undo')result+=' (as A'+action+')';if(n==='add')result+=' '+(data.created||[]).filter((x:any)=>x.table==='notes'||x.table==='checkpoints').map((x:any)=>x.code||'N'+x.no).join(', ');if(n==='grade')result+='; '+(await review(c,{count:1})).split('\n')[0]+' still';
         }
         if(!action)await c.db.rpc('mcp_seen',{p_user:c.userId});
-        const next=n==='resume'?'start_session, then WARM questions':n==='start_session'?'pretest or continue; save_progress at each step':n==='save_progress'?(a.next_question||'continue; save again within ~6 messages'):n.startsWith('propose_')?'tell the user it waits for approval':n==='end_session'?'stop':n==='review'?'show only the first front':n==='grade'?'next card or review again':n==='delete'&&!a.confirm?'ask the user to confirm the listed deletion':'continue with the user';
+        const next=ctx.next?ctx.next:n==='resume'?'start_session, then WARM questions':n==='start_session'?'pretest or continue; save_progress at each step':n==='save_progress'?(a.next_question||'continue; save again within ~6 messages'):n.startsWith('propose_')?'tell the user it waits for approval':n==='end_session'?'stop':n==='review'?'show only the first front':n==='grade'?'next card or review again':n==='delete'&&!a.confirm?'ask the user to confirm the listed deletion':'continue with the user';
         const suffix=isMachineRead(n,a)?'':'\nNEXT: '+next.slice(0,100)+(action?'\nUndo: A'+action:'');
         if(!readOnly&&!(n==='delete'&&!a.confirm))result=cut(result,Math.max(20,160-suffix.length));
-        result+=suffix;
+        result+=(ctx.notices?.length?'\n'+ctx.notices.slice(0,3).join('\n'):'')+suffix;
         return {content:[{type:'text' as const,text:result}]};
       }catch(err){return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]}}
     });
@@ -121,7 +121,10 @@ export function buildServer(c:Context):McpServer{
     kind:z.enum(['pretest','attempt','hint','explanation','evidence','recheck','note']),
     text:S().min(1).max(600),
     outcome:z.enum(['demonstrated','partial','failed']).optional(),
-    hint_level:z.number().int().min(1).max(4).optional(),checkpoint:cp.optional()
+    hint_level:z.number().int().min(1).max(4).optional(),checkpoint:cp.optional(),
+    concept:S().max(60).optional(),level:z.enum(['recall','use','understand','transfer']).optional(),
+    role:z.enum(['primary','secondary','used']).optional(),novelty:z.enum(['novel','familiar','seen_solution','self_reported']).optional(),
+    item:S().max(200).optional(),recall:z.boolean().optional()
   });
   register('save_progress',"Log progress.",z.object({
     project:name,session:S().min(2),step:z.number().int().min(1).max(8).optional(),

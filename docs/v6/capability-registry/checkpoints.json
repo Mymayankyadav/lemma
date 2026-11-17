@@ -171,6 +171,78 @@
       "exportPolicy": "owner-scoped export (N95 planned)",
       "deletionPolicy": "owner account purge via FK cascade (N103 planned); domain change/undo via N36.2",
       "description": "N38: server-derived app/mcp/worker actor, null on historical rows"
+    },
+    "kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/live/adapter.ts (not read yet)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: learn, cards or milestone"
+    },
+    "tier": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: core, standard or venture"
+    },
+    "estimate_minutes": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: planned minutes"
+    },
+    "pinned": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: never pruned"
+    },
+    "self_reported": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: completed by hand; not evidence"
+    },
+    "plan_state": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: active, deferred or skipped"
+    },
+    "deferred_reason": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: why it was deferred (prune:* when automatic)"
+    },
+    "deferred_at": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: when it was deferred; restore runs newest first"
+    },
+    "step_meta": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit checkpoints (N169)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169: per-step tier and estimate, aligned with steps"
     }
   }
 }

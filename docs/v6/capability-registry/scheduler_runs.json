@@ -1,0 +1,86 @@
+{
+  "table": "scheduler_runs",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "user_id"
+    },
+    "study_day": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "study_day"
+    },
+    "project_id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "project_id"
+    },
+    "slack_ratio": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "slack_ratio"
+    },
+    "supply": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "supply"
+    },
+    "required": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "required"
+    },
+    "queue": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "queue"
+    },
+    "prune": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "prune"
+    },
+    "input_hash": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "input_hash"
+    },
+    "computed_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "derived cache recomputed from facts; service role writes, owner reads",
+      "exportPolicy": "not exported: recomputed from facts",
+      "deletionPolicy": "owner account purge via FK cascade; never registered for undo",
+      "description": "computed_at"
+    }
+  }
+}
