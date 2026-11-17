@@ -54,6 +54,24 @@ describe('resume v2 (spec §13.1)',()=>{
     expect(text).toMatch(/recheck Concept topology-1 1\/use ~3m mandatory_prereq/);
     expect(text).toMatch(/RECHECK Concept topology-1 1\/use: Apply "Concept topology-1 1"/);
   });
+  it('incident #1492: a system (fixture) project keeps the legacy packet, with ETA, target and ADAPT, under v2 flags',async()=>{
+    const rows=rowsFor(PRODUCTION,{flags:on});
+    const t=tablesFrom(rows,{diagnostics:[{no:7,project_id:'proj-topology-1',kind:'gap',topic:'Selftest prerequisite',times:2,severity:3,status:'confirmed'}]});
+    Object.assign(t.projects.find((p:any)=>p.slug==='topology-1'),{system:true,target_date:'2027-01-15',target_label:'Prelim',goal:'Fixture goal'});
+    const ctx=fakeContext(t);ctx.selftestProjectIds=new Set(['proj-topology-1']);
+    const text=await packet(ctx,{project:'topology-1'});
+    expect(text).toContain('finish ≈');expect(text).toContain('Prelim 15 Jan');expect(text).toContain('ADAPT D7 gap');
+    expect(text).not.toContain('TIME today');
+  });
+  it('a real project under v2 keeps the ADAPT diagnostics line in BRIEF (pace diagnostics stay out)',async()=>{
+    const rows=rowsFor(PRODUCTION,{flags:on});
+    const t=tablesFrom(rows,{diagnostics:[{no:7,project_id:'proj-topology-1',kind:'gap',topic:'Open sets',times:2,severity:3,status:'confirmed'},
+      {no:8,project_id:'proj-topology-1',kind:'pace',topic:'Behind',times:1,severity:5,status:'open'}]});
+    const text=await packet(fakeContext(t),{project:'topology-1'});
+    const brief=text.slice(text.search(/^BRIEF$/m));
+    expect(brief).toMatch(/^ADAPT D7 gap Open sets \(2x, confirmed\)$/m);
+    expect(text).not.toContain('D8');expect(text).toContain('TIME today');expect(tokens(text)).toBeLessThanOrEqual(1500);
+  });
   it('writes only the derived rechecks cache (never a fact) while reading',async()=>{
     const writes:any[]=[];
     const rows=rowsFor(PRODUCTION,{flags:on});

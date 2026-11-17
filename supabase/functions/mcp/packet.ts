@@ -97,7 +97,7 @@ async function basePacket(c:Context,args:{project?:string;mix?:boolean;brief?:bo
 }
 /** Resume v2 (flag time_block): OWNER, RULES, TIME, QUEUE, BRIEF, FLAGS; the server adds NEXT. Budget ≤ 1500 tokens excl. OWNER. */
 const RESUME_BUDGET_CHARS=4300;
-async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:boolean},st:any):Promise<string>{
+async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:boolean},st:any,adapt?:string):Promise<string>{
   const {state,rows}=await stateOf(c);
   c.next='start_session; work the QUEUE top first, then teach';
   const rules=st.tutor_rules||studyRules(st.flags||{});
@@ -137,7 +137,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     now:cp?'NOW '+cp.code+' '+cut(cp.title,60)+', step '+(open?.resume_step||cp.current_step||1)+'/'+(cp.steps||[]).length+(step?': '+cut(step,100):'')+'\nCRIT '+cut(cp.criterion,300):'NOW all checkpoints done',
     last:latest?'LAST S'+latest.number+' '+date(latest.last_activity_at)+' '+display(latest)+(latest.goal_met?' goal '+latest.goal_met:'')+(latest.state==='ended'&&latest.summary?': '+cut(latest.summary,140):latest.resume_note?': '+cut(latest.resume_note,140):'')+(latest.state==='open'&&latest.resume_question?' | ask: '+cut(latest.resume_question,250):''):undefined,
     fix:fix.length?'FIX '+cut(fix.map((x:any)=>x.label+' ('+x.times+'x)').join('; '),200):undefined,
-    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)});
+    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)});
   return capped(body,RESUME_BUDGET_CHARS);
 }
 export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{
@@ -150,6 +150,8 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
  const adapt=active.map(x=>'D'+x.no+' '+x.kind+' '+x.topic+' ('+x.times+'x, '+x.status+')');
  const fresh=sources.filter(x=>allowed(x.project_id)&&!x.plan_checked_at).map(x=>'NEW '+x.short);
  const {ADAPT}=await import('./rules.ts');
- if(v2)return [owner,await packetV2(c,args,st)].filter(Boolean).join('\n');
+ // Fixture (system) projects are outside the adaptive state (visibleProjects), so v2 has no TIME or QUEUE for them:
+ // they keep the legacy packet. Real projects get v2 with the same ADAPT data line the legacy packet carries.
+ if(v2&&!p?.system)return [owner,await packetV2(c,args,st,adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),300):undefined)].filter(Boolean).join('\n');
  let body=await basePacket(c,args);const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
 }
