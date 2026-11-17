@@ -110,11 +110,11 @@ export function renderForecast(s:State,rows:Rows,slug?:string):string{
   return lines.join('\n');
 }
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
-export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;mandatory?:string[]}):string{
+export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[]}):string{
   const p=slug?Object.values(s.projects).find(x=>x.slug===slug):undefined;
   const q=renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];
-  const b=[brief.now,brief.last,brief.fix,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m)].filter(Boolean) as string[];
+  const b=[brief.now,brief.last,brief.fix,brief.adapt,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m)].filter(Boolean) as string[];
   if(b.length)lines.push('BRIEF\n'+b.join('\n'));
   const f=flagLines(s,slug);
   if(f.length)lines.push('FLAGS\n'+f.slice(0,8).map(x=>'- '+x).join('\n'));
