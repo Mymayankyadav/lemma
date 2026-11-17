@@ -1,10 +1,11 @@
+import {PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../adaptive/Views';
 import {SectionHeading} from '../../ui/SectionHeading';
 import {scheduleForVisibleProject} from './scheduleCache';
 import {FastTex as Tex} from '../../ui/FastTex';
 import {useEffect,useId,useState} from 'react';
 import {Link} from 'react-router';
 import {ChevronRight,Check,RotateCcw,CircleDot,ArrowRight,Lock,CircleDashed} from 'lucide-react';
-import {useProjects} from '../../data/hooks';
+import {useProjects,useSettings} from '../../data/hooks';
 import {useProjectInsight} from './useProjectInsight';
 import type {CheckpointUi,CheckpointView,ProjectDetail} from '../../data/types';
 import {Route} from '../../ui/timeline/Route';
@@ -96,6 +97,7 @@ const marks:Record<CheckpointUi,string>={
 };
 
 function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;open:boolean;onToggle:()=>void;schedule:Map<string,ScheduledCheckpoint>}){
+ const settings=useSettings();
  const id=useId(),[showFinished,setShowFinished]=useState(false);
  const finished=stage.checkpoints.filter(cp=>cp.ui==='done');
  const pending=stage.checkpoints.filter(cp=>cp.ui!=='done');
@@ -122,12 +124,12 @@ function StageCard({stage,slug,open,onToggle,schedule}:{stage:Stage;slug:string;
     <span>{finished.length} done ✓</span><span className="text-ink-2">{showFinished?'Hide':'Show'}</span>
    </button>}
    {rows.map((cp,index)=><Link key={cp.id} to={'/p/'+slug+'/cp/'+encodeURIComponent(cp.code)}
-    data-cp-row="" aria-label={cp.code+' '+cp.title+', '+labels[cp.ui]}
+    data-cp-row="" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} aria-label={cp.code+' '+cp.title+', '+checkpointLabel(cp,settings.data?.flags,labels[cp.ui])}
     className={'flex min-h-11 w-full items-center gap-2 rounded-ctl px-2 py-2 text-left hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber '+
      (index?'border-t border-edge':'')}>
     <span aria-hidden="true" className={'size-[14px] shrink-0 rounded-full border-[1.5px] '+marks[cp.ui]}/>
     <span className="w-[46px] shrink-0 rounded-code text-label tabular-nums text-ink-3">{cp.code}</span>
-    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/>
+    <span className={'min-w-0 flex-1 break-words text-body '+(cp.ui==='locked'?'text-ink-3':'text-ink')}><Tex source={cp.title}/><PlanDisposition view={cp}/>
      {schedule.get(cp.id)?.dueOn&&<span className="block text-caption text-ink-3">Planned {scheduleDate(schedule.get(cp.id)!.dueOn!)}</span>}</span>
     <span data-cp-status-icon="" aria-hidden="true" className={'flex min-w-[24px] shrink-0 items-center justify-end gap-1 text-caption '+(cp.ui==='revisit'?'text-hard':cp.ui==='now'?'text-amber':'text-ink-3')}>
      <StatusGlyph ui={cp.ui}/>{cp.ui==='now'&&cp.stepsTotal>0&&<span className="tabular-nums">{cp.currentStep}/{cp.stepsTotal}</span>}

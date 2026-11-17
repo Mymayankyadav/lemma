@@ -1,7 +1,8 @@
+import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import { plainMath } from '../../../lib/plain-math';
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { Link, useParams } from 'react-router';
-import { useCheckpoint, useProject } from '../../../data/hooks';
+import { useCheckpoint, useProject, useSettings } from '../../../data/hooks';
 import { ProjectSwitcher } from '../ProjectSwitcher';
 import type { CheckpointUi, ProjectDetail, SessionSummary } from '../../../data/types';
 import { currentCheckpointIndex, groupCheckpointStages } from '../../../ui/timeline/progress';
@@ -80,7 +81,7 @@ function NextStep({ slug, code, step, total }: { slug: string; code: string; ste
 export default function V6Project() {
   const { slug: rawSlug } = useParams();
   const slug = rawSlug ?? '';
-  const projectQuery = useProject(slug);
+  const projectQuery = useProject(slug),settings=useSettings();
   const [copied, setCopied] = useState('');
   const [switching, setSwitching] = useState(false);
   useV6HeaderTitle(projectQuery.data?.project.title);
@@ -172,18 +173,19 @@ export default function V6Project() {
             {active.name}{!active.checkpoints[0]?.stage?.trim() ? ' · Grouped checkpoints' : ''}
           </h3>
           <div className="flex flex-col">
-            {active.checkpoints.map(checkpoint => <Link key={checkpoint.id} data-v6-checkpoint={checkpoint.code} data-cp-row=""
+            {active.checkpoints.map(checkpoint => <Link key={checkpoint.id} data-adaptive-state={inactiveCheckpoint(checkpoint,settings.data?.flags)?checkpoint.planState:undefined} data-v6-checkpoint={checkpoint.code} data-cp-row=""
               to={'/p/' + encodeURIComponent(slug) + '/cp/' + encodeURIComponent(checkpoint.code)}
-              aria-label={checkpoint.code + ' ' + plainMath(checkpoint.title) + ', ' + statuses[checkpoint.ui]}
+              aria-label={checkpoint.code + ' ' + plainMath(checkpoint.title) + ', ' + checkpointLabel(checkpoint,settings.data?.flags,statuses[checkpoint.ui])}
               className="flex min-h-14 min-w-0 items-center gap-3 border-b border-[var(--hair)] px-3 py-2 text-ink last:border-b-0">
               <span className="shrink-0 font-mono text-caption text-ink-2">{checkpoint.code}</span>
-              <span className="min-w-0 flex-1 break-words"><Tex source={checkpoint.title}/></span>
-              <span className="lemma-state-chip" data-checkpoint-state={checkpoint.ui}>{statuses[checkpoint.ui]}</span>
+              <span className="min-w-0 flex-1 break-words"><Tex source={checkpoint.title}/><PlanDisposition view={checkpoint}/></span>
+              <span className="lemma-state-chip" data-checkpoint-state={checkpoint.ui}>{checkpointLabel(checkpoint,settings.data?.flags,statuses[checkpoint.ui])}</span>
             </Link>)}
           </div>
         </section>}
       </>}
     </section>
+    <ProjectScheduler projectId={detail.project.id}/>
     <ScopeEvidence key={detail.project.id} detail={detail} slug={slug}/>
     {switching && <ProjectSwitcher open onClose={() => setSwitching(false)} current={slug}/>}
   </section>;

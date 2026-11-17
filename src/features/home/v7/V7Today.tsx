@@ -1,3 +1,4 @@
+import {TodayScheduler} from '../../adaptive/Views';
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
@@ -168,6 +169,7 @@ export default function V7Today(){
   <HubHeader title={todayGreeting(date,zone)} date={todayLabel} settings display>
    <p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>
   </HubHeader>
+  <TodayScheduler/>
   {!ready?<div className="v7-today-skeleton" role="status" aria-label="Today loading">
    {error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
     <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>:<><span/><span/><span/></>}

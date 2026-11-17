@@ -1,3 +1,4 @@
+import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../adaptive/Views';
 import {Tex} from '../../ui/Tex';
 import {isFlagOn} from '../../flags';
 import {lazy,Suspense} from 'react';
@@ -55,9 +56,10 @@ function LegacyPage(){
     <div className="flex flex-col gap-5">
      <div className="flex flex-wrap items-center gap-2">
       <Chip tone="amber">{view.code}</Chip>
-      <Chip tone={view.ui==='done'?'success':view.ui==='revisit'?'amber':'quiet'}>{statusTitles[view.ui]}</Chip>
+      <Chip tone={view.ui==='done'?'success':view.ui==='revisit'?'amber':'quiet'}>{checkpointLabel(view,settings.data?.flags,statusTitles[view.ui])}</Chip>
       {view.stage&&<Chip tone="quiet"><Tex source={view.stage}/></Chip>}
      </div>
+     <PlanDisposition view={view}/>
      {scheduleText&&<p aria-label="Checkpoint schedule" className="rounded-ctl border border-edge bg-raised px-3 py-2 text-label text-ink-2">{scheduleText}</p>}
      <p className="font-math text-title-s italic leading-relaxed text-ink-soft"><Tex source={detail.objective}/></p>
      <section className="flex flex-col gap-2 rounded-ctl border border-edge bg-raised p-4">
@@ -68,12 +70,13 @@ function LegacyPage(){
       <SectionHeading as="h3" className="mb-3 text-ink-2">Steps</SectionHeading>
       <ol className="flex flex-col gap-3">
        {detail.steps.map((step,i)=>{
-        const complete=i<view.currentStep,active=i===view.currentStep;
-        return <li key={i} className="flex items-start gap-3">
+        const deferred=stepDisposition(view,i,settings.data?.flags);
+        const complete=!deferred&&i<view.currentStep,active=!deferred&&i===view.currentStep;
+        return <li key={i} data-adaptive-state={deferred} className="flex items-start gap-3">
          <span className={'flex size-7 shrink-0 items-center justify-center rounded-full '+(complete?'bg-amber text-amber-ink':active?'border border-amber bg-amber-tint text-amber':'border border-edge-3 text-ink-3')}>
           {complete?<Check size={16} aria-hidden="true"/>:active?<Circle size={10} fill="currentColor" aria-hidden="true"/>:i+1}
          </span>
-         <span className={'min-w-0 flex-1 pt-1 text-body '+(complete?'text-ink-soft':active?'font-semibold text-ink':'text-ink-3')}><Tex source={step}/></span>
+         <span className={'min-w-0 flex-1 pt-1 text-body '+(complete?'text-ink-soft':active?'font-semibold text-ink':'text-ink-3')}><Tex source={step}/><DeferredStep view={view} index={i}/></span>
         </li>;
        })}
       </ol>
@@ -92,7 +95,7 @@ function LegacyPage(){
        onClick={()=>navigate('/atlas?focus='+encodeURIComponent(concept.slug))}
        className="min-h-11 rounded-chip border border-edge-2 bg-fill-1 px-3 text-label text-ink-soft"><Tex source={concept.name}/></button>)}</div>
      </section>}
-     {detail.recheckPrompt&&<div className="flex items-start gap-2 rounded-ctl bg-amber-tint px-4 py-3 text-label text-amber">
+     {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<div className="flex items-start gap-2 rounded-ctl bg-amber-tint px-4 py-3 text-label text-amber">
       <RotateCcw size={18} className="mt-0.5 shrink-0"/><span>{view.ui==='revisit'?'Re-check due':'Next re-check'}: <Tex source={detail.recheckPrompt}/></span>
      </div>}
      {detail.events.length>0&&<section aria-label="Recent evidence">

@@ -1,3 +1,4 @@
+import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
 import {useMemo,useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpen} from 'lucide-react';
@@ -58,8 +59,9 @@ export default function CheckpointV7(){
   <header className="v7-learn-head">
    <p className="v7-eyebrow">{'Checkpoint '+view.code.replace(/^\D+/,'')+' · '+title}</p>
    <h1 className="v7-learn-title"><Tex source={view.title}/></h1>
-   <div className="v7-learn-chips"><StatusBadge tone={stateTone(view.ui)}>{isFlagOn('v7Qed')&&view.ui==='done'&&<ProofEnd/>}{stateText(view.ui)}</StatusBadge>{view.stage&&<span className="v7-learn-chip">{view.stage}</span>}</div>
+   <div className="v7-learn-chips"><StatusBadge tone={stateTone(view.ui)}>{isFlagOn('v7Qed')&&view.ui==='done'&&<ProofEnd/>}{checkpointLabel(view,settings.data?.flags,stateText(view.ui))}</StatusBadge>{view.stage&&<span className="v7-learn-chip">{view.stage}</span>}</div>
   </header>
+  <PlanDisposition view={view}/>
   <section className="v7-statement" aria-label="Statement">
    <p className="v7-eyebrow">To demonstrate</p>
    <div className="v7-statement-text"><MathText source={detail.objective}/></div>
@@ -67,12 +69,13 @@ export default function CheckpointV7(){
   </section>
   {detail.steps.length>0&&<section aria-label="Steps"><h2 className="v7-learn-h2">Steps</h2>
    <ol className="v7-steps">{detail.steps.map((text,index)=>{
-    const state=index<step?'done':index===step&&view.ui!=='done'?'current':'later';
-    return <li key={index} data-state={state} aria-current={state==='current'?'step':undefined}>
+    const deferred=stepDisposition(view,index,settings.data?.flags);
+    const state=deferred??(index<step?'done':index===step&&view.ui!=='done'?'current':'later');
+    return <li key={index} data-adaptive-state={deferred} data-state={state} aria-current={state==='current'?'step':undefined}>
      <span className="v7-steps-mark" aria-hidden="true">{state==='done'?<Check/>:index+1}</span>
-     <span className="v7-steps-text"><Tex source={text}/></span>
+     <span className="v7-steps-text"><Tex source={text}/><DeferredStep view={view} index={index}/></span>
      {state==='current'&&<MetaChip kind="next">Next</MetaChip>}
-     <span className="v7-sr-only">{state==='done'?'Done':state==='current'?'Current step':'Later'}</span>
+     <span className="v7-sr-only">{state==='deferred'?'Deferred':state==='done'?'Done':state==='current'?'Current step':'Later'}</span>
     </li>;})}</ol></section>}
   {(detail.prereqs.length>0||detail.sourceShort||detail.pages)&&<section aria-label="Prerequisites and sources"><h2 className="v7-learn-h2">Prerequisites and sources</h2>
    <div className="v7-learn-chiprow">
@@ -80,7 +83,7 @@ export default function CheckpointV7(){
      return <Link key={code} className="v7-learn-chip v7-learn-link" to={back+'/cp/'+encodeURIComponent(code)}>{cp?nodeWord[nodeStateOf(cp.ui)]+' · ':''}{cp?.title??code}</Link>;})}
     {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
    </div></section>}
-  {detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
+  {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
    {evidence.length?<ol className="v7-evidence">{evidence.map(group=><li key={group.key} className="v7-evidence-group">
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>

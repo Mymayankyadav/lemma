@@ -44,6 +44,7 @@ function settingsWithV6(row:Row):Settings {
 /** Owner-scoped implementation; all queries use the browser session and RLS. */
 export class LiveAdapter implements LemmaApi {
  private readonly noteEdits=new Map<string,{operationId:string;expected:number;id:string}>();
+ async getAdaptiveData(now?:Date){return (await import('../adaptive/live')).readAdaptiveData(now)}
  readonly mode = 'live' as const
  /** Uncertain Atlas results must retain the exact command receipt identity. */
  private readonly pendingAtlasEdits=new Map<string,{

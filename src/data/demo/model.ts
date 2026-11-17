@@ -17,6 +17,8 @@ import type {
   Subject,
 } from "../types";
 export interface DemoCheckpoint {
+  planState?: import('../types').CheckpointView['planState'];
+  deferredAt?:string|null;deferredReason?:string|null;stepMeta?:import('../types').CheckpointView['stepMeta'];
   id: string;
   projectId: string;
   code: string;

@@ -1,3 +1,4 @@
+import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
 import {plainMath} from '../../../lib/plain-math';
 import {evidenceText,sessionStatusText} from '../../../lib/labels';
 import {formatDay} from '../../../lib/format';
@@ -78,13 +79,14 @@ export default function V6Checkpoint(){
    <h1 className="sr-only"><Tex source={view.title}/></h1>
    <div className="flex flex-wrap items-center gap-2">
     <span className="lemma-state-chip !ml-0" data-checkpoint-state="now">{view.code}</span>
-    <span className="lemma-state-chip !ml-0" data-checkpoint-state={view.ui}>{states[view.ui]}</span>
+    <span className="lemma-state-chip !ml-0" data-checkpoint-state={view.ui}>{checkpointLabel(view,settings.data?.flags,states[view.ui])}</span>
     {view.stage&&<span className="lemma-state-chip !ml-0"><Tex source={view.stage}/></span>}
    </div>
    <p className="font-math text-[1.125rem] italic leading-relaxed text-ink-2"><Tex source={detail.objective}/></p>
   </header>
+  <PlanDisposition view={view}/>
   <section className="notebook-next-step !my-0"><h3>Next step</h3>
-   <p><Tex source={detail.steps[view.currentStep]||detail.objective}/></p></section>
+   <p><Tex source={detail.steps[view.currentStep]||detail.objective}/><DeferredStep view={view} index={view.currentStep}/></p></section>
   <section aria-label="Evidence criterion" className="flex flex-col gap-2 rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-4">
    <h2 className="flex items-center gap-2 !text-[1.125rem] italic text-ink-2"><Target size={17} aria-hidden="true" className="text-[var(--accent)]"/>What counts as demonstrated</h2>
    <p className="text-body text-ink-2"><Tex source={detail.criterion}/></p>
@@ -93,12 +95,13 @@ export default function V6Checkpoint(){
    <h2 className="text-ink-2">Steps</h2>
    {detail.steps.length===0?<p className="text-label text-ink-2">No steps recorded.</p>:
     <ol className="flex flex-col gap-3">{detail.steps.map((step,index)=>{
-     const done=index<view.currentStep,current=index===view.currentStep;
-     return <li key={index} className="flex items-start gap-3">
+     const deferred=stepDisposition(view,index,settings.data?.flags);
+     const done=!deferred&&index<view.currentStep,current=!deferred&&index===view.currentStep;
+     return <li key={index} data-adaptive-state={deferred} className="flex items-start gap-3">
       <span aria-hidden="true" className={'flex size-7 shrink-0 items-center justify-center rounded-full text-caption '+(done?'bg-[var(--accent)] text-[var(--on-accent)]':current?'border border-[var(--accent)] text-[var(--accent)]':'border border-[var(--edge)] text-ink-3')}>
        {done?<Check size={16}/>:current?<span className="size-2.5 rounded-full bg-current"/>:index+1}</span>
-      <span className={'min-w-0 flex-1 pt-1 text-body '+(done?'text-ink-2':current?'font-semibold text-ink':'text-ink-3')}><Tex source={step}/></span>
-      <span className="sr-only">{done?'Complete':current?'Current':'Upcoming'}</span>
+      <span className={'min-w-0 flex-1 pt-1 text-body '+(done?'text-ink-2':current?'font-semibold text-ink':'text-ink-3')}><Tex source={step}/><DeferredStep view={view} index={index}/></span>
+      <span className="sr-only">{deferred?'Deferred':done?'Complete':current?'Current':'Upcoming'}</span>
      </li>;})}</ol>}
   </section>
   <section aria-label="Prerequisites" className="flex flex-col gap-2">
@@ -108,7 +111,7 @@ export default function V6Checkpoint(){
      className={actionClass+' justify-between gap-3 text-left'}>
      <span className="min-w-0 break-words">{(()=>{const found=projectDetail?.checkpoints.find(cp=>cp.code===prereq);
       return found?<><Tex source={found.title}/> <span className="text-ink-2">({prereq})</span></>:prereq;})()}</span><span className="shrink-0 text-caption text-ink-2">
-      {prerequisiteState(prereq,projectDetail?.checkpoints??[])}</span>
+      {(()=>{const cp=projectDetail?.checkpoints.find(c=>c.code===prereq);return cp?checkpointLabel(cp,settings.data?.flags,prerequisiteState(prereq,projectDetail?.checkpoints??[])):'Status unavailable';})()}</span>
     </Link>)}
    {!projectDetail&&detail.prereqs.length>0&&<p className="text-caption text-ink-2">Prerequisite status is unavailable while path data is loading.</p>}
   </section>
@@ -124,9 +127,9 @@ export default function V6Checkpoint(){
   </section>
   <section aria-label="Evidence and rechecks" className="flex flex-col gap-3">
    <h2 className="text-title-s font-semibold">Evidence and rechecks</h2>
-   {detail.recheckPrompt&&<p className="rounded-ctl bg-amber-tint p-3 text-label text-ink">
+   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<p className="rounded-ctl bg-amber-tint p-3 text-label text-ink">
     Recheck prompt: <Tex source={detail.recheckPrompt}/></p>}
-   {view.recheckDue&&<p className="text-label text-ink-2">Recheck due: <time dateTime={view.recheckDue}>{formatDay(view.recheckDue)}</time></p>}
+   {!settings.data?.flags?.recheck_v2&&view.recheckDue&&<p className="text-label text-ink-2">Recheck due: <time dateTime={view.recheckDue}>{formatDay(view.recheckDue)}</time></p>}
    {detail.events.length===0?<p className="text-label text-ink-2">No evidence recorded yet.</p>:
     <ol className="flex flex-col gap-2">{detail.events.slice(0,20).map(event=><li key={event.id}
      className="rounded-[12px] border border-[var(--hair)] bg-[var(--paper)] p-3">

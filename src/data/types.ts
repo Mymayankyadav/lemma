@@ -74,6 +74,7 @@ export interface PlanningPrefs {
  [key:string]:unknown;
 }
 export interface Settings {
+ flags?: Record<string, boolean>;
  focusDefaults?:FocusDefaultsPrefs;
  planning?:PlanningPrefs;
  reviewBudget?:ReviewBudgetPrefs;
@@ -117,6 +118,10 @@ export interface Project {
  id: string; slug: string; title: string; goal: string; style: string; status: ProjectStatus; subjectId: string; createdAt: IsoDate
 }
 export interface CheckpointView {
+ planState?: 'active' | 'deferred' | 'skipped';
+ deferredReason?: string | null;
+ deferredAt?: IsoDate | null;
+ stepMeta?: {state?:string;tier?:string;deferred_reason?:string|null;deferred_at?:string|null}[];
  dueOn?: IsoDate | null; demonstratedAt?: IsoDate | null
  stage?: string | null
  id: string; code: string; title: string; position: number; ui: CheckpointUi; currentStep: number; stepsTotal: number
