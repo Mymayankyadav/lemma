@@ -4,6 +4,7 @@ import {setPrompt,history,undo,edit,add,remove,review,grade} from './tools/contr
 import {cut} from './text.ts';
 import {isMachineRead} from './machine-reads.ts';
 import { INSTRUCTIONS } from './rules.ts';
+import { prune } from './schema-prune.ts';
 import { packet } from './packet.ts';
 import { get, readPages, search } from './tools/read.ts';
 import { study } from './tools/study.ts';
@@ -20,18 +21,6 @@ export const TOOL_NAMES=['resume','get','read_pages','search','save_pages','star
 // the same zod schema without the per-tool "$schema" dialect line (2020-12 is
 // the MCP default) and without the ±2^53-1 bounds zod adds to plain integers.
 // Validation still runs through zod's own ~standard.validate.
-const SAFE_INT=Number.MAX_SAFE_INTEGER;
-function prune(node:any):any{
-  if(Array.isArray(node))return node.map(prune);
-  if(!node||typeof node!=='object')return node;
-  const out:any={};
-  for(const [k,v] of Object.entries(node)){
-    if(k==='$schema')continue;
-    if((k==='maximum'&&v===SAFE_INT)||(k==='minimum'&&v===-SAFE_INT))continue;
-    out[k]=prune(v);
-  }
-  return out;
-}
 export function lean(schema:any):any{
   const std=schema['~standard'];
   return {'~standard':{...std,jsonSchema:{
