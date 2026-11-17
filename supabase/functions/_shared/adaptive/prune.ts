@@ -114,7 +114,7 @@ const STAGES:((s:PruneState,pid:string)=>Action|null)[]=[venture,ventureCp,compr
 export function prune(input:PruneState):PruneResult{
   const s=clone(input);const actions:Action[]=[];
   const slackOf=()=>Object.fromEntries(Object.entries(evaluate(s)).map(([k,v])=>[k,v.slack]));
-  for(let guard=0;guard<500;guard++){
+  for(let guard=0;guard<20000;guard++){                 // bounded: each pass applies one action or stops
     const ev=evaluate(s);
     const neg=s.projects.filter(p=>p.lastStudyOn!==null&&p.lastStudyOn>=s.today&&ev[p.id].slack<0)
       .sort((a,b)=>(a.lastStudyOn as string).localeCompare(b.lastStudyOn as string)||ev[a.id].ratio-ev[b.id].ratio||a.id.localeCompare(b.id));
@@ -136,12 +136,14 @@ export function prune(input:PruneState):PruneResult{
   return {actions,state:s,slack,atRisk,ask:atRisk.length>1?{question:'which_project_first',projects:atRisk.map(a=>a.project_id)}:null};
 }
 export type Restored={kind:'restore_cp'|'restore_step';project_id:string;ref:string;step?:number};
-/** Restore in exactly the reverse order of deferral while slack stays ≥ 0 (§8.5). Caller enforces the 2-day hysteresis. */
-export function restore(input:PruneState):{restored:Restored[];state:PruneState}{
+/** Restore in exactly the reverse order of deferral while slack stays ≥ 0 (§8.5). Caller enforces the 2-day hysteresis.
+ *  `only` limits which projects' items may come back; every project stays in the evaluation, since capacity is shared. */
+export function restore(input:PruneState,only?:Set<string>):{restored:Restored[];state:PruneState}{
   const s=clone(input);const restored:Restored[]=[];
   type Item={at:number;pos:number;undo:()=>void;redo:()=>void;r:Restored};
   const items:Item[]=[];
   for(const c of s.cps){
+    if(only&&!only.has(c.project_id))continue;
     if(c.planState==='deferred'&&(c.deferredReason??'').startsWith('prune:'))
       items.push({at:c.deferredAt??0,pos:c.position,r:{kind:'restore_cp',project_id:c.project_id,ref:c.code},
         undo:()=>{c.planState='active'},redo:()=>{c.planState='deferred'}});

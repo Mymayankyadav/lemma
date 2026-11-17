@@ -111,12 +111,14 @@ begin
   -- 6. old recheck fields on demonstrated checkpoints (spec §14.7); runs after the evidence backfill so gaps are visible
   if 'recheck_fields'=any(v_steps) then
    v_n:=0;v_m:=0;
-   for r in select c.id,c.code,c.recheck_prompt,c.needs_revisit,c.recheck_due,
-      exists(select 1 from public.session_events e where e.checkpoint_id=c.id and e.user_id=c.user_id and e.voided_at is null and e.superseded_by is null
-        and e.kind in ('pretest','attempt','evidence','recheck','explanation') and (e.outcome in ('partial','failed') or coalesce(e.hint_level,0)>=2)) gap
-     from public.checkpoints c where c.user_id=v_owner and c.status='demonstrated' and (c.recheck_due is not null or c.needs_revisit or c.recheck_prompt is not null) loop
-    if r.gap or r.needs_revisit then
-     -- a real gap: seed one T2-style trigger per concept (≤4) so the replay creates a recheck; the old fields are then retired
+   -- Gaps that were fixed in a session (fail or partial, then a pass) are T1 triggers in the backfilled evidence, and the replay
+   -- schedules them under the new rules; seeding them again would double-count. Only an explicit old revisit state (a failed
+   -- old recheck, needs_revisit) has no such evidence, so only it is seeded. Everything else just loses the old fields.
+   for r in select c.id,c.code,c.recheck_prompt,c.needs_revisit,c.recheck_due
+     from public.checkpoints c where c.user_id=v_owner and c.status='demonstrated'
+      and (c.recheck_due is not null or c.needs_revisit or c.recheck_prompt ~* '^\s*Recheck\s+CP[0-9]+') loop   -- idempotent: a kept concrete prompt is not work
+    if r.needs_revisit then
+     -- seed one T2-style trigger per concept (≤4) so the replay creates a recheck
      insert into public.evidence(user_id,occurred_at,project_id,checkpoint_id,concept_id,level,role,outcome,hint_level,novelty,kind,origin,confidence,ctx)
       select v_owner,now(),c.project_id,c.id,cc.concept_id,'understand','primary','pass',2,'novel','attempt','migration',0.5,
        pg_catalog.jsonb_build_object('migrated',true,'seed','needs_revisit','from',r.code)
@@ -124,13 +126,14 @@ begin
       where c.id=r.id and not exists(select 1 from public.evidence x where x.checkpoint_id=c.id and x.origin='migration' and x.ctx->>'seed'='needs_revisit' and x.concept_id=cc.concept_id)
       order by cc.concept_id limit 4;
      v_m:=v_m+1;
-    else
+    end if;
+    begin
      update public.checkpoints set recheck_due=null,needs_revisit=false,
        recheck_prompt=case when recheck_prompt ~* '^\s*Recheck\s+CP[0-9]+' then null else recheck_prompt end where id=r.id;
-     v_n:=v_n+1;
-    end if;
+     if not r.needs_revisit then v_n:=v_n+1; end if;
+    end;
    end loop;
-   v_report:=v_report||pg_catalog.jsonb_build_object('recheck_fields',pg_catalog.jsonb_build_object('dropped_no_gap',v_n,'seeded_real_gap',v_m,
+   v_report:=v_report||pg_catalog.jsonb_build_object('recheck_fields',pg_catalog.jsonb_build_object('retired_without_seed',v_n,'seeded_from_needs_revisit',v_m,
      'plan_probes_kept_for_items',(select count(*) from public.checkpoints where user_id=v_owner and status='not_started' and recheck_prompt is not null)));
   end if;
   -- 3b. diagnostics: derived pace claims are dismissed (reversible); strengths create no rechecks; gaps become evidence-driven

@@ -10,8 +10,7 @@ import {addDays} from '../_shared/adaptive/dates.ts';
 import {project} from './resolve.ts';
 import {insert,update} from './db.ts';
 import {restore} from '../_shared/adaptive/prune.ts';
-import {DEFAULTS,isLive} from '../_shared/adaptive/plan.ts';
-import {toPlanCps} from '../_shared/adaptive/facts.ts';
+import {DEFAULTS} from '../_shared/adaptive/plan.ts';
 
 export const FLAG_NAMES=['time_block','recheck_v2','scheduler_v2','proficiency','items','atlas_memory','workers'] as const;
 export type FlagName=typeof FLAG_NAMES[number];
@@ -154,7 +153,6 @@ const slackRatio=(f:{slack:number;supply:number})=>f.supply>0?f.slack/f.supply:(
 export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
   const {state,rows}=await stateOf(c,now);
   if(!flagOn(rows.settings,'scheduler_v2'))return '';
-  const slugOf=new Map(rows.projects.map((p:any)=>[p.id,p.slug]));
   const hist=new Map<string,Map<string,number>>();
   for(const f of rows.frozen??[]){(hist.get(f.project_id)??hist.set(f.project_id,new Map()).get(f.project_id)!).set(String(f.study_day).slice(0,10),Number(f.slack_ratio))}
   for(const p of Object.values(state.projects)){
@@ -165,7 +163,6 @@ export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
     (hist.get(p.id)??hist.set(p.id,new Map()).get(p.id)!).set(state.today,ratio);
   }
   const cps=new Map(rows.checkpoints.map((x:any)=>[x.project_id+'|'+x.code,x]));
-  const bySlug=(slug:string)=>rows.projects.find((p:any)=>p.slug===slug);
   const changes:string[]=[];
   // 2. automatic pruning
   for(const a of state.prune.actions.filter(x=>!x.needs_approval&&(x.kind==='defer_cp'||x.kind==='defer_step'))){
@@ -182,12 +179,12 @@ export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
   // 3. restore, newest first, only after 2 consecutive study days above +10%
   const hyster=(id:string)=>{const h=hist.get(id);const prev=addDays(state.today,-1);
     return !!h&&(h.get(state.today)??-1)>DEFAULTS.restoreMargin&&(h.get(prev)??-1)>DEFAULTS.restoreMargin};
-  if(!changes.length){
+  // Only when nothing at all is being pruned (not even a proposal): then the simulated state is the real plan, with
+  // every project in it, so a restore is judged against shared capacity as it really is.
+  if(!state.prune.actions.length){
     const ok=new Set(Object.values(state.projects).filter(p=>hyster(p.id)).map(p=>p.id));
     if(ok.size){
-      const planCps=toPlanCps(rows);
-      const proj=state.prune.state.projects.filter(p=>ok.has(p.id));
-      const out=restore({...state.prune.state,projects:state.prune.state.projects,cps:planCps.filter(x=>ok.has(x.project_id))});
+      const out=restore(state.prune.state,ok);
       for(const r of out.restored){
         const row:any=cps.get(r.project_id+'|'+r.ref);if(!row)continue;
         if(r.kind==='restore_cp')await update(c,'checkpoints',row.id,{plan_state:'active',deferred_at:null,deferred_reason:null});
@@ -197,7 +194,6 @@ export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
         }
         changes.push('restored');
       }
-      void proj;
     }
   }
   if(!changes.length)return '';

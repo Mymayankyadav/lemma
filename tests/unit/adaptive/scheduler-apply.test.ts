@@ -59,4 +59,17 @@ describe('scheduler_v2 (spec §8)',()=>{
     expect(patches(go).map((op:any)=>op.where.id)).toEqual(defer.map((c:any)=>c.id).reverse());    // exact reverse order
     expect(patches(go).every((op:any)=>op.values.plan_state==='active'&&op.values.deferred_reason===null)).toBe(true);
   });
+  it('never restores into capacity another project needs: restore is judged on the whole shared plan',async()=>{
+    const rows=rowsFor([{slug:'aa-small',cps:10,done:0,stages:2,target:'2026-11-20',tiers:'allcore'},{slug:'bb-big',cps:39,done:0,stages:6,target:'2026-11-20',tiers:'nocore'}],
+      {flags:{scheduler_v2:true},capacity:{weekday_minutes:300}});
+    rows.sessions=[];
+    const big=rows.projects.find((p:any)=>p.slug==='bb-big');big.auto_prune_standard=false;      // its pruning is all proposals
+    for(const c of rows.checkpoints)c.steps=c.steps.map((t:string)=>t.replace(/^Venture: /,''));        // nothing is auto-prunable anywhere
+    const small=rows.projects.find((p:any)=>p.slug==='aa-small');
+    const defer=rows.checkpoints.filter((c:any)=>c.project_id===small.id&&c.kind==='learn').slice(-3);
+    defer.forEach((c:any,i:number)=>Object.assign(c,{plan_state:'deferred',deferred_reason:'prune:venture_cp',deferred_at:'2026-11-16T0'+i+':00:00Z'}));
+    rows.frozen=[{study_day:'2026-11-16',project_id:small.id,slack_ratio:0.5},{study_day:'2026-11-17',project_id:small.id,slack_ratio:0.5}];
+    const c=ctx(rows);await applyScheduler(c,NOW);
+    expect(patches(c).filter((op:any)=>op.values.plan_state==='active')).toEqual([]);
+  });
 });

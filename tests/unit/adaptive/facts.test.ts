@@ -82,10 +82,20 @@ describe('feasibility and pruning on the production shape (acceptance 5)',()=>{
     expect(f.raw).toBeGreaterThan(0);expect(f.required).toBeGreaterThan(0);
   });
 });
+describe('the queue shows the real plan',()=>{
+  it('a checkpoint that is only proposed for pruning stays in the queue until the deferral is applied',()=>{
+    const rows=rowsFor([{slug:'tiny',cps:2,done:0,stages:1,target:'2026-11-18',tiers:'nocore'}],{capacity:{weekday_minutes:100}});
+    rows.sessions=[];rows.projects[0].auto_prune_standard=false;
+    const cp1=rows.checkpoints.find((c:any)=>c.code==='CP1');Object.assign(cp1,{estimate_minutes:600,steps:['a','b']});
+    const s=assemble(rows,NOW);
+    expect(s.prune.actions.some(a=>a.kind==='defer_cp'&&a.ref==='CP1'&&a.needs_approval)).toBe(true);   // proposed, not applied
+    expect(s.queue.items.concat(s.queue.tail).map(x=>x.ref)).toContain('CP1#1');
+  });
+});
 describe('purity (I3, I7)',()=>{
   it('identical facts on the same study day give byte-identical output, whatever the row order',()=>{
     for(const seed of SEEDS.slice(0,12)){
-      const r=rng(seed);const rows=topo({seed});
+      const r=rng(seed);const rows=rowsFor([PRODUCTION[0]],{seed});   // the evidence touches topology-1 only; one project keeps this fast
       rows.evidence=Array.from({length:r.int(0,12)},(_,i)=>ev(rows,i+1,{outcome:r.pick(['pass','fail','partial']),hint_level:r.pick([0,2,3]),concept_id:'c-topology-1-'+r.int(1,4),
         occurred_at:'2026-11-1'+r.int(5,7)+'T0'+r.int(1,9)+':00:00Z',session_id:'s-topology-1-'+r.int(0,2)}));
       const a=JSON.stringify(assemble(rows,NOW));
@@ -95,7 +105,7 @@ describe('purity (I3, I7)',()=>{
   });
   it('undo of an evidence row restores the previous recheck set and queue exactly',()=>{
     for(const seed of SEEDS.slice(0,12)){
-      const r=rng(seed);const rows=topo({seed});
+      const r=rng(seed);const rows=rowsFor([PRODUCTION[0]],{seed});   // the evidence touches topology-1 only; one project keeps this fast
       const evs=Array.from({length:r.int(2,10)},(_,i)=>ev(rows,i+1,{outcome:r.pick(['pass','fail']),hint_level:r.pick([0,3]),concept_id:'c-topology-1-'+r.int(1,3),
         occurred_at:'2026-11-1'+r.int(4,6)+'T0'+r.int(1,9)+':00:00Z',session_id:'s-topology-1-'+r.int(0,2)}));
       const full={...rows,evidence:evs},without={...rows,evidence:evs.slice(0,-1)},voided={...rows,evidence:evs.map((e,i)=>i===evs.length-1?{...e,voided_at:'2026-11-17T01:00:00Z'}:e)};

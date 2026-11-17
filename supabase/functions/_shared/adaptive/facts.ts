@@ -149,7 +149,7 @@ export function assemble(r:Rows,now:Date):State{
       feasibility:f&&t.lastStudyOn?{raw:Math.round(f.raw),supply:Math.round(f.supply),required:Math.round(f.required),review:Math.round(f.review),slack:Math.round(f.slack),buffer:Math.round(f.buffer)}:null,
       block,atRisk:pr.atRisk.some(a=>a.project_id===p.id),unconfirmed:!t.confirmed};
   }
-  // --- queue (the project the caller asked about is chosen by the adapter; here: all projects, EDF order)
+  // --- queue: the real plan (applied deferrals only). Proposed pruning is shown in FLAGS and feasibility, never silently applied here.
   const order=[...planProjects].sort((a,b)=>(a.lastStudyOn??'9999').localeCompare(b.lastStudyOn??'9999')||a.slug.localeCompare(b.slug));
   const todaysCps=cps.filter(c=>c.status==='in_progress'||(c.status==='not_started'&&c.planState==='active'&&c.prereqs.every(id=>planById.get(id)?.status==='demonstrated'||planById.get(id)?.planState!=='active')));
   const first=new Set<string>();const todays:PlanCp[]=[];
@@ -168,7 +168,7 @@ export function assemble(r:Rows,now:Date):State{
   const mode:Mode=order.length?(order.some(p=>proj[p.id].mode==='normal')?'normal':order.every(p=>proj[p.id].mode==='post_deadline')?'post_deadline':order.some(p=>proj[p.id].mode==='deadline_today')?'deadline_today':'normal'):'no_deadline';
   const queue=buildQueue({today,mode:primary?mode:'normal',capacity:capacityToday.minutes,configured:capacityToday.configured,used:usedToday,
     reviewShare:pstate.reviewShare,reviewBudgetMinutes:st.review_budget?.minutes??20,reviews,projects:planProjects,
-    cps:pr.state.cps,nextStudyDays:[1,2,3].map(n=>addDays(today,n)).filter(d=>order.some(p=>p.lastStudyOn&&d<=p.lastStudyOn)),
+    cps:pstate.cps,nextStudyDays:[1,2,3].map(n=>addDays(today,n)).filter(d=>order.some(p=>p.lastStudyOn&&d<=p.lastStudyOn)),
     absentDays,probeConcepts:[...needed].map(id=>concepts.get(id)?.name).filter(Boolean)});
   const deprecatedWarnings:string[]=[];
   for(const p of projects)for(const f of ['prompt','goal','target_label'] as const)if(lintText(p[f]).length)deprecatedWarnings.push(p.slug+'.'+f);

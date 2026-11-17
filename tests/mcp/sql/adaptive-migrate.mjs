@@ -40,7 +40,7 @@ try{
  await q("insert into public.checkpoint_concepts(user_id,checkpoint_id,concept_id) values($1,$2,$3),($1,$4,$3),($1,$5,$3),($1,$6,$3),($1,$6,$7)",[owner,cp(1),cA,cp(2),cp(3),cp(5),cB]);
  await q("insert into public.sessions(id,user_id,project_id,number,goal,style,checkpoint_id) values($1,$2,$3,1,'g','socratic',$4)",[sess,owner,project,cp(1)]);
  const ev=(cpn,kind,outcome,hint)=>q("insert into public.session_events(user_id,session_id,checkpoint_id,kind,body,outcome,hint_level) values($1,$2,$3,$4,'x',$5,$6)",[owner,sess,cp(cpn),kind,outcome,hint]);
- await ev(1,'attempt','demonstrated',null);await ev(1,'evidence','demonstrated',null);await ev(2,'attempt','demonstrated',null);
+ await ev(1,'attempt','demonstrated',null);await ev(1,'evidence','demonstrated',null);await ev(2,'attempt','failed',null);await ev(2,'attempt','demonstrated',null);
  await ev(3,'attempt','failed',null);await ev(3,'attempt','demonstrated',3);await ev(5,'pretest','partial',null);await ev(5,'note',null,null);
  await q("insert into public.diagnostics(user_id,project_id,kind,topic,evidence,status) values($1,$2,'pace','Behind plan','about 30 days behind plan','confirmed'),($1,$2,'gap','Totality of maps','x','open')",[owner,project]);
 
@@ -54,8 +54,9 @@ try{
 const dry=await run(args);
  assert.equal(dry.dry_run,true);assert.deepEqual(await state(),before,'a dry run rolls everything back');
  assert.equal(dry.time.projects_last_study_on_set,1);assert.equal(dry.typing.cards_typed,1);assert.equal(dry.typing.venture_steps,4);
- assert.equal(dry.evidence.created,6,'graded events only; notes are not evidence');assert.equal(dry.evidence.unresolved_total,1,'the two-concept checkpoint stays unresolved, never dropped');assert.equal(dry.tiers_written,2);
- assert.equal(dry.recheck_fields.dropped_no_gap,2);assert.equal(dry.recheck_fields.seeded_real_gap,1);assert.equal(dry.recheck_fields.plan_probes_kept_for_items,1);
+ assert.equal(dry.evidence.created,7,'graded events only; notes are not evidence');assert.equal(dry.evidence.unresolved_total,1,'the two-concept checkpoint stays unresolved, never dropped');assert.equal(dry.tiers_written,2);
+ // CP2's fail→pass is a T1 trigger in the backfilled evidence (the replay handles it); only CP3's explicit needs_revisit is seeded
+ assert.equal(dry.recheck_fields.retired_without_seed,2);assert.equal(dry.recheck_fields.seeded_from_needs_revisit,1);assert.equal(dry.recheck_fields.plan_probes_kept_for_items,1);
  assert.equal(dry.diagnostics_pace_dismissed,1);assert.ok(dry.snapshot.projects.md5);
  const real=await run({...args,dry_run:false});
  assert.equal(real.dry_run,false);
@@ -64,8 +65,9 @@ const dry=await run(args);
  const after=await state();
  assert.deepEqual({cards:after.cards,meta:after.meta,est:after.est,pb:after.pb,dismissed:after.dismissed,ls:after.ls,ap:after.ap},{cards:1,meta:5,est:5,pb:1,dismissed:1,ls:'2026-11-22',ap:true});
  assert.deepEqual(JSON.parse(after.cap),{weekday_minutes:240,review_share:0.25});
- assert.equal(after.due,1,'only the real-gap checkpoint keeps recheck_due; the two no-gap checkpoints lose theirs (the loop)');
+ assert.equal(after.due,0,'every old recheck_due is retired; rechecks now come from evidence (the loop is gone)');
  assert.equal((await q("select recheck_prompt from public.checkpoints where id=$1",[cp(1)]))[0].recheck_prompt,null,'a generic prompt is dropped');
+ assert.match((await q("select recheck_prompt from public.checkpoints where id=$1",[cp(3)]))[0].recheck_prompt,/Hausdorff space is closed/,'a concrete prompt on a demonstrated checkpoint is kept (it becomes an item in N170)');
  assert.match((await q("select recheck_prompt from public.checkpoints where id=$1",[cp(5)]))[0].recheck_prompt,/homeomorphism/,'a not-started checkpoint keeps its criterion-style prompt for the item layer');
  assert.deepEqual((await q("select tier,count(*)::int n from public.checkpoints group by tier order by tier")).map(r=>[r.tier,r.n]),[['core',2],['standard',3]],'course-notes checkpoints are core once tiers are approved');
  const tiers=(await q("select step_meta from public.checkpoints where id=$1",[cp(1)]))[0].step_meta;
@@ -76,7 +78,7 @@ const dry=await run(args);
  // --- idempotent
  const again=await run({...args,dry_run:false});
  assert.equal(again.evidence.created,0);assert.equal(again.baselines_created,0);assert.equal(again.typing.cards_typed,0);assert.equal(again.estimates_defaulted,0);
- assert.equal(again.recheck_fields.dropped_no_gap,0);assert.deepEqual(await state(),after);
+ assert.equal(again.recheck_fields.retired_without_seed,0);assert.equal(again.recheck_fields.seeded_from_needs_revisit,0);assert.deepEqual(await state(),after);
 
  // --- one action, fully undoable
  const act=(await q("select max(no) n from public.actions where tool='adaptive_migrate' and summary not like '%dry run%'"))[0].n;
