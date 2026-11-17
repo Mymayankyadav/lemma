@@ -1,4 +1,5 @@
 import {test,expect,type Page} from "@playwright/test";
+import {DATE,NOW} from './v7-scenes';
 // PLAN §6.2–§6.9 golden screens on the seed, with v7 on. Each test asserts structure, not pixels.
 const at=(hash:string)=>"/lemma/?demo=1&flags=v7Shell,v6Shell#"+hash;
 
@@ -30,10 +31,20 @@ test("Calendar Day shows the week strip, the grid and opens quick-add from a tap
  await expect(page.getByRole("dialog",{name:"New block"})).toBeVisible();
 });
 test("Calendar Day moves by week with the strip chevrons and back to today",async({page})=>{
+ await page.clock.setFixedTime(NOW);
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
+ // The strip's current-day cell also contains "today" in its accessible name.
+ const today=page.getByRole("button",{name:"Today",exact:true});
+ await expect(today).toBeVisible();
  await page.getByRole("button",{name:"Next week"}).click();
  await expect(page).toHaveURL(/date=2026-11-18/);
- await expect(page.getByRole("button",{name:"Today"})).toBeVisible();
+ await expect(today).toBeVisible();
+ await page.getByRole("button",{name:"Previous week"}).click();
+ await expect(page).toHaveURL(/date=2026-11-11/);
+ await today.click();
+ await expect(page).toHaveURL(new RegExp('date='+DATE));
+ await expect(page.locator('[data-strip-day="'+DATE+'"]').first()).toHaveAttribute('aria-pressed','true');
+ await expect(today).toHaveCount(0);
 });
 async function openFirstPath(page:Page){
  await page.goto(at("/"));
