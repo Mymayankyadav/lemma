@@ -52,6 +52,7 @@ export async function rows(db: SupabaseClient, table: string, uid: string, inclu
 }
 export function settingsRow(r: Row): Settings {
   return {
+    flags:r.flags??{},
     notify:r.notify??null,
     desiredRetention:r.desired_retention, newPerDay:r.new_per_day, reviewsPerDay:r.reviews_per_day,
     learnSteps:r.learn_steps, relearnSteps:r.relearn_steps, rolloverHour:r.rollover_hour, maxIntervalDays:r.max_interval_days,
@@ -91,6 +92,7 @@ export function sessionRow(r: Row, projectSlug: string, checkpointCode: string |
 }
 export function checkpointRow(r: Row, prereqs: readonly CheckpointView[] = [], today?: string): CheckpointView {
   return {id:r.id,code:r.code,title:r.title,position:r.position,
+    planState:r.plan_state??'active',deferredReason:r.deferred_reason,deferredAt:r.deferred_at,stepMeta:r.step_meta??[],
     ui:checkpointUi({status:r.status,needsRevisit:r.needs_revisit,recheckDue:r.recheck_due},prereqs.map(p=>p.ui),today),
     currentStep:r.current_step,stepsTotal:(r.steps as string[]).length,
     recheckDue:r.recheck_due,dueCards:0}

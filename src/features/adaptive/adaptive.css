@@ -1,0 +1,15 @@
+.adaptive-panel {margin-block:1rem; padding:1rem; border:1px solid var(--hair,var(--edge)); border-radius:12px; color:var(--ink); overflow-wrap:anywhere;}
+.adaptive-panel h2,.adaptive-panel h3 {font-weight:600; margin-block:.5rem;}
+.adaptive-panel p {margin-block:.4rem;}
+.adaptive-section {margin-block:1rem;}
+.adaptive-section li {padding-block:.5rem; border-bottom:1px solid var(--hair,var(--edge));}
+.adaptive-panel a {text-decoration:underline; text-underline-offset:3px;}
+.adaptive-facts {display:flex; flex-wrap:wrap; gap:.75rem 1.5rem; margin-block:.75rem;}
+.adaptive-facts dt {font-size:.85em; color:var(--ink-2);}
+.adaptive-facts dd {font-variant-numeric:tabular-nums;}
+.adaptive-disposition {display:block; border-left:3px dashed var(--ink-3); padding:.25rem .5rem; font-size:.875rem; color:var(--ink-2); font-weight:400;}
+.adaptive-disposition>span {display:block;}
+[data-adaptive-state="deferred"],[data-adaptive-state="skipped"] {background:var(--fill-1); border-radius:4px;}
+li[data-adaptive-state="deferred"] {border-left:3px dashed var(--ink-3); padding:.5rem;}
+li[data-adaptive-state="deferred"] .v7-steps-text {font-weight:400; color:var(--ink-2);}
+.adaptive-risk {border-left:3px solid var(--hard,var(--accent)); padding-left:.5rem;}

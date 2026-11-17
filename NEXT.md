@@ -1,6 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
 
+## N171 Show the adaptive scheduler in the React app (Owner task)
+
+Owner task: "Owner task for mymayankyadav/lemma: make the React app show the adaptive scheduler (N169/N170)."
+Stage: Build · Status: done · Needs: — · Assigned: chat-73158#k9r4
+Done = gated by per-user settings.flags time_block / recheck_v2 / scheduler_v2, show checkpoint and step deferrals with reasons and dates, project and Today due rechecks from rechecks, Today TIME and top-eight QUEUE, and infeasibility linked to the plan; import the shared pure adaptive modules so browser values match MCP resume. All flags off preserves the existing app. N170 is unmerged, so learning profiles are skipped. Recorded in docs/current/N171.md.
+Tests: tests/unit/adaptive-ui/{views,parity}.test.ts[x], existing affected view and adaptive suites, typecheck and Vite production build.
+Scope: src/data/{api.ts,types.ts,adaptive/**,live/{adapter,helpers}.ts,demo/{adapter,model}.ts,sync/keys.ts}, src/features/{adaptive/**,home/{Page.tsx,v7/V7Today.tsx},project/{Page.tsx,PathsView.tsx,v6/V6Project.tsx,v7/V7Path.tsx},checkpoint/{Page.tsx,v6/V6Checkpoint.tsx,v7/CheckpointV7.tsx}}, tests/unit/adaptive-ui/**, tests/unit/project-stage-math.test.tsx, tests/unit/sources-v6/route-wiring.test.tsx, docs/current/N171.md, NEXT.md.
+Not: server changes, migrations, dependencies, production study data, scheduler writes or unrelated fixes.
+
 ## N169 Adaptive core: one time block, evidence-driven rechecks, a daily scheduler (Owner task)
 
 Owner task: "20 nov is just few days before exams starts push to max 22nd nov. Repo is public. No antropic api key or any api key for llm rn. Start stint B"

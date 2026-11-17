@@ -807,6 +807,7 @@ export class DemoAdapter implements LemmaApi {
     const project = this.projectById(cp.projectId);
     return {
       id: cp.id,
+      planState:cp.planState,deferredAt:cp.deferredAt,deferredReason:cp.deferredReason,stepMeta:cp.stepMeta,
       code: cp.code,
       title: cp.title,
       position: cp.position,
@@ -943,6 +944,7 @@ export class DemoAdapter implements LemmaApi {
   async bootstrap() {
     return this.getSettings();
   }
+  async getAdaptiveData(){return (await import('../adaptive/demo')).demoAdaptiveData(this.store);}
   async getSettings() {
     return clone(this.store.settings);
   }

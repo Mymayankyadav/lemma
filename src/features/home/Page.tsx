@@ -1,3 +1,4 @@
+import {TodayScheduler} from '../adaptive/Views';
 import {lazy, Suspense, useEffect, useRef, useState} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {SectionHeading} from '../../ui/SectionHeading';
@@ -221,7 +222,7 @@ function LegacyToday(){
  if(isFlagOn('v6Shell'))return <div className="notebook-today flex min-w-0 flex-col">
   {/* N111 (mockup Today): the shell header carries the date and actions. */}
   <Suspense fallback={null}>
-   <TodayFocus/>
+   <TodayScheduler/><TodayFocus/>
    <V6TodayPlan zone={settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC'}
     due={home.data.due} reviewLimit={settings.data?.reviewsPerDay??200}>
     <PlannerLaunch zone={settings.data?.timeZone}/>
@@ -240,7 +241,7 @@ function LegacyToday(){
   .sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||
    (Date.parse(b.lastActivityAt??'')||0)-(Date.parse(a.lastActivityAt??'')||0));
  return <Screen tabBar className="gap-6 pb-6">
-  <TodayHeader pending={home.data.pendingProposals}/>
+  <TodayHeader pending={home.data.pendingProposals}/><TodayScheduler/>
   {isFlagOn('v6Shell')&&<PlannerLaunch zone={settings.data?.timeZone}/>}
   {isFlagOn('v6Shell')&&<Suspense fallback={null}>
    <TodayFocus/>

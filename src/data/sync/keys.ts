@@ -67,5 +67,7 @@ export async function invalidateOwnerChanges(
   return
  }
  const prefixes = new Set(resources.flatMap(resource => RESOURCE_KEYS[resource] ?? []))
+ // Adaptive state depends on these same owner facts; undo and connector writes must refresh it too.
+ if(resources.some(resource=>['settings','projects','checkpoints','checkpoint_prereqs','checkpoint_concepts','concepts','concept_links','sessions','misconceptions','cards','notes','reviews','study_intervals','calendar_blocks'].includes(resource)))prefixes.add('adaptive')
  await Promise.all([...prefixes].map(prefix => client.invalidateQueries({ queryKey: [prefix] })))
 }
