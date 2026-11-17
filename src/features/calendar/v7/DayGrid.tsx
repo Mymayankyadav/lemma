@@ -12,6 +12,8 @@ import {dayMinutes,layoutDayIntervals,moveInterval,resizeInterval,snapDragMinute
 import type {EnterMark} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
 import {isFlagOn} from '../../../flags';
+import {formatDuration} from '../../../lib/format';
+import {loggedSessions,sessionCaption,type LoggedSession} from './loggedSessions';
 
 export const HOUR_PX=64;
 const MINUTE=60_000;
@@ -23,6 +25,8 @@ type Props={
  date:string;zone:string;clock:(instant:string)=>string;entries:StudyEntryRecord[];blocks:CalendarBlockRecord[];busy?:boolean;
  now:number;lookOf:(block:CalendarBlockRecord)=>BlockLook;
  onCreate:(startsAt:string)=>void;onEdit:(block:CalendarBlockRecord)=>void;
+ /** N168: tapping logged study opens its session sheet. */
+ onOpenEntry?:(entry:StudyEntryRecord)=>void;
  onAdjust:(block:CalendarBlockRecord,patch:Pick<CalendarBlockPatch,'startsAt'|'endsAt'>)=>void;
  /** Dropping a lifted block on a day in the week strip moves it there. */
  onDropDay:(block:CalendarBlockRecord,day:string,delta:number)=>void;
@@ -37,6 +41,9 @@ type Props={
 export interface SuggestedBlock{id:string;title:string;start:string;end:string;onAccept?:()=>void;busy?:boolean}
 /** PLAN §6.5. An hour is 64 px, so 15 minutes is 16 px; the gutter is 44 px. */
 export function layoutKind(height:number):'full'|'line'|'title'{return height>=60?'full':height>=30?'line':'title';}
+/** N168: a title line and a caption line need 46 px; below that a card is one centred row (title, then caption),
+ *  and below 26 px that row is set small, so text is never cut through the middle. */
+export const COMPACT_PX=46,TINY_PX=26;
 export function quarterHour(elapsedMinutes:number,wholeMinutes:number):number{
  return Math.max(0,Math.min(wholeMinutes-15,Math.floor(elapsedMinutes/15)*15));
 }
@@ -44,7 +51,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
  const target=input.sameDay?input.nowY-input.viewport/3:(input.firstBlockTop??input.windowTop)-HOUR_PX/2;
  return Math.max(0,target);
 }
-export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
+export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onOpenEntry,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
  // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
  const HOUR_PX=isFlagOn('v7Room')?96:64;
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
@@ -53,9 +60,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  const from=Date.parse(range.start),until=Date.parse(range.end),whole=dayMinutes(range);
  const visible=useMemo(()=>blocks.filter(block=>block.status!=='cancelled'),[blocks]);
  const byId=useMemo(()=>new Map(visible.map(block=>[block.id,block])),[visible]);
- const saved=useMemo(()=>entries.filter(entry=>entry.status==='saved').flatMap(entry=>entry.intervals
-  .filter(interval=>interval.kind==='focus'&&interval.end!==null).map(interval=>({id:'saved:'+entry.id+':'+interval.id,start:interval.start,end:interval.end!}))),[entries]);
- const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...saved],[visible,saved]);
+ // N168: one card per saved session, from its first focus to its last; pauses and breaks are drawn inside it.
+ const sessions=useMemo(()=>loggedSessions(entries,range),[entries,range]);
+ const sessionById=useMemo(()=>new Map(sessions.map(session=>[session.id,session])),[sessions]);
+ const inputs=useMemo(()=>[...visible.map(block=>({id:'block:'+block.id,start:block.startsAt,end:block.endsAt})),...sessions.map(session=>({id:session.id,start:session.start,end:session.end}))],[visible,sessions]);
  const items=useMemo(()=>layoutDayIntervals(inputs,range,HOUR_PX),[inputs,range,HOUR_PX]);
  const first=Math.min(360,...items.map(item=>Math.floor(item.startMinute/60)*60),scrubTo===null?360:Math.floor(scrubTo/60)*60);
  const height=(whole-first)*HOUR_PX/60;
@@ -146,11 +154,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  function card(item:GridItem){
   const id=item.id.startsWith('block:')?item.id.slice(6):null,block=id?blockOf(id):undefined;
-  const entry=!block?entries.find(candidate=>item.id.startsWith('saved:'+candidate.id+':')):undefined;
+  const session=!block?sessionById.get(item.id):undefined,entry=session?.entry;
   const moving=preview?.id===id,shift=moving&&preview.mode==='move'?preview.delta*HOUR_PX/60:0,grow=moving&&preview.mode==='resize'?preview.delta*HOUR_PX/60:0;
-  const top=item.top-first*HOUR_PX/60+shift,shown=Math.max(15,item.height+grow),size=layoutKind(shown);
+  const top=item.top-first*HOUR_PX/60+shift,shown=Math.max(15,item.height+grow),size=layoutKind(shown),compact=shown<COMPACT_PX,tiny=shown<TINY_PX;
   const look=block?lookOf(block):entry?lookOf({projectId:entry.projectId} as CalendarBlockRecord):{subjectClass:'',path:''};
-  const minutes=Math.round((Date.parse(item.end)-Date.parse(item.start))/MINUTE);
   const done=block?.status==='done',past=sameDay&&Date.parse(item.end)<now;
   const kind=block?(block.kind==='busy'?'busy':done?'done':'study'):'logged';
   const label=block?.title??entry?.intent??'Saved study',lane:CSSProperties={top,height:shown,left:'calc('+item.lane/item.lanes*100+'% + 1px)',width:'calc('+100/item.lanes+'% - 2px)'};
@@ -158,20 +165,24 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   const body=<>
    {kind==='logged'||done?<Check className="v7-cal-check" aria-hidden="true"/>:null}
    <strong>{label}</strong>
-   {size!=='title'&&<small>{kind==='logged'?minutes+' min logged':range}</small>}
-   {size==='full'&&kind!=='logged'&&look.path&&<small>{look.path}</small>}
+   {size!=='title'&&<small>{session?sessionCaption(session,formatDuration):range}</small>}
+   {size==='full'&&(session?<small>{range}{look.path?' · '+look.path:''}</small>:look.path&&<small>{look.path}</small>)}
    {block?.checkpointId&&size!=='title'&&<MEANING_ICON.checkpoint className="v7-cal-link" aria-hidden="true"/>}
    {block?.taskId&&size!=='title'&&<MEANING_ICON.task className="v7-cal-link" aria-hidden="true"/>}
    {item.continuesBefore||item.continuesAfter?<span className="v7-sr-only">Continues across midnight</span>:null}
   </>;
   const mark=block&&enterOf?enterOf(block.id):{};
-  return <div key={item.id} className={'v7-cal-block '+look.subjectClass} data-kind={kind} data-size={size} data-past={past?'true':'false'} data-lifted={moving&&preview.lifted?'true':'false'}
+  return <div key={item.id} className={'v7-cal-block '+look.subjectClass} data-kind={kind} data-size={size} data-compact={compact?'true':undefined} data-tiny={tiny?'true':undefined} data-past={past?'true':'false'} data-lifted={moving&&preview.lifted?'true':'false'}
    data-v7-enter={mark['data-v7-enter']} style={mark.style?{...lane,...mark.style}:lane}>
    {block?<button type="button" data-calendar-block={block.id}
     aria-label={block.title+', '+(kind==='busy'?'Busy':done?'Completed study':'Planned study')+(look.path?', '+look.path:'')+', '+range+'. Enter for details; Alt+Up/Down to move, Alt+Shift+Up/Down to resize.'}
     onClick={()=>{if(suppress.current){suppress.current=false;return;}onEdit(block);}}
     onPointerDown={event=>startDrag(event,block,'move')} onPointerMove={moveDrag} onPointerUp={endDrag} onPointerCancel={cancelDrag}
     onKeyDown={event=>keyAdjust(event,block)}>{body}<span data-grid-resize="" aria-hidden="true"/></button>
+   :session?<button type="button" data-logged-entry={session.entry.id}
+    aria-label={label+', Logged study, '+sessionCaption(session,formatDuration)+(look.path?', '+look.path:'')+', '+range+'. Open for details.'}
+    onClick={()=>{if(suppress.current){suppress.current=false;return;}onOpenEntry?.(session.entry);}}>
+    <SessionGaps session={session} from={Math.max(from,Date.parse(session.start))} height={shown} hourPx={HOUR_PX}/>{body}</button>
    :<div aria-label={label+', Logged study'}>{body}</div>}
   </div>;
  }
@@ -203,4 +214,11 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    </div>
   </div>
  </section>;
+}
+/** N168: a session's pauses (hatched) and breaks (dotted) drawn at their times inside its card. */
+export function SessionGaps({session,from,height,hourPx}:{session:LoggedSession;from:number;height:number;hourPx:number}){
+ return <>{session.stretches.filter(stretch=>stretch.kind!=='focus').map(stretch=>{
+  const top=Math.max(0,(Date.parse(stretch.start)-from)/MINUTE*hourPx/60),bottom=Math.min(height,(Date.parse(stretch.end)-from)/MINUTE*hourPx/60);
+  return bottom>top?<i key={stretch.start} className="v7-cal-gap" data-gap={stretch.kind} aria-hidden="true" style={{top,height:bottom-top}}/>:null;
+ })}</>;
 }
