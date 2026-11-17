@@ -58,7 +58,7 @@
  :where(html[data-v7]) .v7-cal-block[data-kind="logged"] :is(strong,small) {justify-self:start;max-width:100%;background:var(--v7-cal-fill);box-shadow:0 0 0 2px var(--v7-cal-fill);border-radius:3px;}
  /* N168: a saved session is one card; a pause is a hatched gap, a break a dotted one, at their times inside the card. */
  :where(html[data-v7]) .v7-cal-gap {position:absolute;inset-inline:0;z-index:0;pointer-events:none;background-color:var(--v7-role-surface-page);
-  background-image:repeating-linear-gradient(135deg,color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 45%,transparent) 0 1.5px,transparent 1.5px 6px);
+  background-image:linear-gradient(135deg,color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 45%,transparent) 12.5%,transparent 12.5% 50%,color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 45%,transparent) 50% 62.5%,transparent 62.5%);background-size:8px 8px;
   border-block:1px dashed color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 55%,transparent);}
  :where(html[data-v7]) .v7-cal-gap[data-gap="break"] {background-image:radial-gradient(color-mix(in oklab,var(--v7-subject,var(--v7-role-text-secondary)) 55%,transparent) 1px,transparent 1.5px);background-size:6px 6px;}
  :where(html[data-v7]) .v7-cal-block :is(strong,small),:where(html[data-v7]) .v7-wk-block > :is(.v7-wk-glyph,.v7-wk-title,.v7-wk-short) {position:relative;z-index:1;}
