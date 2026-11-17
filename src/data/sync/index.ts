@@ -123,6 +123,8 @@ export function subscribeOwnerChanges(
  if (activeOwner !== owner) {
   cursor = 0
   resetWasApplied = false
+  pendingResources = []
+  pendingReset = false
   activeOwner = owner
  }
  if (!shared) shared = { owner, client, subscribers: 0, stop: beginPolling(owner, client, read) }
