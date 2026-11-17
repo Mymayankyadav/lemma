@@ -1,0 +1,110 @@
+{
+  "table": "worker_runs",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "id"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "user_id"
+    },
+    "job": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "job"
+    },
+    "model": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "model"
+    },
+    "input_tokens": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "input_tokens"
+    },
+    "output_tokens": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "output_tokens"
+    },
+    "cached_tokens": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "cached_tokens"
+    },
+    "status": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "status"
+    },
+    "watermark_from": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "watermark_from"
+    },
+    "watermark_to": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "watermark_to"
+    },
+    "error": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "error"
+    },
+    "started_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "started_at"
+    },
+    "ended_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "service-role writes a log row; owner reads",
+      "exportPolicy": "not exported: operational telemetry",
+      "deletionPolicy": "owner account purge via FK cascade; a log, not a fact",
+      "description": "ended_at"
+    }
+  }
+}

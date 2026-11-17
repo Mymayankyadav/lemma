@@ -472,6 +472,13 @@
      "operations": [
       "create"
      ]
+    },
+    {
+     "resource": "assumptions",
+     "operations": [
+      "create",
+      "revoke"
+     ]
     }
    ]
   },
@@ -494,6 +501,13 @@
       "unlink",
       "preview_merge",
       "merge"
+     ]
+    },
+    {
+     "resource": "concept_aliases",
+     "operations": [
+      "create",
+      "delete"
      ]
     }
    ]

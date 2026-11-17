@@ -2,16 +2,19 @@
 // proposal out. The MCP adapter only loads rows and calls assemble(); tests feed it fixtures (no database).
 import {addDays,diffDays,type DateStr} from './dates.ts';
 import {studyDay,localDate,projectTime,capacityOn,timeBlock,modeOf,studyDaysLeft,type Capacity,type CapacityConfig,type ProjectTime,type Mode} from './time.ts';
-import {replayRechecks,dueRechecks,retrievabilityOf,type Evidence,type ClassInfo,type Recheck,type RecheckResult,type Level} from './recheck.ts';
+import {replayRechecks,dueRechecks,retrievabilityOf,type Evidence,type ClassInfo,type Recheck,type RecheckResult,type Level,type Trigger} from './recheck.ts';
 import {estRemaining,isLive,paceFactor,DEFAULTS,type PlanCp,type PlanProject,type Step,type Tier,type CpKind} from './plan.ts';
 import {buildQueue,type Queue,type ReviewItem} from './queue.ts';
 import {evaluate,prune,type PruneResult,type PruneState} from './prune.ts';
 import {lintText} from './lint.ts';
+import {replayProficiency,isLBU,type Prof,type ProfEvidence} from './proficiency.ts';
 
 export type Rows={
   settings:any;projects:any[];checkpoints:any[];prereqs:any[];cpConcepts:any[];concepts:any[];conceptLinks:any[];
   evidence:any[];misconceptions:any[];decisions:any[];baselines:any[];overrides:any[];sessions:any[];intervals:any[];busy:any[];
   dueCards:Record<string,number>;frozen?:any[];
+  /** N170 (all optional: absent means none) */
+  items?:any[];assumptions?:any[];aliases?:any[];
 };
 export type ProjectView={
   id:string;slug:string;title:string;time:ProjectTime;mode:Mode;firstSession:DateStr|null;
@@ -22,6 +25,10 @@ export type State={
   today:DateStr;zone:string;flags:Record<string,boolean>;capacityToday:Capacity;usedToday:number;
   projects:Record<string,ProjectView>;rechecks:RecheckResult;queue:Queue;prune:PruneResult;
   deprecatedWarnings:string[];capacityUnset:boolean;absentDays:number;
+  /** N170: pooled proficiency per concept class, and its class map */
+  prof:Prof;lbu:string[];classOf:(concept:string)=>string;profEvidence:ProfEvidence[];
+  /** assumption ids withdrawn by T5 (revoked, or contradicted by a later fail on that class and level): derived, so undo restores them */
+  withdrawn:string[];
 };
 const asArr=(x:any)=>Array.isArray(x)?x:[];
 const ms=(x:any)=>x?Date.parse(x):NaN;
@@ -95,6 +102,10 @@ export function assemble(r:Rows,now:Date):State{
   const cpById=new Map<string,any>(r.checkpoints.map((c:any)=>[c.id,c]));
   const planById=new Map<string,PlanCp>(cps.map(c=>[c.id,c]));
   const ptime=new Map<string,ProjectTime>(projects.map((p:any)=>[p.id,projectTime(p,zone)]));
+  const parent=new Map<string,string>();
+  const find=(x:string):string=>{let r=x;while(parent.has(r)&&parent.get(r)!==r)r=parent.get(r) as string;return r};
+  for(const a of asArr(r.aliases)){const x=find(a.concept_a),y=find(a.concept_b);if(x!==y){const lo=x<y?x:y,hi=x<y?y:x;parent.set(hi,lo);parent.set(lo,lo)}}
+  const classOf=(c:string)=>find(c);
   const classes:Record<string,ClassInfo>={};
   const conceptCps=new Map<string,string[]>();
   for(const x of r.cpConcepts)(conceptCps.get(x.concept_id)??conceptCps.set(x.concept_id,[]).get(x.concept_id)!).push(x.checkpoint_id);
@@ -102,8 +113,11 @@ export function assemble(r:Rows,now:Date):State{
     const linked=(conceptCps.get(cid)??[]).map(id=>planById.get(id)).filter(Boolean) as PlanCp[];
     const liveLinked=linked.filter(x=>x.planState==='active'&&ptime.has(x.project_id));
     const lasts=liveLinked.map(x=>ptime.get(x.project_id)!.lastStudyOn).filter(Boolean) as DateStr[];
-    classes[cid]={name:c.name,core:liveLinked.some(x=>x.tier==='core'),lastStudyOn:lasts.length?lasts.sort()[0]:null,
-      active:linked.length===0||liveLinked.length>0};
+    const cls=classOf(cid),mine:ClassInfo={name:c.name,core:liveLinked.some(x=>x.tier==='core'),lastStudyOn:lasts.length?lasts.sort()[0]:null,active:linked.length===0||liveLinked.length>0};
+    const prev=classes[cls];
+    // One class pools its members: core if any is, the nearest deadline, active if any is active (§7: one recheck, nearer deadline)
+    classes[cls]=prev?{name:prev.name,core:prev.core||mine.core,active:prev.active||mine.active,
+      lastStudyOn:prev.lastStudyOn&&mine.lastStudyOn?(prev.lastStudyOn<mine.lastStudyOn?prev.lastStudyOn:mine.lastStudyOn):(prev.lastStudyOn??mine.lastStudyOn)}:mine;
   }
   // A session left open for 12 h counts as abandoned (derived, never written on a read): its evidence counts, but it makes no T3 rechecks.
   const abandoned=r.sessions.filter((s:any)=>s.abandoned||(s.state==='open'&&now.getTime()-ms(s.last_activity_at)>12*3600000)).map((s:any)=>s.id);
@@ -111,10 +125,27 @@ export function assemble(r:Rows,now:Date):State{
   const evidence:Evidence[]=r.evidence.filter((e:any)=>!e.voided_at).map((e:any)=>({
     id:String(e.id),at:ms(e.occurred_at),day:studyDay({time_zone:sessionZone.get(e.session_id)||zone,rollover_hour:st.rollover_hour},e.occurred_at),
     session_id:e.session_id,concept_id:e.concept_id,level:e.level,role:e.role,outcome:e.outcome,hint_level:e.hint_level,novelty:e.novelty,kind:e.kind}));
-  const triggers=r.misconceptions.filter((m:any)=>m.concept_id&&!m.resolved_at).map((m:any)=>({id:'m'+m.id,at:ms(m.created_at),day:studyDay(st,m.created_at),code:'T4' as const,concept_id:m.concept_id}));
+  const triggers:Trigger[]=r.misconceptions.filter((m:any)=>m.concept_id&&!m.resolved_at).map((m:any)=>({id:'m'+m.id,at:ms(m.created_at),day:studyDay(st,m.created_at),code:'T4' as const,concept_id:m.concept_id}));
   const decisions=r.decisions.map((d:any)=>({id:String(d.id),at:ms(d.occurred_at),day:studyDay(st,d.occurred_at),concept_id:d.concept_id,level:d.level as Level,action:d.action}));
   const weights=Array.isArray(st.fsrs_weights)&&st.fsrs_weights.length===21?st.fsrs_weights:undefined;
-  const rechecks=replayRechecks({evidence,triggers,decisions,classes,abandonedSessions:abandoned,weights,retention:st.desired_retention??0.91});
+  // T5: an assumption is withdrawn when the learner revokes it, or when a later gap shows on that class and level (derived, so undo is exact)
+  const withdrawn:string[]=[];
+  for(const a of asArr(r.assumptions)){
+    const made=ms(a.created_at);const cls=classOf(a.concept_id);
+    const gap=evidence.filter(e=>e.concept_id&&classOf(e.concept_id)===cls&&e.level===a.level&&e.outcome==='fail'&&e.at>made).sort((x,y)=>x.at-y.at)[0];
+    const at=a.revoked_at?ms(a.revoked_at):gap?.at;
+    if(at){withdrawn.push(String(a.id));triggers.push({id:'a'+a.id,at,day:studyDay(st,new Date(at)),code:'T5' as const,concept_id:a.concept_id})}
+  }
+  const rechecks=replayRechecks({evidence,triggers,decisions,classes,classOf,abandonedSessions:abandoned,weights,retention:st.desired_retention??0.91});
+  // --- proficiency (spec §9): Beta per class and level, pooled across subjects
+  const itemOf=new Map<string,any>(asArr(r.items).map((i:any)=>[i.id,i]));
+  const profEvidence:ProfEvidence[]=r.evidence.filter((e:any)=>!e.voided_at&&e.concept_id).map((e:any)=>({
+    id:String(e.id),at:ms(e.occurred_at),day:studyDay({time_zone:sessionZone.get(e.session_id)||zone,rollover_hour:st.rollover_hour},e.occurred_at),concept_id:e.concept_id,
+    level:e.level,role:e.role,outcome:e.outcome,hint_level:e.hint_level,novelty:e.novelty,confidence:e.confidence??1,
+    minutes_into_session:e.ctx?.minutes_into_session??null,local_hour:e.ctx?.local_hour??null,fingerprint:e.ctx?.fp??itemOf.get(e.item_id)?.fingerprint??null,teaches:!!itemOf.get(e.item_id)?.teaches}));
+  profEvidence.sort((a,b)=>a.at-b.at||(a.id<b.id?-1:a.id>b.id?1:0));          // canonical order: the output never depends on row order
+  const prof=Object.fromEntries(Object.entries(replayProficiency(profEvidence,undefined,classOf)).sort(([a],[b])=>a<b?-1:a>b?1:0)) as Prof;
+  const lbu=Object.entries(prof).filter(([,row])=>isLBU(row)).map(([c])=>c).sort();
   // --- sessions: first session, absence
   const sessionDays=r.sessions.map((s:any)=>String(s.study_day||studyDay({time_zone:s.time_zone||zone,rollover_hour:st.rollover_hour},s.started_at)).slice(0,10));
   const lastSessionDay=sessionDays.length?sessionDays.slice().sort().pop() as DateStr:null;
@@ -123,7 +154,7 @@ export function assemble(r:Rows,now:Date):State{
   const proj:Record<string,ProjectView>={};
   const planProjects:PlanProject[]=[...projects].sort((a:any,b:any)=>a.slug<b.slug?-1:a.slug>b.slug?1:0).map((p:any)=>{
     const t=ptime.get(p.id)!;
-    const classIds=new Set(r.cpConcepts.filter((x:any)=>cpById.get(x.checkpoint_id)?.project_id===p.id).map((x:any)=>x.concept_id));
+    const classIds=new Set(r.cpConcepts.filter((x:any)=>cpById.get(x.checkpoint_id)?.project_id===p.id).map((x:any)=>classOf(x.concept_id)));
     const due=rechecks.rechecks.filter(x=>x.state==='open'&&x.due&&classIds.has(x.class_id)&&(!t.lastStudyOn||x.due<=t.lastStudyOn)).length;
     return {id:p.id,slug:p.slug,lastStudyOn:t.lastStudyOn,share:p.share_weight??null,autoPrune:!!p.auto_prune_standard,
       paceSamples:paceSamples(r,p.id),reviewMinutes:due*DEFAULTS.recheckMinutes+(r.dueCards[p.id]??0)*DEFAULTS.cardMinutes};
@@ -154,9 +185,11 @@ export function assemble(r:Rows,now:Date):State{
   const todaysCps=cps.filter(c=>c.status==='in_progress'||(c.status==='not_started'&&c.planState==='active'&&c.prereqs.every(id=>planById.get(id)?.status==='demonstrated'||planById.get(id)?.planState!=='active')));
   const first=new Set<string>();const todays:PlanCp[]=[];
   for(const p of order){const mine=todaysCps.filter(c=>c.project_id===p.id).sort((a,b)=>(a.status==='in_progress'?0:1)-(b.status==='in_progress'?0:1)||a.position-b.position)[0];if(mine&&!first.has(p.id)){first.add(p.id);todays.push(mine)}}
+  // Rechecks are keyed by class (canonical alias), so prerequisite edges are matched and recorded by class too.
   const needed=new Set<string>();
   for(const c of todays)for(const x of r.cpConcepts.filter((x:any)=>x.checkpoint_id===c.id)){
-    for(const l of r.conceptLinks)if(l.kind==='prereq'&&l.to_id===x.concept_id)needed.add(l.from_id);
+    const target=classOf(x.concept_id);
+    for(const l of r.conceptLinks)if(l.kind==='prereq'&&classOf(l.to_id)===target)needed.add(classOf(l.from_id));
   }
   const importance=(cid:string)=>classes[cid]?.core?2:1;
   const reviews:ReviewItem[]=dueRechecks(rechecks.rechecks,today).filter(x=>classes[x.class_id]?.active!==false).map(x=>({
@@ -172,7 +205,7 @@ export function assemble(r:Rows,now:Date):State{
     absentDays,probeConcepts:[...needed].map(id=>concepts.get(id)?.name).filter(Boolean)});
   const deprecatedWarnings:string[]=[];
   for(const p of projects)for(const f of ['prompt','goal','target_label'] as const)if(lintText(p[f]).length)deprecatedWarnings.push(p.slug+'.'+f);
-  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays};
+  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays,prof,lbu,classOf,profEvidence,withdrawn};
 }
 export type {Recheck};
 export {studyDaysLeft,isLive,estRemaining,paceFactor};

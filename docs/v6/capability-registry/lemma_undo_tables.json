@@ -113,6 +113,15 @@
     },
     {
       "table_name": "plan_baselines"
+    },
+    {
+      "table_name": "items"
+    },
+    {
+      "table_name": "assumptions"
+    },
+    {
+      "table_name": "concept_aliases"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

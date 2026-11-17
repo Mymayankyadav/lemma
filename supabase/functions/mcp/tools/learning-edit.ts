@@ -4,6 +4,7 @@ export const projectEditFields = [
  'target_date','target_label','title','slug','goal','style','status',
  'subject','subject_id','prompt','pinned',
  'deadline_at','last_study_on','time_confirmed','share_weight','auto_prune_standard',
+ 'learning_profile','learning_profile_approved',
 ] as const;
 export const learningEditTables = [
  'projects','subjects','styles','concepts','sources',
@@ -29,6 +30,14 @@ export function validateProjectEditPatch(patch:Record<string,unknown>):void{
  for(const k of ['time_confirmed','auto_prune_standard'])if(k in patch&&typeof patch[k]!=='boolean')throw Error('Project '+k+' must be boolean');
  if('share_weight' in patch&&patch.share_weight!==null&&(typeof patch.share_weight!=='number'||!Number.isFinite(patch.share_weight)||patch.share_weight<=0))
   throw Error('Project share_weight must be a positive number or null');
+ if('learning_profile' in patch&&patch.learning_profile!==null){
+  const lp=patch.learning_profile as Record<string,unknown>,modes=['prove','solve','compute','recall','explain','read','construct'];
+  if(!lp||typeof lp!=='object'||Array.isArray(lp)||Object.keys(lp).some(k=>!modes.includes(k))||Object.values(lp).some(v=>typeof v!=='number'||!Number.isFinite(v)||v<0))
+   throw Error('Project learning_profile must map '+modes.join(', ')+' to weights ≥ 0, or be null');
+  const tot=Object.values(lp).reduce((a:number,b:unknown)=>a+Number(b),0);
+  if(tot<0.99||tot>1.01)throw Error('Project learning_profile weights must sum to 1');
+ }
+ if('learning_profile_approved' in patch&&typeof patch.learning_profile_approved!=='boolean')throw Error('Project learning_profile_approved must be boolean');
  if('subject' in patch && 'subject_id' in patch)
   throw Error('Choose subject or subject_id, not both');
 }

@@ -15,7 +15,7 @@ import {readAdaptive,flagOn} from '../adaptive.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
-  if(['time','queue','feasibility','forecast'].includes(a.what))return readAdaptive(c,a);
+  if(['time','queue','feasibility','forecast','node','calibration'].includes(a.what))return readAdaptive(c,a);
   if(a.what==='calendar_overlaps')return readCalendarOverlaps(c,a);
   if(a.what==='source_upload')return signedSourceUpload(c,a);
   if((CONTEXT_WHAT as readonly string[]).includes(a.what))return readContext(c,a);

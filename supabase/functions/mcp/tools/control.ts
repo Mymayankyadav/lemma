@@ -136,6 +136,8 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
   if(table==='checkpoints'){
    if(v2&&['recheck_due','needs_revisit','recheck_prompt'].some(k=>k in patch))throw Error('recheck_due, needs_revisit and recheck_prompt are retired: rechecks come only from evidence');
    if(v2&&patch.status==='demonstrated')patch.self_reported=true;           // a hand-set completion is not evidence
+   // 'prune' marks a scheduler proposal the learner approved: restore can bring it back, unlike a hand-made deferral.
+   if(patch.deferred_reason==='prune')patch.deferred_reason='prune:approved';
    if(patch.plan_state==='deferred'&&!('deferred_at' in patch)){patch.deferred_at=new Date().toISOString();if(!patch.deferred_reason)patch.deferred_reason='learner';}
    if(patch.plan_state==='active')Object.assign(patch,{deferred_at:null,deferred_reason:null});
    for(const [k,vals] of [['kind',['learn','cards','milestone']],['tier',['core','standard','venture']],['plan_state',['active','deferred','skipped']]] as [string,string[]][])

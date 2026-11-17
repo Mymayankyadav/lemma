@@ -3,7 +3,7 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX, studyRules } from './rules.ts';
-import { stateOf, flagOn, resumeBlocks, timeLine, flagLines, tokens } from './adaptive.ts';
+import { stateOf, flagOn, resumeBlocks, timeLine, flagLines, tokens, briefNodes } from './adaptive.ts';
 import { renderQueue } from '../_shared/adaptive/queue.ts';
 import { sourceLine, visibleProjects, scheduleHint } from './v3.ts';
 export async function settings(c:Context):Promise<any>{
@@ -137,7 +137,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     now:cp?'NOW '+cp.code+' '+cut(cp.title,60)+', step '+(open?.resume_step||cp.current_step||1)+'/'+(cp.steps||[]).length+(step?': '+cut(step,100):'')+'\nCRIT '+cut(cp.criterion,300):'NOW all checkpoints done',
     last:latest?'LAST S'+latest.number+' '+date(latest.last_activity_at)+' '+display(latest)+(latest.goal_met?' goal '+latest.goal_met:'')+(latest.state==='ended'&&latest.summary?': '+cut(latest.summary,140):latest.resume_note?': '+cut(latest.resume_note,140):'')+(latest.state==='open'&&latest.resume_question?' | ask: '+cut(latest.resume_question,250):''):undefined,
     fix:fix.length?'FIX '+cut(fix.map((x:any)=>x.label+' ('+x.times+'x)').join('; '),200):undefined,
-    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3)});
+    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)});
   return capped(body,RESUME_BUDGET_CHARS);
 }
 export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{

@@ -1,6 +1,5 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
-
 ## N171 Show the adaptive scheduler in the React app (Owner task)
 
 Owner task: "Owner task for mymayankyadav/lemma: make the React app show the adaptive scheduler (N169/N170)."
@@ -9,6 +8,15 @@ Done = gated by per-user settings.flags time_block / recheck_v2 / scheduler_v2, 
 Tests: tests/unit/adaptive-ui/{views,parity}.test.ts[x], existing affected view and adaptive suites, typecheck and Vite production build.
 Scope: src/data/{api.ts,types.ts,adaptive/**,live/{adapter,helpers}.ts,demo/{adapter,model}.ts,sync/keys.ts}, src/features/{adaptive/**,home/{Page.tsx,v7/V7Today.tsx},project/{Page.tsx,PathsView.tsx,v6/V6Project.tsx,v7/V7Path.tsx},checkpoint/{Page.tsx,v6/V6Checkpoint.tsx,v7/CheckpointV7.tsx}}, tests/unit/adaptive-ui/**, tests/unit/project-stage-math.test.tsx, tests/unit/sources-v6/route-wiring.test.tsx, docs/current/N171.md, NEXT.md.
 Not: server changes, migrations, dependencies, production study data, scheduler writes or unrelated fixes.
+
+## N170 Adaptive pace and Atlas memory: proficiency, items, node cards, worker core, calibration (Owner task)
+
+Owner task: "Continue to pr2"
+Stage: Build · Status: open · Needs: N169 · Assigned: chat-48217#q7w2
+Done = with per-user flags `proficiency`, `items`, `atlas_memory` and `workers` (default off, behaviour unchanged with them off): a per-concept-class, per-level Beta proficiency model with the spec's weights, forgetting, predicted success and mode rules; items with templates and never-blocking selection; assumptions (T5) and concept aliases; `get(what=node|calibration)` within the token budgets with provenance on every line; the worker core (scribe validation, idempotent jobs, caps, kill switch) with a mocked model. Spec: `docs/spec/adaptive-learning-spec.md` Phases 4–6; recorded in `docs/current/N170.md`.
+Tests: `tests/unit/adaptive/{proficiency,items,node}.test.ts`, `tests/mcp/sql/n170-items.mjs`, `tests/mcp/sql/parity.mjs` (two new resources); existing suites unchanged.
+Scope: `supabase/functions/_shared/adaptive/**`, `supabase/functions/mcp/{adaptive.ts,packet.ts,rules.ts,server.ts}` and `tools/{control,learning-edit,read,write}.ts`, `supabase/migrations/20261217*_n170_*.sql`, `supabase/rollback/N170.down.sql`, `docs/v6/capability-registry/*`, `docs/mcp/capability-map.json`, tests, `docs/current/N170.md`.
+Not: any LLM call or Edge Function (no key yet), app UI changes, dropping or renaming a column, the curator.
 
 ## N169 Adaptive core: one time block, evidence-driven rechecks, a daily scheduler (Owner task)
 
@@ -103,6 +111,7 @@ Done = V20's three helpers in `src/ui/v7/motion.ts` are used or gone, as follows
 Tests: `tests/unit/v7/n152-motion.test.tsx`, `tests/e2e/v7-n152-motion.spec.ts`, existing suites unchanged.
 Scope: `src/ui/v7/{motion.ts,useAnimatedNumber.ts,sheetDrag.ts,sheet-drag.css}`, `src/main.tsx` (one install call), `src/features/review/v7/ReviewHubV7.tsx` (the count), tests, `docs/current/N152.md`, `docs/v7/ux-audit-2026-11-12/CHECKLIST.md` (the V20 line).
 Not: `src/ui/v7/components.tsx` (owned by another item until its PRs merge), haptics, other numbers, server changes, new dependencies.
+
 ## N138 v7 UX audit r3: every control takes a 44 px tap (U2 · V36) (Owner task)
 
 Owner task: "Ok continue working. Make significant progress"
