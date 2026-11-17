@@ -1,3 +1,11 @@
-## Incident #1492: remaining deployed MCP verification failure
+## Incident #1492: connector telemetry was blocking undo
 
-Agent: chat-61724#v8q2. The Supabase run on main `103d88e` still fails its deployed MCP verification after #1494 and #1495. This PR claims the remaining incident; reproduction, fix and validation will be recorded here before Ready.
+The Supabase deployment of `103d88e` still failed verification after #1494 and #1495. The function logs identify failures in `planning metadata, ETA and undo` and `scan transcription: search, readback, provenance and undo`. The fixture journal shows the planning edit succeeded, followed by two heartbeat actions that each changed only settings telemetry and version/provenance metadata. Those later actions conflict with the settings update that `mcp_commit` includes in every write.
+
+`log_change()` already ignores connection timestamps, but N38's version trigger also changes `version`, `updated_at` and `updated_source` on every update. Consequently, a read heartbeat becomes a journalled settings edit, and ordinary reads or another connector's activity can block undo of an otherwise unrelated project or transcription action.
+
+The additive migration `20261117160430_incident_1492_connector_telemetry_journal.sql` compatibly replaces `log_change()`. For settings UPDATEs only, it compares every standing field while excluding connection telemetry and the generated version/provenance fields. Pure telemetry creates no journal entry. Real settings edits and all other tables retain the existing journal, owner checks and undo-conflict behavior. Record versions still advance on every update. Existing journal rows are untouched.
+
+`tests/mcp/sql/incident-1492-telemetry.mjs` runs against every migration and reproduces the deployed edit/read/undo and transcription/read/undo paths. Without the fix, the first undo fails with `Undo A9, A8 first`. With the fix it passes, including client changes, prompt undo/redo across reads, refusal of a foreign owner and refusal when a real later settings edit exists. Undo of transcription preserves the newest client telemetry.
+
+Validation: all 67 `tests/mcp/sql/*.mjs` suites, the existing DB-2 action/undo, DB-5 transcription and MCP transaction suites, all 2,690 unit tests in 452 files (`TZ=UTC LEMMA_PERF=off npm test`), typecheck, lint, the additive-migration scan and the incident scope check pass. The deployed selftest and its assertions are unchanged. Production verification is pending independent SQL review, CI merge and the subsequent Supabase deploy smoke.
