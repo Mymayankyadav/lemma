@@ -2,7 +2,7 @@
 // proposal out. The MCP adapter only loads rows and calls assemble(); tests feed it fixtures (no database).
 import {addDays,diffDays,type DateStr} from './dates.ts';
 import {studyDay,localDate,projectTime,capacityOn,timeBlock,modeOf,studyDaysLeft,type Capacity,type CapacityConfig,type ProjectTime,type Mode} from './time.ts';
-import {replayRechecks,dueRechecks,retrievabilityOf,type Evidence,type ClassInfo,type Recheck,type RecheckResult,type Level} from './recheck.ts';
+import {replayRechecks,dueRechecks,retrievabilityOf,type Evidence,type ClassInfo,type Recheck,type RecheckResult,type Level,type Trigger} from './recheck.ts';
 import {estRemaining,isLive,paceFactor,DEFAULTS,type PlanCp,type PlanProject,type Step,type Tier,type CpKind} from './plan.ts';
 import {buildQueue,type Queue,type ReviewItem} from './queue.ts';
 import {evaluate,prune,type PruneResult,type PruneState} from './prune.ts';
@@ -125,7 +125,7 @@ export function assemble(r:Rows,now:Date):State{
   const evidence:Evidence[]=r.evidence.filter((e:any)=>!e.voided_at).map((e:any)=>({
     id:String(e.id),at:ms(e.occurred_at),day:studyDay({time_zone:sessionZone.get(e.session_id)||zone,rollover_hour:st.rollover_hour},e.occurred_at),
     session_id:e.session_id,concept_id:e.concept_id,level:e.level,role:e.role,outcome:e.outcome,hint_level:e.hint_level,novelty:e.novelty,kind:e.kind}));
-  const triggers=r.misconceptions.filter((m:any)=>m.concept_id&&!m.resolved_at).map((m:any)=>({id:'m'+m.id,at:ms(m.created_at),day:studyDay(st,m.created_at),code:'T4' as const,concept_id:m.concept_id}));
+  const triggers:Trigger[]=r.misconceptions.filter((m:any)=>m.concept_id&&!m.resolved_at).map((m:any)=>({id:'m'+m.id,at:ms(m.created_at),day:studyDay(st,m.created_at),code:'T4' as const,concept_id:m.concept_id}));
   const decisions=r.decisions.map((d:any)=>({id:String(d.id),at:ms(d.occurred_at),day:studyDay(st,d.occurred_at),concept_id:d.concept_id,level:d.level as Level,action:d.action}));
   const weights=Array.isArray(st.fsrs_weights)&&st.fsrs_weights.length===21?st.fsrs_weights:undefined;
   // T5: an assumption is withdrawn when the learner revokes it, or when a later gap shows on that class and level (derived, so undo is exact)
