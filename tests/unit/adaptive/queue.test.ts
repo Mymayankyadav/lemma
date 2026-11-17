@@ -81,6 +81,16 @@ describe('learning fill and modes',()=>{
     expect(t.split('\n').filter(l=>/^\d+ /.test(l))).toHaveLength(8);expect(t).toMatch(/\+\d+ more/);
   });
 });
+describe('queue refs name their project when several are active',()=>{
+  it('one project keeps bare codes; two projects prefix the slug so CP1 is never ambiguous',()=>{
+    const one=buildQueue(base({cps:[cp(1,{status:'in_progress'})]}));
+    expect(one.items.map(x=>x.ref)).toContain('CP1#1');
+    const Q:PlanProject={...P,id:'q',slug:'quark'};
+    const two=buildQueue(base({projects:[P,Q],capacity:600,cps:[cp(1,{status:'in_progress'}),{...cp(1,{status:'in_progress'}),id:'cq1',project_id:'q'}]}));
+    const refs=two.items.map(x=>x.ref);
+    expect(refs).toContain('p/CP1#1');expect(refs).toContain('quark/CP1#1');expect(new Set(refs).size).toBe(refs.length);
+  });
+});
 describe('byte-identical output (I3)',()=>{
   it('shuffled inputs give identical bytes at a fixed capacity',()=>{
     for(const seed of SEEDS){

@@ -25,6 +25,6 @@ export function tablesFrom(r:Rows,extra:Record<string,any[]>={}):Record<string,a
     checkpoint_prereqs:r.prereqs,checkpoint_concepts:r.cpConcepts,concepts:r.concepts,concept_links:r.conceptLinks,
     evidence:r.evidence,misconceptions:r.misconceptions,recheck_decisions:r.decisions,plan_baselines:r.baselines,capacity_overrides:r.overrides,
     sessions:r.sessions.map((s:any)=>({number:1,goal:'g',style:'socratic',last_activity_at:'2026-11-16T12:00:00Z',summary:'Covered continuity',resume_step:1,...s})),
-    scheduler_runs:r.frozen??[],study_intervals:r.intervals,calendar_blocks:r.busy,v_due_cards:[],cards:[],notes:[],proposals:[],card_comments:[],reviews:[],diagnostics:[],sources:[],styles:[{key:'socratic',name:'Socratic',instructions:'Ask, do not tell.'}],
+    items:r.items??[],assumptions:r.assumptions??[],concept_aliases:r.aliases??[],scheduler_runs:r.frozen??[],study_intervals:r.intervals,calendar_blocks:r.busy,v_due_cards:[],cards:[],notes:[],proposals:[],card_comments:[],reviews:[],diagnostics:[],sources:[],styles:[{key:'socratic',name:'Socratic',instructions:'Ask, do not tell.'}],
     ...extra};
 }

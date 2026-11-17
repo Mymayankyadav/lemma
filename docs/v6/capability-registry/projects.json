@@ -176,6 +176,22 @@
       "exportPolicy": "owner-scoped export (N95)",
       "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
       "description": "N169: standard material may be pruned without a proposal"
+    },
+    "learning_profile": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "edit projects (N170)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N170: weights over prove, solve, compute, recall, explain, read, construct"
+    },
+    "learning_profile_approved": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N170 adds no UI)",
+      "mcpPath": "edit projects (N170)",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N170: the learner approved the drafted profile"
     }
   }
 }

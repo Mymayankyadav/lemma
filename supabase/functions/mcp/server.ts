@@ -93,7 +93,8 @@ export function buildServer(c:Context):McpServer{
     what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources'])
       .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),project:optProject,
     id:S().max(120).optional(),limit:z.number().int().min(1).max(50).optional(),
-    start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional()
+    start:S().optional(),end:S().optional(),cursor:S().optional(),status:S().optional(),
+    depth:z.enum(['card','digest','raw']).optional(),trail:z.boolean().optional()
   }),true,(a,ctx)=>get(ctx,a));
   register('read_pages',"PDF pages.",z.object({
     project:optProject,source:S().optional(),from:S().min(1).max(12),

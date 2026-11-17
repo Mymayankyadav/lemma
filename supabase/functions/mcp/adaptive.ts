@@ -5,6 +5,7 @@ import {Context,all,scoped} from './db.ts';
 import {visibleProjects} from './v3.ts';
 import {assemble,type Rows,type State} from '../_shared/adaptive/facts.ts';
 import {renderQueue} from '../_shared/adaptive/queue.ts';
+import {renderNode,renderCalibration,cardFor} from '../_shared/adaptive/node.ts';
 import {lintNotice,type LintField} from '../_shared/adaptive/lint.ts';
 import {addDays} from '../_shared/adaptive/dates.ts';
 import {project} from './resolve.ts';
@@ -31,21 +32,23 @@ async function dueCardsByProject(c:Context):Promise<Record<string,number>>{
 }
 export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
   const sinceDay=new Date(now.getTime()-3*86400000).toISOString();
-  const [settings,projects,checkpoints,prereqs,cpConcepts,concepts,conceptLinks,misc,decisions,baselines,overrides,sessions]=await Promise.all([
+  const [settings,projects,checkpoints,prereqs,cpConcepts,concepts,conceptLinks,misc,decisions,baselines,overrides,sessions,items,assumptions,aliases]=await Promise.all([
     scoped(c,'settings').maybeSingle().then(r=>{if(r.error||!r.data)throw new Error('Owner settings not initialized; run bootstrap first');return r.data}),
     all(c,'projects','*'),all(c,'checkpoints','*'),all(c,'checkpoint_prereqs','checkpoint_id,prereq_id'),
     all(c,'checkpoint_concepts','checkpoint_id,concept_id'),all(c,'concepts','id,name,parent_id'),all(c,'concept_links','from_id,to_id,kind'),
-    all(c,'misconceptions','id,concept_id,resolved_at,created_at'),all(c,'recheck_decisions','id,concept_id,level,action,occurred_at'),
+    all(c,'misconceptions','id,label,concept_id,resolved_at,created_at'),all(c,'recheck_decisions','id,concept_id,level,action,occurred_at'),
     all(c,'plan_baselines','project_id,baseline_version,entries'),all(c,'capacity_overrides','on_date,minutes'),
-    all(c,'sessions','id,project_id,checkpoint_id,started_at,last_activity_at,minutes,state,abandoned,study_day,time_zone')]);
+    all(c,'sessions','id,number,project_id,checkpoint_id,started_at,last_activity_at,minutes,state,abandoned,study_day,time_zone'),
+    all(c,'items','id,fingerprint,teaches,holdout,status').catch(()=>[] as any[]),all(c,'assumptions','id,concept_id,level,mean_at,revoked_at,created_at').catch(()=>[] as any[]),
+    all(c,'concept_aliases','concept_a,concept_b').catch(()=>[] as any[])]);
   const [evidence,intervals,busy,dueCards,frozen]=await Promise.all([
-    scoped(c,'evidence','id,occurred_at,session_id,concept_id,level,role,outcome,hint_level,novelty,kind,voided_at').is('voided_at',null).order('id').limit(5000).then(must),
+    scoped(c,'evidence','id,occurred_at,session_id,concept_id,item_id,level,role,outcome,hint_level,novelty,kind,origin,confidence,ctx,voided_at').is('voided_at',null).order('id').limit(5000).then(must),
     scoped(c,'study_intervals','kind,started_at,ended_at').gte('started_at',sinceDay).limit(500).then(must),
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),
     scoped(c,'scheduler_runs','study_day,project_id,slack_ratio').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
   return {settings,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
-    decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen};
+    decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases};
 }
 /** Facts → state. The derived rechecks cache is refreshed best-effort; a cache failure never breaks a read. */
 export async function stateOf(c:Context,now=new Date()):Promise<{state:State;rows:Rows}>{
@@ -81,6 +84,7 @@ export function flagLines(s:State,slug?:string):string[]{
   if(s.prune.ask)out.push('core is at risk in '+s.prune.ask.projects.length+' projects; ask which comes first');
   if(s.capacityUnset)out.push('capacity unset; ask for minutes per weekday');
   for(const e of s.rechecks.escalations)out.push('recheck escalated at '+e.fail_count+' fails: '+e.level+'; log a remediation step');
+  if(s.lbu.length&&s.flags.proficiency)out.push(s.lbu.length+' concepts are used often but never examined (LBU): ask why each hypothesis is needed (get what=node)');
   if(s.rechecks.unresolved.length)out.push(s.rechecks.unresolved.length+' evidence rows have no concept');
   if(s.deprecatedWarnings.length)out.push('dates/pace in free text: '+s.deprecatedWarnings.slice(0,3).join(', '));
   const needsApproval=s.prune.actions.filter(a=>a.needs_approval).length,auto=s.prune.actions.length-needsApproval;
@@ -110,11 +114,11 @@ export function renderForecast(s:State,rows:Rows,slug?:string):string{
   return lines.join('\n');
 }
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
-export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;mandatory?:string[]}):string{
+export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;mandatory?:string[];nodes?:string[]}):string{
   const p=slug?Object.values(s.projects).find(x=>x.slug===slug):undefined;
   const q=renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];
-  const b=[brief.now,brief.last,brief.fix,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m)].filter(Boolean) as string[];
+  const b=[brief.now,brief.last,brief.fix,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m),...(brief.nodes??[]).map(n=>'NODE '+n)].filter(Boolean) as string[];
   if(b.length)lines.push('BRIEF\n'+b.join('\n'));
   const f=flagLines(s,slug);
   if(f.length)lines.push('FLAGS\n'+f.slice(0,8).map(x=>'- '+x).join('\n'));
@@ -123,6 +127,12 @@ export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:strin
 /** Warnings for free-text fields the tutor is writing (I2). Appended after the result is trimmed. */
 export function lintNotices(fields:[LintField,string|null|undefined][]):string[]{
   return fields.map(([f,t])=>lintNotice(f,t)).filter(Boolean);
+}
+/** Node cards for the concepts of today's checkpoint and the mandatory rechecks (flag atlas_memory); each ≤ 100 tokens. */
+export function briefNodes(s:State,rows:Rows,cpId:string|undefined,max=4):string[]{
+  if(!s.flags.atlas_memory||!cpId)return [];
+  const ids=[...new Set(rows.cpConcepts.filter((x:any)=>x.checkpoint_id===cpId).map((x:any)=>x.concept_id))].sort() as string[];
+  return ids.slice(0,max).map(id=>cardFor(s,rows,id)).filter(Boolean);
 }
 export {addDays,cut};
 
@@ -134,6 +144,8 @@ export async function readAdaptive(c:Context,a:any):Promise<string>{
     const ps=Object.values(state.projects).filter(p=>!slug||p.slug===slug).sort((x,y)=>x.slug<y.slug?-1:1);
     return ps.length?ps.map(p=>p.slug+'\n'+p.block).join('\n'):timeLine(state);
   }
+  if(a.what==='node')return renderNode(state,rows,{id:a.id,depth:a.depth,trail:a.trail===true,cursor:a.cursor});
+  if(a.what==='calibration')return renderCalibration(state);
   if(a.what==='queue')return renderQueue(state.queue,Math.min(Math.max(a.limit||8,1),50));
   if(a.what==='feasibility')return renderFeasibility(state,slug);
   return renderForecast(state,rows,slug);

@@ -63,6 +63,9 @@ export function buildQueue(i:QueueInput):Queue{
   const L=Math.max(0,avail-reviewMin);q.minutes.learning=L;
   // Learning fill: the current CP's remaining steps, then the next available CPs, at step level.
   const pace=new Map(i.projects.map(p=>[p.id,paceFactor(p.paceSamples)]));
+  // With several active projects every CP code repeats (CP1 exists in each), so refs carry the project slug.
+  const slug=new Map(i.projects.map(p=>[p.id,p.slug]));
+  const tag=(c:PlanCp)=>i.projects.length>1?(slug.get(c.project_id)??c.project_id)+'/':'';
   const order=new Map(i.projects.map((p,k)=>[p.id,k]));
   const live=i.cps.filter(isLive);
   const done=new Set(i.cps.filter(c=>c.status==='demonstrated'||c.planState!=='active').map(c=>c.id));
@@ -76,11 +79,11 @@ export function buildQueue(i:QueueInput):Queue{
     const per=(c.estimate??DEFAULTS.learnMinutes)/Math.max(1,c.steps.length);
     const code=c.status==='in_progress'?'current_step':c.pinned?'pinned':'next_cp';
     if(c.compressed||(c.testOut&&c.status==='not_started')){
-      const m=DEFAULTS.testOutMinutes*f;(m<=left?learn:tail).push({type:'cp',ref:c.code+':test_out',est_minutes:Math.round(m),reason_code:code});if(m<=left)left-=m;continue}
-    if(!c.steps.length){const m=estRemaining(c)*f;(m<=left?learn:tail).push({type:'cp',ref:c.code,est_minutes:Math.round(m),reason_code:code});if(m<=left)left-=m;continue}
+      const m=DEFAULTS.testOutMinutes*f;(m<=left?learn:tail).push({type:'cp',ref:tag(c)+c.code+':test_out',est_minutes:Math.round(m),reason_code:code});if(m<=left)left-=m;continue}
+    if(!c.steps.length){const m=estRemaining(c)*f;(m<=left?learn:tail).push({type:'cp',ref:tag(c)+c.code,est_minutes:Math.round(m),reason_code:code});if(m<=left)left-=m;continue}
     c.steps.forEach((st,k)=>{
       if(st.done||st.deferred)return;
-      const m=(st.minutes??per)*f;const item={type:'step' as const,ref:c.code+'#'+(k+1),est_minutes:Math.round(m),reason_code:code};
+      const m=(st.minutes??per)*f;const item={type:'step' as const,ref:tag(c)+c.code+'#'+(k+1),est_minutes:Math.round(m),reason_code:code};
       if(m<=left&&tail.length===0){learn.push(item);left-=m}else tail.push(item);
     });
   }

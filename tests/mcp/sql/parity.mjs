@@ -211,6 +211,30 @@ async function createOnlyTrip(resource,patch,column,value){
  assert.equal((await q('select count(*)::int n from public.'+resource+' where id=$1',[id]))[0].n,0,resource+': undone create remains');
  mark(resource,'create');
 }
+/** N170: create → replay → second operation (revoke or delete) → isolation → undo of each, through the real MCP dispatcher. */
+async function twoStepTrip(resource,patch,second,after){
+ await role('service_role');
+ const create=command(resource,'create',{patch});
+ const created=status(await mcp(create),resource,'create');
+ const id=created.changed.find(c=>c.id)?.id;
+ assert.deepEqual(await mcp(create),created,resource+': exact MCP retry differs');
+ await role(null);
+ const page=await mcpPage(resource,id);
+ assert.equal(page.total,1,resource+': MCP owner read missing');assert.ok(!('user_id' in page.items[0]),resource+': MCP owner ID leakage');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.'+resource+' where id=$1',[id]))[0].n,0,resource+': foreign owner can read the row');
+ await role('service_role');
+ const stale=await mcp(command(resource,second,{target:{id},expectedVersion:9,patch:{}}));
+ assert.equal(stale.status,'conflict',resource+': stale '+second+' was accepted');
+ const done=status(await mcp(command(resource,second,{target:{id},expectedVersion:1,patch:{}})),resource,second);
+ await role(null);
+ assert.equal(await after(id),true,resource+': '+second+' had no effect');
+ await as(owner);
+ assert.equal(Number((await undo(done.actionNo)).undone),Number(done.actionNo),resource+': undo of '+second+' failed');
+ assert.equal(await after(id),false,resource+': undo of '+second+' did not restore the row');
+ // (undoing the create itself is stack-ordered behind the later actions; createOnlyTrip covers it for the other new resources)
+ mark(resource,'create',second);
+}
 async function roundTrip(resource,details){
  // Requires a service-role command, a real authenticated app owner read/write,
  // then an MCP/owner re-read, logical deletion, and undo restoration.
@@ -1819,6 +1843,11 @@ try{
  await roundTrip('capacity_overrides',specs.capacity_overrides);
  await createOnlyTrip('recheck_decisions',{concept_id:n169Concept,level:'use',action:'rate_easy',note:'parity'},'note','parity');
  await createOnlyTrip('plan_baselines',{project_id:n169Project,reason:'parity baseline'},'reason','parity baseline');
+ const n170Concept2='aaaaaaaa-0000-4000-8000-000000000004';
+ await role(null);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n170-concept','N170 concept')",[n170Concept2,owner,n169Subject]);
+ await twoStepTrip('assumptions',{concept_id:n169Concept,level:'recall',reason:'parity'},'revoke',async id=>(await q('select revoked_at is not null r from public.assumptions where id=$1',[id]))[0]?.r===true);
+ await twoStepTrip('concept_aliases',{concept_a:n169Concept,concept_b:n170Concept2},'delete',async id=>(await q('select count(*)::int n from public.concept_aliases where id=$1',[id]))[0].n===0);
  await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

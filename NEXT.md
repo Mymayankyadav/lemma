@@ -1,6 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
 
+## N170 Adaptive pace and Atlas memory: proficiency, items, node cards, worker core, calibration (Owner task)
+
+Owner task: "Continue to pr2"
+Stage: Build · Status: open · Needs: N169 · Assigned: chat-48217#q7w2
+Done = with per-user flags `proficiency`, `items`, `atlas_memory` and `workers` (default off, behaviour unchanged with them off): a per-concept-class, per-level Beta proficiency model with the spec's weights, forgetting, predicted success and mode rules; items with templates and never-blocking selection; assumptions (T5) and concept aliases; `get(what=node|calibration)` within the token budgets with provenance on every line; the worker core (scribe validation, idempotent jobs, caps, kill switch) with a mocked model. Spec: `docs/spec/adaptive-learning-spec.md` Phases 4–6; recorded in `docs/current/N170.md`.
+Tests: `tests/unit/adaptive/{proficiency,items,node}.test.ts`, `tests/mcp/sql/n170-items.mjs`, `tests/mcp/sql/parity.mjs` (two new resources); existing suites unchanged.
+Scope: `supabase/functions/_shared/adaptive/**`, `supabase/functions/mcp/{adaptive.ts,packet.ts,rules.ts,server.ts}` and `tools/{control,learning-edit,read,write}.ts`, `supabase/migrations/20261217*_n170_*.sql`, `supabase/rollback/N170.down.sql`, `docs/v6/capability-registry/*`, `docs/mcp/capability-map.json`, tests, `docs/current/N170.md`.
+Not: any LLM call or Edge Function (no key yet), app UI changes, dropping or renaming a column, the curator.
+
 ## N169 Adaptive core: one time block, evidence-driven rechecks, a daily scheduler (Owner task)
 
 Owner task: "20 nov is just few days before exams starts push to max 22nd nov. Repo is public. No antropic api key or any api key for llm rn. Start stint B"

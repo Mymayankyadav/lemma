@@ -7,6 +7,7 @@ import { day, ladder } from '../derive.ts';
 import { settings } from '../packet.ts';
 import { slug, cut, capped, normalizedFront, number } from '../text.ts';
 import { flagOn, lintNotices, applyScheduler } from '../adaptive.ts';
+import { fingerprint } from '../../_shared/adaptive/items.ts';
 
 async function origin(c:Context,sess?:any):Promise<string>{
   return sess?.client||(await settings(c)).connector_last_client||'other';
@@ -42,6 +43,8 @@ export async function saveProgress(c:Context,a:any):Promise<string>{
   for(const key of ['step','events','misconception','resolved','next_question','diagnostics']){
     if(a[key]!==undefined)payload[key]=a[key];
   }
+  // N170: the posed item is fingerprinted here so the same question, asked again in any subject, is one item.
+  if(Array.isArray(payload.events))payload.events=(payload.events as any[]).map(e=>typeof e?.item==='string'&&e.item?{...e,fp:fingerprint(e.item)}:e);
   const result=await rpc(c,'save_progress',{
     p_user_id:c.userId,p_project_id:p.id,p_session_id:s.id,p_payload:payload
   });
