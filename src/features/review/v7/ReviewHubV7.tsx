@@ -34,7 +34,9 @@ export default function ReviewHubV7(){
  const decks=useDeckTree(),cards=useReviewItems(allFilter),settings=useSettings(),home=useHome(),insights=useInsightData(30);
  // A successful deck/settings refresh also refreshes scheduling buckets. This
  // includes returning from a grade, Undo or a note/path edit within one minute.
- const forecast=useQuery({queryKey:['path-review-forecast',decks.dataUpdatedAt,settings.dataUpdatedAt],queryFn:()=>getApi().getPathReviewForecast(),staleTime:60_000,enabled:decks.isSuccess&&settings.isSuccess});
+ const forecast=useQuery({queryKey:['path-review-forecast',decks.dataUpdatedAt,settings.dataUpdatedAt],queryFn:()=>getApi().getPathReviewForecast(),staleTime:60_000,
+  // A new deck/settings fetch time is a new key: keep the last chart up while it refetches, never blank it to "Loading".
+  placeholderData:previous=>previous,enabled:decks.isSuccess&&settings.isSuccess});
  const [active,setActive]=useState<DurableRun|null>(null),[selected,setSelected]=useState<Set<string>|null>(null),[sheet,setSheet]=useState(false);
  const {start,busy,issue}=useStartRound();
  useEffect(()=>{
