@@ -1,0 +1,206 @@
+{
+  "table": "evidence",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "server generated identifier"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "owner identity, always derived from the authenticated user"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "creation time"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "last change time"
+    },
+    "occurred_at": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "when the observation happened"
+    },
+    "session_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "session"
+    },
+    "session_event_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "provenance event"
+    },
+    "project_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "project"
+    },
+    "checkpoint_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "checkpoint"
+    },
+    "concept_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "concept (NULL = unresolved)"
+    },
+    "level": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "recall, use, understand or transfer"
+    },
+    "role": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "primary, secondary or used"
+    },
+    "outcome": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "pass, partial or fail"
+    },
+    "hint_level": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "0..4"
+    },
+    "novelty": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "novel, familiar, seen_solution or self_reported"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "event kind or recall"
+    },
+    "item_id": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "item (N170)"
+    },
+    "origin": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "tutor, scribe, migration or user"
+    },
+    "confidence": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "1.0 unless inferred"
+    },
+    "ctx": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "minutes into session, local hour"
+    },
+    "weight": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "computed weight for audit (N170)"
+    },
+    "voided_at": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "void marker"
+    },
+    "superseded_by": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "replacement evidence"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N38 optimistic version advanced by trigger"
+    },
+    "updated_source": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "service-role save_progress / scribe / migration; read-only for the owner",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N38 provenance: app, mcp or worker"
+    }
+  }
+}

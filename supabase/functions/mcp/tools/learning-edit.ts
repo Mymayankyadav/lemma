@@ -3,6 +3,7 @@
 export const projectEditFields = [
  'target_date','target_label','title','slug','goal','style','status',
  'subject','subject_id','prompt','pinned',
+ 'deadline_at','last_study_on','time_confirmed','share_weight','auto_prune_standard',
 ] as const;
 export const learningEditTables = [
  'projects','subjects','styles','concepts','sources',
@@ -21,6 +22,13 @@ export function validateProjectEditPatch(patch:Record<string,unknown>):void{
   (typeof patch.slug!=='string'||!(/^[a-z0-9]+(-[a-z0-9]+)*$/.test(patch.slug))||
     patch.slug.length<2||patch.slug.length>40))
   throw Error('Project slug must be 2–40 lowercase slug characters');
+ if('deadline_at' in patch&&patch.deadline_at!==null&&(typeof patch.deadline_at!=='string'||Number.isNaN(Date.parse(patch.deadline_at))||!/[zZ]|[+-]\d{2}:\d{2}$/.test(patch.deadline_at)))
+  throw Error('Project deadline_at must be an ISO instant with a time zone, or null');
+ if('last_study_on' in patch&&patch.last_study_on!==null&&(typeof patch.last_study_on!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(patch.last_study_on)||Number.isNaN(Date.parse(patch.last_study_on))))
+  throw Error('Project last_study_on must be YYYY-MM-DD or null');
+ for(const k of ['time_confirmed','auto_prune_standard'])if(k in patch&&typeof patch[k]!=='boolean')throw Error('Project '+k+' must be boolean');
+ if('share_weight' in patch&&patch.share_weight!==null&&(typeof patch.share_weight!=='number'||!Number.isFinite(patch.share_weight)||patch.share_weight<=0))
+  throw Error('Project share_weight must be a positive number or null');
  if('subject' in patch && 'subject_id' in patch)
   throw Error('Choose subject or subject_id, not both');
 }

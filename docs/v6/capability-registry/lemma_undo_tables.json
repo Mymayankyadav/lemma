@@ -101,6 +101,18 @@
     },
     {
       "table_name": "period_plans"
+    },
+    {
+      "table_name": "evidence"
+    },
+    {
+      "table_name": "capacity_overrides"
+    },
+    {
+      "table_name": "recheck_decisions"
+    },
+    {
+      "table_name": "plan_baselines"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

@@ -1,0 +1,78 @@
+{
+  "table": "capacity_overrides",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "server generated identifier"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "owner identity, always derived from the authenticated user"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "creation time"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "last change time"
+    },
+    "on_date": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "date"
+    },
+    "minutes": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "capacity that day"
+    },
+    "reason": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "why"
+    },
+    "version": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N38 optimistic version advanced by trigger"
+    },
+    "updated_source": {
+      "classification": "command-managed",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "adaptive_facts_command via service-role mcp_command",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N38 provenance: app, mcp or worker"
+    }
+  }
+}

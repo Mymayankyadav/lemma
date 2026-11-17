@@ -6,10 +6,10 @@ export const ownerEditableSettingsFields = [
  'rollover_hour','max_interval_days','fuzz','load_balance','learn_ahead_minutes',
  'fsrs_weights','macros','default_style','tutor_rules','mix_decks','preferred_chat',
  'time_zone','master_prompt','ui','notify','week_start',
- 'clock_24h','focus_defaults','planning','review_budget','attention',
+ 'clock_24h','focus_defaults','planning','review_budget','attention','flags','capacity',
 ] as const;
 const allowed=new Set<string>(ownerEditableSettingsFields);
-const sections=new Set(['ui','notify','focus_defaults','planning','review_budget','attention']);
+const sections=new Set(['ui','notify','focus_defaults','planning','review_budget','attention','flags','capacity']);
 const typed:Record<string,Record<string,string>>={
  focus_defaults:{mode:'mode',focus_minutes:'int:1:480',break_minutes:'int:1:180',
   long_break_minutes:'int:1:240',cycles:'int:1:24',flowtime_break_ratio:'ratio',
@@ -19,6 +19,8 @@ const typed:Record<string,Record<string,string>>={
   daily_intention:'bool'},
  review_budget:{cards:'int:0:2000',minutes:'int:0:720',reserve_in_plans:'bool'},
  attention:{drift_prompt:'bool',urge_prompt:'bool'},
+ flags:{time_block:'bool',recheck_v2:'bool',scheduler_v2:'bool',proficiency:'bool',items:'bool',atlas_memory:'bool',workers:'bool'},
+ capacity:{weekday_minutes:'week',review_share:'share'},
 };
 const bad=(message:string):never=>{throw Error('Invalid owner settings edit: '+message);};
 function plain(value:unknown):value is Record<string,unknown>{
@@ -49,6 +51,7 @@ function merged(previous:unknown,patch:unknown):Record<string,unknown>{
  return result;
 }
 function checkTyped(section:string,part:Record<string,unknown>):void{
+ if(section==='flags'||section==='capacity')for(const key of Object.keys(part))if(!(key in typed[section]))bad(section+'.'+key+' is not a known setting');
  for(const [name,kind] of Object.entries(typed[section]||{})){
   if(!(name in part))continue;
   const value=part[name];
@@ -61,6 +64,13 @@ function checkTyped(section:string,part:Record<string,unknown>):void{
     bad(section+'.'+name+' must be a fraction in (0,1]');
   }else if(kind==='bool'){
    if(typeof value!=='boolean')bad(section+'.'+name+' must be boolean');
+  }else if(kind==='week'){
+   const ok=(x:unknown)=>Number.isSafeInteger(x)&&Number(x)>=0&&Number(x)<=1440;
+   if(!(ok(value)||(Array.isArray(value)&&value.length===7&&value.every(ok))))
+    bad(section+'.'+name+' must be minutes 0..1440, or seven of them Monday to Sunday');
+  }else if(kind==='share'){
+   if(typeof value!=='number'||!Number.isFinite(value)||value<0.1||value>0.5)
+    bad(section+'.'+name+' must be between 0.1 and 0.5');
   }else if(kind==='time'){
    if(typeof value!=='string'||!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))
     bad(section+'.'+name+' must be HH:MM');

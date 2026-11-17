@@ -11,9 +11,11 @@ import {readNotificationRecords} from './notification-read.ts';
 import {readCalendarOverlaps} from './calendar-read.ts';
 import {readContext,CONTEXT_WHAT} from './context-read.ts';
 import {signedSourceUpload} from './source-upload.ts';
+import {readAdaptive,flagOn} from '../adaptive.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
+  if(['time','queue','feasibility','forecast'].includes(a.what))return readAdaptive(c,a);
   if(a.what==='calendar_overlaps')return readCalendarOverlaps(c,a);
   if(a.what==='source_upload')return signedSourceUpload(c,a);
   if((CONTEXT_WHAT as readonly string[]).includes(a.what))return readContext(c,a);
@@ -78,7 +80,7 @@ export async function get(c: Context, a:any):Promise<string>{
     }
     if(!(citations||[]).length&&cp.pages)lines.push('PAGES '+(src?.short||'book')+' '+cp.pages);
     if(pre.length)lines.push('NEEDS '+pre.join(', '));if(concepts.length)lines.push('IDEAS '+concepts.join(', '));
-    if(cp.recheck_due)lines.push('RECHECK due '+cp.recheck_due+': '+(cp.recheck_prompt||''));
+    if(cp.recheck_due&&!flagOn(s,'recheck_v2'))lines.push('RECHECK due '+cp.recheck_due+': '+(cp.recheck_prompt||''));
     for(const e of events.reverse()){const ssn=ss.find((x:any)=>x.id===e.session_id);lines.push('S'+(ssn?.number||'?')+' '+e.kind+(e.hint_level?' L'+e.hint_level:'')+': '+cut(e.body,140))}
     return capped(lines.join('\n'),2000);
   }

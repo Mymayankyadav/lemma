@@ -144,6 +144,8 @@ async function capabilityPathGaps(registry){
  return {gaps,tracked};
 }
 const specs={
+ capacity_overrides:{fn:'adaptive_facts_command',create:{on_date:'2026-11-18',minutes:90,reason:'parity'},
+  update:{minutes:60},column:'minutes',updated:60},
  tasks:{fn:'task_command',create:{title:'MCP parity task',priority:'high'},
   update:{title:'App parity edited task'},column:'title',updated:'App parity edited task'},
  study_entries:{fn:'study_command',create:{source:'manual',intent:'MCP parity study'},
@@ -181,6 +183,34 @@ function mark(resource,...operations){
  if(!tested){tested=new Set();exercised.set(resource,tested)}
  for(const op of operations)tested.add(op);
 }
+/** N169 append-only facts have no update or delete: create → exact replay → changed-payload conflict → owner and MCP reads → isolation → undo. */
+async function createOnlyTrip(resource,patch,column,value){
+ await role('service_role');
+ const create=command(resource,'create',{patch});
+ const created=status(await mcp(create),resource,'create');
+ const id=created.changed.find(c=>c.id)?.id;
+ assert.equal(created.changed.find(c=>c.id===id).version,1,resource+': unexpected initial version');
+ const journal=(await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n;
+ assert.deepEqual(await mcp(create),created,resource+': exact MCP retry differs');
+ assert.equal((await mcp({...create,patch:{...patch,[column]:value+'x'}})).status,'conflict',resource+': changed payload should conflict');
+ assert.equal((await q('select count(*)::int n from public.actions where user_id=$1',[owner]))[0].n,journal,resource+': replay journalled a second mutation');
+ await assert.rejects(mcp(command(resource,'update',{target:{id},expectedVersion:1,patch:{}})),/append-only/,resource+': an update must be refused');
+ await as(owner);
+ const row=(await q('select * from public.'+resource+' where id=$1',[id]))[0];
+ assert.ok(row&&row.user_id===owner,resource+': MCP-created row missing from the owner read');
+ await role(null);
+ const page=await mcpPage(resource,id);
+ assert.equal(page.total,1,resource+': MCP owner read missing');
+ assert.ok(!('user_id' in page.items[0]),resource+': MCP owner ID leakage');
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.'+resource+' where id=$1',[id]))[0].n,0,resource+': foreign owner can read the row');
+ await role(null);
+ assert.equal((await mcpPage(resource,id,other)).total,0,resource+': foreign owner can read the row through MCP');
+ await as(owner);
+ assert.equal(Number((await undo(created.actionNo)).undone),Number(created.actionNo),resource+': undo of the create failed');
+ assert.equal((await q('select count(*)::int n from public.'+resource+' where id=$1',[id]))[0].n,0,resource+': undone create remains');
+ mark(resource,'create');
+}
 async function roundTrip(resource,details){
  // Requires a service-role command, a real authenticated app owner read/write,
  // then an MCP/owner re-read, logical deletion, and undo restoration.
@@ -209,7 +239,7 @@ async function roundTrip(resource,details){
  // stored receipt for any same-operationId retry (N12 contract). Both must
  // prevent a second mutation or receipt; don't conflate the two policies.
  if(['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics',
-  'overlap_acknowledgements'].includes(resource))
+  'overlap_acknowledgements','capacity_overrides'].includes(resource))
   assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
  else
   assert.deepEqual(altered,created,resource+': compatibility replay must return original receipt');
@@ -1779,6 +1809,17 @@ try{
  mark('device_commands','send','cancel');
  await role('service_role');
 
+
+ // N169: capacity overrides (generic round trip) and the two append-only facts.
+ await role(null);
+ const n169Subject='aaaaaaaa-0000-4000-8000-000000000001',n169Project='aaaaaaaa-0000-4000-8000-000000000002',n169Concept='aaaaaaaa-0000-4000-8000-000000000003';
+ await q("insert into public.subjects(id,user_id,name,glyph,hue) values($1,$2,'N169 Math','M','cyan')",[n169Subject,owner]);
+ await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'n169-parity','N169','Study')",[n169Project,owner,n169Subject]);
+ await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n169-concept','N169 concept')",[n169Concept,owner,n169Subject]);
+ await roundTrip('capacity_overrides',specs.capacity_overrides);
+ await createOnlyTrip('recheck_decisions',{concept_id:n169Concept,level:'use',action:'rate_easy',note:'parity'},'note','parity');
+ await createOnlyTrip('plan_baselines',{project_id:n169Project,reason:'parity baseline'},'reason','parity baseline');
+ await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.
  // Every registered resource and every registered operation must have a real

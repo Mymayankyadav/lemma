@@ -370,6 +370,22 @@
           "description": "opt in to urge notice"
         }
       }
+    },
+    "flags": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit settings (N169): per-user feature flags",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169 per-user flags: time_block, recheck_v2, scheduler_v2, proficiency, items, atlas_memory, workers"
+    },
+    "capacity": {
+      "classification": "owner-editable",
+      "appPath": "not read by the app (N169 adds no UI)",
+      "mcpPath": "edit settings (N169): weekday minutes and review share",
+      "exportPolicy": "owner-scoped export (N95)",
+      "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
+      "description": "N169 capacity: weekday minutes (Mon..Sun) and review_share"
     }
   }
 }

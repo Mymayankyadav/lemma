@@ -2,7 +2,9 @@ import { createClient } from './deps.ts';
 // Dynamic table/projection boundary; tool handlers validate fields and the RPC validates ownership.
 export type Db = {from(table:string):any;rpc(fn:string,args?:Record<string,unknown>):PromiseLike<{data:any;error:{message:string}|null}>};
 /** Self-test-only IDs are scoped to the current request; never supplied by clients. */
-export type Context = { db: Db; userId: string; batch?: any[]; selftestProjectIds?: Set<string> };
+export type Context = { db: Db; userId: string; batch?: any[]; selftestProjectIds?: Set<string>;
+  /** N169: a tool may set its own NEXT line, and add short notices (e.g. I2 lint) shown after the trimmed result. */
+  next?: string; notices?: string[] };
 export function admin(): Db {
   const raw = Deno.env.get('SUPABASE_SECRET_KEYS');
   let key: string | undefined;

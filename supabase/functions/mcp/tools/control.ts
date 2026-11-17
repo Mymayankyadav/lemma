@@ -8,12 +8,13 @@ import {ownerEditableSettingsFields,settingsEditCommand} from './settings-edit.t
 import {projectEditFields,isLearningEditTable,learningEditCommand,validateProjectEditPatch} from './learning-edit.ts';
 import {assertValidAtlasParent,assertNoPrerequisiteCycle} from './learning-graph.ts';
 import {slug,cut} from '../text.ts';
+import {flagOn,lintNotices} from '../adaptive.ts';
 import {cardMovePatch} from './card-move.ts';
 import {confirmedSourceUpload,pageCount} from './source-upload.ts';
 import {studyClock,studyDayBounds} from '../../_shared/calendar.ts';
 import FSRS from '../../_shared/fsrs.js';
 const allowed:Record<string,string[]|string>={
- projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after',
+ projects:projectEditFields.join(' '),checkpoints:'stage code title objective criterion steps pages book prereqs ideas status current_step recheck_prompt recheck_due due_on needs_revisit after kind tier estimate_minutes pinned plan_state deferred_reason step_meta',
  sessions:'goal style checkpoint state goal_met summary resume_question resume_note resume_step minutes',notes:'front back type kind tags checkpoint idea page status due project',card_comments:'body status',
  concepts:'topic name blurb subject subject_id slug prereqs related level parent parent_id star is_star pin_x pin_y',subjects:'name glyph hue position',styles:'name instructions icon position',sources:'title short kind position uploaded',settings:ownerEditableSettingsFields.join(' ')
 };
@@ -81,6 +82,7 @@ async function ideaLinks(c:Context,row:any,fields:any,replace:boolean){
 export async function setPrompt(c:Context,a:any){const global=a.scope==='all',r=global?await settings(c):await project(c,a.scope),key=global?'master_prompt':'prompt';
  const value=a.mode==='clear'?null:a.mode==='replace'?a.text:[r[key],a.text].filter(Boolean).join('\n');
  if((value?.length||0)>(global?2000:1000))throw Error('Prompt exceeds '+(global?2000:1000)+' characters');
+ c.notices=[...(c.notices??[]),...lintNotices([[global?'master_prompt':'prompt',value]])];
  enqueue(c,global?'settings':'projects',global?{user_id:c.userId}:{id:r.id},{[key]:value});return 'saved for '+(global?'all chats':r.slug)+' ('+(value?.length||0)+' chars)';}
 export async function history(c:Context,a:any){const fetched=await scoped(c,'v_history').order('no',{ascending:false}).limit(1000);if(fetched.error)throw Error(fetched.error.message);let acts:any[]=(fetched.data||[]).filter((x:any)=>x.tool!=='heartbeat');if(a.project){
   const p=await project(c,a.project),actionNos=acts.map(x=>x.no),ids=new Set<number>();
@@ -129,6 +131,19 @@ export async function edit(c:Context,a:any){const {table,row,p:given}=await targ
  const valid=String(allowed[table]||'').split(' '),patch={...a.set};
  for(const k of Object.keys(patch))if(!valid.includes(k))throw Error('Valid fields: '+valid.join(', '));
  if(!Object.keys(patch).length)throw Error('Provide fields to change');
+ if(table==='checkpoints'||table==='projects'){
+  const v2=flagOn(await settings(c),'recheck_v2');
+  if(table==='checkpoints'){
+   if(v2&&['recheck_due','needs_revisit','recheck_prompt'].some(k=>k in patch))throw Error('recheck_due, needs_revisit and recheck_prompt are retired: rechecks come only from evidence');
+   if(v2&&patch.status==='demonstrated')patch.self_reported=true;           // a hand-set completion is not evidence
+   if(patch.plan_state==='deferred'&&!('deferred_at' in patch)){patch.deferred_at=new Date().toISOString();if(!patch.deferred_reason)patch.deferred_reason='learner';}
+   if(patch.plan_state==='active')Object.assign(patch,{deferred_at:null,deferred_reason:null});
+   for(const [k,vals] of [['kind',['learn','cards','milestone']],['tier',['core','standard','venture']],['plan_state',['active','deferred','skipped']]] as [string,string[]][])
+    if(k in patch&&!vals.includes(String(patch[k])))throw Error('Checkpoint '+k+' must be '+vals.join(', '));
+   if('estimate_minutes' in patch&&patch.estimate_minutes!==null&&(!Number.isSafeInteger(patch.estimate_minutes)||patch.estimate_minutes<1||patch.estimate_minutes>2400))throw Error('Checkpoint estimate_minutes must be 1..2400');
+   if('pinned' in patch&&typeof patch.pinned!=='boolean')throw Error('Checkpoint pinned must be boolean');
+  }else c.notices=[...(c.notices??[]),...lintNotices([['prompt',patch.prompt],['goal',patch.goal],['target_label',patch.target_label]])];
+ }
  planningFields(patch);
  if((table==='subjects'||table==='styles')&&'position' in patch&&
   (typeof patch.position!=='number'||!Number.isFinite(patch.position)))
@@ -222,7 +237,7 @@ export async function add(c:Context,a:any){const f={...a.fields};planningFields(
  if(a.kind==='checkpoint'){
   const cps=await all(c,'checkpoints');if(!f.code){if(f.after){const base=f.after.match(/^CP[0-9]+/)?.[0];if(!base)throw Error('Invalid insertion point');for(let k=97;k<=122;k++){const code=base+String.fromCharCode(k);if(!cps.some(x=>x.project_id===p.id&&x.code===code)){f.code=code;break;}}}else f.code='CP'+(1+Math.max(0,...cps.filter(x=>x.project_id===p.id).map(x=>Number(x.code.match(/^CP([0-9]+)/)?.[1]||0))));}
   if(!f.code)throw Error('No free checkpoint code');const prop=await insert(c,'proposals',{project_id:p.id,kind:'plan_change',origin:'other',payload:{ops:[{...f,op:'add',concepts:f.ideas,source:f.book}]}});await rpc(c,'approve_proposal',{p_id:prop.id});
-  const extra:any={};for(const k of ['status','current_step','recheck_due','needs_revisit'])if(k in f)extra[k]=f[k];if(Object.keys(extra).length)enqueue(c,'checkpoints',{project_id:p.id,code:f.code},extra);return 'added '+f.code;
+  const extra:any={};if(flagOn(await settings(c),'recheck_v2')&&('recheck_due' in f||'needs_revisit' in f))throw Error('recheck_due and needs_revisit are retired: rechecks come only from evidence');for(const k of ['status','current_step','recheck_due','needs_revisit'])if(k in f)extra[k]=f[k];if(Object.keys(extra).length)enqueue(c,'checkpoints',{project_id:p.id,code:f.code},extra);return 'added '+f.code;
  }
  if(a.kind==='subject'){for(const k of Object.keys(f))if(!['name','glyph','hue','position'].includes(k))throw Error('Valid fields: name, glyph, hue, position');if(f.position!==undefined&&(typeof f.position!=='number'||!Number.isFinite(f.position)))throw Error('Position must be finite');await insert(c,'subjects',{glyph:f.name?.slice(0,1)||'M',hue:'amber',...f});}
  else if(a.kind==='idea'){const sub=await find(c,'subjects','name',f.subject);const row=await idea(c,f.name,sub.id);const patch:any={};for(const k of ['topic','blurb','level'])if(f[k]!==undefined)patch[k]=f[k];if(f.star!==undefined)patch.is_star=!!f.star;

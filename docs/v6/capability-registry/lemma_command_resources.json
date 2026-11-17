@@ -3,54 +3,19 @@
   "source": "D8(a) registered service-role-only public.mcp_command dispatcher",
   "resources": [
     {
-      "resource": "study_entries",
-      "command_fn": "study_command",
+      "resource": "account_controls",
+      "command_fn": "account_controls_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
-          "create",
-          "update",
-          "delete",
-          "start",
-          "pause",
-          "resume",
-          "break",
-          "save",
-          "discard",
-          "take_lease",
-          "next_phase",
-          "exclude_minutes"
+          "request",
+          "confirm",
+          "test_notification"
         ],
         "fields": [
-          "intent",
-          "source",
-          "reflection",
-          "rating",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "session_id",
-          "calendar_block_id",
-          "preset_id",
-          "energy"
-        ]
-      }
-    },
-    {
-      "resource": "study_intervals",
-      "command_fn": "study_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "delete"
-        ],
-        "fields": [
-          "entry_id",
-          "kind",
-          "started_at",
-          "ended_at"
+          "action",
+          "token",
+          "device_id"
         ]
       }
     },
@@ -80,8 +45,8 @@
       }
     },
     {
-      "resource": "tasks",
-      "command_fn": "task_command",
+      "resource": "capacity_overrides",
+      "command_fn": "adaptive_facts_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
@@ -90,175 +55,9 @@
           "delete"
         ],
         "fields": [
-          "title",
-          "body",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "estimate_minutes",
-          "priority",
-          "due_kind",
-          "due_date",
-          "due_at",
-          "position",
-          "status"
-        ]
-      }
-    },
-    {
-      "resource": "presets",
-      "command_fn": "presets_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "reorder",
-          "archive",
-          "restore",
-          "delete"
-        ],
-        "fields": [
-          "label",
-          "subject_id",
-          "project_id",
-          "checkpoint_id",
-          "mode",
-          "focus_minutes",
-          "break_minutes",
-          "long_break_minutes",
-          "cycles",
-          "position"
-        ]
-      }
-    },
-    {
-      "resource": "practice_topics",
-      "command_fn": "practice_topics_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "archive",
-          "restore",
-          "delete",
-          "record",
-          "void_event"
-        ],
-        "fields": [
-          "title",
-          "subject_id",
-          "concept_id",
-          "checkpoint_id",
-          "next_due_date",
-          "cadence",
-          "rating",
-          "occurred_at",
-          "response",
-          "minutes"
-        ]
-      }
-    },
-    {
-      "resource": "parked_thoughts",
-      "command_fn": "parked_thoughts_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "edit",
-          "dismiss",
-          "reopen",
-          "delete",
-          "convert_to_task"
-        ],
-        "fields": [
-          "text",
-          "study_entry_id",
-          "title",
-          "body",
-          "estimate_minutes",
-          "priority",
-          "due_kind",
-          "due_date",
-          "due_at",
-          "position",
-          "subject_id",
-          "project_id",
-          "checkpoint_id"
-        ]
-      }
-    },
-    {
-      "resource": "day_plans",
-      "command_fn": "day_plans_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "preview",
-          "commit",
-          "close",
-          "reopen",
-          "commit_placements"
-        ],
-        "fields": [
-          "plan_date",
-          "time_zone",
-          "intention",
-          "capacity_minutes",
-          "availability",
-          "tomorrow_first_task_id",
-          "ritual",
-          "items",
-          "carry_over"
-        ]
-      }
-    },
-    {
-      "resource": "study_goals",
-      "command_fn": "study_goals_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "create",
-          "update",
-          "archive",
-          "restore",
-          "delete"
-        ],
-        "fields": [
-          "period",
-          "start_date",
-          "end_date",
-          "time_zone",
-          "subject_id",
-          "project_id",
-          "target_minutes"
-        ]
-      }
-    },
-    {
-      "resource": "study_events",
-      "command_fn": "study_events_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "record",
-          "edit",
-          "void",
-          "restore"
-        ],
-        "fields": [
-          "entry_id",
-          "kind",
-          "occurred_at",
-          "duration_minutes",
-          "note",
-          "related_kind",
-          "related_id"
+          "on_date",
+          "minutes",
+          "reason"
         ]
       }
     },
@@ -304,6 +103,33 @@
       }
     },
     {
+      "resource": "day_plans",
+      "command_fn": "day_plans_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "preview",
+          "commit",
+          "close",
+          "reopen",
+          "commit_placements"
+        ],
+        "fields": [
+          "plan_date",
+          "time_zone",
+          "intention",
+          "capacity_minutes",
+          "availability",
+          "tomorrow_first_task_id",
+          "ritual",
+          "items",
+          "carry_over"
+        ]
+      }
+    },
+    {
       "resource": "deadlines",
       "command_fn": "deadlines_command",
       "mcp_ok": true,
@@ -332,6 +158,43 @@
       }
     },
     {
+      "resource": "device_commands",
+      "command_fn": "device_commands_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "send",
+          "cancel"
+        ],
+        "fields": [
+          "device_id",
+          "kind",
+          "payload",
+          "status",
+          "reason",
+          "expires_at",
+          "delivered_at",
+          "applied_at"
+        ]
+      }
+    },
+    {
+      "resource": "notify_holds",
+      "command_fn": "notify_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "delete"
+        ],
+        "fields": [
+          "scope",
+          "until"
+        ]
+      }
+    },
+    {
       "resource": "overlap_acknowledgements",
       "command_fn": "overlap_acknowledgements_command",
       "mcp_ok": true,
@@ -352,6 +215,132 @@
       }
     },
     {
+      "resource": "parked_thoughts",
+      "command_fn": "parked_thoughts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "edit",
+          "dismiss",
+          "reopen",
+          "delete",
+          "convert_to_task"
+        ],
+        "fields": [
+          "text",
+          "study_entry_id",
+          "title",
+          "body",
+          "estimate_minutes",
+          "priority",
+          "due_kind",
+          "due_date",
+          "due_at",
+          "position",
+          "subject_id",
+          "project_id",
+          "checkpoint_id"
+        ]
+      }
+    },
+    {
+      "resource": "period_plans",
+      "command_fn": "period_plans_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "preview",
+          "commit",
+          "replan",
+          "archive"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "status",
+          "daily_cap_minutes",
+          "exclude_task_ids",
+          "placements",
+          "unplaced",
+          "committed_at"
+        ]
+      }
+    },
+    {
+      "resource": "plan_baselines",
+      "command_fn": "adaptive_facts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "project_id",
+          "reason",
+          "entries"
+        ]
+      }
+    },
+    {
+      "resource": "practice_topics",
+      "command_fn": "practice_topics_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete",
+          "record",
+          "void_event"
+        ],
+        "fields": [
+          "title",
+          "subject_id",
+          "concept_id",
+          "checkpoint_id",
+          "next_due_date",
+          "cadence",
+          "rating",
+          "occurred_at",
+          "response",
+          "minutes"
+        ]
+      }
+    },
+    {
+      "resource": "presets",
+      "command_fn": "presets_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "reorder",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "label",
+          "subject_id",
+          "project_id",
+          "checkpoint_id",
+          "mode",
+          "focus_minutes",
+          "break_minutes",
+          "long_break_minutes",
+          "cycles",
+          "position"
+        ]
+      }
+    },
+    {
       "resource": "proposal_drafts",
       "command_fn": "proposal_drafts_command",
       "mcp_ok": true,
@@ -367,6 +356,64 @@
           "target_id",
           "base_versions",
           "payload"
+        ]
+      }
+    },
+    {
+      "resource": "proposals",
+      "command_fn": "proposals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "withdraw",
+          "revise",
+          "reopen"
+        ],
+        "fields": [
+          "project_id",
+          "session_id",
+          "kind",
+          "payload",
+          "reason",
+          "status",
+          "origin",
+          "payload_version",
+          "base_target_versions",
+          "group_id",
+          "citations",
+          "withdrawn_at",
+          "revised_from"
+        ]
+      }
+    },
+    {
+      "resource": "push_devices",
+      "command_fn": "notify_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "rename",
+          "disable",
+          "restore"
+        ],
+        "fields": [
+          "label"
+        ]
+      }
+    },
+    {
+      "resource": "recheck_decisions",
+      "command_fn": "adaptive_facts_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "concept_id",
+          "level",
+          "action",
+          "note"
         ]
       }
     },
@@ -437,50 +484,87 @@
       }
     },
     {
-      "resource": "proposals",
-      "command_fn": "proposals_command",
+      "resource": "study_entries",
+      "command_fn": "study_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
-          "withdraw",
-          "revise",
-          "reopen"
+          "create",
+          "update",
+          "delete",
+          "start",
+          "pause",
+          "resume",
+          "break",
+          "save",
+          "discard",
+          "take_lease",
+          "next_phase",
+          "exclude_minutes"
         ],
         "fields": [
+          "intent",
+          "source",
+          "reflection",
+          "rating",
+          "subject_id",
           "project_id",
+          "checkpoint_id",
           "session_id",
-          "kind",
-          "payload",
-          "reason",
-          "status",
-          "origin",
-          "payload_version",
-          "base_target_versions",
-          "group_id",
-          "citations",
-          "withdrawn_at",
-          "revised_from"
+          "calendar_block_id",
+          "preset_id",
+          "energy"
         ]
       }
     },
     {
-      "resource": "push_devices",
-      "command_fn": "notify_command",
+      "resource": "study_events",
+      "command_fn": "study_events_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
-          "rename",
-          "disable",
+          "record",
+          "edit",
+          "void",
           "restore"
         ],
         "fields": [
-          "label"
+          "entry_id",
+          "kind",
+          "occurred_at",
+          "duration_minutes",
+          "note",
+          "related_kind",
+          "related_id"
         ]
       }
     },
     {
-      "resource": "notify_holds",
-      "command_fn": "notify_command",
+      "resource": "study_goals",
+      "command_fn": "study_goals_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "update",
+          "archive",
+          "restore",
+          "delete"
+        ],
+        "fields": [
+          "period",
+          "start_date",
+          "end_date",
+          "time_zone",
+          "subject_id",
+          "project_id",
+          "target_minutes"
+        ]
+      }
+    },
+    {
+      "resource": "study_intervals",
+      "command_fn": "study_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
@@ -489,8 +573,10 @@
           "delete"
         ],
         "fields": [
-          "scope",
-          "until"
+          "entry_id",
+          "kind",
+          "started_at",
+          "ended_at"
         ]
       }
     },
@@ -528,66 +614,28 @@
       }
     },
     {
-      "resource": "period_plans",
-      "command_fn": "period_plans_command",
+      "resource": "tasks",
+      "command_fn": "task_command",
       "mcp_ok": true,
       "schema": {
         "operations": [
           "create",
           "update",
-          "preview",
-          "commit",
-          "replan",
-          "archive"
+          "delete"
         ],
         "fields": [
-          "period",
-          "start_date",
-          "end_date",
-          "status",
-          "daily_cap_minutes",
-          "exclude_task_ids",
-          "placements",
-          "unplaced",
-          "committed_at"
-        ]
-      }
-    },
-    {
-      "resource": "account_controls",
-      "command_fn": "account_controls_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "request",
-          "confirm",
-          "test_notification"
-        ],
-        "fields": [
-          "action",
-          "token",
-          "device_id"
-        ]
-      }
-    },
-    {
-      "resource": "device_commands",
-      "command_fn": "device_commands_command",
-      "mcp_ok": true,
-      "schema": {
-        "operations": [
-          "send",
-          "cancel"
-        ],
-        "fields": [
-          "device_id",
-          "kind",
-          "payload",
-          "status",
-          "reason",
-          "expires_at",
-          "delivered_at",
-          "applied_at"
+          "title",
+          "body",
+          "subject_id",
+          "project_id",
+          "checkpoint_id",
+          "estimate_minutes",
+          "priority",
+          "due_kind",
+          "due_date",
+          "due_at",
+          "position",
+          "status"
         ]
       }
     }

@@ -77,11 +77,20 @@ export async function registeredResources(c:Context):Promise<string>{
  // N160: saved-time corrections run through study_command (N91) and are not in
  // the registry row, which is seeded and cannot be edited by a migration. They are
  // listed here so chat can discover them; study_command enforces them.
- return JSON.stringify({resources:data.map(x=>{
-  const meta=readSchema(x as RecordMap);
-  const extra=SAVED_TIME_OPERATIONS[meta.resource];
-  return extra?{...meta,operations:[...meta.operations,...extra.filter(o=>!meta.operations.includes(o))]}:meta;
- })});
+ // One malformed registry row must not fail the whole listing: list the good rows and name the bad ones.
+ const resources:Meta[]=[];const skipped:{resource:string;reason:string}[]=[];
+ for(const x of data as RecordMap[]){
+  try{
+   const meta=readSchema(x);
+   const extra=SAVED_TIME_OPERATIONS[meta.resource];
+   resources.push(extra?{...meta,operations:[...meta.operations,...extra.filter(o=>!meta.operations.includes(o))]}:meta);
+  }catch(err){
+   skipped.push({resource:typeof x.resource==='string'?x.resource.slice(0,61):'?',reason:err instanceof Error?err.message:'invalid'});
+  }
+ }
+ // Nothing valid to list is still an error (a lone malformed row is not hidden); otherwise the good rows are listed.
+ if(!resources.length&&skipped.length)throw Error(skipped[0].reason);
+ return JSON.stringify(skipped.length?{resources,skipped}:{resources});
 }
 const safeLike=(s:string)=>s.replace(/[\\%_]/g,'\\$&');
 function pageLimit(raw:unknown,mode:GenericMode):number{
