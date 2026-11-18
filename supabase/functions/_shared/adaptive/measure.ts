@@ -18,9 +18,11 @@ export type Prediction={id:string;at:number;stream:'attempt'|'card';p:number;kf:
 export type DirectEvidence={at:number;session:string;clean:boolean;novel:boolean;uncued:boolean};
 export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
 /** One-pass lookup tables for replay: every per-event find/filter over the facts was linear, so a replay was quadratic in the number of attempts. */
-export type Lookup={tags:Map<string,AttemptTag[]>;sessions:Map<unknown,{id:string;started_at:string}>;items:Map<unknown,NonNullable<AtlasFacts['items']>[number]>;cardsByConcept:Map<string,CardFact[]>;cards:Map<string,CardFact>;concepts:Map<string,Concept>};
+export type Lookup={tags:Map<string,AttemptTag[]>;sessions:Map<unknown,{id:string;started_at:string}>;items:Map<unknown,NonNullable<AtlasFacts['items']>[number]>;cardsByConcept:Map<string,CardFact[]>;cards:Map<string,CardFact>;concepts:Map<string,Concept>;kc:Map<string,string>;anc:Map<string,string[]>;cross:Map<string,Map<string,string>>;pfaKc:Map<string,string>;pfaSys:Map<string,string>};
+/** Interned component ids: building 'kc:'+id on every observation made each lookup in `components` hash a fresh string. */
+const memo=(m:Map<string,string>,prefix:string,id:string)=>{let v=m.get(id);if(v===undefined){v=prefix+id;m.set(id,v);}return v;};
 function lookup(f:AtlasFacts):Lookup{
- const ix:Lookup={tags:new Map(),sessions:new Map(),items:new Map(),cardsByConcept:new Map(),cards:new Map(),concepts:new Map(f.concepts.map(c=>[c.id,c]))};
+ const ix:Lookup={tags:new Map(),sessions:new Map(),items:new Map(),cardsByConcept:new Map(),cards:new Map(),concepts:new Map(f.concepts.map(c=>[c.id,c])),kc:new Map(),anc:new Map(),cross:new Map(),pfaKc:new Map(),pfaSys:new Map()};
  for(const t of f.tags??[]){const k=String(t.attempt_id),l=ix.tags.get(k);if(l)l.push(t);else ix.tags.set(k,[t]);}
  for(const x of f.sessions??[])if(!ix.sessions.has(x.id))ix.sessions.set(x.id,x as any);
  for(const x of f.items??[])if(!ix.items.has(x.id))ix.items.set(x.id,x);
@@ -45,8 +47,10 @@ export type Feature={c:Component;x:number};
 function features(h:Hypothesis,s:MeasurementState,k:string,f:Facet,t:number,hours:number,b:number,bSd:number,item?:string,readOnly=false):Feature[]{
  const get=(id:string,t:number,sd:number,q=0,m=0)=>component(h,id,t,sd,q,m,!readOnly);
  const map=s.ix.concepts,out:Feature[]=[{c:get('mu',t,1),x:1},{c:get('facet:'+f,t,.5),x:1}];
- for(const a of ancestors(k,map))out.push({c:get('ancestor:'+a,t,.5,.005),x:1});
- out.push({c:get('kc:'+k,t,.71,.01),x:1},{c:get('cross:'+key(k,f),t,.5,.01),x:1},
+ let anc=s.ix.anc.get(k);if(!anc){anc=ancestors(k,map).map(a=>'ancestor:'+a);s.ix.anc.set(k,anc);}
+ for(const a of anc)out.push({c:get(a,t,.5,.005),x:1});
+ let cross=s.ix.cross.get(k);if(!cross){cross=new Map();s.ix.cross.set(k,cross);}let crossKey=cross.get(f);if(!crossKey){crossKey='cross:'+key(k,f);cross.set(f,crossKey);}
+ out.push({c:get(memo(s.ix.kc,'kc:',k),t,.71,.01),x:1},{c:get(crossKey,t,.5,.01),x:1},
   {c:get('learning',t,.32,0,.3),x:Math.log1p(h.counts[k]??0)},{c:get('fatigue',t,.2,0,.2),x:-hours});
  for(const l of s.facts.links??[])if(l.status==='approved'&&['equivalent','generalises','instance_of'].includes(l.kind)&&(l.from_id===k||l.to_id===k)){
   const id=l.kind==='instance_of'?'theme:'+l.to_id:'link:'+l.id;out.push({c:get(id,t,l.kind==='equivalent'?.4:.3,.005),x:1});
@@ -68,9 +72,9 @@ export function bayesWeights(weights:number[],ps:number[],y:number,share=0):numb
 }
 export function pfaFeatures(s:MeasurementState,k:string,hours:number,b:number):Record<string,number>{
  const h=s.hypotheses[0],c=s.index[k],sys=c?.parent_id??'root';
- return {intercept:1,['kc:'+k]:1,['system:'+sys]:1,success:Math.log1p(h.successes[k]??0),attempts:Math.log1p(h.counts[k]??0),b,hours};
+ return {intercept:1,[memo(s.ix.pfaKc,'kc:',k)]:1,[memo(s.ix.pfaSys,'system:',sys)]:1,success:Math.log1p(h.successes[k]??0),attempts:Math.log1p(h.counts[k]??0),b,hours};
 }
-function pfa(s:MeasurementState,x:Record<string,number>):number{return sigmoid(Object.entries(x).reduce((z,[k,v])=>z+v*(s.fit.pfa?.[k]??(k==='b'?-1:0)),0));}
+function pfa(s:MeasurementState,x:Record<string,number>):number{let z=0;const w=s.fit.pfa;for(const k in x)z+=x[k]*(w?.[k]??(k==='b'?-1:0));return sigmoid(z);}
 function observation(s:MeasurementState,h:Hypothesis,tags:AttemptTag[],t:number,hours:number,b:number,bSd:number,hint:number,item?:string,kappa=0,options?:number,readOnly=false){
  const target=tags.find(x=>x.role==='target')??tags[0],fs=features(h,s,target.concept_id,target.facet,t,hours,b,bSd,item,readOnly);
  const m=fs.reduce((z,{c,x})=>z+c.m*x,0)-(item?0:b)+kappa,V=fs.reduce((z,{c,x})=>z+c.v*x*x,0)+(item?0:bSd*bSd);
