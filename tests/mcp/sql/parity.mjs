@@ -1187,7 +1187,9 @@ try{
  const atlasColumns=JSON.parse(await readFile(new URL('concepts.json',
   new URL('../../../docs/v6/capability-registry/',import.meta.url)),'utf8')).columns;
  const payloadOnly=atlasSchema.filter(field=>!Object.hasOwn(atlasColumns,field)).sort();
- assert.deepEqual(payloadOnly,['other_id','kind','keep_id','keep_version'].sort(),
+ // Atlas v3 (20261218) makes concepts.kind a documented column, so it is payload-only only before that migration exists.
+ const expectedPayloadOnly=['other_id','keep_id','keep_version',...(Object.hasOwn(atlasColumns,'kind')?[]:['kind'])].sort();
+ assert.deepEqual(payloadOnly,expectedPayloadOnly,
   'concepts: unrecognized graph command payload fields');
  const atlasPersisted=atlasSchema.filter(field=>Object.hasOwn(atlasColumns,field));
  requireFields('concepts',atlasPersisted,Object.fromEntries(atlasPersisted.map(field=>[

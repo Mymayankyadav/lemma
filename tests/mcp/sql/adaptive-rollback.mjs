@@ -18,7 +18,7 @@ try{
  const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  const mine=names.filter(n=>n.startsWith('20261216')&&n.includes('_n169_'));
  assert.equal(mine.length,7,'the seven N169 migrations');
- const earlier=names.filter(n=>!mine.includes(n)&&!n.includes('_n170_'));   // N170 builds on N169 and has its own up/down test
+ const earlier=names.filter(n=>!mine.includes(n)&&!n.includes('_n170_')&&n<'20261218');   // N170 builds on N169 and has its own up/down test; Atlas v3 (20261218+) builds on N170 and has its own test (atlas-v2.mjs)
  for(const n of earlier)await db.exec(await readFile(new URL(n,dir),'utf8'));
  const before=await shape();
  // data that must survive the round trip

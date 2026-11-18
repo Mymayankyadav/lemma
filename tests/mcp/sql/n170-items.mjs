@@ -22,7 +22,8 @@ try{
  const names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort();
  const mine=names.filter(n=>n.startsWith('20261217')&&n.includes('_n170_'));
  assert.equal(mine.length,2);
- for(const n of names.filter(x=>!mine.includes(x)))await db.exec(await readFile(new URL(n,dir),'utf8'));
+ for(const n of names.filter(x=>!mine.includes(x)&&x<'20261218'))   // later Atlas v3 migrations build on this one and are covered by atlas-v2.mjs
+  await db.exec(await readFile(new URL(n,dir),'utf8'));
  const before=await shape();
  await q('insert into auth.users(id) values($1)',[owner]);
  await q("insert into public.settings(user_id,connector_secret,flags) values($1,$2,'{\"recheck_v2\":true,\"items\":true}')",[owner,'a'.repeat(48)]);
