@@ -62,12 +62,12 @@ create trigger atlas_apply_approved_plan after update of status on public.propos
 
 create function public.atlas_conversion_command(p jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $fn$
-declare u uuid:=auth.uid();op text:=p->>'operation';patch jsonb:=p->'patch';pr uuid;project_id uuid;receipt jsonb;operation_id uuid:=(p->>'operationId')::uuid;action_no bigint;
+declare u uuid:=auth.uid();op text:=p->>'operation';patch jsonb:=p->'patch';pr uuid;project_id uuid;receipt jsonb;opid uuid:=(p->>'operationId')::uuid;action_no bigint;
 begin
  if u is null then raise exception 'Authentication required';end if;
- if operation_id is null or p->>'schemaVersion' is distinct from '1' then raise exception 'Invalid command envelope';end if;
- perform pg_advisory_xact_lock(hashtextextended(u::text||':'||operation_id::text,0));
- select result into receipt from public.command_receipts where user_id=u and operation_id=atlas_conversion_command.operation_id;
+ if opid is null or p->>'schemaVersion' is distinct from '1' then raise exception 'Invalid command envelope';end if;
+ perform pg_advisory_xact_lock(hashtextextended(u::text||':'||opid::text,0));
+ select result into receipt from public.command_receipts where user_id=u and operation_id=opid;
  if found then if receipt->'_request'=p then return receipt-'_request';else raise exception 'Operation conflict';end if;end if;
  if coalesce(current_setting('role',true),'')<>'service_role' then perform set_config('lemma.source','app',true);perform set_config('lemma.tool','atlas_conversion',true);end if;
  perform set_config('lemma.summary','Atlas conversion '||coalesce(op,''),true);
@@ -83,8 +83,8 @@ begin
   if op='approve' then perform public.approve_proposal(pr);else perform public.reject_proposal(pr);end if;
  else raise exception 'Unsupported conversion operation';end if;
  select no into action_no from public.actions where user_id=u and txid=txid_current();
- receipt:=jsonb_build_object('operationId',operation_id,'status','ok','actionNo',action_no,'changed',jsonb_build_array(jsonb_build_object('resource','proposals','id',pr)));
- insert into public.command_receipts(user_id,operation_id,resource,result) values(u,operation_id,'plan_conversions',receipt||jsonb_build_object('_request',p));return receipt;
+ receipt:=jsonb_build_object('operationId',opid,'status','ok','actionNo',action_no,'changed',jsonb_build_array(jsonb_build_object('resource','proposals','id',pr)));
+ insert into public.command_receipts(user_id,operation_id,resource,result) values(u,opid,'plan_conversions',receipt||jsonb_build_object('_request',p));return receipt;
 end $fn$;
 revoke all on function public.atlas_conversion_command(jsonb) from public,anon;
 grant execute on function public.atlas_conversion_command(jsonb) to authenticated,service_role;
