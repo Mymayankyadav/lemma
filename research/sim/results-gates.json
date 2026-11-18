@@ -1,0 +1,24 @@
+{
+ "measured": "2026-11-18",
+ "source": "research/sim with the reconstructed test specs and e2e hyper-parameters of docs/current/N172.md; kf_kl_* and kf_reduction_vs_v2 are the SHIPPED TypeScript model on the harness streams (ts_kl.mts, 12+12 held-out learners); calibration, fatigue and the card model are the research KF's; durations and attendance from time_sim.py; end to end on 6+6 paired seeds (3000-3005).",
+ "gates": {
+  "kf_kl_w1": 0.037457,
+  "kf_kl_w2": 0.045318,
+  "kf_reduction_vs_v2": 0.561186,
+  "attempt_calibration_slope_lo": 0.900648,
+  "attempt_calibration_slope_hi": 1.040587,
+  "attempt_calibration_abs_intercept": 0.157026,
+  "fatigue_abs_z": 1.573236,
+  "card_kl_vs_default": -0.004402,
+  "duration_log_density": -0.655,
+  "duration_coverage_lo": 0.83,
+  "duration_coverage_hi": 0.83,
+  "attendance_log_loss": 0.56,
+  "e2e_p2c_minus_p0": 0.011401,
+  "e2e_se_ratio": 3.620425
+ },
+ "failing_or_missing": [
+  "resume_tokens_max: missing",
+  "card_tokens_max: missing"
+ ]
+}
