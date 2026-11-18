@@ -36,6 +36,15 @@ Tests: tests/unit/adaptive/fit-pfa.test.ts (fails on the previous code); existin
 Scope: supabase/functions/_shared/adaptive/fit.ts (fitPfa only), the test, docs/current/N184.md.
 Not: the KF model, diagnostics, serving, simulation gates, migrations or any production write.
 
+## N185 Atlas v3 activation safety: fixtures, resume context, supply and pruning (Owner task)
+
+Owner task: "Complete step 8 and 9"
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = before activating production: activation ignores fixture (system) projects; the v3 resume keeps NOW, LAST, FIX, ADAPT, CARDS and SRC in BRIEF (Atlas cards replace node cards) and keeps the tutor rules with the Atlas lines added, within the 1,500-token budget; with no planned study block, supply comes from the declared weekday capacity shared by the projects still running; the v3 scheduler defers venture material automatically and standard material only with auto_prune_standard, never core.
+Tests: tests/unit/adaptive/atlas-activation-safety.test.ts, tests/mcp/sql/atlas-activation-fixtures.mjs (all fail on the previous code); existing suites unchanged.
+Scope: supabase/functions/mcp/adaptive.ts (v3 resume and scheduler), supabase/functions/_shared/adaptive/atlas.ts (supply), one migration replacing atlas_check_release_report, the two tests, docs/current/N185.md.
+Not: the model, the gates, the duration model, any production write.
+
 ## N182 Atlas v3 screens on by default (Owner task)
 
 Owner task: "Complete step 8 and 9"
