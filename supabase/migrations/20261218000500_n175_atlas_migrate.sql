@@ -48,6 +48,36 @@ begin
 end $fn$;
 create trigger atlas_evidence_frozen before insert or update or delete on public.evidence for each row execute function public.atlas_freeze_evidence();
 
+-- Activation is judged on numbers the release run reports (07 Acceptance 1-8) and on facts the database can check itself: every active project has an approved conversion.
+-- The report is evidence supplied by the release run, so each gate is compared here against its fixed threshold; a missing gate is a failure, never a pass.
+create function public.atlas_check_release_report(u uuid,r jsonb) returns void
+language plpgsql stable security definer set search_path='' as $fn$
+declare g record;v numeric;s jsonb;unconverted int;
+begin
+ if r is null or jsonb_typeof(r)<>'object' or coalesce(jsonb_typeof(r->'gates'),'')<>'object' then raise exception 'Release gate report required';end if;
+ for g in select * from (values
+  ('kf_kl_w1','<=',0.040),('kf_kl_w2','<=',0.050),('kf_reduction_vs_v2','>=',0.40),('attempt_calibration_slope_lo','>=',0.85),('attempt_calibration_slope_hi','<=',1.15),
+  ('attempt_calibration_abs_intercept','<=',0.2),('fatigue_abs_z','<=',3),('card_kl_vs_default','<=',0),('duration_log_density','>=',-0.70),('duration_coverage_lo','>=',0.75),
+  ('duration_coverage_hi','<=',0.85),('attendance_log_loss','<=',0.57),('e2e_p2c_minus_p0','>',0),('e2e_se_ratio','>',2),('resume_tokens_max','<=',1500),('card_tokens_max','<=',100)
+ ) as t(name,op,threshold) loop
+  begin v:=(r->'gates'->>g.name)::numeric;exception when others then v:=null;end;
+  if v is null then raise exception 'Release gate missing: %',g.name;end if;
+  if not (case g.op when '<=' then v<=g.threshold when '>=' then v>=g.threshold when '>' then v>g.threshold end) then raise exception 'Release gate failed: % % % (reported %)',g.name,g.op,g.threshold,v;end if;
+ end loop;
+ if coalesce((r->>'parity_ok')::boolean,false) is not true then raise exception 'Release gate failed: app and MCP parity';end if;
+ if coalesce((r->>'no_beta_imports')::boolean,false) is not true then raise exception 'Release gate failed: Beta proficiency code still imported';end if;
+ -- D1-D5 are reported per stream; a stream with 50 or more events must not be in action.
+ if coalesce(jsonb_typeof(r->'diagnostics'),'')<>'array' then raise exception 'Release gate missing: diagnostics';end if;
+ for s in select jsonb_array_elements(r->'diagnostics') loop
+  if (s->>'n')::int>=50 and s->>'status'<>'ok' then raise exception 'Release gate failed: diagnostics for stream % are %',s->>'stream',s->>'status';end if;
+  if (s->>'n')::int<50 and s->>'status'<>'insufficient data' then raise exception 'Release gate failed: stream % with fewer than 50 events must show insufficient data',s->>'stream';end if;
+ end loop;
+ select count(*) into unconverted from public.projects p where p.user_id=u and p.status in ('planning','active','paused')
+  and not exists(select 1 from public.proposals x where x.user_id=u and x.project_id=p.id and x.payload?'atlas_conversion' and x.status='approved');
+ if unconverted>0 then raise exception 'Release gate failed: % project(s) without an approved conversion',unconverted;end if;
+end $fn$;
+revoke all on function public.atlas_check_release_report(uuid,jsonb) from public,anon,authenticated;
+
 create function public.atlas_v2_activate(p jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $fn$
 declare u uuid:=(p->>'owner')::uuid;report jsonb;
@@ -58,7 +88,7 @@ begin
  if (select count(*) from public.attempts where user_id=u and source_evidence_id is not null)<>(report->>'attempts')::bigint then raise exception 'Migration incomplete';end if;
  if not exists(select 1 from public.model_fits where user_id=u and params->>'version'='3') then raise exception 'Model fit and calibration report required';end if;
  -- Conversion approvals and quantitative replay gates are supplied by the release report, never a read or worker.
- if coalesce((p->>'release_gates_passed')::boolean,false) is not true then raise exception 'Release gate report required';end if;
+ perform public.atlas_check_release_report(u,p->'release_report');
  perform set_config('lemma.source','system',true);perform set_config('lemma.tool','atlas_v2_activate',true);perform set_config('lemma.summary','Activate approved Atlas v3 cutover',true);
  update public.settings set atlas_migrated_at=coalesce(atlas_migrated_at,now()) where user_id=u;
  return report||jsonb_build_object('activated',true);

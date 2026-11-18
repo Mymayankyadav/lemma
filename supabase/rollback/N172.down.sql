@@ -7,6 +7,7 @@ drop function if exists public.atlas_conversion_command(jsonb);
 drop function if exists public.atlas_resolve_kc(uuid,jsonb,text);
 drop function if exists public.atlas_check_template_cp(jsonb);
 drop function if exists public.atlas_v2_activate(jsonb);
+drop function if exists public.atlas_check_release_report(uuid,jsonb);
 drop function if exists public.atlas_v2_migrate(jsonb);
 drop function if exists public.atlas_command(jsonb);
 -- N170: save_progress also registers the item a tutor poses (flag items). Text is fingerprinted by the connector (`fp`), so the
