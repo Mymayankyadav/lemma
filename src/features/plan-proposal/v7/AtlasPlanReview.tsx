@@ -1,6 +1,8 @@
+import {isFlagOn} from '../../../flags';
 import {validateTemplate,type PlanTemplate} from '../../../../supabase/functions/_shared/adaptive/template';
 import type {Conversion} from '../../../../supabase/functions/_shared/adaptive/convert';
 export function AtlasPlanReview({template,conversion}:{template?:PlanTemplate;conversion?:Conversion}){
+ if(!isFlagOn('atlasV3'))return null;
  const plan=conversion??template;if(!plan)return null;const errors=validateTemplate(plan);
  return <section className="v7-atlas-panel" aria-label={conversion?'Course conversion':'Course template'}><h2>{conversion?'Course conversion':'Course template'}</h2>
   {errors.length>0&&<div role="alert" className="v7-atlas-error"><strong>Fix before approval</strong><ul>{errors.map(e=><li key={e}>{e}</li>)}</ul></div>}

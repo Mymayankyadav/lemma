@@ -1,5 +1,5 @@
 import {test,expect} from '@playwright/test';
-const url=(path:string)=>'/lemma/?demo=1&flags=v7Shell,v6Shell#/'+path;
+const url=(path:string)=>'/lemma/?demo=1&flags=v7Shell,v6Shell,atlasV3#/'+path;
 for(const width of [360,390])test('Atlas v3 facets, views and settings at '+width+' px',async({page})=>{
  await page.setViewportSize({width,height:844});await page.goto(url('atlas?view=list'));
  await page.getByRole('button',{name:'Themes',exact:true}).click();await expect(page.getByRole('heading',{name:'Themes',exact:true})).toBeVisible();
