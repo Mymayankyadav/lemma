@@ -27,6 +27,15 @@ Tests: tests/mcp/sql/atlas-release-diagnostics.mjs, tests/unit/adaptive/atlas-re
 Scope: one migration replacing atlas_check_release_report (same signature), scripts/atlas/release-core.ts, the two tests, docs/current/N183.md.
 Not: changing any gate threshold, the model, serving, or any production write.
 
+## N184 The PFA fallback fit converges on correlated features (Owner task)
+
+Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = fitPfa improves its penalised likelihood at every accepted step (diagonal Newton with backtracking) instead of oscillating on correlated features; on the production export it moves off the prior (log loss .581 against the prior's .693 and the base rate's .604); the cutover fit is computed with it.
+Tests: tests/unit/adaptive/fit-pfa.test.ts (fails on the previous code); existing adaptive suites unchanged.
+Scope: supabase/functions/_shared/adaptive/fit.ts (fitPfa only), the test, docs/current/N184.md.
+Not: the KF model, diagnostics, serving, simulation gates, migrations or any production write.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."

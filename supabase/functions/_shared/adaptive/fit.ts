@@ -3,14 +3,27 @@ import {hash,seeded,logLoss,logit,sigmoid,mean,clamp} from './math.ts';
 import {replay,type AtlasFacts,type Fit,type Prediction,type PfaFit} from './measure.ts';
 export type Health={stream:string;n:number;status:'insufficient data'|'ok'|'action';loss:number;baseline:number;pfa:number;a:number;b:number;ece:number;pitP:number;residuals:Record<string,number>;tests:Record<string,boolean|null>;actions:string[]};
 /** MAP logistic fit on past-only features. Random effects get the tighter N(0,.3²) prior. */
-export function fitPfa(trace:Prediction[],iterations=80):PfaFit{
+export function fitPfa(trace:Prediction[],iterations=200):PfaFit{
  const data=trace.filter(x=>x.stream==='attempt'),names=[...new Set(data.flatMap(x=>Object.keys(x.features)))].sort(),w:Record<string,number>={};
- for(const k of names)w[k]=k==='b'?-1:0;
+ const prior=(k:string)=>k==='b'?-1:0,precision=(k:string)=>1/(k.startsWith('kc:')||k.startsWith('system:')?.3**2:.5**2);
+ for(const k of names)w[k]=prior(k);
+ // Penalised log-likelihood (Gaussian priors): the objective every step must improve.
+ const objective=(v:Record<string,number>)=>{let z=0;for(const row of data){const p=clamp(sigmoid(Object.entries(row.features).reduce((a,[k,x])=>a+v[k]*x,0)),1e-12,1-1e-12);z+=row.y*Math.log(p)+(1-row.y)*Math.log(1-p);}
+  for(const k of names)z-=precision(k)*(v[k]-prior(k))**2/2;return z;};
+ let current=objective(w);
  for(let it=0;it<iterations;it++){
   const g:Record<string,number>={},h:Record<string,number>={};
-  for(const k of names){const prior=k==='b'?-1:0,precision=1/(k.startsWith('kc:')||k.startsWith('system:')?.3**2:.5**2);g[k]=-(w[k]-prior)*precision;h[k]=precision;}
+  for(const k of names){g[k]=-(w[k]-prior(k))*precision(k);h[k]=precision(k);}
   for(const row of data){const p=sigmoid(Object.entries(row.features).reduce((z,[k,v])=>z+w[k]*v,0));for(const [k,x] of Object.entries(row.features)){g[k]+=x*(row.y-p);h[k]+=x*x*p*(1-p);}}
-  let largest=0;for(const k of names){const d=clamp(g[k]/h[k],-.2,.2);w[k]+=d;largest=Math.max(largest,Math.abs(d));}if(largest<1e-7)break;
+  // Diagonal Newton direction. Correlated features (intercept, KC, system, counts) make the full step overshoot and oscillate,
+  // so halve it until the objective improves (backtracking); stop when no step helps.
+  const d:Record<string,number>={};for(const k of names)d[k]=clamp(g[k]/h[k],-.2,.2);
+  let t=1,next=w,value=-Infinity;
+  for(;t>1e-4;t/=2){next=Object.fromEntries(names.map(k=>[k,w[k]+t*d[k]]));value=objective(next);if(value>current)break;}
+  if(!(value>current))break;
+  const largest=Math.max(0,...names.map(k=>Math.abs(next[k]-w[k])));
+  Object.assign(w,next);current=value;
+  if(largest<1e-7)break;
  }
  return w;
 }
