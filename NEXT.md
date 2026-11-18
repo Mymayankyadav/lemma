@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N181 Atlas v3 attempts follow corrected and voided session events (Owner task)
+
+Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = after the cutover, voiding a session event voids the attempts and instruction events written from it, and correcting one re-states its attempts on the corrected event (an exact copy when outcome and hint are unchanged, otherwise the corrected outcome), all journalled so undo restores them; an owner without attempts is unaffected.
+Tests: tests/mcp/sql/atlas-corrections.mjs; existing SQL suites unchanged.
+Scope: one additive migration (new function and trigger), tests/mcp/sql/atlas-corrections.mjs, docs/current/N181.md.
+Not: changes to the correction commands, evidence, the model, or any production write.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."
