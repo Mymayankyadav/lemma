@@ -125,9 +125,14 @@ export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:strin
     const v=assembleAtlas(rows,new Date()),fit=p?v.fits[p.id]:undefined;
     const time='TIME today='+s.today+' tz='+s.zone+(fit?' fit='+fit.pAll.toFixed(2)+' core='+fit.pCore.toFixed(2):'')+' checks_due='+v.queue.items.filter(x=>x.kind==='check').length+' new_cards_quota='+v.budget.available.toFixed(1)+' card_min='+v.queue.cardMinutes.toFixed(1)+'/'+v.queue.cardCapMinutes.toFixed(1);
     const queue='QUEUE\n'+v.queue.items.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
-    const nodes=p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[];
+    // BRIEF keeps the resume's context (NOW, LAST, FIX, ADAPT, CARDS, SRC) and swaps the node cards for Atlas cards; RULES keep the
+    // tutor's rules and add the Atlas lines (04 §resume: "BRIEF uses card v2", rules "add"). Budgets are unchanged (packet caps the body).
+    const cards=brief.nodes?.length?brief.nodes:[...new Set(p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[])].slice(0,3).map(id=>atlasCard(v,id));
     const flags=v.health.flatMap(h=>h.actions.map(a=>h.stream+': '+a));if(v.capacity===null)flags.push('capacity unset; ask for minutes per weekday');if(v.frustration.active)flags.push('Easing off — next 3 practice');
-    return ['RULES\nLog stages, cues and errors. Select counts only uncued. Tag explanations with concepts[]. Plan first on proofs. Use get(what=plan_template); draft cards in Close within quota (key idea and skeleton, never proof lines). Read profile, themes, bridges, probes, model_health, card_budget through get. Structured attempts carry ordered stages, tags, result, hint, error and cued UUIDs. A conversion goes to proposal_drafts kind plan_conversion; only the Owner approves it.',time,queue,'BRIEF\n'+[brief.now,...[...new Set(nodes)].slice(0,3).map(id=>atlasCard(v,id))].filter(Boolean).join('\n'),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
+    const atlasRules='Log stages, cues and errors. Select counts only uncued. Tag explanations with concepts[]. Plan first on proofs. Use get(what=plan_template); draft cards in Close within quota (key idea and skeleton, never proof lines). Read profile, themes, bridges, probes, model_health, card_budget through get. Structured attempts carry ordered stages, tags, result, hint, error and cued UUIDs. A conversion goes to proposal_drafts kind plan_conversion; only the Owner approves it.';
+    const rulesText=rules==='(rules as in the last resume)'?rules:rules+'\n'+atlasRules;
+    const b=[brief.now,brief.last,brief.fix,brief.adapt,brief.cards,brief.src,...cards.slice(0,3)].filter(Boolean) as string[];
+    return ['RULES\n'+rulesText,time,queue,...(b.length?['BRIEF\n'+b.join('\n')]:[]),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
   }
   const q=renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];
@@ -196,7 +201,9 @@ export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
       const start:PruneState={pruned:v3.length>0,upDays:(h.get(yesterday)??0)>RESTORE_ABOVE?1:0,lastDay:yesterday};
       const step=stepPrune(start,today,h.get(today)!);
       if(step.action==='prune'){
-        const open=mine.filter((x:any)=>x.status==='not_started'&&(x.plan_state??'active')==='active'&&x.tier!=='core'&&!x.pinned).map((x:any)=>{const k=rows.cpConcepts.find((e:any)=>e.checkpoint_id===x.id)?.concept_id,pt=k?predict(v.model,k,'use',now.getTime()):0;return {id:x.id,tier:x.tier??'standard',weight:x.tier==='venture'?1:2,pTestOut:pt,minutes:x.estimate_minutes??60,status:x.status};});
+        // 10 §5: venture defers automatically; standard only where the project allows it (auto_prune_standard); core never (by proposal).
+        const autoStandard=!!rows.projects.find((x:any)=>x.id===p.id)?.auto_prune_standard;
+        const open=mine.filter((x:any)=>x.status==='not_started'&&(x.plan_state??'active')==='active'&&(x.tier==='venture'||(x.tier!=='core'&&autoStandard))&&!x.pinned).map((x:any)=>{const k=rows.cpConcepts.find((e:any)=>e.checkpoint_id===x.id)?.concept_id,pt=k?predict(v.model,k,'use',now.getTime()):0;return {id:x.id,tier:x.tier??'standard',weight:x.tier==='venture'?1:2,pTestOut:pt,minutes:x.estimate_minutes??60,status:x.status};});
         const order=pruneDecision(f.pAll,f.pCore,[],open).candidates,plan=planPrune(f,order.map(o=>({id:o.id,minutes:o.minutes,testOut:o.testOut})));
         for(const id of plan.defer)await update(c,'checkpoints',id,{plan_state:'deferred',deferred_at:iso(),deferred_reason:'prune:v3 P_all '+f.pAll.toFixed(2)});
         if(plan.defer.length)changes.push('deferred '+plan.defer.length+' ('+f.pAll.toFixed(2)+' → '+plan.pAfter.toFixed(2)+')');
