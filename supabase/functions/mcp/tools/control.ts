@@ -254,9 +254,13 @@ export async function remove(c:Context,a:any){const {table,row}=await target(c,a
  if(table==='subjects'){const ps=(await all(c,'projects')).filter(x=>x.subject_id===row.id);if(ps.length)throw Error('Subject used by '+ps.map(x=>x.slug).join(', '));}
  if(table==='styles'){const ps=(await all(c,'projects')).filter(x=>x.style===row.key);if(ps.length)throw Error('Style used by '+ps.map(x=>x.slug).join(', '));}
  const relations=[['projects','sources','project_id'],['projects','checkpoints','project_id'],['projects','sessions','project_id'],['projects','misconceptions','project_id'],['projects','notes','project_id'],['projects','proposals','project_id'],['projects','diagnostics','project_id'],['subjects','concepts','subject_id'],['sources','source_pages','source_id'],['checkpoints','checkpoint_prereqs','checkpoint_id'],['checkpoints','checkpoint_prereqs','prereq_id'],['checkpoints','checkpoint_concepts','checkpoint_id'],['sessions','session_events','session_id'],['notes','cards','note_id'],['notes','card_comments','note_id'],['cards','reviews','card_id'],['concepts','concept_links','from_id'],['concepts','concept_links','to_id'],['concepts','checkpoint_concepts','concept_id']];
- const names=[...new Set(relations.flatMap(x=>x.slice(0,2)))];const snapshots=new Map(await Promise.all(names.map(async t=>[t,await all(c,t)] as const)));const removed=new Map<string,any[]>([[table,[row]]]);let changed=true;
- while(changed){changed=false;for(const [parent,child,fk] of relations){const parents=removed.get(parent)||[],current=removed.get(child)||[];for(const r of snapshots.get(child)||[])if(parents.some(x=>x.id===r[fk])&&!current.includes(r)){current.push(r);changed=true;}removed.set(child,current);}}
- const counts=[...removed].filter(([t,rows])=>t!==table&&rows.length).map(([t,rows])=>rows.length+' '+t);
+ // Incident #1514: the preview only counts what cascades, so it loads each child table's id and link columns, never whole rows
+ // (source texts and page transcriptions made this request run out of worker memory), and follows links through Sets.
+ const parentTables=new Set(relations.map(x=>x[0])),children=[...new Set(relations.map(x=>x[1]))];
+ const columns=(t:string)=>[...new Set([...(parentTables.has(t)?['id']:[]),...relations.filter(x=>x[1]===t).map(x=>x[2])])].join(',');
+ const snapshots=new Map(await Promise.all(children.map(async t=>[t,await all(c,t,columns(t))] as const)));const removed=new Map<string,Set<any>>([[table,new Set([row])]]);let changed=true;
+ while(changed){changed=false;for(const [parent,child,fk] of relations){const ids=new Set([...(removed.get(parent)??[])].map((x:any)=>x.id)),current=removed.get(child)??new Set<any>();if(ids.size)for(const r of snapshots.get(child)||[])if(ids.has(r[fk])&&!current.has(r)){current.add(r);changed=true;}removed.set(child,current);}}
+ const counts=[...removed].filter(([t,rows])=>t!==table&&rows.size).map(([t,rows])=>rows.size+' '+t);
  if(!a.confirm)return a.target+': '+(counts.join(', ')||'1 '+table)+'. Confirm before deleting.';
  c.batch!.push({op:'delete',table,where:pk(table,row)});return 'deleted '+a.target+(counts.length?' and '+counts.join(', '):'');}
 export async function review(c:Context,a:any){const p=a.project?await project(c,a.project):null,s=await settings(c),today=new Date();
