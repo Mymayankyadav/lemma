@@ -15,12 +15,13 @@ export function fitSql(owner:string,fit:Fit):string{
  const text=(v:string)=>"'"+v.replace(/'/g,"''")+"'",json=(v:unknown)=>text(JSON.stringify(v))+'::jsonb';
  return 'insert into public.model_fits(user_id,input_hash,params,scores) values('+text(owner)+'::uuid,'+text(fit.input_hash)+','+json(fit.params)+','+json(fit.scores)+') on conflict (user_id,input_hash) do nothing;';
 }
-export type Diagnostic={stream:string;n:number;status:string};
+export type Diagnostic={stream:string;n:number;status:string;tests?:Record<'D1'|'D2'|'D3'|'D4'|'D5',boolean|null>;actions?:string[]};
 export function diagnostics(rows:AtlasRows,fit:Fit,now:Date):{diagnostics:Diagnostic[];card_tokens_max:number}{
  const withFit={...rows,modelFits:[...(rows.modelFits??[]),{fitted_at:now.toISOString(),params:fit.params}]};
  const view=assembleAtlas(withFit,now);
  const streams=['attempt','card','duration','attendance'];
- const diagnostics=streams.map(stream=>{const h=view.health.find(x=>x.stream===stream);return {stream,n:h?.n??0,status:h?.status??'insufficient data'};});
+ // D1-D5 and the serving change travel with the status (07 Acceptance 3): activation accepts `action` only with both.
+ const diagnostics=streams.map(stream=>{const h=view.health.find(x=>x.stream===stream);return h?{stream,n:h.n,status:h.status,tests:{...h.tests},actions:[...h.actions]}:{stream,n:0,status:'insufficient data'};});
  const cards=view.model.facts.concepts.map(c=>atlasCard(view,c.id));
  return {diagnostics,card_tokens_max:tokenGates({resumes:[],cards}).card_tokens_max};
 }

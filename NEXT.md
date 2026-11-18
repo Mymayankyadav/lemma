@@ -18,6 +18,15 @@ Tests: tests/mcp/sql/atlas-corrections.mjs; existing SQL suites unchanged.
 Scope: one additive migration (new function and trigger), tests/mcp/sql/atlas-corrections.mjs, docs/current/N181.md.
 Not: changes to the correction commands, evidence, the model, or any production write.
 
+## N183 Activation accepts a diagnostics stream in action with its D1–D5 results (Owner task)
+
+Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = atlas_v2_activate accepts a stream with 50 or more events whose status is action when the report carries its D1–D5 results, at least one failed test and the serving change (07 Acceptance 3, I13); a bare action, an ok with a failed test and any other status are refused; thin streams still must show insufficient data; the release step reports D1–D5 and the actions; the production report of 2026-11-18 (attempt stream: D2 fails, recalibrating) passes.
+Tests: tests/mcp/sql/atlas-release-diagnostics.mjs, tests/unit/adaptive/atlas-release-diagnostics.test.ts; existing atlas-activation and atlas-release tests unchanged.
+Scope: one migration replacing atlas_check_release_report (same signature), scripts/atlas/release-core.ts, the two tests, docs/current/N183.md.
+Not: changing any gate threshold, the model, serving, or any production write.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."
