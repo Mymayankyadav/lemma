@@ -31,4 +31,18 @@ export function defaultTags(k:string,facet:Facet,cued:string[],links:ModelLink[]
   if(l.kind==='part_of'&&l.to_id===k)out.push({concept_id:l.from_id,facet:'execute',role:'required',demand:0});}
  return out;
 }
+/** 06 §5: o = uncued attempts in another subject whose solution uses A (A tagged required or incidental); u = those where A was used unprompted and correctly. */
+export function bridgeCounts(facts:{attempts:{id:string|number;cued?:string[];voided_at?:string|null;superseded_by?:string|number|null;tags?:{concept_id:string;role?:string;result?:string|null}[]}[];tags?:{attempt_id?:string|number;concept_id:string;role?:string;result?:string|null}[]},concepts:{id:string;subject_id?:string|null}[],from:string):{o:number;u:number}{
+ const subject=new Map(concepts.map(c=>[c.id,c.subject_id??null])),ownTags=new Map<string,{concept_id:string;role?:string;result?:string|null}[]>();
+ for(const t of facts.tags??[]){const k=String(t.attempt_id);(ownTags.get(k)??ownTags.set(k,[]).get(k)!).push(t);}
+ let o=0,u=0;
+ for(const a of facts.attempts){
+  if(a.voided_at||a.superseded_by)continue;
+  const tags=a.tags??ownTags.get(String(a.id))??[];
+  const target=tags.find(t=>t.role==='target')?.concept_id,use=tags.find(t=>t.concept_id===from&&(t.role==='required'||t.role==='incidental'));
+  if(!use||!target||subject.get(target)===subject.get(from)||(a.cued??[]).includes(from))continue;
+  o++;if(use.result==='ok')u++;
+ }
+ return {o,u};
+}
 export function bridgeStrength(opportunities:number,uses:number){const o=Math.max(0,opportunities),u=clamp(uses,0,o),mean=(1+u)/(2+o);return {mean,o,u,dashed:o===0,thick:mean>=.5&&o>=3};}

@@ -10,7 +10,7 @@ import {rankSlots,declaredSlots,freeSlots} from './calendar.ts';
 import {certificationChecks} from './recheck.ts';
 import {sessionQueue,type Action} from './kg.ts';
 import {reentryProbes,finalReviews,allocateProjects,type FinalReview} from './scheduler.ts';
-import {bridgeStrength,type AtlasLink} from './links.ts';
+import {bridgeStrength,bridgeCounts,type AtlasLink} from './links.ts';
 import {DAY,logit,clamp} from './math.ts';
 export type AtlasRows={settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
 export type FacetValue=Estimate&{certified:boolean;status:string};
@@ -57,7 +57,7 @@ export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  }
  for(const c of facts.cards??[]){const R=model.hypotheses.reduce((a,h,i)=>a+model.pi[i]*memoryAt(h.cards[c.id],time),0);if(R<.98)actions.push({id:'review:'+c.id,kind:'review',concept_id:c.concept_id,card_id:c.id,minutes:.5,p:R});}
  const queue=sessionQueue(model,actions,capacity??0,settings.card_cap),links=(rows.atlasLinks??[]) as AtlasLink[],themes=rows.concepts.filter(c=>c.kind==='theme').map(c=>({id:c.id,name:c.name,instances:links.filter(l=>l.kind==='instance_of'&&l.to_id===c.id&&l.status==='approved').map(l=>l.from_id)}));
- const bridges=links.filter(l=>l.kind==='instance_of'||l.kind==='analogous').map(l=>({from:l.from_id,to:l.to_id,strength:bridgeStrength(0,0)}));
+ const bridges=links.filter(l=>l.kind==='instance_of'||l.kind==='analogous').map(l=>({from:l.from_id,to:l.to_id,strength:(c=>bridgeStrength(c.o,c.u))(bridgeCounts(facts,rows.concepts,l.from_id))}));
  const slots=rankSlots(attendance,freeSlots(declaredSlots(time,st.time_zone??'UTC',st.planning?.window_start,st.planning?.window_end),rows.busy??[]),st.user_id??'',now.toISOString().slice(0,10));
  return {settings,checkpoints:rows.checkpoints,checkpointConcepts:rows.cpConcepts,model,facets,health,fits,durations,budget,queue,slots,themes,bridges,attempts:rows.attempts??[],links,frustration:frustration(facts.attempts),capacity,finalReviews:finalReviewList,allocation:allocateProjects(rows.projects.map(pr=>({id:pr.id,pCore:fits[pr.id]?.pCore??1,deadline:pr.last_study_on??null,weight:1,share_weight:pr.share_weight??null,needMinutes:needs[pr.id]??0})),capacity??0)};
 }
