@@ -147,6 +147,15 @@ try{
    await assert.rejects(run(command('approve',{target:{id},expectedVersion:v,patch:{}})),/Only the owner approves/);
    await assert.rejects(run(command('reject',{target:{id},expectedVersion:v,patch:{}})),/Only the owner approves/);
    await root();await q("update public.proposals set status='rejected' where id=$1",[id]);}
+  // review recheck 1: the connector's `decide` tool calls approve_proposal as the service role; the trigger refuses it, so no route skips the owner
+  {const id=await draft(P,0),before=await snapshot(P.project);await asService();
+   await assert.rejects(q('select public.approve_proposal($1)',[id]),/Only the owner approves/);await root();
+   assert.deepEqual(await snapshot(P.project),before,'a refused approval changes nothing');assert.equal((await q('select status from public.proposals where id=$1',[id]))[0].status,'pending');
+   await q("update public.proposals set status='rejected' where id=$1",[id]);}
+  // review recheck 1: the owner's own session cannot skip the readiness check by inserting the proposal and approving it directly
+  {const id=await draft(P,0);await root();await q("insert into public.evidence(user_id,level,outcome,origin) values($1,'use','pass','tutor')",[owner]);
+   await asOwner();await assert.rejects(q('select public.approve_proposal($1)',[id]),/migration preparation/);await root();
+   await q('delete from public.evidence where user_id=$1',[owner]);await q("update public.proposals set status='rejected' where id=$1",[id]);}
   // 9: conversions follow the data migration
   {await root();await q("insert into public.evidence(user_id,level,outcome,origin) values($1,'use','pass','tutor')",[owner]);
    await asService();await assert.rejects(run(command('create',{patch:{project_id:P.project,conversion:conversionFor(P,0)}})),/migration preparation/);

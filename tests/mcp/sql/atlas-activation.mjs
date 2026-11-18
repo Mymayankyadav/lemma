@@ -64,16 +64,32 @@ try{
  await q("select set_config('role','service_role',false)");
  await assert.rejects(activate(good()),/2 project\(s\) without an approved conversion/,'forged approvals do not count');
  await db.exec('reset role');await q("delete from public.proposals where user_id=$1",[owner]);
+ // review recheck 2: even a row with every field filled in, inserted directly, is not an approval that was journalled
+ await db.exec('reset role');
+ for(const p of [id(2),id(3)])await q("insert into public.proposals(user_id,project_id,kind,payload,origin,status,decided_at,result) values($1,$2,'plan_change',$3::jsonb,'other','approved',now(),'{}'::jsonb)",[owner,p,JSON.stringify({ops:[],atlas_conversion:{schema:'plan_template_v1',checkpoints:[],map:{},kcs:[],cards:[]}})]);
+ await q("select set_config('role','service_role',false)");
+ await assert.rejects(activate(good()),/2 project\(s\) without an approved conversion/,'a fully formed forged row is not a journalled approval');
+ await db.exec('reset role');await q('delete from public.proposals where user_id=$1',[owner]);
  // real conversions: drafted by the connector, approved by the owner
  const cp={id:'t1',title:'Unit',objective:'Understand',criterion:{text:'Prove',concept_id:'k',facet:'use',kind:'holdout',novel:true,cued:[]},kind:'learn',tier:'core',estimate:60,kcs:[{id:'k',kind:'definition',home:'x'}],steps:['a'],prereqs:[],teach:['t'],practice:[1,2,3].map(i=>({text:'p'+i})),close:{questions:['a','b','c'],minutes:8},card_plan:[]};
  const conversion={schema:'plan_template_v1',checkpoints:[cp],map:{},kcs:[{id:'k',name:'Convert KC',kind:'definition'}],cards:[]},op=()=>crypto.randomUUID();
+ const approvals={};
  for(const p of [id(2),id(3)]){
   await q("select set_config('role','service_role',false)");
   const made=(await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'create',patch:{project_id:p,conversion}})]))[0].r;
   const pid=made.changed[0].id,version=(await q('select version from public.proposals where id=$1',[pid]))[0].version;
   await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await db.exec('set role authenticated');
-  await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'approve',target:{id:pid},expectedVersion:Number(version),patch:{}})]);
+  const receipt=(await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'approve',target:{id:pid},expectedVersion:Number(version),patch:{}})]))[0].r;
+  approvals[p]={pid,actionNo:receipt.actionNo};
  }
+ // an approval that was undone no longer counts; approving again does
+ await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await db.exec('set role authenticated');
+ await q('select public.undo_action($1,$2,false)',[owner,approvals[id(3)].actionNo]);
+ await db.exec('reset role');await q("select set_config('role','service_role',false)");
+ await assert.rejects(activate(good()),/1 project\(s\) without an approved conversion/,'an undone approval does not count');
+ {const version=(await q('select version from public.proposals where id=$1',[approvals[id(3)].pid]))[0].version;
+  await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await db.exec('set role authenticated');
+  await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'approve',target:{id:approvals[id(3)].pid},expectedVersion:Number(version),patch:{}})]);}
  await db.exec('reset role');await q("select set_config('role','service_role',false)");
 
  const done=(await activate(good()))[0].atlas_v2_activate;

@@ -80,6 +80,9 @@ begin
  end loop;
  select count(*) into unconverted from public.projects p where p.user_id=u and p.status in ('planning','active','paused')
   and not exists(select 1 from public.proposals x where x.user_id=u and x.project_id=p.id and x.status='approved' and x.decided_at is not null and x.result is not null
+    -- journalled: the approval is an action in the undo journal that has not been undone. Browsers cannot write the journal, so a row inserted or edited from a session does not count.
+    and exists(select 1 from public.action_changes ac join public.actions ax on ax.no=ac.action_no
+      where ax.user_id=u and ax.undone_by is null and ac.table_name='proposals' and ac.op='update' and ac.row_pk->>'id'=x.id::text and ac.new->>'status'='approved')
     and x.payload#>>'{atlas_conversion,schema}'='plan_template_v1'
     -- applied, not just marked approved: every template checkpoint that is not already done exists in the project with its template
     and (select count(*) from public.checkpoints c where c.user_id=u and c.project_id=p.id and c.template is not null)

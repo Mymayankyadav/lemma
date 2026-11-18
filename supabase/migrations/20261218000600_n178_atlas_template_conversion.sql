@@ -64,6 +64,10 @@ begin
   end loop;
  end if;
  if not new.payload?'atlas_conversion' then return new;end if;
+ -- The guard lives here, where the conversion is applied, so no route around the command can skip it: the connector (service role, including the `decide` tool and
+ -- approve_proposal) never approves a conversion, and the data migration must be prepared first (cutover order, 12). Undo and redo are returned above.
+ if coalesce(current_setting('role',true),'')='service_role' then raise exception 'Only the owner approves a conversion';end if;
+ if not public.atlas_conversion_ready(new.user_id) then raise exception 'Run the Atlas migration preparation before converting projects';end if;
  value:=new.payload->'atlas_conversion';
  if value->>'schema' is distinct from 'plan_template_v1' then raise exception 'Invalid conversion schema';end if;
  if jsonb_typeof(value->'checkpoints')<>'array' or jsonb_typeof(value->'map')<>'object' or jsonb_typeof(value->'cards')<>'array' or jsonb_typeof(coalesce(value->'kcs','[]'))<>'array' then raise exception 'Conversion requires checkpoints, map, kcs and cards';end if;
