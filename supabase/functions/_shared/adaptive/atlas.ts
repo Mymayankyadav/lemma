@@ -20,6 +20,15 @@ export function factsForAtlas(rows:AtlasRows):AtlasFacts{
  return {concepts:rows.concepts,attempts:(rows.attempts??[]).map(a=>({...a,novelty:a.context?.novelty??a.novelty})),tags:[...(rows.attemptTags??[]),...(rows.attempts??[]).flatMap(a=>(a.tags??[]).map((t:any)=>({...t,attempt_id:a.id})))],instructions:rows.instructionEvents??[],links:rows.atlasLinks??[],items:rows.items??[],sessions:rows.sessions,assumptions:rows.assumptions??[],
   cards:(rows.cards??[]).map(c=>({...c,concept_id:c.concept_id??notes.get(c.note_id)?.concept_id})).filter(c=>c.concept_id),reviews:(rows.reviews??[]).map(r=>({...r,occurred_at:r.reviewed_at??r.occurred_at})),};
 }
+/** One block per remaining study day from the declared weekday capacity, split evenly among the projects still running that day. */
+export function declaredBlocks(wd:number|number[],now:Date,last:string|null|undefined,projects:{last_study_on?:string|null}[]):Block[]{
+ if(!last)return [];const out:Block[]=[];const start=Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate());
+ for(let t=start,i=0;i<366&&new Date(t).toISOString().slice(0,10)<=last;t+=DAY,i++){
+  const d=new Date(t),day=d.toISOString().slice(0,10),minutes=Array.isArray(wd)?Number(wd[d.getUTCDay()])||0:Number(wd)||0,sharing=Math.max(1,projects.filter(x=>x.last_study_on&&x.last_study_on>=day).length);
+  if(minutes>0)out.push({weekday:d.getUTCDay(),slot:3,minutes:minutes/sharing});
+ }
+ return out;
+}
 export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  const st=rows.settings??{},settings={...ATLAS_DEFAULTS,...st.atlas},time=now.getTime(),facts=factsForAtlas(rows),lastFit=(rows.modelFits??[]).slice().sort((a,b)=>String(b.fitted_at).localeCompare(String(a.fitted_at)))[0],model=replay(facts,lastFit?.params??{},time),health=['attempt','card'].map(stream=>diagnose(model.trace,stream));
  const facets:Record<string,FacetValue[]>={};
@@ -34,7 +43,10 @@ export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  const wd=st.capacity?.weekday_minutes,capacity=Array.isArray(wd)?wd[now.getUTCDay()]:(typeof wd==='number'?wd:null),needs:Record<string,number>={},fits:AtlasReadModel['fits']={},durations:AtlasReadModel['durations']={};
  for(const p of rows.projects){const cps=rows.checkpoints.filter(c=>c.project_id===p.id&&c.status!=='demonstrated'&&(!c.plan_state||c.plan_state==='active')),required:ReturnType<typeof predictDuration>[]=[],core:typeof required=[];
   for(const c of cps){const k=rows.cpConcepts.find(x=>x.checkpoint_id===c.id)?.concept_id,pt=k?predict(model,k,'use',time):0,d=testOutDuration(predictDuration(duration,{estimate:c.estimate_minutes??60,kind:c.kind==='milestone'?1:0,difficulty:k?-logit(pt):0}),pt);durations[c.id]=d;required.push(d);if(c.tier==='core')core.push(d);}
-  const blocks:Block[]=(rows.busy??[]).filter(b=>b.kind!=='busy'&&b.status!=='cancelled'&&Date.parse(b.starts_at)>=time&&(!p.last_study_on||String(b.starts_at).slice(0,10)<=p.last_study_on)).map(b=>({weekday:new Date(b.starts_at).getUTCDay(),slot:Math.floor(new Date(b.starts_at).getUTCHours()/6),minutes:Math.max(0,(Date.parse(b.ends_at)-Date.parse(b.starts_at))/60000)}));
+  const planned:Block[]=(rows.busy??[]).filter(b=>b.kind!=='busy'&&b.status!=='cancelled'&&Date.parse(b.starts_at)>=time&&(!p.last_study_on||String(b.starts_at).slice(0,10)<=p.last_study_on)).map(b=>({weekday:new Date(b.starts_at).getUTCDay(),slot:Math.floor(new Date(b.starts_at).getUTCHours()/6),minutes:Math.max(0,(Date.parse(b.ends_at)-Date.parse(b.starts_at))/60000)}));
+  // No planned blocks yet: the declared weekday capacity stands in for them (one block per study day up to last_study_on, shared evenly by
+  // the projects still running that day), still weighed by P(kept). Without it supply would be 0 and every project would read infeasible.
+  const blocks:Block[]=planned.length||!wd?planned:declaredBlocks(wd,now,p.last_study_on,rows.projects);
   fits[p.id]=feasibility(required,core,supplyMoments(attendance,blocks));needs[p.id]=required.reduce((z,d)=>z+d.mean,0);
  }
  const budget=cardBudget({capacity:capacity??0,reviewShare:st.capacity?.review_share??.25,reviewBudget:st.review_budget?.minutes,quotaShare:settings.card_quota_share,used7:(rows.notes??[]).filter(n=>Date.parse(n.created_at)>time-7*DAY).reduce((z,n)=>z+(n.atlas_kind==='skeleton'?3:1),0),usedToday:(rows.notes??[]).filter(n=>String(n.created_at).slice(0,10)===now.toISOString().slice(0,10)).reduce((z,n)=>z+(n.atlas_kind==='skeleton'?3:1),0)});
