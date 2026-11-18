@@ -7,7 +7,7 @@ import {estRemaining,isLive,paceFactor,DEFAULTS,type PlanCp,type PlanProject,typ
 import {buildQueue,type Queue,type ReviewItem} from './queue.ts';
 import {evaluate,prune,type PruneResult,type PruneState} from './prune.ts';
 import {lintText} from './lint.ts';
-import {replayProficiency,isLBU,type Prof,type ProfEvidence} from './proficiency.ts';
+import type {EvidenceFact} from './digest.ts';
 
 export type Rows={
   settings:any;projects:any[];checkpoints:any[];prereqs:any[];cpConcepts:any[];concepts:any[];conceptLinks:any[];
@@ -26,8 +26,8 @@ export type State={
   today:DateStr;zone:string;flags:Record<string,boolean>;capacityToday:Capacity;usedToday:number;
   projects:Record<string,ProjectView>;rechecks:RecheckResult;queue:Queue;prune:PruneResult;
   deprecatedWarnings:string[];capacityUnset:boolean;absentDays:number;
-  /** N170: pooled proficiency per concept class, and its class map */
-  prof:Prof;lbu:string[];classOf:(concept:string)=>string;profEvidence:ProfEvidence[];
+  /** the concept class map, and live evidence in canonical order (digest and legacy node cards) */
+  classOf:(concept:string)=>string;evidenceFacts:EvidenceFact[];
   /** assumption ids withdrawn by T5 (revoked, or contradicted by a later fail on that class and level): derived, so undo restores them */
   withdrawn:string[];
 };
@@ -138,15 +138,13 @@ export function assemble(r:Rows,now:Date):State{
     if(at){withdrawn.push(String(a.id));triggers.push({id:'a'+a.id,at,day:studyDay(st,new Date(at)),code:'T5' as const,concept_id:a.concept_id})}
   }
   const rechecks=replayRechecks({evidence,triggers,decisions,classes,classOf,abandonedSessions:abandoned,weights,retention:st.desired_retention??0.91});
-  // --- proficiency (spec §9): Beta per class and level, pooled across subjects
+  // --- live evidence in canonical order (the Beta proficiency model was removed at the Atlas v3 cutover)
   const itemOf=new Map<string,any>(asArr(r.items).map((i:any)=>[i.id,i]));
-  const profEvidence:ProfEvidence[]=r.evidence.filter((e:any)=>!e.voided_at&&e.concept_id).map((e:any)=>({
+  const evidenceFacts:EvidenceFact[]=r.evidence.filter((e:any)=>!e.voided_at&&e.concept_id).map((e:any)=>({
     id:String(e.id),at:ms(e.occurred_at),day:studyDay({time_zone:sessionZone.get(e.session_id)||zone,rollover_hour:st.rollover_hour},e.occurred_at),concept_id:e.concept_id,
     level:e.level,role:e.role,outcome:e.outcome,hint_level:e.hint_level,novelty:e.novelty,confidence:e.confidence??1,
     minutes_into_session:e.ctx?.minutes_into_session??null,local_hour:e.ctx?.local_hour??null,fingerprint:e.ctx?.fp??itemOf.get(e.item_id)?.fingerprint??null,teaches:!!itemOf.get(e.item_id)?.teaches}));
-  profEvidence.sort((a,b)=>a.at-b.at||(a.id<b.id?-1:a.id>b.id?1:0));          // canonical order: the output never depends on row order
-  const prof=Object.fromEntries(Object.entries(replayProficiency(profEvidence,undefined,classOf)).sort(([a],[b])=>a<b?-1:a>b?1:0)) as Prof;
-  const lbu=Object.entries(prof).filter(([,row])=>isLBU(row)).map(([c])=>c).sort();
+  evidenceFacts.sort((a,b)=>a.at-b.at||(a.id<b.id?-1:a.id>b.id?1:0));          // canonical order: the output never depends on row order
   // --- sessions: first session, absence
   const sessionDays=r.sessions.map((s:any)=>String(s.study_day||studyDay({time_zone:s.time_zone||zone,rollover_hour:st.rollover_hour},s.started_at)).slice(0,10));
   const lastSessionDay=sessionDays.length?sessionDays.slice().sort().pop() as DateStr:null;
@@ -206,7 +204,7 @@ export function assemble(r:Rows,now:Date):State{
     absentDays,probeConcepts:[...needed].map(id=>concepts.get(id)?.name).filter(Boolean)});
   const deprecatedWarnings:string[]=[];
   for(const p of projects)for(const f of ['prompt','goal','target_label'] as const)if(lintText(p[f]).length)deprecatedWarnings.push(p.slug+'.'+f);
-  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays,prof,lbu,classOf,profEvidence,withdrawn};
+  return {today,zone,flags,capacityToday,usedToday,projects:proj,rechecks,queue,prune:pr,deprecatedWarnings,capacityUnset:!capacityToday.configured,absentDays,classOf,evidenceFacts,withdrawn};
 }
 export type {Recheck};
 export {studyDaysLeft,isLive,estRemaining,paceFactor};

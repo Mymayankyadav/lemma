@@ -1,15 +1,14 @@
 import {describe,expect,it} from 'vitest';
-import {fingerprint,priorB,updateB,uncalibrated,templateItem,chooseItem,nextItem,targetB,normalizeProfile,coreLevels,draftProfile,type Item,type Ctx} from '../../../supabase/functions/_shared/adaptive/items.ts';
-import {replayProficiency,predict,type ProfEvidence} from '../../../supabase/functions/_shared/adaptive/proficiency.ts';
-import {buildDigest,renderDigest} from '../../../supabase/functions/_shared/adaptive/digest.ts';
+import {fingerprint,priorB,updateB,uncalibrated,templateItem,normalizeProfile,coreLevels,draftProfile} from '../../../supabase/functions/_shared/adaptive/items.ts';
+import {buildDigest,renderDigest,type EvidenceFact} from '../../../supabase/functions/_shared/adaptive/digest.ts';
+import {readFileSync,readdirSync,statSync} from 'node:fs';
+import {join} from 'node:path';
 import {brier,buckets,weightedBrier,scribeAudit,auditSampleSize,weeklyReport,itemWeight} from '../../../supabase/functions/_shared/adaptive/calibration.ts';
 import {validateScribe,runJob,scribeCandidates,aliasProposals,type ScribeEvent,type JobState} from '../../../supabase/functions/_shared/adaptive/workers.ts';
 import {rng,SEEDS} from './prng.ts';
 
 let n=0;
-const ev=(p:Partial<ProfEvidence>={}):ProfEvidence=>({id:'e'+(++n),at:1e12+n*1000,day:'2026-11-16',concept_id:'c',level:'use',role:'primary',outcome:'pass',hint_level:0,novelty:'novel',...p});
-const item=(id:string,b:number,over:Partial<Item>={}):Item=>({id,origin:'source_exercise',text:id,tags:[{concept_id:'c',level:'use',role:'primary'}],b,b_n:5,teaches:false,holdout:false,status:'active',...over});
-const ctx=(evs:ProfEvidence[]):Ctx=>({prof:replayProficiency(evs),value:()=>1});
+const ev=(p:Partial<EvidenceFact>={}):EvidenceFact=>({id:'e'+(++n),at:1e12+n*1000,day:'2026-11-16',concept_id:'c',level:'use',role:'primary',outcome:'pass',hint_level:0,novelty:'novel',...p});
 
 describe('items (§10)',()=>{
   it('fingerprint ignores case, spacing and LaTeX delimiters but not content',()=>{
@@ -26,21 +25,6 @@ describe('items (§10)',()=>{
     expect(updateB(0,0,0.5,'partial').b).toBeCloseTo(0);expect(updateB(0,2,.5,'pass').b_n).toBe(3);
     expect(uncalibrated({b_n:2})).toBe(true);expect(uncalibrated({b_n:3})).toBe(false);
   });
-  it('picks the item nearest p* = .85 inside [.70, .90]; never a hold-out, retired or untranscribed one',()=>{
-    const c=ctx(Array.from({length:6},()=>ev()));            // a strong class
-    const items=[item('easy',-3),item('right',0.2),item('close',0.6),item('hard',3),item('exam',0.2,{holdout:true,origin:'past_exam'}),item('old',0.2,{status:'retired'}),item('scan',0.2,{status:'needs_transcription'})];
-    const best=chooseItem(items,c)!;
-    expect(best.p).toBeGreaterThanOrEqual(0.7);expect(best.p).toBeLessThanOrEqual(0.9);expect(best.item.id).toBe('right');expect(best.p).toBeCloseTo(0.85,1);
-    expect(best.item.holdout).toBe(false);
-    expect(chooseItem([items[4]],c)).toBeNull();expect(chooseItem([items[4]],c,undefined,true)?.item.id).toBe('exam');
-  });
-  it('never blocks: bank → generate at a declared b → template',()=>{
-    const c=ctx([ev(),ev()]);const primary={concept_id:'c',name:'Compactness',level:'use' as const};
-    expect(nextItem([item('x',-0.2)],c,primary,true).kind).toBe('bank');
-    const gen=nextItem([item('far',9)],c,primary,true);expect(gen.kind).toBe('generate');
-    expect(predict([{cell:c.prof.c.use}],gen.b!)).toBeCloseTo(0.85,1);
-    const tpl=nextItem([],c,primary,false);expect(tpl.kind).toBe('template');expect(tpl.item!.text).toContain('Compactness');expect(tpl.item!.origin).toBe('template');
-  });
   it('items with no evidence still get a template at every level',()=>{
     for(const l of ['recall','use','understand','transfer'] as const)expect(templateItem('c','Compactness',l).text.length).toBeGreaterThan(10);
     expect(templateItem('c','Compactness','transfer','a metric-space argument').text).toContain('a metric-space argument');
@@ -52,9 +36,11 @@ describe('items (§10)',()=>{
     expect(coreLevels(normalizeProfile({read:5,explain:3,prove:1}))).toEqual(['recall','understand']);
     expect(coreLevels(draftProfile({exercises:2,theorems:80,examples:20,definitions:30,pages:100}))).toEqual(['understand']);
   });
-  it('targetB lands on p* for any evidence',()=>{
-    for(const seed of SEEDS.slice(0,10)){const r=rng(seed);const c=ctx(Array.from({length:r.int(1,12)},()=>ev({outcome:r.pick(['pass','fail','partial'] as const)})));
-      expect(predict([{cell:c.prof.c.use}],targetB(c.prof.c.use))).toBeCloseTo(0.85,5)}
+  it('the Beta proficiency model is gone: no source file imports it (07 Acceptance 5)',()=>{
+    const files:string[]=[];const walk=(d:string)=>{for(const f of readdirSync(d)){const p=join(d,f);if(statSync(p).isDirectory())walk(p);else if(/\.(ts|tsx|mts)$/.test(f))files.push(p)}};
+    walk('src');walk('supabase/functions');
+    expect(files.filter(f=>/from\s+['"][^'"]*\/proficiency(\.ts)?['"]/.test(readFileSync(f,'utf8')))).toEqual([]);
+    expect(files.some(f=>/adaptive[\\/]proficiency\.ts$/.test(f))).toBe(false);
   });
 });
 describe('digest (§11.1, I9, I10)',()=>{

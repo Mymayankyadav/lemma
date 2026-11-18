@@ -1,9 +1,16 @@
 // Digest (spec §11.1): one line per episode, newest first, each ending with the raw rows it came from (I9).
 // Built from evidence only, never from an earlier digest (I10), within a token budget (≤ 300 tokens).
-import type {ProfEvidence} from './proficiency.ts';
+import type {Level,Outcome,Novelty} from './recheck.ts';
+import type {DateStr} from './dates.ts';
+/** One live evidence row as the digest and the legacy node card read it. */
+export type EvidenceFact={
+  id:string;at:number;day:DateStr;concept_id:string|null;level:Level;role?:'primary'|'secondary'|'used';outcome:Outcome;
+  hint_level:number;novelty:Novelty;confidence?:number;voided?:boolean;
+  minutes_into_session?:number|null;local_hour?:number|null;fingerprint?:string|null;teaches?:boolean;
+};
 export type DigestLine={text:string;ids:string[]};
 const MARK={pass:'pass',partial:'partial',fail:'fail'} as const;
-export function buildDigest(evidence:(ProfEvidence&{session_no?:number|null})[],maxTokens=300):DigestLine[]{
+export function buildDigest(evidence:(EvidenceFact&{session_no?:number|null})[],maxTokens=300):DigestLine[]{
   const live=evidence.filter(e=>!e.voided);
   const groups=new Map<string,typeof live>();
   for(const e of live){const k=(e.session_no!=null?'S'+e.session_no:e.day)+'|'+e.level;(groups.get(k)??groups.set(k,[]).get(k)!).push(e)}

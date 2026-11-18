@@ -58,8 +58,8 @@ describe('classes pooled across subjects',()=>{
     const rr:any=rowsWith({},[ev({outcome:'fail'}),ev({outcome:'pass',hint_level:0})]);
     rr.aliases=[{concept_a:'c-topology-1-1',concept_b:'c-topology-1-2'}];
     const s=assemble(rr,new Date('2026-11-18T06:00:00Z'));
-    expect(s.classOf('c-topology-1-2')).toBe('c-topology-1-1');expect(s.prof['c-topology-1-1'].use.alpha).toBeGreaterThan(1);expect(s.prof['c-topology-1-2']).toBeUndefined();
-    expect(renderNode(s,rr,{id:'c-topology-1-2'})).toMatch(/Us\.\d+/);
+    expect(s.classOf('c-topology-1-2')).toBe('c-topology-1-1');
+    expect(renderNode(s,rr,{id:'c-topology-1-2'})).toMatch(/ Us1\/2[~ ]/);
     expect(s.rechecks.rechecks.filter(x=>x.state==='open')).toHaveLength(1);
   });
   it('without aliases each concept is its own class (identity)',()=>{
@@ -92,16 +92,16 @@ describe('resume brief and flags (flag-gated)',()=>{
     const on=await packet(ctx({atlas_memory:true},evs),{project:'topology-1'});const off=await packet(ctx({},evs),{project:'topology-1'});
     expect(on).toMatch(/\nNODE Concept topology-1 \d+ R/);expect(off).not.toMatch(/\nNODE /);expect(tok(on)).toBeLessThanOrEqual(1500);
   });
-  it('a load-bearing concept used 5 times without examination is flagged only with the proficiency flag',async()=>{
+  it('the Beta LBU flag is gone with the Beta model, even with the old proficiency flag on',async()=>{
     const used=Array.from({length:5},()=>ev({role:'used'}));
-    expect(await packet(ctx({proficiency:true},used),{project:'topology-1'})).toMatch(/LBU/);
+    expect(await packet(ctx({proficiency:true},used),{project:'topology-1'})).not.toMatch(/LBU/);
     expect(await packet(ctx({},used),{project:'topology-1'})).not.toMatch(/LBU/);
   });
   it('get(what=node) and get(what=calibration) answer through the real get()',async()=>{
     const evs=Array.from({length:8},(_,i)=>ev({outcome:i%4?'pass':'fail'}));
     const c=ctx({atlas_memory:true},evs);
     expect(await get(c,{what:'node',id:'c-topology-1-1',depth:'digest'})).toMatch(/^NODE .*\nDIGEST\n/s);
-    expect(await get(c,{what:'calibration'})).toMatch(/^CALIBRATION .*\npredictions \d+, Brier 0\.\d+/s);
+    expect(await get(c,{what:'calibration'})).toMatch(/^CALIBRATION .*\npredictions 0\n.*predictions start with Atlas v3/s);
     expect(await get(c,{what:'node',id:'nope'})).toMatch(/No concept/);
   });
 });

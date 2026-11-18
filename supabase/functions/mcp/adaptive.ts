@@ -90,7 +90,6 @@ export function flagLines(s:State,slug?:string):string[]{
   if(s.prune.ask)out.push('core is at risk in '+s.prune.ask.projects.length+' projects; ask which comes first');
   if(s.capacityUnset)out.push('capacity unset; ask for minutes per weekday');
   for(const e of s.rechecks.escalations)out.push('recheck escalated at '+e.fail_count+' fails: '+e.level+'; log a remediation step');
-  if(s.lbu.length&&s.flags.proficiency)out.push(s.lbu.length+' concepts are used often but never examined (LBU): ask why each hypothesis is needed (get what=node)');
   if(s.rechecks.unresolved.length)out.push(s.rechecks.unresolved.length+' evidence rows have no concept');
   if(s.deprecatedWarnings.length)out.push('dates/pace in free text: '+s.deprecatedWarnings.slice(0,3).join(', '));
   const needsApproval=s.prune.actions.filter(a=>a.needs_approval).length,auto=s.prune.actions.length-needsApproval;
