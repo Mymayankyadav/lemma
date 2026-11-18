@@ -4,7 +4,8 @@ import {diagnose,serve,type Health} from './fit.ts';
 import {facetsFor,type Facet} from './kc.ts';
 import {certification,ATLAS_DEFAULTS,frustration} from './policy.ts';
 import {cardBudget} from './cards.ts';
-import {durationPrior,updateDuration,predictDuration,attendancePrior,updateAttendance,supplyMoments,feasibility,testOutDuration,type Block} from './timemodel.ts';
+import {durationDiagnostics,attendanceDiagnostics} from './diagnostics.ts';
+import {durationPrior,updateDuration,predictDuration,attendancePrior,updateAttendance,attendanceProbability,supplyMoments,feasibility,testOutDuration,type Block} from './timemodel.ts';
 import {rankSlots,declaredSlots,freeSlots} from './calendar.ts';
 import {certificationChecks} from './recheck.ts';
 import {sessionQueue,type Action} from './kg.ts';
@@ -23,12 +24,13 @@ export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  const st=rows.settings??{},settings={...ATLAS_DEFAULTS,...st.atlas},time=now.getTime(),facts=factsForAtlas(rows),lastFit=(rows.modelFits??[]).slice().sort((a,b)=>String(b.fitted_at).localeCompare(String(a.fitted_at)))[0],model=replay(facts,lastFit?.params??{},time),health=['attempt','card'].map(stream=>diagnose(model.trace,stream));
  const facets:Record<string,FacetValue[]>={};
  for(const c of rows.concepts)facets[c.id]=facetsFor(c.kind??'topic').map(f=>{const e=estimate(model,c.id,f,time),cert=certification(model,c.id,f,settings.threshold_p,time),last=model.trace.filter(x=>x.stream==='attempt').at(-1),h=health[0];return {...e,p:serve(e.p,last?.pfa??.5,last?.base??.5,h),certified:cert.certified,status:cert.status};});
- let duration=durationPrior();
+ let duration=durationPrior();const durationObs:{actual:number;estimate:ReturnType<typeof predictDuration>}[]=[],attendanceRows:{p:number;y:number;at:number}[]=[];
  const durationRows=rows.checkpoints.filter(c=>c.status==='demonstrated'&&c.estimate_minutes>0&&!c.self_reported).sort((a,b)=>String(a.demonstrated_at).localeCompare(String(b.demonstrated_at))||a.id.localeCompare(b.id));
- for(const cp of durationRows){const actual=rows.sessions.filter(s=>s.checkpoint_id===cp.id).reduce((z,s)=>z+(Number(s.minutes)||0),0);if(actual>0)duration=updateDuration(duration,{estimate:cp.estimate_minutes,actual,kind:cp.kind==='milestone'?1:0});}
+ for(const cp of durationRows){const actual=rows.sessions.filter(s=>s.checkpoint_id===cp.id).reduce((z,s)=>z+(Number(s.minutes)||0),0);if(actual>0){const input={estimate:cp.estimate_minutes,kind:cp.kind==='milestone'?1:0};durationObs.push({actual,estimate:predictDuration(duration,input)});duration=updateDuration(duration,{...input,actual});}}
  let attendance=attendancePrior();
  const historical=(rows.busy??[]).filter(b=>b.kind!=='busy'&&Date.parse(b.ends_at)<time).sort((a,b)=>String(a.starts_at).localeCompare(String(b.starts_at)));
- for(const block of historical){const d=new Date(block.starts_at),kept=(rows.studyEntries??[]).some(e=>e.calendar_block_id===block.id&&e.status!=='voided');attendance=updateAttendance(attendance,{weekday:d.getUTCDay(),slot:Math.floor(d.getUTCHours()/6),minutes:Math.max(1,(Date.parse(block.ends_at)-Date.parse(block.starts_at))/60000),day:Math.floor(d.getTime()/DAY)},kept);}
+ for(const block of historical){const d=new Date(block.starts_at),kept=(rows.studyEntries??[]).some(e=>e.calendar_block_id===block.id&&e.status!=='voided');const observed={weekday:d.getUTCDay(),slot:Math.floor(d.getUTCHours()/6),minutes:Math.max(1,(Date.parse(block.ends_at)-Date.parse(block.starts_at))/60000),day:Math.floor(d.getTime()/DAY)};attendanceRows.push({p:attendanceProbability(attendance,observed),y:kept?1:0,at:d.getTime()});attendance=updateAttendance(attendance,observed,kept);}
+ health.push(durationDiagnostics(durationObs),attendanceDiagnostics(attendanceRows));
  const wd=st.capacity?.weekday_minutes,capacity=Array.isArray(wd)?wd[now.getUTCDay()]:(typeof wd==='number'?wd:null),needs:Record<string,number>={},fits:AtlasReadModel['fits']={},durations:AtlasReadModel['durations']={};
  for(const p of rows.projects){const cps=rows.checkpoints.filter(c=>c.project_id===p.id&&c.status!=='demonstrated'&&(!c.plan_state||c.plan_state==='active')),required:ReturnType<typeof predictDuration>[]=[],core:typeof required=[];
   for(const c of cps){const k=rows.cpConcepts.find(x=>x.checkpoint_id===c.id)?.concept_id,pt=k?predict(model,k,'use',time):0,d=testOutDuration(predictDuration(duration,{estimate:c.estimate_minutes??60,kind:c.kind==='milestone'?1:0,difficulty:k?-logit(pt):0}),pt);durations[c.id]=d;required.push(d);if(c.tier==='core')core.push(d);}
