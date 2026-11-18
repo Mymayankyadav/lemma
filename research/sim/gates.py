@@ -1,6 +1,6 @@
 """Turns the seeded harness outputs into the `gates` object of the release report that atlas_v2_activate checks (07 Simulation gates).
 
-    python3 gates.py test_W1.pkl test_W2.pkl --time-log time_sim.txt --tokens tokens.json --e2e e2e_W1.pkl e2e_W2.pkl > gates.json
+    python3 gates.py test_W1.pkl test_W2.pkl --time-log time_sim.txt --tokens tokens.json --ts-kl ts_kl.json --e2e e2e_W1.pkl e2e_W2.pkl > gates.json
 
 Inputs: the held-out test-stage pickles of preq.py (both worlds), the stdout of time_sim.py, and the e2e.py pickles. The token gates come from the TypeScript side (`tokenGates` in _shared/adaptive/tokens.ts, run over the real `resume` texts and Atlas cards) as a small JSON file {resume_tokens_max, card_tokens_max}; without it they are left out and activation refuses.
 The thresholds below must equal those in supabase/migrations/*_n175_atlas_migrate.sql (tests/unit/adaptive/gate-thresholds.test.ts compares them).
@@ -33,6 +33,15 @@ def attempt_gates(w1, w2, kf='kf_1.0_1.0', v2='v2_0'):
     out['attempt_calibration_abs_intercept'] = float(max(abs(per[w]['a']) for w in per)); out['fatigue_abs_z'] = float(max(abs(per[w]['z']) for w in per))
     return out
 
+def production_kl_gates(ts_kl, w1, w2, v2='v2_0'):
+    """kf_kl_* and the v2 reduction for the SHIPPED TypeScript model (research/sim/ts_kl.mts on export_stream.py streams), against v2 on the same learners."""
+    out, red = {}, []
+    for name, res in (('w1', w1), ('w2', w2)):
+        k = float(np.mean(ts_kl['W' + name[1]]['prod'])); v = float(np.mean([kl(r['att'][:, 0], r['PA'][v2]).mean() for r in res]))
+        out['kf_kl_' + name] = k; red.append(1 - k / v)
+    out['kf_reduction_vs_v2'] = float(min(red))
+    return out
+
 def card_gate(w1, w2, coupled='c_cpl_0.2', default='c_def'):
     d = [np.mean([kl(r['card'][:, 0], r['PC'][coupled]).mean() for r in res]) - np.mean([kl(r['card'][:, 0], r['PC'][default]).mean() for r in res]) for res in (w1, w2)]
     return {'card_kl_vs_default': float(np.mean(d))}
@@ -57,8 +66,10 @@ def evaluate(gates):
 
 if __name__ == '__main__':
     args = sys.argv[1:]; tl = args.index('--time-log'); e = args.index('--e2e'); tk = args.index('--tokens') if '--tokens' in args else None
-    tests, time_log, e2e = args[:tl], args[tl + 1], args[e + 1:]
+    tests, time_log, e2e = args[:tl], args[tl + 1], [a for a in args[e + 1:] if a.endswith('.pkl')]
     tokens = json.load(open(args[tk + 1])) if tk is not None else {}
+    tsk = args.index('--ts-kl') if '--ts-kl' in args else None
     w1 = load([f for f in tests if 'W1' in f]); w2 = load([f for f in tests if 'W2' in f])
     gates = {**attempt_gates(w1, w2), **card_gate(w1, w2), **time_gates(open(time_log).read()), **e2e_gates(e2e), **tokens}
+    if tsk is not None: gates.update(production_kl_gates(json.load(open(args[tsk + 1])), w1, w2))   # the shipped model's KL replaces the research KF's
     print(json.dumps({'gates': gates, 'failing': evaluate(gates)}, indent=1))
