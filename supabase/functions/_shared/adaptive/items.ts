@@ -1,6 +1,5 @@
 // Items (spec §10): anything posed to the learner that yields evidence, with or without an exercise bank.
-// Pure. Difficulty b is in logits. Selection never blocks: a candidate in the band, else a generated target, else a template.
-import {predict,meanEff,type Cell,type Prof} from './proficiency.ts';
+// Pure. Difficulty b is in logits. Item selection is Atlas v3's (measure.ts); the Beta-based selection was removed at the cutover.
 import {promptFor,type Level} from './recheck.ts';
 
 export type ItemOrigin='source_exercise'|'source_example'|'source_theorem'|'plan_probe'|'template'|'tutor_generated'|'past_exam'|'card'|'user_supplied';
@@ -31,47 +30,6 @@ export const uncalibrated=(i:Pick<Item,'b_n'>)=>i.b_n<3;
 export function templateItem(conceptId:string,name:string,level:Level,setting?:string):Item{
   const text=level==='transfer'&&setting?'Use "'+name.slice(0,80)+'" in '+setting+'; say what changes and what stays.':promptFor(name,level);
   return {id:'tpl:'+conceptId+':'+level,origin:'template',text,tags:[{concept_id:conceptId,level,role:'primary'}],b:priorB('template',level),b_n:0,teaches:false,holdout:false,status:'active'};
-}
-export type Pick_={item:Item;p:number;score:number};
-export type Target={pStar:number;band:[number,number]};
-export const TARGET:Target={pStar:0.85,band:[0.7,0.9]};
-export type Ctx={
-  prof:Prof;classOf?:(c:string)=>string;R?:(cls:string,level:Level)=>number;
-  /** value(class) = tier_weight × (1 + prereq_of_next_cp) × (1 − mean_eff) × (LBU ? 2 : 1); supplied by the caller */
-  value:(cls:string)=>number;
-};
-const cellFor=(ctx:Ctx,cls:string,level:Level):Cell=>(ctx.prof[cls]??{recall:{alpha:1,beta:1,n:0,last:null,used:0},use:{alpha:1,beta:1,n:0,last:null,used:0},understand:{alpha:1,beta:1,n:0,last:null,used:0},transfer:{alpha:1,beta:1,n:0,last:null,used:0}})[level];
-export function predictItem(it:Item,ctx:Ctx):number{
-  const cls=ctx.classOf??((c:string)=>c);
-  const prim=it.tags.filter(t=>t.role==='primary');
-  return predict(prim.map(t=>({cell:cellFor(ctx,cls(t.concept_id),t.level),R:ctx.R?.(cls(t.concept_id),t.level)})),it.b);
-}
-/** score = value × (1 − |p − p*| / 0.15), only inside the band; hold-outs, retired and untranscribed items never qualify. */
-export function chooseItem(items:Item[],ctx:Ctx,t:Target=TARGET,allowHoldout=false):Pick_|null{
-  const cls=ctx.classOf??((c:string)=>c);let best:Pick_|null=null;
-  for(const it of items){
-    if(it.status!=='active'||(it.holdout&&!allowHoldout)||!it.tags.some(x=>x.role==='primary'))continue;
-    const p=predictItem(it,ctx);
-    if(p<t.band[0]||p>t.band[1])continue;
-    const value=Math.max(...it.tags.filter(x=>x.role==='primary').map(x=>ctx.value(cls(x.concept_id))));
-    const score=value*(1-Math.abs(p-t.pStar)/0.15);
-    if(!best||score>best.score||(score===best.score&&it.id<best.item.id))best={item:it,p,score};
-  }
-  return best;
-}
-/** The difficulty a generated item should be declared at to land on p*, for one concept at one level. */
-export function targetB(cell:Cell,R=1,pStar=TARGET.pStar):number{
-  const m=Math.min(0.999,Math.max(0.001,meanEff(cell,R)));
-  return Math.log(m/(1-m))-Math.log(pStar/(1-pStar));
-}
-/** Never block: a candidate in the band, else "generate one at this b", else a template. */
-export type Next={kind:'bank'|'generate'|'template';item?:Item;b?:number;pick?:Pick_};
-export function nextItem(bank:Item[],ctx:Ctx,primary:{concept_id:string;name:string;level:Level},canGenerate:boolean,t:Target=TARGET):Next{
-  const hit=chooseItem(bank,ctx,t);
-  if(hit)return {kind:'bank',item:hit.item,pick:hit};
-  const cls=ctx.classOf?ctx.classOf(primary.concept_id):primary.concept_id;
-  if(canGenerate)return {kind:'generate',b:Math.round(targetB(cellFor(ctx,cls,primary.level),ctx.R?.(cls,primary.level))*100)/100};
-  return {kind:'template',item:templateItem(primary.concept_id,primary.name,primary.level)};
 }
 // ---- learning profile (§10.1): weights over the seven modes sum to 1; they decide which levels count as core for fast-track
 export const MODES=['prove','solve','compute','recall','explain','read','construct'] as const;

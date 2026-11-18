@@ -1,10 +1,8 @@
 // get(what=node): the Atlas as memory (spec §11). Card ≤ 100 tokens, trail ≤ 600, digest ≤ 300, raw ≤ 1500 per call (paged).
 // Pure: derived from facts at read time; nothing here is stored. Every digest line and raw row names the evidence it came from (I9).
 import type {State,Rows} from './facts.ts';
-import {nodeCard,isLBU,type Prof} from './proficiency.ts';
-import {buildDigest,renderDigest} from './digest.ts';
-import {retrievabilityOf,type Level} from './recheck.ts';
-import {calibrationPairs} from './proficiency.ts';
+import {buildDigest,renderDigest,type EvidenceFact} from './digest.ts';
+import {retrievabilityOf,LEVELS,type Level} from './recheck.ts';
 import {brier,buckets,weeklyReport,scribeAudit} from './calibration.ts';
 
 export type NodeArgs={id?:string;depth?:'card'|'digest'|'raw';trail?:boolean;cursor?:string;limit?:number};
@@ -18,15 +16,21 @@ export function findConcept(rows:Rows,id:string|undefined):{concept:any}|{error:
   if(!hits.length)return {error:'No concept "'+id+'"'};
   return {error:'Several concepts match "'+id+'": '+hits.slice(0,5).map((c:any)=>c.id.slice(0,8)+' '+c.name).join('; ')+'. Use the id.'};
 }
+// Before the Atlas v3 cutover a node card counts the live evidence per level (passes/attempts); it carries no model
+// estimate (the Beta model is gone, 07 Acceptance 5). A migrated owner reads Atlas v3 cards instead (renderAtlasRead).
+const SHORT:Record<Level,string>={recall:'R',use:'Us',understand:'Un',transfer:'T'};
+const classEvidence=(s:State,cls:string):EvidenceFact[]=>s.evidenceFacts.filter(e=>e.concept_id&&s.classOf(e.concept_id)===cls);
+const passShare=(evs:EvidenceFact[])=>evs.length?evs.reduce((a,e)=>a+(e.outcome==='pass'?1:e.outcome==='partial'?0.5:0),0)/evs.length:null;
 function cardOf(s:State,rows:Rows,concept:any):string{
-  const cls=s.classOf(concept.id);const prof=s.prof[cls];
+  const cls=s.classOf(concept.id),evs=classEvidence(s,cls);
   const R:Partial<Record<Level,number>>={};
   for(const r of s.rechecks.rechecks)if(r.class_id===cls&&r.state==='open')R[r.level]=retrievabilityOf(r,s.today);
   const open=s.rechecks.rechecks.filter(r=>r.class_id===cls&&(r.state==='open'||r.state==='escalated')).map(r=>'recheck-'+r.level.slice(0,2));
   const mis=(rows.misconceptions??[]).filter((m:any)=>m.concept_id&&s.classOf(m.concept_id)===cls&&!m.resolved_at).map((m:any)=>String(m.label??'misconception').slice(0,24).replace(/\s+/g,'-'));
   const assume=(rows.assumptions??[]).filter((a:any)=>!s.withdrawn.includes(String(a.id))&&s.classOf(a.concept_id)===cls).map((a:any)=>a.level.slice(0,2)+(a.mean_at!=null?'~'+Number(a.mean_at).toFixed(1).replace(/^0/,''):''));
-  const seen=s.profEvidence.filter(e=>e.concept_id&&s.classOf(e.concept_id)===cls).map(e=>e.day).sort().pop()??null;
-  return nodeCard({name:concept.name,prof,R,seen,gaps:[...mis,...open],assume,lbu:!!prof&&isLBU(prof)});
+  const seen=evs.map(e=>e.day).sort().pop()??null;
+  const levels=LEVELS.map(l=>{const at=evs.filter(e=>e.level===l),pass=at.filter(e=>e.outcome==='pass').length;return SHORT[l]+(at.length?pass+'/'+at.length:'-')+(R[l]!=null?'~'+R[l]!.toFixed(2).replace(/^0/,''):'')}).join(' ');
+  return String(concept.name).slice(0,30)+' '+levels+' gaps:['+[...mis,...open].slice(0,3).join(',')+'] assume:['+assume.slice(0,2).join(',')+']'+(seen?' seen:'+seen:'');
 }
 export const cardFor=(s:State,rows:Rows,conceptId:string)=>{const c=rows.concepts.find((x:any)=>x.id===conceptId);return c?cardOf(s,rows,c):''};
 function digestOf(s:State,rows:Rows,cls:string,maxTokens:number){
@@ -42,7 +46,7 @@ export function renderNode(s:State,rows:Rows,a:NodeArgs):string{
   // A system carries a roll-up of its planets: the weakest first, so the tutor drills down only where a gap points.
   const kids=rows.concepts.filter((x:any)=>x.parent_id===c.id);
   if(kids.length){
-    const scored=kids.map((k:any)=>({k,p:s.prof[s.classOf(k.id)]})).filter(x=>x.p).map(x=>({name:x.k.name,m:x.p.understand.alpha/(x.p.understand.alpha+x.p.understand.beta)})).sort((p,q)=>p.m-q.m);
+    const scored=kids.map((k:any)=>({name:k.name,m:passShare(classEvidence(s,s.classOf(k.id)))})).filter((x):x is {name:string;m:number}=>x.m!=null).sort((p,q)=>p.m-q.m);
     out.push('PLANETS '+kids.length+(scored.length?'; weakest: '+scored.slice(0,3).map(x=>x.name.slice(0,24)+' '+x.m.toFixed(2).replace(/^0/,'')).join(', '):'; none examined yet'));
   }
   if(depth==='digest'||depth==='raw'){const d=digestOf(s,rows,cls,300);out.push('DIGEST',...(d.length?d.map(l=>l.text):['(no evidence yet)']))}
@@ -68,9 +72,9 @@ export function renderNode(s:State,rows:Rows,a:NodeArgs):string{
   }
   return out.join('\n');
 }
-/** get(what=calibration): predicted p against what happened, computed from evidence on request (never stored). */
-export function renderCalibration(s:State,audit?:{agree:boolean}[]):string{
-  const pairs=calibrationPairs(s.profEvidence.map(e=>e),()=>0,undefined,s.classOf);
-  return weeklyReport({pairs,uncalibratedItems:0,audit:audit?scribeAudit(audit):undefined})+(pairs.length?'':'\n(not enough evidence yet)');
+/** get(what=calibration) before the cutover: the Beta predictions are gone, so there is nothing to calibrate until
+ *  Atlas v3 is active (a migrated owner gets the Atlas v3 calibration through renderAtlasRead). */
+export function renderCalibration(_s:State,audit?:{agree:boolean}[]):string{
+  return weeklyReport({pairs:[],uncalibratedItems:0,audit:audit?scribeAudit(audit):undefined})+'\n(predictions start with Atlas v3 after the cutover)';
 }
 export {brier,buckets};
