@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../flags';
 import {liveClient} from '../live/client';
 import {checked,owner,rows,type Row} from '../live/helpers';
 import type {AdaptiveData} from './contract';
@@ -30,7 +31,8 @@ export async function readAdaptiveData(now=new Date()):Promise<AdaptiveData>{
   rows(db,'rechecks',uid),
  ]);
  const extra:Record<string,Row[]>={};
- if(settings.atlas){await Promise.all([['attempts','attempts'],['attemptTags','attempt_tags'],['instructionEvents','instruction_events'],['atlasLinks','atlas_links'],['modelFits','model_fits'],['items','items'],['assumptions','assumptions'],['cards','cards'],['notes','notes'],['reviews','reviews'],['studyEntries','study_entries']].map(async([key,table])=>{extra[key]=await list(select(table).limit(table==='attempts'||table==='attempt_tags'?5000:1000));}));}
+ // `settings.atlas` always has its default, so it cannot say whether the owner has migrated; the Atlas tables are read only for a migrated owner or with atlasV3 on.
+ if(settings.atlas_migrated_at||isFlagOn('atlasV3')){await Promise.all([['attempts','attempts'],['attemptTags','attempt_tags'],['instructionEvents','instruction_events'],['atlasLinks','atlas_links'],['modelFits','model_fits'],['items','items'],['assumptions','assumptions'],['cards','cards'],['notes','notes'],['reviews','reviews'],['studyEntries','study_entries']].map(async([key,table])=>{extra[key]=await list(select(table).limit(table==='attempts'||table==='attempt_tags'?5000:1000));}));}
  return {rows:{settings,projects:projects.filter(p=>!p.system&&p.status!=='archived'),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,
   misconceptions,decisions,baselines,overrides,sessions,evidence,intervals,busy,dueCards,...extra},rechecks:rechecks as AdaptiveData['rechecks']};
 }
