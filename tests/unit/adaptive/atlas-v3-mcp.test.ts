@@ -49,3 +49,28 @@ describe('review fix 1: nothing a tutor sends before cutover loses the save',()=
   const {resumeBlocks}=await import('../../../supabase/functions/mcp/adaptive');expect(typeof resumeBlocks).toBe('function');
  });
 });
+
+import {allPaged} from '../../../supabase/functions/mcp/atlas';
+import {proposePlan} from '../../../supabase/functions/mcp/tools/write';
+import {loadRows} from '../../../supabase/functions/mcp/adaptive';
+describe('review fixes 11 and 15: plans after cutover, and what is loaded before it',()=>{
+ it('after cutover propose_plan asks for the template, and validates it',async()=>{
+  const r=rowsFor([{slug:'topology',cps:2,done:0,target:'2026-11-24'}]);r.settings.atlas_migrated_at='2026-11-01T00:00:00Z';
+  const tables=tablesFrom(r),c=fakeContext(tables),p=tables.projects[0];
+  await expect(proposePlan(c,{project:p.slug,checkpoints:[]})).rejects.toThrow('send a plan_template_v1 template');
+  await expect(proposePlan(c,{project:p.slug,checkpoints:[],template:{schema:'plan_template_v1',checkpoints:[{id:'x'}]}})).rejects.toThrow('Plan validation:');
+ });
+ it('the Atlas tables are not read for an owner who has not migrated, though settings.atlas always has its default',async()=>{
+  const r=rowsFor([{slug:'topology',cps:2,done:1,target:'2026-11-24'}]);expect(r.settings.atlas_migrated_at??null).toBeNull();
+  const c=fakeContext(tablesFrom({...r,attempts:[{id:1,user_id:'u',occurred_at:'2026-11-01T00:00:00Z'}]}));
+  const loaded=await loadRows(c,NOW);expect((loaded as any).attempts).toBeUndefined();
+  r.settings.atlas_migrated_at='2026-11-01T00:00:00Z';
+  const c2=fakeContext(tablesFrom({...r,attempts:[{id:1,user_id:r.settings.user_id??'u',occurred_at:'2026-11-01T00:00:00Z'}]}));
+  expect(Array.isArray((await loadRows(c2,NOW) as any).attempts)).toBe(true);
+ });
+ it('reads a table larger than one page whole, in order',async()=>{
+  const c0=fakeContext(tablesFrom(rowsFor([{slug:'topology',cps:2,done:1,target:'2026-11-24'}])));const rows=Array.from({length:2500},(_,i)=>({id:i+1,user_id:c0.userId,attempt_id:i}));
+  const r=rowsFor([{slug:'topology',cps:2,done:1,target:'2026-11-24'}]),tables=tablesFrom(r,{attempt_tags:rows}),c=fakeContext(tables);
+  const out=await allPaged(c,'attempt_tags');expect(out.length).toBe(2500);expect(out.map(x=>x.id)).toEqual(rows.map(x=>x.id));
+ });
+});
