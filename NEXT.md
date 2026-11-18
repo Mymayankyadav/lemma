@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N180 Atlas v3 cutover: tooling, Beta removal and the ordered runbook (Owner task)
+
+Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = everything the cutover needs exists and is in one ordered runbook (docs/current/N180.md): the export and release step that computes the v3 model fit, the four-stream diagnostics and the token gates from production data; the measured simulation gates; the Beta proficiency model removed (rules: PR, protected tests); then the Owner runs the runbook (dry run, preparation, four conversions, fit, activation) with an approval at each write.
+Tests: tests/unit/adaptive/atlas-release.test.ts, existing suites unchanged.
+Scope: scripts/atlas/**, research/sim/results-gates.json, src/data/adaptive/live.ts, tests, docs/current/N180.md.
+Not: any production write by an agent without the Owner's yes in that chat; schema changes; turning atlasV3 on by default.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."
