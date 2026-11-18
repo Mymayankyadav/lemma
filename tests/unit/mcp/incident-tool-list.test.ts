@@ -29,3 +29,17 @@ describe('incident #921 MCP tool-list deploy contract',()=>{
   expect(smoke).toContain("JSON.stringify(tools).length<=15000");
  });
 });
+
+// Incident #1505: the Atlas v3 deploy advertised 15,078 characters (the 15,000 budget is checked only at deploy, against the real zod and MCP packages,
+// which the unit environment does not have). What made it grow stays out of the advertised schema: the plan template is validated by validateTemplate
+// after cutover, so it is advertised as an open value, and only the events of save_progress (where structured attempts arrive) keep passthrough.
+describe('incident #1505 tools/list headroom',()=>{
+ it('advertises the plan template compactly and keeps passthrough on events only',()=>{
+  expect(server).toContain('template:z.any().optional()');
+  expect(server).not.toMatch(/template:z\.object/);
+  const matches=[...server.matchAll(/\.passthrough\(\)/g)];
+  expect(matches).toHaveLength(1);                                                       // only the event schema
+  const event=server.indexOf('const event=z.object({'),save=server.indexOf("register('save_progress'");
+  expect(matches[0].index!).toBeGreaterThan(event);expect(matches[0].index!).toBeLessThan(save);
+ });
+});
