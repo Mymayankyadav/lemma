@@ -4,6 +4,7 @@ drop trigger if exists atlas_apply_approved_plan on public.proposals;
 drop function if exists public.atlas_freeze_evidence();
 drop function if exists public.atlas_apply_approved_plan();
 drop function if exists public.atlas_conversion_command(jsonb);
+drop function if exists public.atlas_conversion_ready(uuid);
 drop function if exists public.atlas_resolve_kc(uuid,jsonb,text);
 drop function if exists public.atlas_check_template_cp(jsonb);
 drop function if exists public.atlas_card_limit(text,text,boolean,boolean);

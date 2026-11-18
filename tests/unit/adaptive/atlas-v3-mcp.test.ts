@@ -31,3 +31,21 @@ describe('Atlas MCP reads: every registered read renders (N173 contract coverage
   const h=JSON.parse(renderAtlasRead(r,{what:'model_health'},NOW)).health.map((x:any)=>x.stream);expect(h).toEqual(['attempt','card','duration','attendance']);
  });
 });
+
+describe('review fix 1: nothing a tutor sends before cutover loses the save',()=>{
+ const setup=()=>{const r=rowsFor([{slug:'topology',cps:2,done:1,target:'2026-11-24'}]),tables=tablesFrom(r),c=fakeContext(tables);return {c,p:tables.projects[0],s:tables.sessions[0]};};
+ it('an explanation carrying concepts[] passes the connector guard before cutover (the database ignores the key)',async()=>{
+  const {c,p,s}=setup();let message='';
+  try{await saveProgress(c,{project:p.slug,session:'S'+s.number,events:[{kind:'explanation',text:'Compactness explained',concepts:['compactness']}]});}catch(e){message=String(e);}
+  expect(message).not.toContain('Atlas v2 not migrated');
+ });
+ it('a structured attempt, alone or inside an event, is still refused before cutover',async()=>{
+  const {c,p,s}=setup();
+  await expect(saveProgress(c,{project:p.slug,session:'S'+s.number,events:[{kind:'attempt',text:'tried',attempt:attempt()}]})).rejects.toThrow('Atlas v2 not migrated');
+ });
+ it('the static server instructions never tell a tutor to send structured attempts or concepts[]; the migrated resume rules do',async()=>{
+  const {INSTRUCTIONS}=await import('../../../supabase/functions/mcp/rules');
+  expect(INSTRUCTIONS).not.toMatch(/concepts\[\]|ordered stages/);
+  const {resumeBlocks}=await import('../../../supabase/functions/mcp/adaptive');expect(typeof resumeBlocks).toBe('function');
+ });
+});

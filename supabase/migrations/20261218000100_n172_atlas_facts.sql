@@ -2,14 +2,14 @@
 alter table public.concepts
  add column kind text not null default 'topic' check(kind in ('topic','definition','result','example','technique','heuristic','control','theme','notation')),
  add column family_id uuid,
- add constraint concepts_family_owner_fk foreign key(user_id,family_id) references public.concepts(user_id,id);
+ add constraint concepts_family_owner_fk foreign key(user_id,family_id) references public.concepts(user_id,id) on delete set null (family_id);
 alter table public.items
  add column cued uuid[] not null default '{}',
  add column item_kind text check(item_kind in ('practice','stretch','prepare','select','micro','recall','recheck','retry','holdout','legacy')),
  add column b_sd real not null default .7 check(b_sd>0 and b_sd<=6),
  add column est_minutes integer check(est_minutes>0),
  add column checkpoint_id uuid,
- add constraint items_checkpoint_owner_fk foreign key(user_id,checkpoint_id) references public.checkpoints(user_id,id);
+ add constraint items_checkpoint_owner_fk foreign key(user_id,checkpoint_id) references public.checkpoints(user_id,id) on delete set null (checkpoint_id);
 alter table public.settings
  add column atlas jsonb not null default '{"threshold_p":0.85,"stretch_share":0.2,"plan_first_min":10,"ask_confidence":true,"card_quota_share":0.5,"card_cap":0.125,"card_weight":0.4}'::jsonb check(jsonb_typeof(atlas)='object'),
  add column atlas_migrated_at timestamptz;
@@ -31,11 +31,12 @@ create table public.attempts(
  version integer not null default 1 check(version>0),created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  updated_source text check(updated_source in ('app','mcp','worker')),
  unique(user_id,id),unique(user_id,source_evidence_id),
- foreign key(user_id,session_id) references public.sessions(user_id,id),
- foreign key(user_id,project_id) references public.projects(user_id,id),
- foreign key(user_id,checkpoint_id) references public.checkpoints(user_id,id),
- foreign key(user_id,item_id) references public.items(user_id,id),
- foreign key(user_id,superseded_by) references public.attempts(user_id,id)
+ -- Same delete behaviour as `evidence`: deleting a project removes its attempts; the other links are cleared, never blocking.
+ foreign key(user_id,session_id) references public.sessions(user_id,id) on delete set null (session_id),
+ foreign key(user_id,project_id) references public.projects(user_id,id) on delete cascade,
+ foreign key(user_id,checkpoint_id) references public.checkpoints(user_id,id) on delete set null (checkpoint_id),
+ foreign key(user_id,item_id) references public.items(user_id,id) on delete set null (item_id),
+ foreign key(user_id,superseded_by) references public.attempts(user_id,id) on delete set null (superseded_by)
 );
 create table public.attempt_tags(
  id bigint generated always as identity primary key,
@@ -51,7 +52,7 @@ create table public.attempt_tags(
  updated_source text check(updated_source in ('app','mcp','worker')),
  unique(user_id,id),unique nulls not distinct(attempt_id,concept_id,facet,stage),
  foreign key(user_id,attempt_id) references public.attempts(user_id,id) on delete cascade,
- foreign key(user_id,concept_id) references public.concepts(user_id,id)
+ foreign key(user_id,concept_id) references public.concepts(user_id,id) on delete cascade
 );
 create table public.instruction_events(
  id bigint generated always as identity primary key,
@@ -61,8 +62,8 @@ create table public.instruction_events(
  version integer not null default 1 check(version>0),created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  updated_source text check(updated_source in ('app','mcp','worker')),
  unique(user_id,id),unique(user_id,source_key),
- foreign key(user_id,session_id) references public.sessions(user_id,id),
- foreign key(user_id,concept_id) references public.concepts(user_id,id)
+ foreign key(user_id,session_id) references public.sessions(user_id,id) on delete set null (session_id),
+ foreign key(user_id,concept_id) references public.concepts(user_id,id) on delete cascade
 );
 create table public.atlas_links(
  id uuid primary key default gen_random_uuid(),
@@ -75,7 +76,7 @@ create table public.atlas_links(
  version integer not null default 1 check(version>0),created_at timestamptz not null default now(),updated_at timestamptz not null default now(),
  updated_source text check(updated_source in ('app','mcp','worker')),
  unique(user_id,id),unique(user_id,from_id,to_id,kind),check(from_id<>to_id),
- foreign key(user_id,from_id) references public.concepts(user_id,id),foreign key(user_id,to_id) references public.concepts(user_id,id)
+ foreign key(user_id,from_id) references public.concepts(user_id,id) on delete cascade,foreign key(user_id,to_id) references public.concepts(user_id,id) on delete cascade
 );
 create table public.model_fits(
  id bigint generated always as identity primary key,user_id uuid not null references auth.users(id) on delete cascade,
@@ -108,6 +109,8 @@ grant insert,update,delete on public.model_fits to service_role;
 
 create function public.atlas_attempt_append_only() returns trigger language plpgsql set search_path='' as $fn$
 begin
+ -- A foreign-key action (a deleted session, checkpoint or item clearing its link) is not an edit of the attempt.
+ if pg_trigger_depth()>1 then return new;end if;
  if (to_jsonb(new)-'voided_at'-'superseded_by'-'version'-'updated_at'-'updated_source') is distinct from (to_jsonb(old)-'voided_at'-'superseded_by'-'version'-'updated_at'-'updated_source') then raise exception 'Attempts are append-only; void or supersede';end if;
  return new;
 end $fn$;

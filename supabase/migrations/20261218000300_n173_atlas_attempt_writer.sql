@@ -1,23 +1,26 @@
 -- Typed attempt writer, called only inside save_progress's existing atomic owner transaction.
 create function public.atlas_store_attempt(u uuid,p_project uuid,p_session uuid,p_checkpoint uuid,p_event bigint,e jsonb) returns bigint
 language plpgsql security definer set search_path='' as $fn$
-declare a jsonb:=coalesce(e->'attempt','{}');st jsonb;t jsonb;cid uuid;i uuid;aid bigint;v_facet text;v_role text;v_kind text;v_outcome text;dedup text;ids uuid[];v_conf real;hint int;
+declare a jsonb:=coalesce(e->'attempt','{}');st jsonb;t jsonb;cid uuid;i uuid;aid bigint;v_facet text;v_role text;v_kind text;v_outcome text;dedup text;ids uuid[];v_conf real;hint int;v_subject uuid;v_level text;
 begin
  if coalesce(current_setting('role',true),'')<>'service_role' then raise exception 'Service role required';end if;
  if not exists(select 1 from public.sessions where user_id=u and id=p_session and project_id=p_project and state='open') then raise exception 'Owner session mismatch';end if;
  if not exists(select 1 from public.settings where user_id=u and atlas_migrated_at is not null) then raise exception 'Atlas v2 not migrated';end if;
  if p_checkpoint is not null and not exists(select 1 from public.checkpoints where user_id=u and id=p_checkpoint and project_id=p_project) then raise exception 'Checkpoint ownership mismatch';end if;
+ -- A slug is resolved inside the project's own subject first, as the legacy writer does; the same slug in another subject is never picked over it.
+ select subject_id into v_subject from public.projects where id=p_project and user_id=u;
  if e->>'kind'='explanation' then
   for t in select value from jsonb_array_elements(coalesce(e->'concepts',case when e?'concept' then jsonb_build_array(e->>'concept') else '[]'::jsonb end)) loop
-   select id into cid from public.concepts where user_id=u and (id::text=t#>>'{}' or slug=t#>>'{}');
+   select c.id into cid from public.concepts c where c.user_id=u and (c.id::text=t#>>'{}' or c.slug=t#>>'{}') order by (c.subject_id is not distinct from v_subject) desc,c.id limit 1;
    if cid is null then raise exception 'Unknown instruction concept';end if;
    insert into public.instruction_events(user_id,occurred_at,session_id,concept_id,origin,source_key) values(u,now(),p_session,cid,'tutor','event:'||p_event||':'||cid);
   end loop;
-  if not e?'attempt' then return null;end if;
+  -- A graded explanation is also evidence, as in the legacy writer.
+  if not e?'attempt' and e->>'outcome' is null then return null;end if;
  end if;
- if not e?'attempt' and (e->>'outcome' is null or e->>'kind' not in ('pretest','attempt','evidence','recheck')) then return null;end if;
+ if not e?'attempt' and (e->>'outcome' is null or e->>'kind' not in ('pretest','attempt','evidence','recheck','explanation')) then return null;end if;
  if jsonb_typeof(a)<>'object' then raise exception 'attempt must be an object';end if;
- v_kind:=coalesce(a->>'kind',case e->>'kind' when 'pretest' then 'prepare' when 'recheck' then 'recheck' else 'legacy' end);
+ v_kind:=coalesce(a->>'kind',case when coalesce((e->>'recall')::boolean,false) then 'recall' else case e->>'kind' when 'pretest' then 'prepare' when 'recheck' then 'recheck' else 'legacy' end end);
  v_outcome:=case e->>'outcome' when 'demonstrated' then 'pass' when 'failed' then 'fail' when 'partial' then 'partial' end;
  ids:=array(select jsonb_array_elements_text(coalesce(a->'cued','[]'))::uuid);
  if exists(select 1 from unnest(ids) x where not exists(select 1 from public.concepts where user_id=u and id=x)) then raise exception 'Unknown cue concept';end if;
@@ -28,7 +31,8 @@ begin
    on conflict(user_id,fingerprint) do update set fingerprint=excluded.fingerprint returning id into i;
  end if;
  -- Same-save duplicates merge inside the transaction; separate saves are independent observations.
- dedup:=md5(jsonb_build_array(txid_current(),p_session,date_trunc('second',now()),case when e?'attempt' then a else e-'text'-'fp' end)::text);
+ -- The text of the event is part of the key: three different questions on one concept in one save are three attempts; the same event repeated is one.
+ dedup:=md5(jsonb_build_array(txid_current(),p_session,date_trunc('second',now()),case when e?'attempt' then a||jsonb_build_object('text',e->>'text','kind',e->>'kind') else e-'fp' end)::text);
  select id into aid from public.attempts where user_id=u and context->>'save_key'=dedup;
  if aid is not null then return aid;end if;
  insert into public.attempts(user_id,occurred_at,session_id,session_event_id,project_id,checkpoint_id,item_id,item_kind,cued,context,confidence_before,minutes,furthest_stage,legacy_outcome,plan_score,grader,origin,weight)
@@ -41,7 +45,7 @@ begin
    if jsonb_typeof(st->'tags') is distinct from 'array' or jsonb_array_length(st->'tags') not between 1 and 12 then raise exception 'Stage needs 1–12 tags';end if;
    hint:=coalesce((st->>'hint')::int,0);if hint not between 0 and 4 then raise exception 'Invalid hint';end if;
    for t in select value from jsonb_array_elements(st->'tags') loop
-    select id into cid from public.concepts where user_id=u and (id::text=coalesce(t->>'concept',t->>'concept_id') or slug=coalesce(t->>'concept',t->>'concept_id'));
+    select c.id into cid from public.concepts c where c.user_id=u and (c.id::text=coalesce(t->>'concept',t->>'concept_id') or c.slug=coalesce(t->>'concept',t->>'concept_id')) order by (c.subject_id is not distinct from v_subject) desc,c.id limit 1;
     if cid is null then raise exception 'Unknown attempt concept';end if;
     v_facet:=t->>'facet';v_role:=coalesce(t->>'role','target');v_conf:=coalesce((t->>'confidence')::real,1);
     insert into public.attempt_tags(user_id,attempt_id,concept_id,facet,role,stage,result,hint_level,error_tag,confidence,demand)
@@ -49,10 +53,13 @@ begin
    end loop;
   end loop;
  else
-  select id into cid from public.concepts where user_id=u and (id::text=e->>'concept' or slug=e->>'concept');
+  if e?'concept' then
+   select c.id into cid from public.concepts c where c.user_id=u and (c.id::text=e->>'concept' or c.slug=e->>'concept') order by (c.subject_id is not distinct from v_subject) desc,c.id limit 1;
+   if cid is null then raise exception 'Unknown concept: %',e->>'concept';end if;
+  end if;
   if cid is null and p_checkpoint is not null then select case when count(*)=1 then (array_agg(concept_id))[1] end into cid from public.checkpoint_concepts where user_id=u and checkpoint_id=p_checkpoint;end if;
   if cid is not null then insert into public.attempt_tags(user_id,attempt_id,concept_id,facet,role,hint_level)
-   values(u,aid,cid,coalesce(e->>'level',case when e->>'kind'='pretest' then 'recall' else 'use' end),case coalesce(e->>'role','primary') when 'primary' then 'target' when 'secondary' then 'required' else 'incidental' end,coalesce((e->>'hint_level')::smallint,0));end if;
+   values(u,aid,cid,coalesce(e->>'level',case when coalesce((e->>'recall')::boolean,false) or e->>'kind'='pretest' then 'recall' when e->>'kind'='explanation' then 'understand' else 'use' end),case coalesce(e->>'role','primary') when 'primary' then 'target' when 'secondary' then 'required' else 'incidental' end,coalesce((e->>'hint_level')::smallint,0));end if;
  end if;
  return aid;
 end $fn$;

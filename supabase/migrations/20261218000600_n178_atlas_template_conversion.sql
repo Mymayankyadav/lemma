@@ -17,7 +17,7 @@ create function public.atlas_check_template_cp(cp jsonb) returns void
 language plpgsql immutable set search_path='' as $fn$
 declare kc_row jsonb;card_row jsonb;
 begin
-  if cp->>'kind' not in ('learn','milestone') or cp->>'tier' not in ('core','standard','venture') or not public.lemma_valid_steps(cp->'steps') then raise exception 'Invalid template checkpoint';end if;
+  if coalesce(cp->>'kind','') not in ('learn','milestone') or coalesce(cp->>'tier','') not in ('core','standard','venture') or not coalesce(public.lemma_valid_steps(cp->'steps'),false) then raise exception 'Invalid template checkpoint';end if;
  if coalesce(jsonb_array_length(cp->'kcs'),0) not between 1 and 6 then raise exception 'Template checkpoint needs 1-6 KCs';end if;
  if coalesce((cp->>'estimate')::numeric,0)<=0 or (cp->>'estimate')::numeric>2400 then raise exception 'Template checkpoint needs a sensible estimate';end if;
  if cp->'criterion'->>'kind' is distinct from 'holdout' or coalesce((cp->'criterion'->>'novel')::boolean,false) is not true or jsonb_array_length(coalesce(cp->'criterion'->'cued','[]'))>0 then raise exception 'Criterion must be an uncued novel holdout';end if;
@@ -29,7 +29,7 @@ begin
  end loop;
  for card_row in select jsonb_array_elements(coalesce(cp->'card_plan','[]')) loop
   if not exists(select 1 from jsonb_array_elements(cp->'kcs') k2 where k2->>'id'=card_row->>'concept_id') then raise exception 'Card names a KC outside its checkpoint';end if;
-  if card_row->>'facet' not in ('recall','understand','select') then raise exception 'Card facet must be recall, understand or select';end if;
+  if coalesce(card_row->>'facet','') not in ('recall','understand','select') then raise exception 'Card facet must be recall, understand or select';end if;
   if coalesce(array_length(regexp_split_to_array(coalesce(card_row->>'back',''),E'\n'),1),0)>3 then raise exception 'Answer exceeds three lines';end if;
   if coalesce(card_row->>'front','') ~* '\mlist all\M' then raise exception 'No list-all cards';end if;
  end loop;
@@ -51,9 +51,12 @@ revoke all on function public.atlas_resolve_kc(uuid,jsonb,text) from public,anon
 create function public.atlas_apply_approved_plan() returns trigger
 language plpgsql security definer set search_path='' as $fn$
 declare cp jsonb;c jsonb;k jsonb;kk jsonb;m jsonb;pre text;oldcp public.checkpoints;newid uuid;cid uuid;nid uuid;nextpos int;nextcode int;value jsonb;
- subj uuid;kcmap jsonb:='{}';cpmap jsonb:='{}';replaced uuid[]:='{}';key text;home uuid;kc_kind text;touched uuid[]:='{}';
+ subj uuid;kcmap jsonb:='{}';cpmap jsonb:='{}';replaced uuid[]:='{}';key text;home uuid;kc_kind text;touched uuid[]:='{}';slug_try text;slug_n int;allowed_cards int;
+ new_cards int;
 begin
  if new.status<>'approved' or old.status='approved' then return new;end if;
+ -- Undo and redo replay every journalled change of the approval themselves; applying the conversion again would duplicate or refuse them.
+ if coalesce(current_setting('lemma.tool',true),'')='undo' then return new;end if;
  if new.payload?'atlas_template' then
   for cp in select jsonb_array_elements(new.payload->'atlas_template'->'checkpoints') loop
    if exists(select 1 from public.settings where user_id=new.user_id and atlas_migrated_at is not null) then perform public.atlas_check_template_cp(cp);end if;
@@ -81,8 +84,10 @@ begin
   else
    select id into cid from public.concepts where user_id=new.user_id and subject_id=subj and lower(name)=lower(k->>'name') order by created_at limit 1;
    if cid is null then
-    cid:=public.lemma_ensure_concept(new.user_id,subj,left(k->>'name',60));
-    update public.concepts set kind=kc_kind where id=cid and user_id=new.user_id;
+    -- A new KC is always a new row: a slug that is already taken by a different concept gets a numeric suffix, so an existing concept is never renamed, retyped or merged.
+    slug_try:=public.lemma_slug(left(k->>'name',60));slug_n:=1;
+    while exists(select 1 from public.concepts where user_id=new.user_id and subject_id=subj and slug=slug_try) loop slug_n:=slug_n+1;slug_try:=left(public.lemma_slug(left(k->>'name',60)),48)||'-'||slug_n;end loop;
+    insert into public.concepts(user_id,subject_id,slug,name,kind) values(new.user_id,subj,slug_try,left(k->>'name',60),kc_kind) returning id into cid;
     home:=null;
     if nullif(k->>'home','') is not null then
      begin select id into home from public.concepts where user_id=new.user_id and id=(k->>'home')::uuid;exception when invalid_text_representation then home:=null;end;
@@ -144,15 +149,30 @@ begin
    if (cpmap->>pre)::uuid<>newid then insert into public.checkpoint_prereqs(user_id,checkpoint_id,prereq_id) values(new.user_id,newid,(cpmap->>pre)::uuid) on conflict do nothing;end if;
   end loop;
  end loop;
- delete from public.checkpoint_prereqs where user_id=new.user_id and prereq_id=any(replaced);
+ -- Edges into a replaced or skipped checkpoint are dropped, but never from a done checkpoint (I17: a done checkpoint is not changed).
+ delete from public.checkpoint_prereqs where user_id=new.user_id and prereq_id=any(replaced)
+  and checkpoint_id not in(select id from public.checkpoints where user_id=new.user_id and project_id=new.project_id and status='demonstrated');
+ -- Reachability over (start, node) pairs: UNION removes repeats, so the work is at most the square of the checkpoint count, however the prerequisites branch.
  if exists(
-  with recursive walk(start,node,path) as (
-   select checkpoint_id,prereq_id,array[checkpoint_id] from public.checkpoint_prereqs where user_id=new.user_id and checkpoint_id in(select id from public.checkpoints where project_id=new.project_id)
-   union all select w.start,p.prereq_id,w.path||w.node from walk w join public.checkpoint_prereqs p on p.checkpoint_id=w.node and p.user_id=new.user_id where not w.node=any(w.path)
+  with recursive walk(start,node) as (
+   select checkpoint_id,prereq_id from public.checkpoint_prereqs where user_id=new.user_id and checkpoint_id in(select id from public.checkpoints where project_id=new.project_id)
+   union select w.start,p.prereq_id from walk w join public.checkpoint_prereqs p on p.checkpoint_id=w.node and p.user_id=new.user_id
   ) select 1 from walk where node=start) then raise exception 'Prerequisites contain a cycle';end if;
  -- Every reviewed or active card needs a decision; nothing is dropped silently.
  if exists(select 1 from public.notes n where n.user_id=new.user_id and n.project_id=new.project_id and n.status<>'deleted'
    and not exists(select 1 from jsonb_array_elements(value->'cards') x where x->>'id'=n.id::text)) then raise exception 'Missing card decision';end if;
+ -- The cards a conversion creates or rewrites obey the same rules as a plan's card_plan (11 §4): at most the template's per-KC limits in total, answers of at most three lines, no "list all".
+ select coalesce(sum(public.atlas_card_limit(kc->>'kind',cpx->>'tier',(kc->>'confusable')::boolean,(kc->>'canonical')::boolean)),0) into allowed_cards
+  from jsonb_array_elements(value->'checkpoints') cpx,jsonb_array_elements(cpx->'kcs') kc;
+ select count(*) into new_cards from jsonb_array_elements(value->'cards') x where x->>'action'='new';
+ if new_cards>allowed_cards then raise exception 'New cards (%) exceed the template card limits (%)',new_cards,allowed_cards;end if;
+ for c in select jsonb_array_elements(value->'cards') loop
+  if c->>'action' in ('new','revise') then
+   if c->>'action'='new' and coalesce(c->>'front','')='' then raise exception 'A new card needs a front';end if;
+   if coalesce(array_length(regexp_split_to_array(coalesce(c->>'back',''),E'\n'),1),0)>3 then raise exception 'Answer exceeds three lines';end if;
+   if coalesce(c->>'front','') ~* '\mlist all\M' then raise exception 'No list-all cards';end if;
+  end if;
+ end loop;
  for c in select jsonb_array_elements(value->'cards') loop
   if c->>'action'='new' then
    insert into public.notes(user_id,project_id,front,back,kind,type,origin,atlas_kind)
@@ -173,6 +193,13 @@ begin
 end $fn$;
 create trigger atlas_apply_approved_plan after update of status on public.proposals for each row execute function public.atlas_apply_approved_plan();
 
+-- Cutover order (12): the data is migrated first, then each project is converted and approved by the Owner.
+create function public.atlas_conversion_ready(u uuid) returns boolean
+language sql stable security definer set search_path='' as $fn$
+ select not exists(select 1 from public.evidence where user_id=u and voided_at is null) or exists(select 1 from public.attempts where user_id=u and origin='migration')
+$fn$;
+revoke all on function public.atlas_conversion_ready(uuid) from public,anon,authenticated;
+
 create function public.atlas_conversion_command(p jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $fn$
 declare u uuid:=auth.uid();op text:=p->>'operation';patch jsonb:=p->'patch';pr uuid;project_id uuid;receipt jsonb;opid uuid:=(p->>'operationId')::uuid;action_no bigint;
@@ -184,6 +211,7 @@ begin
  if found then if receipt->'_request'=p then return receipt-'_request';else raise exception 'Operation conflict';end if;end if;
  if coalesce(current_setting('role',true),'')<>'service_role' then perform set_config('lemma.source','app',true);perform set_config('lemma.tool','atlas_conversion',true);end if;
  perform set_config('lemma.summary','Atlas conversion '||coalesce(op,''),true);
+ if op in ('create','approve','reject') and not public.atlas_conversion_ready(u) then raise exception 'Run the Atlas migration preparation before converting projects';end if;
  if op='create' then
   if coalesce(current_setting('role',true),'')<>'service_role' then raise exception 'Tutor creates conversion drafts';end if;
   project_id:=(patch->>'project_id')::uuid;
@@ -191,6 +219,8 @@ begin
   if patch->'conversion'->>'schema' is distinct from 'plan_template_v1' then raise exception 'Template conversion required';end if;
   insert into public.proposals(user_id,project_id,kind,payload,origin,reason) values(u,project_id,'plan_change',jsonb_build_object('ops','[]'::jsonb,'atlas_conversion',patch->'conversion'),'other','Atlas course conversion') returning id into pr;
  elsif op in ('approve','reject') then
+  -- Only the Owner, from the app, decides a conversion; the connector (service role) may draft but never approve or reject.
+  if coalesce(current_setting('role',true),'')='service_role' then raise exception 'Only the owner approves a conversion';end if;
   pr:=(p->'target'->>'id')::uuid;
   if not exists(select 1 from public.proposals where id=pr and user_id=u and payload?'atlas_conversion' and status='pending' and version=(p->>'expectedVersion')::int) then raise exception 'Conversion missing or version conflict';end if;
   if op='approve' then perform public.approve_proposal(pr);else perform public.reject_proposal(pr);end if;

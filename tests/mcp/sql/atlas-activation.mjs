@@ -25,7 +25,9 @@ try{
  await q("select set_config('test.uid',$1,false)",[owner]);await q("select set_config('role','service_role',false)");
  const dry=(await q('select public.atlas_v2_migrate($1::jsonb) r',[JSON.stringify({owner})]))[0].r;
  await q('select public.atlas_v2_migrate($1::jsonb)',[JSON.stringify({owner,dry_run:false})]);
- const activate=report=>q('select public.atlas_v2_activate($1::jsonb)',[JSON.stringify({owner,approved_diff_hash:dry.diff_hash,release_report:report})]);
+ // The Owner approves the hash of a dry run taken after the conversions (they add KCs, which the diff covers), so every call re-runs it.
+ const currentHash=async()=>(await q('select public.atlas_v2_migrate($1::jsonb) r',[JSON.stringify({owner})]))[0].r.diff_hash;
+ const activate=async report=>q('select public.atlas_v2_activate($1::jsonb)',[JSON.stringify({owner,approved_diff_hash:await currentHash(),release_report:report})]);
  const migrated=async()=>(await q('select atlas_migrated_at from public.settings'))[0].atlas_migrated_at;
  await assert.rejects(activate(good()),/Model fit/,'a v3 fit is required first');
  await q("insert into public.model_fits(user_id,input_hash,params,scores) values($1,'h','{\"version\":\"3\"}','{}')",[owner]);
@@ -44,10 +46,36 @@ try{
  const noDiag=good();delete noDiag.diagnostics;await assert.rejects(activate(noDiag),/diagnostics/);
  const inAction=good();inAction.diagnostics[0].status='action';await assert.rejects(activate(inAction),/diagnostics for stream attempt/);
  const fakePass=good();fakePass.diagnostics[1].status='ok';await assert.rejects(activate(fakePass),/insufficient data/,'a stream with few events cannot claim a pass');
+ // review: report values that are not measurements
+ for(const bad of ['-Infinity','NaN','Infinity','0.01'])for(const name of ['kf_kl_w1','attendance_log_loss']){const r=good();r.gates[name]=bad;await assert.rejects(activate(r),/Release gate missing/,name+' as the string '+bad);}
+ {const r=good();r.diagnostics=[];await assert.rejects(activate(r),/diagnostics for the four streams/,'no diagnostics');}
+ {const r=good();r.diagnostics=r.diagnostics.slice(0,3);await assert.rejects(activate(r),/four streams/,'three streams');}
+ {const r=good();r.diagnostics[2].stream='attempt';await assert.rejects(activate(r),/four streams/,'a repeated stream');}
+ {const r=good();delete r.diagnostics[0].n;await assert.rejects(activate(r),/integer event count/,'no n');}
+ {const r=good();r.diagnostics[0].n=60.5;await assert.rejects(activate(r),/integer event count/,'fractional n');}
+ {const r=good();r.diagnostics[0].n='140';await assert.rejects(activate(r),/integer event count/,'n as a string');}
+ {const r=good();r.diagnostics[0].n=3;r.diagnostics[0].status='action';await assert.rejects(activate(r),/must show insufficient data/,'thin data cannot be action either');}
  assert.equal(await migrated(),null,'nothing above activated the cutover');
  // the database's own check: every active project needs an approved conversion
  await assert.rejects(activate(good()),/2 project\(s\) without an approved conversion/);
+ // a proposal merely marked approved (or approved with an empty conversion) is not an applied conversion
+ await q("select set_config('role','postgres',false)").catch(()=>{});await db.exec('reset role');
  for(const p of [id(2),id(3)])await q("insert into public.proposals(user_id,project_id,kind,payload,origin,status) values($1,$2,'plan_change','{\"ops\":[],\"atlas_conversion\":{}}','other','approved')",[owner,p]);
+ await q("select set_config('role','service_role',false)");
+ await assert.rejects(activate(good()),/2 project\(s\) without an approved conversion/,'forged approvals do not count');
+ await db.exec('reset role');await q("delete from public.proposals where user_id=$1",[owner]);
+ // real conversions: drafted by the connector, approved by the owner
+ const cp={id:'t1',title:'Unit',objective:'Understand',criterion:{text:'Prove',concept_id:'k',facet:'use',kind:'holdout',novel:true,cued:[]},kind:'learn',tier:'core',estimate:60,kcs:[{id:'k',kind:'definition',home:'x'}],steps:['a'],prereqs:[],teach:['t'],practice:[1,2,3].map(i=>({text:'p'+i})),close:{questions:['a','b','c'],minutes:8},card_plan:[]};
+ const conversion={schema:'plan_template_v1',checkpoints:[cp],map:{},kcs:[{id:'k',name:'Convert KC',kind:'definition'}],cards:[]},op=()=>crypto.randomUUID();
+ for(const p of [id(2),id(3)]){
+  await q("select set_config('role','service_role',false)");
+  const made=(await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'create',patch:{project_id:p,conversion}})]))[0].r;
+  const pid=made.changed[0].id,version=(await q('select version from public.proposals where id=$1',[pid]))[0].version;
+  await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await db.exec('set role authenticated');
+  await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,operationId:op(),resource:'plan_conversions',operation:'approve',target:{id:pid},expectedVersion:Number(version),patch:{}})]);
+ }
+ await db.exec('reset role');await q("select set_config('role','service_role',false)");
+
  const done=(await activate(good()))[0].atlas_v2_activate;
  assert.equal(done.activated,true);assert.ok(await migrated(),'activation sets atlas_migrated_at');
  // the owner export covers every Atlas fact table (it is registry-based, so a registered table cannot be forgotten)

@@ -1851,14 +1851,17 @@ try{
  // Atlas v3 (N172, N178): the registered Atlas commands through the real MCP dispatcher. Each operation: create-or-fixture → exact replay →
  // stale-version conflict (where versioned) → effect → undo restores the previous state. Browser-side writes stay revoked (atlas-v2.mjs).
  {
-  const atlasStep=async(resource,operation,fields,effect,{stale=true}={})=>{
+  // `ownerOnly`: the connector may draft a conversion but never decide it, so approve and reject run as the authenticated owner through the app function.
+  const atlasStep=async(resource,operation,fields,effect,{stale=true,ownerOnly=false}={})=>{
+   const send=async c=>{if(ownerOnly){await as(owner);try{return await app('atlas_conversion_command',c);}finally{await role('service_role');}}return mcp(c);};
    await role('service_role');
    const cmd=command(resource,operation,fields);
+   if(ownerOnly)await assert.rejects(mcp(cmd),/Only the owner approves/,resource+'.'+operation+': the connector must not decide');
    if(stale&&fields.expectedVersion!==undefined){
-    await assert.rejects(mcp(command(resource,operation,{...fields,expectedVersion:fields.expectedVersion+8})),/conflict/i,resource+'.'+operation+': stale version accepted');
+    await assert.rejects(send(command(resource,operation,{...fields,expectedVersion:fields.expectedVersion+8})),/conflict|version/i,resource+'.'+operation+': stale version accepted');
    }
-   const done=status(await mcp(cmd),resource,operation);
-   assert.deepEqual(await mcp(cmd),done,resource+'.'+operation+': exact MCP retry differs');
+   const done=status(await send(cmd),resource,operation);
+   assert.deepEqual(await send(cmd),done,resource+'.'+operation+': exact retry differs');
    await role(null);
    assert.equal(await effect(),true,resource+'.'+operation+': no effect');
    await as(owner);
@@ -1893,7 +1896,7 @@ try{
    await role(null);
    assert.equal((await q("select payload?'atlas_conversion' v from public.proposals where id=$1",[id]))[0].v,true,'plan_conversions: draft not stored as a proposal');
    await atlasStep('plan_conversions',operation,{target:{id},expectedVersion:Number((await q('select version from public.proposals where id=$1',[id]))[0].version),patch:{}},
-    async()=>(await q('select status from public.proposals where id=$1',[id]))[0].status===(operation==='approve'?'approved':'rejected'));
+    async()=>(await q('select status from public.proposals where id=$1',[id]))[0].status===(operation==='approve'?'approved':'rejected'),{ownerOnly:true});
   }
   mark('plan_conversions','create');
  }

@@ -7,11 +7,21 @@ import {KINDS,FACETS,STAGES} from '../_shared/adaptive/kc.ts';
 import type {Rows} from '../_shared/adaptive/facts.ts';
 export const ATLAS_READS=['profile','theme','themes','bridges','probes','model_health','plan_template','card_budget','conversion_input','atlas_concepts','atlas_settings'] as const;
 const optional=async(p:Promise<any[]>):Promise<any[]>=>{try{return await p;}catch(e){if(/does not exist|schema cache/i.test(String(e)))return [];throw e;}};
+/** Deterministic pages (ordered by id) so a table larger than one page is read whole; `all` cut a read off at 1,000 unordered rows. */
+export async function allPaged(c:Context,table:string,pageSize=1000,maxPages=50):Promise<any[]>{
+ const out:any[]=[];
+ for(let page=0;page<maxPages;page++){
+  const {data,error}=await scoped(c,table).order('id').range(page*pageSize,page*pageSize+pageSize-1) as any;
+  if(error)throw Error(error.message);
+  out.push(...(data??[]));if((data?.length??0)<pageSize)break;
+ }
+ return out;
+}
 export async function loadAtlasRows(c:Context):Promise<Partial<Rows>>{
  const [attempts,attemptTags,instructionEvents,atlasLinks,modelFits,cards,notes,reviews,studyEntries]=await Promise.all([
   optional(scoped(c,'attempts').order('occurred_at').order('id').limit(5000).then((r:any)=>{if(r.error)throw Error(r.error.message);return r.data??[];})),
-  optional(all(c,'attempt_tags')),optional(all(c,'instruction_events')),optional(all(c,'atlas_links')),optional(all(c,'model_fits')),
-  all(c,'cards'),all(c,'notes'),all(c,'reviews'),all(c,'study_entries')]);
+  optional(allPaged(c,'attempt_tags')),optional(allPaged(c,'instruction_events')),optional(allPaged(c,'atlas_links')),optional(all(c,'model_fits')),
+  allPaged(c,'cards'),allPaged(c,'notes'),allPaged(c,'reviews'),allPaged(c,'study_entries')]);
  return {attempts,attemptTags,instructionEvents,atlasLinks,modelFits,cards,notes,reviews,studyEntries};
 }
 export function validateAttempt(value:unknown):string[]{

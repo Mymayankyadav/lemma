@@ -52,7 +52,7 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),
     scoped(c,'scheduler_runs','*').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
-  const atlas=settings.atlas?await loadAtlasRows(c):{};
+  const atlas=settings.atlas_migrated_at?await loadAtlasRows(c):{};   // `settings.atlas` always has its default, so it cannot say whether the owner has migrated
   return {settings,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
     decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases,...atlas};
 }
@@ -128,7 +128,7 @@ export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:strin
     const queue='QUEUE\n'+v.queue.items.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
     const nodes=p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[];
     const flags=v.health.flatMap(h=>h.actions.map(a=>h.stream+': '+a));if(v.capacity===null)flags.push('capacity unset; ask for minutes per weekday');if(v.frustration.active)flags.push('Easing off — next 3 practice');
-    return ['RULES\nLog stages, cues and errors. Select counts only uncued. Tag explanations. Plan first on proofs. Use get(what=plan_template); draft cards in Close within quota.',time,queue,'BRIEF\n'+[brief.now,...[...new Set(nodes)].slice(0,3).map(id=>atlasCard(v,id))].filter(Boolean).join('\n'),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
+    return ['RULES\nLog stages, cues and errors. Select counts only uncued. Tag explanations with concepts[]. Plan first on proofs. Use get(what=plan_template); draft cards in Close within quota (key idea and skeleton, never proof lines). Read profile, themes, bridges, probes, model_health, card_budget through get. Structured attempts carry ordered stages, tags, result, hint, error and cued UUIDs. A conversion goes to proposal_drafts kind plan_conversion; only the Owner approves it.',time,queue,'BRIEF\n'+[brief.now,...[...new Set(nodes)].slice(0,3).map(id=>atlasCard(v,id))].filter(Boolean).join('\n'),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
   }
   const q=renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];

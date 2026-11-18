@@ -151,7 +151,7 @@ export function buildServer(c:Context):McpServer{
     recheck_prompt:S().max(300).optional()
   });
   register('propose_plan',"Draft plan.",z.object({
-    project:name,checkpoints:z.array(planningCp).min(3).max(40),
+    project:name,checkpoints:z.array(planningCp).min(3).max(40),template:z.object({schema:z.literal('plan_template_v1'),checkpoints:z.array(z.object({}).passthrough()).max(40)}).passthrough().optional(),
     concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     reason:S().max(300).optional()
   }),false,(a,ctx)=>proposePlan(ctx,a));

@@ -10,6 +10,7 @@ const owner='11111111-1111-1111-1111-111111111111';
 const U=n=>'00000000-0000-4000-8000-'+String(n).padStart(12,'0');
 const asService=async()=>{await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await q("select set_config('role','service_role',false)");};
 const root=async()=>{await db.exec('reset role');};
+const asOwner=async()=>{await db.exec('reset role');await q("select set_config('test.uid',$1,false)",[owner]);await db.exec('set role authenticated');};
 const command=(operation,fields)=>({schemaVersion:1,operationId:randomUUID(),resource:'plan_conversions',operation,...fields});
 const run=async input=>(await q('select public.atlas_conversion_command($1::jsonb) r',[JSON.stringify(input)]))[0].r;
 const snapshot=async project=>({
@@ -58,7 +59,7 @@ try{
   kcs:[{id:'kc-old',name:'Old idea '+i,kind:'definition',concept_id:P.old},{id:'kc-new',name:'Brand new idea '+i,kind:'result',home:'Topic '+i}],
   cards:[{id:P.reviewed,action:'revise',front:'Revised front',back:'Revised back',reason:'tighten'},{id:P.plain,action:'delete',reason:'duplicate'},{id:P.susp,action:'suspend',reason:'certified'},{action:'new',kind:'skeleton',front:'Skeleton '+i,back:'1. idea',reason:'proof skeleton'}]});
  const draft=async(P,i,conversion=conversionFor(P,i))=>{await asService();const r=await run(command('create',{patch:{project_id:P.project,conversion}}));return r.changed[0].id;};
- const approve=async id=>{await asService();const v=(await q('select version from public.proposals where id=$1',[id]))[0].version;return run(command('approve',{target:{id},expectedVersion:Number(v),patch:{}}));};
+ const approve=async id=>{await asOwner();const v=(await q('select version from public.proposals where id=$1',[id]))[0].version;return run(command('approve',{target:{id},expectedVersion:Number(v),patch:{}}));};
  // --- 11 §4 card limits per KC kind and tier
  for(const [kind,tier,confusable,canonical,limit] of [['definition','core',false,false,1],['definition','core',true,false,2],['definition','standard',true,false,1],['result','core',false,false,2],['result','standard',false,false,1],['example','core',false,true,1],['example','core',false,false,0],['example','standard',false,true,0],['technique','core',false,false,1],['technique','standard',false,false,0],['notation','core',false,false,0],['topic','core',false,false,0],['result','venture',false,false,0]])
   assert.equal((await q('select public.atlas_card_limit($1,$2,$3,$4) n',[kind,tier,confusable,canonical]))[0].n,limit,kind+' '+tier);
@@ -126,16 +127,81 @@ try{
   assert.equal((await q('select count(*)::int n from public.cards where note_id=$1 and reps>0',[P.reviewed]))[0].n,1,'review history stays');
   // undo restores the whole project in one action
   await q("select set_config('role','service_role',false)");
-  await q('select public.undo_action($1,$2,false)',[owner,done.actionNo]);await root();
+  await asOwner();await q('select public.undo_action($1,$2,false)',[owner,done.actionNo]);await root();
   assert.deepEqual(await snapshot(P.project),before,'undoing one approval restores checkpoints, prerequisites, KCs, links and cards');
   assert.equal((await q('select status from public.proposals where id=$1',[id]))[0].status,'pending','the proposal is pending again after undo');
  }
  // a replayed approval receipt is exact and a stale version conflicts
  {
-  const [P]=projects,id=await draft(P,0);await asService();
+  const [P]=projects,id=await draft(P,0);await asOwner();
   const cmd=command('approve',{target:{id},expectedVersion:Number((await q('select version from public.proposals where id=$1',[id]))[0].version),patch:{}});
   const one=await run(cmd);assert.deepEqual(await run(cmd),one,'exact replay');
   await assert.rejects(run({...cmd,operationId:randomUUID()}),/missing or version conflict/,'a second approval is refused');
+  await asOwner();await q('select public.undo_action($1,$2,false)',[owner,one.actionNo]);await root();   // leave the fixture as it was
+ }
+ // --- independent review fixes (PR #1501)
+ {
+  const [P]=projects;
+  // 9: the connector drafts, only the owner decides
+  {const id=await draft(P,0);await asService();const v=Number((await q('select version from public.proposals where id=$1',[id]))[0].version);
+   await assert.rejects(run(command('approve',{target:{id},expectedVersion:v,patch:{}})),/Only the owner approves/);
+   await assert.rejects(run(command('reject',{target:{id},expectedVersion:v,patch:{}})),/Only the owner approves/);
+   await root();await q("update public.proposals set status='rejected' where id=$1",[id]);}
+  // 9: conversions follow the data migration
+  {await root();await q("insert into public.evidence(user_id,level,outcome,origin) values($1,'use','pass','tutor')",[owner]);
+   await asService();await assert.rejects(run(command('create',{patch:{project_id:P.project,conversion:conversionFor(P,0)}})),/migration preparation/);
+   await root();await q('delete from public.evidence where user_id=$1',[owner]);}
+  // 7: undo then redo of an approval does not re-apply or refuse
+  {const id=await draft(P,0),before=await snapshot(P.project),done=await approve(id);await root();const approved=await snapshot(P.project);
+   await asOwner();const undone=(await q('select public.undo_action($1,$2,false) r',[owner,done.actionNo]))[0].r;await root();
+   assert.deepEqual(await snapshot(P.project),before,'undo restores the project');
+   await asOwner();await q('select public.undo_action($1,$2,false)',[owner,undone.as]);await root();   // redo = undo of the undo
+   assert.deepEqual(await snapshot(P.project),approved,'redo reproduces the approved state without applying the conversion twice');
+   const last=(await q("select max(no) n from public.actions where user_id=$1",[owner]))[0].n;
+   await asOwner();await q('select public.undo_action($1,$2,false)',[owner,last]);await root();
+   assert.deepEqual(await snapshot(P.project),before,'and can be undone again');
+  }
+  // 13: a done checkpoint keeps its prerequisite edges, even into a checkpoint that is skipped
+  {await q('insert into public.checkpoint_prereqs(user_id,checkpoint_id,prereq_id) values($1,$2,$3)',[owner,P.done,P.cards]);
+   const id=await draft(P,0),done=await approve(id);await root();
+   assert.equal((await q('select count(*)::int n from public.checkpoint_prereqs where checkpoint_id=$1 and prereq_id=$2',[P.done,P.cards]))[0].n,1,'a done checkpoint is not changed');
+   await asOwner();await q('select public.undo_action($1,$2,false)',[owner,done.actionNo]);await root();await q('delete from public.checkpoint_prereqs where checkpoint_id=$1 and prereq_id=$2',[P.done,P.cards]);}
+  // 6: a new KC never renames, retypes or merges an existing concept
+  {await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'group-action','Group action')",[U(9001),owner,U(1)]);
+   const conv=conversionFor(P,0);conv.kcs.push({id:'kg',name:'Group-action',kind:'result',home:'Topic 0'},{id:'ke',name:'ε',kind:'definition'},{id:'kd',name:'δ',kind:'definition'});
+   conv.checkpoints[2].kcs.push({id:'kg',kind:'result',home:'Topic 0'},{id:'ke',kind:'definition',home:'Topic 0'},{id:'kd',kind:'definition',home:'Topic 0'});
+   const id=await draft(P,0,conv),done=await approve(id);await root();
+   const group=(await q("select name,kind,slug from public.concepts where id=$1",[U(9001)]))[0];
+   assert.deepEqual([group.name,group.kind,group.slug],['Group action','topic','group-action'],'an existing concept is untouched');
+   const made=await q("select name,kind,slug from public.concepts where name in ('Group-action','ε','δ') order by name");
+   assert.equal(made.length,3,'each new KC is its own concept');assert.equal(new Set(made.map(m=>m.slug)).size,3,'with its own slug');
+   assert.ok(made.every(m=>/^[a-z0-9]+(-[a-z0-9]+)*$/.test(m.slug)));
+   await asOwner();await q('select public.undo_action($1,$2,false)',[owner,done.actionNo]);await root();await q('delete from public.concepts where id=$1',[U(9001)]);}
+  // 5: the cards a conversion creates obey the card rules
+  {const withCards=(cards,extra={})=>{const c=conversionFor(P,0);c.cards=[...c.cards.filter(x=>x.id),...cards];return {...c,...extra};};
+   const fresh=(n,over={})=>Array.from({length:n},(_,i)=>({action:'new',kind:'skeleton',front:'Card '+i,back:'one line',reason:'draft',...over}));
+   for(const [name,conv,expected] of [
+    ['more new cards than the template allows',withCards(fresh(8)),/exceed the template card limits/],
+    ['list-all cards',withCards(fresh(1,{front:'List all the axioms of a group'})),/list-all/],
+    ['answers over three lines',withCards(fresh(1,{back:'1\n2\n3\n4'})),/three lines/],
+    ['a card without a front',withCards(fresh(1,{front:''})),/needs a front/]]){
+    const id=await draft(P,0,conv);await assert.rejects(approve(id),expected,name);await root();await q("update public.proposals set status='rejected' where id=$1",[id]);}
+   const id=await draft(P,0,withCards(fresh(7))),done=await approve(id);await root();   // exactly the allowed number is fine
+   await asOwner();await q('select public.undo_action($1,$2,false)',[owner,done.actionNo]);await root();}
+  // 14: missing kind, tier or facet is refused, not waved through
+  for(const [name,mutate,expected] of [['no kind',c=>{delete c.checkpoints[2].kind;},/Invalid template checkpoint/],['no tier',c=>{delete c.checkpoints[2].tier;},/Invalid template checkpoint/],
+   ['card without a facet',c=>{c.checkpoints[2].card_plan=[{concept_id:'kc-new',kind:'definition',front:'f',back:'b'}];},/facet must be/]]){
+   const c=conversionFor(P,0);mutate(c);const id=await draft(P,0,c);await assert.rejects(approve(id),expected,name);await root();await q("update public.proposals set status='rejected' where id=$1",[id]);}
+  // 4: a wide prerequisite graph is checked in set time, not path time
+  {await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'perf-project','Perf','Understand')",[U(9100),owner,U(1)]);
+   const conv={schema:'plan_template_v1',checkpoints:Array.from({length:28},(_,i)=>template('perf-'+i,{kcs:[{id:'kc-p',kind:'definition',home:'x'}],prereqs:[i>0?'perf-'+(i-1):null,i>1?'perf-'+(i-2):null].filter(Boolean)})),map:{},kcs:[{id:'kc-p',name:'Perf KC',kind:'definition'}],cards:[]};
+   const id=await draft({project:U(9100)},0,conv),t0=Date.now(),done=await approve(id);await root();const ms=Date.now()-t0;
+   assert.ok(ms<4000,'28 checkpoints with two prerequisites each approve in '+ms+' ms');
+   assert.equal((await q('select count(*)::int n from public.checkpoint_prereqs where checkpoint_id in(select id from public.checkpoints where project_id=$1)',[U(9100)]))[0].n,27+26);
+   // and a long cycle is still found
+   await q("insert into public.projects(id,user_id,subject_id,slug,title,goal) values($1,$2,$3,'cycle-project','Cycle','Understand')",[U(9101),owner,U(1)]);
+   const cyc={...conv,checkpoints:conv.checkpoints.map((c,i)=>i===0?{...c,prereqs:['perf-27']}:c)};
+   const cid=await draft({project:U(9101)},0,cyc);await assert.rejects(approve(cid),/cycle/);}
  }
  console.log('PASS N179 conversion: four-project approval and undo, new KCs, prerequisite rewiring, card decisions and approval-time hard rules');
 }finally{await db.close();}

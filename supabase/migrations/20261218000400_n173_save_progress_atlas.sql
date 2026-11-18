@@ -1,5 +1,5 @@
--- N170: save_progress also registers the item a tutor poses (flag items). Text is fingerprinted by the connector (`fp`), so the
--- same question asked again, in any subject, is one item. Everything else is unchanged.
+-- Atlas v3: until `settings.atlas_migrated_at` is set this is the N170 function, byte for byte in behaviour (the tests/mcp/sql/atlas-save-progress.mjs differential proves it on 1,500+ legacy
+-- payloads); afterwards typed attempts, tags and instruction events are written in the same transaction and evidence is frozen. Same signature and grants.
 -- Replaces function: public.save_progress(uuid,uuid,uuid,jsonb), same signature and grants.
 create or replace function public.save_progress(p_user_id uuid,p_project_id uuid,p_session_id uuid,p_payload jsonb) returns jsonb
 language plpgsql security invoker set search_path = '' as $$
@@ -20,9 +20,10 @@ begin
  select * into strict owner_settings from public.settings where user_id=p_user_id;
  today:=((now() at time zone owner_settings.time_zone)-make_interval(hours=>owner_settings.rollover_hour))::date;
  v_atlas:=owner_settings.atlas_migrated_at is not null;
- if not v_atlas and (p_payload?'attempt' or exists(select 1 from jsonb_array_elements(coalesce(p_payload->'events','[]')) x where x?'attempt' or x?'concepts')) then raise exception 'Atlas v2 not migrated';end if;
  v_flag:=v_atlas or public.lemma_flag(p_user_id,'recheck_v2'); v_items:=public.lemma_flag(p_user_id,'items');
  if p_payload ? 'events' and (jsonb_typeof(p_payload->'events') is distinct from 'array' or jsonb_array_length(p_payload->'events')>10) then raise exception 'At most 10 events are allowed'; end if;
+ -- Only a structured attempt needs the migration; `concepts` on an explanation is ignored until then (the legacy writer never read it), so a save is never lost to it.
+ if not v_atlas and exists(select 1 from jsonb_array_elements(coalesce(p_payload->'events','[]')) x where jsonb_typeof(x)='object' and x?'attempt') then raise exception 'Atlas v2 not migrated';end if;
  if p_payload ? 'step' then
   if jsonb_typeof(p_payload->'step') is distinct from 'number' or (p_payload->>'step') !~ '^[1-8]$' then raise exception 'Step must be an integer from 1 to 8'; end if;
   next_step:=(p_payload->>'step')::int;

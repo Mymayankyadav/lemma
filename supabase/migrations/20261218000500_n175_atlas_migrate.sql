@@ -43,6 +43,8 @@ grant execute on function public.atlas_v2_migrate(jsonb) to service_role;
 
 create function public.atlas_freeze_evidence() returns trigger language plpgsql set search_path='' as $fn$
 begin
+ -- Direct writes are frozen; a cascade from a deleted project or account (a foreign-key action runs at trigger depth 2) is not a write.
+ if pg_trigger_depth()>1 then if tg_op='DELETE' then return old;end if;return new;end if;
  if exists(select 1 from public.settings where user_id=coalesce(new.user_id,old.user_id) and atlas_migrated_at is not null) then raise exception 'Evidence is frozen after Atlas cutover';end if;
  if tg_op='DELETE' then return old;end if;return new;
 end $fn$;
@@ -60,20 +62,28 @@ begin
   ('attempt_calibration_abs_intercept','<=',0.2),('fatigue_abs_z','<=',3),('card_kl_vs_default','<=',0),('duration_log_density','>=',-0.70),('duration_coverage_lo','>=',0.75),
   ('duration_coverage_hi','<=',0.85),('attendance_log_loss','<=',0.57),('e2e_p2c_minus_p0','>',0),('e2e_se_ratio','>',2),('resume_tokens_max','<=',1500),('card_tokens_max','<=',100)
  ) as t(name,op,threshold) loop
-  begin v:=(r->'gates'->>g.name)::numeric;exception when others then v:=null;end;
-  if v is null then raise exception 'Release gate missing: %',g.name;end if;
+  -- A gate is a JSON number: a string such as "-Infinity" or "NaN" casts to numeric but is not a measurement.
+  if coalesce(jsonb_typeof(r->'gates'->g.name),'')<>'number' then raise exception 'Release gate missing: %',g.name;end if;
+  v:=(r->'gates'->>g.name)::numeric;
   if not (case g.op when '<=' then v<=g.threshold when '>=' then v>=g.threshold when '>' then v>g.threshold end) then raise exception 'Release gate failed: % % % (reported %)',g.name,g.op,g.threshold,v;end if;
  end loop;
  if coalesce((r->>'parity_ok')::boolean,false) is not true then raise exception 'Release gate failed: app and MCP parity';end if;
  if coalesce((r->>'no_beta_imports')::boolean,false) is not true then raise exception 'Release gate failed: Beta proficiency code still imported';end if;
- -- D1-D5 are reported per stream; a stream with 50 or more events must not be in action.
- if coalesce(jsonb_typeof(r->'diagnostics'),'')<>'array' then raise exception 'Release gate missing: diagnostics';end if;
+ -- D1-D5 are reported for exactly the four streams; a stream with 50 or more events must be ok, one with fewer must say so (never a pass on thin data).
+ if coalesce(jsonb_typeof(r->'diagnostics'),'')<>'array' or jsonb_array_length(r->'diagnostics')<>4 then raise exception 'Release gate missing: diagnostics for the four streams';end if;
+ if (select count(distinct x->>'stream') from jsonb_array_elements(r->'diagnostics') x where x->>'stream' in ('attempt','card','duration','attendance'))<>4 then raise exception 'Release gate missing: diagnostics for the four streams';end if;
  for s in select jsonb_array_elements(r->'diagnostics') loop
+  if coalesce(jsonb_typeof(s->'n'),'')<>'number' or (s->>'n')::numeric<>floor((s->>'n')::numeric) or (s->>'n')::numeric<0 then raise exception 'Release gate failed: stream % needs an integer event count n',s->>'stream';end if;
+  if coalesce(jsonb_typeof(s->'status'),'')<>'string' then raise exception 'Release gate failed: stream % needs a status',s->>'stream';end if;
   if (s->>'n')::int>=50 and s->>'status'<>'ok' then raise exception 'Release gate failed: diagnostics for stream % are %',s->>'stream',s->>'status';end if;
   if (s->>'n')::int<50 and s->>'status'<>'insufficient data' then raise exception 'Release gate failed: stream % with fewer than 50 events must show insufficient data',s->>'stream';end if;
  end loop;
  select count(*) into unconverted from public.projects p where p.user_id=u and p.status in ('planning','active','paused')
-  and not exists(select 1 from public.proposals x where x.user_id=u and x.project_id=p.id and x.payload?'atlas_conversion' and x.status='approved');
+  and not exists(select 1 from public.proposals x where x.user_id=u and x.project_id=p.id and x.status='approved' and x.decided_at is not null and x.result is not null
+    and x.payload#>>'{atlas_conversion,schema}'='plan_template_v1'
+    -- applied, not just marked approved: every template checkpoint that is not already done exists in the project with its template
+    and (select count(*) from public.checkpoints c where c.user_id=u and c.project_id=p.id and c.template is not null)
+     >=(select count(*) from jsonb_array_elements(x.payload->'atlas_conversion'->'checkpoints') cx where cx->>'id' not in(select c2.id::text from public.checkpoints c2 where c2.user_id=u and c2.project_id=p.id and c2.status='demonstrated')));
  if unconverted>0 then raise exception 'Release gate failed: % project(s) without an approved conversion',unconverted;end if;
 end $fn$;
 revoke all on function public.atlas_check_release_report(uuid,jsonb) from public,anon,authenticated;

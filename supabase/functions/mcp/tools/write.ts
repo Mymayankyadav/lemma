@@ -40,7 +40,8 @@ export async function saveProgress(c:Context,a:any):Promise<string>{
   const s=await session(c,p,a.session);
   const proposedAttempts=[...(a.attempt?[a.attempt]:[]),...(a.events??[]).filter((e:any)=>e.attempt).map((e:any)=>e.attempt)];
   for(const attempt of proposedAttempts){const errors=validateAttempt(attempt);if(errors.length)throw Error(errors.join('; '));}
-  if(proposedAttempts.length||(a.events??[]).some((e:any)=>e.concepts)){if(!(await settings(c)).atlas_migrated_at)throw Error('Atlas v2 not migrated');}
+  // Only a structured attempt needs the migration; `concepts` on an explanation is ignored until then so a save is never lost to it.
+  if(proposedAttempts.length){if(!(await settings(c)).atlas_migrated_at)throw Error('Atlas v2 not migrated');}
   if(a.diagnostics?.length)c.notices=[...(c.notices??[]),...lintNotices(a.diagnostics.map((d:any)=>['diagnostic',d.evidence+' '+d.topic] as ['diagnostic',string]))];
   // DB-1 CONTRACT #220 provides an owner-, project-, session-, and checkpoint-scoped
   // Postgres transaction. Never split events and checkpoint updates across REST calls.
@@ -128,7 +129,7 @@ function validateConceptHierarchy(concepts:any[],existing:Set<string>=new Set())
 }
 export async function proposePlan(c:Context,a:any):Promise<string>{
  const p=await project(c,a.project);
- if((await settings(c)).atlas_migrated_at){const errors=validateTemplate(a.template??{schema:'plan_template_v1',checkpoints:a.checkpoints});if(errors.length)throw Error('Plan validation: '+errors.join('; '));}
+ if((await settings(c)).atlas_migrated_at){if(!a.template)throw Error('Plan validation: send a plan_template_v1 template with the plan (get what=plan_template)');const errors=validateTemplate(a.template);if(errors.length)throw Error('Plan validation: '+errors.join('; '));}
  if(p.status!=='planning'||(await checkpoints(c,p)).length)throw Error('This project already has a plan; propose changes instead');
  if(!p.subject_id)throw Error('Set the subject with edit before proposing a plan');
  requireLearningGoal(p.goal);
