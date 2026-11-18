@@ -1,0 +1,21 @@
+{
+  "resource": "plan_conversions",
+  "version": 1,
+  "note": "Command resource (not a table): its fields are written through the named command into the underlying table; the table's own registry document covers every column.",
+  "columns": {
+    "project_id": {
+      "classification": "owner-editable",
+      "appPath": "src/features/plan-proposal/v7 (atlas_conversion_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_conversion_command; stored as a pending proposal payload",
+      "exportPolicy": "exported with proposals",
+      "deletionPolicy": "approval is one undoable action; reject leaves the project unchanged"
+    },
+    "conversion": {
+      "classification": "owner-editable",
+      "appPath": "src/features/plan-proposal/v7 (atlas_conversion_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_conversion_command; stored as a pending proposal payload",
+      "exportPolicy": "exported with proposals",
+      "deletionPolicy": "approval is one undoable action; reject leaves the project unchanged"
+    }
+  }
+}

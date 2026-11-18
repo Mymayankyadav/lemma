@@ -53,7 +53,7 @@ end $fn$;
 revoke all on function public.atlas_command(jsonb) from public,anon;
 grant execute on function public.atlas_command(jsonb) to authenticated,service_role;
 insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema") values
- ('atlas_links','atlas_command',true,'{"operations":["approve","reject"],"fields":[]}'),
+ ('atlas_links','atlas_command',true,'{"operations":["approve","reject"],"fields":["status"]}'),
  ('atlas_concepts','atlas_command',true,'{"operations":["update"],"fields":["kind","family_id"]}'),
  ('atlas_settings','atlas_command',true,'{"operations":["update"],"fields":["threshold_p","stretch_share","plan_first_min","ask_confidence","card_quota_share","card_cap","card_weight"]}'),
- ('instruction_events','atlas_command',true,'{"operations":["void"],"fields":[]}');
+ ('instruction_events','atlas_command',true,'{"operations":["void"],"fields":["voided_at"]}');

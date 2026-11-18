@@ -683,7 +683,9 @@
           "approve",
           "reject"
         ],
-        "fields": []
+        "fields": [
+          "status"
+        ]
       }
     },
     {
@@ -727,7 +729,9 @@
         "operations": [
           "void"
         ],
-        "fields": []
+        "fields": [
+          "voided_at"
+        ]
       }
     },
     {

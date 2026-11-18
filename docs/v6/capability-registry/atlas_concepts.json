@@ -1,0 +1,21 @@
+{
+  "resource": "atlas_concepts",
+  "version": 1,
+  "note": "Command resource (not a table): its fields are written through the named command into the underlying table; the table's own registry document covers every column.",
+  "columns": {
+    "kind": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; writes concepts.kind and concepts.family_id",
+      "exportPolicy": "exported with concepts",
+      "deletionPolicy": "journalled concept change; undo restores the prior value"
+    },
+    "family_id": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; writes concepts.kind and concepts.family_id",
+      "exportPolicy": "exported with concepts",
+      "deletionPolicy": "journalled concept change; undo restores the prior value"
+    }
+  }
+}
