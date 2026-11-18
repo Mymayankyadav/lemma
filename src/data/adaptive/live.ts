@@ -29,6 +29,8 @@ export async function readAdaptiveData(now=new Date()):Promise<AdaptiveData>{
   dueCardsByProject(),
   rows(db,'rechecks',uid),
  ]);
+ const extra:Record<string,Row[]>={};
+ if(settings.atlas){await Promise.all([['attempts','attempts'],['attemptTags','attempt_tags'],['instructionEvents','instruction_events'],['atlasLinks','atlas_links'],['modelFits','model_fits'],['items','items'],['assumptions','assumptions'],['cards','cards'],['notes','notes'],['reviews','reviews'],['studyEntries','study_entries']].map(async([key,table])=>{extra[key]=await list(select(table).limit(table==='attempts'||table==='attempt_tags'?5000:1000));}));}
  return {rows:{settings,projects:projects.filter(p=>!p.system&&p.status!=='archived'),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,
-  misconceptions,decisions,baselines,overrides,sessions,evidence,intervals,busy,dueCards},rechecks:rechecks as AdaptiveData['rechecks']};
+  misconceptions,decisions,baselines,overrides,sessions,evidence,intervals,busy,dueCards,...extra},rechecks:rechecks as AdaptiveData['rechecks']};
 }

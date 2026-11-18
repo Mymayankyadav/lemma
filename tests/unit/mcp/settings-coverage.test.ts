@@ -37,6 +37,7 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
    planning:{gap_minutes:15},review_budget:{minutes:30},
    attention:{urge_prompt:true},
    flags:{recheck_v2:true},capacity:{weekday_minutes:[240,240,240,240,240,120,120],review_share:0.25},
+   atlas:{threshold_p:.85,stretch_share:.2,card_quota_share:.5},
   };
   expect(Object.keys(accepted).sort()).toEqual(wanted);
   const result=prepareSettingsEdit(row,accepted,version);

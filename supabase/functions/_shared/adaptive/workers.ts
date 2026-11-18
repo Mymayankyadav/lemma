@@ -1,7 +1,23 @@
 // Worker pipeline core (spec §12). Pure: the model is injected, so tests use a mock and no key exists yet.
 // Small models extract, tag and propose; they never decide correctness, set outcomes, merge concepts or change tiers (I8).
 import type {Level,Outcome,Novelty} from './recheck.ts';
+import {linkCandidates,validateLinkLabel,kindEnabled,type AtlasLink,type LinkKind} from './links.ts';
+import type {Concept} from './kc.ts';
 export const LEVEL_SET=new Set<string>(['recall','use','understand','transfer']);
+/** I14: worker tags are suggestions only. Trusted results/hints/errors/cues are never copied from model output. */
+export function validateStageSuggestions(rows:unknown,candidates:Set<string>){
+ if(!Array.isArray(rows))return [];
+ return rows.filter(r=>r&&candidates.has(r.concept_id)&&['recall','understand','use','select','execute','recognise','construct','transfer','perform'].includes(r.facet)&&['target','required','incidental'].includes(r.role)&&['U','S','E','C'].includes(r.stage)).map(r=>({concept_id:r.concept_id,facet:r.facet,role:r.role,stage:r.stage,confidence:Math.min(.9,Math.max(0,Number(r.confidence)||.5))}));
+}
+export async function proposeAtlasLinks(fresh:Concept[],old:Concept[],existing:AtlasLink[],label:(candidate:unknown)=>Promise<unknown>){
+ const out:Partial<AtlasLink>[]=[];
+ for(const candidate of linkCandidates(fresh,old,existing)){
+  if(candidate.automatic){out.push({from_id:candidate.from.id,to_id:candidate.to.id,kind:'equivalent',status:'approved',origin:'auto',confidence:1,rationale:'Exact name under a same-named parent',from_hash:candidate.from_hash,to_hash:candidate.to_hash});continue;}
+  const result=await label({from:candidate.from,to:candidate.to});if(!result||validateLinkLabel(result).length)continue;const r=result as {kind:LinkKind;direction:string;confidence:number;rationale:string};if(!kindEnabled(existing,r.kind))continue;
+  const reverse=r.direction==='reverse';out.push({from_id:reverse?candidate.to.id:candidate.from.id,to_id:reverse?candidate.from.id:candidate.to.id,kind:r.kind,status:'proposed',origin:'worker',confidence:r.confidence,rationale:r.rationale,from_hash:reverse?candidate.to_hash:candidate.from_hash,to_hash:reverse?candidate.from_hash:candidate.to_hash});
+ }
+ return out;
+}
 export const ROLE_SET=new Set<string>(['primary','secondary','used']);
 export const NOVELTY_SET=new Set<string>(['novel','familiar','seen_solution','self_reported']);
 export type ScribeEvent={id:string;kind:string;outcome:Outcome;hint_level:number;text:string;session_id:string;checkpoint_id:string|null;tutorTagged:boolean};

@@ -12,6 +12,8 @@ import {project} from './resolve.ts';
 import {insert,update} from './db.ts';
 import {restore} from '../_shared/adaptive/prune.ts';
 import {DEFAULTS} from '../_shared/adaptive/plan.ts';
+import {loadAtlasRows,renderAtlasRead,ATLAS_READS} from './atlas.ts';
+import {assembleAtlas,atlasCard} from '../_shared/adaptive/atlas.ts';
 
 export const FLAG_NAMES=['time_block','recheck_v2','scheduler_v2','proficiency','items','atlas_memory','workers'] as const;
 export type FlagName=typeof FLAG_NAMES[number];
@@ -35,11 +37,11 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
   const [settings,projects,checkpoints,prereqs,cpConcepts,concepts,conceptLinks,misc,decisions,baselines,overrides,sessions,items,assumptions,aliases]=await Promise.all([
     scoped(c,'settings').maybeSingle().then(r=>{if(r.error||!r.data)throw new Error('Owner settings not initialized; run bootstrap first');return r.data}),
     all(c,'projects','*'),all(c,'checkpoints','*'),all(c,'checkpoint_prereqs','checkpoint_id,prereq_id'),
-    all(c,'checkpoint_concepts','checkpoint_id,concept_id'),all(c,'concepts','id,name,slug,parent_id'),all(c,'concept_links','from_id,to_id,kind'),
+    all(c,'checkpoint_concepts','checkpoint_id,concept_id'),all(c,'concepts','*'),all(c,'concept_links','from_id,to_id,kind'),
     all(c,'misconceptions','id,label,concept_id,resolved_at,created_at'),all(c,'recheck_decisions','id,concept_id,level,action,occurred_at'),
     all(c,'plan_baselines','project_id,baseline_version,entries'),all(c,'capacity_overrides','on_date,minutes'),
     all(c,'sessions','id,number,project_id,checkpoint_id,started_at,last_activity_at,minutes,state,abandoned,study_day,time_zone'),
-    all(c,'items','id,fingerprint,teaches,holdout,status').catch(()=>[] as any[]),all(c,'assumptions','id,concept_id,level,mean_at,revoked_at,created_at').catch(()=>[] as any[]),
+    all(c,'items','*').catch(()=>[] as any[]),all(c,'assumptions','id,concept_id,level,mean_at,revoked_at,created_at').catch(()=>[] as any[]),
     all(c,'concept_aliases','concept_a,concept_b').catch(()=>[] as any[])]);
   const [evidence,intervals,busy,dueCards,frozen]=await Promise.all([
     scoped(c,'evidence','id,occurred_at,session_id,concept_id,item_id,level,role,outcome,hint_level,novelty,kind,origin,confidence,ctx,voided_at').order('id').limit(5000).then(must),
@@ -47,8 +49,9 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),
     scoped(c,'scheduler_runs','study_day,project_id,slack_ratio').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
+  const atlas=settings.atlas?await loadAtlasRows(c):{};
   return {settings,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
-    decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases};
+    decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases,...atlas};
 }
 /** Facts → state. The derived rechecks cache is refreshed best-effort; a cache failure never breaks a read. */
 export async function stateOf(c:Context,now=new Date()):Promise<{state:State;rows:Rows}>{
@@ -116,6 +119,14 @@ export function renderForecast(s:State,rows:Rows,slug?:string):string{
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
 export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[];nodes?:string[]}):string{
   const p=slug?Object.values(s.projects).find(x=>x.slug===slug):undefined;
+  if(rows.settings?.atlas_migrated_at){
+    const v=assembleAtlas(rows,new Date()),fit=p?v.fits[p.id]:undefined;
+    const time='TIME today='+s.today+' tz='+s.zone+(fit?' fit='+fit.pAll.toFixed(2)+' core='+fit.pCore.toFixed(2):'')+' checks_due='+v.queue.items.filter(x=>x.kind==='check').length+' new_cards_quota='+v.budget.available.toFixed(1)+' card_min='+v.queue.cardMinutes.toFixed(1)+'/'+v.queue.cardCapMinutes.toFixed(1);
+    const queue='QUEUE\n'+v.queue.items.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
+    const nodes=p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[];
+    const flags=v.health.flatMap(h=>h.actions.map(a=>h.stream+': '+a));if(v.capacity===null)flags.push('capacity unset; ask for minutes per weekday');if(v.frustration.active)flags.push('Easing off — next 3 practice');
+    return ['RULES\nLog stages, cues and errors. Select counts only uncued. Tag explanations. Plan first on proofs. Use get(what=plan_template); draft cards in Close within quota.',time,queue,'BRIEF\n'+[brief.now,...[...new Set(nodes)].slice(0,3).map(id=>atlasCard(v,id))].filter(Boolean).join('\n'),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
+  }
   const q=renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];
   const b=[brief.now,brief.last,brief.fix,brief.adapt,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m),...(brief.nodes??[]).map(n=>'NODE '+n)].filter(Boolean) as string[];
@@ -130,6 +141,7 @@ export function lintNotices(fields:[LintField,string|null|undefined][]):string[]
 }
 /** Node cards for the concepts of today's checkpoint and the mandatory rechecks (flag atlas_memory); each ≤ 100 tokens. */
 export function briefNodes(s:State,rows:Rows,cpId:string|undefined,max=4):string[]{
+  if(rows.settings?.atlas_migrated_at&&cpId){const v=assembleAtlas(rows,new Date());return [...new Set(rows.cpConcepts.filter(x=>x.checkpoint_id===cpId).map(x=>x.concept_id))].slice(0,max).map(id=>atlasCard(v,id));}
   if(!s.flags.atlas_memory||!cpId)return [];
   const ids=[...new Set(rows.cpConcepts.filter((x:any)=>x.checkpoint_id===cpId).map((x:any)=>x.concept_id))].sort() as string[];
   return ids.slice(0,max).map(id=>cardFor(s,rows,id)).filter(Boolean);
@@ -140,6 +152,8 @@ export {addDays,cut};
 export async function readAdaptive(c:Context,a:any):Promise<string>{
   const slug=a.project?(await project(c,a.project)).slug:undefined;
   const {state,rows}=await stateOf(c);
+  if((ATLAS_READS as readonly string[]).includes(a.what)||(rows.settings?.atlas_migrated_at&&['node','calibration'].includes(a.what)))return renderAtlasRead(rows,a);
+  if(rows.settings?.atlas_migrated_at&&a.what==='feasibility')return JSON.stringify(assembleAtlas(rows,new Date()).fits);
   if(a.what==='time'){
     const ps=Object.values(state.projects).filter(p=>!slug||p.slug===slug).sort((x,y)=>x.slug<y.slug?-1:1);
     return ps.length?ps.map(p=>p.slug+'\n'+p.block).join('\n'):timeLine(state);
@@ -164,6 +178,10 @@ const slackRatio=(f:{slack:number;supply:number})=>f.supply>0?f.slack/f.supply:(
  */
 export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
   const {state,rows}=await stateOf(c,now);
+  if(rows.settings?.atlas_migrated_at){
+    const v=assembleAtlas(rows,now);for(const p of Object.values(state.projects)){const f=v.fits[p.id];if(f)await c.db.from('scheduler_runs').upsert({user_id:c.userId,study_day:state.today,project_id:p.id,p_all:f.pAll,p_core:f.pCore,slack_ratio:0,supply:f.supply,required:f.required,input_hash:state.today+':atlas3',computed_at:now.toISOString()},{onConflict:'user_id,study_day,project_id',ignoreDuplicates:true});}
+    return Object.values(v.fits).some(f=>f.pCore<.8)?'SCHEDULER core at risk; choose capacity, deadline or named scope changes':'';
+  }
   if(!flagOn(rows.settings,'scheduler_v2'))return '';
   const hist=new Map<string,Map<string,number>>();
   for(const f of rows.frozen??[]){(hist.get(f.project_id)??hist.set(f.project_id,new Map()).get(f.project_id)!).set(String(f.study_day).slice(0,10),Number(f.slack_ratio))}

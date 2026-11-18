@@ -1,3 +1,4 @@
+import {LinkProposals} from '../../adaptive/AtlasPanels';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {fromEdge} from '../../../ui/v7/edges';
 import {nameCodes} from '../../../lib/codeNames';
@@ -156,6 +157,7 @@ export default function InboxV7(){
  const titleOf=(slug:string)=>bySlug.get(slug)?.title??slug;
  const tabs=['Cards '+cards.length,'Plans '+plans.length];
  return <main id="main-content" className="v7-page v7-inbox" aria-label="Inbox">
+  <LinkProposals/>
   <DetailHeader title="Inbox" back="/" action={tab==='cards'?<IconButton label={list?'Show the stack':'Show as a list'} aria-pressed={list} onClick={toggleList}>{list?<GalleryVerticalEnd aria-hidden="true"/>:<LayoutList aria-hidden="true"/>}</IconButton>:undefined}/>
   <h1 className="v7-sr-only">Inbox</h1>
   <Segmented label="Proposal types" tabs panelId="v7-inbox-panel" options={tabs} value={tab==='plan'?tabs[1]:tabs[0]} onChange={setTab}/>

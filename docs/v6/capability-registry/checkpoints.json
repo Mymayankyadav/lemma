@@ -243,6 +243,13 @@
       "exportPolicy": "owner-scoped export (N95)",
       "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
       "description": "N169: per-step tier and estimate, aligned with steps"
+    },
+    "template": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
     }
   }
 }

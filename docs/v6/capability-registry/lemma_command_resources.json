@@ -673,6 +673,78 @@
           "origin"
         ]
       }
+    },
+    {
+      "resource": "atlas_links",
+      "command_fn": "atlas_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "approve",
+          "reject"
+        ],
+        "fields": []
+      }
+    },
+    {
+      "resource": "atlas_concepts",
+      "command_fn": "atlas_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "update"
+        ],
+        "fields": [
+          "kind",
+          "family_id"
+        ]
+      }
+    },
+    {
+      "resource": "atlas_settings",
+      "command_fn": "atlas_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "update"
+        ],
+        "fields": [
+          "threshold_p",
+          "stretch_share",
+          "plan_first_min",
+          "ask_confidence",
+          "card_quota_share",
+          "card_cap",
+          "card_weight"
+        ]
+      }
+    },
+    {
+      "resource": "instruction_events",
+      "command_fn": "atlas_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "void"
+        ],
+        "fields": []
+      }
+    },
+    {
+      "resource": "plan_conversions",
+      "command_fn": "atlas_conversion_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create",
+          "approve",
+          "reject"
+        ],
+        "fields": [
+          "project_id",
+          "conversion"
+        ]
+      }
     }
   ],
   "access": "mcp_command: service_role only; underlying command functions remain owner-authorized and invoker-scoped",

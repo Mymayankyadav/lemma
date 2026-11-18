@@ -1,3 +1,4 @@
+import {PathEstimates} from '../../adaptive/AtlasPanels';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
@@ -178,6 +179,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   </section>}
   <ProjectScheduler projectId={project.id}/>
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
+  <PathEstimates projectId={project.id}/>
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>setPrompt(true):undefined}/>;})}</ol>;

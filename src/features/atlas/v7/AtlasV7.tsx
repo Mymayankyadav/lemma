@@ -19,6 +19,8 @@ import {alphabetical,atlasSummary,buildAtlasModel,checkpointName,searchStars,sta
 import './atlas.css';
 import {isFlagOn} from '../../../flags';
 import {rememberRoomItem} from '../../../ui/v7/room';
+import {AtlasExplore,ConceptFacets} from '../../adaptive/AtlasPanels';
+import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
 const PAGE=200,PEEK=180,DOCK=92;
@@ -103,6 +105,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
     :<StateButton disabledReason="Unavailable · No cards are due.">Review cards</StateButton>}
   </div>}
   {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
+   <ConceptFacets id={star.id}/>
    {group('Needs',needs)}{group('Opens up',opens)}{group('Related',related)}
    {model.neighbours[index].length===0&&<p className="v7-atlas-meta">No connections yet.</p>}
    <div className="v7-atlas-more-actions">
@@ -118,11 +121,13 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
+ const [atlasView,setAtlasView]=useState<'map'|'themes'|'bridges'>('map');
  const room=isFlagOn('v7Room'),home=useHome();
  const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
+ const atlasModel=useAtlasModel();
  const reduced=useReducedMotion();
- const model=useMemo(()=>query.data?buildAtlasModel(query.data):null,[query.data]);
+ const model=useMemo(()=>query.data?buildAtlasModel({...query.data,concepts:query.data.concepts.map(c=>({...c,kind:atlasModel.data?.model.index[c.id]?.kind??c.kind,facets:atlasModel.data?.facets[c.id],gap:atlasModel.data?{p:Math.max(.05,...(atlasModel.data.facets[c.id]??[]).map(f=>f.gap)),lastAt:null}:undefined}))}):null,[query.data,atlasModel.data]);
  const focusCluster=useMemo(()=>{
   if(!room||!model)return null;
   return model.stars.find(star=>star.checkpoints.some(cp=>cp.projectSlug===home.data?.resume?.projectSlug))?.cluster??model.stars.find(star=>star.state==='in_progress')?.cluster??model.clusters[0]?.index??null;
@@ -197,6 +202,7 @@ export default function AtlasV7(){
  const selectedStar=selected===null?null:model.stars[selected];
  return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}
+  <AtlasExplore view={atlasView} onView={setAtlasView}/>
   {room&&<nav className="v7-room-atlas-subsets" aria-label="Concept subsets">{(['All','Tonight','Shaky','Demonstrated'] as const).map(label=><button key={label} className="v7-filter-chip" type="button" aria-pressed={subset===label} onClick={()=>{setSubset(label);setShown(PAGE);}}>{label}</button>)}</nav>}
   <p className="v7-sr-only" data-testid="atlas-summary">{summary}</p>
   {searching&&<div id="v7-atlas-search" className="v7-atlas-search" role="search" onKeyDown={event=>{if(event.key==='Escape'){setSearching(false);}}}>
@@ -208,7 +214,7 @@ export default function AtlasV7(){
     <span className="v7-atlas-row-name"><FastTex source={model.stars[i].name}/></span>
     <span className="v7-atlas-meta">{model.clusters.find(c=>c.index===model.stars[i].cluster)?.name}</span></button></li>)}</ul>
   </div>}
-  {view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
+  {atlasView!=='map'?null:view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} focusCluster={focusCluster} highlighted={highlighted}
      insets={{top:room?120:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
@@ -241,7 +247,7 @@ export default function AtlasV7(){
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>
   </section>}
-  {selected!==null&&<ConceptSheet key={model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
+  {atlasView==='map'&&selected!==null&&<ConceptSheet key={model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
    onClose={()=>select(null)} onPick={index=>select(index,true)}
    onPin={()=>setDialog('pin')} onEdit={()=>setDialog('edit')} onPreview={()=>setDialog('preview')}/>}
   {dialog==='pin'&&selectedStar&&<ConceptPin key={selectedStar.id} id={selectedStar.id} name={selectedStar.name}

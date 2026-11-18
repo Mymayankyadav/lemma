@@ -122,6 +122,18 @@
     },
     {
       "table_name": "concept_aliases"
+    },
+    {
+      "table_name": "attempts"
+    },
+    {
+      "table_name": "attempt_tags"
+    },
+    {
+      "table_name": "instruction_events"
+    },
+    {
+      "table_name": "atlas_links"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

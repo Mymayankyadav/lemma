@@ -211,6 +211,10 @@ export class AtlasScene{
   for(const i of visible){
    const sprite=this.sprite(i),[sx,sy]=this.toScreen(layout.x[i],layout.y[i]),half=sprite.half*scale;
    ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.15:dimmed&&i!==selected&&!this.neighbourSet.has(i)?.4:1;
+   const node=this.model.stars[i];
+   if(node.uncertainty!=null){ctx.save();ctx.globalAlpha*=Math.min(.22,node.uncertainty*.12);ctx.fillStyle=palette.mark;ctx.beginPath();ctx.arc(sx,sy,half*.65,0,Math.PI*2);ctx.fill();ctx.restore();}
+   if((node.gap??0)>.2){ctx.save();ctx.setLineDash([3,3]);ctx.strokeStyle=palette.mark;ctx.lineWidth=1;ctx.beginPath();ctx.arc(sx,sy,8*scale,0,Math.PI*2);ctx.stroke();ctx.restore();}
+   if(node.certified?.some(Boolean)){ctx.save();ctx.strokeStyle=palette.mark;ctx.lineWidth=1.75;node.certified.forEach((yes,j)=>{if(yes){ctx.beginPath();const n=node.certified!.length;ctx.arc(sx,sy,9*scale,j*2*Math.PI/n+.06,(j+1)*2*Math.PI/n-.06);ctx.stroke();}});ctx.restore();}
    ctx.drawImage(sprite.canvas,sx-half,sy-half,half*2,half*2);
   }
   ctx.globalAlpha=1;

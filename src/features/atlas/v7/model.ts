@@ -9,6 +9,7 @@ import {subjects,type Subject} from '../../../ui/v7/Subject';
  */
 export type StarState='demonstrated'|'in_progress'|'up_next'|'not_started'|'revisit';
 export interface Star{
+ kind?:import('../../../../supabase/functions/_shared/adaptive/kc').Kind;uncertainty?:number;certified?:boolean[];gap?:number;stale?:boolean;
  id:string; slug:string; name:string; label:string; subjectId:string; cluster:number; state:StarState;
  /** Drawn radius in map units (6–14 px diameter at 1× zoom). */
  radius:number; due:number; checkpoints:readonly {projectSlug:string;code:string}[]; pin:readonly [number,number]|null; degree:number;
@@ -66,6 +67,7 @@ export function buildAtlasModel(graph:AtlasGraph):AtlasModel{
   index.set(concept.id,i);
   const cluster=clusterFor(concept.subjectId);clusters[cluster].size++;
   return {id:concept.id,slug:concept.slug,name:concept.name,label:plainMath(concept.name),subjectId:concept.subjectId,cluster,
+   kind:concept.kind,uncertainty:concept.facets?.length?Math.max(...concept.facets.map(f=>f.sd)):undefined,certified:concept.facets?.map(f=>f.certified),gap:concept.gap?.p,
    state:concept.status,radius:3,due:concept.dueCards,checkpoints:concept.checkpointRefs,
    pin:concept.pinX!==null&&concept.pinY!==null?[concept.pinX,concept.pinY] as const:null,degree:0};
  });

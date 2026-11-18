@@ -1,3 +1,4 @@
+import {AtlasSettings} from '../../adaptive/AtlasPanels';
 import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
@@ -185,7 +186,7 @@ export default function SettingsV7(){
   {section==='study'&&(params.get('advanced')==='1'
    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
-  {section==='planning'&&<PlanningLists settings={data}/>}
+  {section==='planning'&&<><AtlasSettings/><PlanningLists settings={data}/></>}
   {section==='reminders'&&<ReminderLists settings={data}/>}
   {section==='data'&&<>
    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>

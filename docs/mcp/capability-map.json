@@ -509,8 +509,42 @@
       "create",
       "delete"
      ]
+    },
+    {
+     "resource": "atlas_links",
+     "operations": [
+      "approve",
+      "reject"
+     ]
+    },
+    {
+     "resource": "atlas_concepts",
+     "operations": [
+      "update"
+     ]
+    },
+    {
+     "resource": "atlas_settings",
+     "operations": [
+      "update"
+     ]
+    },
+    {
+     "resource": "instruction_events",
+     "operations": [
+      "void"
+     ]
+    },
+    {
+     "resource": "plan_conversions",
+     "operations": [
+      "create",
+      "approve",
+      "reject"
+     ]
     }
-   ]
+   ],
+   "note": "N172 consolidated Atlas v3 first pass; production cutover, conversion approvals and remaining simulation acceptance gates are recorded in docs/current/N172.md."
   },
   {
    "n": 21,

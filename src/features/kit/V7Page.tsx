@@ -1,3 +1,4 @@
+import {ProficiencyValue,StageStrip,GapBadge,FitMeter,CardBudget,EstimateRange} from '../../ui/v7/AtlasValues';
 import { useEffect, useId, useState, type ReactNode, type CSSProperties } from "react";
 import { Check, LockKeyhole, Trash2, Undo2 } from "lucide-react";
 import * as UI from "../../ui/v7/components";
@@ -327,6 +328,11 @@ export default function V7Page(){
   </Section>
   <Section number="07" title="App shell" description="The tab bar, hub header, week strip, time-grid block, timer, grade dock, map stars, search row and cover size that the screens share (Night critique v2, KA5–KA8).">
     <Compare high={high} density={density}>{()=> <ShellPanel/>}</Compare>
+  </Section>
+  <Section number="Atlas" title="Atlas estimates" description="One shared model, with intervals and evidence counts.">
+   <ProficiencyValue value={{p:.62,lo:.47,hi:.77,sessions:2,state:'shown',certified:false}}/>
+   <StageStrip stages={[{stage:'U',result:'ok'},{stage:'S',result:'fail',hint:2},{stage:'E',result:'not_reached'}]} cued/>
+   <GapBadge p={.26}/><FitMeter pAll={.87} pCore={.97} required={90} supply={120}/><CardBudget quota={2.6} used={1}/><EstimateRange p10={45} p90={90}/>
   </Section>
   <Section number="08" title="Changelog" description="Versioned guidance for implementing this system consistently across Lemma.">
     <div className="v7-change-card"><span className="v7-kit-version">1.1.0 · Constellation</span>
