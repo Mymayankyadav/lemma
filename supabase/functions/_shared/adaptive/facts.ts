@@ -15,6 +15,7 @@ export type Rows={
   dueCards:Record<string,number>;frozen?:any[];
   /** N170 (all optional: absent means none) */
   items?:any[];assumptions?:any[];aliases?:any[];
+  attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];modelFits?:any[];cards?:any[];notes?:any[];reviews?:any[];studyEntries?:any[];
 };
 export type ProjectView={
   id:string;slug:string;title:string;time:ProjectTime;mode:Mode;firstSession:DateStr|null;

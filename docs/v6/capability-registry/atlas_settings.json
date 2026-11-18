@@ -1,0 +1,56 @@
+{
+  "resource": "atlas_settings",
+  "version": 1,
+  "note": "Command resource (not a table): its fields are written through the named command into the underlying table; the table's own registry document covers every column.",
+  "columns": {
+    "threshold_p": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "stretch_share": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "plan_first_min": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "ask_confidence": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "card_quota_share": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "card_cap": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    },
+    "card_weight": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts and Settings (atlas_command, owner-scoped)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts via atlas_command; merged into settings.atlas",
+      "exportPolicy": "exported with settings",
+      "deletionPolicy": "journalled settings change; undo restores the prior value"
+    }
+  }
+}

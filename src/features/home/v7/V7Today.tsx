@@ -1,3 +1,4 @@
+import {AtlasToday} from '../../adaptive/AtlasPanels';
 import {TodayScheduler} from '../../adaptive/Views';
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
@@ -200,7 +201,8 @@ export default function V7Today(){
     </div>
    </section>
    {!!actionError&&<p className="v7-alert" role="alert">{actionError} <Button small onClick={reload}>Refresh</Button></p>}
-   {state==='first'?<section className="v7-card v7-today-tips" aria-label="Getting started">
+   <AtlasToday/>
+  {state==='first'?<section className="v7-card v7-today-tips" aria-label="Getting started">
     <h2>Three ways to begin</h2>
     <ol><li>Start a path for what you want to prove.</li><li>Connect your tutor and approve its plan in the Inbox.</li><li>Put a study block on today's calendar.</li></ol>
    </section>:<>

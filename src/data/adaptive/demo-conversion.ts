@@ -1,0 +1,10 @@
+import type {Proposal} from '../types';
+import type {Conversion} from '../../../supabase/functions/_shared/adaptive/convert';
+/** Local demo fixture only: a legacy-course conversion for the review screen. `bad` breaks two hard rules so the blocking list and the disabled Approve show. */
+export function demoConversionProposal(project:{slug:string;glyph:Proposal['projectGlyph']},bad=false):Proposal{
+ const cp=(id:string,title:string,over:Record<string,unknown>={})=>({id,title,objective:'Understand '+title.toLowerCase(),criterion:{text:'Prove a novel statement about '+title.toLowerCase(),concept_id:'kc-a',facet:'use',kind:'holdout',novel:true,cued:[]},kind:'learn',tier:'core',estimate:60,
+  kcs:[{id:'kc-a',kind:'definition',home:'Topology'}],steps:['Read','Practise','Close'],prereqs:[],stage:1,teach:['Definitions','Examples'],practice:[1,2,3].map(i=>({text:'Practice '+i,concept_id:'kc-a',facet:'use'})),close:{questions:['What is it?','Why is it needed?','Give an example'],minutes:8},card_plan:[],...over});
+ const first=cp('cp-1','Open sets'),second=cp('cp-2','Compactness',{prereqs:['cp-1'],tier:'standard',...(bad?{criterion:{text:'Recall the definition',concept_id:'kc-a',facet:'recall',kind:'practice',novel:false,cued:['kc-a']}}:{})});
+ const conversion={schema:'plan_template_v1',checkpoints:[first,second],map:{'old-1':{id:'cp-1'},'old-2':{id:'cp-2'},'old-cards':{skipped:true,reason:'template:cards-in-close'}},kcs:[{id:'kc-a',name:'Open sets',kind:'definition',home:'Topology'}],cards:[{id:'note-1',action:'keep',reason:'one retrieval target'},{id:'note-2',action:'suspend',reason:'certified and stable'}]} as unknown as Conversion;
+ return {id:bad?'atlas-demo-conversion-bad':'atlas-demo-conversion',kind:'plan_change',projectSlug:project.slug,projectGlyph:project.glyph,sessionNumber:null,origin:'other',reason:'Convert this course to the template',createdAt:'2026-11-17T10:00:00.000Z',card:null,cardEdit:null,plan:null,planChange:{ops:[]},atlasConversion:conversion} as Proposal;
+}

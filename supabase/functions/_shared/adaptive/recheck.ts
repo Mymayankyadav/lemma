@@ -2,6 +2,9 @@
 // Nothing here reads a clock or the database, so identical facts give identical output (I3)
 // and removing or restoring any fact (undo/redo) recomputes the exact previous set (I7).
 import FSRS from '../fsrs.js';
+import type {MeasurementState} from './measure.ts';
+import {memoryAt} from './measure.ts';
+import type {Facet} from './kc.ts';
 import {addDays,diffDays,maxDay,minDay,type DateStr} from './dates.ts';
 
 export type Level='recall'|'use'|'understand'|'transfer';
@@ -34,6 +37,15 @@ export type RecheckInput={
 export type RecheckResult={rechecks:Recheck[];escalations:{class_id:string;level:Level;fail_count:number}[];unresolved:string[]};
 
 const GRADE={again:1,hard:2,good:3,easy:4};
+export type CertificationCheck={concept_id:string;facet:Facet;createdDay:string;due:string;kind:'certification'|'final_review'|'gap';reason:string};
+/** I18: one pending check per KC/facet; always later than its creation study day. */
+export function certificationChecks(model:MeasurementState,targets:{concept_id:string;facet:Facet;teachDay:string;lastStudyOn:string}[],today:string,existing:CertificationCheck[]=[]):CertificationCheck[]{
+ const out=existing.slice(),keys=new Set(existing.map(c=>c.concept_id+':'+c.facet));
+ for(const t of targets){const key=t.concept_id+':'+t.facet;if(keys.has(key))continue;const days=diffDays(t.teachDay,t.lastStudyOn),gap=Math.max(1,Math.min(7,Math.ceil(.15*Math.max(0,days)))),latest=addDays(t.lastStudyOn,-1);let due=addDays(t.teachDay,gap);if(due>latest)due=latest;if(due<=today)due=addDays(today,1);if(due>latest)continue;
+  out.push({concept_id:t.concept_id,facet:t.facet,createdDay:today,due,kind:'certification',reason:'delayed criterion evidence'});keys.add(key);
+ }
+ return out;
+}
 export const GENERIC_PROMPT=/^\s*Recheck\s+CP\d+/i;
 export function validPrompt(p:string|null|undefined):boolean{
   return typeof p==='string'&&p.trim().length>=8&&p.length<=300&&!GENERIC_PROMPT.test(p);

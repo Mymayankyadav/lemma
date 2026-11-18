@@ -1,5 +1,15 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
+
+Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."
+Stage: Build · Status: open · Needs: — · Assigned: chat-86420#r8p3
+Done = implement and correct the attached Atlas v3 pack across N172–N179, then satisfy its production gates; first-pass code is consolidated in PR #1501, and remaining acceptance work is recorded in docs/current/N172.md.
+Tests: tests/unit/adaptive/atlas-v3*.test.ts, tests/unit/adaptive-ui/atlas-values.test.tsx, tests/mcp/sql/atlas-v2.mjs, tests/e2e/v7-{atlas,plan}-v2.spec.ts, existing affected suites, typecheck and production build.
+Scope: shared adaptive core, additive Atlas migrations and rollback, MCP contract, src/data, affected v7 features and primitives, capability registry mirrors, research/sim, tests and docs/current/N172–N179.md.
+Not: unapproved production migration/conversion/cutover or protected CI/test-policy changes.
+
+
 ## N171 Show the adaptive scheduler in the React app (Owner task)
 
 Owner task: "Owner task for mymayankyadav/lemma: make the React app show the adaptive scheduler (N169/N170)."

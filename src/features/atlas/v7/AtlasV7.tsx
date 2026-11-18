@@ -18,7 +18,10 @@ import type {LayoutResult} from './layout';
 import {alphabetical,atlasSummary,buildAtlasModel,checkpointName,searchStars,starCounts,stateLabel,type AtlasModel,type StarState} from './model';
 import './atlas.css';
 import {isFlagOn} from '../../../flags';
+import {matchesFilter,type AtlasFilter} from './filters';
 import {rememberRoomItem} from '../../../ui/v7/room';
+import {AtlasExplore,AtlasFilters,ConceptFacets} from '../../adaptive/AtlasPanels';
+import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
 const PAGE=200,PEEK=180,DOCK=92;
@@ -103,6 +106,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
     :<StateButton disabledReason="Unavailable · No cards are due.">Review cards</StateButton>}
   </div>}
   {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
+   <ConceptFacets id={star.id}/>
    {group('Needs',needs)}{group('Opens up',opens)}{group('Related',related)}
    {model.neighbours[index].length===0&&<p className="v7-atlas-meta">No connections yet.</p>}
    <div className="v7-atlas-more-actions">
@@ -118,19 +122,28 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
+ const [atlasView,setAtlasView]=useState<'map'|'themes'|'bridges'>('map'),[atlasFilter,setAtlasFilter]=useState<AtlasFilter>('all'),[atlasKind,setAtlasKind]=useState<string>('any');
  const room=isFlagOn('v7Room'),home=useHome();
  const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
+ const atlasModel=useAtlasModel();
  const reduced=useReducedMotion();
- const model=useMemo(()=>query.data?buildAtlasModel(query.data):null,[query.data]);
+ const model=useMemo(()=>query.data?buildAtlasModel({...query.data,concepts:query.data.concepts.map(c=>({...c,kind:atlasModel.data?.model.index[c.id]?.kind??c.kind,facets:atlasModel.data?.facets[c.id],gap:atlasModel.data?{p:Math.max(.05,...(atlasModel.data.facets[c.id]??[]).map(f=>f.gap)),lastAt:(d=>d?.length?new Date(d[d.length-1].at).toISOString():null)(atlasModel.data.model.direct[c.id])}:undefined}))}):null,[query.data,atlasModel.data]);
  const focusCluster=useMemo(()=>{
   if(!room||!model)return null;
   return model.stars.find(star=>star.checkpoints.some(cp=>cp.projectSlug===home.data?.resume?.projectSlug))?.cluster??model.stars.find(star=>star.state==='in_progress')?.cluster??model.clusters[0]?.index??null;
  },[room,model,home.data?.resume?.projectSlug]);
- const highlighted=useMemo(()=>!room||subset==='All'||!model?null:model.stars.flatMap((star,index)=>{
-  const matches=subset==='Tonight'?star.due>0||star.state==='in_progress'||star.state==='up_next':subset==='Shaky'?star.state==='revisit':star.state==='demonstrated';
-  return matches?[index]:[];
- }),[room,subset,model]);
+ const v3Filter=isFlagOn('atlasV3')&&(atlasFilter!=='all'||atlasKind!=='any');
+ const highlighted=useMemo(()=>{
+  if(!model)return null;
+  const base=!room||subset==='All'?null:model.stars.flatMap((star,index)=>{
+   const matches=subset==='Tonight'?star.due>0||star.state==='in_progress'||star.state==='up_next':subset==='Shaky'?star.state==='revisit':star.state==='demonstrated';
+   return matches?[index]:[];
+  });
+  if(!v3Filter)return base;
+  const v3=model.stars.flatMap((star,index)=>matchesFilter(star,atlasFilter,atlasKind)?[index]:[]);
+  return base?base.filter(i=>v3.includes(i)):v3;
+ },[room,subset,model,v3Filter,atlasFilter,atlasKind]);
  // R2 · F12: a sky too dense to read opens as the list; the map stays one tap away (?view=map).
  const dense=!!model&&atlasTooDense(model.stars.length,model.edges.length);
  const view=params.get('view')==='list'||(dense&&params.get('view')!=='map')?'list':'map';
@@ -197,6 +210,7 @@ export default function AtlasV7(){
  const selectedStar=selected===null?null:model.stars[selected];
  return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}
+  <AtlasExplore view={atlasView} onView={setAtlasView}/>
   {room&&<nav className="v7-room-atlas-subsets" aria-label="Concept subsets">{(['All','Tonight','Shaky','Demonstrated'] as const).map(label=><button key={label} className="v7-filter-chip" type="button" aria-pressed={subset===label} onClick={()=>{setSubset(label);setShown(PAGE);}}>{label}</button>)}</nav>}
   <p className="v7-sr-only" data-testid="atlas-summary">{summary}</p>
   {searching&&<div id="v7-atlas-search" className="v7-atlas-search" role="search" onKeyDown={event=>{if(event.key==='Escape'){setSearching(false);}}}>
@@ -208,7 +222,8 @@ export default function AtlasV7(){
     <span className="v7-atlas-row-name"><FastTex source={model.stars[i].name}/></span>
     <span className="v7-atlas-meta">{model.clusters.find(c=>c.index===model.stars[i].cluster)?.name}</span></button></li>)}</ul>
   </div>}
-  {view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
+  {atlasView!=='map'?null:view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
+   <AtlasFilters floating filter={atlasFilter} onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind}/>
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} focusCluster={focusCluster} highlighted={highlighted}
      insets={{top:room?120:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
@@ -228,6 +243,7 @@ export default function AtlasV7(){
    </div>
   </section>
   :<section className="v7-atlas-list" aria-label="Concept list">
+   <AtlasFilters filter={atlasFilter} onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind}/>
    <p className="v7-atlas-meta">{summary}</p>
    {dense&&params.get('view')!=='list'&&<p className="v7-atlas-meta" role="note">Your sky has {model.stars.length.toLocaleString('en-GB')} concepts, so it opens as a list. Choose Map to see the whole sky.</p>}
    {room&&<nav className="v7-room-atlas-index" aria-label="Subject index">{model.clusters.filter(cluster=>rows.some(index=>model.stars[index].cluster===cluster.index)).map(cluster=><button type="button" key={cluster.id} aria-label={'Jump to '+cluster.name} onClick={()=>{setShown(rows.length);requestAnimationFrame(()=>document.getElementById('room-atlas-'+cluster.index)?.scrollIntoView({block:'start'}));}}>{cluster.name[0]}</button>)}</nav>}
@@ -241,7 +257,7 @@ export default function AtlasV7(){
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>
   </section>}
-  {selected!==null&&<ConceptSheet key={model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
+  {atlasView==='map'&&selected!==null&&<ConceptSheet key={model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
    onClose={()=>select(null)} onPick={index=>select(index,true)}
    onPin={()=>setDialog('pin')} onEdit={()=>setDialog('edit')} onPreview={()=>setDialog('preview')}/>}
   {dialog==='pin'&&selectedStar&&<ConceptPin key={selectedStar.id} id={selectedStar.id} name={selectedStar.name}

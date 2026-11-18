@@ -1850,6 +1850,58 @@ try{
  await q("insert into public.concepts(id,user_id,subject_id,slug,name) values($1,$2,$3,'n170-concept','N170 concept')",[n170Concept2,owner,n169Subject]);
  await twoStepTrip('assumptions',{concept_id:n169Concept,level:'recall',reason:'parity'},'revoke',async id=>(await q('select revoked_at is not null r from public.assumptions where id=$1',[id]))[0]?.r===true);
  await twoStepTrip('concept_aliases',{concept_a:n169Concept,concept_b:n170Concept2},'delete',async id=>(await q('select count(*)::int n from public.concept_aliases where id=$1',[id]))[0].n===0);
+ // Atlas v3 (N172, N178): the registered Atlas commands through the real MCP dispatcher. Each operation: create-or-fixture → exact replay →
+ // stale-version conflict (where versioned) → effect → undo restores the previous state. Browser-side writes stay revoked (atlas-v2.mjs).
+ {
+  // `ownerOnly`: the connector may draft a conversion but never decide it, so approve and reject run as the authenticated owner through the app function.
+  const atlasStep=async(resource,operation,fields,effect,{stale=true,ownerOnly=false}={})=>{
+   const send=async c=>{if(ownerOnly){await as(owner);try{return await app('atlas_conversion_command',c);}finally{await role('service_role');}}return mcp(c);};
+   await role('service_role');
+   const cmd=command(resource,operation,fields);
+   if(ownerOnly)await assert.rejects(mcp(cmd),/Only the owner approves/,resource+'.'+operation+': the connector must not decide');
+   if(stale&&fields.expectedVersion!==undefined){
+    await assert.rejects(send(command(resource,operation,{...fields,expectedVersion:fields.expectedVersion+8})),/conflict|version/i,resource+'.'+operation+': stale version accepted');
+   }
+   const done=status(await send(cmd),resource,operation);
+   assert.deepEqual(await send(cmd),done,resource+'.'+operation+': exact retry differs');
+   await role(null);
+   assert.equal(await effect(),true,resource+'.'+operation+': no effect');
+   await as(owner);
+   assert.equal(Number((await undo(done.actionNo)).undone),Number(done.actionNo),resource+'.'+operation+': undo failed');
+   await role(null);
+   assert.equal(await effect(),false,resource+'.'+operation+': undo did not restore the previous state');
+   mark(resource,operation);
+   return done;
+  };
+  const A=n=>'aaaaaaaa-0000-4000-8000-0000000002'+String(n).padStart(2,'0');
+  await role(null);
+  await q("insert into public.atlas_links(id,user_id,from_id,to_id,kind,origin,rationale) values($1,$2,$3,$4,'analogous','tutor','parity'),($5,$2,$4,$3,'contrasts','tutor','parity')",[A(1),owner,n169Concept,n170Concept2,A(2)]);
+  const linkStatus=id=>async()=>(await q('select status from public.atlas_links where id=$1',[id]))[0].status;
+  await atlasStep('atlas_links','approve',{target:{id:A(1)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(1))())==='approved');
+  await atlasStep('atlas_links','reject',{target:{id:A(2)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(2))())==='rejected');
+  const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
+  await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},
+   async()=>(await q('select kind from public.concepts where id=$1',[n169Concept]))[0].kind==='technique');
+  await atlasStep('atlas_settings','update',{patch:{card_cap:0.2}},
+   async()=>(await q("select atlas->>'card_cap' v from public.settings where user_id=$1",[owner]))[0].v==='0.2',{stale:false});
+  await role(null);
+  const ev=(await q("insert into public.instruction_events(user_id,concept_id,origin) values($1,$2,'tutor') returning id",[owner,n169Concept]))[0].id;
+  await atlasStep('instruction_events','void',{target:{id:String(ev)},expectedVersion:1,patch:{}},
+   async()=>(await q('select voided_at is not null v from public.instruction_events where id=$1',[ev]))[0].v===true);
+  // plan conversions: a tutor draft, then the owner's approval or rejection, each one undoable action
+  const conversion={schema:'plan_template_v1',map:{},checkpoints:[],cards:[]};
+  const draftIds=[];
+  for(const operation of ['approve','reject']){
+   await role('service_role');
+   const draft=status(await mcp(command('plan_conversions','create',{patch:{project_id:n169Project,conversion}})),'plan_conversions','create');
+   const id=draft.changed[0].id;draftIds.push(id);
+   await role(null);
+   assert.equal((await q("select payload?'atlas_conversion' v from public.proposals where id=$1",[id]))[0].v,true,'plan_conversions: draft not stored as a proposal');
+   await atlasStep('plan_conversions',operation,{target:{id},expectedVersion:Number((await q('select version from public.proposals where id=$1',[id]))[0].version),patch:{}},
+    async()=>(await q('select status from public.proposals where id=$1',[id]))[0].status===(operation==='approve'?'approved':'rejected'),{ownerOnly:true});
+  }
+  mark('plan_conversions','create');
+ }
  await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

@@ -1,3 +1,4 @@
+import {AttemptHistory} from '../../adaptive/AtlasPanels';
 import {useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {ChevronRight,Copy} from 'lucide-react';
@@ -60,6 +61,7 @@ export default function SessionV7(){
     <StatusBadge tone={goal.tone}>{goal.text}</StatusBadge>
    </div>
   </header>
+  <AttemptHistory sessionId={session.summary.id}/>
   <section className="v7-learn-card" aria-label="Summary">
    <p className="v7-eyebrow">Summary</p>
    {session.summaryText?<MathText source={session.summaryText}/>:<p className="v7-meta">Your tutor has not written a summary yet.</p>}

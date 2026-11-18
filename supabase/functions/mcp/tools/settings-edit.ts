@@ -1,15 +1,16 @@
 // N87: owner-editable settings. This allowlist is checked against the capability
 // registry in tests; credential and server-managed columns cannot be patched.
 import FSRS from '../../_shared/fsrs.js';
+import {validateAtlasSettings} from '../../_shared/adaptive/policy.ts';
 export const ownerEditableSettingsFields = [
  'desired_retention','new_per_day','reviews_per_day','learn_steps','relearn_steps',
  'rollover_hour','max_interval_days','fuzz','load_balance','learn_ahead_minutes',
  'fsrs_weights','macros','default_style','tutor_rules','mix_decks','preferred_chat',
  'time_zone','master_prompt','ui','notify','week_start',
- 'clock_24h','focus_defaults','planning','review_budget','attention','flags','capacity',
+ 'clock_24h','focus_defaults','planning','review_budget','attention','flags','capacity','atlas',
 ] as const;
 const allowed=new Set<string>(ownerEditableSettingsFields);
-const sections=new Set(['ui','notify','focus_defaults','planning','review_budget','attention','flags','capacity']);
+const sections=new Set(['ui','notify','focus_defaults','planning','review_budget','attention','flags','capacity','atlas']);
 const typed:Record<string,Record<string,string>>={
  focus_defaults:{mode:'mode',focus_minutes:'int:1:480',break_minutes:'int:1:180',
   long_break_minutes:'int:1:240',cycles:'int:1:24',flowtime_break_ratio:'ratio',
@@ -51,6 +52,7 @@ function merged(previous:unknown,patch:unknown):Record<string,unknown>{
  return result;
 }
 function checkTyped(section:string,part:Record<string,unknown>):void{
+ if(section==='atlas'){const errors=validateAtlasSettings(part);if(errors.length)bad(errors.join('; '));}
  if(section==='flags'||section==='capacity')for(const key of Object.keys(part))if(!(key in typed[section]))bad(section+'.'+key+' is not a known setting');
  for(const [name,kind] of Object.entries(typed[section]||{})){
   if(!(name in part))continue;

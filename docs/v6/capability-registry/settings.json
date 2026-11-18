@@ -240,25 +240,25 @@
         "focus_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "1–480",
+          "bounds": "1\u2013480",
           "description": "focused duration"
         },
         "break_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "1–180",
+          "bounds": "1\u2013180",
           "description": "short break"
         },
         "long_break_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "1–240",
+          "bounds": "1\u2013240",
           "description": "long break"
         },
         "cycles": {
           "type": "integer",
           "unit": "cycles",
-          "bounds": "1–24",
+          "bounds": "1\u201324",
           "description": "cycles per round"
         },
         "flowtime_break_ratio": {
@@ -270,7 +270,7 @@
         "long_session_guard_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "30–720",
+          "bounds": "30\u2013720",
           "description": "long session guard"
         }
       }
@@ -286,31 +286,31 @@
         "window_start": {
           "type": "HH:MM local",
           "unit": "24-hour local time",
-          "bounds": "00:00–23:59",
+          "bounds": "00:00\u201323:59",
           "description": "daily planning window start"
         },
         "window_end": {
           "type": "HH:MM local",
           "unit": "24-hour local time",
-          "bounds": "00:00–23:59",
+          "bounds": "00:00\u201323:59",
           "description": "daily planning window end"
         },
         "gap_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "0–120",
+          "bounds": "0\u2013120",
           "description": "gap between blocks"
         },
         "max_consecutive_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "15–600",
+          "bounds": "15\u2013600",
           "description": "maximum consecutive study"
         },
         "daily_minimum_minutes": {
           "type": "integer",
           "unit": "minutes",
-          "bounds": "0–600",
+          "bounds": "0\u2013600",
           "description": "minimum qualifying effort"
         },
         "daily_intention": {
@@ -332,13 +332,13 @@
         "cards": {
           "type": "integer",
           "unit": "cards per day",
-          "bounds": "0–2000",
+          "bounds": "0\u20132000",
           "description": "daily card budget"
         },
         "minutes": {
           "type": "integer",
           "unit": "minutes per day",
-          "bounds": "0–720",
+          "bounds": "0\u2013720",
           "description": "daily review duration budget"
         },
         "reserve_in_plans": {
@@ -386,6 +386,20 @@
       "exportPolicy": "owner-scoped export (N95)",
       "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
       "description": "N169 capacity: weekday minutes (Mon..Sun) and review_share"
+    },
+    "atlas": {
+      "classification": "owner-editable",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "atlas_migrated_at": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
     }
   }
 }

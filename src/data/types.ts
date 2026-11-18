@@ -194,6 +194,8 @@ export type PlanChangeOp =
  | {op: 'prereq_add' | 'prereq_remove'; code: string; prereq: string}
 export interface PlanChangePayload { ops: PlanChangeOp[]; concepts?: ProposedIdea[] }
 export interface Proposal {
+ atlasTemplate?:import('../../supabase/functions/_shared/adaptive/template').PlanTemplate;
+ atlasConversion?:import('../../supabase/functions/_shared/adaptive/convert').Conversion;
  id: string; kind: 'card' | 'card_edit' | 'plan' | 'plan_change'; projectSlug: string; projectGlyph: Glyph
  sessionNumber: number | null; origin: Exclude<Client, never>; reason: string | null; createdAt: IsoDate
  card: CardPayload | null
@@ -248,7 +250,7 @@ export interface CardComment {
 }
 export interface AtlasGraph {
  subjects: Subject[]
- concepts: {id: string; slug: string; name: string; topic?: string | null; level?: ConceptLevel; parentId?: string | null; isStar?: boolean; blurb: string | null; subjectId: string
+ concepts: {id: string; slug: string; name: string; kind?:import('../../supabase/functions/_shared/adaptive/kc').Kind;facets?:import('../../supabase/functions/_shared/adaptive/atlas').FacetValue[];gap?:{p:number;lastAt:string|null};topic?: string | null; level?: ConceptLevel; parentId?: string | null; isStar?: boolean; blurb: string | null; subjectId: string
  status: 'revisit' | 'demonstrated' | 'in_progress' | 'not_started'; pinX: number | null; pinY: number | null
  checkpointRefs: {projectSlug: string; code: string}[]; dueCards: number}[]
  links: {fromId: string; toId: string; kind: 'prereq' | 'related'}[]

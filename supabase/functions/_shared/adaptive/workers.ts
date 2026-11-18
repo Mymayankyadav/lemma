@@ -1,7 +1,23 @@
 // Worker pipeline core (spec §12). Pure: the model is injected, so tests use a mock and no key exists yet.
 // Small models extract, tag and propose; they never decide correctness, set outcomes, merge concepts or change tiers (I8).
 import type {Level,Outcome,Novelty} from './recheck.ts';
+import {linkCandidates,validateLinkLabel,kindEnabled,contentHash,type AtlasLink,type LinkKind} from './links.ts';
+import type {Concept} from './kc.ts';
 export const LEVEL_SET=new Set<string>(['recall','use','understand','transfer']);
+/** I14: worker tags are suggestions only. Trusted results/hints/errors/cues are never copied from model output. */
+export function validateStageSuggestions(rows:unknown,candidates:Set<string>){
+ if(!Array.isArray(rows))return [];
+ return rows.filter(r=>r&&candidates.has(r.concept_id)&&['recall','understand','use','select','execute','recognise','construct','transfer','perform'].includes(r.facet)&&['target','required','incidental'].includes(r.role)&&['U','S','E','C'].includes(r.stage)).map(r=>({concept_id:r.concept_id,facet:r.facet,role:r.role,stage:r.stage,confidence:Math.min(.9,Math.max(0,Number(r.confidence)||.5))}));
+}
+export async function proposeAtlasLinks(fresh:Concept[],old:Concept[],existing:AtlasLink[],label:(candidate:unknown)=>Promise<unknown>){
+ const out:Partial<AtlasLink>[]=[];
+ for(const candidate of linkCandidates(fresh,old,existing)){
+  if(candidate.automatic){out.push({from_id:candidate.from.id,to_id:candidate.to.id,kind:'equivalent',status:'approved',origin:'auto',confidence:1,rationale:'Exact name under a same-named parent',from_hash:candidate.from_hash,to_hash:candidate.to_hash});continue;}
+  const result=await label({from:candidate.from,to:candidate.to});if(!result||validateLinkLabel(result).length)continue;const r=result as {kind:LinkKind;direction:string;confidence:number;rationale:string};if(!kindEnabled(existing,r.kind))continue;
+  const reverse=r.direction==='reverse';out.push({from_id:reverse?candidate.to.id:candidate.from.id,to_id:reverse?candidate.from.id:candidate.to.id,kind:r.kind,status:'proposed',origin:'worker',confidence:r.confidence,rationale:r.rationale,from_hash:reverse?candidate.to_hash:candidate.from_hash,to_hash:reverse?candidate.from_hash:candidate.to_hash});
+ }
+ return out;
+}
 export const ROLE_SET=new Set<string>(['primary','secondary','used']);
 export const NOVELTY_SET=new Set<string>(['novel','familiar','seen_solution','self_reported']);
 export type ScribeEvent={id:string;kind:string;outcome:Outcome;hint_level:number;text:string;session_id:string;checkpoint_id:string|null;tutorTagged:boolean};
@@ -84,4 +100,15 @@ export function aliasProposals(concepts:Concept[]):{auto:[string,string][];propo
     }
   }
   return {auto,propose};
+}
+
+/** 06 §6 on course import and nightly: only concepts that are new or whose name/blurb hash changed are "fresh"; each is compared with every other concept,
+ *  at most `limit` proposals per batch (Owner setting, default 50), rejected pairs return only after a hash change (`linkCandidates`). Deterministic apart from the injected label model. */
+export type LinkCursor={seen:Record<string,string>};
+export async function nightlyLinkBatch(concepts:Concept[],existing:AtlasLink[],cursor:LinkCursor,label:(candidate:unknown)=>Promise<unknown>,limit=50){
+ const hashes=Object.fromEntries(concepts.map(c=>[c.id,contentHash(c as any)])),fresh=concepts.filter(c=>cursor.seen[c.id]!==hashes[c.id]),old=concepts.filter(c=>cursor.seen[c.id]===hashes[c.id]);
+ const all=await proposeAtlasLinks(fresh,fresh.length===concepts.length?concepts:old,existing,label);
+ // fresh × fresh pairs are covered when everything is new (old := all); otherwise they are compared with the untouched concepts
+ const proposals=all.slice(0,Math.max(0,limit));
+ return {proposals,deferred:all.length-proposals.length,cursor:{seen:hashes}};
 }

@@ -1,5 +1,6 @@
 // N88: all learning-field edits use the existing audited mcp_commit batch.
 // The DB performs a second, atomic version check through command.expected.
+import {KINDS} from '../../_shared/adaptive/kc.ts';
 export const projectEditFields = [
  'target_date','target_label','title','slug','goal','style','status',
  'subject','subject_id','prompt','pinned',
@@ -49,6 +50,10 @@ export function learningEditCommand(
  if(!patch||typeof patch!=='object'||Array.isArray(patch)||!Object.keys(patch).length)
   throw Error('Learning edit needs fields');
  if(table==='projects')validateProjectEditPatch(patch);
+ if(table==='concepts'){
+  if('kind' in patch&&!(KINDS as readonly string[]).includes(String(patch.kind)))throw Error('Invalid knowledge-component kind');
+  if('family_id' in patch&&patch.family_id!==null&&(typeof patch.family_id!=='string'||!/^[0-9a-f-]{36}$/i.test(patch.family_id)||patch.family_id===current.id))throw Error('Invalid concept family');
+ }
  if(expectedVersion!==undefined){
   if(!Number.isSafeInteger(expectedVersion)||expectedVersion<1||
    expectedVersion>2147483647)throw Error('Invalid expectedVersion');

@@ -4,6 +4,11 @@ import type { QueryClient } from '@tanstack/react-query'
  * Unknown future resources deliberately invalidate the whole owner cache.
  * Never invalidate the in-progress review-items queue on a change event. */
 export const RESOURCE_KEYS: Readonly<Record<string, readonly string[]>> = {
+ attempts:['atlas-model','profile','track','themes','bridges','attempts','adaptive','home'],
+ attempt_tags:['atlas-model','profile','track','attempts','atlas'],
+ instruction_events:['atlas-model','profile','track','adaptive'],
+ atlas_links:['atlas-model','atlas','themes','bridges','proposals'],
+ model_fits:['atlas-model','track','adaptive'],
  actions: ['history'], action_changes: ['history'],
  subjects: ['subjects', 'projects', 'project', 'atlas', 'home'],
  projects: ['projects', 'project', 'home', 'atlas', 'plan-revisions'],

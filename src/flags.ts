@@ -43,6 +43,8 @@ export const FLAG_DEFAULTS = {
   v7DeskClock: true,
   /** N157 · U4 S15 the week page: the weekly digest as a page (/week), the Sunday notification's destination. */
   v7Week: true,
+  /** N172–N179 · Atlas v3 screens (model health, facets, link proposals, course template and conversion review, Atlas settings). Build stage: default off until the approved N175 cutover. */
+  atlasV3: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

@@ -552,7 +552,7 @@ export class LiveAdapter implements LemmaApi {
         card:p.kind==='card'?payload:null,cardEdit:p.kind==='card_edit'?{
           ...payload,current:{front:note?.front??'',back:note?.back??''},
           comments:comments.filter(c=>c.note_id===note?.id).map(c=>commentRow(c))
-        }:null,plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null} as Proposal
+        }:null,plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null,atlasTemplate:payload.atlas_template,atlasConversion:payload.atlas_conversion} as Proposal
     })
  }
  async getProposal(...args: Parameters<LemmaApi['getProposal']>): ReturnType<LemmaApi['getProposal']> {
@@ -569,7 +569,7 @@ export class LiveAdapter implements LemmaApi {
     card:p.kind==='card'?payload:null,
     cardEdit:p.kind==='card_edit'?{...payload,current:{front:note?.front??'',back:note?.back??''},
       comments:comments.filter(c=>c.note_id===note?.id).map(c=>commentRow(c))}:null,
-    plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null} as Proposal
+    plan:p.kind==='plan'?payload:null,planChange:p.kind==='plan_change'?payload:null,atlasTemplate:payload.atlas_template,atlasConversion:payload.atlas_conversion} as Proposal
  }
  async approveProposal(...args: Parameters<LemmaApi['approveProposal']>): ReturnType<LemmaApi['approveProposal']> {
   const [id,edit]=args,db=liveClient()

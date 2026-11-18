@@ -1,0 +1,111 @@
+{
+  "table": "atlas_links",
+  "version": 1,
+  "columns": {
+    "confidence": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "created_at": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "from_hash": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "from_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "id": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "origin": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "rationale": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "status": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "to_hash": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "to_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "updated_at": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "updated_source": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    },
+    "version": {
+      "classification": "derived",
+      "appPath": "src/data/adaptive/atlas-api.ts (owner-scoped; mutations through atlas_command)",
+      "mcpPath": "supabase/functions/mcp/atlas.ts; registered Atlas commands and atomic save_progress",
+      "exportPolicy": "owner-scoped export; post-cutover attempts exported before rollback",
+      "deletionPolicy": "owner account FK cascade; journalled fact changes support undo; model_fits is recomputed"
+    }
+  }
+}

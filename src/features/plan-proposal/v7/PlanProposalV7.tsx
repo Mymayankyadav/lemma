@@ -15,6 +15,8 @@ import {proposalComparison} from '../v6/comparison';
 import {changeSummary} from '../v6/PlanProposalV6';
 import {payloadText,useProposalDraft} from '../useProposalDraft';
 import type {ReviewNode} from '../nodes';
+import {AtlasPlanReview} from './AtlasPlanReview';
+import {validateTemplate} from '../../../../supabase/functions/_shared/adaptive/template';
 import {nameCodes} from '../../../lib/codeNames';
 import '../../project/v7/path.css';
 import '../../project/v7/learning.css';
@@ -67,7 +69,8 @@ export default function PlanProposalV7(){
   <div role="alert" className="v7-learn-empty"><p>Proposal unavailable.</p><Button onClick={()=>{void proposal.refetch();}}>Try again</Button></div></main>;
  const title=summary?.title??project.data?.project.title??p.projectSlug;
  const rows=p.planChange?changeRows(p.planChange.ops,code=>existing.get(code)?.title??code):[];
- const unavailable=busy||draft.editor||!project.data;
+ const atlasPlan=p.atlasConversion??p.atlasTemplate,atlasErrors=atlasPlan?validateTemplate(atlasPlan):[];
+ const unavailable=busy||draft.editor||!project.data||atlasErrors.length>0;
  return <main id="main-content" className={'v7-page v7-learn v7-planp '+subjectClass(subject)} aria-label="Plan proposal">
   <DetailHeader title="Plan proposal" back={back}/>
   <header className="v7-learn-head">
@@ -75,6 +78,7 @@ export default function PlanProposalV7(){
    <h1 className="v7-learn-title">What changes</h1>
    {comparison&&<p className="v7-meta">{changeSummary(comparison.adds.length,comparison.changed.length,comparison.removes.length)}</p>}
   </header>
+  <AtlasPlanReview template={p.atlasTemplate} conversion={p.atlasConversion}/>
   {project.isPending&&<Skeleton/>}
   {project.isError&&<div role="alert" className="v7-learn-empty"><p>The current plan is unavailable, so the comparison is incomplete.</p><Button onClick={()=>{void project.refetch();}}>Try again</Button></div>}
   {rows.length>0&&<ul className="v7-inbox-changes v7-learn-card" aria-label="Changes">{rows.map((row,index)=>{const Icon=changeIcon[row.icon];return <li key={index}><Icon aria-hidden="true"/><span>{row.text}</span></li>;})}</ul>}

@@ -115,12 +115,12 @@ export function buildServer(c:Context):McpServer{
     concept:S().max(60).optional(),level:z.enum(['recall','use','understand','transfer']).optional(),
     role:z.enum(['primary','secondary','used']).optional(),novelty:z.enum(['novel','familiar','seen_solution','self_reported']).optional(),
     item:S().max(200).optional(),recall:z.boolean().optional()
-  });
+  }).passthrough();
   register('save_progress',"Log progress.",z.object({
     project:name,session:S().min(2),step:z.number().int().min(1).max(8).optional(),
     diagnostics:z.array(z.object({kind:z.enum(['gap','strength','material','pace']),topic:S().min(1).max(120),evidence:S().max(600),severity:z.number().int().min(1).max(3).optional(),confirmed:z.boolean().optional()})).max(8).optional(),events:z.array(event).max(10).optional(),misconception:S().max(120).optional(),
     resolved:S().max(120).optional(),next_question:S().max(300).optional()
-  }),false,(a,ctx)=>saveProgress(ctx,a));
+  }).passthrough(),false,(a,ctx)=>saveProgress(ctx,a));
   register('end_session',"End.",z.object({
     project:name,session:S(),summary:S().min(1).max(600),
     goal_met:z.enum(['yes','partial','no']),recheck_prompt:S().max(300).optional()
@@ -151,7 +151,7 @@ export function buildServer(c:Context):McpServer{
     recheck_prompt:S().max(300).optional()
   });
   register('propose_plan',"Draft plan.",z.object({
-    project:name,checkpoints:z.array(planningCp).min(3).max(40),
+    project:name,checkpoints:z.array(planningCp).min(3).max(40),template:z.object({schema:z.literal('plan_template_v1'),checkpoints:z.array(z.object({}).passthrough()).max(40)}).passthrough().optional(),
     concepts:z.array(z.object({name:S().min(1).max(60),level:z.enum(['cluster','galaxy','system','planet','moon']).optional(),parent:S().max(60).nullable().optional(),star:z.boolean().optional(),topic:S().max(40).nullable().optional(),blurb:S().max(200).optional(),prereqs:z.array(S()).optional(),related:z.array(S()).optional()})).max(80).optional(),
     reason:S().max(300).optional()
   }),false,(a,ctx)=>proposePlan(ctx,a));
