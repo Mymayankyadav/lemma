@@ -36,6 +36,15 @@ Tests: tests/unit/adaptive/fit-pfa.test.ts (fails on the previous code); existin
 Scope: supabase/functions/_shared/adaptive/fit.ts (fitPfa only), the test, docs/current/N184.md.
 Not: the KF model, diagnostics, serving, simulation gates, migrations or any production write.
 
+## N182 Atlas v3 screens on by default (Owner task)
+
+Owner task: "Complete step 8 and 9"
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = atlasV3 defaults to on, merged right after the Owner's Atlas v3 activation (docs/current/N180.md step 9), so the app shows the Atlas v3 screens that read attempts instead of the frozen evidence; ?flags=-atlasV3 keeps the off path in dev/test/e2e; rollback is the default back to false.
+Tests: tests/unit/flags.test.ts (atlasV3 released), tests/unit/adaptive-ui/parity.test.ts (fixture keeps its own capacity), the unit and e2e suites.
+Scope: src/flags.ts, the two tests, docs/current/N182.md.
+Not: merging before activation; any other flag; production data.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."

@@ -43,8 +43,10 @@ export const FLAG_DEFAULTS = {
   v7DeskClock: true,
   /** N157 · U4 S15 the week page: the weekly digest as a page (/week), the Sunday notification's destination. */
   v7Week: true,
-  /** N172–N179 · Atlas v3 screens (model health, facets, link proposals, course template and conversion review, Atlas settings). Build stage: default off until the approved N175 cutover. */
-  atlasV3: false,
+  /** N172–N179 · Atlas v3 screens (model health, facets, link proposals, course template and conversion review, Atlas settings).
+   *  On by default from the Owner's Atlas v3 activation (N182, docs/current/N180.md step 9); `?flags=-atlasV3` shows the off path in dev/test/e2e builds.
+   *  Rollback: change this back to false (no data change; the migrated owner keeps Atlas v3 in MCP). */
+  atlasV3: true,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;
