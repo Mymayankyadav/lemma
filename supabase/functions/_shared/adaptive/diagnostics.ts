@@ -31,3 +31,12 @@ export function attendanceDiagnostics(rows:{p:number;y:number;at?:number}[]):Hea
  return {...d,stream:'attendance',n,residuals:{},tests:{...d.tests,D3:null,D5:null},actions:d.actions.filter(a=>!a.startsWith('residual'))};
 }
 export const allStreams=(attempt:Health,card:Health,duration:Health,attendance:Health)=>[attempt,card,duration,attendance];
+
+/** 05 calibration chart: ten equal-width bins of predicted p against the observed rate, from the last 200 attempt predictions (D2 reads the same rows). Empty below 50. */
+export type ReliabilityBin={lo:number;hi:number;n:number;predicted:number;observed:number};
+export function reliabilityBins(rows:{p:number;y:number}[],bins=10):ReliabilityBin[]{
+ const data=rows.slice(-200);if(data.length<MIN)return [];
+ const out:ReliabilityBin[]=Array.from({length:bins},(_,i)=>({lo:i/bins,hi:(i+1)/bins,n:0,predicted:0,observed:0}));
+ for(const r of data){const b=out[Math.min(bins-1,Math.floor(clamp(r.p)*bins))];b.n++;b.predicted+=r.p;b.observed+=r.y;}
+ return out.filter(b=>b.n>0).map(b=>({...b,predicted:b.predicted/b.n,observed:b.observed/b.n}));
+}

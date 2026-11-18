@@ -33,3 +33,14 @@ describe('01 §9 attendance stream (D1, D2, D4)',()=>{
   const h=attendanceDiagnostics(stream(400,.5,.92));expect(h.tests.D2).toBe(false);expect(h.actions).toContain('recalibrating');expect(h.status).toBe('action');
  });
 });
+
+import {reliabilityBins} from '../../../supabase/functions/_shared/adaptive/diagnostics';
+describe('05 calibration chart data',()=>{
+ it('is empty below 50 predictions and bins the last 200 above',()=>{
+  expect(reliabilityBins(Array.from({length:49},()=>({p:.5,y:1})))).toEqual([]);
+  const rng=seeded(21),rows=Array.from({length:500},()=>{const p=rng();return {p,y:rng()<p?1:0};}),bins=reliabilityBins(rows);
+  expect(bins.reduce((a,b)=>a+b.n,0)).toBe(200);
+  for(const b of bins){expect(b.predicted).toBeGreaterThanOrEqual(b.lo);expect(b.predicted).toBeLessThan(b.hi+1e-9);expect(b.observed).toBeGreaterThanOrEqual(0);expect(b.observed).toBeLessThanOrEqual(1);}
+  expect(bins.map(b=>b.lo)).toEqual([...bins.map(b=>b.lo)].sort((a,b)=>a-b));
+ });
+});
