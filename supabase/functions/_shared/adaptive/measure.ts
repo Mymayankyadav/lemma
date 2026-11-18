@@ -16,7 +16,17 @@ export type Fit={pfa?:PfaFit;card_w?:number[];version?:number};
 export type Hypothesis={components:Record<string,Component>;memory:Record<string,Memory>;cards:Record<string,Memory>;counts:Record<string,number>;successes:Record<string,number>};
 export type Prediction={id:string;at:number;stream:'attempt'|'card';p:number;kf:number;pfa:number;base:number;y:number;concept_id?:string;facet?:Facet;confidence?:number|null;hours:number;hint:number;kind:string;features:Record<string,number>;hypotheses:number[]};
 export type DirectEvidence={at:number;session:string;clean:boolean;novel:boolean;uncued:boolean};
-export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
+export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
+/** One-pass lookup tables for replay: every per-event find/filter over the facts was linear, so a replay was quadratic in the number of attempts. */
+export type Lookup={tags:Map<string,AttemptTag[]>;sessions:Map<unknown,{id:string;started_at:string}>;items:Map<unknown,NonNullable<AtlasFacts['items']>[number]>;cardsByConcept:Map<string,CardFact[]>;cards:Map<string,CardFact>;concepts:Map<string,Concept>};
+function lookup(f:AtlasFacts):Lookup{
+ const ix:Lookup={tags:new Map(),sessions:new Map(),items:new Map(),cardsByConcept:new Map(),cards:new Map(),concepts:new Map(f.concepts.map(c=>[c.id,c]))};
+ for(const t of f.tags??[]){const k=String(t.attempt_id),l=ix.tags.get(k);if(l)l.push(t);else ix.tags.set(k,[t]);}
+ for(const x of f.sessions??[])if(!ix.sessions.has(x.id))ix.sessions.set(x.id,x as any);
+ for(const x of f.items??[])if(!ix.items.has(x.id))ix.items.set(x.id,x);
+ for(const c of f.cards??[]){if(!ix.cards.has(c.id))ix.cards.set(c.id,c);const l=ix.cardsByConcept.get(c.concept_id);if(l)l.push(c);else ix.cardsByConcept.set(c.concept_id,[c]);}
+ return ix;
+}
 export type Estimate={facet:Facet;p:number;lo:number;hi:number;m:number;variance:number;sd:number;sessions:number;state:'shown'|'inferred'|'none';retention:number;gap:number;inferredFrom?:string;certified?:boolean};
 const key=(k:string,f:Facet)=>k+':'+f;
 const at=(s:string)=>{const n=Date.parse(s);if(!Number.isFinite(n))throw Error('Invalid fact timestamp');return n;};
@@ -34,7 +44,7 @@ function component(h:Hypothesis,id:string,t:number,sd:number,q=0,m=0,write=true)
 export type Feature={c:Component;x:number};
 function features(h:Hypothesis,s:MeasurementState,k:string,f:Facet,t:number,hours:number,b:number,bSd:number,item?:string,readOnly=false):Feature[]{
  const get=(id:string,t:number,sd:number,q=0,m=0)=>component(h,id,t,sd,q,m,!readOnly);
- const map=new Map(Object.entries(s.index)),out:Feature[]=[{c:get('mu',t,1),x:1},{c:get('facet:'+f,t,.5),x:1}];
+ const map=s.ix.concepts,out:Feature[]=[{c:get('mu',t,1),x:1},{c:get('facet:'+f,t,.5),x:1}];
  for(const a of ancestors(k,map))out.push({c:get('ancestor:'+a,t,.5,.005),x:1});
  out.push({c:get('kc:'+k,t,.71,.01),x:1},{c:get('cross:'+key(k,f),t,.5,.01),x:1},
   {c:get('learning',t,.32,0,.3),x:Math.log1p(h.counts[k]??0)},{c:get('fatigue',t,.2,0,.2),x:-hours});
@@ -75,7 +85,7 @@ export function predict(s:MeasurementState,k:string,f:Facet,t=s.now,b=0,hours=0)
 }
 function updateTrial(s:MeasurementState,tags:AttemptTag[],a:Attempt,t:number,hours:number,y:number,hint:number,kappa=0):void{
  if(!tags.length)return;
- const it=s.facts.items?.find(x=>x.id===a.item_id),b=it?.b??0,bSd=it?.b_sd??.7,options=Number(a.context?.options)||undefined;
+ const it=s.ix.items.get(a.item_id),b=it?.b??0,bSd=it?.b_sd??.7,options=Number(a.context?.options)||undefined;
  const observations=s.hypotheses.map(h=>observation(s,h,tags,t,hours,b,bSd,hint,a.item_id??undefined,kappa,options));
  const ps=observations.map(o=>o.p),kf=ps.reduce((z,p,i)=>z+s.pi[i]*p,0),x=pfaFeatures(s,observations[0].target.concept_id,hours,b),pf=pfa(s,x);
  const prior=s.running.attempt,base=(1+prior.y)/(2+prior.n),weight=clamp(a.weight??1)*clamp(observations[0].target.confidence??1);
@@ -85,13 +95,13 @@ function updateTrial(s:MeasurementState,tags:AttemptTag[],a:Attempt,t:number,hou
   const k=o.target.concept_id;
   if(y){h.memory[k]=memoryStep(h.memory[k],t,3,weight,true);for(const q of tags)if(q!==o.target)h.memory[q.concept_id]=memoryStep(h.memory[q.concept_id],t,3,.4*weight,false);}
   else{const r=clamp((1-o.R)*(1-(options?1/options:.05))/(1-o.p));h.memory[k]=memoryStep(h.memory[k],t,1,r*weight,false);h.memory[k]=memoryStep(h.memory[k],t,3,(1-r)*weight,true);}
-  if(y)for(const card of s.facts.cards??[])if(card.concept_id===k&&h.cards[card.id])h.cards[card.id]=memoryStep(h.cards[card.id],t,3,.2*weight,false,s.fit.card_w);
+  if(y)for(const card of s.ix.cardsByConcept.get(k)??[])if(h.cards[card.id])h.cards[card.id]=memoryStep(h.cards[card.id],t,3,.2*weight,false,s.fit.card_w);
  }
  s.pi=bayesWeights(s.pi,ps,y);s.mix=bayesWeights(s.mix,[kf,pf],y,.001);s.running.attempt.n++;s.running.attempt.y+=y;
 }
 function consumeAttempt(s:MeasurementState,a:Attempt):void{
- const t=at(a.occurred_at),sess=s.facts.sessions?.find(x=>x.id===a.session_id),hours=sess?clamp((t-at(sess.started_at))/3600000,0,24):0;
- const tags=(a.tags??s.facts.tags?.filter(x=>String(x.attempt_id)===String(a.id))??[]).filter(x=>x.result!=='not_reached'&&countsUncued(x.facet,x.concept_id,a.cued??[]));
+ const t=at(a.occurred_at),sess=s.ix.sessions.get(a.session_id),hours=sess?clamp((t-at(sess.started_at))/3600000,0,24):0;
+ const tags=(a.tags??s.ix.tags.get(String(a.id))??[]).filter(x=>x.result!=='not_reached'&&countsUncued(x.facet,x.concept_id,a.cued??[]));
  const seen=new Set<string>();
  for(const tag of tags){
   const k=key(tag.concept_id,tag.facet);if(seen.has(k))continue;seen.add(k);
@@ -117,7 +127,7 @@ function consumeAttempt(s:MeasurementState,a:Attempt):void{
  for(const k of new Set(tags.filter(x=>x.role==='target').map(x=>x.concept_id)))for(const h of s.hypotheses){h.counts[k]=(h.counts[k]??0)+1;if(a.legacy_outcome==='pass'||tags.some(x=>x.concept_id===k&&x.result==='ok'))h.successes[k]=(h.successes[k]??0)+1;}
 }
 function consumeReview(s:MeasurementState,r:ReviewFact):void{
- const c=s.facts.cards?.find(c=>c.id===r.card_id);if(!c)return;const t=at(r.occurred_at),y=r.rating>1?1:0;
+ const c=s.ix.cards.get(r.card_id);if(!c)return;const t=at(r.occurred_at),y=r.rating>1?1:0;
  const ps:number[]=[];
  for(let i=0;i<s.hypotheses.length;i++){
   const h=s.hypotheses[i],R=memoryAt(h.cards[c.id],t,s.fit.card_w),fs=[{c:component(h,'card:global',t,.32),x:1},{c:component(h,'card:system:'+(c.system_id??''),t,.22),x:1},{c:component(h,'card:kc:'+c.concept_id,t,.32),x:1},{c:component(h,'card:fatigue',t,.1),x:-(r.hours??0)}];
@@ -130,13 +140,13 @@ function consumeReview(s:MeasurementState,r:ReviewFact):void{
 }
 export function replay(facts:AtlasFacts,fit:Fit={},now?:number):MeasurementState{
  const fresh=():Hypothesis=>({components:{},memory:{},cards:{},counts:{},successes:{}});
- const s:MeasurementState={hypotheses:[fresh(),fresh()],pi:[.5,.5],mix:[.8,.2],gaps:{},tracked:[],direct:{},lastInstruction:{},trace:[],fit,facts,now:now??0,index:Object.fromEntries(facts.concepts.map(c=>[c.id,c])),running:{attempt:{n:0,y:0},card:{n:0,y:0}}};
+ const s:MeasurementState={hypotheses:[fresh(),fresh()],pi:[.5,.5],mix:[.8,.2],gaps:{},tracked:[],direct:{},lastInstruction:{},trace:[],fit,facts,now:now??0,index:Object.fromEntries(facts.concepts.map(c=>[c.id,c])),ix:lookup(facts),running:{attempt:{n:0,y:0},card:{n:0,y:0}}};
  for(const a of facts.assumptions??[])if(!a.revoked_at)s.gaps[key(a.concept_id,a.level as Facet)]=.05;
  const events=[...facts.attempts.filter(a=>!a.voided_at&&!a.superseded_by).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:1 as const,value:a})),...(facts.instructions??[]).filter(a=>!a.voided_at).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:0 as const,value:a})),...(facts.reviews??[]).filter(a=>!a.voided_at).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:2 as const,value:a}))].sort((a,b)=>a.t-b.t||a.kind-b.kind||(a.id.length-b.id.length)||a.id.localeCompare(b.id));
  const duplicates=new Set<string>();
  for(const e of events){s.now=Math.max(s.now,e.t);
   if(e.kind===0){const ins=e.value as Instruction;s.lastInstruction[ins.concept_id]=e.t;for(const h of s.hypotheses){h.memory[ins.concept_id]=memoryStep(h.memory[ins.concept_id],e.t,3,1,true);const c=component(h,'kc:'+ins.concept_id,e.t,.71,.01);c.v=Math.min(c.prior,c.v+.5);for(const card of s.facts.cards??[])if(card.concept_id===ins.concept_id&&!h.cards[card.id])h.cards[card.id]=memoryStep(undefined,e.t,3);}}
-  else if(e.kind===1){const a=e.value as Attempt,ts=a.tags??facts.tags?.filter(x=>String(x.attempt_id)===String(a.id))??[],dedup=JSON.stringify([Math.floor(e.t/1000),a.session_id,ts.map(t=>[t.concept_id,t.facet,t.role,t.stage,t.result,t.hint_level]).sort(),a.legacy_outcome]);if(!duplicates.has(dedup)){duplicates.add(dedup);consumeAttempt(s,a);}}
+  else if(e.kind===1){const a=e.value as Attempt,ts=a.tags??s.ix.tags.get(String(a.id))??[],dedup=JSON.stringify([Math.floor(e.t/1000),a.session_id,ts.map(t=>[t.concept_id,t.facet,t.role,t.stage,t.result,t.hint_level]).sort(),a.legacy_outcome]);if(!duplicates.has(dedup)){duplicates.add(dedup);consumeAttempt(s,a);}}
   else consumeReview(s,e.value as ReviewFact);
  }
  return s;
