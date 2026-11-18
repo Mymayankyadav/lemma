@@ -116,3 +116,23 @@ describe('10 §6–§8 wired into the read model',()=>{
   expect(view.allocation.reduce((a,o)=>a+o.minutes,0)).toBeLessThanOrEqual(120+1e-9);
  });
 });
+
+import {sessionQueue} from '../../../supabase/functions/_shared/adaptive/kg';
+describe('10 §8 fairness is spent in the daily queue',()=>{
+ const s=replay(facts(),{},T+10*DAY);
+ const act=(project:string,i:number,p=.6):Action=>({project_id:project,id:project+':'+i,kind:'practice',concept_id:i%2?'k':'j',minutes:10,p,needAt:T+30*DAY});
+ it('never spends more than a project\'s share of minutes on KG actions, so a greedy project cannot starve another',()=>{
+  const actions=[...[0,1,2,3,4,5].map(i=>act('a',i)),...[0,1].map(i=>act('b',i,.4))];
+  const free=sessionQueue(s,actions,120,.125),capped=sessionQueue(s,actions,120,.125,{a:20,b:30});
+  const minutes=(q:typeof free,project:string)=>q.items.filter(x=>x.project_id===project).reduce((a,x)=>a+x.minutes,0);
+  expect(minutes(free,'a')+minutes(free,'b')).toBeGreaterThan(40);                    // uncapped, the queue spends the block
+  expect(minutes(capped,'a')).toBeLessThanOrEqual(20);expect(minutes(capped,'b')).toBeLessThanOrEqual(30);
+  expect(minutes(capped,'b')).toBe(20);                                              // b's two actions both fit
+ });
+ it('forced items count against the share but are never dropped; no caps means no change',()=>{
+  const forced:Action={project_id:'a',id:'check:k',kind:'check',concept_id:'k',minutes:5,p:.5,forced:true};
+  const q=sessionQueue(s,[forced,act('a',0),act('a',1)],120,.125,{a:10});
+  expect(q.items[0].id).toBe('check:k');expect(q.items.filter(x=>x.project_id==='a').reduce((a,x)=>a+x.minutes,0)).toBe(5);   // the forced check (5) is kept and uses half the share; a 10-minute action would exceed 10
+  expect(sessionQueue(s,[act('a',0),act('a',1)],120,.125)).toEqual(sessionQueue(s,[act('a',0),act('a',1)],120,.125,undefined));
+ });
+});

@@ -1,9 +1,21 @@
 -- Keep the existing note/proposal transport enums valid. Typed v3 metadata is additive.
 alter table public.notes add column atlas_kind text check(atlas_kind in ('definition','theorem','why','example','counterexample','proof','skeleton','technique','other'));
 
+-- 11 §4 per-KC card limits (mirror of cards.ts cardLimit; a test compares them).
+create function public.atlas_card_limit(kind text,tier text,confusable boolean,canonical boolean) returns int
+language sql immutable set search_path='' as $fn$
+ select case when tier='venture' then 0
+  when kind='definition' then case when tier='core' and coalesce(confusable,false) then 2 else 1 end
+  when kind='result' then case when tier='core' then 2 else 1 end
+  when kind='example' then case when tier='core' and coalesce(canonical,false) then 1 else 0 end
+  when kind='technique' then case when tier='core' then 1 else 0 end
+  else 0 end $fn$;
+revoke all on function public.atlas_card_limit(text,text,boolean,boolean) from public,anon,authenticated;
+
 -- The same structural rules guard a template proposal and a conversion at approval (the TypeScript validator at drafting time is not trusted).
 create function public.atlas_check_template_cp(cp jsonb) returns void
 language plpgsql immutable set search_path='' as $fn$
+declare kc_row jsonb;card_row jsonb;
 begin
   if cp->>'kind' not in ('learn','milestone') or cp->>'tier' not in ('core','standard','venture') or not public.lemma_valid_steps(cp->'steps') then raise exception 'Invalid template checkpoint';end if;
  if coalesce(jsonb_array_length(cp->'kcs'),0) not between 1 and 6 then raise exception 'Template checkpoint needs 1-6 KCs';end if;
@@ -11,6 +23,16 @@ begin
  if cp->'criterion'->>'kind' is distinct from 'holdout' or coalesce((cp->'criterion'->>'novel')::boolean,false) is not true or jsonb_array_length(coalesce(cp->'criterion'->'cued','[]'))>0 then raise exception 'Criterion must be an uncued novel holdout';end if;
  if coalesce(jsonb_array_length(cp->'practice'),0) not between 3 and 6 then raise exception 'Template checkpoint needs 3-6 practice items';end if;
  if coalesce(jsonb_array_length(cp->'close'->'questions'),0)<>3 then raise exception 'Close needs three recall questions';end if;
+ -- Cards: few and structural. Each belongs to one of the checkpoint's KCs, respects that KC's limit, uses an allowed facet, answers in at most three lines, never "list all".
+ for kc_row in select jsonb_array_elements(coalesce(cp->'kcs','[]')) loop
+  if (select count(*) from jsonb_array_elements(coalesce(cp->'card_plan','[]')) x where x->>'concept_id'=kc_row->>'id')>public.atlas_card_limit(kc_row->>'kind',cp->>'tier',(kc_row->>'confusable')::boolean,(kc_row->>'canonical')::boolean) then raise exception 'Card limit exceeded for %',kc_row->>'id';end if;
+ end loop;
+ for card_row in select jsonb_array_elements(coalesce(cp->'card_plan','[]')) loop
+  if not exists(select 1 from jsonb_array_elements(cp->'kcs') k2 where k2->>'id'=card_row->>'concept_id') then raise exception 'Card names a KC outside its checkpoint';end if;
+  if card_row->>'facet' not in ('recall','understand','select') then raise exception 'Card facet must be recall, understand or select';end if;
+  if coalesce(array_length(regexp_split_to_array(coalesce(card_row->>'back',''),E'\n'),1),0)>3 then raise exception 'Answer exceeds three lines';end if;
+  if coalesce(card_row->>'front','') ~* '\mlist all\M' then raise exception 'No list-all cards';end if;
+ end loop;
  end $fn$;
 revoke all on function public.atlas_check_template_cp(jsonb) from public,anon,authenticated;
 

@@ -39,6 +39,7 @@ try{
   await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps,status,demonstrated_at,current_step,kind) values($1,$2,$3,'CP1',1,'Done unit','Was learnt','Proved it','[\"a\",\"b\"]','demonstrated',now(),0,'learn')",[P.done,owner,P.project]);
   await q("insert into public.checkpoints(id,user_id,project_id,code,position,title,objective,criterion,steps,status,kind) values($1,$2,$3,'CP2',2,'Old open unit','Old objective','Old criterion','[\"x\"]','not_started','learn'),($4,$2,$3,'CP3',3,'Cards K1','Cards','Done cards','[\"c\"]','not_started','cards')",[P.open,owner,P.project,P.cards]);
   await q('insert into public.checkpoint_prereqs(user_id,checkpoint_id,prereq_id) values($1,$2,$3),($1,$2,$4)',[owner,P.open,P.done,P.cards]);
+ await q("update public.checkpoints set pages='pp. 12-18' where id=$1",[P.open]);
   await q('insert into public.checkpoint_concepts(user_id,checkpoint_id,concept_id) values($1,$2,$3)',[owner,P.open,P.old]);
   for(const [id,front] of [[P.reviewed,'Reviewed front'],[P.plain,'Plain front'],[P.susp,'Suspend front']]){
    await q("insert into public.notes(id,user_id,project_id,front,back,kind,type,origin) values($1,$2,$3,$4,'back','other','basic','other')",[id,owner,P.project,front]);
@@ -58,6 +59,9 @@ try{
   cards:[{id:P.reviewed,action:'revise',front:'Revised front',back:'Revised back',reason:'tighten'},{id:P.plain,action:'delete',reason:'duplicate'},{id:P.susp,action:'suspend',reason:'certified'},{action:'new',kind:'skeleton',front:'Skeleton '+i,back:'1. idea',reason:'proof skeleton'}]});
  const draft=async(P,i,conversion=conversionFor(P,i))=>{await asService();const r=await run(command('create',{patch:{project_id:P.project,conversion}}));return r.changed[0].id;};
  const approve=async id=>{await asService();const v=(await q('select version from public.proposals where id=$1',[id]))[0].version;return run(command('approve',{target:{id},expectedVersion:Number(v),patch:{}}));};
+ // --- 11 §4 card limits per KC kind and tier
+ for(const [kind,tier,confusable,canonical,limit] of [['definition','core',false,false,1],['definition','core',true,false,2],['definition','standard',true,false,1],['result','core',false,false,2],['result','standard',false,false,1],['example','core',false,true,1],['example','core',false,false,0],['example','standard',false,true,0],['technique','core',false,false,1],['technique','standard',false,false,0],['notation','core',false,false,0],['topic','core',false,false,0],['result','venture',false,false,0]])
+  assert.equal((await q('select public.atlas_card_limit($1,$2,$3,$4) n',[kind,tier,confusable,canonical]))[0].n,limit,kind+' '+tier);
  // --- hard rules at approval: each violation raises and leaves the project exactly as it was
  {
   const [P]=projects,before=await snapshot(P.project);
@@ -75,11 +79,17 @@ try{
    bad('too few practice items',c=>{c.checkpoints[2].practice=[];},/practice items/),
    bad('cards CP skipped for another reason',c=>{c.map[P.cards].reason='other';},/Cards CP must move to Close/),
    bad('bad KC kind',c=>{c.kcs[1].kind='banana';},/Invalid KC kind/),
+   bad('card limit exceeded',c=>{c.checkpoints[2].card_plan=[1,2,3].map(i=>({concept_id:'kc-new',kind:'definition',facet:'recall',front:'f'+i,back:'b'}));},/Card limit exceeded/),
+   bad('card names a KC outside its checkpoint',c=>{c.checkpoints[2].card_plan=[{concept_id:'kc-old',kind:'definition',facet:'recall',front:'f',back:'b'}];},/outside its checkpoint/),
+   bad('card facet not allowed',c=>{c.checkpoints[2].card_plan=[{concept_id:'kc-new',kind:'definition',facet:'execute',front:'f',back:'b'}];},/facet must be/),
+   bad('answer over three lines',c=>{c.checkpoints[2].card_plan=[{concept_id:'kc-new',kind:'definition',facet:'recall',front:'f',back:'1\n2\n3\n4'}];},/three lines/),
+   bad('list-all card',c=>{c.checkpoints[2].card_plan=[{concept_id:'kc-new',kind:'definition',facet:'recall',front:'List all the axioms',back:'b'}];},/list-all/),
+   bad('venture checkpoints draft no cards',c=>{c.checkpoints[2].tier='venture';c.checkpoints[2].card_plan=[{concept_id:'kc-new',kind:'definition',facet:'recall',front:'f',back:'b'}];},/Card limit exceeded/),
   ];
   for(const t of cases){
    const conversion=structuredClone(conversionFor(P,0));t.mutate(conversion);
    const id=await draft(P,0,conversion);
-   await assert.rejects(approve(id),t.expected,t.name);
+   try{await assert.rejects(approve(id),t.expected,t.name);}catch(e){console.error('CASE',t.name,'->',e.message);throw e;}
    await root();
    assert.deepEqual(await snapshot(P.project),before,t.name+': a rejected approval must change nothing');
    assert.equal((await q('select status from public.proposals where id=$1',[id]))[0].status,'pending',t.name+': proposal stays pending');
@@ -92,7 +102,8 @@ try{
   const after=await snapshot(P.project),cp=Object.fromEntries(after.checkpoints.map(c=>[c.id,c]));
   assert.equal(cp[P.done].title,'Done unit','done CP keeps its title');assert.equal(cp[P.done].status,'demonstrated','done CP keeps its status');
   assert.deepEqual(cp[P.done].steps,['a','b'],'done CP keeps its steps');
-  assert.equal(cp[P.open].title,'Open unit, templated','open CP is rewritten from the template');assert.equal(cp[P.open].has_template,true);
+  assert.equal(cp[P.open].title,'Open unit, templated','open CP is rewritten from the template');
+  assert.equal((await q('select pages from public.checkpoints where id=$1',[P.open]))[0].pages,'pp. 12-18','conversion never invents or drops a source page');assert.equal(cp[P.open].has_template,true);
   assert.equal(cp[P.cards].plan_state,'skipped');assert.equal(cp[P.cards].deferred_reason,'template:cards-in-close');
   const created=after.checkpoints.filter(c=>!before.checkpoints.some(b=>b.id===c.id));
   assert.deepEqual(created.map(c=>c.title).sort(),['Brand new unit','Second new unit'],'two new CPs');

@@ -1,6 +1,6 @@
 import {clamp,DAY} from './math.ts';
 import {memoryAt,memoryStep,type MeasurementState} from './measure.ts';
-export type Action={id:string;kind:'practice'|'review'|'teach'|'check'|'close'|'probe';concept_id:string;card_id?:string;minutes:number;p:number;forced?:boolean;weight?:number;needAt?:number};
+export type Action={project_id?:string;id:string;kind:'practice'|'review'|'teach'|'check'|'close'|'probe';concept_id:string;card_id?:string;minutes:number;p:number;forced?:boolean;weight?:number;needAt?:number};
 /** Enumerate the model's two outcomes. Ability-only gains are a martingale; only memory/learning enters ΔU. */
 export type Expect=(p:number,success:number,failure:number)=>number;
 const exactExpect:Expect=(p,success,failure)=>p*success+(1-p)*failure;
@@ -22,12 +22,13 @@ export function knowledgeGain(s:MeasurementState,a:Action,expect:Expect=exactExp
 export function rankActions(s:MeasurementState,actions:Action[],block:number,cardUsed=0,cap=.125){
  return actions.filter(a=>a.minutes>0&&Number.isFinite(a.minutes)&&(a.kind!=='review'||cardUsed+a.minutes<=block*cap)).map(a=>{const gain=knowledgeGain(s,a);return {...a,gain,score:gain/a.minutes,reason:'+'+(gain*100).toFixed(1)+' pts/'+Math.round(a.minutes)+' min · '+(a.kind==='review'?'card':'memory')};}).sort((a,b)=>Number(!!b.forced)-Number(!!a.forced)||b.score-a.score||a.id.localeCompare(b.id));
 }
-export function sessionQueue(s:MeasurementState,actions:Action[],block:number,cardCap=.125){
- const checks=actions.filter(a=>a.kind==='check'&&a.forced),teaching=actions.filter(a=>a.kind==='teach'&&a.forced),out:ReturnType<typeof rankActions>=[];let used=0,cards=0,checkMinutes=0;
- for(const a of checks)if(checkMinutes+a.minutes<=block*.25){out.push({...a,gain:0,score:Infinity,reason:'due certification check'});checkMinutes+=a.minutes;used+=a.minutes;}
- for(const a of actions.filter(x=>x.kind==='probe'&&x.forced))if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'re-entry probe'});used+=a.minutes;}
- for(const a of teaching)if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'teaching pace'});used+=a.minutes;}
- for(const a of rankActions(s,actions.filter(x=>!x.forced&&x.kind!=='close'),block,0,cardCap)){if(used+a.minutes>block-Math.min(10,block*.1))continue;if(a.kind==='review'&&cards+a.minutes>block*cardCap)continue;out.push(a);used+=a.minutes;if(a.kind==='review')cards+=a.minutes;}
+/** `caps` is the per-project minute share from `allocateProjects` (10 §8): the KG part of the queue never spends more than a project's share, so one project cannot starve another. */
+export function sessionQueue(s:MeasurementState,actions:Action[],block:number,cardCap=.125,caps?:Record<string,number>){
+ const checks=actions.filter(a=>a.kind==='check'&&a.forced),teaching=actions.filter(a=>a.kind==='teach'&&a.forced),out:ReturnType<typeof rankActions>=[];let used=0,cards=0,checkMinutes=0;const spent:Record<string,number>={},charge=(a:Action)=>{if(a.project_id)spent[a.project_id]=(spent[a.project_id]??0)+a.minutes;};
+ for(const a of checks)if(checkMinutes+a.minutes<=block*.25){out.push({...a,gain:0,score:Infinity,reason:'due certification check'});checkMinutes+=a.minutes;used+=a.minutes;charge(a);}
+ for(const a of actions.filter(x=>x.kind==='probe'&&x.forced))if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'re-entry probe'});used+=a.minutes;charge(a);}
+ for(const a of teaching)if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'teaching pace'});used+=a.minutes;charge(a);}
+ for(const a of rankActions(s,actions.filter(x=>!x.forced&&x.kind!=='close'),block,0,cardCap)){if(used+a.minutes>block-Math.min(10,block*.1))continue;if(a.kind==='review'&&cards+a.minutes>block*cardCap)continue;if(caps&&a.project_id&&caps[a.project_id]!==undefined&&(spent[a.project_id]??0)+a.minutes>caps[a.project_id]+1e-9)continue;out.push(a);used+=a.minutes;charge(a);if(a.kind==='review')cards+=a.minutes;}
  return {items:out,closeMinutes:Math.min(10,Math.max(0,block-used)),cardMinutes:cards,cardCapMinutes:block*cardCap};
 }
 export function pacing(totalCore:number,taughtCore:number,start:number,lastStudy:number,today:number,freeMinutes:number){const days=Math.max(1,(lastStudy-start)/DAY),reserve=Math.max(7,.2*days),teachingDays=Math.max(1,days-reserve),expected=Math.min(totalCore,Math.ceil(totalCore*clamp((today-start)/DAY+1,0,teachingDays)/teachingDays));return {forceTeach:freeMinutes>=30&&taughtCore<totalCore,behind:taughtCore<expected,finishTeachingAt:lastStudy-reserve*DAY,expected};}

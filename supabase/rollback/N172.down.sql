@@ -6,6 +6,7 @@ drop function if exists public.atlas_apply_approved_plan();
 drop function if exists public.atlas_conversion_command(jsonb);
 drop function if exists public.atlas_resolve_kc(uuid,jsonb,text);
 drop function if exists public.atlas_check_template_cp(jsonb);
+drop function if exists public.atlas_card_limit(text,text,boolean,boolean);
 drop function if exists public.atlas_v2_activate(jsonb);
 drop function if exists public.atlas_check_release_report(uuid,jsonb);
 drop function if exists public.atlas_v2_migrate(jsonb);
