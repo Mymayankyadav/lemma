@@ -14,6 +14,9 @@ import {restore} from '../_shared/adaptive/prune.ts';
 import {DEFAULTS} from '../_shared/adaptive/plan.ts';
 import {loadAtlasRows,renderAtlasRead,ATLAS_READS} from './atlas.ts';
 import {assembleAtlas,atlasCard} from '../_shared/adaptive/atlas.ts';
+import {predict} from '../_shared/adaptive/measure.ts';
+import {pruneDecision} from '../_shared/adaptive/kg.ts';
+import {stepPrune,planPrune,RESTORE_ABOVE,type PruneState} from '../_shared/adaptive/scheduler.ts';
 
 export const FLAG_NAMES=['time_block','recheck_v2','scheduler_v2','proficiency','items','atlas_memory','workers'] as const;
 export type FlagName=typeof FLAG_NAMES[number];
@@ -48,7 +51,7 @@ export async function loadRows(c:Context,now=new Date()):Promise<Rows>{
     scoped(c,'study_intervals','kind,started_at,ended_at').gte('started_at',sinceDay).limit(500).then(must),
     scoped(c,'calendar_blocks','kind,status,starts_at,ends_at,time_zone').gte('ends_at',sinceDay).limit(500).then(must),
     dueCardsByProject(c),
-    scoped(c,'scheduler_runs','study_day,project_id,slack_ratio').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
+    scoped(c,'scheduler_runs','*').gte('study_day',new Date(now.getTime()-4*86400000).toISOString().slice(0,10)).limit(200).then(must).catch(()=>[] as any[])]);
   const atlas=settings.atlas?await loadAtlasRows(c):{};
   return {settings,projects:visibleProjects(projects),checkpoints,prereqs,cpConcepts,concepts,conceptLinks,evidence,misconceptions:misc,
     decisions,baselines,overrides,sessions,intervals,busy,dueCards,frozen,items,assumptions,aliases,...atlas};
@@ -179,8 +182,33 @@ const slackRatio=(f:{slack:number;supply:number})=>f.supply>0?f.slack/f.supply:(
 export async function applyScheduler(c:Context,now=new Date()):Promise<string>{
   const {state,rows}=await stateOf(c,now);
   if(rows.settings?.atlas_migrated_at){
-    const v=assembleAtlas(rows,now);for(const p of Object.values(state.projects)){const f=v.fits[p.id];if(f)await c.db.from('scheduler_runs').upsert({user_id:c.userId,study_day:state.today,project_id:p.id,p_all:f.pAll,p_core:f.pCore,slack_ratio:0,supply:f.supply,required:f.required,input_hash:state.today+':atlas3',computed_at:now.toISOString()},{onConflict:'user_id,study_day,project_id',ignoreDuplicates:true});}
-    return Object.values(v.fits).some(f=>f.pCore<.8)?'SCHEDULER core at risk; choose capacity, deadline or named scope changes':'';
+    // Atlas v3 (10 §4): freeze today's P_all/P_core once, then prune below 0.80 and restore above 0.95 on two consecutive study days. Journalled in the caller's batch so `undo` reverses the run.
+    const v=assembleAtlas(rows,now),today=state.today,yesterday=addDays(today,-1),changes:string[]=[];
+    const frozen=new Map<string,Map<string,number>>();
+    for(const f of rows.frozen??[])if(f.p_all!=null)(frozen.get(f.project_id)??frozen.set(f.project_id,new Map()).get(f.project_id)!).set(String(f.study_day).slice(0,10),Number(f.p_all));
+    for(const p of Object.values(state.projects)){
+      const f=v.fits[p.id];if(!f)continue;
+      const h=frozen.get(p.id)??new Map<string,number>();
+      if(!h.has(today)){
+        await c.db.from('scheduler_runs').upsert({user_id:c.userId,study_day:today,project_id:p.id,p_all:f.pAll,p_core:f.pCore,slack_ratio:0,supply:f.supply,required:f.required,input_hash:today+':atlas3',computed_at:now.toISOString()},{onConflict:'user_id,study_day,project_id',ignoreDuplicates:true});
+        h.set(today,f.pAll);
+      }
+      const mine=rows.checkpoints.filter((x:any)=>x.project_id===p.id),v3=mine.filter((x:any)=>x.plan_state==='deferred'&&String(x.deferred_reason??'').startsWith('prune:v3'));
+      const start:PruneState={pruned:v3.length>0,upDays:(h.get(yesterday)??0)>RESTORE_ABOVE?1:0,lastDay:yesterday};
+      const step=stepPrune(start,today,h.get(today)!);
+      if(step.action==='prune'){
+        const open=mine.filter((x:any)=>x.status==='not_started'&&(x.plan_state??'active')==='active'&&x.tier!=='core'&&!x.pinned).map((x:any)=>{const k=rows.cpConcepts.find((e:any)=>e.checkpoint_id===x.id)?.concept_id,pt=k?predict(v.model,k,'use',now.getTime()):0;return {id:x.id,tier:x.tier??'standard',weight:x.tier==='venture'?1:2,pTestOut:pt,minutes:x.estimate_minutes??60,status:x.status};});
+        const order=pruneDecision(f.pAll,f.pCore,[],open).candidates,plan=planPrune(f,order.map(o=>({id:o.id,minutes:o.minutes,testOut:o.testOut})));
+        for(const id of plan.defer)await update(c,'checkpoints',id,{plan_state:'deferred',deferred_at:iso(),deferred_reason:'prune:v3 P_all '+f.pAll.toFixed(2)});
+        if(plan.defer.length)changes.push('deferred '+plan.defer.length+' ('+f.pAll.toFixed(2)+' → '+plan.pAfter.toFixed(2)+')');
+        if(plan.testOut.length)changes.push('test-out suggested for '+plan.testOut.length);
+      }else if(step.action==='restore'){
+        for(const x of v3.sort((a:any,b:any)=>String(b.deferred_at).localeCompare(String(a.deferred_at))))await update(c,'checkpoints',x.id,{plan_state:'active',deferred_at:null,deferred_reason:null});
+        if(v3.length)changes.push('restored '+v3.length);
+      }
+    }
+    const risk=Object.values(v.fits).some(f=>f.pCore<.8)?'; core at risk, choose capacity, deadline or named scope changes':'';
+    return changes.length?'SCHEDULER '+changes.join(', ')+risk+' (undo reverses it)':risk?'SCHEDULER core at risk; choose capacity, deadline or named scope changes':'';
   }
   if(!flagOn(rows.settings,'scheduler_v2'))return '';
   const hist=new Map<string,Map<string,number>>();

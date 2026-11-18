@@ -1,5 +1,6 @@
 // Atlas v3 scheduler rules that are decisions about the plan, not about memory (10 §4, §6, §7, §8). Pure and deterministic (I3).
 import {memoryAt,type MeasurementState} from './measure.ts';
+import {normalCdf} from './math.ts';
 
 /** 10 §4: prune below 0.80; restore only above 0.95 on 2 consecutive study days. Between the bands nothing changes, so a noisy series cannot flip-flop. */
 export type PruneState={pruned:boolean;upDays:number;lastDay:string|null};
@@ -48,4 +49,18 @@ export function allocateProjects(projects:ProjectNeed[],minutes:number):{id:stri
   left-=used;open=open.filter(p=>out.get(p.id)!.minutes<p.needMinutes-1e-9);
  }
  return projects.map(p=>out.get(p.id)!);
+}
+
+/** 10 §4–§5: which checkpoints to defer so that P_all returns to 0.80. Candidates arrive in value-per-minute order (`pruneDecision`); a test-out candidate is
+ *  reported, not deferred (it becomes a 15-minute probe). Removing a checkpoint takes its minutes off the required mean and its share off the required variance. */
+export type PruneCandidate={id:string;minutes:number;testOut?:boolean};
+export function planPrune(f:{required:number;supply:number;requiredVariance:number;supplyVariance:number},candidates:PruneCandidate[],target=PRUNE_BELOW):{defer:string[];testOut:string[];pAfter:number}{
+ const p=(r:number,rv:number)=>{const v=f.supplyVariance+rv;return v>0?normalCdf((f.supply-r)/Math.sqrt(v)):f.supply>=r?1:0;};
+ let required=f.required,variance=f.requiredVariance;const defer:string[]=[],testOut:string[]=[];
+ for(const c of candidates){
+  if(p(required,variance)>=target)break;
+  if(c.testOut){testOut.push(c.id);const saved=Math.max(0,c.minutes-15);variance*=required>0?Math.max(0,(required-saved)/required)**2:1;required-=saved;continue;}
+  defer.push(c.id);variance*=required>0?Math.max(0,(required-c.minutes)/required)**2:1;required=Math.max(0,required-c.minutes);
+ }
+ return {defer,testOut,pAfter:p(required,variance)};
 }
