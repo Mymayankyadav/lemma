@@ -50,5 +50,11 @@ try{
  for(const p of [id(2),id(3)])await q("insert into public.proposals(user_id,project_id,kind,payload,origin,status) values($1,$2,'plan_change','{\"ops\":[],\"atlas_conversion\":{}}','other','approved')",[owner,p]);
  const done=(await activate(good()))[0].atlas_v2_activate;
  assert.equal(done.activated,true);assert.ok(await migrated(),'activation sets atlas_migrated_at');
+ // the owner export covers every Atlas fact table (it is registry-based, so a registered table cannot be forgotten)
+ for(const table of ['attempts','attempt_tags','instruction_events','atlas_links']){
+  const page=(await q('select public.lemma_export_page_for($1,$2,null,100) r',[owner,table]))[0].r;
+  assert.ok(page&&Array.isArray(page.rows),table+' is exportable');
+  if(table==='attempts')assert.ok(page.rows.length>0,'migrated attempts are exported');
+ }
  console.log('PASS N175 activation: structured release report, every gate, per-stream diagnostics and approved conversions');
 }finally{await db.close();}

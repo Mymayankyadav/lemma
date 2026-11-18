@@ -6,6 +6,7 @@ import {KINDS,type Kind} from '../../../supabase/functions/_shared/adaptive/kc';
 import {ATLAS_DEFAULTS} from '../../../supabase/functions/_shared/adaptive/policy';
 import {ProficiencyValue,IntervalBar,StageStrip,GapBadge,LinkKindChip,FitMeter,CardBudget,EstimateRange} from '../../ui/v7/AtlasValues';
 import {Button} from '../../ui/v7/components';
+import {ATLAS_FILTERS,type AtlasFilter} from '../atlas/v7/filters';
 import {isFlagOn} from '../../flags';
 import type {ComponentType} from 'react';
 function Failure({text}:{text:string}){return <p role="alert">{text}</p>;}
@@ -31,6 +32,9 @@ function AtlasExplorePanel({view,onView}:{view:'map'|'themes'|'bridges';onView:(
  return <section className="v7-atlas-explore" aria-label="Atlas views"><nav aria-label="Atlas model views">{(['map','themes','bridges'] as const).map(v=><button key={v} type="button" aria-pressed={view===v} onClick={()=>onView(v)}>{v[0].toUpperCase()+v.slice(1)}</button>)}</nav>
   {view!=='map'&&<div className="v7-atlas-panel">{q.isPending?<p>Loading Atlas…</p>:q.isError?<Failure text="Could not load Atlas views."/>:q.data&&<>{view==='themes'?<><h2>Themes</h2>{q.data.themes.length?q.data.themes.map(t=><details key={t.id}><summary>{t.name}</summary>{t.instances.map(id=><p key={id}><Link to={'/atlas?id='+id}>{q.data!.model.facts.concepts.find(c=>c.id===id)?.name}</Link> {q.data!.facets[id]?.[0]&&<ProficiencyValue value={q.data!.facets[id][0]}/>}</p>)}</details>):<p>No themes yet.</p>}</>:<><h2>Bridges</h2>{q.data.bridges.length?q.data.bridges.map((b,i)=><div key={i} className="v7-atlas-row" data-dashed={b.strength.dashed}><span>{q.data!.model.facts.concepts.find(c=>c.id===b.from)?.name} → {q.data!.model.facts.concepts.find(c=>c.id===b.to)?.name}</span><small>{b.strength.u} uses · {b.strength.o} opportunities</small></div>):<p>No bridges yet.</p>}</>}</>}</div>}
  </section>;
+}
+function AtlasFiltersPanel({filter,onFilter,kind,onKind,floating=false}:{filter:AtlasFilter;onFilter:(f:AtlasFilter)=>void;kind:string;onKind:(k:string)=>void;floating?:boolean}){
+ return <nav aria-label="Atlas filters" className={'v7-atlas-filters'+(floating?' v7-atlas-filters-floating':'')}>{ATLAS_FILTERS.map(f=><button key={f} type="button" aria-pressed={filter===f} onClick={()=>onFilter(f)}>{f[0].toUpperCase()+f.slice(1)}</button>)}<label>Kind <select value={kind} onChange={e=>onKind(e.target.value)}><option value="any">Any</option>{KINDS.map(k=><option key={k} value={k}>{k}</option>)}</select></label></nav>;
 }
 function AtlasProgressPanel(){const q=useAtlasModel();if(!q.data)return null;const v=q.data,systems=v.model.facts.concepts.filter(c=>c.level==='system');return <section className="v7-atlas-panel" aria-label="Atlas model health"><h2>Atlas</h2><div className="v7-atlas-scroll"><table><thead><tr><th>Area</th><th>Knowledge</th><th>Select</th><th>Execute</th><th>Transfer</th></tr></thead><tbody>{systems.slice(0,20).map(c=><tr key={c.id}><th><Link to={'/atlas?id='+c.id}>{c.name}</Link></th>{['understand','select','execute','transfer'].map(f=>{const value=v.facets[c.id]?.find(x=>x.facet===f);return <td key={f}>{value?<ProficiencyValue value={value}/>:<span>—</span>}</td>;})}</tr>)}</tbody></table></div>
  <h3>Track record</h3>{v.health.some(h=>h.tests.D1===false)&&<p role="status">Model below baseline — simple estimates in use</p>}<ul>{v.health.map(h=><li key={h.stream}><strong>{h.stream}</strong> · {h.n} predictions · {h.status}{h.n>=50&&<span> · log loss {h.loss.toFixed(3)} / PFA {h.pfa.toFixed(3)} / base {h.baseline.toFixed(3)} · slope {h.b.toFixed(2)}</span>}<p>{Object.entries(h.tests).map(([k,v])=>k+': '+(v===null?'insufficient data':v?'pass':'fail')).join(' · ')}</p>{h.actions.map(a=><p key={a}>{a}</p>)}</li>)}</ul></section>;}
@@ -58,3 +62,4 @@ export const PathEstimates=gated(PathEstimatesPanel);
 export const AtlasSettings=gated(AtlasSettingsPanel);
 export const AtlasSlotSuggestions=gated(AtlasSlotSuggestionsPanel);
 export const LinkProposals=gated(LinkProposalsPanel);
+export const AtlasFilters=gated(AtlasFiltersPanel);

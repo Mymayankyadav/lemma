@@ -67,7 +67,7 @@ export function buildAtlasModel(graph:AtlasGraph):AtlasModel{
   index.set(concept.id,i);
   const cluster=clusterFor(concept.subjectId);clusters[cluster].size++;
   return {id:concept.id,slug:concept.slug,name:concept.name,label:plainMath(concept.name),subjectId:concept.subjectId,cluster,
-   kind:concept.kind,uncertainty:concept.facets?.length?Math.max(...concept.facets.map(f=>f.sd)):undefined,certified:concept.facets?.map(f=>f.certified),gap:concept.gap?.p,
+   kind:concept.kind,uncertainty:concept.facets?.length?Math.max(...concept.facets.map(f=>f.sd)):undefined,certified:concept.facets?.map(f=>f.certified),gap:concept.gap?.p,stale:concept.gap?.lastAt?Date.now()-Date.parse(concept.gap.lastAt)>30*86400000:undefined,
    state:concept.status,radius:3,due:concept.dueCards,checkpoints:concept.checkpointRefs,
    pin:concept.pinX!==null&&concept.pinY!==null?[concept.pinX,concept.pinY] as const:null,degree:0};
  });

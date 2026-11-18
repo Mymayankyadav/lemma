@@ -10,3 +10,15 @@ for(const width of [360,390])test('Atlas v3 facets, views and settings at '+widt
  await page.goto(url('settings?section=planning'));const threshold=page.getByRole('spinbutton',{name:'Mastery threshold'});await expect(threshold).toBeVisible();await threshold.fill('0.9');await page.getByRole('button',{name:'Save Atlas settings'}).click();await expect(page.getByRole('button',{name:'Save Atlas settings'})).toBeEnabled();await page.reload();await expect(page.getByRole('spinbutton',{name:'Mastery threshold'})).toHaveValue('0.9');
  await page.addStyleTag({content:'html{font-size:20px!important}'});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
 });
+
+test('Atlas v3 filters narrow the list and are reversible',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto(url('atlas?view=list'));
+ const rows=page.locator('.v7-atlas-list ul button');await expect(rows.first()).toBeVisible();const all=await rows.count();
+ const filters=page.getByRole('navigation',{name:'Atlas filters'});await expect(filters).toBeVisible();
+ await filters.getByRole('button',{name:'Stale',exact:true}).click();await expect(filters.getByRole('button',{name:'Stale',exact:true})).toHaveAttribute('aria-pressed','true');
+ expect(await rows.count()).toBeLessThan(all);                     // nothing in the demo is older than 30 days
+ await filters.getByRole('button',{name:'All',exact:true}).click();expect(await rows.count()).toBe(all);
+ await filters.getByLabel('Kind').selectOption('definition');expect(await rows.count()).toBeLessThanOrEqual(all);
+ await filters.getByLabel('Kind').selectOption('any');expect(await rows.count()).toBe(all);
+ for(const box of await filters.getByRole('button').all())expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+});
