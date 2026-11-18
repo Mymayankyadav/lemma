@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../flags';
 import {getApi} from '..';
 import {getMode} from '../mode';
 import {assembleAtlas,type AtlasReadModel} from '../../../supabase/functions/_shared/adaptive/atlas';
@@ -24,5 +25,6 @@ export const getBridges=async(_subjectId?:string)=>(await getAtlasView()).bridge
 export const getFeasibility=async(projectId:string)=>(await getAtlasView()).fits[projectId];
 export const getCardBudget=async()=>(await getAtlasView()).budget;
 export const listAttempts=async(filter:{conceptId?:string;sessionId?:string;checkpointId?:string}={})=>{const v=await getAtlasView();return v.attempts.filter(a=>(!filter.sessionId||a.session_id===filter.sessionId)&&(!filter.checkpointId||a.checkpoint_id===filter.checkpointId)&&(!filter.conceptId||(v.model.facts.tags??[]).some(t=>String(t.attempt_id)===String(a.id)&&t.concept_id===filter.conceptId)));};
-export function useAtlasModel(){return useQuery({queryKey:['atlas-model'],queryFn:()=>getAtlasView(),staleTime:30_000,refetchInterval:60_000});}
+/** Off with the `atlasV3` flag: no request, no 60-second replay and no change to any screen while the flag is off. */
+export function useAtlasModel(){return useQuery({queryKey:['atlas-model'],queryFn:()=>getAtlasView(),staleTime:30_000,refetchInterval:60_000,enabled:isFlagOn('atlasV3')});}
 export function useRefreshAtlas(){const client=useQueryClient();return ()=>client.invalidateQueries({queryKey:['atlas-model']});}
