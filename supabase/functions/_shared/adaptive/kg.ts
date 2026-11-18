@@ -2,16 +2,20 @@ import {clamp,DAY} from './math.ts';
 import {memoryAt,memoryStep,type MeasurementState} from './measure.ts';
 export type Action={id:string;kind:'practice'|'review'|'teach'|'check'|'close'|'probe';concept_id:string;card_id?:string;minutes:number;p:number;forced?:boolean;weight?:number;needAt?:number};
 /** Enumerate the model's two outcomes. Ability-only gains are a martingale; only memory/learning enters ΔU. */
-export function knowledgeGain(s:MeasurementState,a:Action):number{
+export type Expect=(p:number,success:number,failure:number)=>number;
+const exactExpect:Expect=(p,success,failure)=>p*success+(1-p)*failure;
+/** The same expectation by simulation (10⁴ draws in the acceptance test): the exact enumeration must agree with it. */
+export const monteCarloExpect=(rng:()=>number,draws=10000):Expect=>(p,success,failure)=>{let z=0;for(let i=0;i<draws;i++)z+=rng()<p?success:failure;return z/draws;};
+export function knowledgeGain(s:MeasurementState,a:Action,expect:Expect=exactExpect):number{
  if(!(a.minutes>0&&Number.isFinite(a.minutes)))return 0;let gain=0;
  for(let h=0;h<s.hypotheses.length;h++){
   const state=s.hypotheses[h],now=s.now,T=a.needAt??now+7*DAY,k=a.concept_id,rho=h===1?.3:0;
   const before=memoryAt(state.memory[k],T),card=a.card_id?state.cards[a.card_id]:undefined;
   if(a.kind==='review'){
-   const recall=memoryAt(card,T),after=a.p*memoryAt(memoryStep(card,now,3,1,true),T)+(1-a.p)*memoryAt(memoryStep(card,now,1,1,true),T);
-   let cross=0;if(rho&&state.memory[k])cross=a.p*memoryAt(memoryStep(state.memory[k],now,3,rho,false),T)+(1-a.p)*memoryAt(memoryStep(state.memory[k],now,1,rho,false),T)-before;
+   const recall=memoryAt(card,T),after=expect(a.p,memoryAt(memoryStep(card,now,3,1,true),T),memoryAt(memoryStep(card,now,1,1,true),T));
+   let cross=0;if(rho&&state.memory[k])cross=expect(a.p,memoryAt(memoryStep(state.memory[k],now,3,rho,false),T),memoryAt(memoryStep(state.memory[k],now,1,rho,false),T))-before;
    gain+=s.pi[h]*(.4*Math.max(0,after-recall)+.6*Math.max(0,cross));
-  }else{const old=state.memory[k],success=memoryAt(memoryStep(old,now,3,1,true),T),failure=memoryAt(memoryStep(old,now,1,1,true),T),learning=.3*(Math.log1p((state.counts[k]??0)+1)-Math.log1p(state.counts[k]??0));gain+=s.pi[h]*.6*Math.max(0,a.p*success+(1-a.p)*failure-before+learning*.1);}
+  }else{const old=state.memory[k],success=memoryAt(memoryStep(old,now,3,1,true),T),failure=memoryAt(memoryStep(old,now,1,1,true),T),learning=.3*(Math.log1p((state.counts[k]??0)+1)-Math.log1p(state.counts[k]??0));gain+=s.pi[h]*.6*Math.max(0,expect(a.p,success,failure)-before+learning*.1);}
  }
  return Math.max(0,gain)*(a.weight??1);
 }
@@ -21,6 +25,7 @@ export function rankActions(s:MeasurementState,actions:Action[],block:number,car
 export function sessionQueue(s:MeasurementState,actions:Action[],block:number,cardCap=.125){
  const checks=actions.filter(a=>a.kind==='check'&&a.forced),teaching=actions.filter(a=>a.kind==='teach'&&a.forced),out:ReturnType<typeof rankActions>=[];let used=0,cards=0,checkMinutes=0;
  for(const a of checks)if(checkMinutes+a.minutes<=block*.25){out.push({...a,gain:0,score:Infinity,reason:'due certification check'});checkMinutes+=a.minutes;used+=a.minutes;}
+ for(const a of actions.filter(x=>x.kind==='probe'&&x.forced))if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'re-entry probe'});used+=a.minutes;}
  for(const a of teaching)if(used+a.minutes<=block-10){out.push({...a,gain:0,score:Infinity,reason:'teaching pace'});used+=a.minutes;}
  for(const a of rankActions(s,actions.filter(x=>!x.forced&&x.kind!=='close'),block,0,cardCap)){if(used+a.minutes>block-Math.min(10,block*.1))continue;if(a.kind==='review'&&cards+a.minutes>block*cardCap)continue;out.push(a);used+=a.minutes;if(a.kind==='review')cards+=a.minutes;}
  return {items:out,closeMinutes:Math.min(10,Math.max(0,block-used)),cardMinutes:cards,cardCapMinutes:block*cardCap};
