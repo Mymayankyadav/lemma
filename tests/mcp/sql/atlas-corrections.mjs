@@ -29,7 +29,7 @@ try{
  await q("insert into public.sessions(id,user_id,project_id,number,goal,style) values($1,$2,$3,1,'Learn','socratic')",[id(5),owner,id(2)]);
  // Four graded events, each with the legacy evidence written from it; the migration turns that evidence into attempts.
  const ev=[];
- for(let i=0;i<4;i++){
+ for(let i=0;i<6;i++){
   const e=(await q("insert into public.session_events(user_id,session_id,kind,body,outcome,hint_level,occurred_at) values($1,$2,'attempt',$3,'demonstrated',null,$4) returning id",[owner,id(5),'Q'+i,new Date(Date.UTC(2026,10,1,10,i)).toISOString()]))[0].id;
   await q("insert into public.evidence(user_id,occurred_at,session_id,session_event_id,project_id,concept_id,level,outcome,kind,origin) values($1,$2,$3,$4,$5,$6,'use','pass','attempt','tutor')",[owner,new Date(Date.UTC(2026,10,1,10,i)).toISOString(),id(5),e,id(2),id(4)]);
   ev.push(e);
@@ -74,6 +74,24 @@ try{
  const note=await invoke(command('correct',ev[1],{reason:'Was a note',kind:'note',outcome:null}));
  await db.exec('reset role');
  assert.equal((await live(note.revisedEventId)).length,0);assert.equal((await live(ev[1])).length,0);
+
+ // 4b. Review of #1510: a kind-only correction to a note keeps the event's outcome, yet leaves no attempt (evidence leaves none either).
+ await asOwner();
+ const kindOnly=await invoke(command('correct',ev[4],{reason:'Was a note',kind:'note'}));
+ await db.exec('reset role');
+ assert.equal((await q('select outcome from public.session_events where id=$1',[kindOnly.revisedEventId]))[0].outcome,'demonstrated','the outcome is kept');
+ assert.equal((await live(kindOnly.revisedEventId)).length,0,'no attempt on a note');assert.equal((await live(ev[4])).length,0);
+ assert.equal((await q('select count(*)::int n from public.evidence where session_event_id=$1 and voided_at is null',[kindOnly.revisedEventId]))[0].n,0,'evidence agrees');
+
+ // 4c. Review of #1510: an item kind derived from the event kind follows the corrected kind (attempt → pretest: legacy → prepare), as evidence does.
+ await asOwner();
+ const pre=await invoke(command('correct',ev[2],{reason:'It was the pretest',kind:'pretest'}));
+ await db.exec('reset role');
+ const [prepared]=await live(pre.revisedEventId);
+ assert.equal(prepared.item_kind,'prepare');assert.equal(prepared.legacy_outcome,'pass','an exact copy otherwise');
+ assert.equal((await q('select kind from public.evidence where session_event_id=$1 and voided_at is null',[pre.revisedEventId]))[0].kind,'pretest');
+ // An item kind set explicitly is kept: the structured practice attempt of step 1 stayed practice through its corrections.
+ assert.equal(copy.item_kind,'practice');
 
  // 5. Voiding voids the attempt and the instruction events written from that event; undo restores both.
  await asOwner();
