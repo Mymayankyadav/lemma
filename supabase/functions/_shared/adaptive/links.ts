@@ -32,6 +32,11 @@ export function defaultTags(k:string,facet:Facet,cued:string[],links:ModelLink[]
  return out;
 }
 /** 06 §5: o = uncued attempts in another subject whose solution uses A (A tagged required or incidental); u = those where A was used unprompted and correctly. */
+/** Proposed links grouped by kind so the Owner can decide a whole kind at once (06 §6, "in batches"). Largest group first, then by name, so the order is stable. */
+export function groupProposals<T extends {kind:string;status?:string}>(links:T[]):{kind:string;links:T[]}[]{
+ const by=new Map<string,T[]>();for(const l of links)if(l.status==='proposed'||l.status===undefined)(by.get(l.kind)??by.set(l.kind,[]).get(l.kind)!).push(l);
+ return [...by.entries()].map(([kind,ls])=>({kind,links:ls})).sort((a,b)=>b.links.length-a.links.length||a.kind.localeCompare(b.kind));
+}
 export function bridgeCounts(facts:{attempts:{id:string|number;cued?:string[];voided_at?:string|null;superseded_by?:string|number|null;tags?:{concept_id:string;role?:string;result?:string|null}[]}[];tags?:{attempt_id?:string|number;concept_id:string;role?:string;result?:string|null}[]},concepts:{id:string;subject_id?:string|null}[],from:string):{o:number;u:number}{
  const subject=new Map(concepts.map(c=>[c.id,c.subject_id??null])),ownTags=new Map<string,{concept_id:string;role?:string;result?:string|null}[]>();
  for(const t of facts.tags??[]){const k=String(t.attempt_id);(ownTags.get(k)??ownTags.set(k,[]).get(k)!).push(t);}

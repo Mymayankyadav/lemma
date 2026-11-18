@@ -8,6 +8,7 @@ import {ProficiencyValue,IntervalBar,StageStrip,GapBadge,LinkKindChip,FitMeter,C
 import {Button} from '../../ui/v7/components';
 import {ATLAS_FILTERS,type AtlasFilter} from '../atlas/v7/filters';
 import {isFlagOn} from '../../flags';
+import {groupProposals} from '../../../supabase/functions/_shared/adaptive/links';
 import {reliabilityBins} from '../../../supabase/functions/_shared/adaptive/diagnostics';
 import type {ComponentType} from 'react';
 function Failure({text}:{text:string}){return <p role="alert">{text}</p>;}
@@ -54,7 +55,10 @@ function AtlasSettingsPanel(){const q=useAtlasModel(),refresh=useRefreshAtlas(),
 }
 function AtlasSlotSuggestionsPanel(){const q=useAtlasModel();if(!q.data?.slots.length)return null;return <section className="v7-atlas-panel" aria-label="Suggested study times"><h2>Suggested study times</h2>{q.data.slots.map(({slot,evidence})=><p key={slot.id}><Link to={'/calendar?date='+slot.starts_at.slice(0,10)+'&view=day'}>{new Date(slot.starts_at).toLocaleString()} · {slot.minutes} min</Link><small> · {evidence}</small></p>)}</section>;}
 function LinkProposalsPanel(){const client=useContext(QueryClientContext);return client?<ConnectedLinkProposals/>:null;}
-function ConnectedLinkProposals(){const q=useAtlasModel(),refresh=useRefreshAtlas(),[error,setError]=useState('');const links=q.data?.links.filter(l=>l.status==='proposed')??[];if(!links.length)return null;return <section className="v7-atlas-panel" aria-label="Link proposals"><h2>Atlas links</h2>{links.map(l=><article key={l.id}><p>{q.data!.model.facts.concepts.find(c=>c.id===l.from_id)?.name} → {q.data!.model.facts.concepts.find(c=>c.id===l.to_id)?.name} <LinkKindChip kind={l.kind} proposed/></p><p>{l.rationale} · {Math.round((l.confidence??0)*100)}%</p><Button onClick={()=>{void decideLink(l.id,true,(l as any).version??1).then(refresh).catch(e=>setError(String(e)));}}>Approve link</Button><Button onClick={()=>{void decideLink(l.id,false,(l as any).version??1).then(refresh).catch(e=>setError(String(e)));}}>Reject link</Button></article>)}{error&&<Failure text={error}/>}</section>;}
+function ConnectedLinkProposals(){const q=useAtlasModel(),refresh=useRefreshAtlas(),[error,setError]=useState(''),[busy,setBusy]=useState(false);const links=q.data?.links.filter(l=>l.status==='proposed')??[];if(!links.length)return null;
+ const name=(id:string)=>q.data!.model.facts.concepts.find(c=>c.id===id)?.name;
+ async function decide(group:typeof links,approve:boolean){setBusy(true);setError('');try{for(const l of group)await decideLink(l.id,approve,(l as any).version??1);await refresh();}catch(e){setError(String(e));await refresh();}finally{setBusy(false);}}
+ return <section className="v7-atlas-panel" aria-label="Link proposals"><h2>Atlas links</h2>{groupProposals(links).map(g=><div key={g.kind} role="group" aria-label={g.kind+' links'}><div className="v7-atlas-row"><h3>{g.kind.replace(/_/g,' ')} · {g.links.length}</h3><span><Button loading={busy} onClick={()=>{void decide(g.links,true);}}>{'Approve all '+g.links.length+' '+g.kind.replace(/_/g,' ')}</Button><Button loading={busy} onClick={()=>{void decide(g.links,false);}}>{'Reject all '+g.links.length+' '+g.kind.replace(/_/g,' ')}</Button></span></div>{g.links.map(l=><article key={l.id}><p>{name(l.from_id)} → {name(l.to_id)} <LinkKindChip kind={l.kind} proposed/></p><p>{l.rationale} · {Math.round((l.confidence??0)*100)}%</p><Button onClick={()=>{void decide([l],true);}}>Approve link</Button><Button onClick={()=>{void decide([l],false);}}>Reject link</Button></article>)}</div>)}{error&&<Failure text={error}/>}</section>;}
 
 /** The Atlas v3 panels are Build-stage work behind the `atlasV3` flag (default off): with it off nothing renders, so every existing screen is unchanged. */
 function gated<P extends object>(Panel:ComponentType<P>):ComponentType<P>{return function Gated(props:P){return isFlagOn('atlasV3')?<Panel {...props}/>:null;};}

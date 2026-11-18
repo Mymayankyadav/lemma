@@ -1,7 +1,7 @@
 // Worker pipeline core (spec §12). Pure: the model is injected, so tests use a mock and no key exists yet.
 // Small models extract, tag and propose; they never decide correctness, set outcomes, merge concepts or change tiers (I8).
 import type {Level,Outcome,Novelty} from './recheck.ts';
-import {linkCandidates,validateLinkLabel,kindEnabled,type AtlasLink,type LinkKind} from './links.ts';
+import {linkCandidates,validateLinkLabel,kindEnabled,contentHash,type AtlasLink,type LinkKind} from './links.ts';
 import type {Concept} from './kc.ts';
 export const LEVEL_SET=new Set<string>(['recall','use','understand','transfer']);
 /** I14: worker tags are suggestions only. Trusted results/hints/errors/cues are never copied from model output. */
@@ -100,4 +100,15 @@ export function aliasProposals(concepts:Concept[]):{auto:[string,string][];propo
     }
   }
   return {auto,propose};
+}
+
+/** 06 §6 on course import and nightly: only concepts that are new or whose name/blurb hash changed are "fresh"; each is compared with every other concept,
+ *  at most `limit` proposals per batch (Owner setting, default 50), rejected pairs return only after a hash change (`linkCandidates`). Deterministic apart from the injected label model. */
+export type LinkCursor={seen:Record<string,string>};
+export async function nightlyLinkBatch(concepts:Concept[],existing:AtlasLink[],cursor:LinkCursor,label:(candidate:unknown)=>Promise<unknown>,limit=50){
+ const hashes=Object.fromEntries(concepts.map(c=>[c.id,contentHash(c as any)])),fresh=concepts.filter(c=>cursor.seen[c.id]!==hashes[c.id]),old=concepts.filter(c=>cursor.seen[c.id]===hashes[c.id]);
+ const all=await proposeAtlasLinks(fresh,fresh.length===concepts.length?concepts:old,existing,label);
+ // fresh × fresh pairs are covered when everything is new (old := all); otherwise they are compared with the untouched concepts
+ const proposals=all.slice(0,Math.max(0,limit));
+ return {proposals,deferred:all.length-proposals.length,cursor:{seen:hashes}};
 }

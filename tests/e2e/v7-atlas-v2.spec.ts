@@ -22,3 +22,13 @@ test('Atlas v3 filters narrow the list and are reversible',async({page})=>{
  await filters.getByLabel('Kind').selectOption('any');expect(await rows.count()).toBe(all);
  for(const box of await filters.getByRole('button').all())expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
 });
+
+test('Atlas v3 link proposals are decided one at a time or by kind',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto(url('proposals'));
+ const panel=page.getByRole('region',{name:'Link proposals'});await expect(panel).toBeVisible();
+ const group=panel.getByRole('group',{name:'analogous links'});await expect(group).toBeVisible();
+ await expect(group.getByRole('button',{name:'Approve all 1 analogous'})).toBeVisible();await expect(group.getByRole('button',{name:'Reject all 1 analogous'})).toBeVisible();
+ for(const b of await group.getByRole('button').all())expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+ await group.getByRole('button',{name:'Approve all 1 analogous'}).click();
+ await expect(panel).toBeHidden();                                   // the demo has one proposed link; a decided link leaves the list
+});
