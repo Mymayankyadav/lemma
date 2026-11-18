@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {useDockedRuler} from './useDockedRuler';
 import {ViewMenu} from './ViewMenu';
+import {AtlasSlotSuggestions} from '../../adaptive/AtlasPanels';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {ChevronLeft,ChevronRight} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
@@ -171,6 +172,7 @@ export default function V7CalendarDay(){
    control={<ViewMenu value={viewLabel(view)} options={views} onChange={value=>go('view',value.toLowerCase())}/>}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>}
+  <AtlasSlotSuggestions/>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">

@@ -1,4 +1,6 @@
 import {pathForecast} from '../path-review-forecast';
+import {isFlagOn} from '../../flags';
+import {demoConversionProposal} from '../adaptive/demo-conversion';
 import type {
   LemmaApi,
   SettingsPatch,
@@ -1659,6 +1661,13 @@ export class DemoAdapter implements LemmaApi {
       .map((p) => this.proposalValue(p));
   }
   async getProposal(id: string) {
+    if (id.startsWith("atlas-demo-conversion") && isFlagOn("atlasV3")) {
+      const project = this.store.projects.find((p) => !p.system) ?? this.store.projects[0];
+      return demoConversionProposal(
+        { slug: project.slug, glyph: (this.store.subjects.find((s) => s.id === project.subjectId)?.glyph ?? "Σ") as Proposal["projectGlyph"] },
+        id.endsWith("-bad"),
+      );
+    }
     return this.proposalValue(this.proposal(id));
   }
   private ensureConcept(

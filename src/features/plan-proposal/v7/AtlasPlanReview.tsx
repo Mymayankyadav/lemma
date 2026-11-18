@@ -1,3 +1,4 @@
+import '../../../ui/v7/atlas-values.css';
 import {isFlagOn} from '../../../flags';
 import {validateTemplate,type PlanTemplate} from '../../../../supabase/functions/_shared/adaptive/template';
 import type {Conversion} from '../../../../supabase/functions/_shared/adaptive/convert';

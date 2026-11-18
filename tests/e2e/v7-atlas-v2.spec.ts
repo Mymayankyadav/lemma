@@ -32,3 +32,23 @@ test('Atlas v3 link proposals are decided one at a time or by kind',async({page}
  await group.getByRole('button',{name:'Approve all 1 analogous'}).click();
  await expect(panel).toBeHidden();                                   // the demo has one proposed link; a decided link leaves the list
 });
+
+test('Atlas v3 suggests study times on the Calendar and adds one only when chosen',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto(url('calendar?view=day'));
+ const panel=page.getByRole('region',{name:'Suggested study times'});await expect(panel).toBeVisible();
+ await expect(panel.getByText('nothing is added until you do')).toBeVisible();
+ const add=panel.getByRole('button',{name:'Add study block'});expect(await add.count()).toBeGreaterThan(0);
+ await add.first().click();await expect(panel.getByRole('status').first()).toContainText('Added');
+ await panel.getByRole('button',{name:'Undo'}).first().click();await expect(panel.getByRole('button',{name:'Add study block'}).first()).toBeVisible();
+ for(const b of await panel.getByRole('button').all())expect((await b.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+});
+
+test('an approved link becomes a bridge whose uses and opportunities open on tap',async({page})=>{
+ await page.setViewportSize({width:390,height:844});await page.goto(url('proposals'));
+ await page.getByRole('region',{name:'Link proposals'}).getByRole('button',{name:'Approve all 1 analogous'}).click();
+ await page.goto(url('atlas?view=list'));await page.getByRole('button',{name:'Bridges',exact:true}).click();
+ const bridge=page.locator('.v7-atlas-bridge').first();await expect(bridge).toBeVisible();await expect(bridge).toHaveAttribute('data-dashed','true');
+ await expect(bridge.locator('summary')).toContainText('0 opportunities');
+ await bridge.locator('summary').click();await expect(bridge).toContainText('No opportunities yet');
+ expect((await bridge.locator('summary').boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+});
