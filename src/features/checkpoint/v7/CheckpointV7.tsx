@@ -1,11 +1,12 @@
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
-import {useMemo,useState} from 'react';
+import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpen} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
 import {useCheckpoint,useProject,useSettings} from '../../../data/hooks';
 import type {CheckpointView} from '../../../data/types';
+import {getDemoProfile,getMode,type DemoProfile} from '../../../data/mode';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
 import {Button,IconButton,Sheet,Skeleton} from '../../../ui/v7/components';
@@ -22,6 +23,22 @@ import {kitSubject} from '../../atlas/v7/model';
 import {nodeStateOf,nodeWord} from '../../project/v7/pathModel';
 import {EvidenceEntry,groupEvidence} from '../../project/v7/Evidence';
 import '../../project/v7/learning.css';
+
+const FixtureCheckpointPad=lazy(()=>import('../../pad/FixtureCheckpointPad'));
+
+function DemoPadEntry({checkpointId,profile}:{checkpointId:string;profile:DemoProfile}){
+ const [open,setOpen]=useState(false),[started,setStarted]=useState(false);
+ return <section className="v7-learn-card" aria-label="Local Pad">
+  <Button aria-expanded={open} onClick={()=>{setStarted(true);setOpen(!open);}}>
+   {open?'Put away Local Pad':'Open Local Pad'}
+  </Button>
+  {started&&<div hidden={!open}>
+   <Suspense fallback={<p role="status">Opening local demo Pad…</p>}>
+    <FixtureCheckpointPad checkpointId={checkpointId} profile={profile}/>
+   </Suspense>
+  </div>}
+ </section>;
+}
 
 const stateTone=(ui:CheckpointView['ui'])=>ui==='done'?'success':ui==='revisit'?'warning':'info';
 const stateText=(ui:CheckpointView['ui'])=>ui==='revisit'?'Recheck due':nodeWord[nodeStateOf(ui)];
@@ -47,6 +64,7 @@ export default function CheckpointV7(){
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
  const step=Math.max(0,view.currentStep);
+ const demoPad=isFlagOn('padLocal')&&getMode()==='demo'?getDemoProfile():null;
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>
@@ -85,6 +103,7 @@ export default function CheckpointV7(){
     {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
    </div></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
+  {demoPad&&<DemoPadEntry key={demoPad+':'+view.id} checkpointId={view.id} profile={demoPad}/>}
   <CheckpointReady checkpointId={detail.view.id}/>
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
    {evidence.length?<ol className="v7-evidence">{evidence.map(group=><li key={group.key} className="v7-evidence-group">

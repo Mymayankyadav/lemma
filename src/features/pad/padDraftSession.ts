@@ -29,12 +29,13 @@ export function createPadDraftSession(binding: Binding) {
   function edit(draft: PadDraft) {
     if (!active() || state.status === 'loading') return;
     edits++;
-    state = {...state, draft, status: state.status === 'saving' ? 'saving' : saved ? 'unsaved' : 'load-failed'};
+    state = {...state, draft, status: state.status === 'saving' || state.status === 'conflict' ? state.status : saved ? 'unsaved' : 'load-failed'};
   }
   return {
     snapshot: () => {active(); return state;},
     close: () => {binding.close(); active();},
     edit,
+    previousDraft: () => active() ? saved?.previous?.draft ?? null : null,
     restorePrevious() {
       if (active() && saved?.previous) edit(saved.previous.draft);
     },

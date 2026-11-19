@@ -36,3 +36,6 @@
 .local-pad-ink[data-mode="draw"] {touch-action:none; cursor:crosshair}
 .local-pad-ink[data-mode="scroll"] {touch-action:auto}
 .local-pad-ink-status {margin:0; min-height:1.4em}
+
+.local-pad-import-text {max-height:12rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere}
+.local-pad-import-ink {width:100%; max-width:20rem; outline:1px solid var(--line,currentColor)}

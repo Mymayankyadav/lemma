@@ -3,6 +3,7 @@ import {initializePadInk, type PadStrokes} from './padInk';
 
 export const PAD_NOTE_MAX = 65_536;
 export const PAD_DB_PREFIX = 'lemma-pad-drafts:';
+export const PAD_FIXTURE_DB_PREFIX = 'lemma-pad-fixture:';
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 const isUuid = (id: unknown): id is string => typeof id === 'string' && id.length === 36 && UUID.test(id);
 
@@ -42,7 +43,7 @@ function normalizeScope(scope: AuthorizedPadScope | null): AuthorizedPadScope | 
   return {ownerId: scope.ownerId.toLowerCase(), checkpointId: scope.checkpointId.toLowerCase(), generation: scope.generation};
 }
 
-function checkedDraft(raw: unknown): PadDraft | null {
+export function parsePadDraft(raw: unknown): PadDraft | null {
   if (!raw || typeof raw !== 'object') return null;
   const {edit, strokes} = raw as Partial<PadDraft>;
   if (!edit || typeof edit.text !== 'string' || edit.text.length > PAD_NOTE_MAX
@@ -57,7 +58,7 @@ function checkedDraft(raw: unknown): PadDraft | null {
 function revision(raw: unknown): PadRevision | null {
   if (!raw || typeof raw !== 'object') return null;
   const {id, draft} = raw as Partial<PadRevision>;
-  const checked = checkedDraft(draft);
+  const checked = parsePadDraft(draft);
   return checked && isUuid(id) ? {id, draft: checked} : null;
 }
 
@@ -76,10 +77,10 @@ function inspect(raw: unknown, scope: AuthorizedPadScope): PadDraftRead {
 const STORE = 'drafts';
 const unavailable = () => new PadDraftError('unavailable', 'Pad draft storage is unavailable');
 
-function openPadDb(scope: AuthorizedPadScope, guard: Guard): Promise<IDBDatabase> {
+function openPadDb(prefix: string, scope: AuthorizedPadScope, guard: Guard): Promise<IDBDatabase> {
   if (typeof indexedDB === 'undefined') return Promise.reject(unavailable());
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(PAD_DB_PREFIX + scope.ownerId, 1);
+    const request = indexedDB.open(prefix + scope.ownerId, 1);
     let blocked = false;
     request.onupgradeneeded = () => {
       try {
@@ -101,9 +102,9 @@ function openPadDb(scope: AuthorizedPadScope, guard: Guard): Promise<IDBDatabase
   });
 }
 
-async function access(scope: AuthorizedPadScope, guard: Guard, change?: (raw: unknown) => unknown): Promise<unknown> {
+async function access(prefix: string, scope: AuthorizedPadScope, guard: Guard, change?: (raw: unknown) => unknown): Promise<unknown> {
   guard();
-  const db = await openPadDb(scope, guard);
+  const db = await openPadDb(prefix, scope, guard);
   try {
     guard();
     return await new Promise((resolve, reject) => {
@@ -126,10 +127,19 @@ async function access(scope: AuthorizedPadScope, guard: Guard, change?: (raw: un
   }
 }
 
-const browserBackend: PadDraftBackend = {
-  read: (scope, guard) => access(scope, guard),
-  update: async (scope, guard, change) => {await access(scope, guard, change);},
-};
+function browserNamespace(prefix: typeof PAD_DB_PREFIX | typeof PAD_FIXTURE_DB_PREFIX): PadDraftBackend {
+  return {
+    read: (scope, guard) => access(prefix, scope, guard),
+    update: async (scope, guard, change) => {await access(prefix, scope, guard, change);},
+  };
+}
+const browserBackend = browserNamespace(PAD_DB_PREFIX);
+const fixtureBackend = browserNamespace(PAD_FIXTURE_DB_PREFIX);
+
+/** Synthetic demo identities use a physically distinct DB namespace. */
+export function bindFixturePadDraft(getFixtureScope: () => AuthorizedPadScope | null) {
+  return bindPadDraft(getFixtureScope, fixtureBackend);
+}
 
 /** Captures one authorized binding. Its owner IDs never appear in local exports or tutor context. */
 export function bindPadDraft(getAuthorizedScope: () => AuthorizedPadScope | null, backend = browserBackend) {
@@ -160,7 +170,7 @@ export function bindPadDraft(getAuthorizedScope: () => AuthorizedPadScope | null
     },
     async save(value: PadDraft, expectedId: string | null): Promise<PadDraftRead> {
       guard();
-      const draft = checkedDraft(value);
+      const draft = parsePadDraft(value);
       if (!draft) throw new PadDraftError('invalid', 'Pad draft exceeds storage limits or contains invalid data');
       const current = {id: crypto.randomUUID(), draft};
       let previous: PadRevision | null = null;
