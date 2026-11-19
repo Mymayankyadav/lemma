@@ -14,3 +14,5 @@
 .v7-atlas-filters-floating{position:absolute;inset:auto 12px 96px 12px;z-index:3;width:max-content;max-width:calc(100% - 24px)}
 .v7-atlas-list>.v7-atlas-filters{position:sticky;top:calc(74px + 3.7rem);z-index:2}
 .v7-atlas-bridge{margin:.35rem 0}.v7-atlas-bridge summary{min-height:44px;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;cursor:pointer}.v7-atlas-bridge[data-dashed=true] summary span{text-decoration:underline dashed;text-underline-offset:.3rem}.v7-atlas-bridge[data-thick=true] summary span{font-weight:700}
+/* N182 · AN4 book posture: a panel below a list-beside-detail page (the Inbox's link proposals) sits on the right screen, with the detail, never across the hinge. Unlayered like the rule above, so it wins over its margin. */
+@media (horizontal-viewport-segments:2){html[data-v7] .v7-page:has(.v7-inbox-desk,.v7-settings-split)>.v7-atlas-panel{margin-inline-start:calc(var(--v7-hinge-end) - var(--v7-rail-width,0px))}}

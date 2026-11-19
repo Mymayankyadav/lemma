@@ -32,7 +32,8 @@ export function declaredBlocks(wd:number|number[],now:Date,last:string|null|unde
 export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  const st=rows.settings??{},settings={...ATLAS_DEFAULTS,...st.atlas},time=now.getTime(),facts=factsForAtlas(rows),lastFit=(rows.modelFits??[]).slice().sort((a,b)=>String(b.fitted_at).localeCompare(String(a.fitted_at)))[0],model=replay(facts,lastFit?.params??{},time),health=['attempt','card'].map(stream=>diagnose(model.trace,stream));
  const facets:Record<string,FacetValue[]>={};
- for(const c of rows.concepts)facets[c.id]=facetsFor(c.kind??'topic').map(f=>{const e=estimate(model,c.id,f,time),cert=certification(model,c.id,f,settings.threshold_p,time),last=model.trace.filter(x=>x.stream==='attempt').at(-1),h=health[0];return {...e,p:serve(e.p,last?.pfa??.5,last?.base??.5,h),certified:cert.certified,status:cert.status};});
+ const last=model.trace.filter(x=>x.stream==='attempt').at(-1),h=health[0];
+ for(const c of rows.concepts)facets[c.id]=facetsFor(c.kind??'topic').map(f=>{const e=estimate(model,c.id,f,time),cert=certification(model,c.id,f,settings.threshold_p,time);return {...e,p:serve(e.p,last?.pfa??.5,last?.base??.5,h),certified:cert.certified,status:cert.status};});
  let duration=durationPrior();const durationObs:{actual:number;estimate:ReturnType<typeof predictDuration>}[]=[],attendanceRows:{p:number;y:number;at:number}[]=[];
  const durationRows=rows.checkpoints.filter(c=>c.status==='demonstrated'&&c.estimate_minutes>0&&!c.self_reported).sort((a,b)=>String(a.demonstrated_at).localeCompare(String(b.demonstrated_at))||a.id.localeCompare(b.id));
  for(const cp of durationRows){const actual=rows.sessions.filter(s=>s.checkpoint_id===cp.id).reduce((z,s)=>z+(Number(s.minutes)||0),0);if(actual>0){const input={estimate:cp.estimate_minutes,kind:cp.kind==='milestone'?1:0};durationObs.push({actual,estimate:predictDuration(duration,input)});duration=updateDuration(duration,{...input,actual});}}

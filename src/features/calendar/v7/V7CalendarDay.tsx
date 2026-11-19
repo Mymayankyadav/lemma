@@ -172,7 +172,6 @@ export default function V7CalendarDay(){
    control={<ViewMenu value={viewLabel(view)} options={views} onChange={value=>go('view',value.toLowerCase())}/>}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>}
-  <AtlasSlotSuggestions/>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">
@@ -245,7 +244,7 @@ export default function V7CalendarDay(){
   {editingEntry&&<EntrySheetV7 key={editingEntry.id+'-'+editingEntry.version} entry={editingEntry} busy={false} onClose={()=>{setEditingEntry(null);restoreFocus();}}
    onChange={async()=>{setEditingEntry(null);setReload(value=>value+1);notify('Session updated',{tone:'success'});}}/>}
   <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
- </main>;
+ <AtlasSlotSuggestions/></main>;
 }
 
 /** Month's day list: the picked day's items as Agenda-style rows with an Open day button. */

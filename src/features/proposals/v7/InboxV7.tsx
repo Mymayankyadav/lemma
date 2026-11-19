@@ -157,7 +157,6 @@ export default function InboxV7(){
  const titleOf=(slug:string)=>bySlug.get(slug)?.title??slug;
  const tabs=['Cards '+cards.length,'Plans '+plans.length];
  return <main id="main-content" className="v7-page v7-inbox" aria-label="Inbox">
-  <LinkProposals/>
   <DetailHeader title="Inbox" back="/" action={tab==='cards'?<IconButton label={list?'Show the stack':'Show as a list'} aria-pressed={list} onClick={toggleList}>{list?<GalleryVerticalEnd aria-hidden="true"/>:<LayoutList aria-hidden="true"/>}</IconButton>:undefined}/>
   <h1 className="v7-sr-only">Inbox</h1>
   <Segmented label="Proposal types" tabs panelId="v7-inbox-panel" options={tabs} value={tab==='plan'?tabs[1]:tabs[0]} onChange={setTab}/>
@@ -210,5 +209,5 @@ export default function InboxV7(){
    initial={{noteId:'',noteNo:editing.cardEdit.note_no,front:faces(editing).front,back:faces(editing).back,type:editing.cardEdit.type??'basic',kind:'other',tags:[],status:'active',origin:editing.origin,
     projectSlug:editing.projectSlug,checkpointCode:null,sessionNumber:editing.sessionNumber,sourceShort:null,pageLabel:null}}
    onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back,type:value.type,kind:value.kind});}}/>}
- </main>;
+ <LinkProposals/></main>;
 }

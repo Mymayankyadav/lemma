@@ -4,10 +4,11 @@ import {setShellRoot} from '../../src/app/shellRoot'
 
 describe('feature flags',()=>{
  it('released shells and U4 are enabled; all unreleased flags remain off',()=>{
-  const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,...rest}=FLAG_DEFAULTS
+  const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,atlasV3,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
   expect(v7Shell).toBe(true)
   expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
+  expect(atlasV3).toBe(true)   // released at the Owner's Atlas v3 activation (N182)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })
