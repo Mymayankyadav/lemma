@@ -1,6 +1,7 @@
 import { Context, insert, scoped, rpc, commitBatch } from './db.ts';
 import {setPrompt,history,undo,edit,add,remove,review,grade} from './tools/control.ts';
-import { packet } from './packet.ts';
+import { packet,settings } from './packet.ts';
+import { selftestPlanTemplate } from './selftest-plan.ts';
 import { get, search, readPages } from './tools/read.ts';
 import { proposePlanChange, proposePlan, startSession, saveProgress, proposeCards, endSession, createProject, proposals, decide } from './tools/write.ts';
 import { createMcpHandler } from './deps.ts';
@@ -81,28 +82,36 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     });
     if(only(1))await check('planning resume',async()=>{if(!(await packet(c,{project:p.slug})).includes('PLANNING'))throw Error('No planning packet')});
     await check('plan proposal and approval',async()=>{
+      // Since Atlas v3 activation the same owner requires a template for every plan.
+      // Supply one for both invalid drafts and the accepted draft, so each old
+      // validation is still reached instead of being masked by "template required".
+      const acceptedPlan=[
+        {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
+        {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
+        {stage:'Applications',title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
+      ];
+      const template=selftestPlanTemplate(acceptedPlan,Boolean((await settings(c)).atlas_migrated_at));
+      const planArgs=(checkpoints:any[],concepts?:any[])=>({
+        project:p.slug,checkpoints,...(concepts?{concepts}:{}),...(template?{template}:{})
+      });
       // MCP-5: reject malformed scale proposals before creating any proposal.
       const noStages=Array.from({length:9},(_,i)=>({
         title:'Large CP '+(i+1),objective:'Understand',criterion:'Demonstrates understanding',steps:['Prove']
       }));
       let rejected='';
-      try{await proposePlan(c,{project:p.slug,checkpoints:noStages});}
+      try{await proposePlan(c,planArgs(noStages));}
       catch(e){rejected=(e as Error).message;}
       if(!/3–7 named stages/.test(rejected))throw Error('Stage-free large plan was not rejected');
       const flatIdeas=Array.from({length:21},(_,i)=>({name:'Flat idea '+i}));
       rejected='';
-      try{await proposePlan(c,{project:p.slug,checkpoints:noStages.slice(0,3),concepts:flatIdeas});}
+      try{await proposePlan(c,planArgs(noStages.slice(0,3),flatIdeas));}
       catch(e){rejected=(e as Error).message;}
       if(!/levels and parent links/.test(rejected))throw Error('Flat large idea proposal was not rejected');
       rejected='';
       try{await createProject(c,{title:'Goal-free selftest',subject:'Topology'});}
       catch(e){rejected=(e as Error).message;}
       if(!/specific learning goal/.test(rejected))throw Error('Goal-free project was not rejected');
-      await proposePlan(c,{project:p.slug,checkpoints:[
-        {stage:'Foundations',title:'Cover basics',objective:'Define covers',criterion:'States a correct definition unaided',steps:['Define cover','Give example']},
-        {stage:'Covers',title:'Compactness',objective:'Use covers',criterion:'Proves a finite subcover result',steps:['Choose cover','Prove finite subcover'],prereqs:[1]},
-        {stage:'Applications',title:'Applications',objective:'Apply theorem',criterion:'Constructs a correct example',steps:['Find example','Explain'],prereqs:[2]}
-      ],concepts:[{name:'Selftest cover '+p.slug,topic:'Topology'}]});
+      await proposePlan(c,planArgs(acceptedPlan,[{name:'Selftest cover '+p.slug,topic:'Topology'}]));
       const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
       if(!data)throw Error('No plan proposal');
       if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
