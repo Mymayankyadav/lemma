@@ -1,0 +1,26 @@
+/* Keep the native editor, keyboard and selection; graph lines are decorative. */
+.local-pad {display:grid; gap:.5rem; min-width:0}
+.local-pad-paper, .local-pad-preview {
+  box-sizing:border-box; min-width:0; margin:0; padding:.65rem;
+  border:1px solid var(--line, currentColor); border-radius:.5rem;
+}
+.local-pad-paper {
+  width:100%; min-height:8rem; resize:vertical;
+  background-color:var(--well, transparent); color:inherit; font:inherit;
+  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  background-size:1.5rem 1.5rem;
+}
+.local-pad-controls {display:flex; flex-wrap:wrap; gap:.35rem}
+.local-pad-controls button {
+  min-width:44px; min-height:44px; padding-inline:.5rem; border:1px solid var(--line, currentColor);
+  border-radius:.5rem; background:var(--raised, transparent); color:inherit;
+}
+.local-pad-controls button:disabled {opacity:.55}
+.local-pad-preview {
+  white-space:pre-wrap; overflow-wrap:anywhere; overflow:auto; max-height:24rem;
+  contain:layout paint;
+}
+.local-pad-display {display:block; max-width:100%; overflow:auto}
+.local-pad-inline {display:inline-block; max-width:100%; vertical-align:middle; overflow:auto}
+.local-pad-unrendered {font-family:monospace}
