@@ -24,7 +24,7 @@ import {DAY} from './math.ts';
 
 /** One term of a linear predictor: component id, feature x, prior variance and mean, ageing rate q, and the filter's own current mean and variance. */
 export type Part={id:string;x:number;prior:number;q:number;m0:number;m:number;v:number};
-type Obs={ids:number[];xs:number[];y:number;g:number;A:number;off:number;w:number;extra:number};
+export type Obs={ids:number[];xs:number[];y:number;g:number;A:number;off:number;w:number;extra:number};
 const sig=(x:number)=>1/(1+Math.exp(-x));
 const clampP=(p:number)=>Math.min(1-1e-9,Math.max(1e-9,p));
 
@@ -33,7 +33,7 @@ export class Posterior{
  private idx=new Map<string,number>();
  private prior:number[]=[];private m0:number[]=[];private q:number[]=[];private at:number[]=[];private bump:number[]=[];
  private obs:Obs[]=[];
- private fit:{c:Float64Array;S:Float64Array[]}|null=null;
+ private fit:{c:Float64Array;S:Float64Array[];Vs:number[];fisher:boolean}|null=null;
  private peer:Posterior|null=null;
  get size():number{return this.prior.length;}
  /** The two hypotheses see identical attempts until a card review couples them; then one fit serves both. */
@@ -76,27 +76,33 @@ export class Posterior{
   for(const i of ids){this.at[i]=Math.max(this.at[i],t);this.bump[i]=0;}   // fresh evidence absorbs earlier ageing and bumps
   this.fit=null;
  }
- private solve():{c:Float64Array;S:Float64Array[]}{
+ private solve():{c:Float64Array;S:Float64Array[];Vs:number[];fisher:boolean}{
   if(this.fit)return this.fit;
   if(this.peer&&this.same(this.peer))return this.fit=this.peer.solve();
-  const n=this.prior.length,c=Float64Array.from(this.m0);let S:Float64Array[]|null=null;
-  const quad=(o:Obs):number=>{
+  const n=this.prior.length,c=Float64Array.from(this.m0);
+  /** Per-attempt variance of the predictor, which sets the probit attenuation; held fixed within a fit. */
+  const variances=(S:Float64Array[]|null):number[]=>this.obs.map(o=>{
    let v=o.extra;
    if(!S){for(let a=0;a<o.ids.length;a++)v+=o.xs[a]*o.xs[a]*this.prior[o.ids[a]];return v;}
    for(let a=0;a<o.ids.length;a++){const row=S[o.ids[a]];for(let b=0;b<o.ids.length;b++)v+=o.xs[a]*o.xs[b]*row[o.ids[b]];}
    return v;
-  };
-  const eval1=(o:Obs,cc:Float64Array):{p:number;d:number}=>{
+  });
+  const lik=(o:Obs,cc:Float64Array,V:number)=>{
    let eta=o.off;for(let a=0;a<o.ids.length;a++)eta+=cc[o.ids[a]]*o.xs[a];
-   const att=1/Math.sqrt(1+Math.PI*Math.max(0,quad(o))/8),e=sig(eta*att);return {p:clampP(o.g+o.A*e),d:o.A*e*(1-e)*att};
+   const att=1/Math.sqrt(1+Math.PI*Math.max(0,V)/8),e=sig(eta*att),p=clampP(o.g+o.A*e);
+   return {p,att,e,d:o.A*att*e*(1-e)};
   };
-  const logPost=(cc:Float64Array):number=>{
-   let z=0;for(const o of this.obs){const {p}=eval1(o,cc);z+=o.w*(o.y?Math.log(p):Math.log(1-p));}
+  const logPost=(cc:Float64Array,Vs:number[]):number=>{
+   let z=0;this.obs.forEach((o,k)=>{const {p}=lik(o,cc,Vs[k]);z+=o.w*(o.y?Math.log(p):Math.log(1-p));});
    for(let i=0;i<n;i++)z-=.5*(cc[i]-this.m0[i])**2/this.prior[i];return z;
   };
-  const chol=(P:Float64Array[]):Float64Array[]=>{
+  /** Cholesky factor, or null when the matrix is not positive definite. */
+  const chol=(P:Float64Array[],strict=false):Float64Array[]|null=>{
    const L=Array.from({length:n},()=>new Float64Array(n));
-   for(let i=0;i<n;i++)for(let j=0;j<=i;j++){let sum=P[i][j];for(let k=0;k<j;k++)sum-=L[i][k]*L[j][k];L[i][j]=i===j?Math.sqrt(Math.max(sum,1e-12)):sum/L[j][j];}
+   for(let i=0;i<n;i++)for(let j=0;j<=i;j++){
+    let sum=P[i][j];for(let k=0;k<j;k++)sum-=L[i][k]*L[j][k];
+    if(i===j){if(strict&&!(sum>1e-9))return null;L[i][j]=Math.sqrt(Math.max(sum,1e-12));}else L[i][j]=sum/L[j][j];
+   }
    return L;
   };
   const solveWith=(L:Float64Array[],rhs:Float64Array):Float64Array=>{
@@ -105,48 +111,80 @@ export class Posterior{
    for(let i=n-1;i>=0;i--){let sum=y[i];for(let k=i+1;k<n;k++)sum-=L[k][i]*x[k];x[i]=sum/L[i][i];}
    return x;
   };
-  const system=(cc:Float64Array):{P:Float64Array[];g:Float64Array}=>{
-   const P=Array.from({length:n},(_,i)=>{const r=new Float64Array(n);r[i]=1/this.prior[i];return r;}),g=new Float64Array(n);
-   for(let i=0;i<n;i++)g[i]=-(cc[i]-this.m0[i])/this.prior[i];
-   for(const o of this.obs){
-    const {p,d}=eval1(o,cc),G=(o.y-p)*d/(p*(1-p)),H=d*d/(p*(1-p));
-    for(let a=0;a<o.ids.length;a++){const ia=o.ids[a],xa=o.xs[a];g[ia]+=o.w*G*xa;const row=P[ia];for(let b=0;b<o.ids.length;b++)row[o.ids[b]]+=o.w*H*xa*o.xs[b];}
-   }
-   return {P,g};
-  };
-  // The probit attenuation needs the posterior variance of each attempt's predictor. It is taken from the prior for the first step, from
-  // the posterior after it for the rest (one inverse), and recomputed once more at the end for the reported covariance.
   const inverse=(L:Float64Array[]):Float64Array[]=>{
    const X=Array.from({length:n},()=>new Float64Array(n));
    for(let col=0;col<n;col++){const e=new Float64Array(n);e[col]=1;const x=solveWith(L,e);for(let i=0;i<n;i++)X[i][col]=x[i];}
    return X;
   };
-  let current=this.obs.length?logPost(c):0,last:{P:Float64Array[];L:Float64Array[]}|null=null;
-  for(let it=0;it<10&&this.obs.length;it++){
-   const {P,g}=system(c),L=chol(P),dc=solveWith(L,g);
-   let step=1,value=-Infinity;const next=new Float64Array(n);
-   for(let tries=0;tries<5;tries++,step/=2){for(let i=0;i<n;i++)next[i]=c[i]+step*dc[i];value=logPost(next);if(value>=current-1e-12)break;}
-   let move=0;for(let i=0;i<n;i++)move=Math.max(move,Math.abs(next[i]-c[i]));
-   if(value>=current-1e-12){c.set(next);current=value;}
-   last={P,L};
-   if(it===0)S=inverse(L);
-   if(move<1e-4)break;
-  }
-  if(last){const {P}=system(c),L=chol(P);S=inverse(L);}
-  if(!S)S=Array.from({length:n},(_,i)=>{const r=new Float64Array(n);r[i]=this.prior[i];return r;});
-  return this.fit={c,S};
+  /** Gradient of the log posterior, and its negative Hessian: the expected information (Fisher, always positive semi-definite, used for
+   *  the Newton steps) or the observed one (the true curvature of p = g + A·σ(η), used for the reported covariance). */
+  const system=(cc:Float64Array,Vs:number[],observed:boolean):{P:Float64Array[];g:Float64Array}=>{
+   const P=Array.from({length:n},(_,i)=>{const r=new Float64Array(n);r[i]=1/this.prior[i];return r;}),g=new Float64Array(n);
+   for(let i=0;i<n;i++)g[i]=-(cc[i]-this.m0[i])/this.prior[i];
+   this.obs.forEach((o,k)=>{
+    const {p,att,e,d}=lik(o,cc,Vs[k]),v=p*(1-p),G=(o.y-p)*d/v;
+    let J=d*d/v;
+    if(observed){const d2=o.A*att*att*e*(1-e)*(1-2*e);J+=(o.y-p)*(d*d*(1-2*p)/(v*v)-d2/v);}
+    for(let a=0;a<o.ids.length;a++){const ia=o.ids[a],xa=o.xs[a];g[ia]+=o.w*G*xa;const row=P[ia];for(let b=0;b<o.ids.length;b++)row[o.ids[b]]+=o.w*J*xa*o.xs[b];}
+   });
+   return {P,g};
+  };
+  const newton=(Vs:number[],iterations:number,tolerance:number):void=>{
+   let current=logPost(c,Vs);
+   for(let it=0;it<iterations;it++){
+    const {P,g}=system(c,Vs,false),dc=solveWith(chol(P)!,g);
+    let step=1,value=-Infinity;const next=new Float64Array(n);
+    for(let tries=0;tries<5;tries++,step/=2){for(let i=0;i<n;i++)next[i]=c[i]+step*dc[i];value=logPost(next,Vs);if(value>=current-1e-12)break;}
+    let move=0;for(let i=0;i<n;i++)move=Math.max(move,Math.abs(next[i]-c[i]));
+    if(value>=current-1e-12){c.set(next);current=value;}
+    if(move<tolerance)break;
+   }
+  };
+  if(!this.obs.length){return this.fit={c,S:Array.from({length:n},(_,i)=>{const r=new Float64Array(n);r[i]=this.prior[i];return r;}),Vs:[],fisher:false};}
+  // 1. a first fit with the attenuation from the prior; 2. the attenuation from that posterior, held fixed; 3. the fit it implies;
+  // 4. the covariance there from the observed curvature (the Fisher matrix only if that is not positive definite).
+  let Vs=variances(null);newton(Vs,4,1e-3);
+  Vs=variances(inverse(chol(system(c,Vs,false).P)!));
+  newton(Vs,8,1e-7);
+  let fisher=false,L=chol(system(c,Vs,true).P,true);
+  if(!L){fisher=true;L=chol(system(c,Vs,false).P)!;}
+  return this.fit={c,S:inverse(L),Vs,fisher};
  }
- /** Mean and variance of Σ x·component at time `t`, including the ageing since each component was last observed. */
+ /** Mean and variance of Σ x·component at time `t`.
+  *  Ageing follows the filter's rule while it applies: each component's variance grows by q per day since it was last observed, plus
+  *  any instruction bump, so the sum's variance grows by Σ x²·δ with the covariances kept. That cannot go on for ever: a component that
+  *  has aged back to its prior has also lost the correlations the evidence gave it, so the sum cannot be more certain than the case
+  *  where every aged component is at its prior and uncorrelated with the rest (the components that did not age keep their fitted
+  *  covariance). The variance is the smaller of the two, never below the unaged one, so it rises with time, is continuous, and a
+  *  long-unpractised sum is exactly as uncertain as that limit instead of keeping negative covariances nothing supports any more.
+  *  The mean is not moved (the filter ages variance only). */
  query(parts:Part[],t:number):{m:number;v:number}{
-  const {c,S}=this.solve();let m=0,v=0;const used:{i:number;x:number}[]=[];
+  const {c,S}=this.solve();let m=0,extra=0;const used:{i:number;x:number;delta:number}[]=[];
   for(const p of parts){
    if(p.x===0)continue;
    const i=this.idx.get(p.id);
-   if(i===undefined){m+=p.x*p.m;v+=p.x*p.x*p.v;continue;}
-   const pending=Math.min(this.prior[i]-S[i][i],this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i]);
-   m+=p.x*c[i];v+=p.x*p.x*Math.max(0,pending);used.push({i,x:p.x});
+   if(i===undefined){m+=p.x*p.m;extra+=p.x*p.x*p.v;continue;}
+   m+=p.x*c[i];used.push({i,x:p.x,delta:this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i]});
   }
-  for(const a of used){const row=S[a.i];for(const b of used)v+=a.x*b.x*row[b.i];}
-  return {m,v:Math.max(v,1e-12)};
+  let fitted=0,walk=0,limit=0;
+  for(const a of used){
+   const row=S[a.i];walk+=a.x*a.x*a.delta;
+   if(a.delta>0)limit+=a.x*a.x*this.prior[a.i];
+   for(const b of used){const cov=a.x*b.x*row[b.i];fitted+=cov;if(a.delta<=0&&b.delta<=0)limit+=cov;}
+  }
+  const v=Math.min(fitted+walk,Math.max(limit,fitted));
+  return {m,v:Math.max(v+extra,1e-12)};
+ }
+ /** For tests: the fitted mean and covariance, the per-attempt attenuation variances it used, the log posterior with them held fixed, and whether the Fisher fallback was taken. */
+ inspect():{ids:string[];c:Float64Array;S:Float64Array[];Vs:number[];obs:Obs[];prior:number[];logPosterior:(cc:Float64Array)=>number;fisher:boolean}{
+  const {c,S,Vs,fisher}=this.solve(),n=this.prior.length;
+  const logPosterior=(cc:Float64Array):number=>{
+   let z=0;this.obs.forEach((o,k)=>{
+    let eta=o.off;for(let a=0;a<o.ids.length;a++)eta+=cc[o.ids[a]]*o.xs[a];
+    const att=1/Math.sqrt(1+Math.PI*Math.max(0,Vs[k])/8),p=clampP(o.g+o.A*sig(eta*att));z+=o.w*(o.y?Math.log(p):Math.log(1-p));
+   });
+   for(let i=0;i<n;i++)z-=.5*(cc[i]-this.m0[i])**2/this.prior[i];return z;
+  };
+  return {ids:[...this.idx.keys()],c,S,Vs,obs:this.obs,prior:this.prior,logPosterior,fisher};
  }
 }

@@ -13,6 +13,13 @@ const attempt=(post:Posterior,y:number,over:{A?:number;g?:number;w?:number;extra
 };
 afterEach(()=>{Posterior.MAX=256;});
 
+
+/** Small dense inverse (Gauss-Jordan) for the finite-difference reference. */
+function inv(A:number[][]){const n=A.length,M=A.map((r,i)=>[...r,...Array.from({length:n},(_,j)=>+(i===j))]);
+ for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(M[r][c])>Math.abs(M[p][c]))p=r;[M[c],M[p]]=[M[p],M[c]];const d=M[c][c];for(let j=0;j<2*n;j++)M[c][j]/=d;
+  for(let r=0;r<n;r++)if(r!==c){const f=M[r][c];if(f)for(let j=0;j<2*n;j++)M[r][j]-=f*M[c][j];}}
+ return M.map(r=>r.slice(n));}
+
 describe('Posterior: the ability given all attempts',()=>{
  it('with no attempts it is the prior: the prior mean and the sum of prior variances',()=>{
   const post=new Posterior(),q=all(),{m,v}=post.query(q,T);
@@ -81,5 +88,88 @@ describe('Posterior: the ability given all attempts',()=>{
   plain.observe(parts,parts.reduce((z,p)=>z+p.m*p.x,0),1,.05,.92,1,0,T);
   hinted.observe(parts,parts.reduce((z,p)=>z+p.m*p.x,0)+2,1,.05,.92,1,0,T);       // a +2 shift already explains a pass: less to learn
   expect(hinted.query(all(),T).m).toBeLessThan(plain.query(all(),T).m);
+ });
+});
+
+describe('Posterior: curvature and ageing are consistent',()=>{
+ // A guess floor (g = 0.2, five options) and partial retrieval (A = 0.55-0.8) make p = g + A·σ(η) non-canonical: the observed curvature differs from the
+ // expected information, and surprising outcomes (a pass at low η, a fail at high η) make it differ most.
+ const fitted=()=>{
+  const post=new Posterior();
+  for(let i=0;i<12;i++){
+   const parts=[part('mu'),part('kc'),part('cross'),part('learning',Math.log1p(i%5))];
+   post.observe(parts,parts.reduce((z,p)=>z+p.m*p.x,0),[1,0,0,1,1,0,1,1,1,0,1,1][i],.2,i%2?.55:.8,1,.49,T+i*3600e3);
+  }
+  return post;
+ };
+ it('the reported covariance is the inverse of the observed curvature of the log posterior, by finite differences, and the gradient vanishes at the mode',()=>{
+  const {c,S,logPosterior,fisher}=fitted().inspect(),n=c.length,h=1e-4;
+  expect(fisher).toBe(false);                                                                  // the true curvature was positive definite here
+  const at=(d:[number,number][])=>{const x=Float64Array.from(c);for(const [i,k] of d)x[i]+=k;return logPosterior(x);};
+  const g=Array.from({length:n},(_,i)=>(at([[i,h]])-at([[i,-h]]))/(2*h));
+  for(const gi of g)expect(Math.abs(gi)).toBeLessThan(1e-3);
+  const H=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>(at([[i,h],[j,h]])-at([[i,h],[j,-h]])-at([[i,-h],[j,h]])+at([[i,-h],[j,-h]]))/(4*h*h)));
+  const ref=inv(H.map(r=>r.map(v=>-v)));
+  for(let i=0;i<n;i++)for(let j=0;j<n;j++)expect(Math.abs(S[i][j]-ref[i][j])).toBeLessThan(2e-4);
+ });
+ it('the finite-difference check is discriminating: the expected (Fisher) information gives a visibly different covariance',()=>{
+  const {c,S,Vs,obs,prior}=fitted().inspect(),n=c.length,P=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1/prior[i]:0));
+  obs.forEach((o,k)=>{
+   let eta=o.off;for(let a=0;a<o.ids.length;a++)eta+=c[o.ids[a]]*o.xs[a];
+   const att=1/Math.sqrt(1+Math.PI*Vs[k]/8),e=1/(1+Math.exp(-eta*att)),p=o.g+o.A*e,d=o.A*att*e*(1-e),J=d*d/(p*(1-p));
+   for(let a=0;a<o.ids.length;a++)for(let b=0;b<o.ids.length;b++)P[o.ids[a]][o.ids[b]]+=o.w*J*o.xs[a]*o.xs[b];
+  });
+  const F=inv(P);let worst=0;for(let i=0;i<n;i++)for(let j=0;j<n;j++)worst=Math.max(worst,Math.abs(F[i][j]-S[i][j]));
+  expect(worst).toBeGreaterThan(5e-3);                                          // far above the 2e-4 tolerance of the check above
+ });
+ // Three components, all ageing, all correlated by the attempts.
+ const aged=(q=.02,muQ=q)=>{
+  const mk=()=>[part('mu',1,{q:muQ}),part('kc',1,{q}),part('cross',1,{q})],post=new Posterior();
+  for(let i=0;i<14;i++){const parts=mk();post.observe(parts,0,+(i%3>0),.05,.9,1,0,T+i*3600e3);}
+  return {post,mk};
+ };
+ const last=T+13*3600e3;
+ it('a long-unpractised sum is as uncertain as the prior: ageing a component also forgets its correlations',()=>{
+  const {post,mk}=aged(),prior=mk().reduce((z,p)=>z+p.prior,0);
+  const now=post.query(mk(),T+DAY),later=post.query(mk(),T+1e4*DAY);
+  expect(now.v).toBeLessThan(prior*.8);                                      // evidence narrows the sum
+  expect(later.v).toBeCloseTo(prior,9);                                       // fully aged: the prior, not less through leftover negative covariances
+  expect(later.m).toBeCloseTo(now.m,12);
+ });
+ it('uncertainty never falls as time passes, never exceeds the prior, stays positive, and is continuous (no jump where the cap is reached)',()=>{
+  const {post,mk}=aged(.01),prior=mk().reduce((z,p)=>z+p.prior,0),rate=3*.01;let before=post.query(mk(),last).v,capped=false;
+  for(let days=.5;days<=400;days+=.5){
+   const v=post.query(mk(),last+days*DAY).v;
+   expect(v).toBeGreaterThanOrEqual(before-1e-12);expect(v).toBeLessThanOrEqual(prior+1e-9);expect(v-before).toBeLessThanOrEqual(rate*.5+1e-9);   // at most the rule's growth per step
+   if(Math.abs(v-prior)<1e-9)capped=true;before=v;
+  }
+  expect(capped).toBe(true);
+ });
+ it('while it applies, ageing is the filter\'s rule: the sum grows by Σ x²·q·days with the covariances kept; then it is capped at the forgotten limit',()=>{
+  const {post,mk}=aged(.02),{S}=post.inspect();let fitted=0;for(let i=0;i<3;i++)for(let j=0;j<3;j++)fitted+=S[i][j];
+  const prior=1.75;
+  for(const days of [1,3,8]){
+   const walk=3*.02*days,want=Math.min(fitted+walk,Math.max(prior,fitted));
+   expect(post.query(mk(),last+days*DAY).v).toBeCloseTo(want,9);
+  }
+  expect(fitted+3*.02*8).toBeLessThan(prior);                                  // 8 days is still inside the rule
+  expect(post.query(mk(),last+400*DAY).v).toBeCloseTo(prior,9);               // and 400 days is the limit
+ });
+ it('components that never age (q = 0, like the global level) keep their fitted variance in the limit',()=>{
+  const {post,mk}=aged(.02,0),{S}=post.inspect(),limit=S[0][0]+.5+.25;          // mu keeps its posterior; kc and cross are back at their priors, uncorrelated
+  expect(post.query(mk(),last+1e4*DAY).v).toBeCloseTo(limit,9);
+  expect(limit).toBeLessThan(1.75);
+ });
+ it('an instruction bump resets the concept and its correlations consistently, and fresh evidence absorbs it',()=>{
+  const {post,mk}=aged(0),{S}=post.inspect();                                   // no ageing: only the bump moves anything
+  const before=post.query(mk(),T+DAY).v;
+  post.touch('kc',.5,0,0,T+DAY,10);                                              // far above the room: the concept is back at its prior, uncorrelated
+  const after=post.query(mk(),T+DAY).v;
+  const want=S[0][0]+S[2][2]+2*S[0][2]+.5;                                       // mu and cross keep their posterior and their mutual covariance; kc is the prior alone
+  expect(after).toBeGreaterThan(before);expect(after).toBeCloseTo(want,9);
+  const small=aged(0);small.post.touch('kc',.5,0,0,T+DAY,.1);                    // a small bump is the filter's rule: the sum grows by exactly that
+  expect(small.post.query(small.mk(),T+DAY).v).toBeCloseTo(small.post.inspect().S.reduce((z,r)=>z+r.reduce((a,b)=>a+b,0),0)+.1,9);
+  const parts=mk();post.observe(parts,0,1,.05,.9,1,0,T+2*DAY);
+  expect(post.query(mk(),T+2*DAY).v).toBeLessThan(after);                         // a new attempt on the concept absorbs the bump
  });
 });

@@ -1,6 +1,6 @@
 import {describe,expect,it,vi,beforeAll,afterAll} from 'vitest';
 vi.mock('../../../supabase/functions/mcp/deps.ts',()=>({createClient:()=>({}),McpServer:class{},createMcpHandler:()=>({}),z:{}}));
-import {applyScheduler,resumeBlocks} from '../../../supabase/functions/mcp/adaptive';
+import {applyScheduler,resumeBlocks,renderAtlasQueue} from '../../../supabase/functions/mcp/adaptive';
 import {assemble} from '../../../supabase/functions/_shared/adaptive/facts';
 import {assembleAtlas,declaredBlocks} from '../../../supabase/functions/_shared/adaptive/atlas';
 import {fakeContext,tablesFrom} from './fakedb';
@@ -80,5 +80,38 @@ describe('N186: the v3 resume queue names the project of every item that is not 
   expect(all.length).toBeGreaterThan(0);for(const l of all)expect(l).toMatch(/^\d+\. \w+ \[(topology-1|algebra-1|analysis-1)\] /);
   const solo=migrated(rowsFor(one)),q=lines(resumeBlocks(assemble(solo,NOW),solo,'topology-1','',{}));
   expect(q.length).toBeGreaterThan(0);for(const l of q)expect(l).not.toMatch(/\[[\w-]+\] /);
+ });
+});
+
+describe('N186: card reviews belong to a project too',()=>{
+ const three:P[]=[{slug:'topology-1',cps:12,done:2,stages:3,target:'2026-11-24'},{slug:'algebra-1',cps:12,done:2,stages:3,target:'2026-11-24'},{slug:'analysis-1',cps:12,done:2,stages:3,target:'2026-11-24'}];
+ // a due card for the first concept of every project, written through a note of that project (a card has no project of its own)
+ const withCards=()=>{
+  const rows:any=migrated(rowsFor(three));rows.notes=[];rows.cards=[];rows.instructionEvents=[];
+  for(const p of rows.projects){const cp=rows.checkpoints.find((c:any)=>c.project_id===p.id),k=rows.cpConcepts.find((x:any)=>x.checkpoint_id===cp.id).concept_id;
+   rows.notes.push({id:'n-'+p.slug,project_id:p.id,concept_id:k,created_at:'2026-10-01T00:00:00Z'});rows.cards.push({id:'cd-'+p.slug,note_id:'n-'+p.slug});
+   rows.instructionEvents.push({id:rows.instructionEvents.length+1,concept_id:k,occurred_at:'2026-10-01T10:00:00Z'});}
+  return rows;
+ };
+ it('a card review carries the project of its note as `home`, and no project_id, so no minute cap applies to it',()=>{
+  const rows=withCards(),v=assembleAtlas(rows,NOW),reviews=v.queue.items.filter(a=>a.kind==='review');
+  expect(new Set(reviews.map(r=>r.home)).size).toBe(3);
+  for(const r of reviews){expect(r.project_id).toBeUndefined();expect(rows.projects.find((p:any)=>p.id===r.home)?.slug).toBe(String(r.card_id).replace('cd-',''));}
+ });
+ it('in the resume, reviews are tagged like every other item: untagged when they are the resumed project\'s, tagged otherwise, and listed after the resumed project\'s own',()=>{
+  const rows=withCards(),v=assembleAtlas(rows,NOW),items=v.queue.items;
+  const q=(id?:string)=>renderAtlasQueue(items,rows,id,50).split('\n').slice(1);
+  const forAlgebra=q(rows.projects.find((p:any)=>p.slug==='algebra-1').id),review=(l:string)=>/^\d+\. review /.test(l);
+  const reviewLines=forAlgebra.filter(review);expect(reviewLines.length).toBeGreaterThan(0);
+  for(const l of reviewLines)expect(l.includes('[algebra-1]')).toBe(false);
+  const tags=new Set(reviewLines.map(l=>/\[([\w-]+)\] /.exec(l)?.[1]??'(own)'));
+  expect([...tags].sort()).toEqual(['(own)','analysis-1','topology-1']);                    // all three projects' reviews are in the queue, each named by its own project
+  const own=forAlgebra.map(l=>/\[[\w -]+\] /.test(l));const firstTagged=own.indexOf(true);if(firstTagged>=0)expect(own.slice(firstTagged).every(Boolean)).toBe(true);
+  const none=q(undefined).filter(review);for(const l of none)expect(l).toMatch(/\[(topology-1|algebra-1|analysis-1)\] /);
+ });
+ it('an item with no project at all is tagged [no project] rather than left bare',()=>{
+  const rows=withCards(),text=renderAtlasQueue([{id:'x',kind:'review',concept_id:rows.concepts[0].id,reason:'due',minutes:.5,p:.5}],rows,undefined);
+  expect(text).toMatch(/^QUEUE\n1\. review \[no project\] /);
+  expect(renderAtlasQueue([{id:'x',kind:'review',concept_id:rows.concepts[0].id,reason:'due',minutes:.5,p:.5}],rowsFor(one) as any,undefined)).not.toMatch(/\[/);   // one project: nothing is tagged
  });
 });
