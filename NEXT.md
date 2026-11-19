@@ -1,5 +1,11 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N187 Remove the 14 unused files identified in the repository audit
+
+Owner task: "Clean lemma repo"
+Stage: Stable · Status: done · Needs: — · Assigned: chat-71037#gnss
+Done = remove the retired JavaScript app, its standalone scripts, the unused badge and the empty MCP directory placeholder. See [the cleanup record](docs/current/N187.md).
+
 ## N180 Atlas v3 cutover: tooling, Beta removal and the ordered runbook (Owner task)
 
 Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
