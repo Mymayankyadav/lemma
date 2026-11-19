@@ -164,7 +164,7 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   for(const days of [1,3,8]){
    const time=last+days*DAY,room=prior.map((p,i)=>Math.max(0,p-S[i][i]));
    const added=room.map(gap=>Math.min(gap,.02*days));
-   const r=room.map((gap,i)=>gap>0?Math.sqrt(Math.max(0,1-added[i]/gap)):1);
+   const r=room.map((gap,i)=>gap>0?Math.sqrt(Math.max(0,1-(added[i]/gap)**3)):1);
    let want=0;
    for(let i=0;i<3;i++){
     const diagonal=S[i][i]+added[i];
@@ -232,7 +232,7 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   const small=aged(0),cov=small.post.inspect().S;
   const bump=(.5-cov[1][1])/2;expect(bump).toBeGreaterThan(0);
   small.post.touch('kc',.5,0,0,T+DAY,bump);                    // a partial bump preserves sqrt(1/2) of the correlations
-  const expected=cov[0][0]+cov[1][1]+bump+cov[2][2]+2*cov[0][2]+Math.SQRT2*(cov[0][1]+cov[1][2]);
+  const expected=cov[0][0]+cov[1][1]+bump+cov[2][2]+2*cov[0][2]+2*Math.sqrt(7/8)*(cov[0][1]+cov[1][2]);
   expect(small.post.query(small.mk(),T+DAY).v).toBeCloseTo(expected,9);
   const parts=mk();post.observe(parts,0,1,.05,.9,1,0,T+2*DAY);
   expect(post.query(mk(),T+2*DAY).v).toBeLessThan(after);                         // a new attempt on the concept absorbs the bump

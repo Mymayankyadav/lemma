@@ -177,9 +177,12 @@ export class Posterior{
 
  /** Mean and variance of Σ x·component at time t.
   * Each fitted marginal ages at the filter's q/day rate (plus instruction bumps), capped at its prior. Ageing also removes
-  * evidence-induced cross-covariances: at marginal variance Sii + δ, retain fraction r_i = sqrt(1 - δ/(prior_i-Sii))
-  * of component i's old signal. The resulting covariance is D S D + diag((1-r_i²)prior_i), with D=diag(r_i).
-  * It stays positive semidefinite and becomes the independent prior as soon as every marginal reaches its prior.
+  * evidence-induced cross-covariances. Each marginal grows linearly by δ while correlations are retained initially
+  * and then fade smoothly with r_i² = 1 - (δ/(prior_i-Sii))³. The covariance is D S D plus diagonal
+  * (Sii + δ - r_i²·Sii), with D=diag(r_i). It is positive semidefinite, has the exact required marginal
+  * ageing rate, and becomes the independent prior when each component's marginal reaches its cap. This cubic
+  * relaxation is an explicit reporting approximation (not an exact OU process), avoiding prematurely hiding
+  * recent evidence while still completely forgetting its correlations at the prior.
   * The old cap on the summed variance did not do this: all marginals could be at their priors while their negative
   * covariances still hid uncertainty. Means stay fixed, as in the filter.
   */
@@ -205,7 +208,8 @@ export class Posterior{
    const diagonal=S[i][i],room=Math.max(0,this.prior[i]-diagonal);
    const drift=this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i];
    const added=Math.min(room,Math.max(0,drift));
-   const r=room>0?Math.sqrt(Math.max(0,1-added/room)):1;
+   const fraction=room>0?added/room:0;
+   const r=room>0?Math.sqrt(Math.max(0,1-fraction*fraction*fraction)):1;
    v+=x*x*(diagonal+added);
    used.push({i,x,r});
   }
