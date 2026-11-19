@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import {useNavigate} from 'react-router';
 import {Clock3,MessageSquareText,Mic,X} from 'lucide-react';
 import {MEANING_ICON} from '../../ui/v7/meanings';
@@ -7,40 +7,44 @@ import {useHome,useSettings} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
 import {getTaskApi} from '../../data/tasks';
 import {getThoughtApi} from '../../data/parked-thoughts';
-import {calendarRange} from '../../features/calendar/model';
+import {calendarBlockDraft} from '../../features/calendar/block-sheet/blockDraft';
+import {localClockInstant} from '../../features/time-log/local-time';
+import {taskInput} from '../../features/tasks/taskDraft';
 import {Button,Segmented,Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import {useActiveFocus} from './focus';
-import {addLabel,captureKinds,defaultStart,kindLabel,parseCapture,type CaptureKind} from './captureModel';
+import {addLabel,captureKinds,captureTaskDraft,defaultStart,kindLabel,parseCapture,type CaptureKind} from './captureModel';
 import {takeCaptureText} from '../../platform/share';
 import {useNativeVoice} from '../../platform/voice';
 
 const icons={task:MEANING_ICON.task,block:Clock3,card:MEANING_ICON.card,thought:MessageSquareText} as const;
-/** Local date and time in a zone to an instant: midnight of that civil day plus the elapsed minutes. */
+/** Resolve civil time, not elapsed minutes since midnight: DST days can have 23 or 25 hours. */
 export function instantAt(date:string,time:string,zone:string):string{
- const [hour,minute]=time.split(':').map(Number);
- return new Date(Date.parse(calendarRange(date,zone).start)+(hour*60+minute)*60_000).toISOString();
+ const instant=localClockInstant(date,time,zone);
+ if(!instant)throw new Error('Choose a valid local date and time.');
+ return instant;
 }
 /** PLAN §6.1 F: one field, four types chosen from the text, removable tokens, a footer that names the result. */
 export default function CaptureSheet({open,onClose,initialKind=null,picker=false}:{open:boolean;onClose:()=>void;initialKind?:CaptureKind|null;picker?:boolean}){
  const home=useHome(),settings=useSettings(),{entry}=useActiveFocus(),navigate=useNavigate(),notify=useToast();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
- const [busy,setBusy]=useState(false),[error,setError]=useState('');
+ const saving=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const paths=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived').map(project=>({id:project.id,slug:project.slug,title:project.title})),[home.data]);
  const parse=useMemo(()=>parseCapture(text,{now:new Date(),zone,paths,session:!!entry},ignored,chosen),[text,zone,paths,entry,ignored,chosen]);
  const kind=parse.kind,project=home.data?.projects.find(item=>item.id===parse.path?.id);
  const start=defaultStart(parse.date,parse.time,{now:new Date(),zone});
  const title=kind==='card'?parse.front:parse.title;
- const reason=!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
+ const taskDraft=()=>captureTaskDraft(parse,start.date,zone,project?.subject.id??null);
+ const waitingForZone=(kind==='task'||kind==='block')&&!!(parse.date||parse.time)&&!settings.data;
+ const reason=waitingForZone?'Your time zone must load before saving a scheduled item.':!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
  function reset(){setText('');setChosen(initialKind);setIgnored(new Set());setError('');}
  function close(){reset();onClose();}
  async function save(){
-  if(busy||reason)return;setBusy(true);setError('');
+  if(saving.current||reason)return;saving.current=true;setBusy(true);setError('');
   try{
    if(kind==='task'){
-    const api=getTaskApi(),made=await api.createTask({title:parse.title,projectId:project?.id??null,subjectId:project?.subject.id??null,
-     estimateMinutes:parse.minutes,due:parse.date?{kind:'date',date:parse.date}:{kind:'none'}});
+    const draft=taskDraft(),api=getTaskApi(),made=await api.createTask(taskInput(draft.values,draft.zone));
     notify('Task added',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(made.record.id,made.record.version);}}});
    }else if(kind==='block'){
     const api=getStudyApi(),minutes=parse.minutes??30,startsAt=instantAt(start.date,start.time,zone);
@@ -58,14 +62,24 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
    }
    close();
   }catch(reasonError){setError(reasonError instanceof Error?reasonError.message:'That did not work. Try again.');}
-  finally{setBusy(false);}
+  finally{saving.current=false;setBusy(false);}
  }
  function more(){
-  const target=kind==='task'?'/tasks?new=1':kind==='block'?'/calendar?view=day&date='+start.date+'&new=block&start='+encodeURIComponent(instantAt(start.date,start.time,zone)):kind==='card'?'/cards':null;
-  close();if(target)navigate(target);
+  if(saving.current||waitingForZone)return;
+  if(kind==='task'){
+   const draft=taskDraft();close();navigate('/tasks?new=1',{state:{captureTaskDraft:draft}});return;
+  }
+  try{
+   if(kind==='block'){
+    const draft=calendarBlockDraft({title:parse.title,kind:'study',startsAt:instantAt(start.date,start.time,zone),
+     minutes:parse.minutes??30,zone,projectId:project?.id??null,subjectId:project?.subject.id??null,taskId:null});
+    close();navigate('/calendar?view=day&date='+start.date+'&new=block',{state:{calendarBlockDraft:draft}});return;
+   }
+   close();if(kind==='card')navigate('/cards');
+  }catch(problem){setError(problem instanceof Error?problem.message:'Check the date and time.');}
  }
  return <Sheet open={open} onClose={close} title="Capture" eyebrow="Add something"
-  footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'}>More options</Button>
+  footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'||busy||waitingForZone}>More options</Button>
    {reason&&<p id="v7-capture-reason" className="v7-disabled-reason v7-footer-reason">Unavailable · {reason}</p>}
    <Button variant="primary" disabled={!!reason||busy} aria-describedby={reason?'v7-capture-reason':undefined} onClick={()=>{void save();}}>{addLabel[kind]}</Button></>}>
   {picker&&!text&&<div className="v7-capture-types" role="group" aria-label="Choose a type">{captureKinds.map(item=>{const Icon=icons[item];
