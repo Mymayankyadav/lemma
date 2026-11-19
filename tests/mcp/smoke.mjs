@@ -1,5 +1,6 @@
 // Node 22; no dependencies. Set MCP_URL in the environment; do not print it.
 import assert from 'node:assert/strict';
+import { selftestRequest } from './selftest-request.mjs';
 import { formatSelftestHttpFailure } from './smoke-diagnostics.mjs';
 const url=process.env.MCP_URL;
 if(!url)throw Error('MCP_URL environment variable is required');
@@ -33,7 +34,7 @@ for(const part of [1,2,3,4]){
   const started=Date.now();
   let res;
   try {
-    res=await fetch(url+'/selftest?part='+part,{signal:AbortSignal.timeout(140_000)});
+    res=await fetch(selftestRequest(url,part,AbortSignal.timeout(140_000),process.env.GITHUB_ACTIONS==='true'));
   } catch(error) {
     const kind=error instanceof Error&&error.name==='TimeoutError'?'timeout':'network error';
     console.error('FAIL selftest part '+part+' request ('+kind+') after '+(Date.now()-started)+'ms');

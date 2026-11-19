@@ -37,7 +37,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     }
   }
   let p:any,sessionCode='S1',planId:string|undefined;
-  const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,{client:a.client||'other'},text),text};};
+  const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,a,text),text};};
   // A run stopped by the platform's wall-clock limit never reaches its
   // finally block. Before starting, remove fixtures such runs left behind:
   // owner-scoped, hidden system projects whose slug and subject name match the

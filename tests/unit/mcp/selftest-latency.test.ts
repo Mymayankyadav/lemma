@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { commitBatch } from '../../../supabase/functions/mcp/db';
+import { selftestRequest } from '../../mcp/selftest-request.mjs';
 import { formatSelftestHttpFailure } from '../../mcp/smoke-diagnostics.mjs';
 
 vi.mock('../../../supabase/functions/mcp/deps.ts', () => ({ createClient: vi.fn() }));
@@ -12,6 +13,23 @@ function context(client?: string, lookupError?: string) {
 }
 
 describe('MCP selftest latency and diagnostics', () => {
+  it('routes all four hosted CI fixture requests beside the database without losing cancellation', () => {
+    const endpoint = 'https://yemqnhnztlbyxmjxidis.supabase.co/functions/v1/mcp/fixture';
+    for (const part of [1, 2, 3, 4]) {
+      const controller = new AbortController();
+      const request = selftestRequest(endpoint, part, controller.signal, true);
+      expect(request.url).toBe(endpoint + '/selftest?part=' + part);
+      expect(request.method).toBe('GET');
+      expect(request.headers.get('x-region')).toBe('ap-south-1');
+      controller.abort();
+      expect(request.signal.aborted).toBe(true);
+    }
+    for (const [url, ci] of [[endpoint, false], ['http://127.0.0.1:54321', true],
+      ['https://another.supabase.co', true], ['https://yemqnhnztlbyxmjxidis.supabase.co.example.org', true]] as const) {
+      expect(selftestRequest(url, 4, new AbortController().signal, ci).headers.has('x-region')).toBe(false);
+    }
+  });
+
   it('commits with explicit client without loading owner settings', async () => {
     const c = context('chatgpt');
     await expect(commitBatch(c, 'edit', { client: 'other' }, 'fixture')).resolves.toEqual({ action: 42 });
