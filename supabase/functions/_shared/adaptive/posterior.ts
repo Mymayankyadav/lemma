@@ -74,14 +74,14 @@ export class Posterior{
    ids.push(i);xs.push(p.x);off-=p.m*p.x;
   }
   if(!ids.length)return;
-  // The process variance since the previous observation destroys old evidence about the current latent, not just
-  // confidence at query time. An epoch change means the component has fully returned to its independent prior.
+  // The same smooth cubic age fraction used by query weakens old evidence between observations; an epoch
+  // change removes evidence completely when the marginal has returned to the independent prior.
   for(const i of new Set(ids)){
    const drift=this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i],lastV=this.lastFilterV[i];
    if(drift>0&&Number.isFinite(lastV)){
     const room=Math.max(0,this.prior[i]-lastV);
     if(room<=1e-12||drift>=room){this.epochs[i]++;this.logs[i]=0;}
-    else this.logs[i]+=.5*Math.log1p(-drift/room);
+    else{const fraction=drift/room;this.logs[i]+=.5*Math.log1p(-fraction*fraction*fraction);}
    }
    this.at[i]=Math.max(this.at[i],t);this.bump[i]=0;
   }

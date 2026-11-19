@@ -208,6 +208,17 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   const withHistory=old.query([mk()],late).v,onlyNew=fresh.query([mk()],late).v;
   expect(withHistory).toBeGreaterThan(0);expect(withHistory).toBeLessThan(onlyNew);
  });
+ it('the same cubic survival fraction is applied across a partial between-observation gap',()=>{
+  const mk=()=>part('kc',1,{q:.02}),post=new Posterior();
+  attempt(post,1,{parts:[mk()],t:T});
+  post.after([{...mk(),v:.05}]);
+  attempt(post,0,{parts:[mk()],t:T+5*DAY});
+  const {obs}=post.inspect(),fraction=(.02*5)/(.5-.05),r=Math.sqrt(1-fraction**3);
+  expect(obs).toHaveLength(2);
+  expect(obs[0].xs[0]).toBeCloseTo(r,12);
+  expect(obs[0].extra).toBeCloseTo(.5*(1-r*r),12);
+  expect(obs[1].xs[0]).toBeCloseTo(1,12);
+ });
  it('repeated appearances of a fitted or excluded component share their variance',()=>{
   const post=new Posterior(),mk=(x:number)=>part('kc',x,{q:.03});
   for(let i=0;i<9;i++)post.observe([mk(1),mk(-.4)],0,+(i%3!==0),.05,.9,1,0,T+i*3600e3);
