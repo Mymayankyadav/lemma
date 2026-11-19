@@ -22,7 +22,7 @@ for(const width of [360,390])test('A course conversion is reviewed in full at '+
 
 test('with atlasV3 off a conversion proposal still shows its whole review next to Approve',async({page})=>{
  await page.setViewportSize({width:390,height:844});
- await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/proposals/atlas-demo-conversion');
+ await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,-atlasV3#/proposals/atlas-demo-conversion');   // the off path (rollback); atlasV3 is on by default since N182
  const review=page.getByRole('region',{name:'Course conversion'});await expect(review).toBeVisible();await expect(review.getByText('template:cards-in-close')).toBeVisible();
  await expect(page.getByRole('button',{name:'Approve',exact:true})).toBeEnabled();
 });
