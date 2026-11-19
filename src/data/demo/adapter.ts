@@ -1,3 +1,4 @@
+import {AuthoredCards} from './authored-cards';
 import {pathForecast} from '../path-review-forecast';
 import {demoConversionProposal} from '../adaptive/demo-conversion';
 import type {
@@ -125,6 +126,7 @@ export interface DemoOptions {
   fixture?: DemoStore;
   /** Only set for a freshly generated private store, never a shared fixture. */
   ownedFixture?: boolean;
+  authoredCardStorage?: Pick<Storage,"getItem"|"setItem">;
 }
 /** Reuse one pass across the large stress fixture when summarising every
  * project. Single-project reads keep the same standalone summary semantics. */
@@ -134,7 +136,7 @@ interface SummaryIndex {
   sessions: Map<string,number>;
   sourceTitles: Map<string,string[]>;
 }
-/** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
+/** No network writes. Most fixture state resets on reload; browser-authored cards survive in their tab. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
   private notify: ReturnType<typeof makeDemoNotifyData>;
@@ -229,6 +231,7 @@ export class DemoAdapter implements LemmaApi {
     return forecast.result();
   }
   private store: DemoStore;
+  private readonly authoredCards?:AuthoredCards;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private stressSourceSeedRows:DemoSource[]|null=null;
   private readonly now: () => number;
@@ -369,6 +372,7 @@ export class DemoAdapter implements LemmaApi {
         "UTC",
       { takeOwnership: options.ownedFixture === true },
     );
+    if(options.authoredCardStorage&&!options.fixture)this.authoredCards=new AuthoredCards(options.authoredCardStorage,this.store);
     // Snapshot before installing either lazy getter: spreading an accessor
     // from its own materialization path would recursively invoke itself.
     const original={...this.store};
@@ -441,6 +445,7 @@ export class DemoAdapter implements LemmaApi {
     const before = clone(this.store);
     try {
       const result=write();
+      this.authoredCards?.save(this.store);
       this.dueSnapshotCache=null;
       return result;
     } catch (error) {
@@ -2195,7 +2200,8 @@ export class DemoAdapter implements LemmaApi {
           note.cards.find((c) => c.id === input.cardId),
           "Card",
         );
-      const id = Math.max(0, ...this.store.reviews.map((r) => r.id)) + 1;
+      const minimum=Math.max(0,...this.store.reviews.map(r=>r.id))+1;
+      const id=this.authoredCards?.nextReviewId(this.store.seed,minimum)??minimum;
       this.store.reviews.push({
         id,
         cardId: card.id,
@@ -2366,10 +2372,11 @@ export class DemoAdapter implements LemmaApi {
       historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
   async createNote(input: CreateNoteInput) {
-    return this.transaction(() => ({
-      noteNo: this.insertNote(this.project(input.projectSlug), input).note
-        .noteNo,
-    }));
+    return this.transaction(() => {
+      const noteNo=this.insertNote(this.project(input.projectSlug), input).note.noteNo;
+      this.authoredCards?.add(noteNo);
+      return {noteNo};
+    });
   }
   async updateNote(noteNo: number, patch: NotePatch) {
     this.transaction(() => {
@@ -2384,6 +2391,7 @@ export class DemoAdapter implements LemmaApi {
     if (!["active", "suspended", "deleted"].includes(status))
       invalid("Unknown note status");
     this.note(noteNo).note.status = status;
+    this.authoredCards?.save(this.store);
     this.dueSnapshotCache=null;
   }
   async addComment(noteNo: number, body: string): Promise<CardComment> {
@@ -2412,6 +2420,7 @@ export class DemoAdapter implements LemmaApi {
       "Comment",
     );
     comment.status = "dismissed";
+    this.authoredCards?.save(this.store);
   }
   async resolveMisconception(id: string) {
     found(

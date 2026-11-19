@@ -44,7 +44,7 @@ test('More options retains the Study path and discards a cancelled draft',async(
  await quick.getByRole('button',{name:'More options'}).click();
  const full=page.getByRole('dialog',{name:'New time block'});
  await expect(full.getByRole('radio',{name:'Study'})).toHaveAttribute('aria-checked','true');
- await expect(full.getByText(pathTitle!,{exact:true})).toBeVisible();
+ await expect(full.getByRole('button',{name:'Path: '+pathTitle,exact:true})).toBeVisible();
  await full.getByRole('button',{name:'Cancel'}).click();
  await expect(full).toBeHidden();
  await expect(page).not.toHaveURL(/new=block|quick=1/);
