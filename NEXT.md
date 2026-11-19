@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+
+## N189 Master plan P0/P1: capture task integrity and review-target boundary
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Harden · Status: open · Needs: — · Assigned: chat-71388050#6aam
+Done = Quick Capture retains task due kind, exact owner-local time and other entered values on save or expansion; regression coverage exercises retained drafts, real persisted records in an isolated adapter and DST boundaries. Record the actual live exact-card selection boundary rather than substituting a demo queue.
+Scope: capture and task draft plumbing, tests, and docs/current/N189.md. No production access, schema, authentication or scheduler policy changes.
+
 ## N188 MCP smoke fits the reused Edge worker lifetime (Owner task)
 
 Owner task: "Ok fix it and check why issue is persistent."
