@@ -7,7 +7,8 @@ export function formatSelftestHttpFailure({ part, status, contentType, elapsedMs
     : mime === 'text/html' ? 'html response'
     : mime === 'text/plain' ? 'text response'
     : 'other response';
-  const reason = status === 503 ? 'connector unavailable'
+  const reason = status === 546 ? 'edge worker resource limit'
+    : status === 503 ? 'connector unavailable'
     : status === 504 ? 'gateway timeout'
     : status === 502 ? 'gateway error'
     : status === 429 ? 'rate limited'
@@ -15,7 +16,7 @@ export function formatSelftestHttpFailure({ part, status, contentType, elapsedMs
     : 'HTTP error';
   const safeStatus = Number.isInteger(status) && status >= 100 && status <= 599 ? status : 0;
   const safeElapsed = Number.isFinite(elapsedMs) && elapsedMs >= 0 ? Math.floor(elapsedMs) : 0;
-  const safePart = part === 1 ? 1 : 2;
+  const safePart = [1, 2, 3, 4].includes(part) ? part : 'unknown';
   return 'selftest part ' + safePart + ' HTTP ' + safeStatus
     + ' (' + reason + '; ' + responseType + '; ' + safeElapsed + 'ms; endpoint redacted)';
 }

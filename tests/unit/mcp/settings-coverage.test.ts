@@ -1,8 +1,11 @@
-import {describe,expect,it} from 'vitest';
+import {describe,expect,it,vi} from 'vitest';
+import {commitBatch} from '../../../supabase/functions/mcp/db';
 import {readFileSync} from 'node:fs';
 import FSRS from '../../../supabase/functions/_shared/fsrs.js';
 import {ownerEditableSettingsFields,prepareSettingsEdit,settingsEditCommand} from
  '../../../supabase/functions/mcp/tools/settings-edit';
+
+vi.mock('../../../supabase/functions/mcp/deps.ts',()=>({createClient:vi.fn()}));
 
 const registry=JSON.parse(readFileSync('docs/v6/capability-registry/settings.json','utf8'));
 const wanted=Object.entries(registry.columns)
@@ -85,7 +88,7 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   expect(settingsEditCommand(row,{max_interval_days:600},row.user_id,version).values)
    .toEqual({max_interval_days:600});
  });
- it('refuses mixed connector-client patches without altering real connector audit provenance',()=>{
+ it('refuses mixed connector-client patches without altering real connector audit provenance',async()=>{
   // mcp_commit is the exact deployed SQL boundary. It runs every queued
   // UPDATE before its mandatory telemetry UPDATE, never after it.
   const sql=readFileSync('supabase/migrations/20261029190752_mcp_transactions.sql','utf8');
@@ -97,8 +100,28 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   expect(result).toBeGreaterThan(telemetry);
   expect(sql.slice(telemetry,result)).toContain(
    "case when p_source in ('claude','chatgpt','other') then p_source else connector_last_client end");
-  const client=readFileSync('supabase/functions/mcp/db.ts','utf8');
-  expect(client).toContain("p_source:args.client||st.data?.connector_last_client||'other'");
+  // Exercise the actual RPC boundary, not the spelling of its source expression.
+  const command=settingsEditCommand(row,{new_per_day:30},row.user_id,version);
+  for(const [args,remembered,expected] of [
+   [{client:'claude'},'chatgpt','claude'],[{},'chatgpt','chatgpt'],[{},null,'other'],
+  ] as const){
+   const from=vi.fn((table:string)=>{
+    expect(table).toBe('settings');
+    return {select:(column:string)=>{
+     expect(column).toBe('connector_last_client');
+     return {eq:(key:string,id:string)=>{
+      expect([key,id]).toEqual(['user_id',row.user_id]);
+      return {single:async()=>({data:{connector_last_client:remembered},error:null})};
+     }};
+    }};
+   });
+   const rpc=vi.fn(async()=>({data:{action:1},error:null}));
+   await commitBatch({db:{from,rpc},userId:row.user_id,batch:[command]},'edit',args,'settings edit');
+   expect(from).toHaveBeenCalledTimes('client' in args?0:1);
+   expect(rpc).toHaveBeenCalledExactlyOnceWith('mcp_commit',{
+    p_user:row.user_id,p_tool:'edit',p_source:expected,p_summary:'settings edit',p_commands:[command],
+   });
+  }
   // Reject even a mixed patch, so no unrelated setting write can be queued
   // as partial success alongside an unpersistable connector_last_client edit.
   for(const requested of ['claude','other',null])
