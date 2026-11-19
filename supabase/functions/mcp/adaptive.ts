@@ -124,7 +124,11 @@ export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:strin
   if(rows.settings?.atlas_migrated_at){
     const v=assembleAtlas(rows,new Date()),fit=p?v.fits[p.id]:undefined;
     const time='TIME today='+s.today+' tz='+s.zone+(fit?' fit='+fit.pAll.toFixed(2)+' core='+fit.pCore.toFixed(2):'')+' checks_due='+v.queue.items.filter(x=>x.kind==='check').length+' new_cards_quota='+v.budget.available.toFixed(1)+' card_min='+v.queue.cardMinutes.toFixed(1)+'/'+v.queue.cardCapMinutes.toFixed(1);
-    const queue='QUEUE\n'+v.queue.items.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
+    // One utility over every project (10 §8), so the queue spans them. A project's own items come first and every other project's are
+    // tagged, as the legacy queue named the project in each ref; with a single project nothing is tagged.
+    const slugOf=new Map<string,string>(rows.projects.map((x:any)=>[x.id,x.slug])),multi=rows.projects.length>1,mine=(a:any)=>!p||a.project_id===p.id;
+    const ordered=[...v.queue.items.filter(mine),...v.queue.items.filter(a=>!mine(a))];
+    const queue='QUEUE\n'+ordered.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+(multi&&(!p||!mine(a))&&a.project_id&&slugOf.get(a.project_id)?'['+slugOf.get(a.project_id)+'] ':'')+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
     // BRIEF keeps the resume's context (NOW, LAST, FIX, ADAPT, CARDS, SRC) and swaps the node cards for Atlas cards; RULES keep the
     // tutor's rules and add the Atlas lines (04 §resume: "BRIEF uses card v2", rules "add"). Budgets are unchanged (packet caps the body).
     const cards=brief.nodes?.length?brief.nodes:[...new Set(p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[])].slice(0,3).map(id=>atlasCard(v,id));

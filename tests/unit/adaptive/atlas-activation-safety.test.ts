@@ -62,3 +62,23 @@ describe('04 §resume: the v3 resume keeps its context and the tutor rules',()=>
   expect(resumeBlocks(s,rows,'topology-1','(rules as in the last resume)',brief)).toMatch(/^RULES\n\(rules as in the last resume\)\nTIME/);   // brief mode stays brief
  });
 });
+
+describe('N186: the v3 resume queue names the project of every item that is not the resumed one',()=>{
+ const three:P[]=[{slug:'topology-1',cps:12,done:2,stages:3,target:'2026-11-24'},{slug:'algebra-1',cps:12,done:2,stages:3,target:'2026-11-24'},{slug:'analysis-1',cps:12,done:2,stages:3,target:'2026-11-24'}];
+ const lines=(text:string)=>text.slice(text.indexOf('QUEUE\n')+6).split('\nBRIEF')[0].split('\n').filter(l=>/^\d+\. /.test(l));
+ it('a project resume lists its own items first, untagged, then the others tagged with their project',()=>{
+  const rows=migrated(rowsFor(three)),s=assemble(rows,NOW),t=resumeBlocks(s,rows,'algebra-1','',{}),q=lines(t);
+  expect(q.length).toBeGreaterThan(0);
+  const tagged=q.map(l=>/^\d+\. \w+ \[([\w-]+)\] /.exec(l)?.[1]??null);
+  expect(tagged.every(x=>x!=='algebra-1')).toBe(true);                    // the resumed project is never tagged
+  const firstTagged=tagged.findIndex(x=>x!==null);
+  if(firstTagged>=0)expect(tagged.slice(firstTagged).every(x=>x!==null)).toBe(true);   // untagged (own) items come before every tagged one
+  expect(tagged.filter(x=>x!==null).every(x=>['topology-1','analysis-1'].includes(x as string))).toBe(true);
+ });
+ it('without a project every item is tagged; with one project nothing is',()=>{
+  const rows=migrated(rowsFor(three)),all=lines(resumeBlocks(assemble(rows,NOW),rows,undefined,'',{}));
+  expect(all.length).toBeGreaterThan(0);for(const l of all)expect(l).toMatch(/^\d+\. \w+ \[(topology-1|algebra-1|analysis-1)\] /);
+  const solo=migrated(rowsFor(one)),q=lines(resumeBlocks(assemble(solo,NOW),solo,'topology-1','',{}));
+  expect(q.length).toBeGreaterThan(0);for(const l of q)expect(l).not.toMatch(/\[[\w-]+\] /);
+ });
+});

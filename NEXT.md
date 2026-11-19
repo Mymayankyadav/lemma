@@ -54,6 +54,15 @@ Tests: tests/unit/flags.test.ts (atlasV3 released), tests/unit/adaptive-ui/parit
 Scope: src/flags.ts, the two tests, docs/current/N182.md; what turning it on surfaced: the Atlas panels' native selects (v7 Picker), the quadratic parent lookup in estimate() (measure.ts) and its test tests/unit/adaptive/atlas-estimate-scale.test.ts, where the Calendar, Inbox and Progress pages mount their Atlas panels, the panels' book-posture rule (atlas-values.css), and the two e2e specs that select the old control or the off path (v7-atlas-v2, v7-plan-v2).
 Not: merging before activation; any other flag; production data.
 
+## N186 Atlas v3 reports the ability from a joint fit, and the resume queue names the project (Owner task)
+
+Owner task: "Fix all in one pr"
+Stage: Build · Status: open · Needs: — · Assigned: chat-91357#h6d2
+Done = the ability shown on cards, in intervals and used for certification is the Gaussian (Laplace) posterior given all attempts instead of the filter's own mean and diagonal variance, which overstated the uncertainty (sd 1.0–1.3 against 0.55–1.05 on the production data) and left every practised facet as "—"; predictions are byte-identical (same trace); on simulated learners drawn from the model's prior the nominal 80% interval covers 82–88% of the time and the estimate's error is about half the filter's; replay costs what it did and the first estimate stays under 0.2 s on a 3,000-attempt account; the v3 resume lists the resumed project's queue items first and tags every other project's.
+Tests: tests/unit/adaptive/posterior.test.ts, tests/unit/adaptive/atlas-uncertainty.test.ts (accuracy and coverage against known truth), the queue tests in tests/unit/adaptive/atlas-activation-safety.test.ts; existing suites unchanged.
+Scope: supabase/functions/_shared/adaptive/{posterior,measure}.ts (reported mean and variance only), supabase/functions/mcp/adaptive.ts (resume queue), the tests, docs/current/N186.md.
+Not: the filter's predictions, the research harness or its gates, thresholds, migrations, any production write.
+
 ## N172 Atlas v3 consolidated implementation (Owner task; N172–N179)
 
 Owner task: "Use this docs and start working. First just throw the code they we try to correct it in second pass."
