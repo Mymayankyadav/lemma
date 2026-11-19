@@ -45,3 +45,21 @@ describe('N83 v6 demo durable review-run lifecycle',()=>{
   expect(demoRead(run.id)).toEqual(run);
  });
 });
+
+describe('N189 exact-card durable review',()=>{
+ it('starts the requested card rather than an earlier card, survives reload and records one grade',()=>{
+  const target=cards[2].cardId,run=demoStart({...settings,selectedDeckIds:[],filters:{cardId:target},
+   cardBudget:1,minuteBudget:1},cards);
+  expect(demoRead(run.id)?.targetCardId).toBe(target);
+  expect(demoResume()?.items.map(item=>item.cardId)).toEqual([target]);
+  const item=run.items[0],graded=demoGrade(run.id,run.version,item.id,19);
+  expect(graded.progress).toMatchObject({done:true,total:1,graded:1});
+  expect(demoRead(run.id)?.items[0]).toMatchObject({cardId:target,reviewId:19});
+  expect(()=>demoGrade(run.id,run.version,item.id,20)).toThrow(/version conflict/);
+ });
+ it('does not persist an unrelated or empty run when the requested card is missing',()=>{
+  expect(()=>demoStart({...settings,selectedDeckIds:[],filters:{cardId:'missing'},cardBudget:1,minuteBudget:1},cards))
+   .toThrow('Requested review card is unavailable');
+  expect(demoResume()).toBeNull();
+ });
+});

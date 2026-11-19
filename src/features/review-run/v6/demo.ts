@@ -37,13 +37,18 @@ function update(id:string,expected:number,
 }
 export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const store=load(),now=new Date().toISOString();
- const items=selected.slice(0,Math.min(input.cardBudget,input.minuteBudget)).map((card,i)=>({
+ const target=input.filters.cardId;
+ const pool=target===undefined?selected:selected.filter(card=>card.cardId===target);
+ if(target!==undefined&&(pool.length!==1||input.selectedDeckIds.length||input.cardBudget!==1||input.minuteBudget!==1))
+  throw Error('Requested review card is unavailable');
+ const items=pool.slice(0,Math.min(input.cardBudget,input.minuteBudget)).map((card,i)=>({
   id:id(),cardId:card.cardId,expectedCardVersion:1,
   position:i,state:'pending' as const,reviewId:null,staleReason:null,
  }));
  const run:DurableRun={
   id:id(),status:items.length?'running':'exhausted',
   position:0,version:1,startedAt:now,endedAt:items.length?null:now,
+  ...(target===undefined?{}:{targetCardId:target}),
   items,progress:{position:0,total:items.length,graded:0,skipped:0,
    remaining:items.length,done:items.length===0},
  };

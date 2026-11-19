@@ -388,3 +388,16 @@ describe("demo adapter", () => {
   });
 
 });
+
+it('N189 admits the exact eligible demo card without substituting other due cards',async()=>{
+  const api=make(),project=(await api.listProjects()).find(row=>!row.system&&row.status!=='archived')!;
+  const created=await api.createNote({projectSlug:project.slug,front:'Exact target in a mixed queue',
+   back:'Expected answer',type:'basic',kind:'other'});
+  const detail=await api.getCard(created.noteNo),cardId=detail.cards[0].cardId!;
+  expect(cardId).toBeTruthy();
+  expect(await api.getExactReviewCard(cardId,true)).toMatchObject({cardId,noteNo:created.noteNo,front:'Exact target in a mixed queue'});
+  expect(await api.getExactReviewCard('missing',true)).toBeNull();
+  await api.setNoteStatus(created.noteNo,'suspended');
+  expect(await api.getExactReviewCard(cardId,true)).toBeNull();
+  expect(await api.getExactReviewCard(cardId)).toBeNull();
+});
