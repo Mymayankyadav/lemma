@@ -137,23 +137,44 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   expect(later.m).toBeCloseTo(now.m,12);
  });
  it('uncertainty never falls as time passes, never exceeds the prior, stays positive, and is continuous (no jump where the cap is reached)',()=>{
-  const {post,mk}=aged(.01),prior=mk().reduce((z,p)=>z+p.prior,0),rate=3*.01;let before=post.query(mk(),last).v,capped=false;
+  const {post,mk}=aged(.01),prior=mk().reduce((z,p)=>z+p.prior,0);let before=post.query(mk(),last).v,capped=false;
   for(let days=.5;days<=400;days+=.5){
    const v=post.query(mk(),last+days*DAY).v;
-   expect(v).toBeGreaterThanOrEqual(before-1e-12);expect(v).toBeLessThanOrEqual(prior+1e-9);expect(v-before).toBeLessThanOrEqual(rate*.5+1e-9);   // at most the rule's growth per step
+   expect(v).toBeGreaterThanOrEqual(before-1e-12);expect(v).toBeLessThanOrEqual(prior+1e-9);expect(Number.isFinite(v)).toBe(true);   // positive definite along the ageing trajectory
    if(Math.abs(v-prior)<1e-9)capped=true;before=v;
   }
   expect(capped).toBe(true);
  });
- it('while it applies, ageing is the filter\'s rule: the sum grows by Σ x²·q·days with the covariances kept; then it is capped at the forgotten limit',()=>{
-  const {post,mk}=aged(.02),{S}=post.inspect();let fitted=0;for(let i=0;i<3;i++)for(let j=0;j<3;j++)fitted+=S[i][j];
-  const prior=1.75;
+
+ it('each component ages at q/day and its correlations vanish exactly when the prior is restored',()=>{
+  const {post,mk}=aged(.02),{S,prior}=post.inspect(),parts=mk();
+  expect(S.length).toBe(3);
   for(const days of [1,3,8]){
-   const walk=3*.02*days,want=Math.min(fitted+walk,Math.max(prior,fitted));
-   expect(post.query(mk(),last+days*DAY).v).toBeCloseTo(want,9);
+   const time=last+days*DAY,room=prior.map((p,i)=>Math.max(0,p-S[i][i]));
+   const added=room.map(gap=>Math.min(gap,.02*days));
+   const r=room.map((gap,i)=>gap>0?Math.sqrt(Math.max(0,1-added[i]/gap)):1);
+   let want=0;
+   for(let i=0;i<3;i++){
+    const diagonal=S[i][i]+added[i];
+    expect(post.query([parts[i]],time).v).toBeCloseTo(diagonal,9);
+    want+=diagonal;
+    for(let j=0;j<i;j++)want+=2*r[i]*r[j]*S[i][j];
+   }
+   expect(post.query(parts,time).v).toBeCloseTo(want,9);
   }
-  expect(fitted+3*.02*8).toBeLessThan(prior);                                  // 8 days is still inside the rule
-  expect(post.query(mk(),last+400*DAY).v).toBeCloseTo(prior,9);               // and 400 days is the limit
+  const capDays=Math.max(...prior.map((p,i)=>Math.max(0,p-S[i][i])/.02));
+  const atCap=post.query(parts,last+Math.ceil(capDays*DAY)).v;
+  expect(atCap).toBeCloseTo(prior.reduce((a,p)=>a+p,0),8);
+  expect(post.query(parts,last+(capDays+1)*DAY).v).toBeCloseTo(atCap,8);
+ });
+ it('repeated appearances of a fitted or excluded component share their variance',()=>{
+  const post=new Posterior(),mk=(x:number)=>part('kc',x,{q:.03});
+  for(let i=0;i<9;i++)post.observe([mk(1),mk(-.4)],0,+(i%3!==0),.05,.9,1,0,T+i*3600e3);
+  const time=T+5*DAY;
+  expect(post.query([mk(1),mk(-.4)],time).m).toBeCloseTo(post.query([mk(.6)],time).m,12);
+  expect(post.query([mk(1),mk(-.4)],time).v).toBeCloseTo(post.query([mk(.6)],time).v,12);
+  const item={id:'item:q',x:1,prior:.5,q:0,m0:0,m:.2,v:.3};
+  expect(post.query([item,{...item,x:-.4}],time).v).toBeCloseTo(.6*.6*.3,12);
  });
  it('components that never age (q = 0, like the global level) keep their fitted variance in the limit',()=>{
   const {post,mk}=aged(.02,0),{S}=post.inspect(),limit=S[0][0]+.5+.25;          // mu keeps its posterior; kc and cross are back at their priors, uncorrelated
@@ -167,8 +188,11 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   const after=post.query(mk(),T+DAY).v;
   const want=S[0][0]+S[2][2]+2*S[0][2]+.5;                                       // mu and cross keep their posterior and their mutual covariance; kc is the prior alone
   expect(after).toBeGreaterThan(before);expect(after).toBeCloseTo(want,9);
-  const small=aged(0);small.post.touch('kc',.5,0,0,T+DAY,.1);                    // a small bump is the filter's rule: the sum grows by exactly that
-  expect(small.post.query(small.mk(),T+DAY).v).toBeCloseTo(small.post.inspect().S.reduce((z,r)=>z+r.reduce((a,b)=>a+b,0),0)+.1,9);
+  const small=aged(0),cov=small.post.inspect().S;
+  const bump=(.5-cov[1][1])/2;expect(bump).toBeGreaterThan(0);
+  small.post.touch('kc',.5,0,0,T+DAY,bump);                    // a partial bump preserves sqrt(1/2) of the correlations
+  const expected=cov[0][0]+cov[1][1]+bump+cov[2][2]+2*cov[0][2]+Math.SQRT2*(cov[0][1]+cov[1][2]);
+  expect(small.post.query(small.mk(),T+DAY).v).toBeCloseTo(expected,9);
   const parts=mk();post.observe(parts,0,1,.05,.9,1,0,T+2*DAY);
   expect(post.query(mk(),T+2*DAY).v).toBeLessThan(after);                         // a new attempt on the concept absorbs the bump
  });

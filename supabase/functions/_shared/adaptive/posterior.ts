@@ -15,7 +15,7 @@
 // It stores, per attempt, the components it touched and what the filter measured (amplitude, guess, outcome, weight); the fit runs once,
 // on the first query. Cost: replay is unchanged; the fit is a few Cholesky solves of an n×n precision matrix, about 0.1 s at the cap on
 // a large account and a few milliseconds on a normal one. Ageing (variance grows q per day up to its prior, and an instruction event
-// adds 0.5 to the concept) is applied at query time, only for what has happened since a component was last observed.
+// adds 0.5 to the concept) is applied at query time; cross-covariances decay as each marginal returns to its prior.
 //
 // It holds at most MAX components. Item difficulties (one per question, many) and any component beyond the cap are not fitted: they
 // keep the filter's own mean and variance, entering the likelihood as a fixed offset and an extra variance. That is the old behaviour
@@ -150,30 +150,45 @@ export class Posterior{
   if(!L){fisher=true;L=chol(system(c,Vs,false).P)!;}
   return this.fit={c,S:inverse(L),Vs,fisher};
  }
- /** Mean and variance of Σ x·component at time `t`.
-  *  Ageing follows the filter's rule while it applies: each component's variance grows by q per day since it was last observed, plus
-  *  any instruction bump, so the sum's variance grows by Σ x²·δ with the covariances kept. That cannot go on for ever: a component that
-  *  has aged back to its prior has also lost the correlations the evidence gave it, so the sum cannot be more certain than the case
-  *  where every aged component is at its prior and uncorrelated with the rest (the components that did not age keep their fitted
-  *  covariance). The variance is the smaller of the two, never below the unaged one, so it rises with time, is continuous, and a
-  *  long-unpractised sum is exactly as uncertain as that limit instead of keeping negative covariances nothing supports any more.
-  *  The mean is not moved (the filter ages variance only). */
+
+ /** Mean and variance of Σ x·component at time t.
+  * Each fitted marginal ages at the filter's q/day rate (plus instruction bumps), capped at its prior. Ageing also removes
+  * evidence-induced cross-covariances: at marginal variance Sii + δ, retain fraction r_i = sqrt(1 - δ/(prior_i-Sii))
+  * of component i's old signal. The resulting covariance is D S D + diag((1-r_i²)prior_i), with D=diag(r_i).
+  * It stays positive semidefinite and becomes the independent prior as soon as every marginal reaches its prior.
+  * The old cap on the summed variance did not do this: all marginals could be at their priors while their negative
+  * covariances still hid uncertainty. Means stay fixed, as in the filter.
+  */
  query(parts:Part[],t:number):{m:number;v:number}{
-  const {c,S}=this.solve();let m=0,extra=0;const used:{i:number;x:number;delta:number}[]=[];
-  for(const p of parts){
-   if(p.x===0)continue;
-   const i=this.idx.get(p.id);
-   if(i===undefined){m+=p.x*p.m;extra+=p.x*p.x*p.v;continue;}
-   m+=p.x*c[i];used.push({i,x:p.x,delta:this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i]});
+  const {c,S}=this.solve();let m=0,extra=0;
+  // Combine repeated occurrences of one latent component before ageing its covariance.
+  const xs=new Map<number,number>(),others=new Map<string,{x:number;m:number;v:number}>();
+  for(const part of parts){
+   if(part.x===0)continue;
+   const i=this.idx.get(part.id);
+   if(i===undefined){
+    const prior=others.get(part.id);
+    if(prior)prior.x+=part.x;else others.set(part.id,{x:part.x,m:part.m,v:part.v});
+    continue;
+   }
+   m+=part.x*c[i];xs.set(i,(xs.get(i)??0)+part.x);
   }
-  let fitted=0,walk=0,limit=0;
-  for(const a of used){
-   const row=S[a.i];walk+=a.x*a.x*a.delta;
-   if(a.delta>0)limit+=a.x*a.x*this.prior[a.i];
-   for(const b of used){const cov=a.x*b.x*row[b.i];fitted+=cov;if(a.delta<=0&&b.delta<=0)limit+=cov;}
+  // Non-fitted items and components beyond the cap remain independent, but repeated uses of the SAME one are not.
+  for(const o of others.values()){m+=o.x*o.m;extra+=o.x*o.x*o.v;}
+  let v=extra;
+  const used:{i:number;x:number;r:number}[]=[];
+  for(const [i,x] of xs){
+   const diagonal=S[i][i],room=Math.max(0,this.prior[i]-diagonal);
+   const drift=this.q[i]*Math.max(0,(t-this.at[i])/DAY)+this.bump[i];
+   const added=Math.min(room,Math.max(0,drift));
+   const r=room>0?Math.sqrt(Math.max(0,1-added/room)):1;
+   v+=x*x*(diagonal+added);
+   used.push({i,x,r});
   }
-  const v=Math.min(fitted+walk,Math.max(limit,fitted));
-  return {m,v:Math.max(v+extra,1e-12)};
+  for(let a=0;a<used.length;a++)for(let b=0;b<a;b++){
+   const u=used[a],w=used[b];v+=2*u.x*w.x*u.r*w.r*S[u.i][w.i];
+  }
+  return {m,v:Math.max(v,1e-12)};
  }
  /** For tests: the fitted mean and covariance, the per-attempt attenuation variances it used, the log posterior with them held fixed, and whether the Fisher fallback was taken. */
  inspect():{ids:string[];c:Float64Array;S:Float64Array[];Vs:number[];obs:Obs[];prior:number[];logPosterior:(cc:Float64Array)=>number;fisher:boolean}{
