@@ -1,13 +1,14 @@
 // Atlas v3: prequential KC FSRS × hierarchical execution ADF, hypothesis and PFA mixtures.
 import FSRS from '../fsrs.js';
 import {DAY,clamp,sigmoid,probit,logit} from './math.ts';
+import {Posterior,type Part} from './posterior.ts';
 import {ancestors,countsUncued,type Concept,type Facet,type Stage} from './kc.ts';
 export type Component={m:number;v:number;prior:number;q:number;at:number};
 export type Memory={s:number;d:number;last:number};
 export type AttemptTag={id?:string|number;attempt_id?:string|number;concept_id:string;facet:Facet;role:'target'|'required'|'incidental';stage?:Stage|null;result?:'ok'|'fail'|'not_reached'|null;hint_level?:number;demand?:number;error_tag?:string|null;confidence?:number};
 export type Attempt={id:string|number;occurred_at:string;session_id?:string|null;project_id?:string|null;checkpoint_id?:string|null;item_id?:string|null;item_kind?:string;cued?:string[];confidence_before?:number|null;minutes?:number|null;plan_score?:number|null;furthest_stage?:Stage|'done'|null;legacy_outcome?:'pass'|'partial'|'fail'|null;weight?:number;novelty?:string;context?:Record<string,unknown>;voided_at?:string|null;superseded_by?:string|number|null;tags?:AttemptTag[]};
 export type Instruction={id:string|number;occurred_at:string;concept_id:string;voided_at?:string|null};
-export type CardFact={id:string;concept_id:string;system_id?:string;stability?:number;difficulty?:number;last_review?:string|null;facet?:Facet};
+export type CardFact={id:string;concept_id:string;project_id?:string;system_id?:string;stability?:number;difficulty?:number;last_review?:string|null;facet?:Facet};
 export type ReviewFact={id:string|number;occurred_at:string;card_id:string;rating:number;hours?:number;voided_at?:string|null};
 export type ModelLink={id:string;from_id:string;to_id:string;kind:string;status?:string};
 export type AtlasFacts={concepts:Concept[];attempts:Attempt[];tags?:AttemptTag[];instructions?:Instruction[];cards?:CardFact[];reviews?:ReviewFact[];links?:ModelLink[];assumptions?:{concept_id:string;level:string;revoked_at?:string|null}[];sessions?:{id:string;started_at:string}[];items?:{id:string;b:number;b_sd?:number}[]};
@@ -16,7 +17,7 @@ export type Fit={pfa?:PfaFit;card_w?:number[];version?:number};
 export type Hypothesis={components:Record<string,Component>;memory:Record<string,Memory>;cards:Record<string,Memory>;counts:Record<string,number>;successes:Record<string,number>};
 export type Prediction={id:string;at:number;stream:'attempt'|'card';p:number;kf:number;pfa:number;base:number;y:number;concept_id?:string;facet?:Facet;confidence?:number|null;hours:number;hint:number;kind:string;features:Record<string,number>;hypotheses:number[]};
 export type DirectEvidence={at:number;session:string;clean:boolean;novel:boolean;uncued:boolean};
-export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;research:boolean;running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
+export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;research:boolean;/** N186: joint Gaussian report per hypothesis (predictions never read it). */post?:Posterior[];running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
 /** One-pass lookup tables for replay: every per-event find/filter over the facts was linear, so a replay was quadratic in the number of attempts. */
 export type Lookup={tags:Map<string,AttemptTag[]>;sessions:Map<unknown,{id:string;started_at:string}>;items:Map<unknown,NonNullable<AtlasFacts['items']>[number]>;cardsByConcept:Map<string,CardFact[]>;cards:Map<string,CardFact>;concepts:Map<string,Concept>;kc:Map<string,string>;anc:Map<string,string[]>;cross:Map<string,Map<string,string>>;pfaKc:Map<string,string>;pfaSys:Map<string,string>};
 /** Interned component ids: building 'kc:'+id on every observation made each lookup in `components` hash a fresh string. */
@@ -42,9 +43,14 @@ export function memoryStep(m:Memory|undefined,t:number,grade:number,weight=1,res
  return {s:clamp(m.s+z*(full.s-m.s),.001,36500),d:clamp(m.d+z*(full.d-m.d),1,10),last:reset?t:m.last};
 }
 export function age(c:Component,t:number):void{c.v=Math.min(c.prior,c.v+c.q*Math.max(0,(t-c.at)/DAY));c.at=Math.max(c.at,t);}
+/** Component → id, so the joint report can name what a feature refers to without changing Feature. */
+const IDS=new WeakMap<Component,string>(),INIT=new WeakMap<Component,number>();
 function component(h:Hypothesis,id:string,t:number,sd:number,q=0,m=0,write=true):Component{
- const found=h.components[id];const c=found?(write?found:{...found}):{m,v:sd*sd,prior:sd*sd,q,at:t};if(write&&!found)h.components[id]=c;age(c,t);return c;
+ const found=h.components[id];const c=found?(write?found:{...found}):{m,v:sd*sd,prior:sd*sd,q,at:t};if(write&&!found)h.components[id]=c;
+ if(!found||!write){IDS.set(c,id);INIT.set(c,found?INIT.get(found)??0:m);}
+ age(c,t);return c;
 }
+const partsOf=(fs:Feature[]):Part[]=>fs.map(f=>({id:IDS.get(f.c)??'?',x:f.x,prior:f.c.prior,q:f.c.q,m0:INIT.get(f.c)??0,m:f.c.m,v:f.c.v}));
 export type Feature={c:Component;x:number};
 /** Research-compatible component set (`replay(..., {research:true})`): exactly the harness KF of research/sim/models.py: global, system, KC (with the KC's own ageing), learning slope, fatigue; no facet, cross, link or theme terms. */
 export const RESEARCH_KC_SD=Math.SQRT1_2;
@@ -108,7 +114,7 @@ function updateTrial(s:MeasurementState,tags:AttemptTag[],a:Attempt,t:number,hou
  const prior=s.running.attempt,base=(1+prior.y)/(2+prior.n),weight=clamp(a.weight??1)*clamp(observations[0].target.confidence??1);
  s.trace.push({id:String(a.id)+':'+s.trace.length,at:t,stream:'attempt',p:s.mix[0]*kf+s.mix[1]*pf,kf,pfa:pf,base,y,concept_id:tags[0].concept_id,facet:tags[0].facet,confidence:a.confidence_before,hours,hint,kind:a.item_kind??'legacy',features:x,hypotheses:ps});
  for(let i=0;i<s.hypotheses.length;i++){
-  const h=s.hypotheses[i],o=observations[i];adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);
+  const h=s.hypotheses[i],o=observations[i];s.post?.[i].observe(partsOf(o.fs),o.m+hint,y,options?1/options:.05,o.amplitude,weight,a.item_id?0:bSd*bSd,t);adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);
   const k=o.target.concept_id;
   if(y){h.memory[k]=memoryStep(h.memory[k],t,3,weight,true,undefined,s.research);for(const q of tags)if(q!==o.target)h.memory[q.concept_id]=memoryStep(h.memory[q.concept_id],t,3,.4*weight,false,undefined,s.research);}
   else{const r=clamp((1-o.R)*(1-(options?1/options:.05))/(1-o.p));h.memory[k]=memoryStep(h.memory[k],t,1,r*weight,false,undefined,s.research);h.memory[k]=memoryStep(h.memory[k],t,3,(1-r)*weight,true,undefined,s.research);}
@@ -157,19 +163,20 @@ function consumeReview(s:MeasurementState,r:ReviewFact):void{
 }
 export function replay(facts:AtlasFacts,fit:Fit={},now?:number,options:{research?:boolean}={}):MeasurementState{
  const fresh=():Hypothesis=>({components:{},memory:{},cards:{},counts:{},successes:{}});
- const research=!!options.research,s:MeasurementState={hypotheses:research?[fresh()]:[fresh(),fresh()],pi:research?[1]:[.5,.5],mix:research?[1,0]:[.8,.2],research,gaps:{},tracked:[],direct:{},lastInstruction:{},trace:[],fit,facts,now:now??0,index:Object.fromEntries(facts.concepts.map(c=>[c.id,c])),ix:lookup(facts),running:{attempt:{n:0,y:0},card:{n:0,y:0}}};
+ const research=!!options.research,s:MeasurementState={hypotheses:research?[fresh()]:[fresh(),fresh()],pi:research?[1]:[.5,.5],mix:research?[1,0]:[.8,.2],research,gaps:{},tracked:[],direct:{},lastInstruction:{},trace:[],fit,facts,now:now??0,index:Object.fromEntries(facts.concepts.map(c=>[c.id,c])),ix:lookup(facts),post:research?undefined:[new Posterior(),new Posterior()],running:{attempt:{n:0,y:0},card:{n:0,y:0}}};
  for(const a of facts.assumptions??[])if(!a.revoked_at)s.gaps[key(a.concept_id,a.level as Facet)]=.05;
  const events=[...facts.attempts.filter(a=>!a.voided_at&&!a.superseded_by).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:1 as const,value:a})),...(facts.instructions??[]).filter(a=>!a.voided_at).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:0 as const,value:a})),...(facts.reviews??[]).filter(a=>!a.voided_at).map(a=>({t:at(a.occurred_at),id:String(a.id),kind:2 as const,value:a}))].sort((a,b)=>a.t-b.t||a.kind-b.kind||(a.id.length-b.id.length)||a.id.localeCompare(b.id));
  const duplicates=new Set<string>();
  for(const e of events){s.now=Math.max(s.now,e.t);
-  if(e.kind===0){const ins=e.value as Instruction;s.lastInstruction[ins.concept_id]=e.t;for(const h of s.hypotheses){h.memory[ins.concept_id]=memoryStep(h.memory[ins.concept_id],e.t,3,1,true,undefined,s.research);const c=component(h,'kc:'+ins.concept_id,e.t,s.research?RESEARCH_KC_SD:.71,.01);if(!s.research)c.v=Math.min(c.prior,c.v+.5);for(const card of s.facts.cards??[])if(card.concept_id===ins.concept_id&&!h.cards[card.id])h.cards[card.id]=memoryStep(undefined,e.t,3);}}
+  if(e.kind===0){const ins=e.value as Instruction;s.lastInstruction[ins.concept_id]=e.t;for(const [hi,h] of s.hypotheses.entries()){h.memory[ins.concept_id]=memoryStep(h.memory[ins.concept_id],e.t,3,1,true,undefined,s.research);const c=component(h,'kc:'+ins.concept_id,e.t,s.research?RESEARCH_KC_SD:.71,.01);if(!s.research){c.v=Math.min(c.prior,c.v+.5);s.post?.[hi].touch('kc:'+ins.concept_id,c.prior,c.q,INIT.get(c)??0,e.t,.5);}for(const card of s.facts.cards??[])if(card.concept_id===ins.concept_id&&!h.cards[card.id])h.cards[card.id]=memoryStep(undefined,e.t,3);}}
   else if(e.kind===1){const a=e.value as Attempt,ts=a.tags??s.ix.tags.get(String(a.id))??[],dedup=JSON.stringify([Math.floor(e.t/1000),a.session_id,ts.map(t=>[t.concept_id,t.facet,t.role,t.stage,t.result,t.hint_level]).sort(),a.legacy_outcome]);if(!duplicates.has(dedup)){duplicates.add(dedup);consumeAttempt(s,a);}}
   else consumeReview(s,e.value as ReviewFact);
  }
+ if(s.post)s.post[1].link(s.post[0]);
  return s;
 }
 export function estimate(s:MeasurementState,k:string,f:Facet,t=s.now):Estimate{
- const copy=s,tag:AttemptTag={concept_id:k,facet:f,role:'target'},obs=copy.hypotheses.map(h=>observation(copy,h,[tag],t,0,0,0,0,undefined,0,undefined,true)),m=obs.reduce((a,o,i)=>a+copy.pi[i]*o.m,0),variance=obs.reduce((a,o,i)=>a+copy.pi[i]*(o.V+(o.m-m)**2),0),sd=Math.sqrt(variance),direct=s.direct[key(k,f)]??[],sessions=new Set(direct.map(x=>x.session)).size;
+ const copy=s,tag:AttemptTag={concept_id:k,facet:f,role:'target'},obs=copy.hypotheses.map(h=>observation(copy,h,[tag],t,0,0,0,0,undefined,0,undefined,true)),fits=obs.map((o,i)=>copy.post?copy.post[i].query(partsOf(o.fs),t):{m:o.m,v:o.V}),m=fits.reduce((a,f,i)=>a+copy.pi[i]*f.m,0),variance=fits.reduce((a,f,i)=>a+copy.pi[i]*(f.v+(f.m-m)**2),0),sd=Math.sqrt(variance),direct=s.direct[key(k,f)]??[],sessions=new Set(direct.map(x=>x.session)).size;
  const retention=copy.hypotheses.reduce((a,h,i)=>a+copy.pi[i]*memoryAt(h.memory[k],t),0),p=predict(copy,k,f,t),z=1.2815515655*sd;
  return {facet:f,p,lo:Math.min(p,.05+.92*retention*sigmoid(m-z)),hi:Math.max(p,.05+.92*retention*sigmoid(m+z)),m,variance,sd,sessions,state:!s.trace.length||sd>.8?'none':sessions>=2&&sd<=.6?'shown':'inferred',retention,gap:s.gaps[key(k,f)]??.05,inferredFrom:(()=>{const parent=s.index[k]?.parent_id;return parent?s.index[parent]?.name:undefined;})()};   // indexed: a nested scan here was quadratic in concepts (80 s on a 2,500-concept account)
 }

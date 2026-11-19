@@ -18,7 +18,7 @@ export type AtlasReadModel={settings:typeof ATLAS_DEFAULTS;checkpoints:any[];che
 export function factsForAtlas(rows:AtlasRows):AtlasFacts{
  const notes=new Map((rows.notes??[]).map(n=>[n.id,n]));
  return {concepts:rows.concepts,attempts:(rows.attempts??[]).map(a=>({...a,novelty:a.context?.novelty??a.novelty})),tags:[...(rows.attemptTags??[]),...(rows.attempts??[]).flatMap(a=>(a.tags??[]).map((t:any)=>({...t,attempt_id:a.id})))],instructions:rows.instructionEvents??[],links:rows.atlasLinks??[],items:rows.items??[],sessions:rows.sessions,assumptions:rows.assumptions??[],
-  cards:(rows.cards??[]).map(c=>({...c,concept_id:c.concept_id??notes.get(c.note_id)?.concept_id})).filter(c=>c.concept_id),reviews:(rows.reviews??[]).map(r=>({...r,occurred_at:r.reviewed_at??r.occurred_at})),};
+  cards:(rows.cards??[]).map(c=>({...c,concept_id:c.concept_id??notes.get(c.note_id)?.concept_id,project_id:c.project_id??notes.get(c.note_id)?.project_id})).filter(c=>c.concept_id),reviews:(rows.reviews??[]).map(r=>({...r,occurred_at:r.reviewed_at??r.occurred_at})),};
 }
 /** One block per remaining study day from the declared weekday capacity, split evenly among the projects still running that day. */
 export function declaredBlocks(wd:number|number[],now:Date,last:string|null|undefined,projects:{last_study_on?:string|null}[]):Block[]{
@@ -68,7 +68,7 @@ export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
    for(const r of finalReviews(model,targets,studyDays,p.last_study_on)){finalReviewList.push(r);if(r.day===today&&!actions.some(a=>a.id==='final:'+r.concept_id))actions.push({project_id:p.id,id:'final:'+r.concept_id,kind:'check',concept_id:r.concept_id,minutes:5,p:predict(model,r.concept_id,'use',time),forced:true,needAt,weight});}
   }
  }
- for(const c of facts.cards??[]){const R=model.hypotheses.reduce((a,h,i)=>a+model.pi[i]*memoryAt(h.cards[c.id],time),0);if(R<.98)actions.push({id:'review:'+c.id,kind:'review',concept_id:c.concept_id,card_id:c.id,minutes:.5,p:R});}
+ for(const c of facts.cards??[]){const R=model.hypotheses.reduce((a,h,i)=>a+model.pi[i]*memoryAt(h.cards[c.id],time),0);if(R<.98)actions.push({id:'review:'+c.id,kind:'review',concept_id:c.concept_id,card_id:c.id,home:c.project_id,minutes:.5,p:R});}
  const allocation=allocateProjects(rows.projects.map(pr=>({id:pr.id,pCore:fits[pr.id]?.pCore??1,deadline:pr.last_study_on??null,weight:1,share_weight:pr.share_weight??null,needMinutes:needs[pr.id]??0})),capacity??0);
  const queue=sessionQueue(model,actions,capacity??0,settings.card_cap,rows.projects.length>1?Object.fromEntries(allocation.map(o=>[o.id,o.minutes])):undefined),links=(rows.atlasLinks??[]) as AtlasLink[],themes=rows.concepts.filter(c=>c.kind==='theme').map(c=>({id:c.id,name:c.name,instances:links.filter(l=>l.kind==='instance_of'&&l.to_id===c.id&&l.status==='approved').map(l=>l.from_id)}));
  const bridges=links.filter(l=>l.kind==='instance_of'||l.kind==='analogous').map(l=>({from:l.from_id,to:l.to_id,strength:(c=>bridgeStrength(c.o,c.u))(bridgeCounts(facts,rows.concepts,l.from_id))}));

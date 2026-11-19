@@ -118,13 +118,26 @@ export function renderForecast(s:State,rows:Rows,slug?:string):string{
   }
   return lines.join('\n');
 }
+/**
+ * The QUEUE block of the v3 resume. One utility spans every project (10 §8), so with several projects the queue does too: the resumed
+ * project's own items come first and every other project's are tagged `[slug]` (the legacy queue named the project in each ref); with no
+ * project every item is tagged; with one project nothing is. `home` is the project of a card review (a review has no minute cap of its
+ * own, so it has no `project_id`); an item with neither belongs to no project and is tagged `[no project]`.
+ */
+export function renderAtlasQueue(items:any[],rows:Rows,projectId?:string,limit=8):string{
+ const slugOf=new Map<string,string>(rows.projects.map((x:any)=>[x.id,x.slug])),multi=rows.projects.length>1,pidOf=(a:any)=>a.project_id??a.home,mine=(a:any)=>!projectId||pidOf(a)===projectId;
+ const ordered=[...items.filter(mine),...items.filter(a=>!mine(a))],tag=(a:any)=>multi&&(!projectId||pidOf(a)!==projectId)?'['+(slugOf.get(pidOf(a))??'no project')+'] ':'';
+ return 'QUEUE\n'+ordered.slice(0,limit).map((a,i)=>(i+1)+'. '+a.kind+' '+tag(a)+rows.concepts.find((c:any)=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
+}
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
 export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[];nodes?:string[]}):string{
   const p=slug?Object.values(s.projects).find(x=>x.slug===slug):undefined;
   if(rows.settings?.atlas_migrated_at){
     const v=assembleAtlas(rows,new Date()),fit=p?v.fits[p.id]:undefined;
     const time='TIME today='+s.today+' tz='+s.zone+(fit?' fit='+fit.pAll.toFixed(2)+' core='+fit.pCore.toFixed(2):'')+' checks_due='+v.queue.items.filter(x=>x.kind==='check').length+' new_cards_quota='+v.budget.available.toFixed(1)+' card_min='+v.queue.cardMinutes.toFixed(1)+'/'+v.queue.cardCapMinutes.toFixed(1);
-    const queue='QUEUE\n'+v.queue.items.slice(0,8).map((a,i)=>(i+1)+'. '+a.kind+' '+rows.concepts.find(c=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
+    // One utility over every project (10 §8), so the queue spans them. A project's own items come first and every other project's are
+    // tagged, as the legacy queue named the project in each ref; with a single project nothing is tagged.
+    const queue=renderAtlasQueue(v.queue.items,rows,p?.id);
     // BRIEF keeps the resume's context (NOW, LAST, FIX, ADAPT, CARDS, SRC) and swaps the node cards for Atlas cards; RULES keep the
     // tutor's rules and add the Atlas lines (04 §resume: "BRIEF uses card v2", rules "add"). Budgets are unchanged (packet caps the body).
     const cards=brief.nodes?.length?brief.nodes:[...new Set(p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[])].slice(0,3).map(id=>atlasCard(v,id));
