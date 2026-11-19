@@ -55,12 +55,33 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  const idle=!query.trim(),list:SearchItem[]=idle?[...recent,...items.filter(item=>item.group==='Actions')]:results.flat;
  // Use the result identity, not its index: asynchronous results can arrive before it after Back.
  const active=Math.max(0,list.findIndex(item=>item.id===activeId));
- const activeItem=list[active],scrolledToRestore=useRef(false);
+ const activeItem=list[active];
+ const [keepActiveVisible,setKeepActiveVisible]=useState(Boolean(initial?.activeId));
+ const fieldRef=useRef<HTMLInputElement>(null),resultsRef=useRef<HTMLDivElement>(null);
+ // Checkpoint and card results can arrive above a restored selection, moving it after the modal opens.
+ // Scroll the sheet body, not the page, and leave space for the sticky search field.
  useEffect(()=>{
-  if(scrolledToRestore.current||!initial?.activeId||activeItem?.id!==initial.activeId)return;
-  scrolledToRestore.current=true;
-  document.getElementById('v7-search-'+active)?.scrollIntoView?.({block:'nearest'});
- },[active,activeItem?.id,initial?.activeId]);
+  const field=fieldRef.current,results=resultsRef.current,body=results?.parentElement;
+  if(!open||!keepActiveVisible||!activeItem||!field||!results||!body)return;
+  let frame=0;
+  const reveal=()=>{
+   cancelAnimationFrame(frame);
+   frame=requestAnimationFrame(()=>{
+    if(document.activeElement!==field||!body.closest('dialog')?.open)return;
+    const option=results.querySelector<HTMLElement>('#v7-search-'+active),bounds=option?.getBoundingClientRect();
+    if(!bounds)return;
+    const viewport=body.getBoundingClientRect();
+    const top=getComputedStyle(field).position==='sticky'?Math.max(viewport.top,field.getBoundingClientRect().bottom):viewport.top;
+    if(bounds.top<top)body.scrollTop+=bounds.top-top;
+    else if(bounds.bottom>viewport.bottom)body.scrollTop+=bounds.bottom-viewport.bottom;
+   });
+  };
+  reveal();
+  const observer=typeof ResizeObserver==='function'?new ResizeObserver(reveal):null;
+  observer?.observe(results);
+  observer?.observe(body);
+  return()=>{observer?.disconnect();cancelAnimationFrame(frame);};
+ },[open,keepActiveVisible,active,activeItem,results.flat]);
  function openItem(raw:SearchItem){
   const item=canonicalSearchItem(raw);
   if(room)rememberRoomItem(item);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});
@@ -68,25 +89,25 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  }
  const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=(item.group==='Actions'?searchActionIcon[item.id]:undefined)??searchGroupIcon[item.group];
   return <li key={item.id+index} role="presentation"><button type="button" role="option" tabIndex={-1} aria-label={item.group==='Settings'?item.title:undefined} id={'v7-search-'+index} aria-selected={index===active} data-active={index===active?'true':'false'} className="v7-search-row"
-   onClick={()=>openItem(item)} onMouseEnter={()=>setActiveId(item.id)}>
+   onClick={()=>openItem(item)} onPointerMove={()=>{setKeepActiveVisible(false);setActiveId(item.id);}}>
    <Icon aria-hidden="true"/>
    <span>{hit?.match?<>{hit.before}<mark>{hit.match}</mark><span data-rest="">{hit.after}</span></>:item.group==='Cards'?<FastTex source={item.title}/>:item.title}</span>
    {item.parent&&<small>{item.parent}</small>}
   </button></li>;};
  let cursor=0;
  return <Sheet open={open} onClose={onClose} title="Search" full hideTitle>
-  <input data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
-   aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>{setQuery(event.target.value);setActiveId(null);}}
+  <input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
+   aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>{setQuery(event.target.value);setActiveId(null);setKeepActiveVisible(false);const body=resultsRef.current?.parentElement;if(body)body.scrollTop=0;}}
    onKeyDown={event=>{
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){
      event.preventDefault();
      const next=Math.max(0,Math.min(list.length-1,active+(event.key==='ArrowDown'?1:-1)));
      setActiveId(list[next]?.id??null);
-     document.getElementById('v7-search-'+next)?.scrollIntoView?.({block:'nearest'});
+     setKeepActiveVisible(true);
     }
     else if(event.key==='Enter'&&activeItem){event.preventDefault();openItem(activeItem);}
    }}/>
-  <div id="v7-search-results" role="listbox" aria-label="Results" className="v7-search-groups">
+  <div ref={resultsRef} id="v7-search-results" role="listbox" aria-label="Results" className="v7-search-groups">
    {idle?<>
     {recent.length>0&&<section className="v7-search-group" aria-label={room?'Jump back in':'Recent'}><h2 className="v7-eyebrow">{room?'Jump back in':'Recent'}</h2><ul>{recent.map(item=>row(item,cursor++))}</ul></section>}
     <section className="v7-search-group" aria-label="Actions"><h2 className="v7-eyebrow">Actions</h2><ul className={room?'v7-search-actions':undefined}>{items.filter(item=>item.group==='Actions').map(item=>row(item,cursor++))}</ul></section>

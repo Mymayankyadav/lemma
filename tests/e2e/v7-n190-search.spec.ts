@@ -53,9 +53,10 @@ test('Search opens precise Settings destinations and restores the query, active 
  await expect(input).toHaveValue('a');
  const selected=dialog.getByRole('option',{name:'Appearance',selected:true});
  await expect(selected).toBeInViewport();
- const selectedId=await selected.getAttribute('id');
- expect(selectedId).toBeTruthy();
- await expect(input).toHaveAttribute('aria-activedescendant',selectedId!);
+ await expect.poll(async()=>{
+  const id=await selected.getAttribute('id');
+  return Boolean(id)&&await input.getAttribute('aria-activedescendant')===id;
+ }).toBe(true);
  await expect.poll(()=>dialog.locator('.v7-sheet-body').evaluate(node=>node.scrollWidth-node.clientWidth)).toBeLessThanOrEqual(1);
  await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1);
 
@@ -87,13 +88,15 @@ test('legacy Notifications recents and alias open the same split Settings pane o
  await page.goto(at('/').replace('v7Shell,v6Shell','v7Shell,v6Shell,-v7Room'));
  await expect(page.locator('html')).toHaveAttribute('data-theme','graph-night');
  const opener=page.getByRole('navigation',{name:'Page actions'}).getByRole('button',{name:'Search'});
+ const paneHeading=page.locator('.v7-settings-pane > #v7-settings-pane-title');
  await opener.click();
  const dialog=page.getByRole('dialog',{name:'Search'}),input=dialog.getByRole('combobox',{name:'Search'});
  await expectVisibleFocus(input);
  await expect(dialog.getByRole('region',{name:'Recent'}).getByRole('option',{name:'Reminders',exact:true})).toHaveCount(1);
  await dialog.getByRole('option',{name:'Reminders',exact:true}).click();
  await expect(page).toHaveURL(/#\/settings\?section=reminders$/);
- await expect(page.getByRole('heading',{name:'Reminders',exact:true,level:2})).toBeFocused();
+ await expect(paneHeading).toHaveText('Reminders');
+ await expect(paneHeading).toBeFocused();
 
  await page.goBack();
  await expect(input).toBeFocused();
@@ -103,5 +106,5 @@ test('legacy Notifications recents and alias open the same split Settings pane o
  await expect(dialog.getByRole('option',{name:'Reminders',exact:true,selected:true})).toBeVisible();
  await input.press('Enter');
  await expect(page).toHaveURL(/#\/settings\?section=reminders$/);
- await expect(page.getByRole('heading',{name:'Reminders',exact:true,level:2})).toBeFocused();
+ await expect(paneHeading).toBeFocused();
 });
