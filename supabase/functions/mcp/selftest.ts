@@ -37,7 +37,7 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     }
   }
   let p:any,sessionCode='S1',planId:string|undefined;
-  const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,a,text),text};};
+  const run=async(n:string,fn:any,a:any)=>{const tx={...c,batch:[] as any[]};const text=await fn(tx,a);return {...await commitBatch(tx,n,{client:a.client||'other'},text),text};};
   // A run stopped by the platform's wall-clock limit never reaches its
   // finally block. Before starting, remove fixtures such runs left behind:
   // owner-scoped, hidden system projects whose slug and subject name match the
@@ -77,8 +77,11 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       projectId=p.id;
       c.selftestProjectIds.add(projectId!);
       const src=await insert(c,'sources',{project_id:p.id,title:'Selftest PDF',short:'selftest',filename:'selftest.pdf',page_count:2,status:'ready',has_text:true});
-      await insert(c,'source_pages',{source_id:src.id,page:1,label:'1',body:'A finite subcover is a finite collection of open sets selected from the cover.'});
-      await insert(c,'source_pages',{source_id:src.id,page:2,label:'2',body:'Every open cover of a compact space has a finite subcover.'});
+      const {error}=await c.db.from('source_pages').insert([
+        {user_id:c.userId,source_id:src.id,page:1,label:'1',body:'A finite subcover is a finite collection of open sets selected from the cover.'},
+        {user_id:c.userId,source_id:src.id,page:2,label:'2',body:'Every open cover of a compact space has a finite subcover.'}
+      ]);
+      if(error)throw Error(error.message);
     });
     if(only(1))await check('planning resume',async()=>{if(!(await packet(c,{project:p.slug})).includes('PLANNING'))throw Error('No planning packet')});
     await check('plan proposal and approval',async()=>{
@@ -94,27 +97,35 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
       const planArgs=(checkpoints:any[],concepts?:any[])=>({
         project:p.slug,checkpoints,...(concepts?{concepts}:{}),...(template?{template}:{})
       });
-      // MCP-5: reject malformed scale proposals before creating any proposal.
-      const noStages=Array.from({length:9},(_,i)=>({
-        title:'Large CP '+(i+1),objective:'Understand',criterion:'Demonstrates understanding',steps:['Prove']
-      }));
-      let rejected='';
-      try{await proposePlan(c,planArgs(noStages));}
-      catch(e){rejected=(e as Error).message;}
-      if(!/3–7 named stages/.test(rejected))throw Error('Stage-free large plan was not rejected');
-      const flatIdeas=Array.from({length:21},(_,i)=>({name:'Flat idea '+i}));
-      rejected='';
-      try{await proposePlan(c,planArgs(noStages.slice(0,3),flatIdeas));}
-      catch(e){rejected=(e as Error).message;}
-      if(!/levels and parent links/.test(rejected))throw Error('Flat large idea proposal was not rejected');
-      rejected='';
-      try{await createProject(c,{title:'Goal-free selftest',subject:'Topology'});}
-      catch(e){rejected=(e as Error).message;}
-      if(!/specific learning goal/.test(rejected))throw Error('Goal-free project was not rejected');
+      // The four-part smoke covers these negative cases once, not once per fixture.
+      if(only(1)){
+        // MCP-5: reject malformed scale proposals before creating any proposal.
+        const noStages=Array.from({length:9},(_,i)=>({
+          title:'Large CP '+(i+1),objective:'Understand',criterion:'Demonstrates understanding',steps:['Prove']
+        }));
+        let rejected='';
+        try{await proposePlan(c,planArgs(noStages));}
+        catch(e){rejected=(e as Error).message;}
+        if(!/3–7 named stages/.test(rejected))throw Error('Stage-free large plan was not rejected');
+        const flatIdeas=Array.from({length:21},(_,i)=>({name:'Flat idea '+i}));
+        rejected='';
+        try{await proposePlan(c,planArgs(noStages.slice(0,3),flatIdeas));}
+        catch(e){rejected=(e as Error).message;}
+        if(!/levels and parent links/.test(rejected))throw Error('Flat large idea proposal was not rejected');
+        rejected='';
+        try{await createProject(c,{title:'Goal-free selftest',subject:'Topology'});}
+        catch(e){rejected=(e as Error).message;}
+        if(!/specific learning goal/.test(rejected))throw Error('Goal-free project was not rejected');
+      }
       await proposePlan(c,planArgs(acceptedPlan,[{name:'Selftest cover '+p.slug,topic:'Topology'}]));
-      const {data}=await scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle();
-      if(!data)throw Error('No plan proposal');
-      if((await scoped(c,'checkpoints').eq('project_id',p.id)).data?.length)throw Error('Plan applied before approval');
+      const [proposal,beforeApproval]=await Promise.all([
+        scoped(c,'proposals').eq('project_id',p.id).eq('kind','plan').eq('status','pending').maybeSingle(),
+        scoped(c,'checkpoints').eq('project_id',p.id)
+      ]);
+      const {data}=proposal;
+      if(proposal.error||!data)throw Error('No plan proposal');
+      if(beforeApproval.error)throw Error('Cannot verify checkpoints before approval');
+      if(beforeApproval.data?.length)throw Error('Plan applied before approval');
       if(data.payload?.concepts?.length!==1)throw Error('Plan proposal lost its single concept');
       planId=data.id;
       const applied=await rpc(c,'approve_proposal',{p_id:planId});
@@ -312,8 +323,12 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
         const action=await run(tool,tool==='add'?add:edit,args);
         const rows=await links();if(rows.length!==1||rows[0].kind!==(field==='prereqs'?'prereq':'related'))throw Error('Expected one canonical relationship');
         await run('undo',undo,{action:action.action});
-        if((await links()).length)throw Error('Undo left relationships');
-        if((await scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)).data?.length)throw Error('Undo left new concept');
+        const [remaining,concepts]=await Promise.all([
+          links(),scoped(c,'concepts').eq('subject_id',p.subject_id).ilike('name',name)
+        ]);
+        if(remaining.length)throw Error('Undo left relationships');
+        if(concepts.error)throw Error(concepts.error.message);
+        if(concepts.data?.length)throw Error('Undo left new concept');
       }
       for(const tool of ['add','edit']){
         const name='Selftest conflicting '+tool;
@@ -373,14 +388,16 @@ export async function selftest(c:Context,part:SelftestPart='all'):Promise<any>{
     for(const id of [extraSubjectId,subjectId])await purge('concepts','subject_id',id);
     for(const id of [extraSubjectId,subjectId])await purge('subjects','id',id);
     // A successful DELETE request alone is insufficient: verify the IDs are gone.
-    for(const [table,ids] of [['projects',[extraId,projectId]],['subjects',[extraSubjectId,subjectId]]] as const){
-      for(const id of ids)if(id){
-        try{
-          const {data,error}=await c.db.from(table).select('id').eq('user_id',c.userId).eq('id',id).maybeSingle();
-          if(error||data)cleanupFailures.push(table+' cleanup verification failed');
-        }catch{cleanupFailures.push(table+' cleanup verification unavailable')}
-      }
-    }
+    const verification=await Promise.all(([
+      ['projects',extraId],['projects',projectId],['subjects',extraSubjectId],['subjects',subjectId]
+    ] as const).map(async ([table,id])=>{
+      if(!id)return;
+      try{
+        const {data,error}=await c.db.from(table).select('id').eq('user_id',c.userId).eq('id',id).maybeSingle();
+        if(error||data)return table+' cleanup verification failed';
+      }catch{return table+' cleanup verification unavailable'}
+    }));
+    for(const failure of verification)if(failure)cleanupFailures.push(failure);
     const cleanupMs=Date.now()-cleanupStarted;
     if(cleanupFailures.length)steps.push({name:'cleanup',ok:false,ms:cleanupMs,detail:cleanupFailures.join('; ')});
     console.info('[lemma selftest] '+(cleanupFailures.length?'FAIL':'PASS')+' cleanup ('+cleanupMs+'ms)');
