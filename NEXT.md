@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N192 Build the offline Local Pad (Owner task)
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Build · Status: open · Needs: — · Assigned: chat-2192#p8km
+Done = owner/checkpoint-scoped text and completed strokes resume offline, with bounded preview, recoverable drafts, export, and deliberate selected context handoff; prove local editing sends no tutor requests. The staged editor may proceed before P1/P3 storage and P6 sending integration.
+Tests: Local Pad editor and rendering, owner/checkpoint isolation and recovery, offline reopen and export, mobile rotation and IME, and exact reviewed selection handoff.
+Scope: P8 Local Pad and its tests, optionally a default-off entry after integration, docs/current/N192.md.
+Not: changing the ephemeral Review ScratchPad, OCR, provider auth, MCP or schema work, or enabling a production entry by default.
+
 ## N188 MCP smoke fits the reused Edge worker lifetime (Owner task)
 
 Owner task: "Ok fix it and check why issue is persistent."
