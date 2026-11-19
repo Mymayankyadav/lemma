@@ -1,9 +1,9 @@
 import {AtlasSettings} from '../../adaptive/AtlasPanels';
-import {lazy,Suspense,useState,type ReactNode} from 'react';
+import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
 import {applyReduceEffects} from '../../../ui/v7/effects';
-import {Link,useNavigate,useSearchParams} from 'react-router';
+import {Link,useLocation,useNavigate,useNavigationType,useSearchParams} from 'react-router';
 import {Bell,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageCircle,Palette,RefreshCw,Shapes} from 'lucide-react';
 import {useRotateConnectorSecret,useSettings,useSignOut,useSubjects,useUpdateSettings,useUpdateSubject} from '../../../data/hooks';
 import type {Settings,Subject as DataSubject,UiPreferences} from '../../../data/types';
@@ -35,7 +35,7 @@ type Mode='auto'|'day'|'night';
 type Section='appearance'|'tutor'|'study'|'planning'|'reminders'|'subjects'|'data';
 const sectionTitle:Record<Section,string>={appearance:'Appearance',tutor:'Tutor',study:'Study and review',planning:'Planning',reminders:'Reminders',subjects:'Subjects',data:'Data and account'};
 /** Old `?section=` links keep working: each v6 section id opens the v7 page that now holds it. */
-const legacySection:Record<string,Section>={appearance:'appearance',connector:'tutor',tutor:'tutor',study:'study',activities:'study',focus:'study',planning:'planning',reminders:'reminders',subjects:'subjects',account:'data',export:'data'};
+const legacySection:Record<string,Section>={appearance:'appearance',connector:'tutor',tutor:'tutor',study:'study',activities:'study',focus:'study',planning:'planning',reminders:'reminders',notifications:'reminders',subjects:'subjects',account:'data',export:'data'};
 export const sectionOf=(value:string|null):Section|null=>value?legacySection[value]??((value in sectionTitle)?value as Section:null):null;
 const modeWord:Record<Mode,string>={auto:'Auto',day:'Day',night:'Night'};
 
@@ -167,6 +167,14 @@ function Legacy({children}:{children:ReactNode}){return <div className="v7-setti
 export default function SettingsV7(){
  const [params]=useSearchParams(),navigate=useNavigate(),settings=useSettings(),subjects=useSubjects(),signOut=useSignOut();
  const section=sectionOf(params.get('section'));
+ const location=useLocation(),navigation=useNavigationType(),heading=useRef<HTMLHeadingElement>(null);
+ const focusResult=location.state?.v7SearchDestination===true&&navigation!=='POP';
+ useEffect(()=>{
+  if(!focusResult)return;
+  // The dialog first closes and restores its trigger. Move focus to the newly rendered heading after that cleanup.
+  const frame=requestAnimationFrame(()=>heading.current?.focus());
+  return()=>cancelAnimationFrame(frame);
+ },[focusResult,location.key]);
  const mode=((settings.data?.ui?.mode as Mode|undefined)??readAppearance().mode);
  const systemNight=typeof matchMedia!=='undefined'&&matchMedia('(prefers-color-scheme: dark)').matches;
  // N157 · U1: from 840 px the index stays on the left and the section opens on the right (the first one when none is chosen).
@@ -196,23 +204,23 @@ export default function SettingsV7(){
  if(split){
   const shown=section??groups[0][0];
   return <main id="main-content" className="v7-page v7-settings" data-split="" aria-label="Settings">
-   <HubHeader title="Settings"/>
+   <HubHeader title="Settings" headingRef={section?undefined:heading}/>
    <div className="v7-settings-split">
     <nav className="v7-settings-index" aria-label="Settings sections">{index(shown)}</nav>
     <section className="v7-settings-pane" aria-labelledby="v7-settings-pane-title">
-     <h2 id="v7-settings-pane-title" className="v7-settings-pane-title">{sectionTitle[shown]}</h2>
+     <h2 ref={section?heading:undefined} tabIndex={-1} id="v7-settings-pane-title" className="v7-settings-pane-title">{sectionTitle[shown]}</h2>
      {content(shown)}
     </section>
    </div>
   </main>;
  }
  if(!section)return <main id="main-content" className="v7-page v7-settings" aria-label="Settings">
-  <HubHeader title="Settings"/>
+  <HubHeader title="Settings" headingRef={section?undefined:heading}/>
   {index(null)}
  </main>;
  return <main id="main-content" className="v7-page v7-settings" aria-label={sectionTitle[section]}>
   <DetailHeader title={sectionTitle[section]} back="/settings"/>
-  <h1 className="v7-learn-title">{sectionTitle[section]}</h1>
+  <h1 ref={heading} tabIndex={-1} className="v7-learn-title">{sectionTitle[section]}</h1>
   {content(section)}
  </main>;
 }
