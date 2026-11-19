@@ -1,7 +1,7 @@
-import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type ReactNode,type RefObject} from 'react';
+import {Children,isValidElement,Fragment,lazy,Suspense,useEffect,useLayoutEffect,useRef,useState,type CSSProperties,type MouseEvent,type ReactNode,type RefObject} from 'react';
 import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
-import {Link,useLocation,useNavigate} from 'react-router';
+import {Link,useLocation,useNavigate,useNavigationType} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
 import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {MEANING_ICON} from '../../ui/v7/meanings';
@@ -18,6 +18,7 @@ import {useMinWidth} from './useMinWidth';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
 import {applyReduceEffects} from '../../ui/v7/effects';
+import type {SearchItem,SearchSnapshot} from './searchModel';
 import {needsWelcome} from '../../features/sign-in/v7/welcomeRule';
 import './shell.css';
 import './responsive.css';
@@ -69,7 +70,8 @@ function SessionRow(){
  </div>;
 }
 
-const openSearch=()=>window.dispatchEvent(new CustomEvent('v7:search'));
+type SearchVisit={key:string;opener:HTMLElement|null;initial?:SearchSnapshot};
+const openSearch=(event:MouseEvent<HTMLButtonElement>)=>window.dispatchEvent(new CustomEvent('v7:search',{detail:event.currentTarget}));
 /** F. Capture: a tap opens the sheet (a block on Calendar, a thought during a session); a 350 ms press offers the four types. */
 function Capture(){
  const [mode,setMode]=useState<'closed'|'sheet'|'picker'>('closed'),location=useLocation();
@@ -118,7 +120,9 @@ export function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean):bo
 
 /** Wraps every v7 route except the kit. Immersive screens keep the navigation landmark, hidden until focused. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
- const location=useLocation(),navigate=useNavigate(),home=useHome(),{entry}=useActiveFocus(),[searching,setSearching]=useState(false),[shortcuts,setShortcuts]=useState(false);
+ const location=useLocation(),navigate=useNavigate(),navigation=useNavigationType(),home=useHome(),{entry}=useActiveFocus();
+ const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
+ const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(location.key),key=location.key;
  const wide=useMinWidth(700);
  const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
@@ -149,13 +153,46 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   if(location.pathname!=='/'||!settings.data||!home.data)return;
   if(needsWelcome(settings.data.ui,home.data.projects.filter(project=>!project.system).length))navigate('/welcome',{replace:true});
  },[location.pathname,settings.data,home.data,navigate]);
- useEffect(()=>{const open=()=>setSearching(true);window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);},[]);
+ // Restore only on return to the source history entry, never on an ordinary link to the same URL.
+ useLayoutEffect(()=>{
+  if(previousKey.current===key)return;
+  previousKey.current=key;
+  const visit=navigation==='POP'?searchBack.current.get(key):undefined;
+  searchBack.current.delete(key);
+  setSearching(visit??null);
+ },[key,navigation]);
+ useEffect(()=>{
+  const open=(event:Event)=>{
+   const opener=(event as CustomEvent<HTMLElement>).detail??document.activeElement;
+   setSearching(current=>current?.key===key?current:{key,opener:opener instanceof HTMLElement?opener:null});
+  };
+  window.addEventListener('v7:search',open);return()=>window.removeEventListener('v7:search',open);
+ },[key]);
+ function dismissSearch(){
+  const opener=searching?.opener;
+  setSearching(null);
+  requestAnimationFrame(()=>{
+   if(document.querySelector('dialog[open]'))return;
+   const anchor=opener?.isConnected&&opener!==document.body&&opener.getClientRects().length>0?opener:
+    [...document.querySelectorAll<HTMLElement>('[data-v7-search-opener]')].find(candidate=>candidate.getClientRects().length>0);
+   anchor?.focus({preventScroll:true});
+  });
+ }
+ function pickSearchItem(item:SearchItem,initial:SearchSnapshot){
+  if(!searching)return;
+  const back=searchBack.current;
+  back.delete(key);
+  back.set(key,{...searching,initial});
+  if(back.size>8){const oldest=back.keys().next().value;if(oldest)back.delete(oldest);}
+  setSearching(null);
+  navigate(item.to,{state:{v7SearchDestination:item.group==='Settings'}});
+ }
  // A route outside the five destinations (Inbox, Settings) highlights none of them; the Library link shows where you are.
  const due=home.data?.due??0,active=tabs.findIndex(tab=>tab.match(location.pathname));
  useEffect(()=>{
   const keys=(event:KeyboardEvent)=>{
    if(event.target instanceof HTMLElement&&event.target.closest('input,textarea,select,[contenteditable],dialog'))return;
-   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();setSearching(true);return;}
+   if((event.ctrlKey||event.metaKey)&&event.key.toLowerCase()==='k'){event.preventDefault();window.dispatchEvent(new CustomEvent('v7:search'));return;}
    if(!wide)return;
    if(event.ctrlKey||event.metaKey||event.altKey)return;
    if(event.key==='?'){event.preventDefault();setShortcuts(true);}
@@ -167,9 +204,9 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  },[wide,immersive,capture,navigate,entry]);
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
   <Fragment key={colours}>{children}</Fragment>
-  <Suspense fallback={null}>{searching&&<SearchSheet open onClose={()=>setSearching(false)}/>}</Suspense>
+  <Suspense fallback={null}>{searching?.key===key&&<SearchSheet key={key} open onClose={dismissSearch} onPick={pickSearchItem} initial={searching.initial}/>}</Suspense>
   <div className="v7-dock">
-   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
+   <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
    {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
    <nav ref={tabbar} aria-label="Main navigation" className="v7-tabbar" data-labels={labelsFit?'all':'selected'} style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
@@ -195,7 +232,8 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
 /** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
-export function HubHeader({title,date,settings=false,display=false,control,children}:{title:string;date?:string;settings?:boolean;display?:boolean;
+export function HubHeader({title,date,settings=false,display=false,control,children,headingRef}:{title:string;date?:string;settings?:boolean;display?:boolean;
+ headingRef?:RefObject<HTMLHeadingElement|null>;
  /** N161: one compact control beside the title (Calendar's view menu on a phone). */
  control?:ReactNode;children?:ReactNode}){
  const findSelected=(nodes:ReactNode):string|undefined=>{
@@ -218,12 +256,12 @@ export function HubHeader({title,date,settings=false,display=false,control,child
   onScroll();window.addEventListener('scroll',onScroll,{passive:true});return()=>window.removeEventListener('scroll',onScroll);
  },[display]);
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
-    <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>
+    <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
     {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
    </nav>;
  if(!display)return <>
-  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 className="v7-hub-title">{title}</h1>{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
+  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className="v7-hub-title">{title}</h1>{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
   {children&&<div className="v7-hub-extra">{children}</div>}
  </>;
  return <header className="v7-hub-header" data-display="true">
@@ -253,7 +291,7 @@ export function DetailHeader({title,back,action,compact}:{title:string;back?:str
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
   <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default')navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
-  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
+  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
  </header>;
 }
 /** C. Immersive header: leave on the left, progress in the centre, more on the right. */
