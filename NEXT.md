@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N190 Settings search destinations and keyboard history (Owner task)
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Harden · Status: done · Needs: — · Assigned: chat-294607#q2hj
+Done = Notifications and Reminders find the same Settings section; Appearance and Account open their precise sections; Back restores search query and active result; section headings receive focus and Search keeps Escape and focus containment.
+Tests: `tests/unit/v7/capture-search.test.ts`, `tests/e2e/v7-n190-search.spec.ts`.
+Scope: `src/app/v7/{SearchSheet.tsx,searchModel.ts,V7Shell.tsx}`, `src/features/settings/v7/SettingsV7.tsx`, tests, `docs/current/N190.md`.
+Not: Capture or Review persistence; resume and caught-up checks that depend on N189; new dependencies; server changes.
 
 ## N189 Master plan P0/P1: capture integrity and exact-card review
 

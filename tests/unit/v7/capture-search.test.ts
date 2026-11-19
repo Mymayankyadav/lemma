@@ -1,6 +1,6 @@
 import {describe,expect,it} from 'vitest';
 import {parseCapture,defaultStart,type CaptureContext} from '../../../src/app/v7/captureModel';
-import {matchTitle,search,type SearchItem,type SearchGroupName} from '../../../src/app/v7/searchModel';
+import {canonicalSearchItem,matchTitle,search,settingResults,type SearchItem,type SearchGroupName} from '../../../src/app/v7/searchModel';
 
 const ctx:CaptureContext={now:new Date('2026-11-11T08:20:00Z'),zone:'UTC',session:false,
  paths:[{id:'p1',slug:'real-analysis',title:'Real Analysis'},{id:'p2',slug:'topology',title:'Topology'}]};
@@ -63,5 +63,32 @@ describe('v7 search',()=>{
   expect(search(many,'compact').groups[0].items).toHaveLength(4);
   expect(search(many,'compact',new Set<SearchGroupName>(['Cards'])).groups[0].items).toHaveLength(7);
   expect(search(many,'  ').flat).toHaveLength(0);
+ });
+});
+
+describe('v7 Settings destinations',()=>{
+ it.each([
+  ['Notifications','Reminders','/settings?section=reminders'],
+  ['reminders','Reminders','/settings?section=reminders'],
+  ['appearance','Appearance','/settings?section=appearance'],
+  ['account','Data and account','/settings?section=data'],
+  ['data','Data and account','/settings?section=data'],
+ ])('finds %s under the canonical title and route',(query,title,to)=>{
+  const result=search(settingResults,query);
+  expect(result.groups.map(group=>group.name)).toEqual(['Settings']);
+  expect(result.flat).toHaveLength(1);
+  expect(result.flat[0]).toMatchObject({title,to});
+ });
+ it('does not highlight alias letters that do not appear in the canonical label',()=>{
+  expect(search(settingResults,'notifi').flat[0]).toMatchObject({title:'Reminders',match:''});
+ });
+ it.each([
+  ['Notifications','Reminders','reminders'],
+  ['Reminders','Reminders','reminders'],
+  ['Appearance','Appearance','appearance'],
+  ['Account','Data and account','data'],
+ ])('upgrades the cached %s result',(legacy,title,section)=>{
+  expect(canonicalSearchItem({id:'setting:'+legacy,group:'Settings',title:legacy,to:'/settings'}))
+   .toMatchObject({title,to:'/settings?section='+section});
  });
 });
