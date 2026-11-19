@@ -92,7 +92,7 @@ export class Posterior{
  after(parts:Part[]):void{
   for(const part of parts){const i=this.idx.get(part.id);if(i!==undefined)this.lastFilterV[i]=part.v;}
  }
- private solve():{c:Float64Array;S:Float64Array[];Vs:number[];fisher:boolean}{
+ private solve():{c:Float64Array;S:Float64Array[];Vs:number[];fisher:boolean;used:Obs[]}{
   if(this.fit)return this.fit;
   if(this.peer&&this.same(this.peer))return this.fit=this.peer.solve();
   const n=this.prior.length,c=Float64Array.from(this.m0);
@@ -110,13 +110,8 @@ export class Posterior{
    for(const [i,group] of groups)extra+=group.x*group.x*this.prior[i]*(1-group.r*group.r);
    return {...o,xs,off,extra};
   });
-  /** Per-attempt variance of the predictor, which sets the probit attenuation; held fixed within a fit. */
-  const variances=(S:Float64Array[]|null):number[]=>used.map(o=>{
-   let v=o.extra;
-   if(!S){for(let a=0;a<o.ids.length;a++)v+=o.xs[a]*o.xs[a]*this.prior[o.ids[a]];return v;}
-   for(let a=0;a<o.ids.length;a++){const row=S[o.ids[a]];for(let b=0;b<o.ids.length;b++)v+=o.xs[a]*o.xs[b]*row[o.ids[b]];}
-   return v;
-  });
+  // Only excluded components and process innovations are marginalised. Fitted coefficients are conditioned
+  // on in the likelihood; attenuating by their posterior variance again double-counts uncertainty.
   const lik=(o:Obs,cc:Float64Array,V:number)=>{
    let eta=o.off;for(let a=0;a<o.ids.length;a++)eta+=cc[o.ids[a]]*o.xs[a];
    const att=1/Math.sqrt(1+Math.PI*Math.max(0,V)/8),e=sig(eta*att),p=clampP(o.g+o.A*e);
@@ -171,11 +166,10 @@ export class Posterior{
    }
   };
   if(!this.obs.length){return this.fit={c,S:Array.from({length:n},(_,i)=>{const r=new Float64Array(n);r[i]=this.prior[i];return r;}),Vs:[],fisher:false,used};}
-  // 1. a first fit with the attenuation from the prior; 2. the attenuation from that posterior, held fixed; 3. the fit it implies;
-  // 4. the covariance there from the observed curvature (the Fisher matrix only if that is not positive definite).
-  let Vs=variances(null);newton(Vs,4,1e-3);
-  Vs=variances(inverse(chol(system(c,Vs,false).P)!));
-  newton(Vs,8,1e-7);
+  // Conditional likelihood for fitted latents; only independent nuisance terms are integrated approximately.
+  // Report the observed curvature of the log posterior at this mode.
+  const Vs=used.map(o=>o.extra);
+  newton(Vs,12,1e-7);
   let fisher=false,L=chol(system(c,Vs,true).P,true);
   if(!L){fisher=true;L=chol(system(c,Vs,false).P)!;}
   return this.fit={c,S:inverse(L),Vs,fisher,used};

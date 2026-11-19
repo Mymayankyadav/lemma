@@ -112,6 +112,18 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   const ref=inv(H.map(r=>r.map(v=>-v)));
   for(let i=0;i<n;i++)for(let j=0;j<n;j++)expect(Math.abs(S[i][j]-ref[i][j])).toBeLessThan(2e-4);
  });
+ it('the fitted latent likelihood does not attenuate by the latent posterior uncertainty a second time',()=>{
+  const post=new Posterior(),parts=[part('mu'),part('kc')];
+  for(let i=0;i<12;i++)post.observe(parts,0,i%3?1:0,.2,.65,1,0,T);
+  const {Vs,obs,c,logPosterior}=post.inspect();
+  expect(Vs).toEqual(Array.from({length:12},()=>0));
+  // At the fitted mode, the likelihood for one event is p = g + A·sigmoid(Σxθ), with no extra
+  // probit attenuation of the same fitted θ: only genuinely excluded terms need integration.
+  const sig=(x:number)=>1/(1+Math.exp(-x)),eta=obs[0].off+obs[0].xs.reduce((z,x,j)=>z+x*c[obs[0].ids[j]],0);
+  const expected=.2+.65*sig(eta),actual=Math.exp(logPosterior(c)+c.reduce((z,v,i)=>z+.5*v*v/[1,.5][i],0)
+    -obs.slice(1).reduce((z,o)=>{const e=o.off+o.xs.reduce((a,x,j)=>a+x*c[o.ids[j]],0),pp=.2+.65*sig(e);return z+Math.log(o.y?pp:1-pp);},0));
+  expect(actual).toBeCloseTo(obs[0].y?expected:1-expected,7);
+ });
  it('the finite-difference check is discriminating: the expected (Fisher) information gives a visibly different covariance',()=>{
   const {c,S,Vs,obs,prior}=fitted().inspect(),n=c.length,P=Array.from({length:n},(_,i)=>Array.from({length:n},(_,j)=>i===j?1/prior[i]:0));
   obs.forEach((o,k)=>{
