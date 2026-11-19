@@ -47,7 +47,11 @@ export async function rpc(c: Context, fn: string, args: Record<string,unknown>):
 }
 export async function commitBatch(c:Context,tool:string,args:any,summary:string):Promise<any>{
  if(!c.batch?.length)return {action:null};
- const st=await scoped(c,'settings','connector_last_client').single();if(st.error)throw Error(st.error.message);
- const {data,error}=await c.db.rpc('mcp_commit',{p_user:c.userId,p_tool:tool,p_source:args.client||st.data?.connector_last_client||'other',p_summary:summary.slice(0,200),p_commands:c.batch});
+ let source=args.client;
+ if(!source){
+  const st=await scoped(c,'settings','connector_last_client').single();if(st.error)throw Error(st.error.message);
+  source=st.data?.connector_last_client||'other';
+ }
+ const {data,error}=await c.db.rpc('mcp_commit',{p_user:c.userId,p_tool:tool,p_source:source,p_summary:summary.slice(0,200),p_commands:c.batch});
  if(error)throw Error(error.message);return data;
 }

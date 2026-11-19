@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N188 MCP smoke fits the reused Edge worker lifetime (Owner task)
+
+Owner task: "Ok fix it and check why issue is persistent."
+Stage: Harden · Status: open · Needs: — · Assigned: chat-826409#h2vm
+Done = all four deployed MCP smoke partitions run with substantial worker lifetime headroom, each fixture cleanup is verified, and HTTP failures identify the real partition without leaking credentials.
+Tests: tests/unit/mcp/selftest-latency.test.ts and existing MCP partition coverage; post-deployment MCP smoke must pass.
+Scope: MCP smoke fixture path, commit provenance lookup, smoke diagnostics and regression checks, docs/current/N188.md.
+Not: changing timeouts, workflow gates, FIFO behavior, production data or settings, or application feature semantics.
+
 ## N180 Atlas v3 cutover: tooling, Beta removal and the ordered runbook (Owner task)
 
 Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
