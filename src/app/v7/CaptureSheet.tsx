@@ -36,8 +36,12 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const start=defaultStart(parse.date,parse.time,{now:new Date(),zone});
  const title=kind==='card'?parse.front:parse.title;
  const taskDraft=()=>captureTaskDraft(parse,start.date,zone,project?.subject.id??null);
- const waitingForZone=(kind==='task'||kind==='block')&&!!(parse.date||parse.time)&&!settings.data;
- const reason=waitingForZone?'Your time zone must load before saving a scheduled item.':!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
+ // Every block needs a zoned start, even without explicit tokens. Task expansion
+ // also binds a wall-clock zone because the owner may add a due time in the full form.
+ const hasOwnerZone=!!settings.data?.timeZone;
+ const waitingToSave=!hasOwnerZone&&(kind==='block'||(kind==='task'&&!!(parse.date||parse.time)));
+ const waitingToExpand=!hasOwnerZone&&(kind==='task'||kind==='block');
+ const reason=waitingToSave?'Your time zone must load before saving a scheduled item.':!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
  function reset(){setText('');setChosen(initialKind);setIgnored(new Set());setError('');}
  function close(){reset();onClose();}
  async function save(){
@@ -65,7 +69,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   finally{saving.current=false;setBusy(false);}
  }
  function more(){
-  if(saving.current||waitingForZone)return;
+  if(saving.current||waitingToExpand)return;
   if(kind==='task'){
    const draft=taskDraft();close();navigate('/tasks?new=1',{state:{captureTaskDraft:draft}});return;
   }
@@ -79,7 +83,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   }catch(problem){setError(problem instanceof Error?problem.message:'Check the date and time.');}
  }
  return <Sheet open={open} onClose={close} title="Capture" eyebrow="Add something"
-  footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'||busy||waitingForZone}>More options</Button>
+  footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'||busy||waitingToExpand} title={waitingToExpand?'Waiting for your time zone':undefined}>More options</Button>
    {reason&&<p id="v7-capture-reason" className="v7-disabled-reason v7-footer-reason">Unavailable · {reason}</p>}
    <Button variant="primary" disabled={!!reason||busy} aria-describedby={reason?'v7-capture-reason':undefined} onClick={()=>{void save();}}>{addLabel[kind]}</Button></>}>
   {picker&&!text&&<div className="v7-capture-types" role="group" aria-label="Choose a type">{captureKinds.map(item=>{const Icon=icons[item];

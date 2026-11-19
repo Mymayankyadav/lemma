@@ -57,6 +57,13 @@ describe('N189 exact-card durable review',()=>{
   expect(demoRead(run.id)?.items[0]).toMatchObject({cardId:target,reviewId:19});
   expect(()=>demoGrade(run.id,run.version,item.id,20)).toThrow(/version conflict/);
  });
+ it('still snapshots just its target with larger positive budgets and refuses contradictory filters',()=>{
+  const target=cards[1].cardId,input={...settings,selectedDeckIds:[],filters:{cardId:target}};
+  expect(demoStart(input,cards).items.map(item=>item.cardId)).toEqual([target]);
+  for(const filters of [{newOnly:true},{includeNew:false},{sessionId:'s'},{conceptSlug:'c'}]){
+   expect(()=>demoStart({...input,filters:{cardId:target,...filters}},cards)).toThrow('unavailable');
+  }
+ });
  it('does not persist an unrelated or empty run when the requested card is missing',()=>{
   expect(()=>demoStart({...settings,selectedDeckIds:[],filters:{cardId:'missing'},cardBudget:1,minuteBudget:1},cards))
    .toThrow('Requested review card is unavailable');

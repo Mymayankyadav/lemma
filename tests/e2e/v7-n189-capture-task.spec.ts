@@ -1,6 +1,8 @@
 import {expect,test} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
 
+test.use({timezoneId:'Asia/Kolkata'});
+
 for(const expanded of [false,true]){
  test('timed task reaches tab storage with its exact owner-local time: '+(expanded?'expanded editor':'quick Enter'),async({page})=>{
   await page.clock.setFixedTime(NOW);

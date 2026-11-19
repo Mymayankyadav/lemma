@@ -39,7 +39,8 @@ export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const store=load(),now=new Date().toISOString();
  const target=input.filters.cardId;
  const pool=target===undefined?selected:selected.filter(card=>card.cardId===target);
- if(target!==undefined&&(pool.length!==1||input.selectedDeckIds.length||input.cardBudget!==1||input.minuteBudget!==1))
+ if(target!==undefined&&(pool.length!==1||input.selectedDeckIds.length||input.cardBudget<1||input.minuteBudget<1||
+  input.filters.sessionId||input.filters.conceptSlug||input.filters.newOnly||input.filters.includeNew===false))
   throw Error('Requested review card is unavailable');
  const items=pool.slice(0,Math.min(input.cardBudget,input.minuteBudget)).map((card,i)=>({
   id:id(),cardId:card.cardId,expectedCardVersion:1,
