@@ -18,8 +18,10 @@ test('Atlas v3 filters narrow the list and are reversible',async({page})=>{
  await filters.getByRole('button',{name:'Stale',exact:true}).click();await expect(filters.getByRole('button',{name:'Stale',exact:true})).toHaveAttribute('aria-pressed','true');
  expect(await rows.count()).toBeLessThan(all);                     // nothing in the demo is older than 30 days
  await filters.getByRole('button',{name:'All',exact:true}).click();expect(await rows.count()).toBe(all);
- await filters.getByLabel('Kind').selectOption('definition');expect(await rows.count()).toBeLessThanOrEqual(all);
- await filters.getByLabel('Kind').selectOption('any');expect(await rows.count()).toBe(all);
+ // Kind is a v7 Picker (no native select): open it, choose in its sheet, and the button names the choice.
+ const kind=filters.getByRole('button',{name:/^Kind: /}),choose=async(option:string)=>{await kind.click();await page.getByRole('radiogroup',{name:'Kind'}).getByRole('radio',{name:option,exact:true}).check();await expect(kind).toHaveAccessibleName('Kind: '+option);};
+ await choose('definition');expect(await rows.count()).toBeLessThanOrEqual(all);
+ await choose('Any');expect(await rows.count()).toBe(all);
  for(const box of await filters.getByRole('button').all())expect((await box.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
 });
 

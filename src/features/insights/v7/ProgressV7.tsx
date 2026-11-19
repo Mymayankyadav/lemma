@@ -153,7 +153,6 @@ export default function ProgressV7(){
     series={subjectIds.map(id=>({label:name(id),color:color(id)}))}/>:<section className="v7-chart v7-chart-empty"><h3 className="v7-headline">Time by subject</h3>{empty}</section>}
    {insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')}).map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
   </>}
-  {tab==='learning'&&<AtlasProgress/>}
   {status==='ready'&&tab==='learning'&&(learn?<>
    <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
    <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
@@ -181,5 +180,5 @@ export default function ProgressV7(){
    </section>
   </>}
   {editing&&<GoalSheet goal={editing} onClose={()=>setEditing(null)} onSaved={()=>setReload(value=>value+1)}/>}
- </main>;
+ {tab==='learning'&&<AtlasProgress/>}</main>;
 }

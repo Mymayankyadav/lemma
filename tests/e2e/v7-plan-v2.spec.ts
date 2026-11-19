@@ -28,7 +28,7 @@ test('with atlasV3 off a conversion proposal still shows its whole review next t
 });
 test('with atlasV3 off the Atlas map draws nothing of the model and asks for none',async({page})=>{
  const calls:string[]=[];page.on('request',r=>{if(/atlas-model|attempts|atlas_links/.test(r.url()))calls.push(r.url());});
- await page.setViewportSize({width:390,height:844});await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/atlas?view=list');
+ await page.setViewportSize({width:390,height:844});await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,-atlasV3#/atlas?view=list');   // atlasV3 is on by default since N182
  await expect(page.locator('.v7-atlas-list ul button').first()).toBeVisible();
  await expect(page.getByRole('navigation',{name:'Atlas filters'})).toHaveCount(0);
  await expect(page.getByRole('region',{name:'Atlas views'})).toHaveCount(0);
