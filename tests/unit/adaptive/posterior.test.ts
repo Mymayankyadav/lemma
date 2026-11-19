@@ -96,9 +96,11 @@ describe('Posterior: curvature and ageing are consistent',()=>{
  // expected information, and surprising outcomes (a pass at low η, a fail at high η) make it differ most.
  const fitted=()=>{
   const post=new Posterior();
+  // One static block: its Gaussian prior is the original independent prior.
+  // Transported-prior curvature is checked separately in posterior-mode.test.ts.
   for(let i=0;i<12;i++){
    const parts=[part('mu'),part('kc'),part('cross'),part('learning',Math.log1p(i%5))];
-   post.observe(parts,parts.reduce((z,p)=>z+p.m*p.x,0),[1,0,0,1,1,0,1,1,1,0,1,1][i],.2,i%2?.55:.8,1,.49,T+i*3600e3);
+   post.observe(parts,parts.reduce((z,p)=>z+p.m*p.x,0),[1,0,0,1,1,0,1,1,1,0,1,1][i],.2,i%2?.55:.8,1,.49,T);
   }
   return post;
  };

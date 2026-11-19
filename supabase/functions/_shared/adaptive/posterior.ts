@@ -1,7 +1,8 @@
 // N186. Joint Gaussian reporting, independent of the production prediction filter.
-// With no process noise, fit the joint likelihood and prior by Laplace approximation.
-// At a time/instruction transition, carry that Gaussian (including its correlations)
-// forward, then condition on each new scalar likelihood. This is a sequential Laplace
+// Fit each timestamp's likelihoods jointly against the carried full Gaussian.
+// Timestamp boundaries use the same approximation even when process noise is zero;
+// negligible evidence cannot switch later observations from joint to separate fits.
+// Time/instruction transitions preserve correlations. This is a sequential Laplace
 // approximation, not an exact temporal posterior or a refit of forgotten observations.
 // Recording remains cheap; fitting is lazy and identical hypotheses share its result.
 import {DAY} from './math.ts';
@@ -116,7 +117,7 @@ export class Posterior{
   * all correlations at a full reset. Both transitions preserve the fitted mean.
   * This is a Gaussian reporting approximation, not an exact temporal posterior.
   */
- private ageing(S:Matrix,days:number,bumps?:number[]):{r:Float64Array;diagonal:Float64Array;changed:boolean}{
+ private ageing(S:Matrix,days:number,bumps?:number[]):{r:Float64Array;diagonal:Float64Array}{
   const n=this.size,{prior,q,rates,rateGroups}=this,elapsed=Math.max(0,days);
   let work=this.ageWork;
   if(!work||work.r.length!==n||work.retention.length!==rates.length){
@@ -124,28 +125,24 @@ export class Posterior{
   }
   // These buffers are consumed synchronously by transport/query; they never
   // escape an evaluation. Reuse avoids allocating two dense vectors per event.
-  const {r,diagonal,retention}=work;let changed=false,decay=false;
+  const {r,diagonal,retention}=work;
   // Hundreds of components share a handful of q/prior rates. Evaluate each
   // exponential once per transition, with storage bounded by the component cap.
-  for(let i=0;i<rates.length;i++){retention[i]=Math.exp(-Math.max(0,elapsed*rates[i]));if(retention[i]!==1)decay=true;}
+  for(let i=0;i<rates.length;i++)retention[i]=Math.exp(-Math.max(0,elapsed*rates[i]));
   if(!bumps?.length){
    for(let i=0;i<n;i++){
     const value=S[i][i],target=prior[i],drift=Math.max(0,q[i]*elapsed);
     const aged=value===target?value:value+(value<target?Math.min(target-value,drift):-Math.min(value-target,drift));
-    r[i]=retention[rateGroups[i]];diagonal[i]=aged;if(aged!==value)changed=true;
+    r[i]=retention[rateGroups[i]];diagonal[i]=aged;
    }
   }else for(let i=0;i<n;i++){
    const value=S[i][i],target=prior[i],drift=Math.max(0,q[i]*elapsed);
    const aged=value===target?value:value+(value<target?Math.min(target-value,drift):-Math.min(value-target,drift));
    const room=Math.max(0,target-aged),instruction=Math.max(0,bumps[i]??0),bump=Math.min(room,instruction);
    r[i]=retention[rateGroups[i]]*(instruction>0?(room>0?Math.sqrt(Math.max(0,1-bump/room)):0):1);
-   if(r[i]!==1)decay=true;
-   diagonal[i]=aged+bump;if(diagonal[i]!==value)changed=true;
+   diagonal[i]=aged+bump;
   }
-  if(!changed&&decay){
-   changedEntry:for(let i=0;i<n;i++)for(let j=0;j<i;j++)if(S[i][j]!==0&&r[i]*r[j]!==1){changed=true;break changedEntry;}
-  }
-  return {r,diagonal,changed};
+  return {r,diagonal};
  }
  private workspace(S:Matrix):{d:Float64Array;x:Float64Array;u:Float64Array}{
   let work=this.covarianceWork.get(S);
@@ -170,10 +167,9 @@ export class Posterior{
    }
   }
  }
- /** One rank-one likelihood against a full Gaussian; O(n²), including process transport. */
- private condition(state:Gaussian,o:Obs,age?:ReturnType<Posterior['ageing']>):Gaussian{
-  const {c,S}=state,n=this.size,eta0=this.eta(o,c);
-  if(age)this.transport(S,age);
+ /** Covariance times a sparse predictor, respecting the lazy off-diagonal scale. */
+ private product(S:Matrix,o:Obs):ReturnType<Posterior['workspace']>{
+  const n=this.size;
   const {d,x:Sx,u}=this.workspace(S),{ids,xs}=o;
   Sx.fill(0);u.fill(0);
   // Feature-major multiplication avoids a triangular lookup branch for every
@@ -185,20 +181,17 @@ export class Posterior{
    for(let i=index+1;i<n;i++)Sx[i]+=S[i][index]*weight;
   }
   for(let i=0;i<n;i++){Sx[i]=Sx[i]*d[i]+u[i];u[i]=Sx[i]/d[i];}
+  return {d,x:Sx,u};
+ }
+ /** One rank-one likelihood against a full Gaussian; O(n²). */
+ private condition(state:Gaussian,o:Obs):Gaussian{
+  const {c,S}=state,n=this.size,eta0=this.eta(o,c),{x:Sx,u}=this.product(S,o);
   let V=0;for(let j=0;j<o.ids.length;j++)V+=o.xs[j]*Sx[o.ids[j]];
   if(!(V>0))return state;
   const mode=scalarMode({mean:eta0,variance:V,y:o.y,g:o.g,A:o.A,w:o.w,extra:o.extra}),lik=eventLikelihood(mode,o.g,o.A,o.extra);
   const move=(mode-eta0)/V,J=o.w*lik.J(o.y),den=1+V*J;
   if(!(den>0)||!Number.isFinite(den))throw Error('Reporting posterior has non-positive curvature at its scalar mode');
-  const scale=J/den;
-  for(let i=0;i<n;i++){
-   const row=S[i],si=Sx[i],scaled=scale*u[i];c[i]+=si*move;row[i]-=scale*si*si;
-   if(scaled!==0){
-    let j=0;
-    for(;j+3<i;j+=4){row[j]-=scaled*u[j];row[j+1]-=scaled*u[j+1];row[j+2]-=scaled*u[j+2];row[j+3]-=scaled*u[j+3];}
-    for(;j<i;j++)row[j]-=scaled*u[j];
-   }
-  }
+  this.rankUpdate(c,S,Sx,u,move,J/den);
   // This hook reconstructs the last Gaussian prior's quadratic form from the posterior
   // precision P = P_prior + J xxᵀ. It is evaluated only by numerical audit tests.
   let factor:Matrix|null=null;
@@ -207,9 +200,107 @@ export class Posterior{
    const d=Float64Array.from(cc,(value,i)=>value-c[i]),z=solveWith(factor,d);
    let quad=0,dx=0;for(let i=0;i<n;i++)quad+=d[i]*z[i];
    for(let j=0;j<o.ids.length;j++)dx+=o.xs[j]*d[o.ids[j]];
-   return -.5*(quad-J*dx*dx)-move*dx+o.w*(eventLikelihood(mode+dx,o.g,o.A,o.extra).log(o.y)-lik.log(o.y));
+   return -.5*(move*move*V+quad-J*dx*dx)-move*dx+o.w*eventLikelihood(mode+dx,o.g,o.A,o.extra).log(o.y);
   };
   return {c,S,fisher:false,used:[o],logPosterior};
+ }
+ private rankUpdate(c:Float64Array,S:Matrix,Sx:Float64Array,u:Float64Array,move:number,scale:number):void{
+  const n=this.size;
+  for(let i=0;i<n;i++){
+   const row=S[i],si=Sx[i],scaled=scale*u[i];c[i]+=si*move;row[i]-=scale*si*si;
+   if(scaled!==0){
+    let j=0;
+    for(;j+3<i;j+=4){row[j]-=scaled*u[j];row[j+1]-=scaled*u[j+1];row[j+2]-=scaled*u[j+2];row[j+3]-=scaled*u[j+3];}
+    for(;j<i;j++)row[j]-=scaled*u[j];
+   }
+  }
+ }
+ /** Joint Laplace update for a timestamp block, without an n-dimensional dense solve.
+  * For active coordinates B, K = B S Bᵀ = L Lᵀ and W = S Bᵀ L⁻ᵀ.
+  * Fit z ~ N(0,I) with predictors off + xᵀc + (Lᵀx)ᵀz, then lift:
+  * c' = c + W z*, S' = S + W (Cov(z) - I) Wᵀ.
+  * Identical predictor vectors (hints/partial attempts) need only one coordinate.
+  * Otherwise the active principal submatrix is SPD even for nearly collinear
+  * predictors: no rank threshold, ridge, discarded covariance or pseudoinverse.
+  */
+ private conditionBlock(state:Gaussian,used:Obs[]):Gaussian{
+  if(!used.length)return state;
+  if(used.length===1)return this.condition(state,used[0]);
+  const first=used[0],sameVector=(o:Obs)=>o.ids.length===first.ids.length&&o.ids.every((id,j)=>id===first.ids[j]&&o.xs[j]===first.xs[j]);
+  if(used.every(o=>sameVector(o)&&o.y===first.y&&o.g===first.g&&o.A===first.A&&o.off===first.off&&o.extra===first.extra)){
+   return {...this.condition(state,{...first,w:used.reduce((sum,o)=>sum+o.w,0)}),used};
+  }
+  const {c,S}=state,n=this.size,{d}=this.workspace(S),rankOne=used.every(sameVector);
+  const active=rankOne?first.ids:[...new Set(used.flatMap(o=>o.ids))].sort((a,b)=>a-b),r=rankOne?1:active.length;
+  const local=new Posterior();
+  for(let i=0;i<r;i++)local.slot({id:String(i),prior:1,m0:0,q:0});
+  const priorScore=new Float64Array(n);
+  if(rankOne){
+   const {x:Sx,u}=this.product(S,first);let V=0;
+   for(let j=0;j<first.ids.length;j++)V+=first.xs[j]*Sx[first.ids[j]];
+   if(!(V>0))return state;
+   const root=Math.sqrt(V),projected=used.map(o=>({...o,ids:[0],xs:[root],off:this.eta(o,c)}));
+   const fitted=local.batch(projected),mode=fitted.c[0],move=mode/root;
+   // The scalar lift is exactly W(C-I)Wᵀ. Reuse the sparse product and lazy
+   // rank-one kernel instead of allocating n tiny rows and dividing n² times.
+   this.rankUpdate(c,S,Sx,u,move,(1-fitted.S[0][0])/V);
+   for(let j=0;j<first.ids.length;j++)priorScore[first.ids[j]]=first.xs[j]*move;
+   return {c,S,fisher:false,used,logPosterior:this.blockObjective(c,S,used,priorScore,mode*mode)};
+  }
+  const covariance=(i:number,j:number)=>i===j?S[i][i]:S[Math.max(i,j)][Math.min(i,j)]*d[i]*d[j];
+  const L=cholesky(active.map(i=>Float64Array.from(active,j=>covariance(i,j))));
+  if(!L)throw Error('Reporting block prior is not positive definite');
+  const W:Matrix=Array.from({length:n},()=>new Float64Array(r));
+  for(let i=0;i<n;i++)for(let j=0;j<r;j++){
+   let value=covariance(i,active[j]);for(let k=0;k<j;k++)value-=L[j][k]*W[i][k];
+   W[i][j]=value/L[j][j];
+  }
+  const positions=new Map(active.map((id,i)=>[id,i]));
+  const projected=used.map(o=>{
+   const a=new Float64Array(r);
+   for(let j=0;j<o.ids.length;j++){
+    const row=L[positions.get(o.ids[j])!];for(let k=0;k<r;k++)a[k]+=row[k]*o.xs[j];
+   }
+   const ids:number[]=[],xs:number[]=[];
+   for(let i=0;i<r;i++)if(a[i]!==0){ids.push(i);xs.push(a[i]);}
+   return {...o,ids,xs,off:this.eta(o,c)};
+  });
+  const fitted=local.batch(projected),z=fitted.c,C=fitted.S,precisionShift=new Float64Array(r);
+  // This is P_prior (c' - c), calculated from the Gaussian displacement,
+  // not the likelihood score: inspection must not conceal a mode residual.
+  for(let i=r-1;i>=0;i--){
+   let value=z[i];for(let j=i+1;j<r;j++)value-=L[j][i]*precisionShift[j];
+   precisionShift[i]=value/L[i][i];
+  }
+  for(let j=0;j<r;j++)priorScore[active[j]]=precisionShift[j];
+  const correction=W.map(row=>Float64Array.from({length:r},(_,j)=>{
+   let value=-row[j];for(let k=0;k<r;k++)value+=row[k]*C[Math.max(k,j)][Math.min(k,j)];return value;
+  }));
+  for(let i=0;i<n;i++){
+   const row=S[i],wi=W[i],ti=correction[i];let move=0,diagonal=0;
+   for(let k=0;k<r;k++){move+=wi[k]*z[k];diagonal+=ti[k]*wi[k];}
+   c[i]+=move;row[i]+=diagonal;
+   for(let j=0;j<i;j++){
+    let value=0;for(let k=0;k<r;k++)value+=ti[k]*W[j][k];
+    row[j]+=(value/d[i])/d[j];
+   }
+  }
+  return {c,S,fisher:false,used,logPosterior:this.blockObjective(c,S,used,priorScore,z.reduce((sum,value)=>sum+value*value,0))};
+ }
+ private blockObjective(c:Float64Array,S:Matrix,used:Obs[],priorScore:Float64Array,penalty:number):(cc:Float64Array)=>number{
+  const sites=used.map(o=>{const eta=this.eta(o,c);return {o,eta,J:o.w*eventLikelihood(eta,o.g,o.A,o.extra).J(o.y)};});
+  let factor:Matrix|null=null;
+  return (cc:Float64Array):number=>{
+   factor??=cholesky(S);if(!factor)throw Error('Invalid reporting covariance');
+   const delta=Float64Array.from(cc,(value,i)=>value-c[i]),solved=solveWith(factor,delta);
+   let value=-.5*penalty;
+   for(let i=0;i<c.length;i++)value-=.5*delta[i]*solved[i]+priorScore[i]*delta[i];
+   for(const {o,eta,J} of sites){
+    let dx=0;for(let j=0;j<o.ids.length;j++)dx+=o.xs[j]*delta[o.ids[j]];
+    value+=.5*J*dx*dx+o.w*eventLikelihood(eta+dx,o.g,o.A,o.extra).log(o.y);
+   }
+   return value;
+  };
  }
  /** A batch without process noise uses the actual joint objective and observed Hessian. */
  private batch(used:Obs[]):Gaussian{
@@ -253,20 +344,40 @@ export class Posterior{
    }
    return {P,g};
   };
-  // Guess floors make the objective non-concave. Seed both likelihood lobes as
-  // well as the prior, so perturbing one repeated site does not strand Newton
-  // at an inferior nearby mode. Each candidate is judged on the REAL objective.
-  // This bounded search does not claim a global MAP guarantee in many dimensions.
-  const directions=new Map<string,{site:Obs;weight:number}>();
-  for(const o of used){const key=JSON.stringify([o.ids,o.xs]),group=directions.get(key);if(group)group.weight+=o.w;else directions.set(key,{site:o,weight:o.w});}
-  const [,dominant]=[...directions].sort(([ka,a],[kb,b])=>b.weight-a.weight||ka.localeCompare(kb))[0],site=dominant.site;
-  const starts=[Float64Array.from(c)],eta0=this.eta(site,c),weight=used.reduce((sum,o)=>sum+o.w,0);
-  const V=site.ids.reduce((sum,id,j)=>sum+this.prior[id]*site.xs[j]**2,0);
-  for(const y of [0,1]){
-   const mode=scalarMode({mean:eta0,variance:V,y,g:site.g,A:site.A,w:weight,extra:site.extra});
-   const start=Float64Array.from(c);
-   for(let j=0;j<site.ids.length;j++)start[site.ids[j]]+=this.prior[site.ids[j]]*site.xs[j]*(mode-eta0)/V;
-   starts.push(start);
+  // Guess floors make the objective non-concave. Retain each likelihood family's
+  // own offset/amplitude and weight: a first, already-satisfied site cannot stand
+  // in for a different lobe, and a vanishing new family adds only a prior-limit
+  // start. There is no top-k family cutoff. A continuous pooled predictor also
+  // retains the combined lobe when a repeated family is slightly perturbed.
+  // These are search starts only; every candidate uses the REAL objective below.
+  // The finite family search does not claim a general global-MAP guarantee.
+  const families=new Map<string,{site:Obs;weight:number}>();
+  for(const o of used){
+   const key=JSON.stringify([o.g,o.A,o.off,o.extra,o.ids,o.xs]),group=families.get(key);
+   if(group)group.weight+=o.w;else families.set(key,{site:o,weight:o.w});
+  }
+  const totalWeight=used.reduce((sum,o)=>sum+o.w,0),average=new Float64Array(n);
+  let guess=0,amplitude=0,offset=0,extra=0;
+  for(const o of used){
+   const fraction=o.w/totalWeight;
+   guess+=fraction*o.g;amplitude+=fraction*o.A;offset+=fraction*o.off;extra+=fraction*o.extra;
+   for(let j=0;j<o.ids.length;j++)average[o.ids[j]]+=fraction*o.xs[j];
+  }
+  const ids:number[]=[],xs:number[]=[];
+  for(let i=0;i<n;i++)if(average[i]!==0){ids.push(i);xs.push(average[i]);}
+  const pooled:Obs={...used[0],ids,xs,g:guess,A:amplitude,off:offset,extra,w:totalWeight};
+  const starts=[Float64Array.from(c)];
+  for(const {site,weight} of [{site:pooled,weight:totalWeight},...families.values()]){
+   const eta0=this.eta(site,c),V=site.ids.reduce((sum,id,j)=>sum+this.prior[id]*site.xs[j]**2,0);
+   // Predictor averaging commutes with Gaussian whitening. Its scalar variance
+   // and the lifted start are invariant to an orthonormal change of coordinates.
+   if(!(V>0))continue;
+   for(const y of [0,1]){
+    const mode=scalarMode({mean:eta0,variance:V,y,g:site.g,A:site.A,w:weight,extra:site.extra});
+    const start=Float64Array.from(c);
+    for(let j=0;j<site.ids.length;j++)start[site.ids[j]]+=this.prior[site.ids[j]]*site.xs[j]*(mode-eta0)/V;
+    starts.push(start);
+   }
   }
   let best:{point:Float64Array;L:Matrix;value:number}|null=null;
   for(const point of starts){
@@ -295,28 +406,23 @@ export class Posterior{
  private solve():Fit{
   if(this.fit)return this.fit;
   if(this.peer&&this.same(this.peer))return this.fit=this.peer.solve();
-  const batch:Obs[]=[];let state:Gaussian|null=null,time=this.events[0]?.kind==='instruction'?this.events[0].t:0;
+  let batch:Obs[]=[],state=this.batch([]),time=this.events[0]?.kind==='instruction'?this.events[0].t:this.events[0]?.obs.t??0;
+  const flush=()=>{state=this.conditionBlock(state,batch);batch=[];};
   for(const event of this.events){
+   const at=event.kind==='instruction'?event.t:event.obs.t;
+   if(at>time){
+    flush();this.transport(state.S,this.ageing(state.S,(at-time)/DAY));time=at;
+   }
    if(event.kind==='instruction'){
-    if(!state&&!batch.length){time=Math.max(time,event.t);continue;}
-    state??=this.batch(batch);
+    flush();
     const bumps=Array(this.size).fill(0);bumps[event.i]=event.bump;
-    this.transport(state.S,this.ageing(state.S,Math.max(0,(event.t-time)/DAY),bumps));time=Math.max(time,event.t);
+    this.transport(state.S,this.ageing(state.S,0,bumps));
     state={...state,used:[],logPosterior:gaussianObjective(state.c,state.S)};
     continue;
    }
-   const o=event.obs;
-   if(!state&&!batch.length){batch.push(o);time=o.t;continue;}
-   if(!state){
-    // Keep static observations together until an actual covariance transition is needed.
-    if(!(o.t>time)||!this.q.some(x=>x>0)){batch.push(o);time=Math.max(time,o.t);continue;}
-    const fitted=this.batch(batch),age=this.ageing(fitted.S,Math.max(0,(o.t-time)/DAY));
-    if(!age.changed){batch.push(o);time=Math.max(time,o.t);continue;}
-    state=this.condition(fitted,o,age);
-   }else state=this.condition(state,o,this.ageing(state.S,Math.max(0,(o.t-time)/DAY)));
-   time=Math.max(time,o.t);
+   batch.push(event.obs);
   }
-  state??=this.batch(batch);
+  flush();
   // Public inspection and shared fits expose actual symmetric covariances.
   // Materialise lazy scaling and the second triangle only once per fit.
   const d=this.covarianceWork.get(state.S)?.d;

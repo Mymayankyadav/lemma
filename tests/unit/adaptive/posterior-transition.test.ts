@@ -238,3 +238,57 @@ describe('N186 transitions through production replay',()=>{
   expect(joint.pi).toEqual(filter.pi);expect(joint.mix).toEqual(filter.mix);expect(jointP).toBe(filterP);
  });
 });
+
+describe('N186 the first temporal boundary is continuous at zero evidence',()=>{
+ const start=Date.parse('2026-11-01T00:00:00Z'),observed=start+DAY;
+ const facts=(weight:number,kind:'hinted'|'partial'):AtlasFacts=>({
+  concepts:[{id:'k',name:'K',kind:'topic'}],
+  attempts:[
+   {id:1,occurred_at:new Date(start).toISOString(),session_id:'first',weight,
+    tags:[{concept_id:'k',facet:'use',role:'target',stage:'E',result:'ok',hint_level:0}]},
+   {id:2,occurred_at:new Date(observed).toISOString(),session_id:'second',weight:1,
+    ...(kind==='partial'?{legacy_outcome:'partial' as const}:{}),
+    tags:[{concept_id:'k',facet:'use',role:'target',stage:'E',result:'ok',hint_level:kind==='hinted'?2:0}]},
+  ],
+ });
+ const withoutReporting=(f:AtlasFacts,time:number)=>{
+  const previous=Posterior.MAX;Posterior.MAX=0;
+  try{return replay(f,{},time);}finally{Posterior.MAX=previous;}
+ };
+ it('a true zero-weight first attempt adds no reporting information',()=>{
+  const f=facts(0,'hinted');f.attempts=f.attempts.slice(0,1);
+  const joint=replay(f,{},start),filter=withoutReporting(f,start),actual=estimate(joint,'k','use',start),expected=estimate(filter,'k','use',start);
+  expect(actual.m).toBe(expected.m);expect(actual.variance).toBe(expected.variance);
+  expect(joint.hypotheses).toEqual(filter.hypotheses);expect(joint.trace).toEqual(filter.trace);
+ });
+ for(const kind of ['hinted','partial'] as const)for(const weight of [1e-6,1e-10,1e-14]){
+  it(`${kind}: an initial weight of ${weight} converges to the zero-weight result immediately and in future queries`,()=>{
+   const zero=replay(facts(0,kind),{},observed),small=replay(facts(weight,kind),{},observed);
+   // A likelihood raised to w changes its local score and information by O(w).
+   // Allow a conservative linear perturbation bound plus numerical optimisation
+   // error; a fixed jump from changing the fitting algorithm cannot satisfy it.
+   const tolerance=10*weight+5e-8;
+   for(const time of [observed,start+20*DAY]){
+    const baseline=estimate(zero,'k','use',time),actual=estimate(small,'k','use',time);
+    for(const field of ['m','variance','lo','hi','p','retention'] as const){
+     expect(Number.isFinite(actual[field])).toBe(true);
+     expect(Math.abs(actual[field]-baseline[field])).toBeLessThan(tolerance);
+    }
+   }
+  });
+ }
+ for(const kind of ['hinted','partial'] as const)it(`${kind}: reporting fits do not change predictions, ADF or FSRS for zero or tiny first weights`,()=>{
+  for(const weight of [0,1e-6,1e-10,1e-14]){
+   const f=facts(weight,kind),joint=replay(f,{},observed),filter=withoutReporting(f,observed);
+   // Exercise both lazy fitting and subsequent aged queries before checking
+   // the complete hypotheses, including their KC and card FSRS memory states.
+   for(const time of [observed,start+20*DAY]){
+    const actual=estimate(joint,'k','use',time),expected=estimate(filter,'k','use',time);
+    expect(actual.p).toBe(expected.p);expect(actual.retention).toBe(expected.retention);
+   }
+   expect(joint.trace).toEqual(filter.trace);expect(joint.hypotheses).toEqual(filter.hypotheses);
+   expect(joint.pi).toEqual(filter.pi);expect(joint.mix).toEqual(filter.mix);
+   expect(joint.running).toEqual(filter.running);expect(joint.direct).toEqual(filter.direct);
+  }
+ });
+});
