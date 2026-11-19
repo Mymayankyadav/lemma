@@ -24,3 +24,15 @@
 .local-pad-display {display:block; max-width:100%; overflow:auto}
 .local-pad-inline {display:inline-block; max-width:100%; vertical-align:middle; overflow:auto}
 .local-pad-unrendered {font-family:monospace}
+
+.local-pad-ink {
+  display:block; width:100%; height:auto; aspect-ratio:8/5; user-select:none;
+  outline:1px solid var(--line, currentColor); border-radius:.5rem;
+  background-color:var(--well, transparent);
+  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  background-size:calc(100% / 32) calc(100% / 20);
+}
+.local-pad-ink[data-mode="draw"] {touch-action:none; cursor:crosshair}
+.local-pad-ink[data-mode="scroll"] {touch-action:auto}
+.local-pad-ink-status {margin:0; min-height:1.4em}
