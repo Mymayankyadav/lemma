@@ -114,7 +114,7 @@ function updateTrial(s:MeasurementState,tags:AttemptTag[],a:Attempt,t:number,hou
  const prior=s.running.attempt,base=(1+prior.y)/(2+prior.n),weight=clamp(a.weight??1)*clamp(observations[0].target.confidence??1);
  s.trace.push({id:String(a.id)+':'+s.trace.length,at:t,stream:'attempt',p:s.mix[0]*kf+s.mix[1]*pf,kf,pfa:pf,base,y,concept_id:tags[0].concept_id,facet:tags[0].facet,confidence:a.confidence_before,hours,hint,kind:a.item_kind??'legacy',features:x,hypotheses:ps});
  for(let i=0;i<s.hypotheses.length;i++){
-  const h=s.hypotheses[i],o=observations[i];s.post?.[i].observe(partsOf(o.fs),o.m+hint,y,options?1/options:.05,o.amplitude,weight,a.item_id?0:bSd*bSd,t);adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);
+  const h=s.hypotheses[i],o=observations[i];s.post?.[i].observe(partsOf(o.fs),o.m+hint,y,options?1/options:.05,o.amplitude,weight,a.item_id?0:bSd*bSd,t);adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);if(weight>0)s.post?.[i].after(partsOf(o.fs));
   const k=o.target.concept_id;
   if(y){h.memory[k]=memoryStep(h.memory[k],t,3,weight,true,undefined,s.research);for(const q of tags)if(q!==o.target)h.memory[q.concept_id]=memoryStep(h.memory[q.concept_id],t,3,.4*weight,false,undefined,s.research);}
   else{const r=clamp((1-o.R)*(1-(options?1/options:.05))/(1-o.p));h.memory[k]=memoryStep(h.memory[k],t,1,r*weight,false,undefined,s.research);h.memory[k]=memoryStep(h.memory[k],t,3,(1-r)*weight,true,undefined,s.research);}

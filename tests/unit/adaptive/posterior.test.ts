@@ -167,6 +167,35 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   expect(atCap).toBeCloseTo(prior.reduce((a,p)=>a+p,0),8);
   expect(post.query(parts,last+(capDays+1)*DAY).v).toBeCloseTo(atCap,8);
  });
+ it('long-gap → one attempt has only fresh evidence once the old component has aged to prior',()=>{
+  const mk=()=>part('kc',1,{q:.02}),old=new Posterior(),fresh=new Posterior(),late=T+60*DAY;
+  for(let i=0;i<60;i++)attempt(old,1,{parts:[mk()]});
+  old.after([{...mk(),v:.04}]); // filter's marginal after dense old evidence
+  expect(old.query([mk()],late).v).toBeCloseTo(.5,10);
+  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
+  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([mk()],late).v,10);
+  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([mk()],late).m,10);
+ });
+ it('instruction bump → one attempt does not resurrect the old over-tight posterior',()=>{
+  const mk=()=>part('kc'),old=new Posterior(),fresh=new Posterior(),late=T+DAY;
+  for(let i=0;i<60;i++)attempt(old,1,{parts:[mk()]});
+  old.after([{...mk(),v:.03}]);
+  old.touch('kc',.5,0,0,late,.5); // reset at the independent prior
+  expect(old.query([mk()],late).v).toBeCloseTo(.5,10);
+  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
+  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([mk()],late).v,10);
+  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([mk()],late).m,10);
+ });
+ it('partial forgetting decreases the weight of old evidence without discarding it completely',()=>{
+  const mk=()=>part('kc',1,{q:.02}),old=new Posterior(),fresh=new Posterior(),late=T+5*DAY;
+  for(let i=0;i<20;i++)attempt(old,1,{parts:[mk()]});
+  old.after([{...mk(),v:.05}]);
+  const tight=old.query([mk()],T).v,aged=old.query([mk()],late).v;
+  expect(aged).toBeGreaterThan(tight);expect(aged).toBeLessThan(.5);
+  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
+  const withHistory=old.query([mk()],late).v,onlyNew=fresh.query([mk()],late).v;
+  expect(withHistory).toBeGreaterThan(0);expect(withHistory).toBeLessThan(onlyNew);
+ });
  it('repeated appearances of a fitted or excluded component share their variance',()=>{
   const post=new Posterior(),mk=(x:number)=>part('kc',x,{q:.03});
   for(let i=0;i<9;i++)post.observe([mk(1),mk(-.4)],0,+(i%3!==0),.05,.9,1,0,T+i*3600e3);
