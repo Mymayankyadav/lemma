@@ -17,7 +17,7 @@ export type Fit={pfa?:PfaFit;card_w?:number[];version?:number};
 export type Hypothesis={components:Record<string,Component>;memory:Record<string,Memory>;cards:Record<string,Memory>;counts:Record<string,number>;successes:Record<string,number>};
 export type Prediction={id:string;at:number;stream:'attempt'|'card';p:number;kf:number;pfa:number;base:number;y:number;concept_id?:string;facet?:Facet;confidence?:number|null;hours:number;hint:number;kind:string;features:Record<string,number>;hypotheses:number[]};
 export type DirectEvidence={at:number;session:string;clean:boolean;novel:boolean;uncued:boolean};
-export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;research:boolean;/** N186: exact posterior per hypothesis, the source of the reported uncertainty (predictions never read it). */post?:Posterior[];running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
+export type MeasurementState={hypotheses:Hypothesis[];pi:number[];mix:number[];gaps:Record<string,number>;tracked:string[];direct:Record<string,DirectEvidence[]>;lastInstruction:Record<string,number>;trace:Prediction[];fit:Fit;facts:AtlasFacts;now:number;index:Record<string,Concept>;ix:Lookup;research:boolean;/** N186: joint Gaussian report per hypothesis (predictions never read it). */post?:Posterior[];running:{attempt:{n:number;y:number};card:{n:number;y:number}}};
 /** One-pass lookup tables for replay: every per-event find/filter over the facts was linear, so a replay was quadratic in the number of attempts. */
 export type Lookup={tags:Map<string,AttemptTag[]>;sessions:Map<unknown,{id:string;started_at:string}>;items:Map<unknown,NonNullable<AtlasFacts['items']>[number]>;cardsByConcept:Map<string,CardFact[]>;cards:Map<string,CardFact>;concepts:Map<string,Concept>;kc:Map<string,string>;anc:Map<string,string[]>;cross:Map<string,Map<string,string>>;pfaKc:Map<string,string>;pfaSys:Map<string,string>};
 /** Interned component ids: building 'kc:'+id on every observation made each lookup in `components` hash a fresh string. */
@@ -43,7 +43,7 @@ export function memoryStep(m:Memory|undefined,t:number,grade:number,weight=1,res
  return {s:clamp(m.s+z*(full.s-m.s),.001,36500),d:clamp(m.d+z*(full.d-m.d),1,10),last:reset?t:m.last};
 }
 export function age(c:Component,t:number):void{c.v=Math.min(c.prior,c.v+c.q*Math.max(0,(t-c.at)/DAY));c.at=Math.max(c.at,t);}
-/** Component → id, so the exact posterior can name what a feature refers to without changing Feature. */
+/** Component → id, so the joint report can name what a feature refers to without changing Feature. */
 const IDS=new WeakMap<Component,string>(),INIT=new WeakMap<Component,number>();
 function component(h:Hypothesis,id:string,t:number,sd:number,q=0,m=0,write=true):Component{
  const found=h.components[id];const c=found?(write?found:{...found}):{m,v:sd*sd,prior:sd*sd,q,at:t};if(write&&!found)h.components[id]=c;
@@ -114,7 +114,7 @@ function updateTrial(s:MeasurementState,tags:AttemptTag[],a:Attempt,t:number,hou
  const prior=s.running.attempt,base=(1+prior.y)/(2+prior.n),weight=clamp(a.weight??1)*clamp(observations[0].target.confidence??1);
  s.trace.push({id:String(a.id)+':'+s.trace.length,at:t,stream:'attempt',p:s.mix[0]*kf+s.mix[1]*pf,kf,pfa:pf,base,y,concept_id:tags[0].concept_id,facet:tags[0].facet,confidence:a.confidence_before,hours,hint,kind:a.item_kind??'legacy',features:x,hypotheses:ps});
  for(let i=0;i<s.hypotheses.length;i++){
-  const h=s.hypotheses[i],o=observations[i];s.post?.[i].observe(partsOf(o.fs),o.m+hint,y,options?1/options:.05,o.amplitude,weight,a.item_id?0:bSd*bSd,t);adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);if(weight>0)s.post?.[i].after(partsOf(o.fs));
+  const h=s.hypotheses[i],o=observations[i];s.post?.[i].observe(partsOf(o.fs),o.m+hint,y,options?1/options:.05,o.amplitude,weight,a.item_id?0:bSd*bSd,t);adf(o.fs,o.G(y),o.H,weight,s.research?1e-4:1e-8);
   const k=o.target.concept_id;
   if(y){h.memory[k]=memoryStep(h.memory[k],t,3,weight,true,undefined,s.research);for(const q of tags)if(q!==o.target)h.memory[q.concept_id]=memoryStep(h.memory[q.concept_id],t,3,.4*weight,false,undefined,s.research);}
   else{const r=clamp((1-o.R)*(1-(options?1/options:.05))/(1-o.p));h.memory[k]=memoryStep(h.memory[k],t,1,r*weight,false,undefined,s.research);h.memory[k]=memoryStep(h.memory[k],t,3,(1-r)*weight,true,undefined,s.research);}

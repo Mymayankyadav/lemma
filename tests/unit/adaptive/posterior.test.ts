@@ -32,10 +32,10 @@ describe('Posterior: the ability given all attempts',()=>{
   expect(up.m).toBeGreaterThan(prior.m+.5);expect(down.m).toBeLessThan(prior.m-.5);
   expect(up.v).toBeLessThan(prior.v);expect(down.v).toBeLessThan(prior.v);
  });
- it('more evidence means less variance, and a mixed record is less certain than a clean one',()=>{
+ it('more evidence narrows variance for a repeated mixed record',()=>{
   const v=(n:number,pattern:(i:number)=>number)=>{const p=new Posterior();for(let i=0;i<n;i++)attempt(p,pattern(i));return p.query(all(),T).v;};
   expect(v(20,i=>+(i%3>0))).toBeLessThan(v(6,i=>+(i%3>0)));
-  expect(v(12,i=>+(i%2===0))).toBeLessThan(v(12,i=>+(i%2===0))+1e-9);
+  expect(v(24,i=>+(i%2===0))).toBeLessThan(v(12,i=>+(i%2===0)));
   expect(v(12,i=>+(i%2===0))).toBeLessThan(new Posterior().query(all(),T).v);
  });
  it('is far more certain about the sum than the diagonal would be: the components share each attempt',()=>{
@@ -148,23 +148,23 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   expect(later.v).toBeCloseTo(prior,9);                                       // fully aged: the prior, not less through leftover negative covariances
   expect(later.m).toBeCloseTo(now.m,12);
  });
- it('uncertainty never falls as time passes, never exceeds the prior, stays positive, and is continuous (no jump where the cap is reached)',()=>{
-  const {post,mk}=aged(.01),prior=mk().reduce((z,p)=>z+p.prior,0);let before=post.query(mk(),last).v,capped=false;
+ it('uncertainty rises toward the independent prior continuously for this positively weighted mixed record',()=>{
+  const {post,mk}=aged(.01),prior=mk().reduce((z,p)=>z+p.prior,0);let before=post.query(mk(),last).v;
   for(let days=.5;days<=400;days+=.5){
    const v=post.query(mk(),last+days*DAY).v;
    expect(v).toBeGreaterThanOrEqual(before-1e-12);expect(v).toBeLessThanOrEqual(prior+1e-9);expect(Number.isFinite(v)).toBe(true);   // positive definite along the ageing trajectory
-   if(Math.abs(v-prior)<1e-9)capped=true;before=v;
+   before=v;
   }
-  expect(capped).toBe(true);
+  expect(post.query(mk(),last+1e4*DAY).v).toBeCloseTo(prior,9);
  });
 
- it('each component ages at q/day and its correlations vanish exactly when the prior is restored',()=>{
+ it('each component ages at q/day and correlations decay continuously through marginal prior restoration',()=>{
   const {post,mk}=aged(.02),{S,prior}=post.inspect(),parts=mk();
   expect(S.length).toBe(3);
   for(const days of [1,3,8]){
    const time=last+days*DAY,room=prior.map((p,i)=>Math.max(0,p-S[i][i]));
    const added=room.map(gap=>Math.min(gap,.02*days));
-   const r=room.map((gap,i)=>gap>0?Math.sqrt(Math.max(0,1-(added[i]/gap)**3)):1);
+   const r=prior.map(p=>Math.exp(-.02*days/(2*p)));
    let want=0;
    for(let i=0;i<3;i++){
     const diagonal=S[i][i]+added[i];
@@ -175,49 +175,50 @@ describe('Posterior: curvature and ageing are consistent',()=>{
    expect(post.query(parts,time).v).toBeCloseTo(want,9);
   }
   const capDays=Math.max(...prior.map((p,i)=>Math.max(0,p-S[i][i])/.02));
-  const atCap=post.query(parts,last+Math.ceil(capDays*DAY)).v;
-  expect(atCap).toBeCloseTo(prior.reduce((a,p)=>a+p,0),8);
-  expect(post.query(parts,last+(capDays+1)*DAY).v).toBeCloseTo(atCap,8);
+  const atCap=post.query(parts,last+capDays*DAY).v,r=prior.map(p=>Math.exp(-.02*capDays/(2*p)));
+  let expected=prior.reduce((a,p)=>a+p,0);
+  for(let i=0;i<3;i++)for(let j=0;j<i;j++)expected+=2*r[i]*r[j]*S[i][j];
+  expect(atCap).toBeCloseTo(expected,8);
+  expect(post.query(parts,last+1e4*DAY).v).toBeCloseTo(prior.reduce((a,p)=>a+p,0),8);
  });
- it('long-gap → one attempt has only fresh evidence once the old component has aged to prior',()=>{
+ it('long-gap → one attempt conditions on the aged Gaussian once the old component has aged to prior',()=>{
   const mk=()=>part('kc',1,{q:.02}),old=new Posterior(),fresh=new Posterior(),late=T+60*DAY;
   for(let i=0;i<60;i++)attempt(old,1,{parts:[mk()]});
-  old.after([{...mk(),v:.04}]); // filter's marginal after dense old evidence
-  expect(old.query([mk()],late).v).toBeCloseTo(.5,10);
-  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
-  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([mk()],late).v,10);
-  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([mk()],late).m,10);
+  const aged=old.query([mk()],late),baseline={...mk(),prior:aged.v,m0:aged.m,m:aged.m,v:aged.v};
+  expect(aged.v).toBeCloseTo(.5,10);
+  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[baseline],t:late});
+  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([baseline],late).v,10);
+  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([baseline],late).m,10);
  });
  it('instruction bump → one attempt does not resurrect the old over-tight posterior',()=>{
   const mk=()=>part('kc'),old=new Posterior(),fresh=new Posterior(),late=T+DAY;
   for(let i=0;i<60;i++)attempt(old,1,{parts:[mk()]});
-  old.after([{...mk(),v:.03}]);
   old.touch('kc',.5,0,0,late,.5); // reset at the independent prior
-  expect(old.query([mk()],late).v).toBeCloseTo(.5,10);
-  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
-  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([mk()],late).v,10);
-  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([mk()],late).m,10);
+  const aged=old.query([mk()],late),baseline={...mk(),prior:aged.v,m0:aged.m,m:aged.m,v:aged.v};
+  expect(aged.v).toBeCloseTo(.5,10);
+  attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[baseline],t:late});
+  expect(old.query([mk()],late).v).toBeCloseTo(fresh.query([baseline],late).v,10);
+  expect(old.query([mk()],late).m).toBeCloseTo(fresh.query([baseline],late).m,10);
  });
  it('partial forgetting decreases the weight of old evidence without discarding it completely',()=>{
   const mk=()=>part('kc',1,{q:.02}),old=new Posterior(),fresh=new Posterior(),late=T+5*DAY;
   for(let i=0;i<20;i++)attempt(old,1,{parts:[mk()]});
-  old.after([{...mk(),v:.05}]);
   const tight=old.query([mk()],T).v,aged=old.query([mk()],late).v;
   expect(aged).toBeGreaterThan(tight);expect(aged).toBeLessThan(.5);
   attempt(old,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[mk()],t:late});
   const withHistory=old.query([mk()],late).v,onlyNew=fresh.query([mk()],late).v;
   expect(withHistory).toBeGreaterThan(0);expect(withHistory).toBeLessThan(onlyNew);
  });
- it('the same cubic survival fraction is applied across a partial between-observation gap',()=>{
-  const mk=()=>part('kc',1,{q:.02}),post=new Posterior();
+ it('a partial between-observation gap carries the reported Gaussian into the next likelihood',()=>{
+  const mk=()=>part('kc',1,{q:.02}),post=new Posterior(),fresh=new Posterior();
   attempt(post,1,{parts:[mk()],t:T});
-  post.after([{...mk(),v:.05}]);
-  attempt(post,0,{parts:[mk()],t:T+5*DAY});
-  const {obs}=post.inspect(),fraction=(.02*5)/(.5-.05),r=Math.sqrt(1-fraction**3);
-  expect(obs).toHaveLength(2);
-  expect(obs[0].xs[0]).toBeCloseTo(r,12);
-  expect(obs[0].extra).toBeCloseTo(.5*(1-r*r),12);
-  expect(obs[1].xs[0]).toBeCloseTo(1,12);
+  const tight=post.query([mk()],T),late=T+DAY,aged=post.query([mk()],late),baseline={...mk(),prior:aged.v,m0:aged.m,m:aged.m,v:aged.v};
+  attempt(post,0,{parts:[mk()],t:late});attempt(fresh,0,{parts:[baseline],t:late});
+  const actual=post.query([mk()],late),want=fresh.query([baseline],late);
+  expect(aged.v).toBeCloseTo(tight.v+.02,12);
+  expect(actual.m).toBeCloseTo(want.m,12);
+  expect(actual.v).toBeCloseTo(want.v,12);
+  expect(actual.v).toBeLessThan(aged.v);
  });
  it('repeated appearances of a fitted or excluded component share their variance',()=>{
   const post=new Posterior(),mk=(x:number)=>part('kc',x,{q:.03});
@@ -243,7 +244,7 @@ describe('Posterior: curvature and ageing are consistent',()=>{
   const small=aged(0),cov=small.post.inspect().S;
   const bump=(.5-cov[1][1])/2;expect(bump).toBeGreaterThan(0);
   small.post.touch('kc',.5,0,0,T+DAY,bump);                    // a partial bump preserves sqrt(1/2) of the correlations
-  const expected=cov[0][0]+cov[1][1]+bump+cov[2][2]+2*cov[0][2]+2*Math.sqrt(7/8)*(cov[0][1]+cov[1][2]);
+  const expected=cov[0][0]+cov[1][1]+bump+cov[2][2]+2*cov[0][2]+2*Math.SQRT1_2*(cov[0][1]+cov[1][2]);
   expect(small.post.query(small.mk(),T+DAY).v).toBeCloseTo(expected,9);
   const parts=mk();post.observe(parts,0,1,.05,.9,1,0,T+2*DAY);
   expect(post.query(mk(),T+2*DAY).v).toBeLessThan(after);                         // a new attempt on the concept absorbs the bump
