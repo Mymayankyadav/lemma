@@ -9,6 +9,12 @@ Tests: tests/unit/mcp/selftest-latency.test.ts and existing MCP partition covera
 Scope: MCP smoke fixture path, commit provenance lookup, smoke diagnostics and regression checks, docs/current/N188.md.
 Not: changing timeouts, workflow gates, FIFO behavior, production data or settings, or application feature semantics.
 
+## N187 Remove 13 unused source and test files
+
+Owner task: "Clean lemma repo"
+Stage: Stable · Status: done · Needs: — · Assigned: chat-71388050#6aam
+Done = remove the retired JavaScript app, its three standalone scripts and the unused badge without changing any Supabase paths. See [the cleanup record](docs/current/N187.md).
+
 ## N180 Atlas v3 cutover: tooling, Beta removal and the ordered runbook (Owner task)
 
 Owner task: "Complete every work so cut over can happen don't procrastinate. Like nothing happening in the right order I am confused what come next. You have been sitting on it like forever."
