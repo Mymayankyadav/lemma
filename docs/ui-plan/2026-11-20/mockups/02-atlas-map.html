@@ -1,0 +1,74 @@
+<!doctype html><html lang="en" data-v7 data-theme="graph-night"><head><meta charset="utf-8"><title>Atlas · map</title>
+<link rel="stylesheet" href="/lemma/fonts/v7/fonts.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"><script src="icons.js"></script>
+<style>
+.map{position:absolute;inset:0;background:radial-gradient(70% 45% at 52% 46%,var(--v7-role-subject-analysis-subtle),transparent 70%),var(--v7-role-surface-page)}
+.lab{font:500 13px/1 var(--v7-sans);fill:var(--v7-role-text-secondary);paint-order:stroke;stroke:var(--v7-role-surface-page);stroke-width:4px;stroke-linejoin:round}
+.lab.hi{font:600 16px/1 var(--v7-sans);fill:var(--v7-role-text-primary)}
+.clu{font:600 12px/1 var(--v7-sans);letter-spacing:.24em;fill:var(--v7-role-text-tertiary)}
+.search{position:absolute;left:12px;right:12px;top:10px;height:52px;border-radius:26px;background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);box-shadow:var(--v7-shadow-2);display:flex;align-items:center;padding:0 6px}
+.fab{position:absolute;right:12px;width:48px;height:48px;border-radius:24px;background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);box-shadow:var(--v7-shadow-2);display:flex;align-items:center;justify-content:center;color:var(--v7-role-text-primary)}
+.edge{position:absolute;height:32px;border-radius:16px;background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);display:flex;align-items:center;gap:6px;padding:0 10px 0 6px;font:500 13px/1 var(--v7-sans);color:var(--v7-role-text-secondary);box-shadow:var(--v7-shadow-1)}
+.peek{position:absolute;left:10px;right:10px;bottom:88px;border-radius:var(--v7-radius-4);background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);box-shadow:var(--v7-shadow-3);padding:6px 16px 14px}
+.state{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:13px;font:600 12px/1 var(--v7-sans)}
+</style></head><body>
+<div class="phone">
+ <div class="map sky"></div>
+ <svg width="390" height="844" viewBox="0 0 390 844" style="position:absolute;inset:0">
+  <defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--v7-role-border-default)"/></marker></defs>
+  <text x="195" y="128" text-anchor="middle" class="clu">ANALYSIS</text>
+  <g stroke="var(--v7-role-border-default)" stroke-width="1.3" fill="none" marker-end="url(#ar)" opacity=".9">
+   <path d="M92 196 L168 168"/><path d="M188 176 L206 288"/><path d="M286 210 L228 292"/>
+   <path d="M224 330 L246 430"/><path d="M118 384 L282 384"/><path d="M296 400 L178 480"/><path d="M252 470 L292 530"/>
+  </g>
+  <path d="M232 304 L322 268" stroke="var(--v7-role-link-fg)" stroke-width="1.3" stroke-dasharray="4 4" fill="none"/>
+  <path d="M120 384 C 70 300, 70 250, 88 206" stroke="var(--v7-role-border-subtle)" stroke-width="1.2" stroke-dasharray="2 4" fill="none"/>
+  <!-- stars: demonstrated (filled star), in progress (half), up next (outline star), not started (hollow) -->
+  <g fill="var(--v7-role-subject-analysis)">
+   <path transform="translate(80,186)" d="M10 0l3 6.5 7 .8-5.2 4.8 1.4 7L10 15.6 3.8 19l1.4-7L0 7.3l7-.8z"/>
+   <path transform="translate(168,158)" d="M10 0l3 6.5 7 .8-5.2 4.8 1.4 7L10 15.6 3.8 19l1.4-7L0 7.3l7-.8z"/>
+   <path transform="translate(280,192)" d="M10 0l3 6.5 7 .8-5.2 4.8 1.4 7L10 15.6 3.8 19l1.4-7L0 7.3l7-.8z"/>
+  </g>
+  <circle cx="216" cy="308" r="26" fill="none" stroke="var(--v7-role-link-fg)" stroke-width="2" opacity=".9"/>
+  <circle cx="216" cy="308" r="12" fill="none" stroke="var(--v7-role-subject-analysis)" stroke-width="2.5"/>
+  <path d="M216 296 a12 12 0 0 0 0 24z" fill="var(--v7-role-subject-analysis)"/>
+  <path transform="translate(102,374)" d="M10 0l3 6.5 7 .8-5.2 4.8 1.4 7L10 15.6 3.8 19l1.4-7L0 7.3l7-.8z" fill="none" stroke="var(--v7-role-subject-analysis)" stroke-width="1.6"/>
+  <circle cx="330" cy="262" r="7" fill="var(--v7-role-surface-page)" stroke="var(--v7-role-link-fg)" stroke-width="1.6" stroke-dasharray="3 2"/>
+  <g fill="var(--v7-role-surface-page)" stroke="var(--v7-role-text-tertiary)" stroke-width="1.6">
+   <circle cx="292" cy="384" r="6"/><circle cx="250" cy="446" r="6"/><circle cx="168" cy="488" r="6"/><circle cx="300" cy="544" r="6"/><circle cx="120" cy="560" r="6"/>
+  </g>
+  <g transform="translate(244,438)" stroke="var(--v7-role-status-warning)" stroke-width="1.6" fill="none"><path d="M13 3 A9 9 0 1 0 15 11"/><path d="M15 1v4h-4"/></g>
+  <!-- labels with halos, never crossed by edges -->
+  <text x="62" y="222" class="lab">Metric spaces</text>
+  <text x="150" y="150" class="lab">Open and closed sets</text>
+  <text x="262" y="232" class="lab">Sequences</text>
+  <text x="246" y="335" class="lab hi">Compactness</text>
+  <text x="330" y="288" text-anchor="middle" class="lab" style="fill:var(--v7-role-link-fg)">Finite subcover</text>
+  <text x="74" y="414" class="lab">Continuity</text>
+  <text x="304" y="388" class="lab">Limits</text>
+  <text x="262" y="474" class="lab">Heine–Borel</text>
+  <text x="182" y="508" class="lab">Uniform continuity</text>
+  <text x="214" y="572" class="lab">Extreme value thm.</text>
+  <text x="70" y="584" class="lab">Connectedness</text>
+ </svg>
+
+ <div class="search"><span class="ib"><span class="i" data-i="chevron-left"></span></span><span class="t-body ter grow">Search the Atlas</span><span class="ib"><span class="i" data-i="list"></span></span></div>
+ <span class="fab" style="top:76px"><span class="i" data-i="layers"></span></span>
+ <span class="fab" style="top:132px"><span class="i" data-i="locate-fixed"></span></span>
+ <span class="edge" style="right:8px;top:398px"><span class="subj sm to">τ</span>Topology<span class="i xs" data-i="chevron-right"></span></span>
+ <span class="edge" style="left:12px;top:612px"><span class="i xs" data-i="chevron-left"></span><span class="subj sm al">λ</span>Linear Algebra</span>
+
+ <section class="peek" aria-label="Selected concept">
+  <div class="grab"></div>
+  <div class="row between"><div class="t-subhead">Compactness</div><span class="t-cap">CP4 · Real Analysis</span></div>
+  <div class="row" style="margin:8px 0 12px;gap:6px">
+   <span class="state" style="background:var(--v7-role-selection-subtle);color:var(--v7-role-link-fg)">◐ In progress · step 3 of 4</span>
+   <span class="state" style="background:var(--v7-role-status-warning-subtle);color:var(--v7-role-status-warning)">↻ 9 due</span>
+  </div>
+  <div class="row"><span class="btn primary small grow">Continue with tutor</span><span class="btn tonal small">Review 9</span><span class="btn tonal small" style="width:40px;padding:0"><span class="i s" data-i="chevron-up"></span></span></div>
+ </section>
+
+ <div class="dock"><div class="tabbar">
+  <span class="tab"><span class="i" data-i="house"></span>Today</span><span class="tab on"><span class="i" data-i="route"></span>Paths</span>
+  <span class="tab"><span class="i" data-i="layers"></span>Review<span class="badge">23</span></span><span class="tab"><span class="i" data-i="calendar"></span>Calendar</span><span class="tab"><span class="i" data-i="chart-column"></span>Progress</span>
+ </div><span class="capture"><span class="i" data-i="plus"></span></span></div>
+</div></body></html>

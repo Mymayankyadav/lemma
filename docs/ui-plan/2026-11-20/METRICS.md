@@ -89,3 +89,19 @@ im = Image.open('artifacts/ui-audit/frames/F173-full-atlas-map.png').convert('RG
 px = im.load(); pts = [(x, y) for y in range(int(135*s), int(425*s), 2) for x in range(0, im.size[0], 2) if max(px[x, y]) > 70]
 xs, ys = zip(*pts); print(min(xs)/s, max(xs)/s, min(ys)/s, max(ys)/s)   # → x 16–359, y 213–424 (band ≈ 211–240px tall)
 ```
+
+## Code measurements (v2)
+
+| What | Value | Source |
+|---|---|---|
+| Legacy heading rule active under v7 | `h1–h4 { font-family: var(--font-display) }` (= Google `Newsreader`, not loaded by v7) | `src/styles/graph.css:16`, `src/app/shellFonts.ts` |
+| v6 stylesheets imported in the shell | 4 (`ui/v6/tokens.css`, `mockup.css`, `mockup-bindings.css`, `v6-atlas-shell.css`) | `src/app/AppShell.tsx:15–22` |
+| v7-era stylesheets | 44 | `src/ui/v7`, `src/app/v7`, `src/features/*/v7`, tutor, pad |
+| Raw px font declarations | 43 (40 in `tutor.css`) | CSS scan |
+| Off-token rem font sizes | 13 (`atlas-values.css` and others) | CSS scan |
+| Feature stylesheets with `position: fixed` | 11 | CSS scan |
+| Distinct z-index values | 14 (−1 … 30), no scale | CSS scan |
+| Tutor own button classes | `.btn` `.tb` `.sbtn` `.send` `.chip` | `src/features/tutor/tutor.css` |
+| Scheduler availability | only planned study blocks; otherwise a hold reason is printed | `src/data/adaptive/demo-agenda.ts`, `AtlasPanels.tsx` `AtlasTodayPanel` |
+| Tutor reply pickup | app polls every 3 s while a turn is pending and visible; `tutor_next` waits ≤ 18 s per call | `DemoCheckpointTutor.tsx:169–178`, `supabase/functions/mcp/tutor-connector.ts` |
+| MCP tool results | text only | `supabase/functions/mcp/server.ts:39–41` |

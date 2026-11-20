@@ -60,3 +60,20 @@ Where a line is removed for sighted users, keep it as screen-reader text if it s
 | 47 | Tutor (path, no plan) · F101 | Approve a checkpoint in your plan to start a tutor conversation. · Back to path | This path has no plan yet. · Plan with your tutor |
 | 48 | Tutor (demo) · F282 | Saved in this demo. Import a tutor reply to continue. | *(status line)* Demo: import a reply to continue |
 | 49 | Pad · F283 | Work through a checkpoint with notes, mathematics and ink. Drafts stay on this device until you explicitly export or share a selection. | Notes and ink for a checkpoint. Saved on this device. |
+
+## v2 additions (from the full revisit)
+
+| # | Screen · frame | Before | After |
+|---|---|---|---|
+| 50 | Today evening · F287 | Free evening · Nothing planned for the rest of today · A little room to think is a good thing. · Plan my day | Free evening · Close the day · Plan tomorrow |
+| 51 | Today after midnight · F290 | Good evening *(at 00:40)* | Still up? *(hero: Plan tomorrow)* |
+| 52 | Path not found · F123 | Path unavailable. Check your connection or try again. · Try again | This path doesn't exist. · Back to Paths |
+| 53 | Checkpoint not found · F124 | Checkpoint unavailable. Check your connection or try again. | This checkpoint doesn't exist. · Back to the path |
+| 54 | Card not found · F138 | This card could not be loaded. · Try again | Card #99999 doesn't exist. · Back to Cards |
+| 55 | Tutor › Connection | Copy bearer token · Create a connector grant for this question · Handoff reference · Check for reply | *(under ⋯ › Connection)* Copy connection prompt · Reference · Refresh |
+| 56 | Tutor | A saved submission is waiting for confirmation. | Sending… *(status line, retries on its own)* |
+| 57 | Progress › Time empty · E098 | No active goals. Set one from Settings › Planning. | No goals yet · Add a goal |
+| 58 | Paths Paused/Done/Archived · F089–F091 | No paused paths · Paths you mark this way will gather here. · Start a new path | Nothing paused. *(no button)* |
+| 59 | Checkpoint locked · F117 | Work on this with your tutor · 0 due · Review Uniform continuity | Unlocks after Heine–Borel |
+| 60 | Delete task · F062 | Task deleted *(no Undo)* | Task deleted · Undo |
+| 61 | Search · F013 | Nothing matches "zzzzqq". | Nothing matches "zzzzqq" · Add task "zzzzqq" · Ask your tutor |

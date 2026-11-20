@@ -1,0 +1,91 @@
+/* Concept mockups for the 2026-11-20 UI plan. Built only on Lemma v7 tokens (src/ui/v7/tokens.css, copied next to
+   these files by render.mjs) and the v7 fonts (/lemma/fonts/v7/fonts.css). No new colours: every colour is a role token. */
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);
+ font:400 16px/1.5 var(--v7-sans);-webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums lining-nums}
+.phone{position:relative;width:390px;height:844px;overflow:hidden;background:var(--v7-role-surface-page)}
+.phone.tall{height:auto;min-height:844px;overflow:visible}
+.sky:before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.55;
+ background:radial-gradient(1px 1px at 12% 18%,var(--v7-role-text-tertiary) 50%,transparent 51%),radial-gradient(1px 1px at 72% 9%,var(--v7-role-text-tertiary) 50%,transparent 51%),
+ radial-gradient(1px 1px at 88% 34%,var(--v7-role-text-tertiary) 50%,transparent 51%),radial-gradient(1px 1px at 33% 62%,var(--v7-role-border-default) 50%,transparent 51%),
+ radial-gradient(1px 1px at 58% 78%,var(--v7-role-border-default) 50%,transparent 51%),radial-gradient(1.4px 1.4px at 6% 88%,var(--v7-role-text-tertiary) 50%,transparent 51%)}
+svg{display:block}
+.i{display:inline-flex;width:22px;height:22px;flex:none}.i svg{width:100%;height:100%}
+.i.s{width:18px;height:18px}.i.xs{width:14px;height:14px}.i.l{width:26px;height:26px}
+
+/* type roles (v7 scale: 12 14 16 17 19 20 26 28 32 44 64) */
+.t-display{font:500 44px/1.05 var(--v7-serif);letter-spacing:-.01em}
+.t-title{font:500 32px/1.1 var(--v7-serif);letter-spacing:-.005em}
+.t-headline{font:500 26px/1.15 var(--v7-serif)}
+.t-subhead{font:500 20px/1.25 var(--v7-serif)}
+.t-lead{font:400 19px/1.4 var(--v7-sans)}
+.t-reading{font:400 17px/1.55 var(--v7-glyph)}
+.t-body{font:400 16px/1.5 var(--v7-sans)}
+.t-supp{font:400 14px/1.43 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.t-cap{font:400 12px/1.33 var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.t-eyebrow{font:600 12px/1.33 var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
+.t-num{font:500 28px/1 var(--v7-sans)}
+.m{font-family:var(--v7-glyph);font-style:italic}
+.sec{color:var(--v7-role-text-secondary)}.ter{color:var(--v7-role-text-tertiary)}.link{color:var(--v7-role-link-fg)}
+.ok{color:var(--v7-role-status-success)}.warn{color:var(--v7-role-status-warning)}
+
+/* structure */
+.pad{padding:0 16px}.row{display:flex;align-items:center;gap:8px}.col{display:flex;flex-direction:column}
+.grow{flex:1;min-width:0}.gap4{gap:4px}.gap12{gap:12px}.gap16{gap:16px}.between{justify-content:space-between}
+.hdr{height:52px;display:flex;align-items:center;gap:4px;padding:0 6px 0 8px}
+.ib{width:44px;height:44px;border-radius:var(--v7-radius-2);display:inline-flex;align-items:center;justify-content:center;color:var(--v7-role-text-secondary);position:relative;flex:none}
+.badge{position:absolute;top:6px;right:5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);font:600 11px/17px var(--v7-sans);text-align:center}
+.card{background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);box-shadow:var(--v7-shadow-1)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--v7-role-surface-overlay);border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;box-shadow:var(--v7-shadow-3);border-top:1px solid var(--v7-role-border-subtle)}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--v7-role-border-default);margin:8px auto 4px;opacity:.7}
+.scrim{position:absolute;inset:0;background:rgb(5 10 27 / 55%)}
+.divider{height:1px;background:var(--v7-role-border-subtle)}
+
+/* controls */
+.btn{height:48px;border-radius:var(--v7-radius-3);display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;font:600 16px/1 var(--v7-sans);border:1px solid transparent;white-space:nowrap}
+.btn.primary{background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:var(--v7-shadow-1)}
+.btn.tonal{background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary)}
+.btn.ghost{color:var(--v7-role-link-fg);padding:0 10px}
+.btn.small{height:40px;border-radius:var(--v7-radius-2);font-size:14px;padding:0 14px}
+.chip{height:32px;border-radius:999px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border:1px solid var(--v7-role-border-subtle);background:var(--v7-role-surface-raised);font:500 14px/1 var(--v7-sans);color:var(--v7-role-text-secondary);white-space:nowrap}
+.chip.on{background:var(--v7-role-selection-subtle);border-color:transparent;color:var(--v7-role-link-fg)}
+.seg{display:flex;background:var(--v7-role-surface-sunken);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);padding:3px}
+.seg>span{flex:1;height:38px;border-radius:var(--v7-radius-2);display:flex;align-items:center;justify-content:center;font:500 14px/1 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.seg>span.on{background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1)}
+.tabs{display:flex;gap:20px;border-bottom:1px solid var(--v7-role-border-subtle)}
+.tabs>span{padding:12px 0 10px;font:500 14px/1 var(--v7-sans);color:var(--v7-role-text-tertiary);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs>span.on{color:var(--v7-role-text-primary);border-color:var(--v7-role-link-fg)}
+.toggle{width:44px;height:26px;border-radius:13px;background:var(--v7-role-surface-muted);border:1px solid var(--v7-role-border-default);position:relative;flex:none}
+.toggle:after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:var(--v7-role-text-secondary)}
+.toggle.on{background:var(--v7-role-action-bg);border-color:transparent}.toggle.on:after{left:21px;background:var(--v7-role-text-on-action)}
+
+/* subject glyph tiles (glyph + colour, never colour alone) */
+.subj{width:28px;height:28px;border-radius:var(--v7-radius-1);display:inline-flex;align-items:center;justify-content:center;font:500 16px/1 var(--v7-glyph);flex:none}
+.subj.an{background:var(--v7-role-subject-analysis-subtle);color:var(--v7-role-subject-analysis)}
+.subj.to{background:var(--v7-role-subject-topology-subtle);color:var(--v7-role-subject-topology)}
+.subj.al{background:var(--v7-role-subject-algebra-subtle);color:var(--v7-role-subject-algebra)}
+.subj.sm{width:20px;height:20px;font-size:13px;border-radius:6px}
+
+/* tab bar (as shipped: floating dock with five tabs and Capture) */
+.dock{position:absolute;left:10px;right:10px;bottom:12px;height:64px;display:flex;align-items:center;gap:6px}
+.tabbar{flex:1;height:64px;border-radius:22px;background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);box-shadow:var(--v7-shadow-2);display:grid;grid-template-columns:repeat(5,1fr);padding:4px}
+.tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:16px;color:var(--v7-role-text-tertiary);font:500 11.5px/1 var(--v7-sans);position:relative}
+.tab .i{width:22px;height:22px}.tab.on{background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary)}
+.tab .badge{top:2px;right:12px}
+.capture{width:52px;height:52px;border-radius:18px;border:1px solid var(--v7-role-border-default);background:var(--v7-role-surface-overlay);display:flex;align-items:center;justify-content:center;color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-2)}
+
+/* docked action bar (replaces the tab bar on detail pages) */
+.actionbar{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 20px;background:linear-gradient(to top,var(--v7-role-surface-page) 70%,transparent);display:flex;gap:10px}
+.actionbar .btn{flex:1}
+
+/* the ruler (the custom scale from Calendar, reused) */
+.ruler{position:relative;height:44px}
+.ruler .ticks{position:absolute;left:0;right:0;bottom:12px;height:16px;
+ background:repeating-linear-gradient(to right,var(--v7-role-border-default) 0 1px,transparent 1px 8px),repeating-linear-gradient(to right,var(--v7-role-text-tertiary) 0 1px,transparent 1px 40px);
+ background-size:100% 8px,100% 16px;background-repeat:no-repeat;background-position:0 100%,0 100%;opacity:.8}
+.ruler .fill{position:absolute;left:0;bottom:12px;height:3px;border-radius:2px;background:var(--v7-role-link-fg)}
+.ruler .thumb{position:absolute;bottom:4px;width:14px;height:30px;border-radius:7px;background:var(--v7-role-text-primary);box-shadow:0 0 0 4px var(--v7-role-selection-subtle);transform:translateX(-7px)}
+.ruler .lbl{position:absolute;bottom:-6px;font:400 11px/1 var(--v7-sans);color:var(--v7-role-text-tertiary);transform:translateX(-50%)}
+
+/* annotation callouts (only on the board) */
+.note{font:400 12px/1.35 var(--v7-sans);color:var(--v7-role-text-tertiary)}
