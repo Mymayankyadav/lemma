@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 import org.junit.Test;
@@ -25,12 +26,12 @@ public class ExportsTest {
         File dir = Files.createTempDirectory("lemma-pad-exports").toFile();
         try {
             File previous = Exports.newFile(dir, "lemma-pad.html");
-            Files.writeString(previous.toPath(), "first owner's private Pad");
+            Files.write(previous.toPath(), "first owner's private Pad".getBytes(StandardCharsets.UTF_8));
             assertFalse(Exports.clearCache(dir, file -> {assertTrue(file.exists());throw new SecurityException("fixture");}));
             assertFalse(previous.exists());
             assertFalse(previous.getParentFile().exists());
             File next = Exports.newFile(dir, "lemma-pad.html");
-            Files.writeString(next.toPath(), "another owner's Pad");
+            Files.write(next.toPath(), "another owner's Pad".getBytes(StandardCharsets.UTF_8));
             assertNotEquals(previous.getAbsolutePath(), next.getAbsolutePath());
             assertEquals("lemma-pad.html", next.getName());
             assertFalse(previous.exists());
