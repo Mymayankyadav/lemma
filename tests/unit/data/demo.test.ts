@@ -388,3 +388,41 @@ describe("demo adapter", () => {
   });
 
 });
+
+it('N189 admits the exact eligible demo card without substituting other due cards',async()=>{
+  const api=make(),project=(await api.listProjects()).find(row=>!row.system&&row.status!=='archived')!;
+  const created=await api.createNote({projectSlug:project.slug,front:'Exact target in a mixed queue',
+   back:'Expected answer',type:'basic',kind:'other'});
+  const detail=await api.getCard(created.noteNo),cardId=detail.cards[0].cardId!;
+  expect(cardId).toBeTruthy();
+  expect(await api.getExactReviewCard(cardId,true)).toMatchObject({cardId,noteNo:created.noteNo,front:'Exact target in a mixed queue'});
+  expect(await api.getExactReviewCard('missing',true)).toBeNull();
+  await api.setNoteStatus(created.noteNo,'suspended');
+  expect(await api.getExactReviewCard(cardId,true)).toBeNull();
+  expect(await api.getExactReviewCard(cardId)).toBeNull();
+});
+
+it('restores the authored card, path, real grade and undo in its own demo tab only',async()=>{
+ const rows=new Map<string,string>();
+ const tab={getItem:(k:string)=>rows.get(k)??null,setItem:(k:string,v:string)=>{rows.set(k,v);}};
+ const reopen=()=>new DemoAdapter({now:()=>now,timeZone:'UTC',authoredCardStorage:tab});
+ const seed=reopen(),other=(await seed.getReviewItems({...filter,decks:[]}))[0];
+ const old=await seed.recordReview({cardId:other.cardId,confidence:null,rating:3,durationMs:30,
+  next:preview(other.state,now,scheduleConfig(await seed.getSettings()))[3].card});
+ const first=reopen(),path=await first.createProjectDraft({title:'Reload test path'});
+ const {noteNo}=await first.createNote({projectSlug:path.slug,front:'Durable front',back:'Durable back',type:'basic',kind:'other'});
+ const id=(await first.getCard(noteNo)).cards[0].cardId!;
+ const second=reopen(),card=await second.getExactReviewCard(id,true);
+ expect(card).toMatchObject({cardId:id,noteNo,front:'Durable front',back:'Durable back',projectSlug:path.slug});
+ const next=preview(card!.state,now,scheduleConfig(await second.getSettings()))[3].card;
+ const {reviewId}=await second.recordReview({cardId:id,confidence:null,rating:3,durationMs:100,next});
+ const third=reopen();
+ expect(reviewId).toBeGreaterThan(old.reviewId);
+ await expect(third.undoReview(old.reviewId)).rejects.toMatchObject({code:'not_found'});
+ expect((await third.getCard(noteNo)).history).toContainEqual(expect.objectContaining({rating:3}));
+ await third.undoReview(reviewId);
+ expect((await reopen().getExactReviewCard(id))?.state).toEqual(card!.state);
+ await third.setNoteStatus(noteNo,'suspended');
+ expect(await reopen().getExactReviewCard(id)).toBeNull();
+ expect(await make().getExactReviewCard(id)).toBeNull();
+});

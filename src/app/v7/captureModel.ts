@@ -1,3 +1,4 @@
+import type {CapturedTaskDraft} from '../../features/tasks/taskDraft';
 /** PLAN §6.1 F. The local, rule-based capture recogniser. No network, no model: dates, times, lengths, "#path" and "front :: back". */
 export type CaptureKind='task'|'block'|'card'|'thought';
 export const captureKinds:readonly CaptureKind[]=['task','block','card','thought'];
@@ -108,3 +109,13 @@ export function defaultStart(date:string|null,time:string|null,context:{now:Date
  return total>=1440?{date:addDays(today,1),time:'09:00'}:{date:today,time:pad(Math.floor(total/60))+':'+pad(total%60)};
 }
 export {monthNames};
+
+/** Only an explicit time creates an instant. A time without a date is on the owner's civil day. */
+export function captureTaskDraft(parsed:CaptureParse,localDay:string,zone:string,subjectId:string|null):CapturedTaskDraft{
+ const date=parsed.date??localDay;
+ return {zone,values:{
+  title:parsed.title,estimate:parsed.minutes===null?'':String(parsed.minutes),priority:'normal',
+  dueKind:parsed.time?'instant':parsed.date?'date':'none',dueDate:date,dueInstant:date+'T'+(parsed.time??'17:00'),
+  projectId:parsed.path?.id??'',subjectId:subjectId??'',
+ }};
+}

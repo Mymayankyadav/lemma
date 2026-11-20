@@ -10,11 +10,12 @@ import {useToast} from '../../../ui/Toast';
 import {DEFAULT_LENGTH,QUICK_LENGTHS,quickInput,quickStart,startLabel} from './quickAddModel';
 import {isFlagOn} from '../../../flags';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {calendarBlockDraft,type CalendarBlockDraft} from '../block-sheet/blockDraft';
 
 /** Tap an empty slot, type a title, pick a length. Everything else lives under More options. */
 export default function QuickAddSheet({open,date,zone,start,taskId,length,projects,onClose,onSaved,onMore}:{
  open:boolean;date:string;zone:string;start:string|null;taskId:string|null;length:number|null;projects:readonly ProjectSummary[];
- onClose:()=>void;onSaved:()=>void;onMore:(startsAt:string,carry:{title:string;taskId:string|null;minutes:number})=>void;
+ onClose:()=>void;onSaved:()=>void;onMore:(draft:CalendarBlockDraft)=>void;
 }){
  const notify=useToast();
  const [title,setTitle]=useState(''),[minutes,setMinutes]=useState<number>(length??DEFAULT_LENGTH),[study,setStudy]=useState(true);
@@ -44,7 +45,7 @@ export default function QuickAddSheet({open,date,zone,start,taskId,length,projec
   finally{setBusy(false);}
  }
  return <Sheet open={open} onClose={onClose} title="New block" eyebrow={formatShortDate(startsAt,{zone})+' · '+formatClock(startsAt,{zone})+'–'+formatClock(new Date(Date.parse(startsAt)+minutes*60_000),{zone})} footer={<>
-   <Button variant="ghost" onClick={()=>onMore(startsAt,{title:title.trim(),taskId,minutes})}>More options</Button>
+   <Button variant="ghost" disabled={busy} onClick={()=>onMore(calendarBlockDraft({title,kind:study?'study':'busy',startsAt,minutes,zone,projectId:projectId||null,taskId}))}>More options</Button>
    <Button variant="primary" loading={busy} onClick={()=>{void save();}}>Add block</Button></>}>
   <form className="v7-qa" onSubmit={event=>{event.preventDefault();void save();}}>
    <Field label="Title" value={title} autoFocus maxLength={200} error={error||undefined} onChange={event=>setTitle(event.target.value)}/>
