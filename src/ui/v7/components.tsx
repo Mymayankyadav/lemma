@@ -103,14 +103,28 @@ export function Chip({
 }
 
 /** V11 (v7 UX audit r3): whether every option's label fits its segment at the current width and text size. */
-export function useSegmentsFit(ref: { current: HTMLElement | null }, key: string): boolean {
+export function useSegmentsFit(ref: { current: HTMLElement | null }, key: string, measureUnwrapped = false): boolean {
   const [fit, setFit] = useState(true);
   useLayoutEffect(() => {
     const box = ref.current;
     if (!box) return;
     // The label's own width (it may use the button's padding), against the button's: overlapping text is what matters.
     const range = typeof document.createRange === "function" ? document.createRange() : null;
+    const probe = measureUnwrapped ? document.createElement("span") : null;
+    if (probe) {
+      probe.ariaHidden = "true";
+      probe.style.cssText = "position:fixed;visibility:hidden;pointer-events:none;white-space:pre;width:max-content";
+    }
     const textWidth = (button: HTMLElement) => {
+      // Measure the same single line in both layouts. A range over already-wrapped text
+      // can report that it fits, unwrap the control and resize it again on the next frame.
+      if (probe) {
+        probe.textContent = button.textContent;
+        button.appendChild(probe);
+        const width = probe.getBoundingClientRect().width;
+        probe.remove();
+        return width;
+      }
       if (!range) return button.scrollWidth;
       range.selectNodeContents(button);
       return range.getBoundingClientRect?.().width ?? button.scrollWidth;
@@ -125,7 +139,7 @@ export function useSegmentsFit(ref: { current: HTMLElement | null }, key: string
     observer?.observe(box);
     void document.fonts?.ready.then(check).catch(() => undefined);
     return () => observer?.disconnect();
-  }, [ref, key]);
+  }, [ref, key, measureUnwrapped]);
   return fit;
 }
 export function Segmented({
@@ -136,6 +150,7 @@ export function Segmented({
   tabs = false,
   disabled = false,
   panelId,
+  measureUnwrapped = false,
 }: {
   label: string;
   options: string[];
@@ -144,6 +159,7 @@ export function Segmented({
   tabs?: boolean;
   disabled?: boolean;
   panelId?: string;
+  measureUnwrapped?: boolean;
 }) {
   const tabSemantics=tabs&&!!panelId;
   const refs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -151,7 +167,7 @@ export function Segmented({
   // the kit's Picker menu and up to three wrap onto two lines. A hidden copy keeps measuring, so it switches back.
   const box = useRef<HTMLDivElement>(null), [mode, setMode] = useState("segments");
   // The measured element moves when the mode flips, so the key includes the mode and the observer follows it.
-  const fit = useSegmentsFit(box, options.join("\u0000") + "|" + mode), menu = !tabs && !fit && options.length > 3;
+  const fit = useSegmentsFit(box, options.join("\u0000") + "|" + mode, measureUnwrapped), menu = !tabs && !fit && options.length > 3;
   useEffect(() => setMode(menu ? "menu" : "segments"), [menu]);
   const control = (measure: boolean) => (
     <div
@@ -463,8 +479,10 @@ export function DatePicker({
   value,
   onChange,
   label = "Date",
+  today,
 }: {
   value: string;
+  today?: string;
   onChange: (v: string) => void;
   label?: string;
 }) {
@@ -477,8 +495,9 @@ export function DatePicker({
     onChange(dateString(date));
     setOpen(false);
   }
+  const currentDay = () => today ? new Date(today + "T12:00:00") : new Date();
   function shortcut(offset: number) {
-    const date = new Date();
+    const date = currentDay();
     date.setDate(date.getDate() + offset);
     pick(date);
   }
@@ -506,7 +525,7 @@ export function DatePicker({
           </Button>
           <Button
             small
-            onClick={() => shortcut((8 - new Date().getDay()) % 7 || 7)}
+            onClick={() => shortcut((8 - currentDay().getDay()) % 7 || 7)}
           >
             Next Monday
           </Button>

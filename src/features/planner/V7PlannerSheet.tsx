@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../data/StudyUiRelease';
 import {useState} from 'react';
 import {Link} from 'react-router';
 import type {TaskRecord} from '../../data/tasks';
@@ -36,10 +37,11 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
  selected:Set<string>;overrides:Map<string,Move>;unplaced:PlannerUnplaced[];count:number;rangeDays:number;
  onClose:()=>void;onCommit:()=>void;onToggle:(key:string,on:boolean)=>void;onMove:(key:string,part:'date'|'start'|'end',value:string,original:Move)=>void;onRange:(days:number)=>void;
 }){
+ const repair=useStudyUi();
  const [editing,setEditing]=useState<string|null>(null);
  return <Sheet open onClose={onClose} title="Plan study tasks" eyebrow={'Plan · '+formatShortDate(anchor,{zone})}
   footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button>
-   <Button variant="primary" disabled={busy||loading||!!selectionError||!count} onClick={onCommit}>{busy?'Saving…':count===1?'Add 1 block':'Add '+count+' blocks'}</Button></>}>
+   {(!repair||count>0)&&<Button variant="primary" disabled={busy||loading||!!selectionError||!count} onClick={onCommit}>{busy?'Saving…':count===1?'Add 1 block':'Add '+count+' blocks'}</Button>}</>}>
   <div className="v7-plan">
    <Picker label="Days to plan" value={rangeLabel(rangeDays)} options={ranges.map(rangeLabel)} disabled={loading||busy}
     onChange={label=>onRange(ranges.find(n=>rangeLabel(n)===label)??1)}/>
@@ -47,7 +49,8 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
    {error&&<p role="alert" className="v7-alert">{error}</p>}
    {selectionError&&<p role="alert" className="v7-alert">{selectionError}</p>}
    {preview&&<section aria-label="Planner preview" className="v7-plan-list">
-    {preview.placements.length===0&&<p className="v7-meta">No free slots left in these days. Try more days, or free up time in Calendar.</p>}
+    {repair&&preview.placements.length===0&&unplaced.length===0&&<div><p>No eligible tasks to plan.</p><Link className="v7-button v7-primary" to="/tasks?new=1" onClick={onClose}>Add task</Link></div>}
+    {preview.placements.length===0&&(!repair||unplaced.some(item=>item.reason==='no_capacity'))&&<p className="v7-meta">No free slots left in these days. Try more days, or free up time in Calendar.</p>}
     {preview.placements.map(place=>{
      const key=place.taskId+':'+place.part,chosen=selected.has(key),moved=overrides.get(key)??place;
      const title=tasks.find(task=>task.id===place.taskId)?.title??'Study task';
@@ -71,7 +74,7 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
      {unplaced.map((entry,index)=>{const task=tasks.find(item=>item.id===entry.taskId),line=unplacedLine(entry,task,preview,zone,rangeDays);
       return <div key={entry.taskId+':'+index} className="v7-plan-row">
        <p><strong>{task?.title??'Study task'}</strong></p><p className="v7-meta">{line.text}</p>
-       {line.action&&(line.action.to?<Link className="v7-button v7-ghost v7-small" to={line.action.to}><span>{line.action.label}</span></Link>
+       {line.action&&(line.action.to?<Link className="v7-button v7-ghost v7-small" to={line.action.to} onClick={onClose}><span>{line.action.label}</span></Link>
         :<Button variant="ghost" small onClick={()=>onRange(line.action!.range!)}>{line.action.label}</Button>)}
       </div>;})}
     </section>}

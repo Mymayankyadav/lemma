@@ -5,7 +5,8 @@ import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as React
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
 import {Ban,CalendarPlus,Check,ChevronDown,ChevronUp,GripVertical,Pencil,Play,RotateCcw,Trash2} from 'lucide-react';
 import {useHome,useSettings} from '../../../data/hooks';
-import {getTaskApi} from '../../../data/tasks';
+import {useStudyUi} from '../../../data/StudyUiRelease';
+import {getTaskApi,onTaskChange} from '../../../data/tasks';
 import type {TaskPatch,TaskRecord} from '../../../data/tasks/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
@@ -38,32 +39,47 @@ const merge=(old:TaskRecord[],next:readonly TaskRecord[])=>{
 
 /** PLAN §6.6: tasks as To do / Doing / Done, one card per group, rows with chips, swipe right to complete. */
 export default function TasksV7(){
- const room=isFlagOn('v7Room');
+ const room=isFlagOn('v7Room'),repair=useStudyUi();
  const navigate=useNavigate(),notify=useToast(),home=useHome(),settings=useSettings();
  const location=useLocation(),initialDraft=readCapturedTaskDraft(location.state);
  const [params,setParams]=useSearchParams(),creating=params.get('new')==='1';
  const closeNew=()=>{const next=new URLSearchParams(params);next.delete('new');setParams(next,{replace:true,state:null});};
  const zone=ownerZone(settings.data);
- const [rows,setRows]=useState<TaskRecord[]>([]),[total,setTotal]=useState(0),[cursor,setCursor]=useState<string|null>(null);
+ const [{rows,total,cursor},setPage]=useState<{rows:TaskRecord[];total:number;cursor:string|null}>({rows:[],total:0,cursor:null});
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[busy,setBusy]=useState(false);
  const [segment,setSegment]=useState<Segment>('To do'),[filter,setFilter]=useState<TaskFilter>(noFilter),[picker,setPicker]=useState(false);
  const [editing,setEditing]=useState<TaskRecord|null>(null),[now,setNow]=useState(()=>new Date());
  const overdue=useOverdueSummary(zone,rows);
- const epoch=useRef(0);
+ const epoch=useRef(0),pageReady=useRef(false);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(new Date()),60_000);return()=>window.clearInterval(timer);},[]);
  useEffect(()=>{
-  let live=true;const mine=++epoch.current;setPhase('loading');
+  let live=true;const mine=++epoch.current;pageReady.current=false;setPhase('loading');
   void getTaskApi().listTasks({limit:PAGE,status:statuses}).then(page=>{
    if(!live||epoch.current!==mine)return;
-   setRows(merge([],page.items));setTotal(page.total);setCursor(page.nextCursor);setPhase('ready');
-  }).catch(error=>{if(!live||epoch.current!==mine)return;setMessage(error instanceof Error?error.message:'Erratum: tasks didn’t load. Try again.');setPhase('error');});
+   pageReady.current=true;setPage({rows:merge([],page.items),total:page.total,cursor:page.nextCursor});setPhase('ready');
+  }).catch(error=>{if(!live||epoch.current!==mine)return;pageReady.current=false;setMessage(error instanceof Error?error.message:'Erratum: tasks didn’t load. Try again.');setPhase('error');});
   return()=>{live=false;};
  },[reload]);
  useEffect(()=>{const again=()=>setReload(value=>value+1);window.addEventListener('focus',again);return()=>window.removeEventListener('focus',again);},[]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system),[home.data]);
  const [pathQuery,setPathQuery]=useState('');
  const look=useMemo(()=>new Map(projects.map(project=>[project.id,{title:project.title,klass:subjectClass(kitSubject(project.subject.name))}])),[projects]);
- const put=useCallback((record:TaskRecord)=>setRows(old=>merge(old,[record])),[]);
+ const put=useCallback((record:TaskRecord)=>setPage(old=>({...old,rows:merge(old.rows,[record])})),[]);
+ const add=useCallback((record:TaskRecord)=>setPage(old=>({...old,rows:merge(old.rows,[record]),
+  total:old.total+(old.rows.some(row=>row.id===record.id)?0:1)})),[]);
+ const drop=useCallback((id:string)=>setPage(old=>{
+  const rows=old.rows.filter(row=>row.id!==id);
+  const counted=rows.length!==old.rows.length||old.cursor!==null;
+  return {...old,rows,total:counted?Math.max(0,old.total-1):old.total};
+ }),[]);
+ useEffect(()=>{
+  if(!repair)return;
+  return onTaskChange(change=>{
+   ++epoch.current;
+   if(change.kind==='created')add(change.record);else drop(change.id);
+   if(!pageReady.current)setReload(value=>value+1);
+  });
+ },[repair,add,drop]);
  const change=useCallback(async(task:TaskRecord,patch:TaskPatch,done?:{message:string;undo:TaskPatch})=>{
   if(busy)return;
   setBusy(true);setMessage('');
@@ -83,14 +99,17 @@ export default function TasksV7(){
  async function remove(task:TaskRecord){
   if(busy)return;
   setBusy(true);
-  try{await getTaskApi().deleteTask(task.id,task.version);setRows(old=>old.filter(item=>item.id!==task.id));setTotal(count=>Math.max(0,count-1));notify('Task deleted',{tone:'success'});}
+  try{await getTaskApi().deleteTask(task.id,task.version);if(!repair)drop(task.id);notify('Task deleted',{tone:'success'});}
   catch(error){setMessage(error instanceof Error?error.message:'Could not delete this task.');}
   finally{setBusy(false);}
  }
  async function more(){
   if(!cursor||busy)return;
   setBusy(true);
-  try{const page=await getTaskApi().listTasks({limit:PAGE,status:statuses,cursor});setRows(old=>merge(old,page.items));setCursor(page.nextCursor);setTotal(page.total);}
+  const mine=epoch.current;
+  try{const page=await getTaskApi().listTasks({limit:PAGE,status:statuses,cursor});
+   if(epoch.current!==mine){setReload(value=>value+1);return;}
+   setPage(old=>({rows:merge(old.rows,page.items),cursor:page.nextCursor,total:page.total}));}
   catch(error){setMessage(error instanceof Error?error.message:'Erratum: more tasks didn’t load. Try again.');}
   finally{setBusy(false);}
  }
@@ -173,7 +192,7 @@ export default function TasksV7(){
   </Sheet>
   {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={()=>setEditing(null)} onSaved={put}
    onConflict={()=>{setMessage('Task changed elsewhere. The latest version was loaded.');setReload(value=>value+1);setEditing(null);}}/>}
-  {creating&&<TaskSheet initialDraft={initialDraft} onDismiss={closeNew} onSaved={record=>{put(record);setTotal(value=>value+1);}}/>}
+  {creating&&<TaskSheet initialDraft={initialDraft} onDismiss={closeNew} onSaved={repair?undefined:add}/>}
  </main>;
 }
 

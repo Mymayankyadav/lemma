@@ -1,4 +1,3 @@
-import {isFlagOn} from '../../flags';
 import FirstCardPanel from '../../features/cards/v7/FirstCardPanel';
 import {CardEditorSheet} from '../../features/cards/v7/CardEditorSheet';
 import type {EditorValue} from '../../features/cards/Editor';
@@ -13,7 +12,9 @@ import {getTaskApi} from '../../data/tasks';
 import {getThoughtApi} from '../../data/parked-thoughts';
 import {calendarBlockDraft} from '../../features/calendar/block-sheet/blockDraft';
 import {localClockInstant} from '../../features/time-log/local-time';
-import {taskInput} from '../../features/tasks/taskDraft';
+import {useStudyUi} from '../../data/StudyUiRelease';
+import TaskSheetV7 from '../../features/tasks/v7/TaskSheetV7';
+import {taskInput,type CapturedTaskDraft} from '../../features/tasks/taskDraft';
 import {Button,Segmented,Sheet} from '../../ui/v7/components';
 import {useToast} from '../../ui/Toast';
 import {useActiveFocus} from './focus';
@@ -33,6 +34,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const home=useHome(),settings=useSettings(),{entry}=useActiveFocus(),navigate=useNavigate(),notify=useToast();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
+ const repair=useStudyUi(),[expandedTask,setExpandedTask]=useState<CapturedTaskDraft|null>(null);
  const [cardForm,setCardForm]=useState<'first'|'full'|null>(null);
  const saving=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const paths=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived').map(project=>({id:project.id,slug:project.slug,title:project.title})),[home.data]);
@@ -48,7 +50,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const waitingToExpand=!hasOwnerZone&&(kind==='task'||kind==='block');
  const reason=waitingToSave?'Your time zone must load before saving a scheduled item.':!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
  function reset(){setText('');setChosen(initialKind);setIgnored(new Set());setError('');}
- function close(){setCardForm(null);reset();onClose();}
+ function close(){setExpandedTask(null);setCardForm(null);reset();onClose();}
  async function emptyLibrary(){
   const page=await getApi().searchCardsPage({query:'',offset:0});
   return page.rows.length===0&&page.nextOffset===null;
@@ -67,14 +69,14 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   try{
    if(kind==='task'){
     const draft=taskDraft(),api=getTaskApi(),made=await api.createTask(taskInput(draft.values,draft.zone));
-    notify('Task added',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(made.record.id,made.record.version);}}});
+    notify('Task added',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(made.record.id,made.record.version).catch(()=>notify('Could not undo the task. Reopen it to check its current version.',{tone:'danger'}));}}});
    }else if(kind==='block'){
     const api=getStudyApi(),minutes=parse.minutes??30,startsAt=instantAt(start.date,start.time,zone);
     const made=await api.createCalendarBlock({kind:'study',title:parse.title||(project?project.title+' study':'Study block'),startsAt,endsAt:new Date(Date.parse(startsAt)+minutes*60_000).toISOString(),
      timeZone:zone,projectId:project?.id??null,subjectId:project?.subject.id??null});
     notify('Block added for '+start.time,{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteCalendarBlock(made.record.id,made.record.version);}}});
    }else if(kind==='card'){
-    if(isFlagOn('uiRepairV1')&&await emptyLibrary()){setCardForm('first');return;}
+    if(repair&&await emptyLibrary()){setCardForm('first');return;}
     const target=project??home.data?.projects.find(item=>!item.system);
     if(!target)throw Error('Add a path before adding cards.');
     const api=getApi(),made=await api.createNote({projectSlug:target.slug,front:parse.front,back:parse.back,type:'basic',kind:'other'});
@@ -89,7 +91,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  }
  function more(){
   if(saving.current||waitingToExpand)return;
-  if(isFlagOn('uiRepairV1')&&kind==='card'){
+  if(repair&&kind==='card'){
    saving.current=true;setBusy(true);setError('');
    void emptyLibrary().then(empty=>setCardForm(empty?'first':'full'))
     .catch(failure=>setError(failure instanceof Error?failure.message:'Could not load the card library.'))
@@ -97,7 +99,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
    return;
   }
   if(kind==='task'){
-   const draft=taskDraft();close();navigate('/tasks?new=1',{state:{captureTaskDraft:draft}});return;
+   const draft=taskDraft();if(repair){setExpandedTask(draft);return;}close();navigate('/tasks?new=1',{state:{captureTaskDraft:draft}});return;
   }
   try{
    if(kind==='block'){
@@ -109,6 +111,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   }catch(problem){setError(problem instanceof Error?problem.message:'Check the date and time.');}
  }
  const cardDraft={front:parse.front,back:parse.back,projectSlug:project?.slug??paths[0]?.slug??''};
+ if(open&&expandedTask)return <TaskSheetV7 initialDraft={expandedTask} onDismiss={()=>setExpandedTask(null)} onSaved={close}/>;
  if(open&&cardForm==='first')return <Sheet open onClose={()=>setCardForm(null)} title="Capture card">
   <FirstCardPanel initial={{front:cardDraft.front,back:cardDraft.back,slug:cardDraft.projectSlug||undefined}}
    onCancel={()=>setCardForm(null)} onSaved={close}/>
