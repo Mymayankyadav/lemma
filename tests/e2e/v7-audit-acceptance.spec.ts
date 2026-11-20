@@ -88,7 +88,7 @@ async function startRound(page:Page){
  await openScene(page,shot('review-hub'),'dark',{width:390,height:844});
  const count=Number(await page.getByLabel('Cards in this round').textContent());
  expect(count).toBe(23);
- await page.getByRole('button',{name:/^Start \d+ cards$/}).click();
+ await page.getByRole('button',{name:/^Start review, \d+ cards?$/}).click();
  await expect(page.locator('.v7-review-card')).toBeVisible();
  return count;
 }

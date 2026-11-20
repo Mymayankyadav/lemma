@@ -57,7 +57,7 @@ test('N157 AN4 book posture: nothing interactive across the hinge; a list on one
 
 test('N157 AN4 book posture: the review spread (v7Spread) puts the question on one screen and the answer on the other', async ({page}) => {
   const {start, end} = await fold(page, 1200, 800, 'vertical', '/review', ',v7Spread')
-  await page.getByRole('button', {name: /^Start \d+ cards$/}).click()
+  await page.getByRole('button', {name: /^Start review, \d+ cards?$/}).click()
   await page.getByRole('button', {name: 'Show answer'}).click()
   const [front, back] = await Promise.all([page.locator('.v7-review-front').boundingBox(), page.locator('.v7-review-back').boundingBox()])
   expect(front!.x + front!.width).toBeLessThanOrEqual(start)

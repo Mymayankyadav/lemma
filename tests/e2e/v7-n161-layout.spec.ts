@@ -37,8 +37,10 @@ for(const [width,scale] of sizes){
   const sheet=page.getByRole("region",{name:"Compactness"});
   await expect(sheet).toBeVisible();
   // Peek: no button is drawn, nothing inside is cut off, and the sheet rests on the tab bar.
-  await expect(sheet.getByRole("link",{name:/open checkpoint/i})).toHaveCount(0);
-  await expect(sheet.getByRole("link",{name:"Review cards"})).toHaveCount(0);
+  const checkpoint=sheet.getByRole("link",{name:"Open Checkpoint 4",exact:true});
+  const review=sheet.getByRole("link",{name:"Review 9",exact:true});
+  await expect(checkpoint).toHaveCount(0);
+  await expect(review).toHaveCount(0);
   const clipped=await sheet.evaluate(node=>node.scrollHeight>node.clientHeight+1);
   expect(clipped,"the peek cuts off its own content").toBe(false);
   let dock=await dockBox(page),box=(await sheet.boundingBox())!;
@@ -49,13 +51,13 @@ for(const [width,scale] of sizes){
   // Pulled up: both buttons are inside the sheet, above the tab bar, and a tap at their centre reaches them.
   await sheet.getByRole("button",{name:"Show neighbours and actions"}).click();
   dock=await dockBox(page);box=(await sheet.boundingBox())!;
-  for(const name of [/open checkpoint/i,/review cards/i]){
-   const button=sheet.getByRole("link",{name}).first();
+  await expect(review).toHaveAttribute("href","#/review/run?target=concept&id=concept-compactness");
+  for(const button of [checkpoint,review]){
    await button.scrollIntoViewIfNeeded();
    const b=(await button.boundingBox())!;
    expect(b.y+b.height).toBeLessThanOrEqual(dock.y+1);
    const hit=await page.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest("a.v7-button"),{x:b.x+b.width/2,y:b.y+b.height/2});
-   expect(hit,String(name)+" is covered").toBe(true);
+   expect(hit,(await button.textContent())+" is covered").toBe(true);
   }
  });
 

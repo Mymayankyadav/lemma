@@ -30,3 +30,19 @@ it('no-argument resume retains the existing project list and queue when the rele
   expect(text).toContain('LEMMA projects. Ask which one');expect(text).not.toContain('Planning · New');
   expect(text).toMatch(/QUEUE /);
 });
+
+it('counts unavailable shadow reads with latency and keeps the held release out of the learner response',async()=>{
+  const c=fakeContext(tablesFrom(rowsFor([])));
+  c.db.rpc=vi.fn(async(name:string)=>name==='lemma_plan_released'
+    ? {data:false,error:null}
+    : {data:null,error:{message:'private fixture details'}});
+  const info=vi.spyOn(console,'info').mockImplementation(()=>{});
+  try{
+    expect(await readAgenda(c,null,true)).toEqual({released:false,agenda:null});
+    expect(c.db.rpc).toHaveBeenCalledTimes(2);
+    const [event,payload]=info.mock.calls[0];
+    expect(event).toBe('atlas-agenda');
+    expect(JSON.parse(payload)).toMatchObject({mode:'shadow',readMs:expect.any(Number),kind:'unavailable',hardViolations:0});
+    expect(payload).not.toContain('private fixture details');
+  }finally{info.mockRestore();}
+});

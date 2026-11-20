@@ -14,12 +14,12 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
-  /** P1/P2 study repairs ship together at the owner-approved release. */
-  uiRepairV1: false,
+  /** N198: first study and scoped review use the shared server release control. */
+  uiRepairV1: true,
   /** Manual copy/paste tutoring is a default-off, demo-only preview. */
   tutorManualDemo: false,
   /** N193: live owner-bound checkpoint threads, released with the new study UI. */
-  tutorThreads: false,
+  tutorThreads: true,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
@@ -43,8 +43,8 @@ export const FLAG_DEFAULTS = {
   v7Qed: true,
   /** N157 · U4 S6 scratch paper: a sheet of graph paper for an attempt before the reveal; nothing is stored. */
   v7Scratch: true,
-  /** P8 checkpoint Pad and device-local offline entry. Enabled together in the reviewed release. */
-  padLocal: false,
+  /** N198: full-page Pad, checkpoint workspace and device-local offline entry. */
+  padLocal: true,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,
   /** N157 · U4 S16 desk clock: Focus as large digits, the intention and a ring; the screen stays awake while it runs. */
@@ -55,8 +55,8 @@ export const FLAG_DEFAULTS = {
    *  On by default from the Owner's Atlas v3 activation (N182, docs/current/N180.md step 9); `?flags=-atlasV3` shows the off path in dev/test/e2e builds.
    *  Rollback: change this back to false (no data change; the migrated owner keeps Atlas v3 in MCP). */
   atlasV3: true,
-  /** November implementation plan: one account preference for future agenda decisions. */
-  atlasAgendaV1: false,
+  /** N198: one account preference for future agenda and learning decisions. */
+  atlasAgendaV1: true,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

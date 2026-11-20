@@ -33,7 +33,7 @@ test('released week page is reachable from Progress',async({page})=>{
  await expect(page.getByRole('img',{name:/The week as a constellation/})).toBeVisible();
 });
 test('released scratch paper survives reveal and review uses the desktop spread',async({page})=>{
- await release(page,'/review',1280);await page.getByRole('button',{name:/^Start \d+ cards$/}).click();
+ await release(page,'/review',1280);await page.getByRole('button',{name:/^Start review, \d+ cards?$/}).click();
  await page.getByRole('button',{name:'Scratch paper',exact:true}).click();await page.getByRole('textbox',{name:'Type an attempt'}).fill('Let epsilon be positive.');
  await page.getByRole('button',{name:'Show answer',exact:true}).click();
  await expect(page.getByRole('textbox',{name:'Type an attempt'})).toHaveValue('Let epsilon be positive.');

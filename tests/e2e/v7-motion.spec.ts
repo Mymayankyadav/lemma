@@ -75,7 +75,7 @@ test('A1 the settled sheet is identical with and without motion', async ({browse
 test('A1 a revealed answer rises in; under reduced motion it simply appears', async ({page}) => {
   for (const mode of ['motion', 'system-reduced'] as const) {
     await open(page, mode, '/review')
-    await page.getByRole('button', {name: /^(Start \d+ cards?|Resume)/}).first().click()
+    await page.getByRole('button', {name: /^(Start review, \d+ cards?|Resume)/}).first().click()
     await page.waitForURL(/#\/review\/run/)
     await page.getByRole('button', {name: 'Show answer'}).click()
     await expect(page.locator('.v7-review-back')).toBeVisible()

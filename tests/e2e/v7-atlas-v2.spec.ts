@@ -4,7 +4,11 @@ for(const width of [360,390])test('Atlas v3 facets, views and settings at '+widt
  await page.setViewportSize({width,height:844});await page.goto(url('atlas?view=list'));
  await page.getByRole('button',{name:'Themes',exact:true}).click();await expect(page.getByRole('heading',{name:'Themes',exact:true})).toBeVisible();
  await page.getByRole('button',{name:'Bridges',exact:true}).click();await expect(page.getByRole('heading',{name:'Bridges',exact:true})).toBeVisible();
- await page.getByRole('button',{name:'Map',exact:true}).last().click();await page.locator('.v7-atlas-list ul button').first().click();
+ const views=page.getByRole('navigation',{name:'Atlas model views'});
+ await views.getByRole('button',{name:'Map',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Atlas map',exact:true})).toBeVisible();
+ await page.getByRole('radio',{name:'List',exact:true}).click();
+ await page.locator('.v7-atlas-list ul button').first().click();
  await page.getByRole('button',{name:'Show neighbours and actions'}).click();await expect(page.getByRole('heading',{name:'Facets',exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Copy probe prompt'})).toBeVisible();
  await page.goto(url('settings?section=planning'));const threshold=page.getByRole('spinbutton',{name:'Mastery threshold'});await expect(threshold).toBeVisible();await threshold.fill('0.9');await page.getByRole('button',{name:'Save Atlas settings'}).click();await expect(page.getByRole('button',{name:'Save Atlas settings'})).toBeEnabled();await page.reload();await expect(page.getByRole('spinbutton',{name:'Mastery threshold'})).toHaveValue('0.9');
