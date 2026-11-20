@@ -26,6 +26,21 @@ export async function cardVersion(id:string):Promise<number|null>{
 export function startRun(input:StartRunInput,selected:ReviewItem[]):Promise<DurableRun>{
  return getMode()==='demo'?Promise.resolve(demoStart(input,selected)):startDurableRun(input);
 }
+/** Start from a concrete saved card, never a path or the current queue's first card. */
+export async function startExactCard(cardId:string):Promise<DurableRun>{
+ if(!cardId)throw Error('Requested review card is unavailable');
+ const selected:ReviewItem[]=[];
+ if(getMode()==='demo'){
+  const card=await getApi().getExactReviewCard?.(cardId,true);
+  if(card?.cardId!==cardId)throw Error('Requested review card is unavailable');
+  selected.push(card);
+ }
+ const run=await startRun({selectedDeckIds:[],filters:{cardId},cardBudget:1,minuteBudget:1,
+  schedulerVersion:'fsrs-v6',settingsVersion:await currentSettingsVersion()},selected);
+ if(run.targetCardId!==cardId||run.items.length!==1||run.items[0].cardId!==cardId)
+  throw Error('Requested review card is unavailable');
+ return run;
+}
 export function getRun(id:string):Promise<DurableRun|null>{
  return getMode()==='demo'?Promise.resolve(demoRead(id)):readDurableRun(id);
 }

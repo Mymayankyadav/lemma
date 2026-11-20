@@ -19,6 +19,7 @@ import {useOverdueSummary} from './overdue';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import BlockSheetActions from '../block-sheet/BlockSheetActions';
+import type {CalendarBlockDraft} from '../block-sheet/blockDraft';
 import {dueForDay,emptyCalendarDues,type CalendarDues} from '../deadlines/DueDayItems';
 import {loadCalendarDues} from '../deadlines/load';
 import {calendarRange,dayKey,savedSlices,shiftDay,shiftMonth,validDayKey,weekStartDay} from '../model';
@@ -107,11 +108,10 @@ export default function V7CalendarDay(){
   setParams(next);
  }
  /** More options keeps what was typed: title, task link and length ride along to the full sheet. */
- function moreParams(startsAt:string,carry:{title:string;taskId:string|null;minutes:number}){
-  const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set('new','block');next.set('start',startsAt);next.delete('edit');next.delete('quick');
-  if(carry.title)next.set('title',carry.title);else next.delete('title');
-  if(carry.taskId)next.set('task',carry.taskId);else next.delete('task');
-  next.set('len',String(carry.minutes));setParams(next);
+ function moreParams(draft:CalendarBlockDraft){
+  const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set('new','block');
+  ['edit','quick','start','title','task','len'].forEach(key=>next.delete(key));
+  setParams(next,{replace:true,state:{calendarBlockDraft:draft}});
  }
  /** Quick-add is the default way to make a block; More options hands over to the full sheet. */
  function quickParams(startsAt?:string){
@@ -237,7 +237,7 @@ export default function V7CalendarDay(){
    {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={120}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
   </div>}
   <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
-   onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={(startsAt,carry)=>moreParams(startsAt,carry)}/>
+   onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={moreParams}/>
   <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>
   {loggedEntry&&<LoggedSessionSheet key={loggedEntry.id+'-'+loggedEntry.version} entry={loggedEntry} look={lookOf({projectId:loggedEntry.projectId} as CalendarBlockRecord)} zone={zone} clock={clock}
    onClose={closeEntry} onChanged={()=>setReload(value=>value+1)} onEdit={entry=>{const next=new URLSearchParams(params);next.delete('logged');setParams(next,{replace:true});setEditingEntry(entry);}}/>}

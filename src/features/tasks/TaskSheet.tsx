@@ -1,4 +1,6 @@
-import {localClockInstant,localWallParts} from '../time-log/local-time';
+import {localWallParts} from '../time-log/local-time';
+import {taskInput} from './taskDraft';
+export {taskInput} from './taskDraft';
 import {useId,useRef,useState,type FormEvent} from 'react';
 import Dialog from '../../ui/v6/Dialog';
 import {getTaskApi} from '../../data/tasks';
@@ -9,37 +11,6 @@ import {useToast} from '../../ui/Toast';
 const field='min-h-11 w-full rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
 const label='flex flex-col gap-1.5 text-label font-medium text-ink-2';
 type DueKind = TaskDue['kind'];
-
-export function taskInput(values:{
-  title:string; estimate:string; priority:TaskPriority; dueKind:DueKind; dueDate:string;
-  dueInstant:string; subjectId:string; projectId:string;
-},zone=Intl.DateTimeFormat().resolvedOptions().timeZone) {
-  const title=values.title.trim();
-  if (!title) throw new Error('Enter a task title.');
-  if (title.length>200) throw new Error('Task title must be 200 characters or fewer.');
-  const raw=values.estimate.trim();
-  if (raw && (!/^\d+$/.test(raw) || !Number.isSafeInteger(Number(raw)) || Number(raw)>2147483647))
-    throw new Error('Estimate must be whole minutes, 0 or more.');
-  if (!['low','normal','high'].includes(values.priority)) throw new Error('Choose a priority.');
-  let due:TaskDue={kind:'none'};
-  if (values.dueKind==='date') {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(values.dueDate) ||
-        !Number.isFinite(Date.parse(values.dueDate))) throw new Error('Choose a valid due date.');
-    const [y,m,d]=values.dueDate.split('-').map(Number);
-    const date=new Date(Date.UTC(y,m-1,d));
-    if (date.getUTCFullYear()!==y || date.getUTCMonth()+1!==m || date.getUTCDate()!==d)
-      throw new Error('Choose a valid due date.');
-    due={kind:'date',date:values.dueDate};
-  } else if (values.dueKind==='instant') {
-    const at=localClockInstant(values.dueInstant.slice(0,10),values.dueInstant.slice(11),zone);
-    if (!at) throw new Error('Choose a valid local date and time.');
-    due={kind:'instant',at};
-  } else if (values.dueKind!=='none') throw new Error('Choose a due type.');
-  return {
-    title,estimateMinutes:raw?Number(raw):null,priority:values.priority,due,
-    subjectId:values.subjectId||null,projectId:values.projectId||null,
-  };
-}
 
 /** Shared create/edit sheet; its opener owns focus restoration. */
 function localDateTime(iso:string,zone:string):string {
@@ -68,7 +39,7 @@ export default function TaskSheet({onDismiss,task,onSaved,onConflict}:{
     event.preventDefault();
     if (busy.current) return;
     let input:ReturnType<typeof taskInput>;
-    try {input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant,subjectId,projectId},zone);}
+    try {input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant,subjectId,projectId},zone,task?.due.kind==='instant'?task.due.at:undefined);}
     catch (e) {setError(e instanceof Error?e.message:'Invalid task details.');return;}
     busy.current=true;setSaving(true);setError('');
     try {
