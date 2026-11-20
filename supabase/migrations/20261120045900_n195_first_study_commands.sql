@@ -134,7 +134,8 @@ begin
   select * into strict card_row from public.cards where user_id=owner_id and id=p_card for update;
   if run_row.version<>p_run_version or run_row.status<>'running'
     or item_row.position<>run_row.position or item_row.state<>'pending' or item_row.card_id<>p_card
-    or card_row.version<>p_card_version or item_row.expected_card_version<>p_card_version then
+    or card_row.version<>p_card_version or item_row.expected_card_version<>p_card_version
+    or not public.study_run_item_available(p_run,p_item,p_card) then
     receipt := pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','conflict','reason','review_changed');
   else
     -- Use the same FSRS mutation and action journal as ordinary review.

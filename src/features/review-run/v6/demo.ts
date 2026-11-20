@@ -35,9 +35,15 @@ function update(id:string,expected:number,
  save({...store,runs:store.runs.map(x=>x.id===id?run:x)});
  return clone(run);
 }
+export function demoScopedRun(scope:NonNullable<StartRunInput['filters']['target']>){
+ const previous=[...load().runs].reverse().find(row=>row.target?.id===scope.id&&row.target.kind===scope.kind&&
+  (row.status==='running'||row.status==='paused'));
+ return previous?.status==='paused'?demoUnpause(previous.id,previous.version):previous?clone(previous):null;
+}
 export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const store=load(),now=new Date().toISOString();
  const target=input.filters.cardId;
+ const scope=input.filters.target;
  const pool=target===undefined?selected:selected.filter(card=>card.cardId===target);
  if(target!==undefined&&(pool.length!==1||input.selectedDeckIds.length||input.cardBudget<1||input.minuteBudget<1||
   input.filters.sessionId||input.filters.conceptSlug||input.filters.newOnly||input.filters.includeNew===false))
@@ -49,7 +55,7 @@ export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const run:DurableRun={
   id:id(),status:items.length?'running':'exhausted',
   position:0,version:1,startedAt:now,endedAt:items.length?null:now,
-  ...(target===undefined?{}:{targetCardId:target}),
+  ...(target===undefined?{}:{targetCardId:target}),...(scope?{target:scope}:{}),
   items,progress:{position:0,total:items.length,graded:0,skipped:0,
    remaining:items.length,done:items.length===0},
  };

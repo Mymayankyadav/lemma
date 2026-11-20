@@ -669,7 +669,7 @@ export class DemoAdapter implements LemmaApi {
     const now = this.now();
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
-  private eligible(cardId?:string): ReviewItem[] {
+  private eligible(cardId?:string,scope?:import('../review-target').ReviewDomainTarget): ReviewItem[] {
     const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
@@ -684,7 +684,15 @@ export class DemoAdapter implements LemmaApi {
     // dueToday never selects a future scheduled card. Avoid constructing
     // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
     // Keep every new card, plus every due/learning card before study-day end.
-    const notes=this.reviewNotes();
+    const checkpoint=scope?.kind==='checkpoint'?this.store.checkpoints.find(cp=>cp.id===scope.id):null;
+    const notes=scope?this.reviewNotes().filter(n=>{
+      switch(scope.kind){
+        case 'path':return n.projectId===scope.id;
+        case 'concept':return n.conceptId===scope.id;
+        case 'checkpoint':return !!checkpoint&&n.projectId===checkpoint.projectId&&n.note.checkpointCode===checkpoint.code;
+        case 'card':return n.cards.some(c=>c.id===scope.id);
+      }
+    }):this.reviewNotes();
     // Private generated stress notes cannot be mutated by the queue read.
     // getReviewItems defensively clones its final response, so cloning all
     // 4,000 intermediate CardState objects here only delays cold Review-run.
@@ -2087,6 +2095,9 @@ export class DemoAdapter implements LemmaApi {
         count++;
       }
     return count;
+  }
+  async getReviewTargetItems(target:import('../review-target').ReviewDomainTarget){
+    return clone(this.eligible(target.kind==='card'?target.id:undefined,target));
   }
   async getReviewItems(filter: QueueFilter) {
     const eligible = this.eligible();

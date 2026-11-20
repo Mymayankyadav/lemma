@@ -1,3 +1,4 @@
+import {reviewHref} from '../../../data/review-target';
 import {PathEstimates} from '../../adaptive/AtlasPanels';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
@@ -148,7 +149,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const label=counts[tab];
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
-   action={<><Link className="v7-header-pill" to={'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
+   action={<><Link className="v7-header-pill" to={isFlagOn('uiRepairV1')?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<MEANING_ICON.concepts aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),

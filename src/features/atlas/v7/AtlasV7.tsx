@@ -1,3 +1,4 @@
+import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {useMotionReduced} from '../../../ui/v7/effects';
@@ -83,7 +84,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   <h3 className="v7-atlas-eyebrow">{title} · {items.length}</h3>
   <ul>{items.map(other=><li key={model.stars[other].id}><button type="button" onClick={()=>onPick(other)}>
    <StarMark state={model.stars[other].state} subjectClassName={subjectClass(model.clusters.find(c=>c.index===model.stars[other].cluster)?.subject??'Other')}/>
-   <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
+   <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>)}</ul>
  </div>;
  return <section ref={sheetRef} className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
@@ -98,11 +99,11 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className="v7-atlas-counts" data-testid="atlas-counts">{starCounts(model,index)}</p>
   {/* N161: the actions show when the sheet is pulled up; a peek shows only whole rows, never half-hidden buttons. */}
-  {expanded&&<div className="v7-atlas-actions">
+  {(expanded||isFlagOn('uiRepairV1'))&&<div className="v7-atlas-actions">
    {checkpoint?<Link className="v7-button v7-primary" to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}
      aria-label={'Open '+checkpointName(checkpoint.code)}><span>Open checkpoint</span></Link>
     :<StateButton variant="primary" disabledReason="Unavailable · No checkpoint uses this concept yet.">Open checkpoint</StateButton>}
-   {star.due>0?<Link className="v7-button v7-secondary" to={'/review/run?concept='+encodeURIComponent(star.slug)}><span>Review cards</span></Link>
+   {star.due>0?<Link className="v7-button v7-secondary" to={isFlagOn('uiRepairV1')?reviewHref({kind:'concept',id:star.id}):'/review/run?concept='+encodeURIComponent(star.slug)}><span>{isFlagOn('uiRepairV1')?'Review '+star.due:'Review cards'}</span></Link>
     :<StateButton disabledReason="Unavailable · No cards are due.">Review cards</StateButton>}
   </div>}
   {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
@@ -247,12 +248,12 @@ export default function AtlasV7(){
    <p className="v7-atlas-meta">{summary}</p>
    {dense&&params.get('view')!=='list'&&<p className="v7-atlas-meta" role="note">Your sky has {model.stars.length.toLocaleString('en-GB')} concepts, so it opens as a list. Choose Map to see the whole sky.</p>}
    {room&&<nav className="v7-room-atlas-index" aria-label="Subject index">{model.clusters.filter(cluster=>rows.some(index=>model.stars[index].cluster===cluster.index)).map(cluster=><button type="button" key={cluster.id} aria-label={'Jump to '+cluster.name} onClick={()=>{setShown(rows.length);requestAnimationFrame(()=>document.getElementById('room-atlas-'+cluster.index)?.scrollIntoView({block:'start'}));}}>{cluster.name[0]}</button>)}</nav>}
-   {room?model.clusters.map(cluster=>{const members=rows.slice(0,shown).filter(index=>model.stars[index].cluster===cluster.index);return members.length>0&&<section key={cluster.id} id={'room-atlas-'+cluster.index} className="v7-room-atlas-subject" aria-label={cluster.name}><h2 className="v7-headline">{cluster.name}</h2><ul>{members.map(i=>{const star=model.stars[i];return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}><StarMark state={star.state} subjectClassName={subjectClass(cluster.subject)}/><span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span><small>{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}</small></span><ChevronRight aria-hidden="true"/></button></li>;})}</ul></section>;}):<ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
+   {room?model.clusters.map(cluster=>{const members=rows.slice(0,shown).filter(index=>model.stars[index].cluster===cluster.index);return members.length>0&&<section key={cluster.id} id={'room-atlas-'+cluster.index} className="v7-room-atlas-subject" aria-label={cluster.name}><h2 className="v7-headline">{cluster.name}</h2><ul>{members.map(i=>{const star=model.stars[i];return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}><StarMark state={star.state} subjectClassName={subjectClass(cluster.subject)}/><span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span><small>{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}</small></span><ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul></section>;}):<ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
     return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}>
      <StarMark state={star.state} subjectClassName={subjectClass(cluster?.subject??'Other')}/>
      <span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span>
       <span className="v7-atlas-meta">{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}{cluster?' · '+cluster.name:''}</span></span>
-     <ChevronRight aria-hidden="true"/></button></li>;})}</ul>}
+     <ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul>}
    {room&&rows.length===0&&<p role="status">No concepts in this subset.</p>}
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>

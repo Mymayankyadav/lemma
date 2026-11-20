@@ -1,3 +1,4 @@
+import {reviewHref} from '../../../data/review-target';
 import {currentStudyStep} from '../../project/v7/pathModel';
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
@@ -92,7 +93,7 @@ export default function CheckpointV7(){
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
-  <Link className="v7-learn-row" to={'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
+  <Link className="v7-learn-row" to={isFlagOn('uiRepairV1')?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :<Button variant="primary" onClick={()=>launch()}>Work on this with your tutor</Button>}

@@ -11,6 +11,7 @@ import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
 import {authOwner,onAccountChange} from '../../../data/authBoundary';
 import {getMode} from '../../../data/mode';
+import {openStudyTarget,targetFromLink} from './scopedRound';
 import {saveGrade,savedGrade,confirmGrade,type GradeIntent} from './gradeIntent';
 import {useHome,useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
@@ -53,14 +54,22 @@ export default function ReviewRoundV7(){
  const [grades,setGrades]=useState<Record<string,Rating>>({});
  const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
  const dragStart=useRef<{x:number;y:number}|null>(null);
- const runId=search.get('run');
+ const runId=search.get('run'),link=search.toString(),repair=isFlagOn('uiRepairV1');
  const signedIn=useSyncExternalStore(onAccountChange,authOwner,authOwner);
  const atomic=isFlagOn('uiRepairV1')&&getMode()==='live';
  const [frozen,setFrozen]=useState<GradeIntent|null>(null);
- const item=run?.items[run.position],exactId=run?.targetCardId;
+ const item=run?.items[run.position],exactId=run?.targetCardId??(run?.target?item?.cardId:undefined);
  // Do not fetch singleton faces from the global quota-ranked prefix.
  const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
-  queryFn:async()=>await getApi().getExactReviewCard?.(exactId!)??null});
+  queryFn:async()=>{
+   if(run?.target&&getMode()==='live'){
+    const {liveClient}=await import('../../../data/live/client');
+    const {data,error}=await liveClient().rpc('study_run_item_available',{p_run:run.id,p_item:item!.id,p_card:exactId});
+    if(error)throw Error(error.message);
+    if(!data)return null;
+   }
+   return await getApi().getExactReviewCard?.(exactId!)??null;
+  }});
  const card=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
  const lookup=exactId?exact:cards;
  const faces=card?.type==='reverse'&&card.ord===2?{front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
@@ -68,9 +77,13 @@ export default function ReviewRoundV7(){
  useEffect(()=>{
   let cancelled=false;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
   void (async()=>{
-   const loaded=runId?await getRun(runId):await resumeRun();
+   const target=repair?await targetFromLink(new URLSearchParams(link)):null;
+   const loaded=target?await openStudyTarget(target):runId?await getRun(runId):await resumeRun();
    if(cancelled)return;
-   if(!loaded){setMessage(null);return;}
+   if(!loaded){setMessage(target?'There are no eligible cards in this review selection.':null);return;}
+   if(target&&target.kind!=='round'){
+    navigate('/review/run?run='+encodeURIComponent(loaded.id),{replace:true});return;
+   }
    setGrades(readGrades(loaded.id));setRun(loaded);
    const intent=atomic&&signedIn?savedGrade(signedIn,loaded.id):null;
    if(intent){
@@ -97,7 +110,7 @@ export default function ReviewRoundV7(){
    if(!cancelled)setRun(loaded);
   })().catch(error=>{if(!cancelled)setMessage(error instanceof Error?error.message:'Could not restore review');}).finally(()=>{if(!cancelled)setLoading(false);});
   return ()=>{cancelled=true;};
- },[runId,atomic,signedIn,queries]);
+ },[runId,link,repair,atomic,signedIn,queries,navigate]);
  useEffect(()=>{setRevealed(false);setConfidence(null);setStartTime(Date.now());setDrag(null);},[run?.id,run?.position]);
  const done=(result:DurableRun)=>{setRun(result);if(result.progress.done)navigate('/review/done?run='+encodeURIComponent(result.id));};
  async function recover(intent:GradeIntent){

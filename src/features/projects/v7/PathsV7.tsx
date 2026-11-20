@@ -1,3 +1,5 @@
+import {isFlagOn} from '../../../flags';
+import {reviewHref} from '../../../data/review-target';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useLocation,useNavigate} from 'react-router';
@@ -61,7 +63,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
     <small>{project.done} of {project.total}</small></div>
    <div className="v7-paths-chips">
     {schedule&&<StatusBadge tone={schedule.tone}>{schedule.text}</StatusBadge>}
-    {due>0&&<Link className="v7-paths-due" to={'/review?path='+encodeURIComponent(project.slug)} aria-label={'Review '+due+' due on '+project.title}>{due} due</Link>}
+    {due>0&&<Link className="v7-paths-due" to={isFlagOn('uiRepairV1')?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(project.slug)} aria-label={'Review '+due+' due on '+project.title}>{due} due</Link>}
     {project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}
    </div>
   </div>
