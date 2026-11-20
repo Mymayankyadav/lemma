@@ -693,6 +693,22 @@ export class LiveAdapter implements LemmaApi {
   })) as import('../types').CardRow[]
   return {rows:page,nextOffset:page.length===50?offset+50:null}
  }
+ async getExactReviewCard(cardId:string,demoAdmission=false):Promise<ReviewItem|null> {
+  if(demoAdmission)throw new LemmaError('invalid','Start live review through the run command')
+  const db=liveClient(),uid=await owner(db)
+  const card=await db.from('cards').select('note_id').eq('user_id',uid).eq('id',cardId).maybeSingle()
+  if(card.error)fail(card.error)
+  if(!card.data)return null
+  const note=await db.from('notes').select('no').eq('user_id',uid).eq('id',card.data.note_id).eq('status','active').maybeSingle()
+  if(note.error)fail(note.error)
+  if(!note.data)return null
+  const detail=await this.getCard(Number(note.data.no)),matched=detail.cards.find(c=>c.cardId===cardId)
+  if(!matched||detail.note.status!=='active'||!detail.note.projectSlug)return null
+  const n=detail.note
+  return {cardId,noteId:n.noteId,noteNo:n.noteNo,ord:matched.ord,type:n.type,kind:n.kind,
+   front:n.front,back:n.back,projectSlug:n.projectSlug,glyph:'',checkpointCode:n.checkpointCode,
+   checkpointTitle:null,sessionNumber:n.sessionNumber,sourceShort:n.sourceShort,pageLabel:n.pageLabel,state:matched.state}
+ }
  async getCard(...args: Parameters<LemmaApi['getCard']>): ReturnType<LemmaApi['getCard']> {
   const [no]=args,db=liveClient(),uid=await owner(db)
   const note=checked(await db.from('notes').select('*').eq('user_id',uid).eq('no',no).single()) as Row
@@ -724,7 +740,7 @@ export class LiveAdapter implements LemmaApi {
     projectSlug:project?.slug??'',checkpointCode:cps[0]?.code??null,
     sessionNumber:sessions[0]?.number??null,
     sourceShort:sources[0]?.short??null,pageLabel:note.page_label},
-    cards:cardRows.map(c=>({ord:c.ord,state:cardState(c)})).sort((a,b)=>a.ord-b.ord),
+    cards:cardRows.map(c=>({cardId:c.id,ord:c.ord,state:cardState(c)})).sort((a,b)=>a.ord-b.ord),
     history:historyPage.rows,
     comments:commentsPage.rows,
     historyNextCursor:historyPage.nextCursor,

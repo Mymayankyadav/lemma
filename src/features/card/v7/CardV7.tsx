@@ -1,4 +1,4 @@
-import {useMemo,useState} from 'react';
+import {useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams,Link} from 'react-router';
 import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
 import {useAddComment,useCard,useDismissComment,useProjects,useSetNoteStatus,useSettings,useUpdateNote} from '../../../data/hooks';
@@ -19,6 +19,7 @@ import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {CardEditorSheet} from '../../cards/v7/CardEditorSheet';
 import type {EditorValue} from '../../cards/Editor';
+import {startExactCard} from '../../review-run/v6/adapter';
 import {RecallChart} from './RecallChart';
 import {gradeKey,recallNow,recallSeries} from './recallModel';
 import '../../project/v7/learning.css';
@@ -33,15 +34,26 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  const {no='0'}=useParams(),number=selectedNo??Number(no),query=useCard(number),projects=useProjects(),settings=useSettings(),notify=useToast(),navigate=useNavigate();
  const update=useUpdateNote(),status=useSetNoteStatus(),add=useAddComment(),dismiss=useDismissComment();
  const [editing,setEditing]=useState(false),[more,setMore]=useState(false),[deleting,setDeleting]=useState(false),[message,setMessage]=useState('');
+ const starting=useRef(false),[reviewing,setReviewing]=useState(false);
  const zone=ownerZone(settings.data),now=useMemo(()=>Date.now(),[]);
- const detail=query.data,note=detail?.note,card=detail?.cards[0]?.state;
+ const detail=query.data,note=detail?.note,first=detail?.cards[0],card=first?.state;
  const series=useMemo(()=>detail?recallSeries(detail.history,settings.data,now):null,[detail,settings.data,now]);
  const project=projects.data?.find(row=>row.slug===note?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Card"><DetailHeader title="Card" back="/cards"/><Skeleton/><Skeleton/></main>;
  if(query.isError||!note)return <main id="main-content" className="v7-page v7-learn" aria-label="Card"><DetailHeader title="Card" back="/cards"/>
   <div role="alert" className="v7-learn-empty"><p>This card could not be loaded.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
  const paused=note.status==='suspended';
- const due=!paused&&!!card&&!!card.due&&Date.parse(card.due)<=now;
+ const due=note.status==='active'&&!!card&&(card.state===0||Date.parse(card.due)<=now);
+ async function reviewNow(){
+  if(starting.current)return;
+  if(!first?.cardId){notify('This card is unavailable for review.',{tone:'danger'});return;}
+  starting.current=true;setReviewing(true);
+  try{
+   const run=await startExactCard(first.cardId);
+   navigate('/review/run?run='+encodeURIComponent(run.id));
+  }catch{notify('Could not start review for this card. Check that it is due and you have room in today’s review limit.',{tone:'danger'});}
+  finally{starting.current=false;setReviewing(false);}
+ }
  const recall=recallNow(card,settings.data,now),target=settings.data?.desiredRetention??.9;
  const intervals=new Map(series?.dots.map(dot=>[dot.at,dot.intervalDays])??[]);
  async function setNoteStatus(next:'active'|'suspended'|'deleted'){
@@ -114,10 +126,10 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
    <label className="v7-field-group"><span>Note for your tutor</span><textarea className="v7-field" rows={2} value={message} onChange={event=>setMessage(event.target.value)} placeholder="What is unclear or wrong on this card?"/></label>
    <Button small loading={add.isPending} disabled={!message.trim()} onClick={()=>{void comment();}}>Save note</Button>
   </section>
-  {/* V38 (v7 UX audit r3): the pinned primary is "Review now" when the card is due (its path's round, which includes it);
+  {/* V38 (v7 UX audit r3): the pinned primary is "Review now" when the card is due (a round with only this card);
       editing is a secondary action, and Pause / Resume live in the ⋯ menu. */}
   <div className={'v7-learn-bar'+(due?'':' v7-learn-bar-single')} role="group" aria-label="Card actions">
-   {due&&<Link className="v7-button v7-primary" to={'/review?path='+encodeURIComponent(note.projectSlug)}><span>Review now</span></Link>}
+   {due&&<Button variant="primary" loading={reviewing} onClick={()=>{void reviewNow();}}>Review now</Button>}
    <Button onClick={()=>setEditing(true)}>Edit card</Button>
   </div>
   <ActionSheet open={more} onClose={()=>setMore(false)} title="This card" label="Card actions" items={[

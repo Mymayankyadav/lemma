@@ -7,7 +7,8 @@ import {warmMoment} from '../../../ui/v7/LottieMoment';
 import {useEffect,useMemo,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
-import {useQueryClient} from '@tanstack/react-query';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
+import {getApi} from '../../../data';
 import {useHome,useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
 import {preview,scheduleConfig} from '../../../lib/fsrs';
@@ -50,7 +51,12 @@ export default function ReviewRoundV7(){
  const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
  const dragStart=useRef<{x:number;y:number}|null>(null);
  const runId=search.get('run');
- const item=run?.items[run.position],card=cards.data?.find(x=>x.cardId===item?.cardId);
+ const item=run?.items[run.position],exactId=run?.targetCardId;
+ // Do not fetch singleton faces from the global quota-ranked prefix.
+ const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
+  queryFn:async()=>await getApi().getExactReviewCard?.(exactId!)??null});
+ const card=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
+ const lookup=exactId?exact:cards;
  const faces=card?.type==='reverse'&&card.ord===2?{front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
  const choices=useMemo(()=>{if(!settings.data||!card)return null;try{return preview(card.state,Date.now(),scheduleConfig(settings.data));}catch{return null;}},[settings.data,card]);
  useEffect(()=>{
@@ -171,8 +177,8 @@ export default function ReviewRoundV7(){
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
   :item&&run.status==='running'?<>
    {pending?<section className="v7-review-state"><p role="status">Your answer is recorded. Advance without grading again.</p><Button disabled={busy} onClick={()=>{void retryAdvance();}}>Retry advance</Button></section>
-   :!card&&!cards.isPending?<section className="v7-review-state"><p role="status">This card is no longer in the current review queue.</p>
-    <Button disabled={busy} onClick={()=>{void skip();}}>Skip stale card</Button><Button onClick={()=>{void cards.refetch();}}>Retry card lookup</Button></section>
+   :!card&&!lookup.isPending?<section className="v7-review-state"><p role="status">{lookup.isError?'Could not load this card. Retry the lookup.':'This card is no longer available for this review.'}</p>
+    <Button disabled={busy||lookup.isError} onClick={()=>{void skip();}}>Skip stale card</Button><Button onClick={()=>{void lookup.refetch();}}>Retry card lookup</Button></section>
    :card?<section className="v7-review-stage">
     <article className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{dragStart.current=null;setDrag(null);}}
      style={drag?{transform:`translate(${drag.dx}px,${Math.min(0,drag.dy)}px) rotate(${Math.max(-6,Math.min(6,drag.dx/24))}deg)`} as CSSProperties:undefined} data-swipe={swiping?gradeNames[swiping-1].toLowerCase():undefined}>
