@@ -1,3 +1,14 @@
+-- Resolve moved occurrences before ordering by their real instant. A stable
+-- identity tie-breaker matches the shared normalizer across series.
+create function public.lemma_order_calendar_intervals(intervals jsonb) returns jsonb
+language sql stable security invoker set search_path='' as $ordered$
+  select coalesce(pg_catalog.jsonb_agg(e.item order by (e.item->>'startsAt')::timestamptz,
+    (e.item->>'id') collate pg_catalog."C"),'[]'::jsonb)
+  from pg_catalog.jsonb_array_elements(intervals) e(item)
+$ordered$;
+revoke all on function public.lemma_order_calendar_intervals(jsonb) from public,anon;
+grant execute on function public.lemma_order_calendar_intervals(jsonb) to authenticated;
+
 -- Rare transitions include half-hour folds and whole skipped dates. Enumerate
 -- distinct real offsets around the wall instant, and round-trip each candidate.
 -- PostgreSQL's default fold/gap choice is deliberately never silently accepted.
@@ -96,7 +107,7 @@ begin
       items:=items||pg_catalog.jsonb_build_array(item);
     end if;
   end loop;
-  return items;
+  return public.lemma_order_calendar_intervals(items);
 exception when data_exception then return null;
 end
 $occurrences$;
@@ -180,8 +191,8 @@ begin
       end if;
     end loop;
   end if;
-  return base||pg_catalog.jsonb_build_object('status','ok','fixed',fixed,
-    'availability',case when pg_catalog.jsonb_array_length(available)>0 or capacity_known then available end);
+  return base||pg_catalog.jsonb_build_object('status','ok','fixed',public.lemma_order_calendar_intervals(fixed),
+    'availability',case when pg_catalog.jsonb_array_length(available)>0 or capacity_known then public.lemma_order_calendar_intervals(available) end);
 exception when invalid_datetime_format or invalid_parameter_value then
   if base is null then raise; end if;
   return base||'{"status":"blocked","reason":"invalid-calendar-input","fixed":[],"availability":null}'::jsonb;

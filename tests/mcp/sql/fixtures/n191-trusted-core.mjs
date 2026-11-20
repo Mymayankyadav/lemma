@@ -52,6 +52,9 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
   await match(series,[moved,moved],'2026-12-01','2026-12-02');
   await match(series,[moved,{...moved,kind:'cancel'}],'2026-12-01','2026-12-02');
   await match(series,[moved,{...moved,kind:'cancel',revision:3}],'2026-12-01','2026-12-02');
+  await match({...series,zone:'UTC',firstDate:'2026-11-02',lastDate:'2026-11-03',weekdays:[1,2]},
+    [{...moved,zone:'UTC',originalDate:'2026-11-02',start:{date:'2026-11-04',time:'12:00'},end:{date:'2026-11-04',time:'13:00'}}],
+    '2026-11-02','2026-11-05');
 
   const anchors = (await q("select (now()+interval '2 hours')::text as lo,(now()+interval '3 hours')::text as hi,(now()+interval '1 day')::text as horizon"))[0];
   await as('service_role');
@@ -89,6 +92,14 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
   const movedSnapshot=await scalar('select public.lemma_calendar_snapshot($1) result',[anchors.horizon]);
   const savedException=movedSnapshot.fixed.find(x=>x.seriesId===recurring);
   assert.equal(savedException.originalDate,originalDate); assert.equal(savedException.revision,1);
+  // Independent block IDs have the opposite order from their actual starts.
+  await q(`insert into public.calendar_blocks(id,user_id,kind,title,starts_at,ends_at,time_zone) values
+    ($1,$3,'busy','Earlier',$4::timestamptz-interval '1 hour',$4,'UTC'),
+    ($2,$3,'busy','Later',$5,$5::timestamptz+interval '1 hour','UTC')`,
+    [operationId(301),operationId(300),owner,anchors.lo,anchors.hi]);
+  const ordered=await scalar('select public.lemma_calendar_snapshot($1) result',[anchors.horizon]);
+  assert.deepEqual(ordered.fixed.filter(x=>x.id===operationId(300)||x.id===operationId(301)).map(x=>x.id),
+    [operationId(301),operationId(300)]);
 
   await as('authenticated',other);
   assert.equal((await scalar('select public.lemma_calendar_snapshot($1) result',[anchors.horizon])).fixed.length,1);
