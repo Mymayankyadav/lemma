@@ -1,5 +1,6 @@
 import {useEffect,useId,useState} from 'react'
 import {getDemoProfile,getMode} from '../../data/mode'
+import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt'
 import {openDemoManualTutor} from '../../data/tutor/demo-manual'
 import {isFlagOn} from '../../flags'
 import {Button,Sheet} from '../../ui/v7/components'
@@ -48,10 +49,13 @@ function TutorEntry({scope}:{scope:Scope}) {
 function TutorBody({scope}:{scope:Scope}) {
   const draftKey='lemma.demo-tutor:'+JSON.stringify([getDemoProfile(),scope.pathId,scope.checkpointId])
   const question=useDraft(draftKey+':question'), context=useDraft(draftKey+':context')
+  const [selectedLocal,setSelectedLocal]=useState('')
+  const attachedLocal=useDraft(draftKey+':attached-local')
+  const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:Tutor; thread:Thread}>()
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
-  const questionId=useId(),copyId=useId()
+  const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
   const {pathId,checkpointId}=scope
   const excerpt=scope.objective.slice(0,1200)
@@ -74,11 +78,15 @@ function TutorBody({scope}:{scope:Scope}) {
     if (!session || busy || !question.text.trim()) return
     setBusy(true);setError('');setCopyStatus('')
     try {
+      const local=attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
       const result=await session.api.submit(crypto.randomUUID(),{
         question:question.text,
+        ...(local?.kind==='preview' ? {localExcerpt:addLocalTutorExcerpt(local)} : {}),
         selectedContext:context.text && excerpt ? [{kind:'checkpoint',refId:checkpointId,version:'demo',excerpt}] : [],
       })
-      if(result.kind==='submitted') question.clearIfUnchanged(question.text)
+      if(result.kind==='submitted') {
+        question.clearIfUnchanged(question.text);attachedLocal.clearIfUnchanged(attachedLocal.text)
+      }
       else setError('A question is already waiting. Your new text was kept.')
       const thread=await session.api.resume()
       setSession({api:session.api,thread})
@@ -106,7 +114,10 @@ function TutorBody({scope}:{scope:Scope}) {
 
   const thread=session?.thread,last=thread?.turns.at(-1)
   const pending=last?.status==='awaiting-tutor'?last:null
-  const handoff=pending?[pending.snapshot.question,...pending.snapshot.selectedContext.map(x=>x.excerpt)].join('\n\n'):''
+  const localExcerpt=pending?.snapshot.localExcerpt
+  const handoff=pending?[pending.snapshot.question,...pending.snapshot.selectedContext.map(x=>x.excerpt),
+    ...(localExcerpt ? ['Local excerpt (learner-provided; not a citation):\n'+localExcerpt.text] : []),
+  ].join('\n\n'):''
   async function copy() {
     try { await navigator.clipboard.writeText(handoff);setCopyStatus('Question copied.') }
     catch { setCopyStatus('Clipboard unavailable. Select and copy the text yourself.') }
@@ -124,8 +135,33 @@ function TutorBody({scope}:{scope:Scope}) {
           onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
-      <Button disabled={busy||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
-      {(question.unsaved||context.unsaved)&&<p role="alert">This draft may not survive a reload.</p>}
+      <details>
+        <summary>Add selected local text</summary>
+        <p>Paste only the text you selected. It stays local until you choose to copy the saved question.</p>
+        <label htmlFor={selectionId}>Paste selected local text</label>
+        <textarea id={selectionId} className="v7-field" rows={3} value={selectedLocal} disabled={busy}
+          onChange={e=>{setSelectedLocal(e.currentTarget.value);setPreview(undefined)}}/>
+        <p>{selectedLocal.length} / {LOCAL_TUTOR_EXCERPT_LIMIT} characters</p>
+        <Button disabled={busy||!selectedLocal.trim()} onClick={()=>setPreview(previewLocalTutorExcerpt(selectedLocal))}>
+          Preview selected text
+        </Button>
+        {preview?.kind==='too-long'&&<p role="alert">Select a shorter excerpt before adding it.</p>}
+        {preview?.kind==='preview'&&<section aria-label="Local excerpt preview">
+          <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{preview.text}</p>
+          <Button disabled={busy} onClick={()=>setPreview(undefined)}>Cancel excerpt preview</Button>
+          <Button disabled={busy} onClick={()=>{
+            attachedLocal.change(addLocalTutorExcerpt(preview).text)
+            setSelectedLocal('');setPreview(undefined)
+          }}>Add local excerpt</Button>
+        </section>}
+      </details>
+      {attachedLocal.text&&<section aria-label="Attached local excerpt">
+        <p>Local excerpt added</p>
+        <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{attachedLocal.text}</p>
+        <Button disabled={busy} onClick={()=>attachedLocal.change('')}>Remove local excerpt</Button>
+      </section>}
+      <Button disabled={busy||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
+      {(question.unsaved||context.unsaved||attachedLocal.unsaved)&&<p role="alert">This draft may not survive a reload.</p>}
     </div>}
     {pending&&<div className="v7-field-group">
       <p role="status">Saved. Waiting for a reply.</p>

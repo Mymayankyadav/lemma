@@ -1,3 +1,5 @@
+import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
+
 /**
  * Pure P6 turn transitions. A caller must supply a current, owner-authorized head
  * and apply the returned changes together with its operation receipt. This module
@@ -19,11 +21,13 @@ export type TutorThreadHead = Readonly<{
 export type TutorComposerDraft = Readonly<{
   question: string
   selectedContext: readonly TutorContextSelection[]
+  localExcerpt?: LocalTutorExcerpt
 }>
 
 type TutorQuestionSnapshot = Readonly<{
   question: string
   selectedContext: readonly TutorContextSelection[]
+  localExcerpt?: LocalTutorExcerpt
 }>
 
 type TurnIdentity = Readonly<{
@@ -73,6 +77,7 @@ type SubmitResult =
   | { kind: 'submitted'; head: TutorThreadHead; turn: TutorPendingTurn }
   | { kind: 'turn-pending'; turnId: string }
   | { kind: 'empty-question' }
+  | { kind: 'invalid-local-excerpt' }
 
 export function submitTutorTurn(
   head: TutorThreadHead, turnId: string, draft: TutorComposerDraft,
@@ -80,10 +85,13 @@ export function submitTutorTurn(
   if (head.pendingTurnId !== null) return { kind: 'turn-pending', turnId: head.pendingTurnId }
   if (!draft.question.trim()) return { kind: 'empty-question' }
 
+  const localExcerpt = draft.localExcerpt && freezeLocalTutorExcerpt(draft.localExcerpt)
+  if (draft.localExcerpt && !localExcerpt) return { kind: 'invalid-local-excerpt' }
   const sequence = head.lastSequence + 1
   // Copy selected scalar fields only. Never retain a pointer into the editor's draft.
   const snapshot: TutorQuestionSnapshot = Object.freeze({
     question: draft.question,
+    ...(localExcerpt ? {localExcerpt} : {}),
     selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt }) =>
       Object.freeze({ kind, refId, version, excerpt }))),
   })
