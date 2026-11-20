@@ -1,5 +1,14 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N195 Live first study, scoped review and UI repairs
+
+Owner task: "Implement the proposed plan."
+Stage: Build · Status: open · Needs: N191, N194 · Assigned: chat-671983#wxm1
+Done = The authenticated first-use flow creates one path and card, recovers a lost acknowledgement, and opens the exact saved card. An explicit grade advances the same round exactly once. Path, checkpoint and concept starts, pause and resume retain membership. Verify remaining P1/P2 user journeys against the November 20 finding and accessibility matrix.
+Tests: isolated owner, version, rollback and concurrent receipt cases; exact persisted first-card/run/grade readback; scoped, caught-up and interrupted browser journeys; route, drawer, focus, contrast, theme and responsive acceptance.
+Scope: study commands and live/demo adapters, affected React study and UI surfaces, targeted tests, release acceptance and docs/current/N195.md.
+Not: scheduler policy activation, tutor/provider access, Pad, OCR, live learner data, or changing the release default.
+
 ## N190 Settings search destinations and keyboard history (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
