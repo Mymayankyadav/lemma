@@ -1,0 +1,97 @@
+{
+  "table": "evidence_revisions",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "project_id": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "fact_id": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "revision": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "kind": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "occurred_at": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "reported_at": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "known_at": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "writer_xid": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "fact": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    },
+    "superseded_by": {
+      "classification": "derived",
+      "appPath": "public.lemma_evidence_snapshot reads owner and project revisions",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Canonical corrections and undo append revisions"
+    }
+  }
+}

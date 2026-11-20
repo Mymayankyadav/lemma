@@ -75,7 +75,10 @@
           "project_id",
           "checkpoint_id",
           "session_id",
-          "task_id"
+          "task_id",
+          "weekly_rule",
+          "buffer_before_minutes",
+          "buffer_after_minutes"
         ]
       }
     },
@@ -747,6 +750,44 @@
         "fields": [
           "project_id",
           "conversion"
+        ]
+      }
+    },
+    {
+      "resource": "session_progress",
+      "command_fn": "lemma_session_progress_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "save"
+        ],
+        "fields": [
+          "step",
+          "events",
+          "misconception",
+          "resolved",
+          "next_question"
+        ]
+      }
+    },
+    {
+      "resource": "calendar_occurrence_changes",
+      "command_fn": "calendar_occurrence_changes_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": [
+          "create"
+        ],
+        "fields": [
+          "series_id",
+          "original_date",
+          "original_zone",
+          "revision",
+          "kind",
+          "starts_local",
+          "ends_local",
+          "start_fold",
+          "end_fold"
         ]
       }
     }

@@ -47,6 +47,12 @@
      "operations": [
       "create"
      ]
+    },
+    {
+     "resource": "calendar_occurrence_changes",
+     "operations": [
+      "create"
+     ]
     }
    ],
    "note": "get(what=today) returns tasks due and overdue, the day's blocks, the running timer, deadlines due within 14 days, the Today review summary, the review budget and free minutes inside working hours."
@@ -118,6 +124,12 @@
       "create",
       "update",
       "delete"
+     ]
+    },
+    {
+     "resource": "calendar_occurrence_changes",
+     "operations": [
+      "create"
      ]
     }
    ],
@@ -601,6 +613,12 @@
     "study"
    ],
    "covers": [
+    {
+     "resource": "session_progress",
+     "operations": [
+      "save"
+     ]
+    },
     {
      "resource": "session_event_corrections",
      "operations": [
