@@ -216,6 +216,12 @@ export interface ReviewItem {
  projectSlug: string; glyph: Glyph; checkpointCode: string | null; checkpointTitle: string | null; sessionNumber: number | null
  sourceShort: string | null; pageLabel: string | null; state: CardState
 }
+export interface FirstStudyCardInput {
+ operationId:string; expectedOwner?:string
+ path:{kind:'new';title:string}|{kind:'existing';slug:string;id?:string}
+ front:string; back:string
+}
+export interface FirstStudyCardReceipt {noteNo:number;noteId:string;cardId:string;projectSlug:string}
 export interface RecordReviewInput { expectedVersion?:number; cardId: string; rating: Rating; confidence: Confidence; durationMs: number; next: CardState }
 export interface CardRow {
  noteNo: number; front: string; type: NoteType; kind: NoteKind; projectSlug: string; glyph: Glyph

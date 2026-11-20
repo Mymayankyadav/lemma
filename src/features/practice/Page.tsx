@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../flags';
 // N78: v6-only practice topic management. Practice records are distinct from card reviews.
 import {formatDay,formatInterval} from '../../lib/format';
 import {practiceRatingText} from '../../lib/labels';
@@ -84,7 +85,7 @@ function LegacyPracticePage(){
  const [busy,setBusy]=useState(false);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
- const [rating,setRating]=useState('3');
+ const [rating,setRating]=useState(()=>isFlagOn('uiRepairV1')?'':'3');
  const [response,setResponse]=useState('');
  const [minutes,setMinutes]=useState('');
  const [cadenceKind,setCadenceKind]=useState<'fixed_days'|'after_rating'>('fixed_days');
@@ -115,6 +116,7 @@ function LegacyPracticePage(){
  const current=items.find(x=>x.id===selected);
  const open=(topic:PracticeTopicRecord)=>{
   setSelected(topic.id);setError('');setNotice('');
+  if(isFlagOn('uiRepairV1'))setRating('');
   setCadenceKind(topic.cadence.kind);
   setCadenceDays(topic.cadence.kind==='fixed_days'?
    [String(topic.cadence.days),'1','3','7','14']:
@@ -194,6 +196,7 @@ function LegacyPracticePage(){
       <label className="block text-label">How did it go?
        <select className={field+' ml-2'} aria-label="Practice rating" value={rating}
         onChange={event=>setRating(event.target.value)}>
+        {isFlagOn('uiRepairV1')&&<option value="" disabled>Choose a rating</option>}
         {[1,2,3,4].map(x=><option key={x} value={x}>{practiceRatingText(x)}</option>)}
        </select>
       </label>
@@ -205,7 +208,7 @@ function LegacyPracticePage(){
        <input className={field+' ml-2 w-32'} type="number" min={0} max={1440}
         aria-label="Practice minutes" value={minutes} onChange={event=>setMinutes(event.target.value)}/>
       </label>
-      <button className={action} type="submit" disabled={busy}>Record practice</button>
+      <button className={action} type="submit" disabled={busy||!rating}>Record practice</button>
      </form>
      <form noValidate onSubmit={saveCadence} aria-label={'Cadence '+topic.title} className="space-y-3">
       <h3 className="text-label font-semibold">Cadence</h3>

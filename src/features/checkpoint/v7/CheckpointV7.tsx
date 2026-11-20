@@ -1,3 +1,5 @@
+import {reviewHref} from '../../../data/review-target';
+import {currentStudyStep} from '../../project/v7/pathModel';
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
 import {lazy,Suspense,useMemo,useState} from 'react';
@@ -50,7 +52,7 @@ export default function CheckpointV7(){
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/><Skeleton/><Skeleton/></main>;
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
- const step=Math.max(0,view.currentStep);
+ const step=isFlagOn('uiRepairV1')?currentStudyStep(view).index:Math.max(0,view.currentStep);
  const tutorScope={pathId:slug,checkpointId:view.id,title:view.title,objective:detail.objective,sourceShort:detail.sourceShort,
   linkedSessions:detail.sessions.filter(session=>session.display!=='ended'),authScope:detail.authScope};
  const tutorEnabled=getMode()==='live'?isFlagOn('tutorThreads'):isFlagOn('tutorManualDemo');
@@ -102,7 +104,7 @@ export default function CheckpointV7(){
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
   {!isFlagOn('padLocal')&&<CheckpointTutor scope={tutorScope}/>}
-  <Link className="v7-learn-row" to={'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
+  <Link className="v7-learn-row" to={isFlagOn('uiRepairV1')?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :<Button variant="primary" onClick={()=>launch()}>Work on this with your tutor</Button>}

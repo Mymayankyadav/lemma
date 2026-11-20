@@ -18,6 +18,8 @@ export const FLAG_DEFAULTS = {
   tutorManualDemo: false,
   /** N193: live owner-bound checkpoint threads, released with the new study UI. */
   tutorThreads: false,
+  /** P1/P2 study repairs ship together at the owner-approved release. */
+  uiRepairV1: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */

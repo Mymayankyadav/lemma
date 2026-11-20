@@ -24,13 +24,13 @@ function CheckpointPicker({slug,value,onChange}:{slug:string;value:string;onChan
 /** PLAN §6.11 Editor: a full-height sheet, Write · Preview (side by side on desktop), Front and Back in Reading, a key row
  *  with the owner's macros and common symbols, pickers for Path, Checkpoint, Type and Kind, and the primary in the footer
  *  (the sheet footer stays above the keyboard). */
-export function CardEditorSheet({open,onClose,initial,busy,onSubmit,submitLabel,lockPath=false}:{open:boolean;onClose:()=>void;initial?:CardDetail['note'];busy:boolean;onSubmit:(value:EditorValue)=>void;
+export function CardEditorSheet({open,onClose,initial,draft,busy,onSubmit,submitLabel,submitError,lockPath=false}:{open:boolean;onClose:()=>void;initial?:CardDetail['note'];draft?:{front:string;back:string;projectSlug:string};submitError?:string;busy:boolean;onSubmit:(value:EditorValue)=>void;
  /** The Inbox edits a proposal before approving it: "Save and approve", with the path fixed. */
  submitLabel?:string;lockPath?:boolean}){
  const projects=useProjects(),settings=useSettings(),wide=useMinWidth(700);
- const [front,setFront]=useState(initial?.front??''),[back,setBack]=useState(initial?.back??'');
+ const [front,setFront]=useState(initial?.front??draft?.front??''),[back,setBack]=useState(initial?.back??draft?.back??'');
  const [type,setType]=useState<NoteType>(initial?.type??'basic'),[kind,setKind]=useState<NoteKind>(initial?.kind??'other');
- const [slug,setSlug]=useState(initial?.projectSlug??''),[checkpoint,setCheckpoint]=useState(initial?.checkpointCode??'');
+ const [slug,setSlug]=useState(initial?.projectSlug??draft?.projectSlug??''),[checkpoint,setCheckpoint]=useState(initial?.checkpointCode??'');
  const [mode,setMode]=useState<'Write'|'Preview'>('Write'),[error,setError]=useState('');
  const target=useRef<'front'|'back'>('front'),frontRef=useRef<HTMLTextAreaElement>(null),backRef=useRef<HTMLTextAreaElement>(null);
  const paths=useMemo(()=>(projects.data??[]).filter(row=>!row.system&&row.status!=='archived'),[projects.data]);
@@ -74,7 +74,7 @@ export function CardEditorSheet({open,onClose,initial,busy,onSubmit,submitLabel,
     <Picker label="Type" value={cardTypeText(type)} options={types.map(cardTypeText)} onChange={label=>setType(types.find(item=>cardTypeText(item)===label)??'basic')}/>
     <Picker label="Kind" value={noteKindText(kind)} options={kinds.map(noteKindText)} onChange={label=>setKind(kinds.find(item=>noteKindText(item)===label)??'other')}/>
    </div>
-   {error&&<p role="alert" className="v7-error">{error}</p>}
+   {(error||submitError)&&<p role="alert" className="v7-error">{error||submitError}</p>}
   </div>
  </Sheet>;
 }

@@ -4,11 +4,15 @@ import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
 import {warmMoment} from '../../../ui/v7/LottieMoment';
-import {useEffect,useMemo,useRef,useState,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
+import {useEffect,useMemo,useRef,useState,useSyncExternalStore,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
+import {authOwner,onAccountChange} from '../../../data/authBoundary';
+import {getMode} from '../../../data/mode';
+import {openStudyTarget,targetFromLink} from './scopedRound';
+import {saveGrade,savedGrade,confirmGrade,type GradeIntent} from './gradeIntent';
 import {useHome,useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
 import {preview,scheduleConfig} from '../../../lib/fsrs';
@@ -50,22 +54,50 @@ export default function ReviewRoundV7(){
  const [grades,setGrades]=useState<Record<string,Rating>>({});
  const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
  const dragStart=useRef<{x:number;y:number}|null>(null);
- const runId=search.get('run');
- const item=run?.items[run.position],exactId=run?.targetCardId;
+ const runId=search.get('run'),link=search.toString(),repair=isFlagOn('uiRepairV1');
+ const signedIn=useSyncExternalStore(onAccountChange,authOwner,authOwner);
+ const atomic=isFlagOn('uiRepairV1')&&getMode()==='live';
+ const [frozen,setFrozen]=useState<GradeIntent|null>(null);
+ const item=run?.items[run.position],exactId=run?.targetCardId??(run?.target?item?.cardId:undefined);
  // Do not fetch singleton faces from the global quota-ranked prefix.
  const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
-  queryFn:async()=>await getApi().getExactReviewCard?.(exactId!)??null});
+  queryFn:async()=>{
+   if(run?.target&&getMode()==='live'){
+    const {liveClient}=await import('../../../data/live/client');
+    const {data,error}=await liveClient().rpc('study_run_item_available',{p_run:run.id,p_item:item!.id,p_card:exactId});
+    if(error)throw Error(error.message);
+    if(!data)return null;
+   }
+   return await getApi().getExactReviewCard?.(exactId!)??null;
+  }});
  const card=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
  const lookup=exactId?exact:cards;
  const faces=card?.type==='reverse'&&card.ord===2?{front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
  const choices=useMemo(()=>{if(!settings.data||!card)return null;try{return preview(card.state,Date.now(),scheduleConfig(settings.data));}catch{return null;}},[settings.data,card]);
  useEffect(()=>{
-  let cancelled=false;setLoading(true);
+  let cancelled=false;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
   void (async()=>{
-   const loaded=runId?await getRun(runId):await resumeRun();
+   const target=repair?await targetFromLink(new URLSearchParams(link)):null;
+   const loaded=target?await openStudyTarget(target):runId?await getRun(runId):await resumeRun();
    if(cancelled)return;
-   if(!loaded){setMessage(null);return;}
-   setGrades(readGrades(loaded.id));
+   if(!loaded){setMessage(target?'There are no eligible cards in this review selection.':null);return;}
+   if(target&&target.kind!=='round'){
+    navigate('/review/run?run='+encodeURIComponent(loaded.id),{replace:true});return;
+   }
+   setGrades(readGrades(loaded.id));setRun(loaded);
+   const intent=atomic&&signedIn?savedGrade(signedIn,loaded.id):null;
+   if(intent){
+    setFrozen(intent);
+    try{
+     const confirmed=await confirmGrade(intent);
+     if(!cancelled){
+      setFrozen(null);setRun(confirmed.run);
+      if(!confirmed.applied)setMessage('The round changed. Your saved selection did not add a grade.');
+      else void queries.invalidateQueries();
+     }
+    }catch{if(!cancelled)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
+    return;
+   }
    const receipt=pendingGrade();
    if(receipt?.runId===loaded.id){
     const current=loaded.items[loaded.position];
@@ -78,17 +110,44 @@ export default function ReviewRoundV7(){
    if(!cancelled)setRun(loaded);
   })().catch(error=>{if(!cancelled)setMessage(error instanceof Error?error.message:'Could not restore review');}).finally(()=>{if(!cancelled)setLoading(false);});
   return ()=>{cancelled=true;};
- },[runId]);
+ },[runId,link,repair,atomic,signedIn,queries,navigate]);
  useEffect(()=>{setRevealed(false);setConfidence(null);setStartTime(Date.now());setDrag(null);},[run?.id,run?.position]);
  const done=(result:DurableRun)=>{setRun(result);if(result.progress.done)navigate('/review/done?run='+encodeURIComponent(result.id));};
+ async function recover(intent:GradeIntent){
+  const saved=await confirmGrade(intent);
+  if(authOwner()!==intent.ownerId)return;
+  setFrozen(null);
+  if(saved.applied){
+   const nextGrades={...grades,[intent.itemId]:intent.rating};
+   setGrades(nextGrades);writeGrades(intent.runId,nextGrades);
+   void queries.invalidateQueries();
+  }else setMessage('The round changed. Your saved selection did not add a grade.');
+  done(saved.run);
+ }
+ async function retryGrade(){
+  if(!frozen||busy)return;
+  setBusy(true);setMessage(null);
+  try{await recover(frozen);}
+  catch{if(authOwner()===frozen.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
+  finally{setBusy(false);}
+ }
  async function grade(rating:Rating){
-  if(!run||!item||!card||!choices||!settings.data||busy||pending)return;
+  if(!run||!item||!card||!choices||!settings.data||busy||pending||frozen)return;
   setBusy(true);setMessage(null);
   // N131 · A5: the pencil tick, when Sounds is on (it plays on the tap, before saving, so it is felt as the mark).
   void playSound('tick',soundsOn(settings.data.ui));
   // AW6: Good, Hard or Easy is one click, Again two light ticks.
   haptic(rating===1?'gradeAgain':'grade');
   try{
+   if(atomic){
+    let intent:GradeIntent;
+    try{intent=saveGrade(run,{cardId:item.cardId,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});}
+    catch{setMessage('This device could not keep a recoverable grade. Try again after reloading.');return;}
+    setFrozen(intent);
+    try{await recover(intent);}
+    catch{if(authOwner()===intent.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
+    return;
+   }
    const currentVersion=await cardVersion(item.cardId);
    if(currentVersion!==null&&currentVersion!==item.expectedCardVersion){done(await advanceSkip(run,item.id,'Card changed after run started'));setMessage('Changed card skipped; no duplicate grade recorded.');return;}
    const reviewed=await record.mutateAsync({cardId:item.cardId,expectedVersion:item.expectedCardVersion,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});
@@ -107,7 +166,7 @@ export default function ReviewRoundV7(){
   finally{setBusy(false);}
  }
  async function undo(){
-  if(!run||busy||pending||!lastGraded(run))return;setBusy(true);setMessage(null);
+  if(!run||busy||pending||frozen||!lastGraded(run))return;setBusy(true);setMessage(null);
   try{
    const graded=lastGraded(run),result=await undoLast(run);
    if(graded){const nextGrades={...grades};delete nextGrades[graded.id];setGrades(nextGrades);writeGrades(run.id,nextGrades);}
@@ -116,13 +175,13 @@ export default function ReviewRoundV7(){
   finally{setBusy(false);}
  }
  async function skip(){
-  if(!run||!item||busy||pending)return;setBusy(true);setMessage(null);
+  if(!run||!item||busy||pending||frozen)return;setBusy(true);setMessage(null);
   try{done(await advanceSkip(run,item.id,'Card missing or changed since run snapshot'));setMessage('Stale card skipped.');}
   catch(error){setMessage(error instanceof Error?error.message:'Could not skip stale card');}
   finally{setBusy(false);}
  }
  async function leave(){
-  if(!run||busy){navigate('/review');return;}
+  if(!run||busy||frozen){navigate('/review');return;}
   setBusy(true);
   try{if(run.status==='running')await pauseRun(run);navigate('/review');}
   catch(error){setMessage(error instanceof Error?error.message:'Could not save the run position');}
@@ -164,7 +223,7 @@ export default function ReviewRoundV7(){
  return <main id="main-content" className="v7-review" aria-label="Review round" data-revealed={revealed?'true':'false'} data-spread={isFlagOn('v7Spread')?'':undefined}>
   <ImmersiveHeader leave={<button type="button" className="v7-icon-button" aria-label="Leave" onClick={()=>{void leave();}}><X aria-hidden="true"/></button>}
    center={<p className="v7-review-count" role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={run.progress.position}>{shown} of {run.progress.total}</p>}
-   more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={busy||!!pending||!lastGraded(run)} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
+   more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={busy||!!pending||!!frozen||!lastGraded(run)} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
   <ol className="v7-review-progress" aria-hidden="true">{run.items.map(entry=><li key={entry.id} data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>)}</ol>
   {message&&<p role="alert" className="v7-review-message">{message}</p>}
   {/* N157 · U1 S11 (flag v7Margin): why this card and its source, beside the round; never the answer. */}
@@ -173,7 +232,9 @@ export default function ReviewRoundV7(){
    ...(card.sourceShort?[{title:'Source',body:<p>{card.sourceShort}{card.pageLabel?', p. '+card.pageLabel:''}</p>}]:[]),
   ]} sheet={false}/>}
   {run.status==='paused'&&<Button onClick={()=>{setBusy(true);void unpauseRun(run).then(setRun).catch(error=>setMessage(String(error))).finally(()=>setBusy(false));}}>Resume this round</Button>}
-  {run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
+  {frozen?<section className="v7-review-state"><p role="status">Your grade selection is saved on this device.</p>
+   <Button disabled={busy} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button></section>
+  :run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
   :item&&run.status==='running'?<>
    {pending?<section className="v7-review-state"><p role="status">Your answer is recorded. Advance without grading again.</p><Button disabled={busy} onClick={()=>{void retryAdvance();}}>Retry advance</Button></section>
@@ -199,7 +260,7 @@ export default function ReviewRoundV7(){
     {revealed&&run.progress.graded<3&&<p className="v7-review-hint">Swipe right for Good, left for Again, up for Easy.</p>}
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
-  {item&&card&&!pending&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
+  {item&&card&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
    {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}

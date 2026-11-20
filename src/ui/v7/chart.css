@@ -48,3 +48,7 @@
 :where(html[data-v7]) .v7-chart [data-chart-point]:focus,:where(html[data-v7]) .v7-chart :is(button,[tabindex]):focus:not(:focus-visible) {outline:none;}
 :where(html[data-v7]) .v7-chart-band {fill:var(--v7-role-text-primary);opacity:.06;pointer-events:none;}
 :where(html[data-v7]) .v7-chart [data-chart-point]:focus-visible .v7-chart-band {opacity:.1;stroke:var(--v7-role-focus-ring);stroke-width:2;}
+
+:where(html[data-v7]) .v7-chart[data-study-ui] [data-chart-point]:focus-visible .v7-chart-band {
+  opacity:1; fill-opacity:.1; stroke-opacity:1; stroke-width:2; vector-effect:non-scaling-stroke;
+}
