@@ -1,0 +1,55 @@
+{
+  "table": "tutor_threads",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "project_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "checkpoint_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "last_sequence": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "updated_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    }
+  }
+}

@@ -14,6 +14,10 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
+  /** Manual copy/paste tutoring is a default-off, demo-only preview. */
+  tutorManualDemo: false,
+  /** N193: live owner-bound checkpoint threads, released with the new study UI. */
+  tutorThreads: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
