@@ -1,3 +1,4 @@
+import {readFile} from 'node:fs/promises';
 import {expect,test} from '@playwright/test';
 
 const checkpoint = (code: string, enabled = true) =>
@@ -52,9 +53,22 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
   await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await open.click();
-  await notes.fill('Compactness notes saved offline');
+  await expect(notes).toBeVisible();
   await context.setOffline(true);
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+  const outbound: string[] = [];
+  const origin = new URL(page.url()).origin;
+  context.on('request', request => {
+    const url = new URL(request.url());
+    if (/^https?:$/.test(url.protocol) &&
+      (url.origin !== origin || !['GET','HEAD'].includes(request.method()) ||
+        ['fetch','xhr'].includes(request.resourceType()))) outbound.push(request.method() + ' ' + url.pathname);
+  });
+  const offlineNote = 'Compactness notes: $\\frac{1}{2}$ and <proof>';
+  await notes.fill(offlineNote);
+  const preview = page.getByRole('region',{name:'Local math preview'});
+  await expect(preview.locator('math mfrac')).toHaveCount(1);
+  await expect(preview).toContainText('<proof>');
 
   await paper.scrollIntoViewIfNeeded();
   const box = await paper.boundingBox();
@@ -71,6 +85,26 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
 
   await page.setViewportSize({width:844,height:390});
   await expect(strokes.first()).toHaveAttribute('d',path ?? '');
+  const exportButton = page.getByRole('button',{name:'Export readable Pad'});
+  const createObjectURL = await page.evaluateHandle(() => URL.createObjectURL);
+  try {
+    await page.evaluate(() => {URL.createObjectURL = () => {throw new Error('Simulated blob URL failure');};});
+    await exportButton.click();
+    await expect(page.getByText('Could not start the export. Your Pad is unchanged.',{exact:true})).toBeVisible();
+    await expect(notes).toHaveValue(offlineNote);
+    await expect(strokes.first()).toHaveAttribute('d',path ?? '');
+  } finally {
+    await page.evaluate(original => {URL.createObjectURL = original;},createObjectURL);
+    await createObjectURL.dispose();
+  }
+  const [download] = await Promise.all([page.waitForEvent('download'), exportButton.click()]);
+  expect(download.suggestedFilename()).toBe('lemma-pad.html');
+  const file = await download.path();
+  if (!file) throw new Error('No downloaded Pad file');
+  const html = await readFile(file,'utf8');
+  expect(html).toContain(offlineNote.replace('<proof>','&lt;proof&gt;'));
+  expect(html).toContain('<path d="' + path + '"/>');
+  expect(html).toContain('Content-Security-Policy');
   // Hash-only navigation remounts the fixture without depending on a service worker.
   await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP2';});
   await expect(page.getByRole('button',{name:'Put away Local Pad'})).toHaveCount(0);
@@ -80,6 +114,7 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
   await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await open.click();
-  await expect(notes).toHaveValue('Compactness notes saved offline');
+  await expect(notes).toHaveValue(offlineNote);
   await expect(strokes.first()).toHaveAttribute('d',path ?? '');
+  expect(outbound).toEqual([]);
 });
