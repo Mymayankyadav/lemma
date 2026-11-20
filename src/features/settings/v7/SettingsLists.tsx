@@ -1,6 +1,8 @@
 import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {Check,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
+import {usePlanRelease} from '../../../data/usePlanRelease';
+import {requestedAlgorithm, type SchedulingAlgorithm} from '../../../../supabase/functions/_shared/agenda/contract';
 import type {SettingsPatch} from '../../../data/api';
 import type {FocusDefaultsPrefs,NotifyPrefs,PlanningPrefs,ReviewBudgetPrefs,Settings} from '../../../data/types';
 import {notifyUndo} from '../../../data/notify';
@@ -156,6 +158,8 @@ const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sat
 /** Planning: the day window and calendar as rows; gaps and continuous limits behind Advanced. */
 export function PlanningLists({settings}:{settings:Settings}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Planning'),notify=useToast();
+ const agendaReleased=usePlanRelease('atlasAgendaV1');
+ const algorithm=requestedAlgorithm(settings.schedulingAlgorithm,agendaReleased);
  const [advanced,setAdvanced]=useState(false);
  const planning:PlanningPrefs={window_start:'08:00',window_end:'22:00',gap_minutes:10,max_consecutive_minutes:120,daily_minimum_minutes:20,daily_intention:true,...settings.planning};
  const withPlanning=(patch:Partial<PlanningPrefs>)=>{
@@ -167,6 +171,13 @@ export function PlanningLists({settings}:{settings:Settings}){
  };
  const minimums=[0,10,15,20,30,45,60,90,120,180];
  return <div className="v7-settings-body">
+  {agendaReleased&&<Group title="Scheduling">
+   <ValueRow label="Scheduling algorithm" value={algorithm==='new'?'New':'Legacy'} onOpen={()=>editor.setOpen({
+    kind:'pick',title:'Scheduling algorithm',value:algorithm,
+    options:[{value:'new',label:'New',hint:'Uses available time, commitments and study history'},{value:'legacy',label:'Legacy',hint:'Uses the native v3 scheduler'}],
+    onPick:(value:SchedulingAlgorithm)=>{void save({schedulingAlgorithm:value},{schedulingAlgorithm:settings.schedulingAlgorithm??null});},
+   })}/>
+  </Group>}
   <Group title="Your day">
    <ValueRow label="Daily minimum" value={planning.daily_minimum_minutes?formatDuration(planning.daily_minimum_minutes):'None'} onOpen={()=>editor.setOpen({kind:'pick',title:'Daily minimum',value:planning.daily_minimum_minutes,
     options:[...new Set([...minimums,planning.daily_minimum_minutes])].sort((a,b)=>a-b).map(n=>({value:n,label:n?formatDuration(n):'None'})),onPick:((value:number)=>withPlanning({daily_minimum_minutes:value})) as (value:never)=>void})}/>

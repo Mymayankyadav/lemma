@@ -2,6 +2,13 @@
   "table": "settings",
   "version": 1,
   "columns": {
+    "scheduling_algorithm": {
+      "classification": "owner-editable",
+      "appPath": "Settings > Planning > Scheduling algorithm",
+      "mcpPath": "Owner settings edit and authenticated agenda read",
+      "exportPolicy": "Included in the owner settings export",
+      "deletionPolicy": "Deleted with the owner's settings row"
+    },
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/live/adapter.ts",

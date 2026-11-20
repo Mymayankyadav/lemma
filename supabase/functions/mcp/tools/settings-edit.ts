@@ -7,7 +7,7 @@ export const ownerEditableSettingsFields = [
  'rollover_hour','max_interval_days','fuzz','load_balance','learn_ahead_minutes',
  'fsrs_weights','macros','default_style','tutor_rules','mix_decks','preferred_chat',
  'time_zone','master_prompt','ui','notify','week_start',
- 'clock_24h','focus_defaults','planning','review_budget','attention','flags','capacity','atlas',
+ 'clock_24h','focus_defaults','planning','review_budget','attention','flags','capacity','atlas','scheduling_algorithm',
 ] as const;
 const allowed=new Set<string>(ownerEditableSettingsFields);
 const sections=new Set(['ui','notify','focus_defaults','planning','review_budget','attention','flags','capacity','atlas']);
@@ -116,6 +116,8 @@ function verify(key:string,value:unknown):unknown{
   return [...value];
  }else if(key==='preferred_chat'){
   if(value!=='claude'&&value!=='chatgpt')bad('preferred_chat invalid');
+ }else if(key==='scheduling_algorithm'){
+  if(value!==null&&value!=='new'&&value!=='legacy')bad('scheduling_algorithm must be new, legacy or null');
  }else if(key==='time_zone'){
   text(value,100,key);
   try{new Intl.DateTimeFormat('en-US',{timeZone:value as string})}

@@ -47,6 +47,8 @@ export const FLAG_DEFAULTS = {
    *  On by default from the Owner's Atlas v3 activation (N182, docs/current/N180.md step 9); `?flags=-atlasV3` shows the off path in dev/test/e2e builds.
    *  Rollback: change this back to false (no data change; the migrated owner keeps Atlas v3 in MCP). */
   atlasV3: true,
+  /** November implementation plan: one account preference for future agenda decisions. */
+  atlasAgendaV1: false,
 } as const satisfies Record<string, boolean>;
 
 export type FlagName = keyof typeof FLAG_DEFAULTS;

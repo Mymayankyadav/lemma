@@ -123,7 +123,7 @@ export function useBootstrap() {
  return useWrite((api, _value: void) => api.bootstrap(), ['settings', 'styles', 'auth'])
 }
 export function useUpdateSettings() {
- return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings','notify-preview'])
+ return useWrite((api, value: Parameters<LemmaApi['updateSettings']>[0]) => api.updateSettings(value), ['settings','notify-preview','agenda','atlas-model'])
 }
 export function useRotateConnectorSecret() {
  return useWrite((api, _value: void) => api.rotateConnectorSecret(), ['settings'])
