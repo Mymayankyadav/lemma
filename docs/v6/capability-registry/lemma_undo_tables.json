@@ -136,12 +136,6 @@
       "table_name": "atlas_links"
     },
     {
-      "table_name": "evidence_revisions"
-    },
-    {
-      "table_name": "calendar_input_history"
-    },
-    {
       "table_name": "calendar_occurrence_changes"
     }
   ],

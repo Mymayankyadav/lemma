@@ -190,3 +190,61 @@ begin
   'rowsRemoved',total_removed,'passes',pass);
 end
 $purge$;
+
+-- Replaces function: public.lemma_export_page(text,text,integer), same owner,
+-- ACL, keyset and DTO as N95. The extra resource registry is private.
+create or replace function public.lemma_export_page(p_table text default null,p_cursor text default null,p_limit integer default 100)
+returns jsonb language plpgsql stable security definer set search_path='' as $export$
+declare owner_id uuid:=auth.uid();
+begin
+  if pg_catalog.current_setting('role',true) is distinct from 'authenticated' or owner_id is null
+    then raise exception 'Authenticated owner required'; end if;
+  return lemma_export_private.keyset_page(owner_id,p_table,p_cursor,p_limit);
+end
+$export$;
+
+-- Replaces function: public.lemma_export_page_for(uuid,text,text,integer),
+-- retaining the N160 service dispatcher's independently verified owner.
+create or replace function public.lemma_export_page_for(p_owner uuid,p_table text default null,p_cursor text default null,p_limit integer default 100)
+returns jsonb language plpgsql stable security definer set search_path='' as $export$
+begin
+  if pg_catalog.current_setting('role',true) is distinct from 'service_role' or p_owner is null
+    then raise exception 'Service role and owner required'; end if;
+  return lemma_export_private.keyset_page(p_owner,p_table,p_cursor,p_limit);
+end
+$export$;
+
+-- Replaces function: public.begin_owner_export(), preserving N165's owner
+-- lock, single-statement snapshot, authenticated role and existing page API.
+create or replace function public.begin_owner_export() returns uuid
+language plpgsql security definer set search_path='' as $begin$
+declare owner_id uuid:=auth.uid(); result uuid;
+begin
+  if pg_catalog.current_setting('role',true) is distinct from 'authenticated' or owner_id is null
+    then raise exception 'Authenticated owner required'; end if;
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(owner_id::text||':export',0));
+  delete from public.owner_export_snapshots where user_id=owner_id;
+  insert into public.owner_export_snapshots(user_id,data)
+    values(owner_id,lemma_export_private.snapshot_data(owner_id)) returning id into result;
+  return result;
+end
+$begin$;
+
+-- CREATE OR REPLACE keeps a historical function's original role and grants.
+-- Let just those definer roles resolve and execute their private implementation.
+do $export_owners$
+declare api record;
+begin
+  for api in select distinct pg_catalog.pg_get_userbyid(p.proowner) role_name,
+    case when p.oid='public.begin_owner_export()'::regprocedure then 'snapshot_data(uuid)'
+      else 'keyset_page(uuid,text,text,integer)' end helper
+    from pg_catalog.pg_proc p where p.oid in ('public.begin_owner_export()'::regprocedure,
+      'public.lemma_export_page(text,text,integer)'::regprocedure,
+      'public.lemma_export_page_for(uuid,text,text,integer)'::regprocedure)
+  loop
+    if api.role_name in ('anon','authenticated','service_role') then raise exception 'Unexpected export definer'; end if;
+    execute pg_catalog.format('grant usage on schema lemma_export_private to %I',api.role_name);
+    execute pg_catalog.format('grant execute on function lemma_export_private.%s to %I',api.helper,api.role_name);
+  end loop;
+end
+$export_owners$;

@@ -72,7 +72,8 @@ revoke insert,update,delete,truncate on public.calendar_input_history from anon,
 grant select on public.calendar_input_history to authenticated,service_role;
 create trigger lemma_account_delete_write_guard before insert or update or delete on public.calendar_input_history
   for each row execute function public.lemma_block_account_deletion_writes();
-insert into public.lemma_undo_tables(table_name) values ('calendar_occurrence_changes'),('calendar_input_history');
+insert into public.lemma_undo_tables(table_name) values ('calendar_occurrence_changes');
+insert into lemma_export_private.additional_tables(table_name) values ('calendar_input_history');
 
 create function public.lemma_calendar_projection(source text, r jsonb) returns jsonb
 language sql immutable security invoker set search_path='' as $project$

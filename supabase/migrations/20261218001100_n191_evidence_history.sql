@@ -31,9 +31,8 @@ grant select on public.evidence_revisions to authenticated,service_role;
 create trigger lemma_account_delete_write_guard before insert or update or delete on public.evidence_revisions
   for each row execute function public.lemma_block_account_deletion_writes();
 
--- Register with the existing owner export. The revisions themselves are not
--- journal undo targets: undo changes the source evidence and appends an inverse.
-insert into public.lemma_undo_tables(table_name) values ('evidence_revisions');
+-- Undo changes the source evidence, which appends its inverse to this history.
+insert into lemma_export_private.additional_tables(table_name) values ('evidence_revisions');
 
 -- Preserve native fact columns for the offline parity oracle. IDs that may
 -- exceed JavaScript integer precision cross the JSON boundary as strings.

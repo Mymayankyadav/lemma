@@ -15,14 +15,17 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
   assert.equal(await scalar(`select has_function_privilege(p.proowner,'public.lemma_session_progress_command(jsonb)','EXECUTE') result
     from pg_proc p where p.oid='public.mcp_command(uuid,text,jsonb)'::regprocedure`),true);
   const registry = (await q("select table_name from public.lemma_undo_tables")).map(row => row.table_name);
-  for (const table of ['evidence_revisions','calendar_input_history','calendar_occurrence_changes']) {
-    assert.ok(registry.includes(table));
-  }
+  assert.ok(registry.includes('calendar_occurrence_changes'));
   for (const table of ['evidence_revisions','calendar_input_history']) {
+    assert.equal(registry.includes(table),false,'undo must change the source rather than its immutable history');
     for (const role of ['anon','authenticated']) {
       assert.equal(await scalar('select has_table_privilege($1,$2,$3) result',
         [role,'public.'+table,'INSERT, UPDATE, DELETE, TRUNCATE']),false);
     }
+  }
+  for (const client of ['anon','authenticated','service_role']) {
+    assert.equal(await scalar("select has_schema_privilege($1,'lemma_export_private','USAGE,CREATE') result",[client]),false);
+    assert.equal(await scalar("select has_table_privilege($1,'lemma_export_private.additional_tables','INSERT,UPDATE,DELETE,TRUNCATE') result",[client]),false);
   }
   // The canonical normalizer and PG resolver independently agree on gaps,
   // both folds, an overnight occurrence and a moved original across a cutoff.
@@ -280,10 +283,41 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
   const page2 = await scalar("select public.lemma_planning_snapshot_mcp($1,'evidence',$2) result",
     [owner,JSON.stringify({p_project_id:project,p_as_of:page1.asOf,p_watermark:page1.watermark,p_after:page1.nextAfter,p_limit:1})]);
   assert.deepEqual([...page1.events,...page2.events],full.events.slice(0,2));
+  await as();
+  // A non-journalled owner table may use another FK name and retain private fields internally.
+  await db.exec(`create table public.n191_export_fixture (
+    owner_id uuid not null references auth.users(id) on delete cascade, sequence int not null,
+    value text not null, internal_note text, connector_secret text, primary key(owner_id,sequence));
+    insert into lemma_export_private.additional_tables(table_name,owner_column,redact_columns)
+      values('n191_export_fixture','owner_id',array['internal_note']);`);
+  for (const id of [owner,other]) {
+    await q("insert into public.n191_export_fixture values($1,1,'first','private','secret'),($1,2,'second','private','secret')",[id]);
+  }
   await as('authenticated',owner);
   const exported = await scalar('select public.begin_owner_export() result');
-  const page = await scalar("select public.owner_export_page($1,'evidence_revisions',0,100) result",[exported]);
-  assert.ok(page.rows.length>0); assert.ok(page.rows.every(row=>row.user_id===owner));
+  const page = (table,cursor,limit) => scalar('select public.lemma_export_page($1,$2,$3) result',[table,cursor,limit]);
+  const names = (await page(null,null,100)).rows.map(row => row.table_name);
+  const historyTables=['evidence_revisions','calendar_input_history','calendar_occurrence_changes'];
+  for (const name of historyTables) {
+    assert.ok(names.includes(name));
+    const live = await page(name,null,100);
+    const frozen = await scalar('select public.owner_export_page($1,$2,0,100) result',[exported,name]);
+    assert.ok(live.rows.length>0);
+    assert.deepEqual(new Set(frozen.rows.map(row=>row.id)),new Set(live.rows.map(row=>row.id)));
+    assert.ok(live.rows.every(row=>row.user_id===owner) && frozen.rows.every(row=>row.user_id===owner));
+    await as('service_role');
+    assert.deepEqual(await scalar('select public.lemma_export_page_for($1,$2,null,100) result',[owner,name]),live);
+    await as('authenticated',owner);
+  }
+  const firstPage=await page('n191_export_fixture',null,1);
+  const secondPage=await page('n191_export_fixture',firstPage.nextCursor,1);
+  const projected=[1,2].map((sequence,i)=>({owner_id:owner,sequence,value:['first','second'][i]}));
+  assert.deepEqual([...firstPage.rows,...secondPage.rows],projected);
+  assert.deepEqual((await scalar("select public.owner_export_page($1,'n191_export_fixture',0,100) result",[exported])).rows,projected);
+  await as('authenticated',other);
+  await assert.rejects(scalar("select public.owner_export_page($1,'n191_export_fixture',0,100) result",[exported]),/Export expired/);
+  assert.ok((await page('n191_export_fixture',null,100)).rows.every(row=>row.owner_id===other));
+  await as('authenticated',owner);
   await q("select public.end_owner_export($1)",[exported]);
   await as('service_role');
   assert.equal(await scalar('select public.lemma_evidence_purge_active($1) result',[owner]),false);
