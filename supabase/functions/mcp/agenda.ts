@@ -19,26 +19,32 @@ async function unavailablePreference(c:Context,stored:unknown,released:boolean):
   return 'unknown';
 }
 export async function readAgenda(c:Context,stored?:unknown,shadowEnabled=shadowConfigured()):Promise<AgendaResponse>{
+  const started=performance.now();
   let released=false;
   try {
     const gate=await c.db.rpc('lemma_plan_released');
     released=!gate.error&&gate.data===true;
   } catch { /* A database without the release capability serves its existing queue. */ }
   if(!released&&!shadowEnabled)return {released:false,agenda:null};
+  const report=(candidate:AgendaDecision,elapsedMs:number,hardViolations:number)=>{
+    // Production comparisons use only coarse status, policy, and latency.
+    console.info('atlas-agenda',JSON.stringify({mode:released?'live':'shadow',
+      readMs:Math.round(performance.now()-started),elapsedMs:Math.round(elapsedMs),
+      effective:candidate.effective,kind:candidate.outcome.kind,policy:candidate.policyVersion,
+      hardViolations,fallback:candidate.reason.slice(0,100)}));
+  };
   try {
     const result=await c.db.rpc('lemma_agenda_snapshot',{p_owner:c.userId});
     if(result.error||!result.data)throw Error('Missing agenda snapshot');
     const read=ownerAgenda(c.userId,result.data as HostData,released);
     if(!result.data.rows?.settings)read.decision.requested=await unavailablePreference(c,stored,released);
-    // Coarse shadow and fallback counters only. Never write learner material, IDs or times to diagnostic logs.
-    console.info('atlas-agenda',JSON.stringify({elapsedMs:Math.round(read.elapsedMs),effective:read.candidate.effective,
-      kind:read.candidate.outcome.kind,policy:read.candidate.policyVersion,hardViolations:read.hardViolations,
-      fallback:read.candidate.reason.slice(0,100)}));
+    report(read.candidate,read.elapsedMs,read.hardViolations);
     return {released,agenda:released?{decision:read.decision,label:read.label,baselineLabel:read.baselineLabel,practice:read.practice}:null};
   } catch {
     const preference=await unavailablePreference(c,stored,released);
     const decision:AgendaDecision={...holdReceipt(new Date().toISOString(),'unavailable',preference==='new'?'new':'legacy',
       preference==='unknown'?'Planning preference and decision inputs temporarily unavailable':'Decision inputs temporarily unavailable'),requested:preference};
+    report(decision,0,0);
     return {released,agenda:released?{decision}:null};
   }
 }

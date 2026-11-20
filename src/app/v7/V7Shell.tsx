@@ -267,7 +267,7 @@ export function HubHeader({title,date,settings=false,display=false,control,child
  </>;
  return <header className="v7-hub-header" data-display="true">
   <div className="v7-hub-row">
-   {date?<p className="v7-hub-date"><SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark>{date}</p>:<span/>}
+   {date?<p className="v7-hub-date"><SyncMark><span className="v7-hub-mark" aria-hidden="true"><EllMark size={18}/></span></SyncMark><span>{date}</span></p>:<span/>}
    {actions}
   </div>
   <h1 className="v7-hub-title v7-display">{title}</h1>

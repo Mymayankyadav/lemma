@@ -11,6 +11,11 @@ async function open(page:Page,hash="/proposals"){
 }
 const card=(page:Page)=>page.locator(".v7-inbox-card");
 const position=(page:Page)=>page.locator(".v7-inbox-position");
+async function expectCardsReviewed(page:Page){
+ await expect(page.getByRole("heading",{name:"All card proposals reviewed"})).toBeVisible();
+ await expect(page.getByRole("link",{name:"Review 1 plan"})).toHaveAttribute("href","#/proposals?tab=plan");
+ await expect(page.getByRole("heading",{name:"Inbox zero"})).toHaveCount(0);
+}
 async function swipe(page:Page,dx:number,dy=0){
  const box=(await card(page).boundingBox())!;
  const x=box.x+box.width/2,y=box.y+box.height*.75;
@@ -26,7 +31,7 @@ test("§6.10 five proposals can be decided by swipe alone",async({page})=>{
   await expect(position(page)).toHaveText("1 of "+left);
   await swipe(page,left%2?170:-170);
  }
- await expect(page.getByRole("heading",{name:"Inbox zero"})).toBeVisible();
+ await expectCardsReviewed(page);
 });
 
 test("§6.10 a short drag springs back; an upward swipe skips to the end",async({page})=>{
@@ -51,7 +56,7 @@ test("§6.10 five proposals can be decided by buttons alone, and the three butto
   await expect(position(page)).toHaveText("1 of "+left);
   await group.getByRole("button",{name:left%2?"Approve":"Reject",exact:true}).click();
  }
- await expect(page.getByRole("heading",{name:"Inbox zero"})).toBeVisible();
+ await expectCardsReviewed(page);
 });
 
 test("§6.10 five proposals can be decided by keys alone (A, R, arrows), and E opens the editor",async({page})=>{
@@ -65,7 +70,7 @@ test("§6.10 five proposals can be decided by keys alone (A, R, arrows), and E o
  await page.keyboard.press("ArrowUp");
  await expect(position(page)).toHaveText("1 of 1");
  await page.keyboard.press("a");
- await expect(page.getByRole("heading",{name:"Inbox zero"})).toBeVisible();
+ await expectCardsReviewed(page);
 });
 
 test("§6.10 every decision can be undone for 6 s",async({page})=>{

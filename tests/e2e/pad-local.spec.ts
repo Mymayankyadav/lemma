@@ -1,7 +1,7 @@
 import {readFile} from 'node:fs/promises';
 import {expect,test,type Page} from '@playwright/test';
 
-const app = './?demo=1&flags=v7Shell,padLocal,tutorManualDemo#/';
+const app = './?demo=1&flags=v7Shell,tutorManualDemo#/';
 const checkpoint = (code: string) => app + 'p/real-analysis/cp/' + code;
 const pad = (code: string) => app + 'pad?path=real-analysis&checkpoint=' + code;
 const backup = {

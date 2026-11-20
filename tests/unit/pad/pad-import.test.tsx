@@ -70,10 +70,10 @@ test('requires known backup format, exact dimensions, and bounded valid UTF-8', 
   expect(arrayBuffer).not.toHaveBeenCalled();
 });
 
-test('uses opt-in flag only in override builds and keeps fixture DB/key separate', async () => {
-  expect(FLAG_DEFAULTS.padLocal).toBe(false);
-  expect(resolveFlags({allowOverrides: false, search: '?flags=padLocal'}).padLocal).toBe(false);
-  expect(resolveFlags({allowOverrides: true, search: '?flags=padLocal'}).padLocal).toBe(true);
+test('ships the Pad default, exercises the off path in override builds and keeps fixture storage separate', async () => {
+  expect(FLAG_DEFAULTS.padLocal).toBe(true);
+  expect(resolveFlags({allowOverrides: false, search: '?flags=-padLocal'}).padLocal).toBe(true);
+  expect(resolveFlags({allowOverrides: true, search: '?flags=-padLocal'}).padLocal).toBe(false);
   vi.stubGlobal('crypto', webcrypto);
   const a = await fixtureCheckpointId('default', 'demo-checkpoint-1');
   expect(await fixtureCheckpointId('default', 'demo-checkpoint-1')).toBe(a);

@@ -48,7 +48,7 @@ test("V03 · the review estimate reads the same on Today and on Review",async({p
  const count=Number((await row.locator("strong").textContent())!.match(/\d+/)![0]);
  const minutes=Number((await row.getByText(/^about \d+ min$/).textContent())!.match(/\d+/)![0]);
  await open(page,"/review");
- await expect(page.getByRole("button",{name:new RegExp("^Start "+count+" cards?")})).toBeVisible();
+ await expect(page.getByRole("button",{name:"Start review, "+count+" "+(count===1?"card":"cards"),exact:true})).toBeVisible();
  await expect(page.getByText("About "+minutes+" min at your pace",{exact:true})).toBeVisible();
 });
 

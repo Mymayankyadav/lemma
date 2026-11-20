@@ -101,7 +101,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className="v7-atlas-counts" data-testid="atlas-counts">{starCounts(model,index)}</p>
   {/* N161: the actions show when the sheet is pulled up; a peek shows only whole rows, never half-hidden buttons. */}
-  {(expanded||studyRepair)&&<div className="v7-atlas-actions">
+  {expanded&&<div className="v7-atlas-actions">
    {checkpoint?<Link className="v7-button v7-primary" to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}
      aria-label={'Open '+checkpointName(checkpoint.code)}><span>Open checkpoint</span></Link>
     :<StateButton variant="primary" disabledReason="Unavailable · No checkpoint uses this concept yet.">Open checkpoint</StateButton>}

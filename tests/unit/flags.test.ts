@@ -3,13 +3,14 @@ import {FLAG_DEFAULTS,resolveFlags,isFlagOn,resolveEffectiveShell,currentEffecti
 import {setShellRoot} from '../../src/app/shellRoot'
 
 describe('feature flags',()=>{
- it('enables the released shells, U4, Atlas and checkpoint tutor defaults',()=>{
-  const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,atlasV3,tutorThreads,...rest}=FLAG_DEFAULTS
+ it('the shells and reviewed feature defaults are on; unreleased flags are off',()=>{
+  const {v6Shell,v7Shell,v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week,atlasV3,
+    atlasAgendaV1,padLocal,uiRepairV1,tutorThreads,...rest}=FLAG_DEFAULTS
   expect(v6Shell).toBe(true)
   expect(v7Shell).toBe(true)
   expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
   expect(atlasV3).toBe(true)   // released at the Owner's Atlas v3 activation (N182)
-  expect(tutorThreads).toBe(true)
+  expect([atlasAgendaV1,padLocal,uiRepairV1,tutorThreads]).toEqual([true,true,true,true])
   expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorThreads'}).tutorThreads).toBe(false)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)

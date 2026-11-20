@@ -23,7 +23,7 @@ export const shots:Shot[]=[
    await page.getByRole("button",{name:"Quick focus",exact:true}).first().click({timeout:5000});
   }},
  {name:"review-hub",hash:"/review",frames:3},
- {name:"review-round",hash:"/review",prepare:async page=>{await page.getByRole("button",{name:/^(Start \d+ cards?|Resume)/}).first().click({timeout:5000});await page.waitForURL(/#\/review\/run/).catch(()=>{});}},
+ {name:"review-round",hash:"/review",prepare:async page=>{await page.getByRole("button",{name:/^(Start review, \d+ cards?|Resume)/}).first().click({timeout:5000});await page.waitForURL(/#\/review\/run/).catch(()=>{});}},
  {name:"path-map",hash:"/p/real-analysis"},
  {name:"practice",hash:"/practice",frames:2},
  {name:"tasks",hash:"/tasks",frames:2},

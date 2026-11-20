@@ -41,7 +41,7 @@ test("Review hub shows one count, one primary button, the forecast and memory ti
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
  await expect(page.getByRole("heading",{level:1,name:"Review"})).toBeVisible();
  await expect(page.getByLabel("Cards in this round")).toBeVisible();
- await expect(page.getByRole("button",{name:/^(Start \d+ cards|Resume)/}).first()).toBeVisible();
+ await expect(page.getByRole("button",{name:/^(Start review, \d+ cards?|Resume)/}).first()).toBeVisible();
  await expect(page.getByRole("region",{name:"Due each day"})).toBeVisible();
  await expect(page.getByRole("region",{name:"Memory, last 30 days"})).toBeVisible();
  await page.getByRole("button",{name:"Customise this round"}).click();
@@ -63,7 +63,7 @@ test("Round complete without a saved run keeps the existing results page",async(
  await page.goto(at("/review/done"));
  await expect(page.locator(".v7-rc")).toHaveCount(0);
 });
-test("Path More menu pauses a path and its Cards tab lists cards; Review N opens the hub for that path",async({page})=>{
+test("Path More pauses a path, its Cards tab lists cards, and Review opens a round for that path",async({page})=>{
  await page.goto(at("/"));
  await page.locator(".v7-today-tile").first().click();
  await expect(page.locator(".v7-path")).toBeVisible();
@@ -72,10 +72,11 @@ test("Path More menu pauses a path and its Cards tab lists cards; Review N opens
  await expect(page.locator(".v7-path-chips")).toContainText("Paused");
  await page.getByRole("tab",{name:/^Cards/}).click();
  await expect(page.getByRole("list",{name:"Cards on this path"})).toBeVisible();
- // R2 · F11: Review moved from the bottom bar to the header actions.
- await page.getByRole("navigation",{name:"Page actions"}).getByRole("link",{name:/^Review/}).click();
- await expect(page).toHaveURL(/#\/review\?path=/);
- await expect(page.getByLabel("Cards in this round")).toBeVisible();
+ const review=page.getByRole("navigation",{name:"Page actions"}).getByRole("link",{name:/^Review/});
+ await expect(review).toHaveAttribute("href","#/review/run?target=path&id=project-analysis");
+ await review.click();
+ await expect(page).toHaveURL(/#\/review\/run\?run=/);
+ await expect(page.getByRole("button",{name:"Show answer"})).toBeVisible();
 });
 test("Practice shows a card per topic and records practice from a sheet",async({page})=>{
  await page.goto(at("/practice"));

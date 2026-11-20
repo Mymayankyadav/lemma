@@ -1,10 +1,11 @@
 // N97: pre-v6 account -> every migration -> legacy/new export and reversible writes.
-// Offline PGlite only: never reaches a Supabase project or changes production data.
+// Disposable local PostgreSQL or PGlite. The same assertions run in both.
 import assert from 'node:assert/strict';
 import {readFile,readdir} from 'node:fs/promises';
+import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
 
-const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
-const db=new PGlite();
+const db=process.env.NOTIF_TEST_DATABASE_URL?await openN191Postgres(process.env.NOTIF_TEST_DATABASE_URL):
+ new (await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')).PGlite();
 const owner='11111111-1111-4111-8111-111111111111';
 const project='33333333-3333-4333-8333-333333333333';
 const note='88888888-8888-4888-8888-888888888888';
@@ -58,8 +59,9 @@ const requireOk=(reply,label)=>{
  return reply;
 };
 try{
- await db.exec("create role anon;create role authenticated;create role service_role;"+
-  "create schema auth;create schema extensions;create table auth.users(id uuid primary key);"+
+ for(const role of ['anon','authenticated','service_role'])
+  if(!(await q('select 1 from pg_roles where rolname=$1',[role])).length)await db.exec('create role '+role);
+ await db.exec("create schema auth;create schema extensions;create table auth.users(id uuid primary key);"+
   "create function auth.uid() returns uuid language sql as $auth$ "+
   "select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,"+
   "nullif(current_setting('test.uid',true),'')::uuid) $auth$;"+

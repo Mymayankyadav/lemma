@@ -1,10 +1,10 @@
 import {expect, test} from '@playwright/test';
 
-const route = (suffix = '') => './?demo=1&flags=v7Shell,padLocal#/pad' + suffix;
+const route = (suffix = '') => './?demo=1&flags=v7Shell#/pad' + suffix;
 
 test('Lemma Pad is accessible from Data and account and opens a full checkpoint workspace', async ({page}) => {
   await page.route('https://**/*', route => route.abort());
-  await page.goto('./?demo=1&flags=v7Shell,padLocal#/');
+  await page.goto('./?demo=1&flags=v7Shell#/');
   await expect(page.getByRole('main')).toBeVisible();
   await expect(page.getByRole('button', {name: 'More destinations'})).toHaveCount(0);
   await page.setViewportSize({width: 1280, height: 844});
@@ -19,6 +19,7 @@ test('Lemma Pad is accessible from Data and account and opens a full checkpoint 
   await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');
   const notes = page.getByRole('textbox', {name: 'Pad notes'});
   await expect(notes).toBeVisible();
+  await expect(page.getByRole('region', {name: 'Math keyboard'}).getByRole('button', {name: 'Hide math keyboard'})).toBeVisible();
   await expect(page.getByRole('button', {name: 'Open Local Pad', exact: true})).toHaveCount(0);
   await notes.fill('A full-page compactness proof.');
   await page.getByRole('button', {name: 'Save draft'}).click();

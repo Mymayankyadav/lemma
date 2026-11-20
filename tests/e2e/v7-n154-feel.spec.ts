@@ -71,14 +71,15 @@ test('N154 LT7 with one proposal left the Inbox fetches the ending in idle time;
   }
   await expect.poll(() => fetched().length).toBeGreaterThan(0)
   await page.keyboard.press('a')
-  await expect(page.getByRole('heading', {name: 'Inbox zero'})).toBeVisible()
-  // Five decisions (a click each), then the ending (Inbox zero lands).
+  await expect(page.getByRole('heading', {name: 'All card proposals reviewed'})).toBeVisible()
+  await expect(page.getByRole('link', {name: 'Review 1 plan'})).toBeVisible()
+  // Five decisions, then the card-stack completion.
   await expect.poll(felt, {timeout: 5000}).toEqual([8, 8, 8, 8, 8, [12, 40, 20]])
-  // Coming back to the now-empty Inbox shows Inbox zero again, but nothing was just finished, so nothing is felt.
+  // Returning to the completed card stack does not replay its last haptic.
   await page.evaluate(() => {location.hash = '#/'})
   await expect(page.locator('.v7-today-hero')).toBeVisible()
   await page.evaluate(() => {location.hash = '#/proposals'})
-  await expect(page.getByRole('heading', {name: 'Inbox zero'})).toBeVisible()
+  await expect(page.getByRole('heading', {name: 'All card proposals reviewed'})).toBeVisible()
   await page.waitForTimeout(2500)
   expect(await felt()).toEqual([8, 8, 8, 8, 8, [12, 40, 20]])
 })
@@ -88,7 +89,7 @@ test('N154 AW6 the review round: a soft tick on reveal, a click for Good, two ti
   await page.setViewportSize({width: 390, height: 844})
   await page.clock.setFixedTime(NOW)
   await page.goto(at('/review'))
-  await page.getByRole('button', {name: /^Start \d+ cards$/}).click()
+  await page.getByRole('button', {name: /^Start review, \d+ cards?$/}).click()
   await expect(page.locator('.v7-review-card')).toBeVisible()
   await page.getByRole('button', {name: 'Show answer'}).click()
   await expect.poll(felt).toEqual([5])
