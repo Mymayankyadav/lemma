@@ -286,6 +286,7 @@ export type Database = {
           resource: string
           result: Json
           created_at: string
+          trusted_writer_version: number | null
         }
         Insert: {
           user_id?: string
@@ -293,6 +294,7 @@ export type Database = {
           resource: string
           result: Json
           created_at?: string
+          trusted_writer_version?: number | null
         }
         Update: {
           user_id?: string
@@ -300,6 +302,7 @@ export type Database = {
           resource?: string
           result?: Json
           created_at?: string
+          trusted_writer_version?: number | null
         }
         Relationships: []
       }

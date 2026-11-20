@@ -15,7 +15,10 @@ try {
  create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;
  grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
- for(const file of (await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort())
+ const files=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
+ const cutover=files.indexOf('20261218001300_owner_command_receipt_cutover.sql');
+ assert.ok(cutover>0,'receipt cutover follows the original owner CRUD rules');
+ for(const file of files.slice(0,cutover))
    await db.exec(await readFile(new URL(file,dir),'utf8'));
  await q('insert into auth.users(id) values ($1),($2)',[a,b]);
  await q("insert into public.subjects(id,user_id,name,glyph,hue) values ($1,$2,'Math','M','amber')",[subject,a]);
@@ -55,5 +58,13 @@ try {
  await q('update public.study_entries set status=\'saved\' where id=$1',[entry]);
  await q('delete from public.study_entries where id=$1',[entry]);
  assert.equal((await q('select count(*)::int n from public.study_entries'))[0].n,0);
- console.log('PASS N10 owner CRUD, cross-owner links, active uniqueness and interval bounds');
+ // Run the N10 browser grant assertions at their original schema version.
+ // Then apply the complete remaining chain and confirm the new write boundary.
+ await db.exec('reset role');
+ for(const file of files.slice(cutover))await db.exec(await readFile(new URL(file,dir),'utf8'));
+ await as(a);
+ assert.equal((await q('select count(*)::int n from public.command_receipts'))[0].n,0);
+ await assert.rejects(q('delete from public.command_receipts'),/permission denied/);
+ assert.equal((await q("select has_any_column_privilege(current_user,'public.command_receipts','INSERT,UPDATE') writable"))[0].writable,false);
+ console.log('PASS N10 owner CRUD, cross-owner links, active uniqueness, interval bounds and upgraded receipt ACL');
 } finally {await db.close()}
