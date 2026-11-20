@@ -5,6 +5,7 @@ import {tutorGrantHash} from '../_shared/tutor-connector.ts'
 const uuid=z.string().uuid()
 const base={turnId:uuid,operationId:uuid}
 const leased={...base,claimId:uuid,generation:z.number().int().positive()}
+const replyText=z.string().min(1).max(12000)
 const suggestion=z.union([
  z.object({kind:z.literal('card'),front:z.string().min(1).max(1500),back:z.string().max(3000),summary:z.string().min(1).max(300)}).strict(),
  z.object({kind:z.literal('plan'),summary:z.string().min(1).max(300),checkpoints:z.array(z.object({title:z.string().min(1).max(80),objective:z.string().min(1).max(400),criterion:z.string().min(1).max(400),steps:z.array(z.string().min(1).max(80)).min(1).max(8)}).strict()).min(1).max(5)}).strict(),
@@ -15,7 +16,9 @@ export const tutorInputSchemas={
  claim:z.object({...base,expectedVersion:z.number().int().positive()}).strict(),
  renew:z.object(leased).strict(),
  reply:z.object({...leased,expectedVersion:z.number().int().positive(),messageId:uuid,
-  body:z.string().min(1).max(12000),reportedHost:z.string().min(1).max(100).optional(),
+  body:replyText,
+  nextQuestion:replyText.describe('Full next question copied verbatim from body, including display math and paragraph breaks.').optional(),
+  reportedHost:z.string().min(1).max(100).optional(),
   citations:z.array(z.union([z.object({kind:z.literal('checkpoint'),refId:uuid,version:z.string().max(20)}).strict(),
    z.object({kind:z.literal('source'),refId:uuid,page:z.number().int().positive(),version:z.string().max(20)}).strict()])).max(8).optional(),
   suggestions:z.array(suggestion).max(4).optional()}).strict(),

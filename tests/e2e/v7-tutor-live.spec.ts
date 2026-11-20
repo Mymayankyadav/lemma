@@ -1,6 +1,57 @@
 import {expect,test} from '@playwright/test'
 import type {TutorThreadView} from '../../src/data/tutor/manual-api'
-import {prepareLiveTutor} from './helpers/live-tutor'
+import {liveTutorFixtureResponse,prepareLiveTutor} from './helpers/live-tutor'
+
+for(const entry of ['chat','Pad'] as const){
+ test('signed-in '+entry+' warns when attaching a source page to a saved draft exceeds storage quota',async({page})=>{
+  const {owner,cpId,projectId,payload}=await prepareLiveTutor(page)
+  const refId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',short='Logic notes'
+  const excerpt='A statement and its converse are different implications.'
+  const source={kind:'source',refId,page:1,version:'1',excerpt}
+  const checkpoint=(payload.checkpoints as Record<string,unknown>[])[0]
+  checkpoint.source_id=refId
+  payload.sources=[{id:refId,user_id:owner,project_id:projectId,short,title:short,kind:'notes'}]
+  payload['rpc/tutor_thread_state']={head:{threadId:null,pendingTurnId:null,lastSequence:0},turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false}
+  payload['rpc/tutor_source_preview']=source
+  await page.route('**/rest/v1/**',route=>{
+   const request=route.request(),resource=new URL(request.url()).pathname.split('/rest/v1/')[1]
+   return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)})
+  })
+  const draftKey='lemma.tutor.draft:'+JSON.stringify([owner,'logic',cpId])
+  await page.addInitScript(key=>{
+   const setItem=Storage.prototype.setItem
+   Storage.prototype.setItem=function(name,value){
+    if(this===localStorage&&name===key)throw new DOMException('Storage full','QuotaExceededError')
+    setItem.call(this,name,value)
+   }
+  },draftKey+':source')
+
+  const chat=entry==='chat'
+  await page.goto('/lemma/?demo=0&flags=v7Shell,padLocal,tutorThreads#'+(chat?'/p/logic/cp/CP1/tutor':'/pad?path=logic&checkpoint=CP1'))
+  const tutor=page.getByRole(chat?'main':'dialog',{name:'Checkpoint tutor'})
+  if(chat)await tutor.getByRole('button',{name:'Write a question',exact:true}).click()
+  else await page.getByRole('button',{name:'Open checkpoint tutor',exact:true}).click()
+  const question=tutor.getByRole('textbox',{name:chat?'Your answer':'Question',exact:true})
+  const text='Can I reverse this implication?'
+  await question.fill(text)
+  const warning=/draft.*may be lost on reload/i
+  await expect(tutor.getByRole('alert').filter({hasText:warning})).toHaveCount(0)
+
+  if(chat)await tutor.getByRole('button',{name:'Context',exact:true}).click()
+  const context=chat?page.getByRole('dialog',{name:'Context for your tutor'}):tutor
+  await context.getByText('Add a page from '+short,{exact:true}).click()
+  await context.getByRole('button',{name:'Preview linked source page'}).click()
+  await context.getByRole('button',{name:'Add source excerpt'}).click()
+  await expect(context.getByRole('region',{name:'Attached source excerpt'})).toContainText(excerpt)
+  expect(await page.evaluate(key=>[localStorage.getItem(key+':question'),localStorage.getItem(key+':source')],draftKey)).toEqual([text,null])
+  const alert=context.getByRole('alert').filter({hasText:warning})
+  await expect(alert).toBeVisible()
+  await context.getByRole('button',{name:'Remove source excerpt'}).click()
+  await expect(alert).toHaveCount(0)
+  if(chat)await context.getByRole('button',{name:'Close',exact:true}).click()
+  await expect(question).toHaveValue(text)
+ })
+}
 
 test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste and opens its exact card proposal',async({page})=>{
  const {owner,cpId,threadId,projectId,proposalId,payload}=await prepareLiveTutor(page)

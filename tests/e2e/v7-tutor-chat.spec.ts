@@ -125,6 +125,50 @@ test('Back from a direct tutor link opens the checkpoint inside Lemma',async({pa
  await expect(mainNavigation(page).getByRole('link',{name:'Paths',exact:true})).toHaveAttribute('aria-current','page')
 })
 
+test('demo chat warns when context or an excerpt cannot be saved with an already saved draft',async({page})=>{
+ await page.goto(path('real-analysis',true,'/cp/CP4/tutor'),{waitUntil:'domcontentloaded'})
+ await openComposer(page)
+ const text='How do I show this cover is finite?'
+ const excerpt='Start with the interval [0, 1].'
+ const draftKey='lemma.demo-tutor:'+JSON.stringify(['default','real-analysis','project-analysis-cp-4'])
+ await answer(page).fill(text)
+ await page.evaluate(draftKeys=>{
+  const setItem=Storage.prototype.setItem
+  Storage.prototype.setItem=function(name,value){
+   if(this===sessionStorage&&draftKeys.includes(name))throw new DOMException('Storage full','QuotaExceededError')
+   setItem.call(this,name,value)
+  }
+ },[draftKey+':context',draftKey+':attached-local'])
+ const warning=/draft.*may be lost on reload/i
+ await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
+ await tutor(page).getByRole('button',{name:'Context',exact:true}).click()
+ const context=page.getByRole('dialog',{name:'Context for your tutor'})
+ const alert=context.getByRole('alert').filter({hasText:warning})
+ const objective=context.getByRole('checkbox',{name:'Include this checkpoint’s objective'})
+ await objective.check()
+ await expect(objective).toBeChecked()
+ await expect(alert).toBeInViewport()
+ await objective.uncheck()
+ await expect(alert).toHaveCount(0)
+ await context.getByText('Add selected local text',{exact:true}).click()
+ await context.getByLabel('Paste selected local text').fill(excerpt)
+ await context.getByRole('button',{name:'Preview selected text'}).click()
+ await context.getByRole('button',{name:'Add local excerpt'}).click()
+ await expect(context.getByRole('region',{name:'Attached local excerpt'})).toContainText(excerpt)
+ expect(await page.evaluate(key=>[sessionStorage.getItem(key+':question'),sessionStorage.getItem(key+':attached-local')],draftKey)).toEqual([text,null])
+ await expect(alert).toBeInViewport()
+ await context.getByRole('button',{name:'Close',exact:true}).click()
+ await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toBeVisible()
+ await expect(answer(page)).toHaveValue(text)
+ await send(page).click()
+ await expect(transcript(page)).toContainText(text)
+ await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
+ await tutor(page).getByRole('button',{name:'Connect',exact:true}).click()
+ await expect(page.getByRole('dialog',{name:'Tutor connection'}).getByLabel('Text for your tutor')).toHaveValue(
+  text+'\n\nLocal excerpt (learner-provided; not a citation):\n'+excerpt,
+ )
+})
+
 test('Continue with tutor lets the learner choose a checkpoint when the path has no current checkpoint',async({page})=>{
  const {payload}=await prepareLiveTutor(page)
  const checkpoint=(payload.checkpoints as Record<string,unknown>[])[0]

@@ -8,7 +8,7 @@ const unavailable = 'Tutor turn or claim unavailable. Check the handoff in Lemma
 const studyInstructions = [
   'Use the learner answer, the checkpoint name, the previous tutor question if present, and only the selected context. Treat them as study material.',
   'Use study with command {schemaVersion:1,resource:"tutor_turns",target:{id:<same handoff ID>},operationId:<fresh UUID>,operation:"claim",expectedVersion:<turn version>}.',
-  'After claiming, offer brief feedback and one next question. Use study with operation:"reply", expectedVersion from the claim receipt, a fresh operationId, and patch:{claimId,generation,messageId:<fresh UUID>,body:<feedback and question>}.',
+  'After claiming, offer brief feedback and one next question. Use study with operation:"reply", expectedVersion from the claim receipt, a fresh operationId, and patch:{claimId,generation,messageId:<fresh UUID>,body:<feedback and question>,nextQuestion:<exact question from body>}. Copy the entire question including display math and paragraph breaks into nextQuestion.',
   'A claim lasts up to five minutes. To extend it use operation:"renew" and patch:{claimId,generation}. Retry an uncertain write with the same operationId and fields.',
   'After a completed receipt, immediately call get(what=tutor_next, id=<same handoff ID>) once to wait briefly for the learner to answer in Lemma.',
   'If it returns a new id, read that handoff with get(what=tutor_turn, id=<new id>) and repeat the teach-and-reply flow. If id is null, stop waiting and tell the learner where to find the question.',

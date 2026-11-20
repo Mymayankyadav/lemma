@@ -42,11 +42,11 @@ try {
  if(db.native)await db.exec('create extension pgcrypto with schema extensions');
  else await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
- const names=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
- // --include-all can install this migration after the previously deployed, future-dated chain.
+ let names=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
+ // --include-all can install the tutor migrations after the previously deployed, future-dated chain.
  if(process.env.N193_TEST_MIGRATION_LAST==='1'){
-  const index=names.findIndex(name=>name.endsWith('_n193_tutor_threads.sql'));
-  names.push(...names.splice(index,1));
+  const tutorMigration=name=>/_(n193_tutor_threads|n201_tutor_\w+)\.sql$/.test(name);
+  names=[...names.filter(name=>!tutorMigration(name)),...names.filter(tutorMigration)];
  }
  for(const name of names){
   await db.exec(await readFile(new URL(name,dir),'utf8'));

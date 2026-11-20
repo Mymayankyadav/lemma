@@ -72,11 +72,24 @@ export async function checkRegularTutorConnector({db,owner,other,as,one,ownerCmd
  await denied(use(cmd('claim',{turnId,expectedVersion:claim.version})),'40001');
  const lease={turnId,claimId:claim.claimId,generation:claim.generation};
  assert.equal((await use(cmd('renew',lease))).status,'renewed');
+ const nextQuestion=[
+  'Your method also works for the definite integral',
+  String.raw`\[
+\int_0^1 x^2\,dx
+\]`,
+  'What is its exact value?',
+ ].join('\n\n')+'\n\n'+
+  ('You can justify your answer with an antiderivative or by a limit of sums. '.repeat(21)).trimEnd();
+ assert.ok(nextQuestion.length>1500);
  const response=cmd('reply',{...lease,expectedVersion:claim.version,messageId:randomUUID(),
-  body:'Correct. Can you justify that value in one step?'});
+  body:'Private feedback about the previous answer.\n\n'+nextQuestion,nextQuestion});
+ for(const invalid of [null,'\t\n','A different question?','x'.repeat(12001)]){
+  await denied(use({...response,nextQuestion:invalid}),'22023');
+ }
  const receipt=await use(response);
  assert.equal(receipt.status,'completed');
  assert.deepEqual(await use(response),receipt);
+ assert.equal((await use({...response,nextQuestion:'What is its exact value?'})).status,'conflict');
  await denied(use({...response,operationId:randomUUID()}),'40001');
  assert.deepEqual(await discover(),[]);
  assert.equal('snapshot' in await use(get),false);
@@ -91,18 +104,22 @@ export async function checkRegularTutorConnector({db,owner,other,as,one,ownerCmd
  await as('authenticated',owner);
  const unrelated=(await ownerCmd(cmd('start',{expectedVersion:0,question:'A different thread'}),db,unrelatedCheckpoint)).turnId;
  const unrelatedGrant=await grant(unrelated,rotated,unrelatedCheckpoint);
- const followup=(await ownerCmd(cmd('start',{expectedVersion:6,question:'A follow-up answer'}))).turnId;
+ const followup=(await ownerCmd(cmd('start',{expectedVersion:6,question:'1/3'}))).turnId;
  await as('service_role');
  assert.deepEqual(await discover(),[{id:unrelated+'.'+unrelatedGrant.operationId}]);
+ assert.equal('previousTutorQuestion' in await host(unrelatedGrant.operationId,{operation:'get',turnId:unrelated},owner,rotated),false);
  assert.equal(await use(next),null);
  await as('authenticated',owner);
  const followupGrant=await grant(followup,rotated);
  await as('service_role');
  assert.deepEqual(await use(next),{id:followup+'.'+followupGrant.operationId});
+ const followupContext=await host(followupGrant.operationId,{operation:'get',turnId:followup},owner,rotated);
+ assert.deepEqual(followupContext.snapshot,{question:'1/3',selectedContext:[]});
+ assert.equal(followupContext.previousTutorQuestion,nextQuestion);
  await as('authenticated',owner);
  await ownerCmd(cmd('revoke',{turnId:followup,expectedVersion:1,grantId:followupGrant.grantId}));
  await as('service_role');assert.equal(await use(next),null);
  await as();await db.query('update public.tutor_grants set revoked_at=clock_timestamp() where id=$1',[final.grantId]);
  await as('service_role');await denied(use(next));
- console.log('N201 passed connector authorization, same-thread follow-up, rotation, revoke, expiry and exact reply replay.');
+ console.log('N201 passed connector authorization, verbatim same-thread follow-up, rotation, revoke, expiry and exact reply replay.');
 }

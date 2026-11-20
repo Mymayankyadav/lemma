@@ -12,6 +12,9 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   const turnId = randomUUID()
   const grantOperationId = randomUUID()
   const handoffId = turnId + '.' + grantOperationId
+  const followupTurnId = randomUUID()
+  const followupGrantOperationId = randomUUID()
+  const followupHandoffId = followupTurnId + '.' + followupGrantOperationId
   const proof = createHmac('sha256', secret).update('lemma:tutor-connector:v1:' + turnId + ':' + grantOperationId).digest('hex')
   const verifier = createHash('sha256').update(proof).digest('hex')
   assert.equal(await tutorConnectorGrantHash(url, turnId.toUpperCase(), grantOperationId.toUpperCase()), verifier)
@@ -21,6 +24,7 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   const calls: unknown[] = []
   let active = true
   let nextId: string | null = null
+  let savedQuestion: unknown
   let firstPoll = Promise.withResolvers<void>()
   const db: Context['db'] = {
     from() { throw Error('The tutor route must not query generic tables.') },
@@ -30,6 +34,12 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
       assert.equal(args!.p_owner, c.userId)
       assert.equal(args!.p_connector_hash, createHash('sha256').update(secret).digest('hex'))
       const command = args!.p_command as Record<string, unknown> | null
+      if (command?.turnId === followupTurnId) {
+        assert.equal(args!.p_grant_operation_id, followupGrantOperationId)
+        assert.equal(command.operation, 'get')
+        return {data: {turnId: followupTurnId, status: 'pending', version: 1,
+          snapshot: {question: '1/3'}, previousTutorQuestion: savedQuestion}, error: null}
+      }
       assert.equal(args!.p_grant_operation_id, command ? grantOperationId : null)
       calls.push(command)
       if (!active) return {data: null, error: {message: verifier}}
@@ -43,6 +53,8 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
         return {data: nextId ? {id: nextId} : null, error: null}
       }
       if (command.operation === 'claim') return {data: {claimId, generation: 1, version: 2}, error: null}
+      assert.equal(command.operation, 'reply')
+      savedQuestion = command.nextQuestion
       return {data: {status: 'completed', version: 3}, error: null}
     },
   }
@@ -71,6 +83,7 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   assert.equal(turn.snapshot.question, '17')
   assert.equal(turn.previousTutorQuestion, 'What is the value?')
   assert.match(turn.instructions, /tutor_turns/)
+  assert.match(turn.instructions, /nextQuestion/)
   const envelope = {resource: 'tutor_turns', schemaVersion: 1, target: {id: handoffId}}
   const claimOp = randomUUID()
   const bad = await call('study', {command: {...envelope, operation: 'claim', operationId: claimOp, expectedVersion: 1,
@@ -79,8 +92,9 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   assert.equal(calls.length, 2)
   const claim = parse(await call('study', {command: {...envelope, operation: 'claim', operationId: claimOp, expectedVersion: 1}}))
   const replyOp = randomUUID()
+  const nextQuestion = 'Evaluate this integral.\n\n' + String.raw`\[\int_0^1 x^2\,dx\]` + '\n\nGive its exact value.'
   const patch = {claimId: claim.claimId, generation: claim.generation, messageId: randomUUID(),
-    body: 'Correct. Can you justify your choice in one step?'}
+    body: 'That method works.\n\n' + nextQuestion, nextQuestion}
   const reply = parse(await call('study', {command: {...envelope, operation: 'reply', operationId: replyOp,
     expectedVersion: claim.version, patch}}))
   assert.equal(reply.status, 'completed')
@@ -92,9 +106,12 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   const nextArgs = {what: 'tutor_next', id: handoffId}
   const waiting = call('get', nextArgs)
   await firstPoll.promise
-  nextId = randomUUID() + '.' + randomUUID()
+  nextId = followupHandoffId
   assert.deepEqual(parse(await waiting), {id: nextId})
   assert.deepEqual(calls.slice(-2), [{operation: 'next', turnId}, {operation: 'next', turnId}])
+  const followup = parse(await call('get', {what: 'tutor_turn', id: followupHandoffId}))
+  assert.equal(followup.snapshot.question, '1/3')
+  assert.equal(followup.previousTutorQuestion, nextQuestion)
 
   nextId = null
   firstPoll = Promise.withResolvers<void>()

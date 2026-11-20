@@ -28,29 +28,34 @@ function useDraft(key:string,live=false) {
   const storage=()=>live?localStorage:sessionStorage
   const captured=useRef({key,ownerId:live?tutorStorageOwner(key):null,generation:authGeneration()}).current
   const active=()=>!live||(captured.key===key&&captured.ownerId!==null&&tutorLocalScopeActive({ownerId:captured.ownerId,generation:captured.generation}))
-  const [text,setText] = useState(() => {
-    if(!active())return ''
-    try { return storage().getItem(key) ?? '' } catch { return '' }
+  const [draft,setDraft] = useState(() => {
+    let text=''
+    try { if(active())text=storage().getItem(key) ?? '' } catch {/* No stored draft is available. */}
+    return {text,unsaved:false}
   })
-  const [unsaved,setUnsaved] = useState(false)
   function change(value: string) {
     if(!active())return
-    setText(value)
     try {
       if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
       else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
-      setUnsaved(false)
-    } catch { setUnsaved(true) }
+      setDraft({text:value,unsaved:false})
+    } catch { setDraft({text:value,unsaved:true}) }
   }
   function clearIfUnchanged(expected: string) {
     if(!active())return
-    setText(current=>current===expected?'':current)
+    let cleared=false,failed=false
     try {
-      if(storage().getItem(key)===expected) storage().removeItem(key)
-    } catch {setUnsaved(true)}
+      const saved=storage().getItem(key)
+      if(saved===expected)storage().removeItem(key)
+      cleared=saved===null||saved===expected
+    } catch {failed=true}
+    setDraft(current=>{
+      if(current.text!==expected)return current
+      return {text:'',unsaved:failed||(!cleared&&current.unsaved)}
+    })
   }
-  return {text,change,clearIfUnchanged,unsaved}
+  return {...draft,change,clearIfUnchanged}
 }
 
 export function CheckpointTutor(props:EntryProps) {
@@ -93,6 +98,8 @@ function TutorBody({page,connectorUrl,connectorLoading,scope,live,readOnly,hando
   try {attachedSource=sourceDraft.text?JSON.parse(sourceDraft.text):undefined} catch {/* Restore only a saved selection. */}
   const [selectedLocal,setSelectedLocal]=useState('')
   const attachedLocal=useDraft(draftKey+':attached-local',live)
+  const draftWarning=question.unsaved||context.unsaved||attachedLocal.unsaved||sourceDraft.unsaved
+    ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
   const [busy,setBusy]=useState(false)
@@ -409,7 +416,7 @@ function TutorBody({page,connectorUrl,connectorLoading,scope,live,readOnly,hando
     </details>}  </>
   if(page)return <TutorChat page={page} turns={allTurns} draft={question.text} onChange={question.change}
     onSend={saveQuestion} readOnly={recoveryOnly} pending={!!pending} offline={!!thread?.offline}
-    draftUnsaved={question.unsaved} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
+    draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     pendingStatus={pendingStatus}
     status={<>{statusControls}{thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
@@ -444,8 +451,8 @@ function TutorBody({page,connectorUrl,connectorLoading,scope,live,readOnly,hando
         disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
       {contextControls}
       <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
-      {(question.unsaved||context.unsaved||attachedLocal.unsaved)&&<p role="alert">This draft may not survive a reload.</p>}
     </div>}
+    {draftWarning&&<p role="alert">{draftWarning}</p>}
     {manualControls}
     {transcript}
   </>

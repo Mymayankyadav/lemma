@@ -39,5 +39,11 @@ Deno.test('narrow tutor HTTP profile checks every bearer and exposes four bounde
  assert.ok(forbidden.error || forbidden.result?.isError);assert.equal(calls.length,1)
  const malformed=await message(await request(secret,'tools/call',{name:'get_tutor_turn',arguments:{turnId,projectId:turnId}}))
  assert.ok(malformed.error || malformed.result?.isError);assert.equal(calls.length,1)
- granted=false;assert.equal((await request(secret,'tools/list')).status,401);assert.equal(checks,5)
+ const nextQuestion='Evaluate this integral.\n\n'+String.raw`\[\int_0^1 x^2\,dx\]`+'\n\nGive its exact value.'
+ const reply={turnId,operationId:crypto.randomUUID(),claimId:crypto.randomUUID(),messageId:crypto.randomUUID(),
+  generation:1,expectedVersion:2,body:'Correct.\n\n'+nextQuestion,nextQuestion}
+ const submission=await message(await request(secret,'tools/call',{name:'submit_tutor_reply',arguments:reply}))
+ assert.equal(submission.result.isError,undefined)
+ assert.deepEqual(calls[1],{...reply,operation:'reply'})
+ granted=false;assert.equal((await request(secret,'tools/list')).status,401);assert.equal(checks,6)
 })

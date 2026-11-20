@@ -30,6 +30,13 @@
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint or thread"
     },
+    "next_question": {
+      "classification": "command-managed",
+      "appPath": "Rendered verbatim as part of the existing reply body",
+      "mcpPath": "study tutor reply or submit_tutor_reply via a per-turn grant and server-validated lease, returned by get(tutor_turn) on the next authorized handoff",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
     "provenance": {
       "classification": "command-managed",
       "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",

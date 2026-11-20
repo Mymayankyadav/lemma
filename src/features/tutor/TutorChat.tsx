@@ -23,7 +23,7 @@ type Props = {
   readOnly: boolean;
   pending: boolean;
   offline: boolean;
-  draftUnsaved: boolean;
+  draftWarning?: string;
   hasContext: boolean;
   status: ReactNode;
   pendingStatus: ReactNode;
@@ -39,7 +39,7 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftUnsaved}: Props) {
+  status, pendingStatus, context, connection, transcript, hasContext, draftWarning}: Props) {
   const [view, setView] = useState<'overview' | 'chat'>();
   const [panel, setPanel] = useState<'context' | 'connection' | 'close'>();
   const chat = useRef<HTMLDivElement>(null), follow = useRef(true);
@@ -107,8 +107,8 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
           </div>}
         </>}
     </div>
-    {!overview && <>
-      {draftUnsaved && <p className="composer-status" role="alert">This draft could not be saved on this device.</p>}
+    {panel !== 'context' && draftWarning && <p className="composer-status" role="alert">{draftWarning}</p>}
+    {!overview &&
       <TutorComposer value={draft} onChange={onChange} onSend={send} canSend={canSend}
         hintLevel={hintIndex + 1}
         onAsk={kind => {
@@ -119,8 +119,9 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
         }}
         notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
         onContext={() => setPanel('context')} onConnection={openConnection}/>
-    </>}
-    <Sheet open={panel === 'context'} title="Context for your tutor" onClose={() => setPanel(undefined)}>
+    }
+    <Sheet open={panel === 'context'} title="Context for your tutor" onClose={() => setPanel(undefined)}
+      footer={panel === 'context' && draftWarning && <p role="alert">{draftWarning}</p>}>
       {panel === 'context' && context}
     </Sheet>
     <Sheet open={panel === 'connection'} title="Tutor connection" onClose={() => setPanel(undefined)}>
