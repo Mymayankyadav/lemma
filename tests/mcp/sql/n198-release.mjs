@@ -75,8 +75,20 @@ try {
   });
   const preferences = () => q('select user_id,scheduling_algorithm from public.settings order by user_id');
   const original = await preferences();
-  await q('insert into lemma_release.plan_control(enabled) values(true)');
+  await db.exec(`begin;
+    insert into public.tutor_release_controls(capability,enabled) values('manual',true),('mcp',true)
+      on conflict(capability) do update set enabled=excluded.enabled;
+    set local role service_role;
+    select public.lemma_practice_controls(true,false,false);
+    reset role;
+    insert into lemma_release.plan_control(singleton,enabled) values(true,true)
+      on conflict(singleton) do update set enabled=excluded.enabled;
+    commit`);
   for (const role of ['authenticated', 'service_role']) assert.equal(await as(role, release), true);
+  assert.deepEqual(await q('select capability,enabled from public.tutor_release_controls order by capability'),
+    [{capability:'manual',enabled:true},{capability:'mcp',enabled:true}]);
+  assert.deepEqual(await q('select forecast_enabled,challenger_enabled,admission_enabled from public.atlas_practice_controls'),
+    [{forecast_enabled:true,challenger_enabled:false,admission_enabled:false}]);
   await q('update lemma_release.plan_control set enabled=false');
   for (const role of ['authenticated', 'service_role']) assert.equal(await as(role, release), false);
   assert.deepEqual(await preferences(), original, 'Activation and rollback preserve both owner preferences');

@@ -76,7 +76,7 @@ test('N157 V08 chart text is 12 px at every width, a chart is at most 640 px, tw
 
 test('N157 V09 prose and mathematics are at most 34 em wide; the review card is a page, not the window', async ({page}) => {
   await go(page, 1280, '/review')
-  await page.getByRole('button', {name: /^Start \d+ cards$/}).click()
+  await page.getByRole('button', {name: /^Start review, \d+ cards?$/}).click()
   await expect(page.locator('.v7-review-card')).toBeVisible()
   await page.getByRole('button', {name: 'Show answer'}).click()
   const measured = await page.evaluate(() => ({
@@ -90,7 +90,7 @@ test('N157 V09 prose and mathematics are at most 34 em wide; the review card is 
 
 test('N157 V09 the spread (flag v7Spread): question left, answer right, blank paper before the reveal, grades with their keys', async ({page}) => {
   await go(page, 1280, '/review', ',v7Spread')
-  await page.getByRole('button', {name: /^Start \d+ cards$/}).click()
+  await page.getByRole('button', {name: /^Start review, \d+ cards?$/}).click()
   const front = page.locator('.v7-review-front')
   await expect(front).toBeVisible()
   await expect(page.locator('.v7-review-back')).toHaveCount(0)
@@ -104,7 +104,7 @@ test('N157 V09 the spread (flag v7Spread): question left, answer right, blank pa
   await expect(page.locator('.v7-review-grades .v7-review-key')).toHaveText(['1', '2', '3', '4'])
   // Below 840 px the same flag keeps the single page.
   await go(page, 700, '/review', ',v7Spread')
-  await page.getByRole('button', {name: /^Start \d+ cards$|^Resume/}).first().click()
+  await page.getByRole('button', {name: /^Start review, \d+ cards?$|^Resume/}).first().click()
   await page.getByRole('button', {name: 'Show answer'}).click()
   const narrow = await page.evaluate(() => ({front: document.querySelector('.v7-review-front')!.getBoundingClientRect().bottom, back: document.querySelector('.v7-review-back')!.getBoundingClientRect().top}))
   expect(narrow.back).toBeGreaterThanOrEqual(narrow.front)
