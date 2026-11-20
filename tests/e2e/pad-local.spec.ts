@@ -46,7 +46,11 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   const notes = page.getByRole('textbox',{name:'Pad notes'});
   const paper = page.getByRole('img',{name:'Pad drawing'});
   const strokes = paper.locator('path');
-  await page.goto(checkpoint('CP4'));
+  // The Pad stores drafts offline; the checkpoint host only exposes previously loaded demo routes offline.
+  await page.goto(checkpoint('CP2'));
+  await expect(open).toBeVisible();
+  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
+  await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await open.click();
   await notes.fill('Compactness notes saved offline');
   await context.setOffline(true);
