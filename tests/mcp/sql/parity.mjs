@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import {readdir,readFile} from 'node:fs/promises';
 import {randomUUID} from 'node:crypto';
 import {tsImport} from 'tsx/esm/api';
+import {checkSessionProgressParity} from './fixtures/n191-session-progress-parity.mjs';
 const {readRegisteredResource}=await tsImport('../../../supabase/functions/mcp/tools/registry.ts',import.meta.url);
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
@@ -98,7 +99,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','account_controls']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -262,7 +263,7 @@ async function roundTrip(resource,details){
  // study_command compatibility bridge intentionally returns its first
  // stored receipt for any same-operationId retry (N12 contract). Both must
  // prevent a second mutation or receipt; don't conflate the two policies.
- if(['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics',
+ if(details.strictReceipt||['tasks','study_goals','presets','deadlines','parked_thoughts','practice_topics',
   'overlap_acknowledgements','capacity_overrides'].includes(resource))
   assert.equal(altered.status,'conflict',resource+': changed payload should conflict');
  else
@@ -506,6 +507,53 @@ try{
   [goalId]))[0].archived_at,'study_goals: undo restore should re-archive');
  const entryId=await roundTrip('study_entries',specs.study_entries);
  const calendarId=await roundTrip('calendar_blocks',specs.calendar_blocks);
+ // Preserve the legacy calendar replay assertion above and separately verify
+ // the stricter receipt identity used by requests carrying N191 fields.
+ const recurringCalendar={...specs.calendar_blocks,strictReceipt:true,
+  create:{...specs.calendar_blocks.create,buffer_before_minutes:5,buffer_after_minutes:10,
+   weekly_rule:{firstDate:'2026-11-06',lastDate:'2026-11-13',weekdays:[5],start:{time:'08:00'},end:{time:'09:00'}}},
+  update:{...specs.calendar_blocks.update,buffer_before_minutes:15,buffer_after_minutes:20,
+   weekly_rule:{firstDate:'2026-11-06',lastDate:'2026-11-13',weekdays:[5],start:{time:'09:00'},end:{time:'10:00'}}}};
+ const recurringCalendarId=await roundTrip('calendar_blocks',recurringCalendar);
+ await as(owner);
+ const calendarFields=(await q('select weekly_rule,buffer_before_minutes,buffer_after_minutes from public.calendar_blocks where id=$1',[recurringCalendarId]))[0];
+ assert.deepEqual(calendarFields,{weekly_rule:recurringCalendar.update.weekly_rule,buffer_before_minutes:15,buffer_after_minutes:20},
+  'calendar_blocks: the three N191 fields must survive app update, deletion and undo');
+ await role(null);
+ const calendarPage=(await mcpPage('calendar_blocks',recurringCalendarId)).items[0];
+ for(const field of ['weekly_rule','buffer_before_minutes','buffer_after_minutes'])
+  assert.deepEqual(calendarPage[field],calendarFields[field],'calendar_blocks: registered MCP read loses '+field);
+ // An exception is an append-only revision of an occurrence. Exercise its
+ // actual app write, registered MCP read/write, replay, version and undo path.
+ const occurrenceRequest=command('calendar_occurrence_changes','create',{expectedVersion:0,patch:{
+  series_id:recurringCalendarId,original_date:'2026-11-06',original_zone:'UTC',revision:1,kind:'move',
+  starts_local:'2026-11-06T10:00',ends_local:'2026-11-06T11:00',start_fold:null,end_fold:null}});
+ await as(owner);
+ const occurrence=status(await app('calendar_occurrence_changes_command',occurrenceRequest),'calendar_occurrence_changes','create');
+ const occurrenceId=occurrence.changed[0].id;
+ assert.deepEqual(await app('calendar_occurrence_changes_command',occurrenceRequest),occurrence);
+ await role(null);
+ assert.equal((await mcpPage('calendar_occurrence_changes',occurrenceId)).items[0].revision,1);
+ assert.equal((await mcpPage('calendar_occurrence_changes',occurrenceId,other)).total,0);
+ await as(other);
+ assert.equal((await q('select count(*)::int n from public.calendar_occurrence_changes where id=$1',[occurrenceId]))[0].n,0);
+ await role('service_role');
+ await assert.rejects(q('select public.mcp_command($1,$2,$3::jsonb)',[other,'chatgpt',JSON.stringify({...occurrenceRequest,operationId:randomUUID()})]),
+  /Calendar series not found/,'calendar_occurrence_changes: foreign owner cannot append an exception');
+ assert.deepEqual(await mcp(occurrenceRequest),occurrence,'App receipt must replay through MCP');
+ assert.equal((await mcp({...occurrenceRequest,patch:{...occurrenceRequest.patch,ends_local:'2026-11-06T12:00'}})).status,'conflict');
+ assert.equal((await mcp({...occurrenceRequest,operationId:randomUUID()})).status,'conflict','Stale occurrence revision accepted');
+ const nextOccurrence=command('calendar_occurrence_changes','create',{expectedVersion:1,
+  patch:{series_id:recurringCalendarId,original_date:'2026-11-06',original_zone:'UTC',revision:2,kind:'cancel'}});
+ const canceledOccurrence=status(await mcp(nextOccurrence),'calendar_occurrence_changes','create');
+ assert.deepEqual(await mcp(nextOccurrence),canceledOccurrence);
+ await as(owner);
+ assert.equal((await q('select kind from public.calendar_occurrence_changes where id=$1',[canceledOccurrence.changed[0].id]))[0].kind,'cancel');
+ assert.equal(Number((await undo(canceledOccurrence.actionNo)).undone),Number(canceledOccurrence.actionNo));
+ assert.equal((await q('select count(*)::int n from public.calendar_occurrence_changes where id=$1',[canceledOccurrence.changed[0].id]))[0].n,0);
+ assert.equal(Number((await undo(occurrence.actionNo)).undone),Number(occurrence.actionNo));
+ assert.equal((await q('select count(*)::int n from public.calendar_occurrence_changes where series_id=$1',[recurringCalendarId]))[0].n,0);
+ mark('calendar_occurrence_changes','create');
  await roundTrip('study_intervals',{...specs.study_intervals,
   create:{...specs.study_intervals.create,entry_id:entryId}});
 
@@ -1902,6 +1950,8 @@ try{
   }
   mark('plan_conversions','create');
  }
+ await checkSessionProgressParity(db,{owner,other});
+ mark('session_progress','save');
  await role('service_role');
  // For the *actually completed* resource operation families, never allow a
  // missing schema operation to be covered by a metadata-only smoke test.

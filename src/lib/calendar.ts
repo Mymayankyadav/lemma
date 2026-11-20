@@ -32,6 +32,22 @@ function civilStamp(at: number, zone: string) {
   const p = parts(at, zone);
   return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
 }
+function wallTimeCandidates(target: number, zone: string): number[] {
+  const offsets = new Set(
+    [-36, -12, 0, 12, 36].map((h) => {
+      const at = target + h * 3_600_000;
+      return civilStamp(at, zone) - at;
+    }),
+  );
+  return [...offsets].map((offset) => target - offset).sort((a, b) => a - b);
+}
+
+/** Exact matches for a validated minute-aligned civil timestamp encoded as UTC.
+ * Zero matches is a gap; two are a fold, in chronological order. */
+export function wallTimeMatches(target: number, zone: string): number[] {
+  return wallTimeCandidates(target, zone).filter((at) => civilStamp(at, zone) === target);
+}
+
 export interface StudyClock {
   rolloverHour: number;
   dayIndex(at: number): number;
@@ -53,15 +69,7 @@ export function studyClock(rolloverHour = 4, timeZone = "UTC"): StudyClock {
     },
     dayStart(index) {
       const target = index * DAY + rolloverHour * 3_600_000;
-      const offsets = new Set(
-        [-36, -12, 0, 12, 36].map((h) => {
-          const at = target + h * 3_600_000;
-          return civilStamp(at, timeZone) - at;
-        }),
-      );
-      const candidates = [...offsets]
-        .map((offset) => target - offset)
-        .sort((a, b) => a - b);
+      const candidates = wallTimeCandidates(target, timeZone);
       // Choose the earlier occurrence of a folded hour. A skipped hour moves forward.
       return (
         candidates.find((at) => civilStamp(at, timeZone) === target) ??
