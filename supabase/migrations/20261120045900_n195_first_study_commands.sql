@@ -1,5 +1,24 @@
 -- The N191 helpers serialize operation IDs, verify receipt provenance and store
 -- the canonical request digest. Only these owner-scoped commands are exposed.
+-- N195 may be installed before the shared launch capability. Resolve it only
+-- at call time, so ordinary review remains available during that upgrade. This
+-- guard never creates or substitutes the N191 receipt/release foundation.
+create function public.lemma_study_ui_released() returns boolean
+language plpgsql stable security invoker set search_path='' as $release$
+declare released boolean;
+begin
+  if pg_catalog.to_regprocedure('public.lemma_plan_released()') is null
+    or pg_catalog.to_regprocedure('public.lemma_trusted_receipt_begin(uuid,uuid,text,jsonb)') is null
+    or pg_catalog.to_regprocedure('public.lemma_trusted_receipt_finish(uuid,uuid,text,jsonb,jsonb)') is null then
+    return false;
+  end if;
+  execute 'select public.lemma_plan_released()' into released;
+  return coalesce(released,false);
+end
+$release$;
+revoke all on function public.lemma_study_ui_released() from public,anon;
+grant execute on function public.lemma_study_ui_released() to authenticated,service_role;
+
 create function public.create_first_study_card(
   p_operation_id uuid, p_expected_owner uuid, p_path jsonb, p_front text, p_back text
 ) returns jsonb language plpgsql security definer set search_path = '' as $first$
@@ -20,7 +39,7 @@ begin
     or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
     raise exception 'Sign in to save a card' using errcode='42501';
   end if;
-  if not public.lemma_plan_released() then raise exception 'First card is unavailable' using errcode='55000'; end if;
+  if not public.lemma_study_ui_released() then raise exception 'First card is unavailable' using errcode='55000'; end if;
   p_front := pg_catalog.btrim(p_front);
   p_back := pg_catalog.btrim(p_back);
   if pg_catalog.jsonb_typeof(p_path) is distinct from 'object'
@@ -128,7 +147,7 @@ begin
   if owner_id is null or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
     raise exception 'Sign in to grade' using errcode='42501';
   end if;
-  if not public.lemma_plan_released() then raise exception 'Study grading unavailable' using errcode='55000'; end if;
+  if not public.lemma_study_ui_released() then raise exception 'Study grading unavailable' using errcode='55000'; end if;
 
   -- Authenticate the full target before receipt lookup on every call, including
   -- retries. Lock and re-read before validation so concurrent grades see the winner.

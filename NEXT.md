@@ -39,17 +39,6 @@ Scope: src/features/tutor/DemoCheckpointTutor.tsx; src/data/tutor/{manual-api,li
 Not: Automatic inference using an unverified provider; Implicit Pad submission; Broad connected-host access or new secret exposure.
 Agent packet: [N193.md](docs/implementation/2026-11-20/tasks/N193.md). 
 
-## N195 Complete live first study, scoped review, UI and accessibility repairs
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-671983#wxm1
-Existing PR: #1546 (https://github.com/Mymayankyadav/lemma/pull/1546)
-Done = Finish existing PR #1546's live first-card and exact grading, task/calendar write recovery, frozen per-scope review, Today/Atlas/capture repairs and accessibility. Demonstrate 1-card, 23-card, 90-future-card, lost-ack, account-switch and focus/keyboard pathways.
-Tests: `npx tsc -b; node scripts/ci/lint.mjs`; `node tests/mcp/sql/first-study.mjs`; `node tests/mcp/sql/first-study-concurrency.mjs`; `tests/e2e/v7-n195-{live-first-study,study-repairs,task-live,task-planner}.spec.ts`; `full affected unit/browser suites and physical phone acceptance`.
-Scope: src/data/StudyUiRelease.tsx; src/features/practice/v7/PracticeV7.tsx; src/features/atlas/v7/{AtlasV7,AtlasMap}.tsx; src/features/settings/v7/SettingsV7.tsx; supabase/migrations/20261218002000_n195_study_review_targets.sql; docs/current/N195.md.
-Not: Rewriting N191 evidence core; Moving the scheduler default into the wrong PR; Skipping tests because a shared dependency is absent.
-Agent packet: [N195.md](docs/implementation/2026-11-20/tasks/N195.md). 
-
 ## N196 Ship new scheduler and learning algorithm with default New and Settings override
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
@@ -104,12 +93,3 @@ Tests: `representative formula and handwriting corpus`; `slow/offline device can
 Scope: src/features/pad/**; tests/unit/pad/**; tests/e2e/pad-local.spec.ts; docs/current/N200.md.
 Not: Replacing the custom math keyboard; Shipping an unlicensed model; Requiring the optional OCR for N198.
 Agent packet: [N200.md](docs/implementation/2026-11-20/tasks/N200.md). Do not auto-select: Needs verified model rights, assets, device and representative corpus; remains blocked and optional.
-
-## N195 Live first study, scoped review and UI repairs
-
-Owner task: "Implement the proposed plan."
-Stage: Build · Status: open · Needs: N191, N194 · Assigned: chat-671983#wxm1
-Done = The authenticated first-use flow creates one path and card, recovers a lost acknowledgement, and opens the exact saved card. An explicit grade advances the same round exactly once. Path, checkpoint and concept starts, pause and resume retain membership. Verify remaining P1/P2 user journeys against the November 20 finding and accessibility matrix.
-Tests: isolated owner, version, rollback and concurrent receipt cases; exact persisted first-card/run/grade readback; scoped, caught-up and interrupted browser journeys; route, drawer, focus, contrast, theme and responsive acceptance.
-Scope: study commands and live/demo adapters, affected React study and UI surfaces, targeted tests, release acceptance and docs/current/N195.md.
-Not: scheduler policy activation, tutor/provider access, Pad, OCR, live learner data, or changing the release default.

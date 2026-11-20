@@ -35,11 +35,13 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
  const repair=useStudyUi(),[expandedTask,setExpandedTask]=useState<CapturedTaskDraft|null>(null);
+ const [blockKind,setBlockKind]=useState<'study'|'busy'>('study');
  const [cardForm,setCardForm]=useState<'first'|'full'|null>(null);
  const saving=useRef(false),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const paths=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system&&project.status!=='archived').map(project=>({id:project.id,slug:project.slug,title:project.title})),[home.data]);
  const parse=useMemo(()=>parseCapture(text,{now:new Date(),zone,paths,session:!!entry},ignored,chosen),[text,zone,paths,entry,ignored,chosen]);
  const kind=parse.kind,project=home.data?.projects.find(item=>item.id===parse.path?.id);
+ const tokens=repair&&kind==='block'&&blockKind==='busy'?parse.tokens.filter(token=>token.type!=='path'):parse.tokens;
  const start=defaultStart(parse.date,parse.time,{now:new Date(),zone});
  const title=kind==='card'?parse.front:parse.title;
  const taskDraft=()=>captureTaskDraft(parse,start.date,zone,project?.subject.id??null);
@@ -49,7 +51,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const waitingToSave=!hasOwnerZone&&(kind==='block'||(kind==='task'&&!!(parse.date||parse.time)));
  const waitingToExpand=!hasOwnerZone&&(kind==='task'||kind==='block');
  const reason=waitingToSave?'Your time zone must load before saving a scheduled item.':!text.trim()?'Type something to add.':kind==='card'&&(!parse.front||!parse.back)?'Write the card as front :: back.':kind!=='block'&&!title?'Add a title.':'';
- function reset(){setText('');setChosen(initialKind);setIgnored(new Set());setError('');}
+ function reset(){setText('');setChosen(initialKind);setBlockKind('study');setIgnored(new Set());setError('');}
  function close(){setExpandedTask(null);setCardForm(null);reset();onClose();}
  async function emptyLibrary(){
   const page=await getApi().searchCardsPage({query:'',offset:0});
@@ -72,8 +74,9 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
     notify('Task added',{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteTask(made.record.id,made.record.version).catch(()=>notify('Could not undo the task. Reopen it to check its current version.',{tone:'danger'}));}}});
    }else if(kind==='block'){
     const api=getStudyApi(),minutes=parse.minutes??30,startsAt=instantAt(start.date,start.time,zone);
-    const made=await api.createCalendarBlock({kind:'study',title:parse.title||(project?project.title+' study':'Study block'),startsAt,endsAt:new Date(Date.parse(startsAt)+minutes*60_000).toISOString(),
-     timeZone:zone,projectId:project?.id??null,subjectId:project?.subject.id??null});
+    const type=repair?blockKind:'study';
+    const made=await api.createCalendarBlock({kind:type,title:parse.title||(type==='busy'?'Busy':project?project.title+' study':'Study block'),startsAt,endsAt:new Date(Date.parse(startsAt)+minutes*60_000).toISOString(),
+     timeZone:zone,projectId:type==='study'?project?.id??null:null,subjectId:type==='study'?project?.subject.id??null:null});
     notify('Block added for '+start.time,{tone:'success',action:{label:'Undo',onClick:()=>{void api.deleteCalendarBlock(made.record.id,made.record.version);}}});
    }else if(kind==='card'){
     if(repair&&await emptyLibrary()){setCardForm('first');return;}
@@ -103,7 +106,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
   }
   try{
    if(kind==='block'){
-    const draft=calendarBlockDraft({title:parse.title,kind:'study',startsAt:instantAt(start.date,start.time,zone),
+    const draft=calendarBlockDraft({title:parse.title,kind:repair?blockKind:'study',startsAt:instantAt(start.date,start.time,zone),
      minutes:parse.minutes??30,zone,projectId:project?.id??null,subjectId:project?.subject.id??null,taskId:null});
     close();navigate('/calendar?view=day&date='+start.date+'&new=block',{state:{calendarBlockDraft:draft}});return;
    }
@@ -129,10 +132,14 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
    onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void save();}}}/>
   {voice.available&&<Button small variant="ghost" onClick={()=>{void voice.listen().then(spoken=>{if(spoken)setText(previous=>(previous.trim()?previous.trim()+' ':'')+spoken);}).catch(()=>setError('Voice input is not available right now.'));}}><Mic aria-hidden="true"/>Speak</Button>}
   {!text&&<p className="v7-capture-hint">Try: Rudin ch 4 tomorrow 4pm 90m #real</p>}
-  {parse.tokens.length>0&&<ul className="v7-capture-tokens" aria-label="Recognised">{parse.tokens.map(token=><li key={token.id}>
+  {tokens.length>0&&<ul className="v7-capture-tokens" aria-label="Recognised">{tokens.map(token=><li key={token.id}>
    <button type="button" aria-label={'Remove '+token.label} onClick={()=>setIgnored(new Set([...ignored,token.id]))}><span>{token.label}</span><X aria-hidden="true"/></button></li>)}</ul>}
   <div className="v7-capture-kinds"><Segmented label="Type" options={captureKinds.map(item=>kindLabel[item])} value={kindLabel[kind]}
    onChange={label=>{const next=captureKinds.find(item=>kindLabel[item]===label);if(next)setChosen(next);}}/></div>
+  {repair&&kind==='block'&&<div className="v7-form-stack">
+   <Segmented label="Block kind" options={['Study','Busy']} value={blockKind==='study'?'Study':'Busy'} onChange={value=>setBlockKind(value==='Busy'?'busy':'study')}/>
+   <p className="v7-meta">{blockKind==='busy'?'Reserve time without assigning study work.':'Plan time for studying.'}</p>
+  </div>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
  </Sheet>;
 }

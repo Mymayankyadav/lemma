@@ -110,10 +110,24 @@ function PlanCard({proposal,project,onDecide}:{proposal:Proposal;project:Project
 
 /** N131 · L-07: how long a stamped card stays before it leaves (the stamp lands in the first 220 ms). */
 export const STAMP_MS=360;
+function InboxZero(){return <><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></>;}
+function AtlasCardEnd(){
+ const atlas=useAtlasModel(),pending=atlas.data?.links.filter(row=>row.status==='proposed').length;
+ if(atlas.isSuccess&&pending===0)return <InboxZero/>;
+ return <><h2>All card proposals reviewed</h2>
+  {pending?<button type="button" className="v7-button v7-secondary" onClick={()=>{const el=document.querySelector<HTMLElement>('[aria-label="Link proposals"]');if(el){el.tabIndex=-1;el.focus();}}}>Review {pending} Atlas {pending===1?'link':'links'}</button>:
+   <><p role="status">{atlas.isError?'Atlas proposals could not be checked.':'Checking Atlas proposals…'}</p>
+    {atlas.isError&&<Button onClick={()=>{void atlas.refetch();}}>Retry Atlas proposals</Button>}</>}
+ </>;
+}
+function CardInboxEnd({plans}:{plans:number}){
+ if(plans>0)return <><h2>All card proposals reviewed</h2><Link className="v7-button v7-secondary" to="/proposals?tab=plan">Review {plans} {plans===1?'plan':'plans'}</Link></>;
+ return isFlagOn('atlasV3')?<AtlasCardEnd/>:<InboxZero/>;
+}
 /** PLAN §6.10 Inbox: a triage stack for cards (swipe, buttons or keys), a list view for batches, and plan cards. */
 export default function InboxV7(){
  const studyRepair=useStudyUi();
- const atlas=useAtlasModel(),repair=studyRepair;
+ const repair=studyRepair;
  const query=useProposals(),projects=useProjects(),settings=useSettings();
  const [params,setParams]=useSearchParams(),tab=params.get('tab')==='plan'?'plan':'cards',list=params.get('view')==='list';
  const [order,setOrder]=useState<string[]>([]),[editing,setEditing]=useState<Proposal|null>(null),[batch,setBatch]=useState<Proposal[]|null>(null);
@@ -127,14 +141,7 @@ export default function InboxV7(){
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const all=useMemo(()=>(query.data??[]).filter(p=>!held.has(p.id)),[query.data,held]);
  const cards=useMemo(()=>all.filter(isCardProposal),[all]),plans=useMemo(()=>all.filter(isPlanProposal),[all]);
- const linkCount=atlas.data?.links.filter(row=>row.status==='proposed').length;
- const pendingLinks=isFlagOn('atlasV3')?linkCount:0;
- const cardEnd=repair&&(plans.length>0||pendingLinks!==0)?<>
-  <h2>All card proposals reviewed</h2>
-  {plans.length>0?<Link className="v7-button v7-secondary" to="/proposals?tab=plan">Review {plans.length} {plans.length===1?'plan':'plans'}</Link>:
-   pendingLinks?<button type="button" className="v7-button v7-secondary" onClick={()=>{const el=document.querySelector<HTMLElement>('[aria-label="Link proposals"]');if(el){el.tabIndex=-1;el.focus();}}}>Review {pendingLinks} Atlas {pendingLinks===1?'link':'links'}</button>:
-   <p role="status">{atlas.isError?'Atlas proposals could not be checked.':'Checking Atlas proposals…'}</p>}
- </>:<><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></>;
+ const cardEnd=repair?<CardInboxEnd plans={plans.length}/>:<InboxZero/>;
  useEffect(()=>{setOrder(previous=>mergeOrder(previous,cards.map(p=>p.id)));},[cards]);
  const queue=useMemo(()=>{const byId=new Map(cards.map(p=>[p.id,p]));return mergeOrder(order,cards.map(p=>p.id)).map(id=>byId.get(id)!).filter(Boolean);},[order,cards]);
  const top=queue[0],peers=sameSession(top,queue);

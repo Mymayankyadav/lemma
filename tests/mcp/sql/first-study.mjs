@@ -1,9 +1,8 @@
-// Exercise the shipped functions against the complete release-candidate migration stack.
+// Exercise N195 against the complete migration stack plus pinned real N191/N197 candidates.
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readdir,readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
-import {join} from 'node:path';
+import {firstStudyMigrationStack} from './fixtures/n195-foundation/load.mjs';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
 const q=async(sql,params=[]) => (await db.query(sql,params)).rows;
@@ -28,8 +27,20 @@ try{
   create function extensions.gen_random_bytes(n int) returns bytea language sql as $$ select decode(repeat('00',n),'hex') $$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
  const dir=process.env.N195_TEST_MIGRATIONS||fileURLToPath(new URL('../../../supabase/migrations/',import.meta.url));
- for(const file of (await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort())
-  await db.exec(await readFile(join(dir,file),'utf8'));
+ for(const {sql} of await firstStudyMigrationStack(dir))await db.exec(sql);
+ for(const signature of [
+  'public.create_first_study_card(uuid,uuid,jsonb,text,text)',
+  'public.grade_study_run_item(uuid,uuid,uuid,uuid,integer,integer,integer,text,integer,jsonb)',
+  'public.start_study_target(uuid,text,uuid)',
+  'public.skip_changed_study_item(uuid,uuid,uuid,integer)',
+  'public.set_study_weekday_minutes(uuid,uuid,jsonb,integer[])',
+ ])assert.deepEqual(await one(`select has_function_privilege('anon',$1,'execute') anon,
+   has_function_privilege('authenticated',$1,'execute') authenticated,
+   has_function_privilege('service_role',$1,'execute') service`,[signature]),
+  {anon:false,authenticated:true,service:false},signature+' grants stay owner-app-only');
+ assert.deepEqual(await one(`select has_any_column_privilege('authenticated','public.command_receipts','INSERT,UPDATE') browser_columns,
+  has_table_privilege('authenticated','public.command_receipts','DELETE,TRUNCATE,TRIGGER') browser_table`),
+  {browser_columns:false,browser_table:false},'the real cutover denies direct browser receipt writes');
  for(const uid of [alpha,beta]){
   await q('insert into auth.users(id) values($1)',[uid]);
   await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[uid,uid.replaceAll('-','').repeat(2).slice(0,48)]);
@@ -39,6 +50,7 @@ try{
  await db.exec("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select false'");
  await auth(alpha);
  await assert.rejects(create(op,path),{code:'55000'});
+ await assert.rejects(q("insert into public.command_receipts(user_id,operation_id,resource,result) values($1,$2,'first_study_card','{}')",[alpha,op]),{code:'42501'});
  await db.exec('reset role');
  // The release owner supplies this reviewed capability. Simulate its on state only inside this disposable database.
  await db.exec("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select true'");
@@ -117,8 +129,11 @@ try{
  }
  await auth(alpha);
  const open=async(kind,id,op=randomUUID())=>(await one('select public.start_study_target($1,$2,$3) as result',[op,kind,id])).result;
- const firstConcept=await open('concept',targets[0].concept);
+ const conceptOp=randomUUID();
+ const firstConcept=await open('concept',targets[0].concept,conceptOp);
  assert.equal(firstConcept.status,'applied');
+ assert.deepEqual(await open('concept',targets[0].concept,conceptOp),firstConcept,'lost admission acknowledgement replays the same frozen run');
+ assert.equal((await open('checkpoint',targets[1].checkpoint,conceptOp)).status,'conflict','one operation cannot be replayed into a different scope');
  const cohort=async id=>(await q('select card_id from public.review_run_items where run_id=$1',[id])).map(row=>row.card_id).sort();
  assert.deepEqual(await cohort(firstConcept.runId),[...targets[0].cards].sort());
  const pause=await one('select public.review_runs_command($1::jsonb) as r',[JSON.stringify({schemaVersion:1,resource:'review_runs',operation:'pause',operationId:randomUUID(),target:{id:firstConcept.runId},expectedVersion:firstConcept.runVersion,patch:{}})]);
@@ -166,5 +181,52 @@ try{
  assert.deepEqual((await one('select capacity from public.settings where user_id=$1',[alpha])).capacity,
   {weekday_minutes:weekdays,review_share:0.37,legacy_hint:'keep'});
  await auth(beta);await assert.rejects(editWeek(weekdayOp,null,weekdays),{code:'42501'});
+
+ // A nonempty library larger than a usual first page resumes its frozen cohort.
+ // Use a third owner so daily quota and counts are independent of earlier cases.
+ const largeOwner=randomUUID();
+ await db.exec('reset role');
+ await q('insert into auth.users(id) values($1)',[largeOwner]);
+ await q('insert into public.settings(user_id,connector_secret,new_per_day) values($1,$2,200)',[largeOwner,'c'.repeat(48)]);
+ await auth(largeOwner);
+ const largeFirst=await create(randomUUID(),{kind:'new',title:'Long review'});
+ await db.exec('reset role');
+ const addCard=async index=>{
+  const note=await one("insert into public.notes(user_id,project_id,front,back) values($1,$2,$3,'Answer') returning id",[largeOwner,largeFirst.projectId,'Long queue '+index]);
+  return (await one('insert into public.cards(user_id,note_id,ord) values($1,$2,1) returning id',[largeOwner,note.id])).id;
+ };
+ for(let i=1;i<23;i++)await addCard(i);
+ await auth(largeOwner);
+ const largeRun=await open('path',largeFirst.projectId);
+ const frozen=await q('select id,card_id,expected_card_version from public.review_run_items where run_id=$1 order by position',[largeRun.runId]);
+ assert.equal(frozen.length,23);
+ const largeGradeArgs=[randomUUID(),largeRun.runId,frozen[0].id,frozen[0].card_id,largeRun.runVersion,
+  frozen[0].expected_card_version,3,null,900,JSON.stringify(next)];
+ const largeGrade=await grade(largeGradeArgs);
+ assert.equal(largeGrade.status,'applied');
+ const largePaused=await one('select public.review_runs_command($1::jsonb) r',[JSON.stringify({schemaVersion:1,resource:'review_runs',operation:'pause',operationId:randomUUID(),target:{id:largeRun.runId},expectedVersion:largeGrade.runVersion,patch:{}})]);
+ assert.equal(largePaused.r.status,'ok');
+ const resumedLarge=await open('path',largeFirst.projectId);
+ assert.equal(resumedLarge.runId,largeRun.runId);
+ assert.deepEqual(await one('select position,status from public.review_runs where id=$1',[largeRun.runId]),{position:1,status:'running'});
+ assert.deepEqual(await one('select state,review_id from public.review_run_items where id=$1',[frozen[0].id]),{state:'graded',review_id:largeGrade.reviewId});
+ assert.equal((await one('select state from public.review_run_items where id=$1',[frozen[1].id])).state,'pending');
+ assert.equal((await one('select public.study_run_item_available($1,$2,$3) ok',[largeRun.runId,frozen[1].id,frozen[1].card_id])).ok,true);
+ assert.deepEqual(await grade(largeGradeArgs),largeGrade,'reloaded first grade still replays after the round resumes');
+ assert.equal((await one('select count(*)::int n from public.reviews')).n,1);
+
+ // Ninety future cards must show the closest study date even beyond the chart.
+ await db.exec('reset role');
+ for(let i=23;i<90;i++)await addCard(i);
+ await q("update public.cards set state=2,due=now()+interval '90 days' where user_id=$1",[largeOwner]);
+ await auth(largeOwner);
+ const future=(await one('select public.next_study_due() due')).due;
+ assert.equal(future.count,90);
+ const expectedDay=(await one("select to_char(((now()+interval '90 days') at time zone time_zone)-make_interval(hours=>rollover_hour),'YYYY-MM-DD') as day from public.settings where user_id=$1",[largeOwner])).day;
+ assert.equal(future.day,expectedDay);
+ assert.equal((await one('select count(*)::int n from public.review_run_items where run_id=$1',[largeRun.runId])).n,23,'new cards cannot alter a frozen round');
+ await auth(alpha);
+ assert.equal((await one('select public.next_study_due() due')).due.count,13,'future counts stay owner-scoped after an account switch');
  console.log('PASS first card and grade: gate, rollback, scope, duplicate/lost acknowledgement, conflicts, owner isolation, single schedule and run advance');
+ console.log('PASS 23-card resume keeps its grade and next item; 90 future cards retain the nearest study date and frozen membership');
 }finally{await db.close();}

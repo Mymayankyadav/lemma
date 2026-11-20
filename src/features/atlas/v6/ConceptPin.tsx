@@ -40,7 +40,7 @@ export default function ConceptPin({
   <h2 className="text-headline font-semibold">Map pin: {name}</h2>
   <p className="mt-1 text-label text-ink-2">
    {pinned?'Pinned at ('+x+', '+y+').':'Not pinned.'}
-   {' '}Pinning uses the existing owner-authorized Atlas write path.
+   {' '}Choose a position for this concept on the map.
   </p>
   <form onSubmit={submit} className="mt-3 grid gap-3">
    <label className="text-label">X coordinate

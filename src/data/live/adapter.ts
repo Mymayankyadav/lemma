@@ -10,6 +10,8 @@ import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, 
 import { LemmaError, notImplemented } from '../api'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 import {pathForecast} from '../path-review-forecast'
+import {authGeneration,authOwner} from '../authBoundary'
+import {SOURCE_SEARCH_LIMIT,sourceSearchFilter,sourceSearchTerm} from '../source-search'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -694,6 +696,16 @@ export class LiveAdapter implements LemmaApi {
  }
  async resetCard(...args:Parameters<LemmaApi['resetCard']>):ReturnType<LemmaApi['resetCard']>{
   const [noteNo,ordinal]=args;return this.cardSchedule('reset',noteNo,ordinal)
+ }
+ async searchSources(...args:Parameters<LemmaApi['searchSources']>):ReturnType<LemmaApi['searchSources']>{
+  const term=sourceSearchTerm(args[0]);if(!term)return []
+  const db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The signed-in account changed.')
+  const result=checked(await db.from('sources').select('id,title,short,filename,projects!inner(slug,title,user_id,status,system)')
+   .eq('user_id',uid).eq('projects.user_id',uid).neq('projects.status','archived').eq('projects.system',false)
+   .or(sourceSearchFilter(term)).order('title',{ascending:true}).order('id',{ascending:true}).limit(SOURCE_SEARCH_LIMIT)) as Row[]
+  if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The signed-in account changed.')
+  return result.map(row=>({id:row.id,title:row.title,short:row.short??'',filename:row.filename??'',projectSlug:row.projects.slug,projectTitle:row.projects.title}))
  }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
   const [query,slug]=args,db=liveClient()

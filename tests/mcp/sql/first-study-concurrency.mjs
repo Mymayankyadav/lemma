@@ -1,15 +1,25 @@
 // Native PostgreSQL only: independent clients must actually wait on the same operation or first-library lock.
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readdir,readFile} from 'node:fs/promises';
-import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {setTimeout as wait} from 'node:timers/promises';
+import {firstStudyMigrationStack} from './fixtures/n195-foundation/load.mjs';
 const {default:pg}=await import(process.env.PG_MODULE||'pg');
 const {Client}=pg;
 const host=process.env.N195_PG_SOCKET;
-if(!host?.startsWith('/tmp/')||host.includes('..'))throw Error('An isolated local PostgreSQL socket directory is required');
-const connection={host,port:Number(process.env.N195_PG_PORT||5432),user:'postgres'};
+let connection;
+if(host){
+ if(!host.startsWith('/')||host.includes('..'))throw Error('An absolute isolated local PostgreSQL socket directory is required');
+ connection={host,port:Number(process.env.N195_PG_PORT||5432),user:'postgres'};
+}else{
+ // Use the already-provisioned CI PostgreSQL service, never a Supabase URL.
+ // Each run still creates and destroys its own randomly named database.
+ const url=new URL(process.env.NOTIF_TEST_DATABASE_URL||'postgres://invalid');
+ if(!['postgres:','postgresql:'].includes(url.protocol)||!['localhost','127.0.0.1','[::1]'].includes(url.hostname)
+  ||url.username!=='postgres'||url.password!=='test-only'||url.pathname!=='/lemma_test'||url.search)
+  throw Error('Use N195_PG_SOCKET or the isolated localhost lemma_test PostgreSQL service');
+ connection={host:url.hostname.replace(/^\[|\]$/g,''),port:Number(url.port||5432),user:'postgres',password:'test-only'};
+}
 const name='lemma_n195_'+randomUUID().replaceAll('-','');
 const client=async database=>{const db=new Client({...connection,database});await db.connect();return db;};
 const admin=await client('postgres');
@@ -27,8 +37,7 @@ try{
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;
  `);
  const dir=process.env.N195_TEST_MIGRATIONS||fileURLToPath(new URL('../../../supabase/migrations/',import.meta.url));
- for(const f of (await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort())
-  await schema.query(await readFile(join(dir,f),'utf8'));
+ for(const {sql} of await firstStudyMigrationStack(dir))await schema.query(sql);
  await schema.query("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select true'");
  a=await client(name);b=await client(name);
  const owner=randomUUID(),second=randomUUID();

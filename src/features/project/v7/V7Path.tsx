@@ -194,7 +194,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
      return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>isDemonstrated(cp.ui))?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
    </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
-   {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id}/></Suspense>}
+   {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id} focusSourceId={studyRepair?params.get('source'):null}/></Suspense>}
    {tab==='Cards'&&<ul className="v7-path-cards" aria-label="Cards by checkpoint">
     <li className="v7-path-cards-total"><strong>{cards} {cards===1?'card':'cards'}</strong><Link className="v7-button v7-secondary v7-small" to="/cards"><span>Browse cards</span></Link></li>
     {cps.filter(cp=>cp.dueCards>0).map(cp=><li key={cp.id}><Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>{cp.title}</span><small>{cp.dueCards} due</small></Link></li>)}

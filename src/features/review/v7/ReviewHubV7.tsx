@@ -1,5 +1,4 @@
 import {useStudyUi} from '../../../data/StudyUiRelease';
-import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {Link,useNavigate,useSearchParams} from 'react-router';
@@ -125,9 +124,8 @@ export default function ReviewHubV7(){
     {issue&&<p role="alert" className="v7-rv-note">{issue}</p>}
     {active&&!(repair&&pathSlug)?<Button variant="primary" onClick={()=>navigate('/review/run?run='+encodeURIComponent(active.id))}>
      {'Resume · '+Math.min(active.progress.total,active.progress.position+1)+' of '+active.progress.total}</Button>
-    :<Button variant="primary" aria-label={repair?'Start review, '+count+(count===1?' card':' cards'):'Start '+count+' cards'} disabled={count===0} loading={busy} onClick={()=>{const path=repair&&pathSlug?home.data?.projects.find(p=>p.slug===pathSlug):null;
-     if(path){navigate(reviewHref({kind:'path',id:path.id}));return;}
-     if(!repair||!pathSlug)void start(result.batch,[...enabled]);}}>Start review</Button>}
+    :<Button variant="primary" aria-label={repair?'Start review, '+count+(count===1?' card':' cards'):'Start '+count+' cards'} disabled={count===0} loading={busy}
+     onClick={()=>{void start(result.batch,[...enabled]);}}>Start review</Button>}
     <Button variant="ghost" className="v7-rv-customise" onClick={()=>setSheet(true)} disabled={nodes.length===0}>Customise this round</Button>
    </section>
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
@@ -175,7 +173,7 @@ export default function ReviewHubV7(){
      {node.children.filter(child=>child.due>0).map(child=><div key={child.key} className="v7-rv-child">
       <Switch label={child.label+' · '+child.due+' due'} checked={enabled.has(child.key)} onChange={value=>toggleChild(node,child,value)}/></div>)}
     </div>)}
-    <Button variant="ghost" onClick={()=>setSelected(null)}>Reset to all decks</Button>
+    <Button variant="ghost" onClick={()=>{setSelected(null);if(pathSlug)navigate('/review',{replace:true});}}>Reset to all decks</Button>
    </div>
   </Sheet>
  </main>;

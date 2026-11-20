@@ -27,7 +27,7 @@ as $$
         + interval '1 day' + make_interval(hours => s.rollover_hour))
         at time zone s.time_zone) as day_end
     from public.settings s where s.user_id = (select auth.uid())
-      and (p_target_kind is null or (select public.lemma_plan_released()))
+      and (p_target_kind is null or (select public.lemma_study_ui_released()))
   ),
   answered as (
     select count(*)::integer as total,
@@ -132,7 +132,7 @@ language sql stable security invoker set search_path='' as $$
  join public.cards c on c.user_id=i.user_id and c.id=i.card_id
  join public.notes n on n.user_id=c.user_id and n.id=c.note_id
  join public.projects p on p.user_id=n.user_id and p.id=n.project_id
- where (select public.lemma_plan_released()) and r.user_id=(select auth.uid()) and r.id=p_run and i.id=p_item and c.id=p_card
+ where (select public.lemma_study_ui_released()) and r.user_id=(select auth.uid()) and r.id=p_run and i.id=p_item and c.id=p_card
   and n.status='active' and not p.system and p.status<>'archived'
   and public.lemma_study_target_member(r.filters->'target'->>'kind',(r.filters->'target'->>'id')::uuid,c.id,p.id,n.checkpoint_id,n.concept_id))
 $$;
@@ -154,7 +154,7 @@ begin
  if owner_id is null or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
   raise exception 'Sign in to review' using errcode='42501';
  end if;
- if not public.lemma_plan_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
+ if not public.lemma_study_ui_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
  case p_kind
   when 'card' then select 'Saved card' into target_label from public.cards where user_id=owner_id and id=p_id;
   when 'path' then select title into target_label from public.projects where user_id=owner_id and id=p_id;
@@ -214,7 +214,7 @@ create function public.next_study_due() returns jsonb language sql stable securi
  with prefs as (
   select user_id,time_zone,rollover_hour,
    ((current_timestamp at time zone time_zone)-make_interval(hours=>rollover_hour))::date as today
-  from public.settings where user_id=(select auth.uid()) and (select public.lemma_plan_released())
+  from public.settings where user_id=(select auth.uid()) and (select public.lemma_study_ui_released())
  ), future as (
   select ((c.due at time zone s.time_zone)-make_interval(hours=>s.rollover_hour))::date as day
   from prefs s join public.cards c on c.user_id=s.user_id
@@ -251,7 +251,7 @@ begin
  if owner_id is null or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
   raise exception 'Sign in to review' using errcode='42501';
  end if;
- if not public.lemma_plan_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
+ if not public.lemma_study_ui_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
  if not exists(select 1 from public.review_run_items where user_id=owner_id and run_id=p_run and id=p_item) then
   raise exception 'Review item unavailable' using errcode='P0002';
  end if;
@@ -295,7 +295,7 @@ begin
   or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
   raise exception 'Sign in to set study time' using errcode='42501';
  end if;
- if not public.lemma_plan_released() then raise exception 'Study availability is unavailable' using errcode='55000'; end if;
+ if not public.lemma_study_ui_released() then raise exception 'Study availability is unavailable' using errcode='55000'; end if;
  if pg_catalog.cardinality(p_minutes) is distinct from 7 or pg_catalog.array_ndims(p_minutes) is distinct from 1
    or exists(select 1 from pg_catalog.unnest(p_minutes) m where m is null or m not between 0 and 1440) then
   raise exception 'Enter 0 to 1440 whole minutes for each day' using errcode='22023';

@@ -79,7 +79,13 @@ export default function ReviewRoundV7(){
  useEffect(()=>{
   let cancelled=false;setLoading(true);setRun(null);setFrozen(null);setPending(null);setMessage(null);
   void (async()=>{
-   const target=repair?await targetFromLink(new URLSearchParams(link)):null;
+   const parameters=new URLSearchParams(link);
+   // A scoped URL must never fall through to a different active round while its
+   // release check is pending, unavailable, or switched off for this owner.
+   if(!repair&&(parameters.has('target')||parameters.has('id')||parameters.has('concept'))){
+    setMessage('This review selection is not available yet. Reconnect and try again.');return;
+   }
+   const target=repair?await targetFromLink(parameters):null;
    const loaded=target?await openStudyTarget(target):runId?await getRun(runId):await resumeRun();
    if(cancelled)return;
    if(!loaded){setMessage(target?'There are no eligible cards in this review selection.':null);return;}

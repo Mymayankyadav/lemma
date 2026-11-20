@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import type {Source,SourceTranscriptionStat} from '../../../data/types';
 import * as dataHooks from '../../../data/hooks';
 import {FastTex as Tex} from '../../../ui/FastTex';
@@ -23,7 +23,7 @@ export function coverageOf(source:Source,stat:SourceTranscriptionStat|undefined)
    transcribed>0?'No pages to check':'No pages transcribed yet'};
 }
 /** N82 is presentation-only: existing owner-scoped ingestion and transcript controls remain authoritative. */
-type Props={projectId:string;sources:Source[];manage:ReactNode};
+type Props={projectId:string;sources:Source[];manage:ReactNode;focusSourceId?:string|null};
 
 /** An older/project-only embedding can lack the transcription hook. Surface
  * source records without claiming coverage rather than crashing the route. */
@@ -41,10 +41,23 @@ export default function V6Sources(props:Props){
  }
  return <V6SourcesWithStats {...props}/>;
 }
-function V6SourcesWithStats({projectId,sources,manage}:Props){
+function V6SourcesWithStats({projectId,sources,manage,focusSourceId}:Props){
  const stats=dataHooks.useSourceTranscriptionStats(projectId),[showManage,setShowManage]=useState(false),[limit,setLimit]=useState(20);
+ const focused=useRef<string|null>(null);
  const byId=new Map((stats.data??[]).map(stat=>[stat.sourceId,stat]));
  const rows=orderedSources(sources);
+ useEffect(()=>{
+  if(!focusSourceId){focused.current=null;return;}
+  if(focused.current===focusSourceId)return;
+  const index=rows.findIndex(source=>source.id===focusSourceId);
+  if(index<0)return;
+  if(index>=limit){setLimit(Math.ceil((index+1)/20)*20);return;}
+  const frame=requestAnimationFrame(()=>{
+   const heading=document.getElementById('study-source-'+focusSourceId);
+   if(heading){heading.focus({preventScroll:true});heading.scrollIntoView({block:'center'});focused.current=focusSourceId;}
+  });
+  return ()=>cancelAnimationFrame(frame);
+ },[focusSourceId,limit,rows]);
  return <section data-v6-sources className="flex min-w-0 flex-col gap-4">
   <header><h2 className="text-title-s font-semibold">Study sources</h2>
    <p className="text-label text-ink-2">{rows.length} {rows.length===1?'source':'sources'} in plan order</p>
@@ -58,7 +71,7 @@ function V6SourcesWithStats({projectId,sources,manage}:Props){
     return <li key={source.id} className="min-w-0 rounded-ctl border border-edge bg-raised p-4">
      <div className="flex min-w-0 gap-3"><span className="shrink-0 text-caption text-amber">{index+1}</span>
       <div className="min-w-0 flex-1">
-       <h3 className="break-words text-body-l font-semibold"><Tex source={source.title}/></h3>
+       <h3 id={'study-source-'+source.id} tabIndex={-1} className="break-words text-body-l font-semibold focus-visible:outline-2 focus-visible:outline-amber"><Tex source={source.title}/></h3>
        <p className="mt-1 text-label text-ink-2">{({book:'Book',notes:'Notes',paper:'Paper',lecture:'Lecture',other:'Other source'} as Record<string,string>)[source.kind??'other']??'Source'} · {({ready:'Ready',processing:'Processing',failed:'Could not read',uploading:'Uploading'} as Record<string,string>)[source.status]??'Added'}</p>
        <p aria-label={'Coverage for '+source.title} className="mt-1 text-label text-ink-2">{coverage.label}</p>
        <p aria-label={'Verification for '+source.title} className="mt-1 text-label text-ink-2">{coverage.verification}</p>

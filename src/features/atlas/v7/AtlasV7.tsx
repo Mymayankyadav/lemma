@@ -273,13 +273,13 @@ export default function AtlasV7(){
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>
   </section>}
-  {atlasView==='map'&&selected!==null&&<ConceptSheet key={model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
+  {atlasView==='map'&&selected!==null&&<ConceptSheet key={'concept-sheet:'+model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
    onClose={()=>select(null)} onPick={index=>select(index,true)}
    onPin={()=>setDialog('pin')} onEdit={()=>setDialog('edit')} onPreview={()=>setDialog('preview')}/>}
-  {dialog==='pin'&&selectedStar&&<ConceptPin key={selectedStar.id} id={selectedStar.id} name={selectedStar.name}
+  {dialog==='pin'&&selectedStar&&<ConceptPin key={'concept-pin:'+selectedStar.id} id={selectedStar.id} name={selectedStar.name}
    x={selectedStar.pin?.[0]??null} y={selectedStar.pin?.[1]??null}
    onSave={async(id,x,y)=>{await getApi().pinConcept(id,x,y);await refetch();}} onClose={()=>setDialog(null)}/>}
-  {(dialog==='edit'||dialog==='new')&&query.data&&<AtlasCommands key={dialog==='new'?'new':selectedStar?.id} graph={query.data}
+  {(dialog==='edit'||dialog==='new')&&query.data&&<AtlasCommands key={'atlas-command:'+(dialog==='new'?'new':selectedStar?.id)} graph={query.data}
    sourceId={dialog==='new'?null:selectedStar?.id??null} onClose={()=>setDialog(null)} onSaved={refetch}/>}
   {dialog==='preview'&&selectedStar&&query.data&&<AtlasImpactPreview key={selectedStar.id} graph={query.data} sourceId={selectedStar.id} onClose={()=>setDialog(null)}/>}
  </main>;

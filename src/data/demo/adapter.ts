@@ -66,6 +66,7 @@ import type {
   DemoStore,
 } from "./model";
 import fixtureText from "./fixture.json?raw";
+import {SOURCE_SEARCH_LIMIT,sourceSearchTerm} from '../source-search';
 import { hydrateFixture } from "./hydrate";
 import {
   checkpointUi,
@@ -2325,6 +2326,13 @@ export class DemoAdapter implements LemmaApi {
     card.state={state:0,due:this.iso(),stability:0,difficulty:0,
      lastReview:null,step:0,reps:0,lapses:0};
    });
+  }
+  async searchSources(...args:Parameters<LemmaApi['searchSources']>):ReturnType<LemmaApi['searchSources']>{
+    const term=sourceSearchTerm(args[0]).toLowerCase();if(!term)return [];
+    const projects=new Map(this.store.projects.filter(project=>!project.system&&project.status!=='archived').map(project=>[project.id,project]));
+    return this.store.sources.filter(source=>projects.has(source.projectId)&&[source.title,source.short,source.filename].some(value=>value?.toLowerCase().includes(term)))
+      .sort((a,b)=>a.title.localeCompare(b.title)||a.id.localeCompare(b.id)).slice(0,SOURCE_SEARCH_LIMIT)
+      .map(source=>({id:source.id,title:source.title,short:source.short,filename:source.filename,projectSlug:projects.get(source.projectId)!.slug,projectTitle:projects.get(source.projectId)!.title}));
   }
   async searchCards(query: string, slug?: string): Promise<CardRow[]> {
     if (slug) this.project(slug);

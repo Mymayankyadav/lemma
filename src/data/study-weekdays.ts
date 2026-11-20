@@ -12,8 +12,11 @@ export function demoWeekdayMinutes():number[]|null{
 export async function readWeekdayMinutes():Promise<WeekdayValue>{
  if(getMode()==='demo')return demoWeekdayMinutes();
  const {liveClient}=await import('./live/client'),{checked,owner}=await import('./live/helpers');
- const db=liveClient(),uid=await owner(db);
- const row=checked(await db.from('settings').select('capacity').eq('user_id',uid).single());
+ const db=liveClient(),generation=authGeneration(),uid=await owner(db);
+ if(authGeneration()!==generation||authOwner()!==uid)throw Error('The signed-in account changed.');
+ const row=checked(await db.from('settings').select('capacity').eq('user_id',uid)
+  .single<{capacity:{weekday_minutes?:WeekdayValue}|null}>());
+ if(authGeneration()!==generation||authOwner()!==uid)throw Error('The signed-in account changed.');
  if(!row)throw Error('The signed-in study settings could not be read.');
  return row.capacity?.weekday_minutes??null;
 }
