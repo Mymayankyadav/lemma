@@ -17,6 +17,7 @@ import {kitSubject} from '../../atlas/v7/model';
 import {PathsTabs} from '../../projects/v7/PathsV7';
 import type {EditorValue} from '../Editor';
 import {CardEditorSheet} from './CardEditorSheet';
+import FirstCardPanel from './FirstCardPanel';
 import {cardFilters,cardMeta,isDueToday,sortCards,stateWords,type CardSort,type CardStateFilter} from './cardsModel';
 import './cards.css';
 
@@ -115,7 +116,8 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
   {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Erratum: cards didn’t load. Try again.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
   {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone} selected={selected}/>)}</ul>
    :active?<EmptyMoment art="cards" title="∅ No cards match these filters" action={{label:'Clear filters',onClick:()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}}/>
-   :<EmptyMoment title="No cards yet">Your tutor proposes cards after each session, or use Capture to write one.</EmptyMoment>)}
+   :null)}
+  {!active&&<FirstCardPanel fallback={cards.isSuccess&&!rows.length?<EmptyMoment title="No cards yet">Your tutor proposes cards after each session, or use Capture to write one.</EmptyMoment>:null}/>}
   {cards.isFetchingNextPage&&<Skeleton/>}
   <div ref={sentinel} aria-hidden="true"/>
   {cards.hasNextPage&&<Button className="v7-cards-more" loading={cards.isFetchingNextPage} onClick={()=>{void cards.fetchNextPage();}}>Load more</Button>}
