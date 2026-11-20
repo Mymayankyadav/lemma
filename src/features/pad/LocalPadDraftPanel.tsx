@@ -67,6 +67,7 @@ export function LocalPadDraftPanel({session, onSendSelection}: {
   return <div className="local-pad">
     <p role="status">{status[state.status]}</p>
     <LocalPadWorkspace key={workspaceVersion} value={state.draft.edit} ink={ink}
+      canExport={() => session.snapshot().status !== 'scope-changed'}
       onSendSelection={onSendSelection && (text => {
         if (session.snapshot().status !== 'scope-changed') onSendSelection(text);
       })}

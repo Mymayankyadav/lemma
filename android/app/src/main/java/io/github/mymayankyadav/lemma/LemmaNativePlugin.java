@@ -90,8 +90,16 @@ public class LemmaNativePlugin extends Plugin {
 
     private void clearAccountSurfaces(){
         TimerController.clear(getContext());Reminders.reset(getContext());
+        clearExportCache();
         getContext().getSharedPreferences("lemma.push.order",android.content.Context.MODE_PRIVATE).edit().clear().apply();
         try{CalendarSync.removeAll(getContext());}catch(SecurityException noCalendarPermission){/* No calendar access to clear. */}
+    }
+
+    private boolean clearExportCache() {
+        return Exports.clearCache(new File(getContext().getCacheDir(), Exports.DIR), file -> {
+            Uri uri = FileProvider.getUriForFile(getContext(), getContext().getPackageName() + ".fileprovider", file);
+            getContext().revokeUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        });
     }
 
     // ---- focus timer ---------------------------------------------------------------------------------------------
@@ -369,8 +377,7 @@ public class LemmaNativePlugin extends Plugin {
         String mime = Exports.mime(call.getString("mime"));
         try {
             File dir = new File(getContext().getCacheDir(), Exports.DIR);
-            File[] old = dir.listFiles();
-            if (old != null) for (File file : old) file.delete();
+            if (!clearExportCache()) throw new IOException("Could not clear the previous export");
             if (!dir.isDirectory() && !dir.mkdirs()) throw new IOException("No export folder");
             File file = new File(dir, name);
             try (FileOutputStream out = new FileOutputStream(file)) {

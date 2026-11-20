@@ -10,22 +10,23 @@ interface Props {
   value: PadEdit;
   onEdit: (value: PadEdit) => void;
   onSendSelection?: (text: string) => void;
+  canExport?: () => boolean;
   ink: PadInkHistory;
   onInk: (history: PadInkHistory) => void;
 }
 
-export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection}: Props) {
+export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection, canExport}: Props) {
   const [result, setResult] = useState('');
   const [exporting, setExporting] = useState(false);
   async function exportFile(format: 'backup' | 'readable') {
-    if (exporting) return;
+    if (exporting || (canExport && !canExport())) return;
     setExporting(true);
     try {
       const file = makePadFile(value, ink.strokes, format);
       if (isNative()) {
         const {shareFile} = await import('../../platform/files');
         const blob = new Blob([file.contents], {type: file.type.split(';')[0]});
-        if (!await shareFile(blob, file.filename, 'Save your Local Pad')) throw new Error('Share sheet unavailable');
+        if (!await shareFile(blob, file.filename, 'Save your Local Pad', canExport)) throw new Error('Share sheet unavailable');
         setResult('Choose where to save your Pad.');
       } else {
         startPadDownload(file);

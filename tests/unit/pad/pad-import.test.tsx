@@ -8,6 +8,7 @@ import {LocalPadDraftPanel} from '../../../src/features/pad/LocalPadDraftPanel';
 import {LocalPadWorkspace} from '../../../src/features/pad/LocalPadWorkspace';
 import {initializePadInk} from '../../../src/features/pad/padInk';
 import {setLemmaNativeForTests, type LemmaNativePlugin} from '../../../src/platform/bridge';
+import {shareFile as sharePadFile} from '../../../src/platform/files';
 import {makePadFile} from '../../../src/features/pad/padExport';
 import {PAD_BACKUP_MAX_BYTES, readPadBackup} from '../../../src/features/pad/padImport';
 import {bindPadDraft, bindFixturePadDraft, PAD_FIXTURE_DB_PREFIX, PAD_NOTE_MAX, type PadDraftBackend} from '../../../src/features/pad/padDraftStore';
@@ -44,6 +45,8 @@ test('Android export opens the share sheet with the selected local format and ke
     await vi.waitFor(() => expect(shareFile).toHaveBeenNthCalledWith(2, expect.objectContaining({name:'lemma-pad.json',mime:'application/json',text:backup})));
     await vi.waitFor(() => expect(host.textContent).toContain('Could not start the export.'));
     expect(host.querySelector('textarea')?.value).toBe(edit.text);
+    expect(await sharePadFile(new Blob([backup]), 'lemma-pad.json', 'Save your Local Pad', () => false)).toBe(false);
+    expect(shareFile).toHaveBeenCalledTimes(2);
   } finally {
     await act(async () => root.unmount());
     host.remove();

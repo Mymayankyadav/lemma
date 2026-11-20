@@ -1,11 +1,27 @@
 package io.github.mymayankyadav.lemma;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import org.junit.Test;
 
 /** AW2 (v7 UX audit r3): the backup handed to the share sheet keeps a plain name and a known type. */
 public class ExportsTest {
+    @Test public void revokesTheOldUriBeforeRemovingTheCachedFile() throws IOException {
+        File dir = Files.createTempDirectory("lemma-pad-exports").toFile();
+        File previous = new File(dir, "lemma-pad.html");
+        try {
+            assertTrue(previous.createNewFile());
+            assertFalse(Exports.clearCache(dir, file -> {throw new SecurityException("fixture");}));
+            assertTrue(previous.exists());
+            assertTrue(Exports.clearCache(dir, file -> {assertEquals(previous, file); assertTrue(file.exists());}));
+            assertFalse(previous.exists());
+        } finally {previous.delete(); dir.delete();}
+    }
     @Test public void keepsAPlainBackupName() {
         assertEquals("lemma-backup-2026-11-12.json", Exports.safeName("lemma-backup-2026-11-12.json"));
     }

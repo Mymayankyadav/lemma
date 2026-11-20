@@ -1,5 +1,8 @@
 package io.github.mymayankyadav.lemma;
 
+import java.io.File;
+import java.util.function.Consumer;
+
 /**
  * AW2 (v7 UX audit r3, Owner decision E14): the rules for a file the web layer hands to Android's share sheet. Pure, so
  * it is unit-tested. The file is written under the app's cache ({@code cache/exports/}, shared through the existing
@@ -11,6 +14,23 @@ final class Exports {
     static final int MAX_NAME = 96;
 
     private Exports() {}
+
+    /** A previously granted URI must stop resolving before a new export can reuse that file name. */
+    static boolean clearCache(File directory, Consumer<File> revoke) {
+        if (!directory.exists()) return true;
+        File[] files = directory.listFiles();
+        if (files == null) return false;
+        boolean cleared = true;
+        for (File file : files) {
+            try {
+                revoke.accept(file);
+                if (!file.delete() && file.exists()) cleared = false;
+            } catch (RuntimeException error) {
+                cleared = false;
+            }
+        }
+        return cleared;
+    }
 
     /** A plain file name: letters, digits, '.', '-' and '_' only, never a path or a hidden file, at most 96 characters. */
     static String safeName(String name) {
