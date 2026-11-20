@@ -1,4 +1,5 @@
 import {useState} from 'react';
+import {Link} from 'react-router';
 import {Download,LogOut,Trash2} from 'lucide-react';
 import {Button,Checkbox,Field,Sheet} from '../../../ui/v7/components';
 import {useBackup} from '../v6/Export';
@@ -16,12 +17,18 @@ export function DataAccount({demo,onSignOut,signingOut}:{demo:boolean;onSignOut:
  const backup=useBackup();
  const deletion=useAccountDeletion();
  const [confirming,setConfirming]=useState(false);
- const devicePads=!demo&&isFlagOn('padLocal');
+ const padAvailable=isFlagOn('padLocal');
+ const devicePads=!demo&&padAvailable;
  return <div className="v7-settings-body v7-data">
   <Group title="Account" note={demo?'You are exploring the example workspace. Sign in with Google to open your own record.':undefined}>
    <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">{demo?'Example workspace':'Your study record'}</span></span>
     <Button small loading={signingOut} onClick={onSignOut}><LogOut aria-hidden="true"/>Sign out</Button></li>
   </Group>
+  {padAvailable&&<Group title="Device notes">
+   <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Saved Pad notes</span>
+    <small>Open or export notes and drawings saved on this device.</small></span>
+    <Link className="v7-button v7-secondary v7-small" to="/pad">Open saved notes</Link></li>
+  </Group>}
   <Group title="Export">
    <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Backup</span>
     <small>{backup.app?'A JSON copy of your whole record. Android asks where to keep it: Files keeps it on this phone; Drive or email keeps a copy elsewhere.'

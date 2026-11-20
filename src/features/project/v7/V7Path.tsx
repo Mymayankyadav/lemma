@@ -15,12 +15,13 @@ import {MathText} from '../../../ui/MathText';
 import type {CheckpointView,SessionSummary} from '../../../data/types';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {Margin} from '../../../app/v7/Margin';
-import {Button,Chip,Segmented,Sheet,Skeleton} from '../../../ui/v7/components';
+import {Button,Chip,Segmented,Skeleton} from '../../../ui/v7/components';
 import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {MetaChip,StatusBadge} from '../../../ui/v7/Status';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {subjectClass} from '../../../ui/v7/Subject';
-import {chatLink,planPrompt,studyPrompt} from '../../../lib/chat';
+import {planPrompt} from '../../../lib/chat';
+import {tutorHref} from '../../tutor/tutorHref';
 import {formatMinutes} from '../../../lib/text';
 import {groupCheckpointStages} from '../../../ui/timeline/progress';
 import {useToast} from '../../../ui/Toast';
@@ -99,7 +100,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
- const [prompt,setPrompt]=useState(false),[switcher,setSwitcher]=useState(false);
+ const [switcher,setSwitcher]=useState(false);
  const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Map';
  const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
@@ -120,7 +121,6 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const project=data.project,subject=kitSubject(data.subject.name),klass=subjectClass(subject);
  const stages=groupCheckpointStages(cps),end=lineEnd(cps);
  const due=dueTotal(cps),cards=home.data?.projects.find(item=>item.id===project.id)?.cardsCount??0;
- const client=settings.data?.preferredChat??'claude',text=studyPrompt(project.title,current?.code,current?.title);
  const target=project.targetDate?shortDate(project.targetDate):'';
  async function setStatus(status:'active'|'paused'|'archived',message:string){
   const prior=project.status,apply=async(value:typeof status|typeof prior)=>{
@@ -144,9 +144,6 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  function setTab(label:string){
   const next=new URLSearchParams(params),value=label.split(' ')[0].toLowerCase();
   if(value==='map')next.delete('tab');else next.set('tab',value);setParams(next);
- }
- function copy(){
-  void navigator.clipboard?.writeText(text).then(()=>notify('Tutor prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));
  }
  const counts:Record<Tab,string>={Map:'Map',Sessions:'Sessions '+data.sessions.length,Sources:'Sources '+data.sources.length,Cards:'Cards '+cards};
  const label=counts[tab];
@@ -190,7 +187,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   {(!studyRepair||tab==='Map')&&<PathEstimates projectId={project.id}/>}
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
-    {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>setPrompt(true):undefined}/>;})}</ol>;
+    {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>navigate(tutorHref(slug,cp.code)):undefined}/>;})}</ol>;
      return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>isDemonstrated(cp.ui))?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
    </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
@@ -204,14 +201,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   </section>
   {/* R2 · F11: one floating layer above the tab bar — the Continue pill; Review lives in the header actions. */}
   {(!room||!current)&&<div className="v7-path-bar" role="group" aria-label="Path actions">
-   <Button variant="primary" onClick={()=>setPrompt(true)}>Continue with tutor</Button>
+   <Button variant="primary" onClick={()=>navigate(tutorHref(slug,current?.code))}>Continue with tutor</Button>
   </div>}
-  <Sheet open={prompt} onClose={()=>setPrompt(false)} title="Continue with your tutor" eyebrow="Study prompt"
-   footer={<Button variant="primary" onClick={copy}><Copy aria-hidden="true"/>Copy prompt</Button>}>
-   <p className="v7-path-prompt">{text}</p>
-   <p className="v7-path-note">Paste it into your tutor.</p>
-   <a className="v7-button v7-secondary" href={chatLink(client,text)} target="_blank" rel="noopener noreferrer"><span>Open {client==='chatgpt'?'ChatGPT':'Claude'}</span></a>
-  </Sheet>
   {switcher&&<Suspense fallback={null}><ProjectSwitcher open onClose={()=>setSwitcher(false)} current={slug}/></Suspense>}
  </main>;
 }

@@ -1,12 +1,11 @@
 import {expect, test} from '@playwright/test';
 
-const checkpoint = './?demo=1&flags=v7Shell,padLocal#/p/real-analysis/cp/CP4';
+const pad = './?demo=1&flags=v7Shell,padLocal#/pad?path=real-analysis&checkpoint=CP4';
 
 test('math keys preserve the native selection, share text undo and keep native typing available', async ({page}) => {
   await page.route('https://**/*', route => route.abort());
   await page.setViewportSize({width:320,height:740});
-  await page.goto(checkpoint);
-  await page.getByRole('button',{name:'Open Local Pad',exact:true}).click();
+  await page.goto(pad);
   const notes = page.getByRole('textbox',{name:'Pad notes'});
   await notes.fill('Proof: x+1');
   await notes.evaluate((element: HTMLTextAreaElement) => {element.focus(); element.setSelectionRange(7,10);});
@@ -35,7 +34,6 @@ test('math keys preserve the native selection, share text undo and keep native t
   await page.getByRole('button',{name:'Save draft',exact:true}).click();
   await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
   await page.reload();
-  await page.getByRole('button',{name:'Open Local Pad',exact:true}).click();
   await expect(page.getByRole('button',{name:'Show math keyboard',exact:true})).toBeVisible();
   await expect(notes).toHaveValue('Proof: \\(\\frac{x+1}{2}\\) verified');
   await page.getByRole('button',{name:'Show math keyboard',exact:true}).click();
@@ -44,8 +42,7 @@ test('math keys preserve the native selection, share text undo and keep native t
 
 test('math keys remain local and reachable at narrow widths and landscape with labeled touch targets', async ({page, context}) => {
   await page.route('https://**/*', route => route.abort());
-  await page.goto(checkpoint);
-  await page.getByRole('button',{name:'Open Local Pad',exact:true}).click();
+  await page.goto(pad);
   const notes = page.getByRole('textbox',{name:'Pad notes'});
   await notes.fill('');
   // Finish the app's initial offline-cache installation before disconnecting.

@@ -32,7 +32,7 @@ export default function AppShell(){
  const inboxActions=v6&&location.pathname==='/proposals';
  const tab=showTabs,back=navigation==='POP';
  // The kit, sign-in and first run stand alone: no tab bar or capture.
- if(screen==='kit'||screen==='sign-in'||screen==='welcome')return <>{outlet}</>;
+ if(screen==='tutor'||screen==='kit'||screen==='sign-in'||screen==='welcome')return <>{outlet}</>;
  if(v7)return <Suspense fallback={null}><V7Shell immersive={screen==='focus'||screen==='review-run'||screen==='close-day'} capture={screen!=='atlas'&&screen!=='path'&&screen!=='checkpoint'&&screen!=='session'&&screen!=='card'}>{isFlagOn('v7Room')&&/^(?:\/projects(?:\/new)?|\/p\/[^/]+|\/cards(?:\/\d+)?)$/.test(location.pathname)?<LibrarySplit>{outlet}</LibrarySplit>:outlet}</V7Shell></Suspense>;
  return <><Ground lamp={location.pathname==='/atlas'?'none':location.pathname.startsWith('/review')?'tr':'tl'} deep={location.pathname==='/atlas'}/>
  {fullBleed&&!v6&&<DemoChip floating/>}

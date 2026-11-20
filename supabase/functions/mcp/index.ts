@@ -7,6 +7,7 @@ import { buildServer } from './server.ts';
 import { selftest } from './selftest.ts';
 import { mcpCorsHeaders as cors,mcpPreflight } from './http-cors.ts';
 import {serveTutor} from './tutor-profile.ts';
+import {tutorConnector} from './tutor-connector.ts';
 
 const cache=new Map<string,{userId:string;until:number}>();
 function equal(a:string,b:string):boolean{
@@ -63,10 +64,11 @@ Deno.serve(async (req:Request)=>{
       return Response.json(result,{status:result.ok?200:500,headers:cors});
     }
     if(path.length!==i+2)return new Response(null,{status:404,headers:cors});
-    const handler=createMcpHandler(()=>buildServer(c));
+    const handler=createMcpHandler(()=>buildServer(c,tutorConnector(c,secret,req.signal)));
     const response=await handler.fetch(req);
     const headers=new Headers(response.headers);
     for(const [k,v] of Object.entries(cors))headers.set(k,v);
+    headers.set('Cache-Control','no-store');
     return new Response(response.body,{status:response.status,headers});
   }catch{
     // Never echo credentials or internal connection errors to unauthenticated callers.

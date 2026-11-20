@@ -8,6 +8,7 @@ import { prune } from './schema-prune.ts';
 import { packet } from './packet.ts';
 import { get, readPages, search } from './tools/read.ts';
 import { study } from './tools/study.ts';
+import type {TutorConnector} from './tutor-connector.ts';
 import { savePages } from './tools/transcribe.ts';
 import { startSession, saveProgress, endSession, proposeCards, proposeCardEdits, proposePlan, proposePlanChange, createProject, proposals, decide } from './tools/write.ts';
 const S=z.string;
@@ -28,11 +29,17 @@ export function lean(schema:any):any{
     output:(o:any)=>prune(std.jsonSchema.output(o))
   }}};
 }
-export function buildServer(c:Context):McpServer{
-  const m=new McpServer({name:'lemma',version:'1.0.0'}, {instructions:INSTRUCTIONS});
+export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
+  const m=new McpServer({name:'lemma',version:'1.0.0'}, {instructions:INSTRUCTIONS +
+    ' For a learner answer sent from Lemma, use get(what=tutor_turn, id=<handoff ID if provided>) and follow the claim and reply instructions to send one next question back to Lemma.'});
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
-    m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any)=>{
+    m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any,toolContext)=>{
       try{
+        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next')){
+          if(!tutor)throw Error('Tutor connector unavailable.');
+          const text=a.what==='tutor_next'?await tutor.next(a.id,toolContext.mcpReq.signal):await tutor.read(a.id);
+          return {content:[{type:'text' as const,text}]};
+        }
         const ctx:Context=readOnly?c:{...c,batch:[]};
         let result=await fn(a,ctx);
         let action:number|null=null;
@@ -69,7 +76,11 @@ export function buildServer(c:Context):McpServer{
     annotations:write
   },async (args:any)=>{
     try{
-      const receipt=await study(c,args);
+      let receipt;
+      if(args.command.resource==='tutor_turns'){
+        if(!tutor)throw Error('Tutor connector unavailable.');
+        receipt=await tutor.write(args);
+      }else receipt=await study(c,args);
       return {content:[{type:'text' as const,text:JSON.stringify(receipt)}]};
     }catch(err){
       return {isError:true,content:[{type:'text' as const,text:err instanceof Error?err.message:'Request failed'}]};
@@ -78,7 +89,7 @@ export function buildServer(c:Context):McpServer{
   register('resume',"Resume.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get',"Read.",z.object({
+  register('get',"Read, including tutor_turn.",z.object({
     what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources'])
       .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),project:optProject,
     id:S().max(120).optional(),limit:z.number().int().min(1).max(50).optional(),

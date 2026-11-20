@@ -11,6 +11,12 @@ export type SavedTutorTurn=
  | (Omit<PendingTurn,'status'> & {status:'cancelled'})
  | (Omit<CompletedTurn,'finalReply'> & {finalReply:SavedReply})
 
+export type ConnectorDelivery={turnId:string;grantId:string;expiresAt:string;reference:string}
+
+export type ConnectorSubmission=
+ | {kind:'submitted';turnId:string;delivery?:ConnectorDelivery}
+ | {kind:'turn-pending'}
+
 export type TutorThreadView={
  head:{threadId:string|null;lastSequence:number;pendingTurnId:string|null}
  turns:readonly SavedTutorTurn[]
@@ -21,13 +27,16 @@ export type TutorThreadView={
  before?:number|null
  canSubmit?:boolean
  canConnect?:boolean
+ connectorDelivery?:ConnectorDelivery
  reconciled?:readonly {operation:string;status:string;text:string;turnId?:string;localExcerpt?:string;source?:TutorContextSelection}[]
  outbox?:readonly {operationId:string;operation:string;text:string;turnId?:string;localExcerpt?:string;source?:TutorContextSelection}[]
 }
 export type ManualTutor={
  close:()=>void
- resume:(before?:number,reconcile?:boolean)=>Promise<TutorThreadView>
+ resume:(before?:number,reconcile?:boolean,connectorUrl?:string)=>Promise<TutorThreadView>
  submit:(id:string,draft:TutorComposerDraft,sequence:number)=>Promise<{kind:string}>
+ submitToConnector?:(id:string,draft:TutorComposerDraft,sequence:number,connectorUrl:string)=>Promise<ConnectorSubmission>
+ connectTurn?:(turnId:string,version:number,connectorUrl:string)=>Promise<ConnectorDelivery>
  confirmImport:(turnId:string,version:number,messageId:string,body:string)=>Promise<{kind:string}>
  previewSource?:(page:number)=>Promise<TutorContextSelection>
  retry?:(operationId:string)=>Promise<string>

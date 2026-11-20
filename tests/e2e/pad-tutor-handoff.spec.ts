@@ -10,11 +10,10 @@ async function select(notes: Locator, excerpt: string) {
   }, excerpt);
 }
 
-test('checkpoint Pad selection reaches the canonical tutor only through preview, Add and Save', async ({page}) => {
+test('saved Pad selection reaches the canonical tutor only through preview, Add and Save', async ({page}) => {
   await page.route('https://**/*', route => route.abort());
-  await page.goto('./?demo=1&flags=v7Shell,padLocal,tutorManualDemo#/p/real-analysis/cp/CP4');
+  await page.goto('./?demo=1&flags=v7Shell,padLocal,tutorManualDemo#/pad?path=real-analysis&checkpoint=CP4');
   await expect(page.getByRole('button', {name: 'Open manual tutor'})).toHaveCount(1);
-  await page.getByRole('button', {name: 'Open Local Pad', exact: true}).click();
   const notes = page.getByRole('textbox', {name: 'Pad notes'});
   const excerpt = '  Selected proof step\n∀ x ∈ ℝ  ';
   await notes.fill('Private beginning |' + excerpt + '| private ending');

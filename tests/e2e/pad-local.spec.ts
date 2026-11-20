@@ -1,8 +1,9 @@
 import {readFile} from 'node:fs/promises';
 import {expect,test,type Page} from '@playwright/test';
 
-const checkpoint = (code: string, enabled = true) =>
-  './?demo=1&flags=v7Shell' + (enabled ? ',padLocal' : '') + '#/p/real-analysis/cp/' + code;
+const app = './?demo=1&flags=v7Shell,padLocal,tutorManualDemo#/';
+const checkpoint = (code: string) => app + 'p/real-analysis/cp/' + code;
+const pad = (code: string) => app + 'pad?path=real-analysis&checkpoint=' + code;
 const backup = {
   format:'lemma-pad', version:1, notes:{text:'Imported compactness proof',start:0,end:0,direction:'none'},
   ink:{width:640,height:400,strokes:[[{x:12,y:14}]]},
@@ -49,27 +50,30 @@ async function withPadSaveDiagnostics<T>(page: Page, action: () => Promise<T>): 
   }
 }
 
-test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local revisions', async ({page}) => {
+test('saved Pad revisions stay scoped to their checkpoint and recover through the dedicated address', async ({page}) => {
   // Keep this fixture browser completely away from any live or external service.
   await page.route('https://**/*', route => route.abort());
   const open = page.getByRole('button',{name:'Open Local Pad',exact:true});
-  await page.goto(checkpoint('CP4',false));
+  await page.goto(checkpoint('CP4'));
   await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await expect(open).toHaveCount(0);
-  await page.goto(checkpoint('CP4'));
+  await expect(page.getByRole('link',{name:'Open full Pad page'})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Open manual tutor'})).toHaveCount(0);
   const checkpointActions = page.getByRole('group',{name:'Checkpoint actions',exact:true});
   await expect(checkpointActions).toHaveCSS('position','fixed');
-  await open.click();
-  await expect(checkpointActions).toHaveCSS('position','static');
   const notes = page.getByRole('textbox',{name:'Pad notes'}), save = page.getByRole('button',{name:'Save draft'});
+  await expect(notes).toHaveCount(0);
+
+  await page.goto(pad('CP4'));
+  await expect(checkpointActions).toHaveCount(0);
+  await expect(page.getByLabel('Checkpoint', {exact:true})).toHaveValue('CP4');
   await notes.fill('First compactness proof');
   await save.click();
   await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
-  await page.getByRole('button',{name:'Put away Local Pad',exact:true}).click();
+  await page.getByRole('link',{name:'Return to checkpoint'}).click();
   await expect(checkpointActions).toHaveCSS('position','fixed');
-  await expect(notes).toBeHidden();
-  await open.click();
-  await expect(checkpointActions).toHaveCSS('position','static');
+  await expect(notes).toHaveCount(0);
+  await page.goBack();
   await expect(notes).toHaveValue('First compactness proof');
   await page.getByLabel('Import a Pad JSON backup').setInputFiles({
     name:'lemma-pad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup)),
@@ -81,28 +85,20 @@ test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local re
   await save.click();
   await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
   await page.reload();
-  await open.click();
   await expect(notes).toHaveValue('Imported compactness proof');
   await page.getByRole('button',{name:'Review previous draft'}).click();
   await expect(page.getByRole('region',{name:'Review Pad replacement'})).toContainText('First compactness proof');
   await page.getByRole('button',{name:'Keep current work'}).click();
-  await page.goto(checkpoint('CP2'));
-  await open.click();
+  await page.goto(pad('CP2'));
   await expect(notes).toHaveValue('');
 });
 
 test('a saved Pad reopens offline after leaving its checkpoint and retains ink across rotation', async ({page, context}) => {
   await page.route('https://**/*', route => route.abort());
-  const open = page.getByRole('button',{name:'Open Local Pad',exact:true});
   const notes = page.getByRole('textbox',{name:'Pad notes'});
   const paper = page.getByRole('img',{name:'Pad drawing'});
   const strokes = paper.locator('path');
-  // The Pad stores drafts offline; the checkpoint host only exposes previously loaded demo routes offline.
-  await page.goto(checkpoint('CP2'));
-  await expect(open).toBeVisible();
-  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
-  await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
-  await open.click();
+  await page.goto(pad('CP4'));
   await expect(notes).toBeVisible();
   // Finish initial precaching before measuring network activity during offline work.
   await page.evaluate(async () => {await navigator.serviceWorker.ready;});
@@ -136,7 +132,7 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
     await expect(paper.locator('path[opacity="0.65"]')).toHaveCount(0);
     const path = await strokes.first().getAttribute('d');
     expect(path).toBeTruthy();
-    // The checkpoint's fixed action bar used to receive this click instead of Save.
+    // Verify that the Save button receives the click after drawing and scrolling.
     const save = page.getByRole('button',{name:'Save draft'});
     await save.scrollIntoViewIfNeeded();
     expect(await save.evaluate(button => {
@@ -171,15 +167,12 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   expect(html).toContain(offlineNote.replace('<proof>','&lt;proof&gt;'));
   expect(html).toContain('<path d="' + path + '"/>');
   expect(html).toContain('Content-Security-Policy');
-  // Hash-only navigation remounts the fixture without depending on a service worker.
-  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP2';});
-  await expect(page.getByRole('button',{name:'Put away Local Pad'})).toHaveCount(0);
-  await open.click();
+  // Switching checkpoints while offline loads each Pad's own saved revision.
+  await page.getByLabel('Checkpoint', {exact:true}).selectOption('CP2');
+  await expect(page.getByRole('link',{name:'Return to checkpoint'})).toHaveAttribute('href', /#\/p\/real-analysis\/cp\/CP2$/);
   await expect(notes).toHaveValue('');
   await expect(strokes).toHaveCount(0);
-  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
-  await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
-  await open.click();
+  await page.getByLabel('Checkpoint', {exact:true}).selectOption('CP4');
   await expect(notes).toHaveValue(offlineNote);
   await expect(strokes.first()).toHaveAttribute('d',path ?? '');
   expect(outbound).toEqual([]);

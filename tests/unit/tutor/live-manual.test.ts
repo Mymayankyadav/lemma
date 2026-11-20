@@ -1,4 +1,5 @@
-import {beforeEach,describe,expect,it,vi} from 'vitest'
+import {webcrypto} from 'node:crypto'
+import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest'
 import {authGeneration,publishAuth} from '../../../src/data/authBoundary'
 import {openLiveManualTutor} from '../../../src/data/tutor/live-manual'
 import type {TutorThreadView} from '../../../src/data/tutor/manual-api'
@@ -14,6 +15,7 @@ const thread=(head:number,first=head,before:number|null=null):TutorThreadView=>(
 const ok=(data:unknown)=>({data,error:null,status:200})
 const noNetwork={data:null,error:{code:'',message:'Failed to fetch'},status:0}
 beforeEach(()=>{localStorage.clear();publishAuth(null);publishAuth({id:'owner'});rpc.mockReset()})
+afterEach(()=>vi.unstubAllGlobals())
 
 describe('live tutor persistence',()=>{
  it('reopens a lost submission, replays its exact operation and keeps additional typing separate',async()=>{
@@ -123,5 +125,129 @@ describe('live tutor persistence',()=>{
   expect(updated.turns.map(t=>t.sequence)).toEqual(Array.from({length:120},(_,i)=>i+2))
   expect(updated.head.lastSequence).toBe(121);expect(updated.before).toBe(2)
   expect(rpc.mock.calls.map(c=>c[1].p_before)).toEqual([null,null,82,42])
+ })
+})
+
+describe('ordinary connector delivery',()=>{
+ const turnId='aaaaaaaa-aaaa-4aaa-aaaa-aaaaaaaaaaaa'
+ const answerId='bbbbbbbb-bbbb-4bbb-bbbb-bbbbbbbbbbbb'
+ const secret='abc123'.repeat(8)
+ const connectorUrl='https://lemma.example/functions/v1/mcp/'+secret
+ const draft={question:'My partial proof',selectedContext:[]}
+ const pending:TutorThreadView={
+  head:{threadId:'thread',lastSequence:1,pendingTurnId:turnId},canSubmit:true,canConnect:true,recoveredDrafts:[],
+  turns:[{id:turnId,threadId:'thread',sequence:1,version:1,status:'awaiting-tutor',snapshot:draft}],
+ }
+ const grantId='cccccccc-cccc-4ccc-cccc-cccccccccccc'
+ const expiresAt='2099-01-01T00:00:00.000Z'
+ function server({lostStart=false,lostGrant=false}={}){
+  let state=thread(0),grantActive=true
+  const issued=new Map<string,string>()
+  const grants:Record<string,unknown>[]=[]
+  rpc.mockImplementation(async(name,args)=>{
+   if(name==='tutor_thread_state')return ok(state)
+   if(name==='tutor_owner_grant_active'){
+    expect(args).toEqual({p_turn_id:turnId,p_grant_id:grantId,p_grant_operation_id:grants.at(-1)?.operationId})
+    return ok(grantActive)
+   }
+   const command=args.p_command
+   expect(command).not.toHaveProperty('connectorOperationId')
+   if(command.operation==='start'){
+    state=pending
+    if(lostStart){lostStart=false;return noNetwork}
+    return ok({status:'submitted',operationId:command.operationId,turnId,version:1})
+   }
+   if(command.operation==='grant'){
+    grants.push(command)
+    if(issued.has(command.operationId)&&issued.get(command.operationId)!==command.tokenHash)
+     return ok({status:'conflict',operationId:command.operationId})
+    if(!issued.has(command.operationId)){
+     issued.set(command.operationId,command.tokenHash)
+     grantActive=true
+    }
+    if(lostGrant){lostGrant=false;return noNetwork}
+    return ok({status:'granted',operationId:command.operationId,turnId,grantId,expiresAt})
+   }
+   if(command.operation==='switch')grantActive=false
+   return ok({status:command.operation,operationId:command.operationId})
+  })
+  return {grants,revoke(){grantActive=false}}
+ }
+ beforeEach(()=>vi.stubGlobal('crypto',webcrypto))
+
+ it('reopens a lost start and grant with the original commands and no local verifier',async()=>{
+  const {grants}=server({lostStart:true,lostGrant:true})
+  const initial=open()
+  await expect(initial.submitToConnector!(answerId,draft,0,connectorUrl)).rejects.toThrow('confirm')
+  initial.close()
+  const reopened=open()
+  const recovered=await reopened.resume(undefined,true,connectorUrl)
+  expect(recovered).toMatchObject({outbox:[],reconciled:[{operation:'start',status:'submitted',turnId}]})
+  expect(recovered.connectorDelivery).toBeUndefined()
+  reopened.close()
+  const resumed=await open().resume(undefined,true,connectorUrl)
+  expect(resumed.connectorDelivery).toEqual({turnId,grantId,expiresAt,reference:turnId+'.'+grants[0].operationId})
+  expect(grants).toEqual([grants[0],grants[0]])
+  const starts=rpc.mock.calls.filter(([,args])=>args.p_command?.operation==='start')
+  expect(starts).toHaveLength(2)
+  expect(starts[0]).toEqual(starts[1])
+  const stored=Object.entries(localStorage).flat().join(' ')
+  expect(stored).not.toContain(secret)
+  expect(stored).not.toContain(String(grants[0].tokenHash))
+  expect(stored).not.toContain('tokenHash')
+ })
+
+ it('uses one grant receipt across concurrent sends and stops offering remotely revoked handoffs',async()=>{
+  const {grants,revoke}=server()
+  const [first,second]=await Promise.all([open().submitToConnector!(answerId,draft,0,connectorUrl),open().submitToConnector!(answerId,draft,0,connectorUrl)])
+  expect(first).toEqual(second)
+  expect(rpc.mock.calls.filter(([name,args])=>name==='tutor_owner_command'&&args.p_command.operation==='grant')).toHaveLength(1)
+  revoke()
+  expect((await open().resume(undefined,true,connectorUrl)).connectorDelivery).toBeUndefined()
+  expect(grants).toHaveLength(1)
+  const replacement=await open().connectTurn!(turnId,1,connectorUrl)
+  expect(replacement.reference).not.toEqual(turnId+'.'+grants[0].operationId)
+  expect(grants.at(-1)?.tokenHash).not.toEqual(grants[0].tokenHash)
+ })
+
+ it('requires explicit reauthorization when recovering an unconfirmed grant after rotation',async()=>{
+  const {grants}=server({lostGrant:true})
+  const initial=open()
+  await initial.submitToConnector!(answerId,draft,0,connectorUrl)
+  const rotated=connectorUrl.replace(secret,'def456'.repeat(8))
+  const reopened=open()
+  expect((await reopened.resume(undefined,true,rotated)).connectorDelivery).toBeUndefined()
+  expect(grants).toHaveLength(2)
+  expect(grants[1].operationId).toBe(grants[0].operationId)
+  const replacement=await reopened.connectTurn!(turnId,1,rotated)
+  expect(replacement.reference).not.toEqual(turnId+'.'+grants[0].operationId)
+ })
+
+ it('stops an unconfirmed grant before switching, with no replay on the next foreground read',async()=>{
+  const {grants}=server({lostGrant:true})
+  const api=open()
+  await expect(api.submitToConnector!(answerId,draft,0,connectorUrl)).resolves.toEqual({kind:'submitted',turnId})
+  await api.stopGrants!(turnId,1)
+  expect((await open().resume(undefined,true,connectorUrl)).connectorDelivery).toBeUndefined()
+  expect(grants).toHaveLength(1)
+ })
+
+ it('drops the grant acknowledgement when the owner changes while it is in flight',async()=>{
+  let resolveGrant!:(response:unknown)=>void
+  let beginGrant!:(operationId:string)=>void
+  const grantStarted=new Promise<string>(resolve=>{beginGrant=resolve})
+  rpc.mockImplementation(async(name,args)=>{
+   expect(name).toBe('tutor_owner_command')
+   const {operation,operationId}=args.p_command
+   if(operation==='start')return ok({status:'submitted',operationId,turnId,version:1})
+   return new Promise(resolve=>{resolveGrant=resolve;beginGrant(operationId)})
+  })
+  const send=open().submitToConnector!(answerId,draft,0,connectorUrl)
+  const operationId=await grantStarted
+  publishAuth({id:'other'})
+  resolveGrant(ok({status:'granted',operationId,turnId,grantId,expiresAt}))
+  await expect(send).rejects.toThrow('account changed')
+  expect(rpc).toHaveBeenCalledTimes(2)
+  expect(Object.entries(localStorage).flat().join(' ')).not.toContain(grantId)
  })
 })

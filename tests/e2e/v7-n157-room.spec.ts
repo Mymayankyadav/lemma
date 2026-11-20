@@ -63,8 +63,10 @@ test('Path tabs follow the header without a star overview; Map keeps current and
  await expect(current).toBeInViewport();
  await expect(current.getByRole('button',{name:'Continue with tutor'})).toBeVisible();
  await current.getByRole('button',{name:'Continue with tutor'}).click();
- await expect(page.getByRole('dialog',{name:'Continue with your tutor'})).toBeVisible();
- await page.keyboard.press('Escape');
+ await expect(page.getByRole('main',{name:'Checkpoint tutor'})).toBeVisible();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/);
+ await page.goBack();
+ await expect(page).toHaveURL(/#\/p\/real-analysis$/);
  const folded=page.locator('.v7-path-stage details').first();
  await expect(folded).not.toHaveAttribute('open');
  await folded.locator('summary').focus();await page.keyboard.press('Enter');

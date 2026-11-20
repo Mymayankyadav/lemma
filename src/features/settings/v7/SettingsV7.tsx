@@ -47,7 +47,7 @@ export function settingsSummary(section:Section,settings:Settings|undefined,subj
  switch(section){
   case 'appearance':return mode==='auto'?(systemNight?'Night':'Day')+' · follows the system':modeWord[mode];
   case 'tutor':
-   if(tutorReleased)return settings.connectorLastSeenAt?'Manual handoff · Connector used':'Manual handoff';
+   if(tutorReleased)return settings.connectorLastSeenAt?'Checkpoint chat · Connector used':'Checkpoint chat';
    return (settings.connectorUrl?'Connected':'Not connected')+' · '+(settings.preferredChat==='chatgpt'?'ChatGPT':'Claude');
   case 'study':return 'Target recall '+Math.round(settings.desiredRetention*100)+'% · '+settings.newPerDay+' new cards a day';
   case 'planning':{const p=settings.planning;return p?'Daily minimum '+formatDuration(p.daily_minimum_minutes)+' · day ends '+p.window_end:'Daily minimum and working hours';}
@@ -156,7 +156,8 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
  const lastUsed=settings.connectorLastSeenAt?new Date(settings.connectorLastSeenAt):null;
  return <div className="v7-settings-body">
   {released&&<Group title="Checkpoint tutor">
-   <InfoRow label="Manual handoff" hint="Open a checkpoint to copy a question and import a reply."/>
+   <InfoRow label="Checkpoint chat" hint="Continue with tutor opens your checkpoint conversation. Your connected tutor can read your answer and send its next question back through Lemma MCP."/>
+   <InfoRow label="Manual handoff" hint="Use Tutor connection in the chat to copy a question or import a reply."/>
    <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Lemma needs provider approval for direct access to a ChatGPT plan."/>
    <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
   </Group>}

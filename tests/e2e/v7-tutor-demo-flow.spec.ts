@@ -1,11 +1,11 @@
 import {expect,test} from '@playwright/test'
 
-const route=(cp:string,flag=true)=>'/lemma/?demo=1&flags=v7Shell'+(flag?',tutorManualDemo':'')+'#/p/real-analysis/cp/'+cp
+const route=(cp:string,flag=true)=>'/lemma/?demo=1&flags=v7Shell,padLocal'+(flag?',tutorManualDemo':'')+'#/pad?path=real-analysis&checkpoint='+cp
 
 test('manual tutor keeps drafts across checkpoints and reload without sending anything',async({page,context})=>{
  await context.grantPermissions(['clipboard-read','clipboard-write'])
  await page.goto(route('CP4',false))
- await expect(page.getByRole('heading',{level:1,name:'Compactness'})).toBeVisible()
+ await expect(page.getByRole('heading',{level:2,name:'CP4 · Compactness'})).toBeVisible()
  await expect(page.getByRole('button',{name:'Open manual tutor'})).toHaveCount(0)
  await page.goto(route('CP4'))
  const open=page.getByRole('button',{name:'Open manual tutor'})
@@ -17,12 +17,13 @@ test('manual tutor keeps drafts across checkpoints and reload without sending an
  await page.keyboard.press('Escape')
  await expect(dialog).toBeHidden()
  await expect(open).toBeFocused()
- await page.evaluate(()=>{location.hash='/p/real-analysis/cp/CP3'})
- await expect(page.getByRole('heading',{level:1,name:'Sequences'})).toBeVisible()
+ await page.getByLabel('Checkpoint',{exact:true}).selectOption('CP3')
+ await expect(page.getByRole('heading',{level:2,name:'CP3 · Sequences'})).toBeVisible()
  await show()
  await expect(dialog.getByLabel('Question',{exact:true})).toHaveValue('')
- await page.evaluate(()=>{location.hash='/p/real-analysis/cp/CP4'})
- await expect(page.getByRole('heading',{level:1,name:'Compactness'})).toBeVisible()
+ await dialog.getByRole('button',{name:'Close',exact:true}).click()
+ await page.getByLabel('Checkpoint',{exact:true}).selectOption('CP4')
+ await expect(page.getByRole('heading',{level:2,name:'CP4 · Compactness'})).toBeVisible()
  await show()
  await expect(dialog.getByLabel('Question',{exact:true})).toHaveValue('Why does the subcover suffice?')
  await dialog.getByRole('button',{name:'Save question'}).click()

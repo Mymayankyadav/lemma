@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {readdir,readFile} from 'node:fs/promises';
 import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
+import {checkRegularTutorConnector} from './fixtures/n201-connector-contract.mjs';
 
 const db=process.env.NOTIF_TEST_DATABASE_URL ? await openN191Postgres(process.env.NOTIF_TEST_DATABASE_URL) :
  new (await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')).PGlite();
@@ -37,8 +38,9 @@ try {
   create function auth.uid() returns uuid language sql as $a$ select coalesce(
     nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,
     nullif(current_setting('test.uid',true),'')::uuid) $a$;
-  create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
+ if(db.native)await db.exec('create extension pgcrypto with schema extensions');
+ else await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  const names=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
  // --include-all can install this migration after the previously deployed, future-dated chain.
@@ -288,6 +290,7 @@ try {
  assert.equal((await ownerCmd(cmd('manual',{turnId:recovery.turnId,expectedVersion:1,messageId:randomUUID(),body:'Recovered after rollback.'}))).status,'completed');
  await denied(ownerCmd(cmd('start',{question:'Disabled',expectedVersion:3})),'55000');
  await as('service_role');await denied(hostCmd(hash,{operation:'get',turnId}));
+ if(db.native)await checkRegularTutorConnector({db,owner,other,as,one,ownerCmd,state,denied});
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);
  await as('authenticated',owner);await denied(state());
  await as('service_role');await q('select public.lemma_purge_account_rows($1)',[owner]);

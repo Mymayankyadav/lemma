@@ -18,8 +18,8 @@ export const FLAG_DEFAULTS = {
   uiRepairV1: false,
   /** Manual copy/paste tutoring is a default-off, demo-only preview. */
   tutorManualDemo: false,
-  /** N193: live owner-bound checkpoint threads, released with the new study UI. */
-  tutorThreads: false,
+  /** Owner-requested tutor page. Live writes also require the server release capability. */
+  tutorThreads: true,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */

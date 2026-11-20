@@ -77,9 +77,9 @@ describe('v7 Settings, Sign-in and first run (PLAN §6.14–6.15)',()=>{
   expect(sectionOf(null)).toBeNull();
  });
  it('reports only recorded connector activity after the checkpoint tutor launches',()=>{
-  expect(settingsSummary('tutor',settings,0,'day',false,true)).toBe('Manual handoff');
+  expect(settingsSummary('tutor',settings,0,'day',false,true)).toBe('Checkpoint chat');
   expect(settingsSummary('tutor',{...settings,connectorLastSeenAt:'2026-11-20T12:03:00Z'},0,'day',false,true))
-   .toBe('Manual handoff · Connector used');
+   .toBe('Checkpoint chat · Connector used');
  });
  it('a chosen subject colour overrides the name match everywhere kitSubject is used',()=>{
   const ui={subjectColours:{s1:'Topology',s2:'Not a subject'}};

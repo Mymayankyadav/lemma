@@ -1,12 +1,19 @@
 import {liveClient} from '../live/client'
 import {supabaseUrl} from '../env'
+import {tutorConnectorGrantHash} from '../../../supabase/functions/_shared/tutor-connector'
 import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
-import type {TutorContextSelection} from './turn-model'
-import type {ManualTutor,TutorThreadView} from './manual-api'
+import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
+import type {ConnectorDelivery,ManualTutor,TutorThreadView} from './manual-api'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
-type Command={operation:string;operationId:string;[key:string]:unknown}
-type RpcResult={status:string;operationId:string;grantId?:string}
+type Command={operation:string;operationId:string;connectorOperationId?:string;[key:string]:unknown}
+type RpcResult={status:string;operationId:string;grantId?:string;turnId?:string;version?:number;expiresAt?:string}
+type ConnectorReceipt=Pick<ConnectorDelivery,'grantId'|'expiresAt'>
+type ConnectorIntent={operationId:string;version:number;receipt?:ConnectorReceipt}|{stopped:true}
+const connectorLocks=new Map<string,Promise<unknown>>()
+class TutorRpcError extends Error {
+ constructor(readonly code:string,message:string){super(message)}
+}
 
 export function tutorScopeActive(scope:Pick<Scope,'ownerId'|'generation'>) {
  return tutorLocalScopeActive(scope)
@@ -16,6 +23,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  const client=liveClient()
  const scopeKey=JSON.stringify([scope.ownerId,scope.pathId,scope.checkpointId])
  const prefix='lemma.tutor.pending.v1:'+scopeKey+':',cacheKey='lemma.tutor.confirmed.v1:'+scopeKey
+ const connectorPrefix='lemma.tutor.connector.v1:'+scopeKey+':'
  let closed=false
  let readSequence=0,confirmedRead=0
  function active(){
@@ -24,6 +32,15 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  function writable(){
   active()
   if(scope.readOnly)throw new Error('The tutor is read-only. Your draft was kept.')
+ }
+ async function withConnectorLock<T>(task:()=>Promise<T>):Promise<T>{
+  const run=()=>{active();return task()}
+  if(typeof navigator!=='undefined'&&navigator.locks)return navigator.locks.request(connectorPrefix,run)
+  const before=connectorLocks.get(connectorPrefix)
+  const next=before?before.then(run,run):run()
+  connectorLocks.set(connectorPrefix,next)
+  try{return await next}
+  finally{if(connectorLocks.get(connectorPrefix)===next)connectorLocks.delete(connectorPrefix)}
  }
  const target={p_owner:scope.ownerId,p_slug:scope.pathId,p_checkpoint:scope.checkpointId}
  function pending(){
@@ -67,6 +84,29 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   if(thread.head.lastSequence<previous.head.lastSequence)return true
   return thread.turns.some(turn=>previous.turns.some(old=>old.id===turn.id&&old.version>turn.version))
  }
+ function savedConnector(turnId:string):ConnectorIntent|undefined {
+  try {return JSON.parse(localStorage.getItem(connectorPrefix+turnId)??'null')??undefined}
+  catch {return undefined}
+ }
+ function saveConnector(turnId:string,intent:ConnectorIntent){
+  writeTutorLocal(scope,connectorPrefix+turnId,JSON.stringify(intent))
+ }
+ function stopDelivery(turnId:string){
+  try {saveConnector(turnId,{stopped:true})}
+  catch {active() /* A storage failure must still allow server-side revocation. */}
+ }
+ function finishPending(command:Command,result:RpcResult){
+  if(command.operation==='start'&&command.connectorOperationId&&result.status==='submitted'){
+   const {turnId,version}=result
+   if(!turnId||typeof version!=='number')throw new Error('Could not confirm the saved tutor turn.')
+   if(!savedConnector(turnId))saveConnector(turnId,{operationId:command.connectorOperationId,version})
+  }
+  localStorage.removeItem(prefix+command.operationId)
+ }
+ function rpcCommand(command:Command){
+  const {connectorOperationId:_,...request}=command
+  return request
+ }
  async function dispatch(command:Command,persist=false):Promise<RpcResult>{
   writable()
   if(persist){
@@ -77,37 +117,82 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(remembered!==null && remembered!==serialized)throw new Error('This pending operation changed.')
    writeTutorLocal(scope,key,serialized)
   }
-  const {data,error}=await client.rpc('tutor_owner_command',{...target,p_command:command})
+  const {data,error}=await client.rpc('tutor_owner_command',{...target,p_command:rpcCommand(command)})
   active()
   if(error){
    // Database rejection has no partial effect. Keep unknown transport outcomes retriable.
    if(persist&&['40001','22023','42501','23505','55000','P0001'].includes(error.code))localStorage.removeItem(prefix+command.operationId)
-   throw new Error(error.code==='40001'?'The turn changed. Reopen it to review the latest version.':
+   throw new TutorRpcError(error.code,error.code==='40001'?'The turn changed. Reopen it to review the latest version.':
     error.code==='55000'?'This tutor capability is unavailable. Your draft was kept.':'Could not confirm this tutor operation.')
   }
   const result=data as RpcResult
   if(!result||result.operationId!==command.operationId||typeof result.status!=='string')throw new Error('Unconfirmed tutor response.')
-  if(persist)localStorage.removeItem(prefix+command.operationId)
+  if(persist)finishPending(command,result)
   return result
  }
  async function recover(command:Command):Promise<RpcResult>{
   active()
   // This endpoint only reads committed receipts. It cannot submit an unseen operation.
-  const {data,error}=await client.rpc('tutor_owner_receipt',{...target,p_command:command})
+  const {data,error}=await client.rpc('tutor_owner_receipt',{...target,p_command:rpcCommand(command)})
   active()
-  if(error)throw new Error('Could not check the saved tutor receipt. Your submission was kept.')
+  if(error)throw new TutorRpcError(error.code,'Could not check the saved tutor receipt. Your submission was kept.')
   const result=data as RpcResult
   if(!result||result.operationId!==command.operationId||typeof result.status!=='string')throw new Error('Unconfirmed tutor response.')
-  if(['submitted','completed','already-completed','proposed','turn-pending'].includes(result.status))
-   localStorage.removeItem(prefix+command.operationId)
+  if(['submitted','completed','already-completed','proposed','turn-pending'].includes(result.status))finishPending(command,result)
   return result
  }
  function write(operation:string,turnId:string,version:number,patch:Record<string,unknown>={}):Command {
   return {operation,operationId:crypto.randomUUID(),turnId,expectedVersion:version,...patch}
  }
+ function start(id:string,draft:TutorComposerDraft,sequence:number):Command {
+  const objective=draft.selectedContext.find(selection=>selection.kind==='checkpoint')?.excerpt
+  const source=draft.selectedContext.find(selection=>selection.kind==='source')
+  return {operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
+   ...(draft.localExcerpt?{localExcerpt:draft.localExcerpt.text}:{}),...(objective?{objective}:{}),...(source?{source}:{})}
+ }
+ async function confirmDelivery(turnId:string,{grantId,expiresAt}:ConnectorReceipt,operationId:string):Promise<ConnectorDelivery|undefined>{
+  const grant=await client.rpc('tutor_owner_grant_active',{p_turn_id:turnId,p_grant_id:grantId,p_grant_operation_id:operationId})
+  active()
+  if(grant.error||typeof grant.data!=='boolean')throw new Error('Could not check the connector grant.')
+  return grant.data?{turnId,grantId,expiresAt,reference:turnId+'.'+operationId}:undefined
+ }
+ async function deliver(turnId:string,intent:Exclude<ConnectorIntent,{stopped:true}>,connectorUrl:string):Promise<ConnectorDelivery|undefined>{
+  writable()
+  const {operationId,version}=intent
+  if(intent.receipt)return confirmDelivery(turnId,intent.receipt,operationId)
+  let tokenHash:string
+  try {tokenHash=await tutorConnectorGrantHash(connectorUrl,turnId,operationId)}
+  catch {active();throw new Error('Could not prepare the configured Lemma connector.')}
+  const command={operation:'grant',operationId,turnId,expectedVersion:version,tokenHash}
+  try {
+   // An unconfirmed grant replays the same command, including the verifier
+   // derived again from Settings.
+   const result=await dispatch(command)
+   const {status,grantId,expiresAt}=result
+   if(status==='conflict'){
+    stopDelivery(turnId)
+    return undefined
+   }
+   if(status!=='granted'||result.turnId!==turnId||!grantId||!expiresAt)throw new Error('The connector grant was not confirmed.')
+   const receipt={grantId,expiresAt}
+   saveConnector(turnId,{...intent,receipt})
+   return await confirmDelivery(turnId,receipt,operationId)
+  }catch(error){
+   active()
+   if(error instanceof TutorRpcError&&['40001','22023','23505','42501'].includes(error.code))saveConnector(turnId,{stopped:true})
+   throw error
+  }
+ }
+ async function continueDelivery(turnId:string|null,connectorUrl?:string):Promise<ConnectorDelivery|undefined>{
+  if(!turnId||!connectorUrl||scope.readOnly)return undefined
+  try {
+   const intent=savedConnector(turnId)
+   return intent&&!('stopped' in intent)?await deliver(turnId,intent,connectorUrl):undefined
+  }catch {active();return undefined}
+ }
  return {
   close(){closed=true},
-  async resume(before,reconcile=false){
+  async resume(before,reconcile=false,connectorUrl){
    active()
    const request=++readSequence
    async function read(cursor?:number):Promise<TutorThreadView> {
@@ -129,19 +214,21 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(before!==undefined)return usable(thread)
    const previous=cached()
    const reconciled:NonNullable<TutorThreadView['reconciled']>[number][]=[]
-   if(reconcile){
+   let connectorDelivery:ConnectorDelivery|undefined
+   if(reconcile)await withConnectorLock(async()=>{
     for(const operation of pending()){
      try {
-      const {status}=await (scope.readOnly?recover(operation):dispatch(operation,true))
+      const {status,turnId}=await (scope.readOnly?recover(operation):dispatch(operation,true))
       if(status==='unconfirmed')continue
       reconciled.push({operation:operation.operation,status,text:String(operation.question??operation.body??operation.front??''),
-       turnId:typeof operation.turnId==='string'?operation.turnId:undefined,
+       turnId:operation.connectorOperationId?turnId:typeof operation.turnId==='string'?operation.turnId:undefined,
        ...(typeof operation.localExcerpt==='string'?{localExcerpt:operation.localExcerpt}:{}),
        ...(operation.source?{source:operation.source as TutorContextSelection}:{})})
      } catch {active()}
     }
     if(reconciled.length)thread=await read()
-   }
+    if(thread.canConnect)connectorDelivery=await continueDelivery(thread.head.pendingTurnId,connectorUrl)
+   })
    // A foreground read can jump farther than one history page after a long absence.
    // Keep paging to the previous confirmed head, without losing the continuation cursor.
    const lastSeen=previous?.head.threadId===thread.head.threadId?previous?.head.lastSequence:undefined
@@ -162,14 +249,40 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    }
    if(typeof navigator!=='undefined'&&navigator.locks)await navigator.locks.request(cacheKey,remember)
    else remember()
-   return {...usable(thread),outbox:outbox(),reconciled}
+   return {...usable(thread),outbox:outbox(),reconciled,...(connectorDelivery?{connectorDelivery}:{})}
   },
   async submit(id,draft,sequence){
-   const objective=draft.selectedContext.find(s=>s.kind==='checkpoint')?.excerpt
-   const source=draft.selectedContext.find(s=>s.kind==='source')
-   const {status}=await dispatch({operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
-    ...(draft.localExcerpt?{localExcerpt:draft.localExcerpt.text}:{}),...(objective?{objective}:{}),...(source?{source}:{})},true)
+   const {status}=await dispatch(start(id,draft,sequence),true)
    return {kind:status}
+  },
+  async submitToConnector(id,draft,sequence,connectorUrl){
+   return withConnectorLock(async()=>{
+    const connectorOperationId=pending().find(command=>command.operationId===id)?.connectorOperationId??crypto.randomUUID()
+    const saved=await dispatch({...start(id,draft,sequence),connectorOperationId},true)
+    if(saved.status==='turn-pending')return {kind:'turn-pending'}
+    if(saved.status!=='submitted'||!saved.turnId)throw new Error('Could not confirm the saved tutor turn.')
+    const delivery=await continueDelivery(saved.turnId,connectorUrl)
+    return {kind:'submitted',turnId:saved.turnId,...(delivery?{delivery}:{})}
+   })
+  },
+  async connectTurn(turnId,version,connectorUrl){
+   return withConnectorLock(async()=>{
+    writable()
+    const saved=savedConnector(turnId)
+    if(saved&&!('stopped' in saved)){
+     try {
+      const delivery=await deliver(turnId,saved,connectorUrl)
+      if(delivery)return delivery
+     }catch(error){
+      if(!(error instanceof TutorRpcError&&(error.code==='23505'||(error.code==='40001'&&saved.version!==version))))throw error
+     }
+    }
+    const intent={operationId:crypto.randomUUID(),version}
+    saveConnector(turnId,intent)
+    const delivery=await deliver(turnId,intent,connectorUrl)
+    if(!delivery)throw new Error('The connector grant is no longer active. Reopen the turn to try again.')
+    return delivery
+   })
   },
   async confirmImport(turnId,version,messageId,body){
    const {status}=await dispatch({operation:'manual',operationId:messageId,turnId,messageId,expectedVersion:version,body},true)
@@ -182,11 +295,11 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(error)throw new Error('Could not open that page of the linked source.')
    return data as TutorContextSelection
   },
-  async retry(operationId){
+  async retry(operationId){return withConnectorLock(async()=>{
    const command=pending().find(c=>c.operationId===operationId)
    if(!command)return 'resolved'
    return (await (scope.readOnly?recover(command):dispatch(command,true))).status
-  },
+  })},
   async issueGrant(turnId,version){
    writable()
    const bytes=crypto.getRandomValues(new Uint8Array(32))
@@ -199,13 +312,26 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    return {token,endpoint:supabaseUrl+'/functions/v1/mcp/tutor',grantId}
   },
   async revokeGrant(turnId,version,grantId){
-   if((await dispatch(write('revoke',turnId,version,{grantId}))).status!=='revoke')throw new Error('Could not revoke this grant.')
+   await withConnectorLock(async()=>{
+    writable()
+    const intent=savedConnector(turnId)
+    if(intent&&!('stopped' in intent)&&intent.receipt?.grantId===grantId)stopDelivery(turnId)
+    if((await dispatch(write('revoke',turnId,version,{grantId}))).status!=='revoke')throw new Error('Could not revoke this grant.')
+   })
   },
   async stopGrants(turnId,version){
-   if((await dispatch(write('switch',turnId,version))).status!=='switch')throw new Error('Could not revoke this turn’s grants.')
+   await withConnectorLock(async()=>{
+    writable()
+    stopDelivery(turnId)
+    if((await dispatch(write('switch',turnId,version))).status!=='switch')throw new Error('Could not revoke this turn’s grants.')
+   })
   },
   async cancel(turnId,version){
-   if((await dispatch(write('cancel',turnId,version))).status!=='cancel')throw new Error('Could not cancel this turn.')
+   await withConnectorLock(async()=>{
+    writable()
+    stopDelivery(turnId)
+    if((await dispatch(write('cancel',turnId,version))).status!=='cancel')throw new Error('Could not cancel this turn.')
+   })
   },
   async proposeCard(turnId,version,front,back){
    if((await dispatch(write('suggest_card',turnId,version,{front,back}),true)).status!=='proposed')throw new Error('Card proposal was not saved.')

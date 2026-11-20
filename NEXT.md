@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N201 Open the checkpoint tutor chat from the study path
+
+Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
+Stage: Harden · Status: done · Needs: — · Assigned: chat-174602#75tl
+Done = Both Continue with tutor entry points open the supplied chat design for the selected checkpoint. Sending an answer grants the connected Lemma MCP tutor that turn. The next tutor question appears in the same conversation. Existing saved Pad notes remain accessible through Settings.
+Tests: phone and desktop navigation, keyboard editing, persisted drafts, signed-in grant and reply recovery, ordinary MCP tool discovery and PostgreSQL owner/lease/reply isolation.
+Scope: app routing and v7 navigation, tutor UI, browser adapters, checkpoint and Settings entry points, existing Lemma MCP tutor tools, an additive grant lookup migration and their regression tests.
+
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
