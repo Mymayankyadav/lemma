@@ -121,12 +121,81 @@ async function pageFacts(page) {
       .length
     const clipped = [...document.querySelectorAll('h1,h2,h3,button,a,p,li,span')]
       .filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.right > vw + 1 || r.left < -1) && r.top < window.innerHeight }).length
+    const vh = window.innerHeight
+    const visible = (e) => { if (!e || !e.getClientRects().length) return false; const s = getComputedStyle(e); return s.visibility !== 'hidden' && Number(s.opacity) > 0.05 }
+    const pinned = (el) => { for (let e = el; e && e !== document.body; e = e.parentElement) { const p = getComputedStyle(e).position; if (p === 'fixed' || p === 'sticky') return e } return null }
+    const dialog = [...document.querySelectorAll('[role=dialog]')].some(visible)
+
+    // Chrome: rows from the top and from the bottom where a fixed or sticky element is hit (headers, hub tabs, filters, tab bar).
+    const xs = [24, 110, 195, 280, 366]
+    const chromeRow = (y) => xs.some((x) => { const el = document.elementFromPoint(x, y); return el && pinned(el) && !pinned(el).matches('[role=dialog],[role=dialog] *') })
+    // Pinned bars float with gaps (the tab bar sits above a margin), so take the outermost pinned row within each half.
+    let top = 0; for (let y = 2; y < vh * 0.55; y += 4) if (chromeRow(y)) top = y + 2
+    let bottom = 0; for (let y = vh - 2; y > vh * 0.55; y -= 4) if (chromeRow(y)) bottom = vh - y + 2
+    const overlay = top >= vh * 0.5 && bottom >= vh * 0.4 // a full-screen sheet or page overlay, not chrome
+
+    // Visible words in the viewport (outside the bottom navigation), and on the whole page or open sheet.
+    const nav = document.querySelector('nav[aria-label="Primary"], .v7-tabbar, nav.v7-nav') // the tab bar, whichever selector this build uses
+    const walker = document.createTreeWalker(dialog ? [...document.querySelectorAll('[role=dialog]')].filter(visible).at(-1) : document.body, NodeFilter.SHOW_TEXT)
+    let wordsView = 0, wordsAll = 0
+    const offFont = new Map(), offSize = new Map(), sizes = new Map()
+    const SCALE = new Set([12, 14, 16, 17, 19, 20, 26, 28, 32, 44, 64])
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const t = n.textContent.trim(); if (!t) continue
+      const el = n.parentElement; if (!el || el.closest('script,style,svg,.katex-mathml,[aria-hidden=true]') || (nav && nav.contains(el)) || !visible(el)) continue
+      const words = (t.match(/[\p{L}\p{N}][\p{L}\p{N}'’.-]*/gu) || []).length
+      wordsAll += words
+      const range = document.createRange(); range.selectNodeContents(n); const r = range.getBoundingClientRect()
+      if (r.bottom <= 0 || r.top >= vh || r.width === 0) continue
+      wordsView += words
+      if (el.closest('.katex')) continue
+      const cs = getComputedStyle(el)
+      const family = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim()
+      if (!/^Lemma v7|^KaTeX/.test(family)) { const k = family; offFont.set(k, [...(offFont.get(k) || []), t.slice(0, 40)].slice(0, 4)) }
+      const px = Math.round(parseFloat(cs.fontSize) * 2) / 2
+      sizes.set(px, (sizes.get(px) || 0) + words)
+      if (!SCALE.has(px)) offSize.set(px, [...(offSize.get(px) || []), t.slice(0, 30)].slice(0, 3))
+    }
+
+    // Native controls the design system replaces (and that look unstyled on a phone).
+    const native = [...document.querySelectorAll('details>summary, select, input[type=date], input[type=time], input[type=datetime-local], input[type=range]')]
+      .filter((e) => visible(e) && e.getBoundingClientRect().top < vh && e.getBoundingClientRect().bottom > 0)
+      .map((e) => (e.tagName === 'INPUT' ? 'input[' + e.type + ']' : e.tagName.toLowerCase()) + ': ' + (e.textContent || e.getAttribute('aria-label') || '').trim().slice(0, 30))
+
+    // Text that overlaps other text in normal flow (not content scrolling under a pinned header, which is expected).
+    const leaves = [...document.querySelectorAll('h1,h2,h3,h4,p,li,a,button,label,span,small,strong,em,dt,dd,figcaption,td,th')]
+      .filter((e) => { if (!visible(e) || !e.textContent.trim() || [...e.children].some((c) => c.textContent.trim())) return false; const r = e.getBoundingClientRect(); return r.width > 2 && r.height > 2 && r.bottom > 0 && r.top < vh })
+      .slice(0, 400)
+    const overlaps = []
+    for (let i = 0; i < leaves.length && overlaps.length < 6; i++) for (let j = i + 1; j < leaves.length && overlaps.length < 6; j++) {
+      const a = leaves[i], b = leaves[j]
+      if (a.contains(b) || b.contains(a) || (!!pinned(a)) !== (!!pinned(b))) continue
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect()
+      const w = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left), h = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top)
+      if (w > 4 && h > 4 && w * h > 0.25 * Math.min(ra.width * ra.height, rb.width * rb.height)) overlaps.push(a.textContent.trim().slice(0, 30) + ' ⟂ ' + b.textContent.trim().slice(0, 30))
+    }
+
+    // The main picture (a canvas or large SVG such as the Atlas map): how much of it is actually visible, not covered by panels.
+    const pics = [...document.querySelectorAll('canvas, svg')].filter((e) => { const r = e.getBoundingClientRect(); return visible(e) && r.width >= 200 && r.height >= 200 && r.top < vh - 100 && r.bottom > 100 })
+    let picture = null
+    if (pics.length) {
+      const pic = pics.sort((a, b) => b.getBoundingClientRect().height * b.getBoundingClientRect().width - a.getBoundingClientRect().height * a.getBoundingClientRect().width)[0]
+      const r = pic.getBoundingClientRect(); let seen = 0, total = 0
+      for (let y = Math.max(0, r.top) + 4; y < Math.min(vh, r.bottom); y += 12) for (let x = Math.max(0, r.left) + 4; x < Math.min(window.innerWidth, r.right); x += 12) {
+        total++; const hit = document.elementFromPoint(x, y)
+        if (hit && (hit === pic || pic.contains(hit) || (hit.contains(pic) && getComputedStyle(hit).pointerEvents !== 'none'))) seen++
+      }
+      picture = {tag: pic.tagName.toLowerCase(), box: [Math.round(r.top), Math.round(r.height)], unobstructed: total ? Math.round((seen / total) * 100) : 0}
+    }
     return {
       hash: location.hash,
       heading: (document.querySelector('h1')?.textContent || '').trim().slice(0, 80),
       errorScreen: /something went wrong|unexpected error|route error/i.test(text.slice(0, 600)),
-      overflowX, clippedOffscreen: clipped, targetsUnder40px: small,
-      dialog: !!document.querySelector('[role=dialog]'),
+      overflowX, clippedOffscreen: clipped, targetsUnder40px: small, dialog,
+      chrome: dialog || overlay ? null : {top, bottom, content: vh - top - bottom},
+      words: {view: wordsView, all: wordsAll},
+      offFonts: Object.fromEntries(offFont), offSizes: Object.fromEntries(offSize), sizes: Object.fromEntries(sizes),
+      native, overlaps, picture,
     }
   })
 }

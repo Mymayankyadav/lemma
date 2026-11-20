@@ -52,7 +52,11 @@ async function runScene(browser, profile, scene) {
   const {context, page, diag} = await newScene(browser, {base, profile, scale})
   const p = sceneHelper({page, diag, base, profile, outDir: out, sceneId: scene.id, frames, scale})
   let error = null
-  try { await scene.run(p) } catch (e) {
+  try {
+    await scene.run(p)
+    // Warnings raised after the last frame (a final optional step failed) would otherwise be lost.
+    if (p.warnings.length && frames.length) frames.at(-1).warnings.push(...p.warnings.splice(0))
+  } catch (e) {
     error = String(e.message).split('\n')[0]
     // Always leave evidence: the state the scene failed in.
     p.warnings.push('SCENE FAILED: ' + error.slice(0, 140))
