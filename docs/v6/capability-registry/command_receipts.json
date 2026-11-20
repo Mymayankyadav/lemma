@@ -1,6 +1,6 @@
 {
   "table": "command_receipts",
-  "version": 2,
+  "version": 1,
   "columns": {
     "user_id": {
       "classification": "derived",
