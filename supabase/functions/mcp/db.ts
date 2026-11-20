@@ -5,7 +5,7 @@ export type Db = {from(table:string):any;rpc(fn:string,args?:Record<string,unkno
 export type Context = { db: Db; userId: string; batch?: any[]; selftestProjectIds?: Set<string>;
   /** N169: a tool may set its own NEXT line, and add short notices (e.g. I2 lint) shown after the trimmed result. */
   next?: string; notices?: string[] };
-export function admin(): Db {
+export function adminClient() {
   const raw = Deno.env.get('SUPABASE_SECRET_KEYS');
   let key: string | undefined;
   if (raw) {
@@ -14,8 +14,9 @@ export function admin(): Db {
   key ||= Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const url = Deno.env.get('SUPABASE_URL');
   if (!key || !url) throw new Error('Server database credentials are unavailable');
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }) as unknown as Db;
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
+export function admin(): Db { return adminClient() as unknown as Db; }
 export function scoped(c: Context, table: string, select = '*') {
   const query = c.db.from(table).select(select).eq('user_id', c.userId);
   return table === 'projects' ? query.neq('status', 'archived') : query;
