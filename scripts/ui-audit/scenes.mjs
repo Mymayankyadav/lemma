@@ -182,6 +182,13 @@ export const scenes = [
     await p.fillPlaceholder('e.g. Abstract Algebra', 'Measure Theory'); await p.shot('name typed', {scroll: false})
     await p.tap('Create path'); await p.wait(1500); await p.shot('after Create path: the new, empty path', {maxFrames: 4})
   }},
+  {id: 'path-new-tutor', group: 'paths', title: 'New path → Continue with tutor', check: 'the tutor chat opened for the path just created: does it carry the new path name?', run: async (p) => {
+    await p.go('/projects/new'); await p.fillPlaceholder('e.g. Abstract Algebra', 'Measure Theory'); await p.tap('Create path'); await p.wait(1500)
+    await p.shot('new empty path, before tapping', {scroll: false})
+    await p.tap('Continue with tutor'); await p.wait(1200); await p.shot('after Continue with tutor', {maxFrames: 3})
+    await p.try('begin', async () => { await p.tap('Begin session'); await p.wait(800); await p.shot('Begin session', {maxFrames: 2}) })
+    await p.try('write', async () => { await p.tap('Write a question'); await p.wait(600); await p.shot('Write a question (keyboard)', {scroll: false}) })
+  }},
   {id: 'path-map', group: 'paths', title: 'Path page (Map tab)', profiles: ['full'], run: async (p) => {
     await p.go('/p/real-analysis'); await p.shot('Map', {maxFrames: 5})
   }},
