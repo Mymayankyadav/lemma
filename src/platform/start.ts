@@ -1,5 +1,5 @@
 import {deviceToken} from '../data/study/live';
-import {authGeneration,publishAuth} from '../data/authBoundary';
+import {authGeneration,authOwner,publishAuth} from '../data/authBoundary';
 /**
  * N123 · the Android app's start-up: loaded with a dynamic import from main.tsx only when `isNative()`, so none of
  * this (or any `@capacitor/*` module) is in the web bundle's first load.
@@ -27,12 +27,15 @@ import {calendarEvents, SYNC_AHEAD_MS, SYNC_BACK_MS} from './calendar';
 import {holdCaptureText, holdSharedSources, routeShare, sharedItems} from './share';
 import {offerNotificationsOnce} from './permissions';
 import {askDrift} from './drift';
+import {createNativeSessionSync} from './session';
 
 const DRIFT_MS = 2 * 60_000;
 let native: LemmaNativePlugin;
 let backgroundedAt: number | null = null;
 let backgroundEntry: string | null = null;
-let nativeOwner:string|null=null;
+let sessions: ReturnType<typeof createNativeSessionSync> | null = null;
+const nativeReady = (generation: number) => generation === authGeneration()
+  && (getMode() !== 'live' || !!sessions?.ready());
 
 const route = () => (window.location.hash.replace(/^#/, '') || '/');
 function go(path: string): void {
@@ -71,9 +74,9 @@ async function syncTimer(): Promise<void> {
     const entry = await getStudyApi().activeStudyEntry();
     const ctx = await context();
     const state = nativeTimerState(entry, Date.now(), entry?.projectId ? ctx.projects.get(entry.projectId) ?? '' : '', ctx.clock24h);
-    if(epoch!==authGeneration())return;
+    if(!nativeReady(epoch))return;
     // The lock-screen timer is the payoff of notifications: a first running session is the moment to ask (once).
-    if (state) {state.device=deviceToken();state.leaseVersion=entry?.leaseVersion;state.ownerId=nativeOwner??undefined;await native.timerUpdate({state}); void offerNotificationsOnce();}
+    if (state) {state.device=deviceToken();state.leaseVersion=entry?.leaseVersion;state.ownerId=sessions?.ready()?.ownerId??undefined;await native.timerUpdate({state}); void offerNotificationsOnce();}
     else await native.timerClear();
   } catch {/* offline: the notification keeps its last state, rebuilt on the next sync */}
 }
@@ -81,19 +84,21 @@ async function syncTimer(): Promise<void> {
 let replaying = false;
 /** N163: register this phone's FCM token with the server (live mode, signed in). Quiet: a failure is retried on the next token or sign-in. */
 async function syncPush(): Promise<void> {
-  if (getMode() !== 'live'||!nativeOwner) return;
-  const owner=nativeOwner;
+  const binding = sessions?.ready();
+  if (getMode() !== 'live' || !binding?.ownerId) return;
+  const owner = binding.ownerId, current = () => getMode() === 'live' && sessions?.ready() === binding;
   try {
     const [{liveClient}, {deviceKey}, {App}] = await Promise.all([import('../data/live/client'), import('./deviceCommands'), import('@capacitor/app')]);
     const version = (await App.getInfo().catch(() => ({version: ''}))).version || '0';
-    const outcome = await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version,owner,()=>nativeOwner===owner);
+    if (!current()) return;
+    const outcome = await syncPushToken(native, createPushRegistrar(async () => liveClient()), deviceKey(), version,owner,current);
     // N164: the server now delivers `due` to this phone; drop the one the phone had scheduled itself.
-    if (outcome === 'registered') void scheduleReminders();
+    if (outcome === 'registered' && current()) void scheduleReminders();
   } catch {/* offline, signed out or FCM off: tried again on the next token, sign-in or return to the app */}
 }
 
 async function replayActions(): Promise<void> {
-  if (replaying) return;
+  if (replaying || !nativeReady(authGeneration())) return;
   replaying = true;
   try {
     const outcomes = await replayTimerActions(native, getStudyApi(), (text, entryId) => getThoughtApi().createThought({text, studyEntryId: entryId}));
@@ -107,17 +112,18 @@ async function replayActions(): Promise<void> {
 
 async function scheduleReminders(): Promise<void> {
   const epoch=authGeneration();
+  if (!nativeReady(epoch)) return;
   try {
     const [settings, home] = await Promise.all([getApi().getSettings(), getApi().getHome()]);
     const zone = settings.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone ?? 'UTC', now = Date.now();
     const blocks = settings.notify?.kinds?.plan ? await getStudyApi().listCalendarBlocks({start: new Date(now).toISOString(), end: new Date(now + 49 * 3600_000).toISOString()}) : [];
-    if(epoch!==authGeneration())return;
+    if(!nativeReady(epoch))return;
     await native.remindersSet({items: planReminders({prefs: settings.notify, due: home.due, blocks, now, zone, clock24h: settings.clock24h ?? true, serverDue: serverDelivers()})});
     const shortcuts: {id: string; label: string; route: string}[] = [];
     // N157 (P7): Review is always here (it replaced the static Review), with its count when cards are due.
     shortcuts.push({id: 'review-due', label: (home.due > 0 ? 'Review ' + home.due : 'Review').slice(0, 25), route: '/review'});
     if (home.resume) shortcuts.push({id: 'resume', label: ('Resume ' + home.resume.projectTitle).slice(0, 25), route: '/p/' + encodeURIComponent(home.resume.projectSlug)});
-    if(epoch===authGeneration())await native.shortcutsSet({items: shortcuts});
+    if(nativeReady(epoch))await native.shortcutsSet({items: shortcuts});
   } catch {/* keep the previous schedule */}
 }
 
@@ -128,7 +134,7 @@ export async function syncCalendar(): Promise<void> {
     if ((await native.calendarStatus()).permission !== 'granted') return;
     const now = Date.now(), from = now - SYNC_BACK_MS, to = now + SYNC_AHEAD_MS;
     const blocks = await getStudyApi().listCalendarBlocks({start: new Date(from).toISOString(), end: new Date(to).toISOString()});
-    if(epoch!==authGeneration()||!readDevicePref('calendarSync',false))return;
+    if(!nativeReady(epoch)||!readDevicePref('calendarSync',false))return;
     await native.calendarSync({events: calendarEvents(blocks), from, to});
   } catch {/* retried on the next resume */}
 }
@@ -234,24 +240,30 @@ async function connectSession(): Promise<void> {
   try {
     const [{liveClient}, env] = await Promise.all([import('../data/live/client'), import('../data/env')]);
     const db = liveClient();
-    db.auth.onAuthStateChange((event, session) => {
+    let dismissFailure: (() => void) | undefined;
+    sessions = createNativeSessionSync(native, {
+      isCurrent: target => getMode() === 'live' && target.generation === authGeneration() && target.ownerId === authOwner(),
+      onReady: target => {
+        dismissFailure?.(); dismissFailure = undefined;
+        if (!target.session) return;
+        void syncPush(); void replayActions(); void scheduleReminders(); void syncCalendar();
+      },
+      onFailure: (target, retry) => {
+        dismissFailure?.();
+        dismissFailure = toast(target.session
+          ? 'Android account setup is paused because temporary account files could not be cleared. Try again.'
+          : 'Android could not finish clearing this account’s temporary files. Try again.',
+        {tone: 'danger', duration: 15_000, action: {label: 'Retry', onClick: retry}});
+      },
+    });
+    db.auth.onAuthStateChange((_event, session) => {
       publishAuth(session?.user?{id:session.user.id,email:session.user.email}:null);
-      const changedOwner=nativeOwner!== (session?.user.id??null);
-      nativeOwner=session?.user.id??null;
-      if(changedOwner){cached=null;resetPushRegistration();}
-      if (session?.access_token && env.supabaseUrl && env.supabasePublishableKey) {
-        void native.setSession({url: env.supabaseUrl, key: env.supabasePublishableKey, accessToken: session.access_token, expiresAt: (session.expires_at ?? 0) * 1000,ownerId:session.user.id,device:deviceToken()});
-        if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') void syncPush();
-      } else if (!session) {
-        // Nothing of the account stays on the phone's system surfaces after sign-out.
-        resetPushRegistration();
-        void native.clearSession();
-        void native.timerClear();
-        void native.remindersSet({items: []});
-        void native.shortcutsSet({items: []});
-        void native.calendarRemoveAll().catch(() => undefined);
-        cached = null;
-      }
+      cached = null; resetPushRegistration(); dismissFailure?.(); dismissFailure = undefined;
+      const ownerId = session?.user.id ?? null;
+      sessions!.update({ownerId, generation: authGeneration(),
+        session: session?.access_token && env.supabaseUrl && env.supabasePublishableKey
+          ? {url: env.supabaseUrl, key: env.supabasePublishableKey, accessToken: session.access_token,
+            expiresAt: (session.expires_at ?? 0) * 1000, ownerId: session.user.id, device: deviceToken()} : null});
     });
   } catch {/* demo or misconfigured: lock-screen actions fall back to opening the app */}
 }
@@ -321,7 +333,9 @@ export async function startNative(): Promise<void> {
       void scheduleReminders();
       return;
     }
+    sessions?.retry();
     void replayActions();
+    void syncPush();
     void takeShares();
     void syncCalendar();
     void checkDrift();

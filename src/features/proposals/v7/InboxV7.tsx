@@ -144,6 +144,13 @@ export default function InboxV7(){
  const cardEnd=repair?<CardInboxEnd plans={plans.length}/>:<InboxZero/>;
  useEffect(()=>{setOrder(previous=>mergeOrder(previous,cards.map(p=>p.id)));},[cards]);
  const queue=useMemo(()=>{const byId=new Map(cards.map(p=>[p.id,p]));return mergeOrder(order,cards.map(p=>p.id)).map(id=>byId.get(id)!).filter(Boolean);},[order,cards]);
+ const requestedCard=params.get('card'),opened=useRef<string|null>(null);
+ useEffect(()=>{
+  if(!requestedCard){opened.current=null;return;}
+  if(opened.current===requestedCard||!cards.some(card=>card.id===requestedCard))return;
+  opened.current=requestedCard;
+  setOrder(previous=>[requestedCard,...previous.filter(id=>id!==requestedCard)]);
+ },[requestedCard,cards]);
  const top=queue[0],peers=sameSession(top,queue);
  // LT7: one card left, so Inbox zero is one decision away: fetch its player in idle time. LT8: the ending is felt only
  // when it happens here (the last card decided), not when an empty Inbox is opened.

@@ -1,0 +1,153 @@
+{
+  "table": "atlas_practice_bank",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "item_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "item_version": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "project_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "concept_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "facet": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "context": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "track": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "policy": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "bank": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "rubric": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "family": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "form": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "minutes": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "uncued": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "novel": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "native_order": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "expert_probabilities": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "scored_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "registered_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    },
+    "valid_until": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Owner-scoped approved bank mapping. Underlying items retain their normal export.",
+      "deletionPolicy": "Owner account deletion erases linked records by cascade."
+    }
+  }
+}

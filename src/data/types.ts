@@ -1,3 +1,5 @@
+import type {SchedulingAlgorithm} from '../../supabase/functions/_shared/agenda/contract'
+
 /** Domain contract (see CURRENT.md, data model). Dates are ISO strings. */
 export type Glyph = string
 export type Hue = 'amber' | 'violet' | 'cyan' | 'rose' | 'lime' | 'slate'
@@ -74,6 +76,7 @@ export interface PlanningPrefs {
  [key:string]:unknown;
 }
 export interface Settings {
+ schedulingAlgorithm?: SchedulingAlgorithm | null
  flags?: Record<string, boolean>;
  focusDefaults?:FocusDefaultsPrefs;
  planning?:PlanningPrefs;
@@ -133,6 +136,8 @@ export interface ProjectDetail {
  sources: Source[]; sessions: SessionSummary[]; pendingProposals: number
 }
 export interface CheckpointDetail {
+ /** Present only on a live result verified for this owner and account generation. */
+ authScope?: {ownerId:string;generation:number;checkpointId:string}
  view: CheckpointView; objective: string; criterion: string; steps: string[]; pages: string | null
  sourceShort: string | null; prereqs: string[]; concepts: {slug: string; name: string}[]
  recheckPrompt: string | null; events: SessionEvent[]; cardsCount: number; sessions: SessionSummary[]

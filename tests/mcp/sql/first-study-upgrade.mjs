@@ -1,8 +1,10 @@
-// N195 must install before N191 without changing the existing review API or data.
+// N195 must install before the shared receipt/release foundation and preserve
+// the legacy review API both then and on the current canonical release-off stack.
 // Exercise the actual old queue, upgrade the same database, and compare results.
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readdir,readFile} from 'node:fs/promises';
+import {fileURLToPath} from 'node:url';
+import {firstStudyMigrationStack} from './fixtures/n195-foundation/load.mjs';
 const {PGlite}=await import(process.env.PGLITE_MODULE||'@electric-sql/pglite');
 const db=new PGlite();
 const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
@@ -19,12 +21,23 @@ try{
   create function auth.uid() returns uuid language sql as $$select nullif(current_setting('test.uid',true),'')::uuid$$;
   create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;
   grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;`);
- const dir=new URL('../../../supabase/migrations/',import.meta.url);
- const migrations=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
- const feature=migrations.filter(name=>name.includes('_n195_'));
+ const dir=process.env.N195_TEST_MIGRATIONS||fileURLToPath(new URL('../../../supabase/migrations/',import.meta.url));
+ const migrations=await firstStudyMigrationStack(dir);
+ const feature=migrations.filter(({name})=>name.includes('_n195_'));
  assert.equal(feature.length,2,'both N195 production migrations must be exercised');
- for(const name of migrations.filter(name=>!name.includes('_n195_')))
-  await db.exec(await readFile(new URL(name,dir),'utf8'));
+ const foundationFiles=new Set(['20261120044716_n191_evidence_receipts.sql','20261120045749_n191_plan_release_capability.sql']);
+ const foundation=migrations.filter(({name})=>foundationFiles.has(name));
+ assert.equal(foundation.length,2,'the real canonical receipt and release migrations must be installed later');
+ // All other current migrations, including the reviewed N197 cutover, remain
+ // present. Defer only the actual foundation to reproduce a dependency-order
+ // upgrade; no N191 writer is replaced by a permissive fixture implementation.
+ for(const {sql} of migrations.filter(({name})=>!name.includes('_n195_')&&!foundationFiles.has(name)))
+  await db.exec(sql);
+ assert.deepEqual(await one(`select
+  to_regprocedure('public.lemma_plan_released()') is null as release_absent,
+  to_regprocedure('public.lemma_trusted_receipt_begin(uuid,uuid,text,jsonb)') is null as begin_absent,
+  to_regprocedure('public.lemma_trusted_receipt_finish(uuid,uuid,text,jsonb,jsonb)') is null as finish_absent`),
+  {release_absent:true,begin_absent:true,finish_absent:true});
  for(const [uid,secret] of [[owner,'a'],[other,'b']]){
   await q('insert into auth.users(id) values($1)',[uid]);
   await q('insert into public.settings(user_id,connector_secret,new_per_day,reviews_per_day) values($1,$2,3,6)',[uid,secret.repeat(48)]);
@@ -82,7 +95,7 @@ try{
  await auth(other);
  const beforeOther=await queue();
  await db.exec('reset role');
- for(const name of feature)await db.exec(await readFile(new URL(name,dir),'utf8'));
+ for(const {sql} of feature)await db.exec(sql);
  assert.deepEqual(await signature(),beforeSignature,'review_items retains exact arguments, defaults, return type, security and grants');
  assert.deepEqual(await saved(),beforeData,'upgrade must not rewrite existing rows, cards, schedules, runs or receipts');
  await auth(owner);
@@ -106,5 +119,22 @@ try{
  assert.equal((await one('select public.lemma_study_ui_released() released')).released,false);
  await noWrites();
  assert.deepEqual(await queue(),before,'a partially installed dependency cannot alter the old queue');
- console.log('PASS N195 upgrade: legacy signature, grants, ordered queues and data preserved; absent/partial foundation fails closed');
+ await db.exec('reset role');
+ assert.deepEqual(await saved(),beforeData,'partial foundation creates no data or receipt writes');
+ // Replace only the deliberately partial test switch with the exact canonical
+ // foundation SQL. The complete installed stack must retain the default-off
+ // behavior, old review contract and existing learner data without replacement.
+ await db.exec('drop function public.lemma_plan_released()');
+ for(const {sql} of foundation)await db.exec(sql);
+ assert.deepEqual(await signature(),beforeSignature,'canonical foundation retains the upgraded legacy signature and ACL');
+ await auth(owner);
+ assert.equal((await one('select public.lemma_plan_released() released')).released,false);
+ assert.equal((await one('select public.lemma_study_ui_released() released')).released,false);
+ await noWrites();
+ assert.deepEqual(await queue(),before,'the real canonical release-off stack preserves the legacy queue');
+ await auth(other);
+ assert.deepEqual(await queue(),beforeOther,'the canonical release-off stack preserves account isolation');
+ await db.exec('reset role');
+ assert.deepEqual(await saved(),beforeData,'canonical release-off calls preserve data and receipt history');
+ console.log('PASS N195 upgrade: legacy signature, grants, ordered queues and data preserved; absent/partial foundation and canonical release-off stack fail closed');
 }finally{await db.close();}

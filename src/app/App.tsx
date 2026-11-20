@@ -15,6 +15,7 @@ import { calendarRoute } from './calendarRoute'
 import { tasksRoute } from './tasksRoute'
 import { weekRoute } from './weekRoute'
 import {isFlagOn} from '../flags'
+const OfflinePadPage=lazy(()=>import('../features/pad/OfflinePadPage'))
 const PracticePage=lazy(()=>import('../features/practice/Page'))
 const DayRitual=lazy(()=>import('../features/ritual/Page'))
 const TimeLog=lazy(()=>import('../features/time-log/Page'))
@@ -45,7 +46,8 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
   {path:'/welcome',element:<Suspense fallback={<RouteFallback/>}><WelcomeV7/></Suspense>,errorElement:<RouteError/>}]:[]),
  // V32 (v7 UX audit r3): with v7 an unknown address says so (NotFoundV7); without it, it still goes to Today.
  {path: '*', handle: {notFound: true}, element: isFlagOn('v7Shell')?<Suspense fallback={<RouteFallback/>}><NotFoundV7/></Suspense>:<Navigate to="/" replace />},
-]}])
+]}, ...(isFlagOn('v7Shell') && isFlagOn('padLocal') ? [{path: '/pad/:checkpointId?', element:
+  <Suspense fallback={<RouteFallback/>}><OfflinePadPage/></Suspense>, errorElement: <RouteError/>}] : [])])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>
   <StudyUiRelease><RouterProvider router={router} /></StudyUiRelease><ToastHost /><OfflineBanner /><PwaStatus />

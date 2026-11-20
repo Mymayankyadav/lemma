@@ -158,8 +158,75 @@ export type Database = {
         }
         Relationships: []
       }
+      evidence_revisions: {
+        Row: {
+          id: number
+          user_id: string
+          project_id: string | null
+          source: string
+          fact_id: number
+          revision: number
+          kind: string
+          occurred_at: string
+          reported_at: string
+          known_at: string
+          writer_xid: string
+          fact: Json | null
+          superseded_by: number | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      calendar_input_history: {
+        Row: {
+          id: number
+          user_id: string
+          source: string
+          source_key: string
+          known_at: string
+          writer_xid: string
+          input: Json | null
+        }
+        Insert: never
+        Update: never
+        Relationships: []
+      }
+      calendar_occurrence_changes: {
+        Row: {
+          id: string
+          user_id: string
+          series_id: string
+          original_date: string
+          original_zone: string
+          revision: number
+          kind: string
+          starts_local: string | null
+          ends_local: string | null
+          start_fold: number | null
+          end_fold: number | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          series_id: string
+          original_date: string
+          original_zone: string
+          revision: number
+          kind: string
+          starts_local?: string | null
+          ends_local?: string | null
+          start_fold?: number | null
+          end_fold?: number | null
+        }
+        Update: never
+        Relationships: []
+      }
       calendar_blocks: {
         Row: {
+          weekly_rule: Json | null
+          buffer_before_minutes: number
+          buffer_after_minutes: number
           id: string
           user_id: string
           kind: string
@@ -175,6 +242,9 @@ export type Database = {
           session_id: string | null
         }
         Insert: {
+          weekly_rule?: Json | null
+          buffer_before_minutes?: number
+          buffer_after_minutes?: number
           id?: string
           user_id?: string
           kind: string
@@ -190,6 +260,9 @@ export type Database = {
           session_id?: string | null
         }
         Update: {
+          weekly_rule?: Json | null
+          buffer_before_minutes?: number
+          buffer_after_minutes?: number
           id?: string
           user_id?: string
           kind?: string
@@ -952,6 +1025,7 @@ export type Database = {
       }
       sessions: {
         Row: {
+          progress_version: number
           checkpoint_id: string | null
           client: string
           created_at: string
@@ -973,6 +1047,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          progress_version?: number
           checkpoint_id?: string | null
           client?: string
           created_at?: string
@@ -994,6 +1069,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          progress_version?: number
           checkpoint_id?: string | null
           client?: string
           created_at?: string
@@ -1052,6 +1128,7 @@ export type Database = {
           preferred_chat: string
           relearn_steps: string
           reviews_per_day: number
+          scheduling_algorithm: "new" | "legacy" | null
           rollover_hour: number
           time_zone: string
           tutor_rules: string | null
@@ -1078,6 +1155,7 @@ export type Database = {
           preferred_chat?: string
           relearn_steps?: string
           reviews_per_day?: number
+          scheduling_algorithm?: "new" | "legacy" | null
           rollover_hour?: number
           time_zone?: string
           tutor_rules?: string | null
@@ -1104,6 +1182,7 @@ export type Database = {
           preferred_chat?: string
           relearn_steps?: string
           reviews_per_day?: number
+          scheduling_algorithm?: "new" | "legacy" | null
           rollover_hour?: number
           time_zone?: string
           tutor_rules?: string | null
@@ -1291,6 +1370,21 @@ export type Database = {
       }
     }
     Functions: {
+      lemma_plan_released: { Args: Record<string, never>; Returns: boolean }
+      lemma_calendar_snapshot: {
+        Args: { p_horizon_end: string; p_as_of?: string; p_watermark?: string }
+        Returns: Json
+      }
+      lemma_evidence_snapshot: {
+        Args: { p_project_id?: string; p_as_of?: string; p_watermark?: string; p_after?: number | string; p_limit?: number }
+        Returns: Json
+      }
+      lemma_planning_snapshot_mcp: {
+        Args: { p_owner: string; p_kind: string; p_args: Json }
+        Returns: Json
+      }
+      lemma_session_progress_command: { Args: { p: Json }; Returns: Json }
+      calendar_occurrence_changes_command: { Args: { p: Json }; Returns: Json }
       approve_proposal: { Args: { p_edit?: Json; p_id: string }; Returns: Json }
       bootstrap: {
         Args: never

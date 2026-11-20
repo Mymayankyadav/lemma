@@ -37,6 +37,7 @@ export function WeekdayCapacity(){
    await cache.invalidateQueries({queryKey:['study-weekdays',owner]});
    if(result==='conflict'){setError('Availability changed elsewhere. Reopen the saved values before editing.');return;}
    void cache.invalidateQueries({queryKey:['atlas-model']});
+   void cache.invalidateQueries({queryKey:['agenda']});
    void cache.invalidateQueries({predicate:q=>String(q.queryKey[0]).startsWith('adaptive')});
    setOpen(false);
   }catch(e){setError(e instanceof Error?e.message:'Could not confirm availability. Retry the same values.');}

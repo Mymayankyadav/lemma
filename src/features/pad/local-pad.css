@@ -1,0 +1,69 @@
+/* Keep the native editor, keyboard and selection; graph lines are decorative. */
+.local-pad {display:grid; gap:.5rem; min-width:0}
+.local-pad-paper, .local-pad-preview {
+  box-sizing:border-box; min-width:0; margin:0; padding:.65rem;
+  border:1px solid var(--line, currentColor); border-radius:.5rem;
+}
+.local-pad-paper {
+  width:100%; min-height:8rem; resize:vertical;
+  background-color:var(--well, transparent); color:inherit; font:inherit;
+  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  background-size:1.5rem 1.5rem;
+}
+.local-pad-controls {display:flex; flex-wrap:wrap; gap:.35rem}
+.local-pad-controls button {
+  min-width:44px; min-height:44px; padding-inline:.5rem; border:1px solid var(--line, currentColor);
+  border-radius:.5rem; background:var(--raised, transparent); color:inherit;
+}
+.local-pad-controls button:disabled {opacity:.55}
+/* The checkpoint's floating tutor bar must not cover Save or the ink controls.
+   Keep its actions in the document while this editor is open; putting the Pad
+   away restores the checkpoint's normal floating bar without unmounting work. */
+.v7-learn:has(> .local-pad-entry[data-pad-open="true"]) > .v7-learn-bar {
+  position:static; inset:auto; width:auto; max-width:none; margin-inline:0; transform:none;
+}
+.local-pad-preview {
+  white-space:pre-wrap; overflow-wrap:anywhere; overflow:auto; max-height:24rem;
+  contain:layout paint;
+}
+.local-pad-display {display:block; max-width:100%; overflow:auto}
+.local-pad-inline {display:inline-block; max-width:100%; vertical-align:middle; overflow:auto}
+.local-pad-unrendered {font-family:monospace}
+
+.local-pad-ink {
+  display:block; width:100%; height:auto; aspect-ratio:8/5; user-select:none;
+  outline:1px solid var(--line, currentColor); border-radius:.5rem;
+  background-color:var(--well, transparent);
+  background-image:linear-gradient(to right, var(--line, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line, transparent) 1px, transparent 1px);
+  background-size:calc(100% / 32) calc(100% / 20);
+}
+.local-pad-ink[data-mode="draw"] {touch-action:none; cursor:crosshair}
+.local-pad-ink[data-mode="scroll"] {touch-action:auto}
+.local-pad-ink-status {margin:0; min-height:1.4em}
+
+.local-pad-import-text {max-height:12rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere}
+.local-pad-import-ink {width:100%; max-width:20rem; outline:1px solid var(--line,currentColor)}
+
+.local-pad-page {
+  box-sizing:border-box; display:grid; gap:1rem; max-width:48rem; margin-inline:auto;
+  padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom));
+}
+.local-pad-page[data-offline="true"] {padding-top:calc(6rem + env(safe-area-inset-top))}
+.local-pad-page h1 {margin:0; font-size:1.75rem}
+.local-pad-page a {text-decoration:underline; text-underline-offset:.15em}
+html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48px}
+
+.local-pad-page-header {display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:.75rem}
+.local-pad-page-header a, .local-pad-cached a {display:inline-flex; align-items:center; min-height:44px}
+.local-pad-eyebrow {margin:0 0 .25rem; font-size:.875rem; color:var(--ink-2,inherit)}
+.local-pad-chooser {display:grid; grid-template-columns:minmax(0,1fr); gap:.5rem; padding:1rem; border:1px solid var(--line,currentColor); border-radius:.75rem; background:var(--well,transparent)}
+.local-pad-chooser h2,.local-pad-cached h2 {margin:0; font-size:1.125rem}
+.local-pad-chooser select,.local-pad-chooser button {width:100%; min-width:0; min-height:44px; padding:.5rem; border:1px solid var(--line,currentColor); border-radius:.5rem; background:var(--raised,transparent); color:inherit; font:inherit}
+.local-pad-chooser option {background:var(--page,#f8f5f0); color:var(--ink,#091023)}
+.local-pad-chooser p {margin:.25rem 0}
+.local-pad-cached ul {display:flex; flex-wrap:wrap; gap:.5rem 1rem; padding:0; list-style:none}
+.local-pad-page h2,.local-pad-page p,.local-pad-page a {overflow-wrap:anywhere}
+.local-pad-page :is(button,a,input,select,textarea):focus-visible {outline:2px solid var(--ink,currentColor); outline-offset:3px}
+@media (max-width:360px) {.local-pad-page {padding-inline:.75rem}.local-pad-chooser {padding:.75rem}}

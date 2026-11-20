@@ -1,10 +1,13 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
-import { admin } from './db.ts';
+import { admin, adminClient } from './db.ts';
+import { browserAgenda,browserPracticeResult } from './agenda-http.ts';
+import { readAgenda, openPractice, recordPractice, validPracticeRequest } from './agenda.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer } from './server.ts';
 import { selftest } from './selftest.ts';
+import { mcpCorsHeaders as cors,mcpPreflight } from './http-cors.ts';
+import {serveTutor} from './tutor-profile.ts';
 
-const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS,DELETE','Access-Control-Expose-Headers':'Mcp-Session-Id','Vary':'Origin'};
 const cache=new Map<string,{userId:string;until:number}>();
 function equal(a:string,b:string):boolean{
   const x=new TextEncoder().encode(a),y=new TextEncoder().encode(b);
@@ -26,12 +29,30 @@ async function owner(secret:string):Promise<string|null>{
   return match.user_id;
 }
 Deno.serve(async (req:Request)=>{
-  if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
+  if(req.method==='OPTIONS')return mcpPreflight();
   const path=new URL(req.url).pathname.split('/');
   const i=path.indexOf('mcp');
+  if(i>=0&&path.length===i+2&&['agenda','practice-question','practice-result'].includes(path[i+1])){
+    const verify=async (token:string)=>{const {data,error}=await adminClient().auth.getUser(token);return error?null:data.user?.id??null;};
+    if(path[i+1]==='practice-result')return browserPracticeResult(req,{verify,
+      record:async(userId,request)=>recordPractice({db:admin(),userId},request)},cors);
+    const delivery=path[i+1]==='practice-question',requestId=req.headers.get('Idempotency-Key');
+    if(delivery&&!validPracticeRequest(requestId))return new Response(null,{status:400,headers:cors});
+    return browserAgenda(req,{
+      verify,
+      read:async userId=>delivery?openPractice({db:admin(),userId},requestId!):readAgenda({db:admin(),userId}),
+    },cors);
+  }
   const secret=i>=0?path[i+1]:null;
-  if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
   try{
+    if(secret==='tutor'&&path.length===i+2){
+      const response=await serveTutor(req,admin());
+      const headers=new Headers(response.headers);
+      for(const [k,v] of Object.entries(cors))headers.set(k,v);
+      headers.set('Cache-Control','no-store');
+      return new Response(response.body,{status:response.status,headers});
+    }
+    if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
     const userId=await owner(secret);
     if(!userId)return new Response(null,{status:404,headers:cors});
     const c={db:admin(),userId};

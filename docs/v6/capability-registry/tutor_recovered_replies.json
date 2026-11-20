@@ -1,0 +1,48 @@
+{
+  "table": "tutor_recovered_replies",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "body": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "message_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal to the tutor transaction; owner-only history",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    }
+  }
+}

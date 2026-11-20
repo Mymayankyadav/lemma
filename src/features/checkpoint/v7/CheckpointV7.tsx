@@ -5,7 +5,7 @@ import {reviewHref} from '../../../data/review-target';
 import {currentStudyStep} from '../../project/v7/pathModel';
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
-import {useMemo,useState} from 'react';
+import {lazy,Suspense,useMemo,useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {CalendarClock,Check,ChevronRight,CircleCheck,Copy,MoreHorizontal,BookOpen} from 'lucide-react';
 import {ActionSheet} from '../../../ui/v7/ActionSheet';
@@ -22,11 +22,14 @@ import {MathText} from '../../../ui/MathText';
 import {FastTex as Tex} from '../../../ui/FastTex';
 import {chatLink,studyPrompt} from '../../../lib/chat';
 import {ownerZone} from '../../../lib/format';
+import {CheckpointTutor} from '../../tutor/DemoCheckpointTutor';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {nodeStateOf,nodeWord} from '../../project/v7/pathModel';
 import {EvidenceEntry,groupEvidence} from '../../project/v7/Evidence';
 import '../../project/v7/learning.css';
+
+const CheckpointPad=lazy(()=>import('../../pad/CheckpointPad'));
 
 const stateTone=(ui:CheckpointView['ui'])=>ui==='done'?'success':ui==='revisit'?'warning':'info';
 const stateText=(ui:CheckpointView['ui'])=>ui==='revisit'?'Recheck due':nodeWord[nodeStateOf(ui)];
@@ -93,12 +96,16 @@ export default function CheckpointV7(){
     {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
    </div></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
+  {isFlagOn('padLocal')&&<Suspense fallback={null}>
+   <CheckpointPad slug={slug} code={code} detail={detail}/>
+  </Suspense>}
   <CheckpointReady checkpointId={detail.view.id}/>
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
    {evidence.length?<ol className="v7-evidence">{evidence.map(group=><li key={group.key} className="v7-evidence-group">
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
+  {!isFlagOn('padLocal')&&<CheckpointTutor scope={{pathId:slug,checkpointId:view.id,title:view.title,objective:detail.objective,sourceShort:detail.sourceShort,linkedSessions:detail.sessions.filter(s=>s.display!=='ended'),authScope:detail.authScope}}/>}
   <Link className="v7-learn-row" to={studyRepair?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{studyRepair?(due.isSuccess?due.data+' due · Review '+view.title:'Review '+view.title):detail.cardsCount+' '+(detail.cardsCount===1?'card':'cards')+' · Review'}</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>

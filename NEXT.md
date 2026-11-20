@@ -6,17 +6,6 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N191 Complete durable evidence, owner-local calendar and shared receipt foundation
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: — · Assigned: chat-84293#kzbq
-Existing PR: #1533 (https://github.com/Mymayankyadav/lemma/pull/1533)
-Done = Finish PR #1533 without re-implementing its already tested foundations: immutable owner-scoped revision evidence, as-of knowledge/time snapshots, capacity/recurrence/DST calendar commands, atomic operation receipts and legacy session-progress compatibility, owner export/purge, and full registered field+command parity. Make SQL, scope and relevant integration tests pass.
-Tests: `node tests/mcp/sql/parity.mjs`; `node tests/mcp/sql/n191-receipt-compat.mjs`; `tests/mcp/sql/fixtures/n191-{pg-fixture,correction-parity,local-ingress,trusted-core}.mjs`; `tests/unit/calendar/fixed-occurrences.test.ts`; `tests/unit/evidence/{ingress,replay}.test.ts`; `full affected CI and independent review`.
-Scope: supabase/migrations/20261120044716_n191_evidence_receipts.sql; supabase/migrations/20261120045749_n191_plan_release_capability.sql; src/data/usePlanRelease.ts; docs/current/N191.md.
-Not: A new scheduler or learning policy; Turning a feature on by default; Unapproved production data conversion; Replacing history or relaxing test gates.
-Agent packet: [N191.md](docs/implementation/2026-11-20/tasks/N191.md). 
-
 ## N197 Finish shared receipt privileges and seven legacy-writer cutover
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
@@ -27,39 +16,6 @@ Tests: `real PostgreSQL role and grant inspection`; `seven-writer compatibility 
 Scope: supabase/migrations/** (new authorized migration only); tests/mcp/sql/**; docs/current/N197.md; docs/v6/capability-registry/**.
 Not: New learning policy or UI; Co-mingling unrelated feature migrations; Changing protected CI permissions to hide failures.
 Agent packet: [N197.md](docs/implementation/2026-11-20/tasks/N197.md). 
-
-## N193 Finish durable checkpoint tutoring, MCP grants and recovery
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-84293#kzbq
-Existing PR: #1537 (https://github.com/Mymayankyadav/lemma/pull/1537)
-Done = Complete existing PR #1537 so each checkpoint has an owner-bound conversation, one accepted answer per sealed turn, explicit context and source citations, retained losing/manual replies, recoverable ambiguous acknowledgements, narrow per-turn MCP authorization and owner-reviewed change proposals. Expose the canonical receiving contract for Pad excerpts.
-Tests: `node tests/mcp/sql/n193-tutor.mjs`; `tests/mcp/n193-tutor-profile.test.ts`; `tests/e2e/v7-tutor-{live,route-status,local-excerpt,demo-manual}.spec.ts`; `tests/unit/tutor/{live-manual,local-excerpt,turn-model}.test.ts`; `combined export/deletion and real-permission check after N197`.
-Scope: src/features/tutor/DemoCheckpointTutor.tsx; src/data/tutor/{manual-api,live-manual,turn-model,local-excerpt}.ts; supabase/functions/mcp/tutor-profile.ts; supabase/migrations/20261120045827_n193_tutor_threads.sql; docs/current/N193.md.
-Not: Automatic inference using an unverified provider; Implicit Pad submission; Broad connected-host access or new secret exposure.
-Agent packet: [N193.md](docs/implementation/2026-11-20/tasks/N193.md). 
-
-## N196 Ship new scheduler and learning algorithm with default New and Settings override
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-917364#0hiq
-Existing PR: #1547 (https://github.com/Mymayankyadav/lemma/pull/1547)
-Done = Finish PR #1547's owner-bound constrained agenda and four-state forecast/qualified practice routing. Implement a clear persistent Settings > Planning engine choice (New/Legacy). At the coordinated shipping release N198, NEW IS THE DEFAULT for existing and new owners, with no hidden opt-in; user can switch to Legacy and back. Both Today and authenticated MCP queue/resume honor the same choice, preserve already materialized rounds and fail safely to native when invalid.
-Tests: `npx tsc -b; node scripts/ci/lint.mjs`; `node tests/mcp/sql/n196-agenda.mjs`; `tests/e2e/v7-{agenda-decision,scheduling-preference}.spec.ts`; `tests/unit/agenda/** and tests/unit/forecast/parity.test.ts`; `node scripts/atlas/qualify-agenda.mjs with retained reference suite`; `deployment-side read-only shadow, rollback and cross-client tests`.
-Scope: src/data/adaptive/{agenda-api,demo-agenda}.ts; src/features/settings/v7/SettingsLists.tsx; supabase/functions/_shared/agenda/**; supabase/functions/_shared/practice/{router,questions}.ts; supabase/functions/mcp/{agenda,agenda-http}.ts; supabase/migrations/2026121800160*_n196_*.sql; docs/current/N196.md.
-Not: Quietly defaulting all users to Legacy; Unobservable fallback or a hidden opt-in; Unqualified randomized practice exposure; Changing protected test thresholds or bypassing Owner approval.
-Agent packet: [N196.md](docs/implementation/2026-11-20/tasks/N196.md). 
-
-## N192 Ship dedicated Lemma Pad page, custom math keyboard and offline editor
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N193 · Assigned: chat-84293#kzbq
-Existing PR: #1535 (https://github.com/Mymayankyadav/lemma/pull/1535)
-Done = Extend existing PR #1535 into a shipped, discoverable full-page Lemma Pad—not merely an embedded checkpoint panel or hidden offline shortcut. Add a first-class route, in-app entry and deep-link recovery; ship a usable custom mathematics keyboard while retaining native keyboard/IME and caret support. Preserve current revisioned offline text, KaTeX preview, ink, backup/export, owner isolation and explicit tutor selection.
-Tests: `tests/e2e/pad-{local,live-offline}.spec.ts plus dedicated route/math-keyboard flows`; `tests/unit/pad/{local-pad-editor,pad-draft,pad-edit,pad-ink,pad-checkpoint,pad-import}.test.ts[x]`; `Android export unit tests and POCO M8 Power Android 16 physical acceptance`; `offline PWA cold start, keyboard IME, TalkBack and landscape reachability`.
-Scope: src/features/pad/{OfflinePadPage,LocalPadWorkspace,LocalPadEditor,LocalPadInk,CheckpointPad,LocalPadDraftPanel}.tsx; new PadMathKeyboard component and CSS in src/features/pad; src/app/routes.tsx; src/app/v7/V7Shell.tsx; src/features/pad/padDraftStore.ts; src/data/tutor/local-excerpt.ts; docs/current/N192.md.
-Not: Only offering Pad as a checkpoint subsection; Removing native keyboard or keyboard accessibility; A cloud-sync rewrite or insecure offline authorization; Unrequested automatic tutor submission.
-Agent packet: [N192.md](docs/implementation/2026-11-20/tasks/N192.md). 
 
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
