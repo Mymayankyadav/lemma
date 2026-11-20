@@ -52,6 +52,7 @@ declare
   r jsonb; previous jsonb; owner_id uuid; project uuid; session uuid;
   fact_key bigint; successor bigint; occurred timestamptz; accepted timestamptz;
   report_time timestamptz; next_revision integer; active boolean;
+  prior_project uuid; prior_kind text; prior_occurred timestamptz;
   writer xid8 := pg_catalog.pg_current_xact_id();
 begin
   if TG_OP='DELETE' then r:=pg_catalog.to_jsonb(old);
@@ -89,7 +90,18 @@ begin
     select 1 from public.session_events se join public.sessions ss on ss.user_id=se.user_id and ss.id=se.session_id
     where se.user_id=owner_id and se.id=(r->>'session_event_id')::bigint and (session is null or se.session_id=session)
       and (project is null or ss.project_id=project)
-  ) then raise exception 'Evidence event outside its owner/session' using errcode='23503'; end if;
+  ) then
+    -- Atlas retains the previously accepted event ID when its session is
+    -- deleted. FK triggers can clear the session before deleting its events.
+    -- Only retain the unchanged reference on the same owner's detached fact.
+    if (TG_OP='UPDATE' and session is null and previous->>'user_id'=r->>'user_id'
+      and previous->>'session_event_id'=r->>'session_event_id'
+      and (project is null or previous->>'project_id'=r->>'project_id')
+      and not exists(select 1 from public.session_events se join public.sessions ss on ss.id=se.session_id
+        where se.id=(r->>'session_event_id')::bigint)) is not true then
+      raise exception 'Evidence event outside its owner/session' using errcode='23503';
+    end if;
+  end if;
   if TG_TABLE_NAME='evidence' and TG_OP<>'DELETE' and successor is not null and not exists (
     select 1 from public.evidence e where e.user_id=owner_id and e.id=successor
   ) then raise exception 'Evidence successor outside its owner' using errcode='23503'; end if;
@@ -101,9 +113,22 @@ begin
     where h.user_id=owner_id and h.writer_xid=writer limit 1;
   accepted:=coalesce(accepted,pg_catalog.clock_timestamp());
   report_time:=case when TG_OP='INSERT' then (r->>'created_at')::timestamptz else accepted end;
-  select coalesce(max(h.revision),0)+1 into next_revision from public.evidence_revisions h
-    where h.user_id=owner_id and h.source=TG_TABLE_NAME and h.fact_id=fact_key;
+  select h.revision+1,h.project_id,h.kind,h.occurred_at into next_revision,prior_project,prior_kind,prior_occurred
+    from public.evidence_revisions h where h.user_id=owner_id and h.source=TG_TABLE_NAME and h.fact_id=fact_key
+    order by h.revision desc limit 1;
+  next_revision:=coalesce(next_revision,1);
   active:=TG_OP<>'DELETE' and r->>'voided_at' is null and successor is null;
+  -- A canonical link can change without removing the owner's fact. Close its
+  -- former project lineage first so a scoped reader sees the departure. The
+  -- next global revision describes the surviving record under its new scope.
+  if prior_kind='record' and prior_project is not null and prior_project is distinct from project
+    and exists(select 1 from public.projects where user_id=owner_id and id=prior_project) then
+    insert into public.evidence_revisions
+      (user_id,project_id,source,fact_id,revision,kind,occurred_at,reported_at,known_at,writer_xid)
+    values(owner_id,prior_project,TG_TABLE_NAME,fact_key,next_revision,'void',prior_occurred,accepted,accepted,writer);
+    if not active then return null; end if;
+    next_revision:=next_revision+1;
+  end if;
   insert into public.evidence_revisions
     (user_id,project_id,source,fact_id,revision,kind,occurred_at,reported_at,known_at,writer_xid,fact,superseded_by)
   values(owner_id,project,TG_TABLE_NAME,fact_key,next_revision,case when active then 'record' else 'void' end,

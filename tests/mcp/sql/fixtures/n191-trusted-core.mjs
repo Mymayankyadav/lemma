@@ -219,6 +219,48 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
     assert.equal(await scalar('select count(*)::int result from public.session_events where session_id=$1',[session]),2);
   }
   await as('service_role');
+  // Session deletion clears the canonical instruction's link. Its previous
+  // project must lose the fact while the owner still retains the instruction.
+  const {replayEvidence} = await tsImport('../../../../src/lib/evidence/replay.ts', import.meta.url);
+  await as();
+  const detachedSession = await scalar(`insert into public.sessions(user_id,project_id,number,goal,style)
+    values ($1,$2,89,'Detached instruction','socratic') returning id result`,[owner,project]);
+  await as('service_role');
+  const accepted = await call({...request,operationId:operationId(96),target:{id:detachedSession}});
+  assert.equal(accepted.status,'ok');
+  await as();
+  const instruction = await scalar('select id::text result from public.instruction_events where user_id=$1 and session_id=$2',
+    [owner,detachedSession]);
+  const [originalAttempt]=await q('select id::text,session_event_id::text from public.attempts where user_id=$1 and session_id=$2',
+    [owner,detachedSession]);
+  await assert.rejects(q('insert into public.attempts(user_id,session_event_id) values ($1,$2)',
+    [other,originalAttempt.session_event_id]),failCode('23503'));
+  await as('service_role');
+  const readScope = (user, args) => scalar("select public.lemma_planning_snapshot_mcp($1,'evidence',$2) result",
+    [user,JSON.stringify(args)]);
+  const activeInstruction = (user,snap) => replayEvidence(user,snap.events,snap.asOf).active
+    .filter(e=>e.source==='instruction_events'&&e.lineageId===instruction);
+  const scopedBefore = await readScope(owner,{p_project_id:project});
+  assert.deepEqual(activeInstruction(owner,scopedBefore).map(e=>e.payload.session_id),[detachedSession]);
+  await as();
+  await q('delete from public.sessions where id=$1 and user_id=$2',[detachedSession,owner]);
+  assert.equal(await scalar('select session_id result from public.instruction_events where id=$1 and user_id=$2',[instruction,owner]),null);
+  assert.deepEqual((await q('select id::text,session_id,session_event_id::text from public.attempts where user_id=$1 and id=$2',
+    [owner,originalAttempt.id]))[0],{...originalAttempt,session_id:null});
+  await assert.rejects(q('insert into public.attempts(user_id,project_id,session_event_id) values ($1,$2,$3)',
+    [owner,project,originalAttempt.session_event_id]),failCode('23503'));
+  await as('service_role');
+  const scopedAfter = await readScope(owner,{p_project_id:project});
+  assert.deepEqual(activeInstruction(owner,scopedAfter),[]);
+  const allAfter = await readScope(owner,{});
+  assert.deepEqual(activeInstruction(owner,allAfter).map(e=>e.payload.session_id),[null]);
+  const changes=allAfter.events.filter(e=>e.source==='instruction_events'&&e.lineageId===instruction);
+  assert.deepEqual(changes.map(e=>[e.revision,e.kind]),[[1,'record'],[2,'void'],[3,'record']]);
+  assert.equal(changes[1].knownAt,changes[2].knownAt);
+  const historical = await readScope(owner,{p_project_id:project,p_as_of:scopedBefore.asOf,p_watermark:scopedBefore.watermark});
+  assert.deepEqual(historical.events,scopedBefore.events);
+  assert.deepEqual(activeInstruction(other,await readScope(other,{})),[]);
+  await assert.rejects(readScope(other,{p_project_id:project}),failCode('42501'));
   const seeded = await scalar("select public.lemma_seed_evidence_page($1,'attempts',0,1) result",[owner]);
   assert.equal(seeded.captured,0); assert.ok(seeded.cursor);
   const full = await evidence();
