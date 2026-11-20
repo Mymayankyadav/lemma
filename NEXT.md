@@ -19,7 +19,7 @@ Scope: capture and task/block forms, card detail and durable review-run clients,
 ## N192 Build the offline Local Pad (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
-Stage: Build · Status: open · Needs: — · Assigned: chat-2192#p8km
+Stage: Build · Status: done · Needs: — · Assigned: chat-84293#kzbq
 Done = owner/checkpoint-scoped text and completed strokes resume offline, with bounded preview, recoverable drafts, export, and deliberate selected context handoff; prove local editing sends no tutor requests. The staged editor may proceed before P1/P3 storage and P6 sending integration.
 Tests: Local Pad editor and rendering, owner/checkpoint isolation and recovery, offline reopen and export, mobile rotation and IME, and exact reviewed selection handoff.
 Scope: P8 Local Pad and its tests, optionally a default-off entry after integration, docs/current/N192.md.

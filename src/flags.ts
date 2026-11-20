@@ -37,7 +37,7 @@ export const FLAG_DEFAULTS = {
   v7Qed: true,
   /** N157 · U4 S6 scratch paper: a sheet of graph paper for an attempt before the reveal; nothing is stored. */
   v7Scratch: true,
-  /** P8 local Pad can be exercised only in demo builds until live owner/checkpoint authority is wired. */
+  /** P8 checkpoint Pad and device-local offline entry. Enabled together in the reviewed release. */
   padLocal: false,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,

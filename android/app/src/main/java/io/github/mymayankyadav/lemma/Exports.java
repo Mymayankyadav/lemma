@@ -23,7 +23,7 @@ final class Exports {
 
     /** Only the types a Lemma export uses; anything else is sent as JSON, the backup's own type. */
     static String mime(String mime) {
-        if ("application/json".equals(mime) || "text/plain".equals(mime) || "text/markdown".equals(mime) || "text/csv".equals(mime)) return mime;
+        if ("application/json".equals(mime) || "text/plain".equals(mime) || "text/markdown".equals(mime) || "text/csv".equals(mime) || "text/html".equals(mime)) return mime;
         return "application/json";
     }
 }

@@ -39,3 +39,12 @@
 
 .local-pad-import-text {max-height:12rem; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere}
 .local-pad-import-ink {width:100%; max-width:20rem; outline:1px solid var(--line,currentColor)}
+
+.local-pad-page {
+  box-sizing:border-box; display:grid; gap:1rem; max-width:48rem; margin-inline:auto;
+  padding:calc(1rem + env(safe-area-inset-top)) 1rem calc(2rem + env(safe-area-inset-bottom));
+}
+.local-pad-page[data-offline="true"] {padding-top:calc(6rem + env(safe-area-inset-top))}
+.local-pad-page h1 {margin:0; font-size:1.75rem}
+.local-pad-page a {text-decoration:underline; text-underline-offset:.15em}
+html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48px}

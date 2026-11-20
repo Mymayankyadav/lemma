@@ -5,6 +5,9 @@ import {afterEach, expect, test, vi} from 'vitest';
 import {FLAG_DEFAULTS, resolveFlags} from '../../../src/flags';
 import {fixtureCheckpointId} from '../../../src/features/pad/FixtureCheckpointPad';
 import {LocalPadDraftPanel} from '../../../src/features/pad/LocalPadDraftPanel';
+import {LocalPadWorkspace} from '../../../src/features/pad/LocalPadWorkspace';
+import {initializePadInk} from '../../../src/features/pad/padInk';
+import {setLemmaNativeForTests, type LemmaNativePlugin} from '../../../src/platform/bridge';
 import {makePadFile} from '../../../src/features/pad/padExport';
 import {PAD_BACKUP_MAX_BYTES, readPadBackup} from '../../../src/features/pad/padImport';
 import {bindPadDraft, bindFixturePadDraft, PAD_FIXTURE_DB_PREFIX, PAD_NOTE_MAX, type PadDraftBackend} from '../../../src/features/pad/padDraftStore';
@@ -20,6 +23,33 @@ const edit = padEdit('<img src="https://no.invalid"> π', 0, 2, 'backward');
 const ink = [[{x: 16, y: 20}]];
 const backup = makePadFile(edit, ink, 'backup').contents;
 afterEach(() => vi.unstubAllGlobals());
+
+test('Android export opens the share sheet with the selected local format and keeps the draft on failure', async () => {
+  vi.stubGlobal('Capacitor', {isNativePlatform: () => true, getPlatform: () => 'android'});
+  const shareFile = vi.fn().mockResolvedValueOnce({shared: true}).mockResolvedValueOnce({shared: false});
+  setLemmaNativeForTests({shareFile} as unknown as LemmaNativePlugin);
+  const host = document.createElement('div');
+  document.body.append(host);
+  const root = createRoot(host);
+  Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
+  const click = (label: string) => [...host.querySelectorAll('button')].find(button => button.textContent === label)!.click();
+  try {
+    await act(async () => root.render(<LocalPadWorkspace value={edit} onEdit={() => {}}
+      ink={initializePadInk(ink)!} onInk={() => {}}/>));
+    await act(async () => click('Export readable Pad'));
+    await vi.waitFor(() => expect(shareFile).toHaveBeenNthCalledWith(1, expect.objectContaining({name: 'lemma-pad.html', mime: 'text/html',
+      text: expect.stringContaining('&lt;img')})));
+    await vi.waitFor(() => expect(host.textContent).toContain('Choose where to save your Pad.'));
+    await act(async () => click('Export Pad backup'));
+    await vi.waitFor(() => expect(shareFile).toHaveBeenNthCalledWith(2, expect.objectContaining({name:'lemma-pad.json',mime:'application/json',text:backup})));
+    await vi.waitFor(() => expect(host.textContent).toContain('Could not start the export.'));
+    expect(host.querySelector('textarea')?.value).toBe(edit.text);
+  } finally {
+    await act(async () => root.unmount());
+    host.remove();
+    setLemmaNativeForTests(null);
+  }
+});
 
 test('requires known backup format, exact dimensions, and bounded valid UTF-8', async () => {
   expect(await readPadBackup(file(backup))).toEqual({edit, strokes: ink});

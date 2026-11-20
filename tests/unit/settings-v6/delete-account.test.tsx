@@ -2,6 +2,7 @@ import {act} from 'react';
 import {createRoot,type Root} from 'react-dom/client';
 import {beforeEach,afterEach,describe,expect,it,vi} from 'vitest';
 import DeleteAccount,{canDeleteAccount,DELETE_CONFIRMATION} from '../../../src/features/settings/v6/DeleteAccount';
+import {publishAuth} from '../../../src/data/authBoundary';
 
 const mocks=vi.hoisted(()=>({invoke:vi.fn(),signOut:vi.fn(),
  navigate:vi.fn(),getMode:vi.fn()}));
@@ -19,7 +20,7 @@ beforeEach(()=>{
  host=document.createElement('div');document.body.append(host);
  root=createRoot(host);
 });
-afterEach(async()=>{await act(async()=>root.unmount());host.remove()});
+afterEach(async()=>{await act(async()=>root.unmount());host.remove();publishAuth(null)});
 async function render(onExport=vi.fn()){
  await act(async()=>root.render(<DeleteAccount onExport={onExport}/>));
  return onExport;
@@ -104,5 +105,19 @@ describe('N103 deliberate account deletion control',()=>{
   await act(async()=>button('Delete account permanently').click());
   await vi.waitFor(()=>expect(host.querySelector('[role=alert]')).not.toBeNull());
   expect(mocks.navigate).not.toHaveBeenCalled();
+ });
+ it('does not sign out the new account when the original deletion completes after an account change',async()=>{
+  const owner='00000000-0000-4000-8000-000000000053',other='00000000-0000-4000-8000-000000000054';
+  publishAuth({id:owner});
+  const marker='lemma.device-pad.v1:'+other+':last';
+  localStorage.setItem(marker,'some checkpoint');
+  mocks.invoke.mockImplementation(async()=>{publishAuth({id:other});return {data:{deleted:true},error:null};});
+  await render();await confirm();
+  await act(async()=>button('Delete account permanently').click());
+  expect(mocks.invoke).toHaveBeenCalledTimes(1);
+  expect(mocks.signOut).not.toHaveBeenCalled();
+  expect(mocks.navigate).not.toHaveBeenCalled();
+  expect(localStorage.getItem(marker)).toBe('some checkpoint');
+  localStorage.removeItem(marker);
  });
 });

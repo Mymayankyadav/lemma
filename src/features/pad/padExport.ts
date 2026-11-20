@@ -4,13 +4,17 @@ import {padEdit, type PadEdit} from './padEdit';
 interface PadFile {filename: string; type: string; contents: string}
 type Format = 'backup' | 'readable';
 
+export function padBackup(notes: PadEdit, strokes: PadStrokes) {
+  return {format: 'lemma-pad', version: 1, notes, ink: {...PAD_PAPER, strokes}};
+}
+
 /** Explicit export of the current local Pad only. No owner, checkpoint or provider metadata. */
 export function makePadFile(edit: PadEdit, strokes: PadStrokes, format: Format): PadFile {
   const ink = initializePadInk(strokes);
   if (!ink) throw new Error('Invalid Pad ink');
   const notes = padEdit(edit.text, edit.start, edit.end, edit.direction);
   if (format === 'backup') {
-    const envelope = {format: 'lemma-pad', version: 1, notes, ink: {...PAD_PAPER, strokes: ink.strokes}};
+    const envelope = padBackup(notes, ink.strokes);
     return {filename: 'lemma-pad.json', type: 'application/json', contents: JSON.stringify(envelope)};
   }
   const escapeText = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');

@@ -4,6 +4,7 @@ import {Button,Checkbox,Field,Sheet} from '../../../ui/v7/components';
 import {useBackup} from '../v6/Export';
 import {DELETE_CONFIRMATION,useAccountDeletion} from '../v6/DeleteAccount';
 import {Group} from './SettingsLists';
+import {isFlagOn} from '../../../flags';
 
 /**
  * V43 (v7 UX audit r3): Settings › Data and account was the old form inside a v7 page (12 px text in seven places, a
@@ -15,6 +16,7 @@ export function DataAccount({demo,onSignOut,signingOut}:{demo:boolean;onSignOut:
  const backup=useBackup();
  const deletion=useAccountDeletion();
  const [confirming,setConfirming]=useState(false);
+ const devicePads=!demo&&isFlagOn('padLocal');
  return <div className="v7-settings-body v7-data">
   <Group title="Account" note={demo?'You are exploring the example workspace. Sign in with Google to open your own record.':undefined}>
    <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">{demo?'Example workspace':'Your study record'}</span></span>
@@ -23,7 +25,7 @@ export function DataAccount({demo,onSignOut,signingOut}:{demo:boolean;onSignOut:
   <Group title="Export">
    <li className="v7-data-row"><span className="v7-set-text"><span className="v7-set-label">Backup</span>
     <small>{backup.app?'A JSON copy of your whole record. Android asks where to keep it: Files keeps it on this phone; Drive or email keeps a copy elsewhere.'
-     :'A JSON copy of your whole record. Keep it somewhere only you can open.'}</small></span>
+     :'A JSON copy of your whole record. Keep it somewhere only you can open.'}{devicePads&&' Includes saved Local Pad revisions on this device.'}</small></span>
     <Button small loading={backup.busy} onClick={()=>{void backup.run();}}><Download aria-hidden="true"/>{backup.busy?'Preparing backup…':backup.label}</Button></li>
    {backup.shared&&<li className="v7-data-status" role="status">Your backup is in Android's share sheet. Choose Files to keep it on this phone.</li>}
    {backup.error&&<li className="v7-data-status" role="alert">{backup.error}</li>}
@@ -37,7 +39,7 @@ export function DataAccount({demo,onSignOut,signingOut}:{demo:boolean;onSignOut:
    footer={<><Button variant="ghost" onClick={()=>setConfirming(false)}>Keep account</Button>
     <Button variant="primary" destructive loading={deletion.busy} disabled={!deletion.allowed} onClick={()=>{void deletion.requestDeletion();}}>Delete account permanently</Button></>}>
    <div className="v7-data-sheet">
-    <p>This permanently deletes your study record, uploaded files, tutor connection and sign-in. It cannot be undone.</p>
+    <p>This permanently deletes your study record, uploaded files, tutor connection and sign-in. It cannot be undone.{devicePads&&' Saved Local Pads on this device are also removed. Clear Pad data on your other devices separately.'}</p>
     <Button onClick={()=>{void backup.run();}} loading={backup.busy}><Download aria-hidden="true"/>{backup.label} first</Button>
     <Checkbox label="I have a backup, or I chose not to keep one." checked={deletion.exported} disabled={deletion.busy||deletion.mode!=='live'} onChange={deletion.setExported}/>
     <Field label={'Type '+DELETE_CONFIRMATION+' to confirm'} aria-label="Type delete confirmation" autoComplete="off" value={deletion.confirmation}

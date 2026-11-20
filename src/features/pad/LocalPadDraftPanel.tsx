@@ -18,7 +18,9 @@ const status: Record<PadDraftState['status'], string> = {
   'scope-changed': 'This Pad is no longer available.',
 };
 
-export function LocalPadDraftPanel({session}: {session: ReturnType<typeof createPadDraftSession>}) {
+export function LocalPadDraftPanel({session, onSendSelection}: {
+  session: ReturnType<typeof createPadDraftSession>; onSendSelection?: (text: string) => void;
+}) {
   const [, redraw] = useState(0);
   const state = session.snapshot();
   const [ink, setInk] = useState(() => initializePadInk(state.draft.strokes)!);
@@ -65,6 +67,9 @@ export function LocalPadDraftPanel({session}: {session: ReturnType<typeof create
   return <div className="local-pad">
     <p role="status">{status[state.status]}</p>
     <LocalPadWorkspace key={workspaceVersion} value={state.draft.edit} ink={ink}
+      onSendSelection={onSendSelection && (text => {
+        if (session.snapshot().status !== 'scope-changed') onSendSelection(text);
+      })}
       onEdit={edit => {session.edit({...session.snapshot().draft, edit}); refresh();}}
       onInk={next => {session.edit({...session.snapshot().draft, strokes: next.strokes}); setInk(next); refresh();}}/>
     <div className="local-pad-controls" role="group" aria-label="Pad draft actions">

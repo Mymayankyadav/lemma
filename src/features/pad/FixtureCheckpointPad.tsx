@@ -14,7 +14,9 @@ export async function fixtureCheckpointId(profile: DemoProfile, checkpointId: st
   return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20)].join('-');
 }
 
-export default function FixtureCheckpointPad({checkpointId, profile}: {checkpointId: string; profile: DemoProfile}) {
+export default function FixtureCheckpointPad({checkpointId, profile, onSendSelection}: {
+  checkpointId: string; profile: DemoProfile; onSendSelection?: (text: string) => void;
+}) {
   const [session, show] = useState<ReturnType<typeof createPadDraftSession> | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -32,5 +34,5 @@ export default function FixtureCheckpointPad({checkpointId, profile}: {checkpoin
   }, [profile, checkpointId]);
 
   if (!session) return <p role="status">{failed ? 'Could not open the demo Pad.' : 'Opening local demo Pad…'}</p>;
-  return <LocalPadDraftPanel session={session}/>;
+  return <LocalPadDraftPanel session={session} onSendSelection={onSendSelection}/>;
 }

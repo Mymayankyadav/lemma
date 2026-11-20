@@ -1,6 +1,7 @@
 import type { LemmaApi } from '../api'
 import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
+import {authGeneration, authOwner} from '../authBoundary'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
 import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
@@ -349,6 +350,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> {
   const [slug,code]=args,db=liveClient(),uid=await owner(db)
+  const generation=authGeneration()
   const project=await this.getProject(slug)
   const row=checked(await db.from('checkpoints').select('*').eq('project_id',project.project.id).eq('code',code).eq('user_id',uid).single()) as Row
   const [prereqs,cpConcepts,concepts,sources,events,notes,sessions]=await Promise.all([
@@ -358,7 +360,10 @@ export class LiveAdapter implements LemmaApi {
   const cpRows=await rows(db,'checkpoints',uid)
   const linked=cpConcepts.filter(x=>x.checkpoint_id===row.id).map(x=>concepts.find(c=>c.id===x.concept_id)).filter(Boolean) as Row[]
   const cpById=new Map(cpRows.map(c=>[c.id,c]))
-  return {view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
+  if(authGeneration()!==generation || (authOwner()!==null && authOwner()!==uid))
+   throw new LemmaError('auth','The account changed. Reopen the checkpoint.')
+  const authScope=authOwner()===uid?{ownerId:uid,generation,checkpointId:row.id as string}:undefined
+  return {authScope,view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
     steps:row.steps??[],pages:row.pages,sourceShort:sources.find(x=>x.id===row.source_id)?.short??null,
     prereqs:prereqs.filter(x=>x.checkpoint_id===row.id).map(x=>cpById.get(x.prereq_id)?.code).filter(Boolean) as string[],
     concepts:linked.map(x=>({slug:x.slug,name:x.name})),recheckPrompt:row.recheck_prompt,
@@ -925,9 +930,11 @@ export class LiveAdapter implements LemmaApi {
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
+  const generation=authGeneration()
   // Only the owner-scoped SECURITY DEFINER function reads the private registry.
   // The browser never selects undo metadata or other users' domain tables.
   const snapshot=checked(await db.rpc('begin_owner_export')) as string
+  let result:Blob
   try{
   const load=async(table:string|null)=>{
    const accumulated:unknown[]=[]
@@ -973,10 +980,16 @@ export class LiveAdapter implements LemmaApi {
    })
    manifest.push({table,count:tables[table].length})
   }
-  return new Blob([JSON.stringify({
+  const checkAccount=()=>{if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The export account changed')}
+  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
+  const savedPads=authOwner()===uid?await (await import('../../features/pad/padDraftStore')).exportSavedPadDrafts(uid,checkAccount):[]
+  result=new Blob([JSON.stringify({
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
-   manifest:{registry:'lemma_undo_tables',tables:manifest},tables
+   manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+   ...(savedPads.length?{devicePad:{version:1,checkpoints:savedPads}}:{})
   },null,2)],{type:'application/json'})
   }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}
+  if(authGeneration()!==generation)throw new LemmaError('auth','The export account changed')
+  return result
  }
 }

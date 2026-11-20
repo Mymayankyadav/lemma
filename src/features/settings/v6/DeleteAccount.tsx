@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import {useNavigate} from 'react-router';
 import {getMode} from '../../../data/mode';
+import {authGeneration,authOwner} from '../../../data/authBoundary';
 import {liveClient} from '../../../data/live/client';
 import {useToast} from '../../../ui/Toast';
 export const DELETE_CONFIRMATION='DELETE MY ACCOUNT';
@@ -20,13 +21,20 @@ export function useAccountDeletion(){
   setBusy(true);setError('');
   try{
    const owner=liveClient();
+   const ownerId=authOwner(),generation=authGeneration();
    const response=await owner.functions.invoke('account-delete',{
     body:{confirmation:DELETE_CONFIRMATION,exportAcknowledged:true},
    });
    if(response.error||response.data?.deleted!==true)
     throw Error('Could not verify complete account deletion. Your account may still exist.');
+   if(authGeneration()!==generation||authOwner()!==ownerId){
+    notify('Account deleted. Local Pad data may remain on this device because the active account changed.');
+    return;
+   }
+   const removed=!ownerId||await import('../../pad/padCheckpoint').then(pad=>pad.removeDeletedOwnerPads(ownerId,generation)).catch(()=>false);
+   if(authGeneration()!==generation||authOwner()!==ownerId)return;
    await owner.auth.signOut();
-   notify('Account deleted',{tone:'success'});
+   notify(removed?'Account deleted':'Account deleted. Clear this site’s storage to remove remaining local Pad data.',{tone:removed?'success':'normal'});
    navigate('/sign-in',{replace:true});
   }catch(e){
    setError(e instanceof Error?e.message:'Account deletion could not be verified');

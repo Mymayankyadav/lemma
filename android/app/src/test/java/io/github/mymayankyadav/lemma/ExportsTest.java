@@ -30,6 +30,7 @@ public class ExportsTest {
     @Test public void sendsOnlyKnownTypes() {
         assertEquals("application/json", Exports.mime("application/json"));
         assertEquals("text/markdown", Exports.mime("text/markdown"));
+        assertEquals("text/html", Exports.mime("text/html"));
         assertEquals("application/json", Exports.mime("application/vnd.android.package-archive"));
         assertEquals("application/json", Exports.mime(null));
     }

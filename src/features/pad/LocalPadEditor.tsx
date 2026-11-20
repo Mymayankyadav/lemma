@@ -1,4 +1,5 @@
 import {useDeferredValue, useId, useLayoutEffect, useRef, useState, type PointerEvent} from 'react';
+import {LOCAL_TUTOR_EXCERPT_LIMIT, previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt';
 import {LocalPadPreview} from './LocalPadPreview';
 import {
   PAD_SYMBOLS, PAD_TEMPLATES, applyPadSuggestion, insertPadSymbol, insertPadTemplate,
@@ -13,6 +14,7 @@ function snapshot(node: HTMLTextAreaElement) {
 interface LocalPadEditorProps {
   value: PadEdit;
   onEdit: (value: PadEdit) => void;
+  onSendSelection?: (text: string) => void;
 }
 
 /**
@@ -20,7 +22,7 @@ interface LocalPadEditorProps {
  * currently authorized owner/checkpoint; this component has no storage or transport.
  * Key it by the authorized draft binding when changing checkpoint or account.
  */
-export function LocalPadEditor({value, onEdit}: LocalPadEditorProps) {
+export function LocalPadEditor({value, onEdit, onSendSelection}: LocalPadEditorProps) {
   const field = useRef<HTMLTextAreaElement>(null);
   const composing = useRef(false);
   const [frozenSource, setFrozenSource] = useState<string | null>(null);
@@ -45,6 +47,19 @@ export function LocalPadEditor({value, onEdit}: LocalPadEditorProps) {
     }
   }
 
+  // Native touch selection handles can update a textarea without a key or mouse event.
+  useLayoutEffect(() => {
+    const node = field.current;
+    if (!node) return;
+    const selectionChanged = () => {if (!composing.current) publish(snapshot(node));};
+    node.addEventListener('select', selectionChanged);
+    node.addEventListener('selectionchange', selectionChanged);
+    return () => {
+      node.removeEventListener('select', selectionChanged);
+      node.removeEventListener('selectionchange', selectionChanged);
+    };
+  });
+
   function edit(operation: (current: PadEdit) => PadEdit | null) {
     const node = field.current;
     if (!node || composing.current) return;
@@ -59,6 +74,7 @@ export function LocalPadEditor({value, onEdit}: LocalPadEditorProps) {
     if (document.activeElement === field.current) event.preventDefault();
   }
 
+  const selection = previewLocalTutorExcerpt(value.text.slice(valueSelection.start, valueSelection.end));
   const suggestions = compositionActive ? [] : padSuggestions(valueSelection);
   return <section aria-label="Local Pad editor" className="local-pad">
     <label htmlFor={id}>Pad notes</label>
@@ -83,6 +99,16 @@ export function LocalPadEditor({value, onEdit}: LocalPadEditorProps) {
       <button type="button" disabled={compositionActive || !nextPadSlot(valueSelection)}
         onPointerDown={keepSelection} onClick={() => edit(nextPadSlot)}>Next slot</button>
     </div>
+    {onSendSelection && <div className="local-pad-controls">
+      <button type="button" disabled={compositionActive || selection.kind !== 'preview'}
+        onPointerDown={keepSelection} onClick={() => {
+          const node = field.current;
+          if (!node || composing.current) return;
+          const reviewed = previewLocalTutorExcerpt(node.value.slice(node.selectionStart, node.selectionEnd));
+          if (reviewed.kind === 'preview') onSendSelection(reviewed.text);
+        }}>Send selection to tutor</button>
+      {selection.kind === 'too-long' && <p role="status">Select up to {LOCAL_TUTOR_EXCERPT_LIMIT} characters.</p>}
+    </div>}
     {suggestions.length > 0 && <div className="local-pad-controls" role="group" aria-label="Local math suggestions">
       {suggestions.map(({command}) => <button key={command} type="button" onPointerDown={keepSelection}
         onClick={() => edit(current => {

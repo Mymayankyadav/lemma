@@ -92,3 +92,24 @@ test('preserves literal text for invalid or over-budget TeX and isolates formula
   await act(async () => root.render(<LocalPadPreview source={'x'.repeat(PAD_PREVIEW_LIMIT + 1)}/>));
   expect(host.textContent).toContain('Your text is unchanged.');
 });
+
+test('offers only the explicitly selected bounded text to the tutor, and freezes that value on click', async () => {
+  const send = vi.fn(), fetch = vi.fn();
+  vi.stubGlobal('fetch', fetch);
+  const full = 'Private before |  ∀ x ∈ ℝ  | private after';
+  const snippet = '  ∀ x ∈ ℝ  ', start = full.indexOf(snippet);
+  const render = (value: PadEdit) => act(async () =>
+    root.render(<LocalPadEditor value={value} onEdit={() => {}} onSendSelection={send}/>));
+  await render(padEdit(full, start, start + snippet.length));
+  const action = button('Send selection to tutor');
+  expect(send).not.toHaveBeenCalled();
+  await act(async () => action.click());
+  expect(send.mock.calls).toEqual([[snippet]]);
+  await render(padEdit('later edits'));
+  expect(action.disabled).toBe(true);
+  await render(padEdit('x'.repeat(1201), 0, 1201));
+  expect(action.disabled).toBe(true);
+  expect(host.textContent).toContain('Select up to 1200 characters.');
+  expect(fetch).not.toHaveBeenCalled();
+  expect(send.mock.calls).toEqual([[snippet]]);
+});
