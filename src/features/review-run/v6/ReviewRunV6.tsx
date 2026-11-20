@@ -11,7 +11,8 @@ import {MathText} from '../../../ui/MathText';
 import {advanceGrade,advanceSkip,cardVersion,getRun,lastGraded,pauseRun,resumeRun,
  undoLast,unpauseRun,type DurableRun} from './adapter';
 import {Undo2} from 'lucide-react';
-import {useQueryClient} from '@tanstack/react-query';
+import {getApi} from '../../../data';
+import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {clearPendingGrade,pendingGrade,writePendingGrade,
  type PendingGrade} from './pending';
 
@@ -28,7 +29,11 @@ export default function ReviewRunV6(){
  const [startTime,setStartTime]=useState(Date.now());
  const [pending,setPending]=useState<PendingGrade|null>(null);
  const runId=search.get('run');
- const item=run?.items[run.position],card=cards.data?.find(x=>x.cardId===item?.cardId);
+ const item=run?.items[run.position],exactId=run?.targetCardId;
+ const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
+  queryFn:async()=>await getApi().getExactReviewCard?.(exactId!)??null});
+ const card=exactId?(exact.data?.cardId===item?.cardId?exact.data:null):cards.data?.find(x=>x.cardId===item?.cardId);
+ const lookup=exactId?exact:cards;
  const faces=card?.type==='reverse'&&card.ord===2?
   {front:card.back,back:card.front}:{front:card?.front??'',back:card?.back??''};
  const choices=useMemo(()=>{
@@ -166,10 +171,10 @@ export default function ReviewRunV6(){
    {pending?<section className="flex flex-col gap-3">
     <p role="status">Your answer is recorded. Advance without grading again.</p>
     <button className={button} disabled={busy} onClick={()=>{void retryAdvance()}}>Retry advance</button>
-   </section>:!card&&!cards.isPending?<section className="flex flex-col gap-3">
+   </section>:!card&&!lookup.isPending?<section className="flex flex-col gap-3">
     <p role="status">This card is no longer in the current review queue. Its saved run position is unchanged.</p>
     <button className={button} disabled={busy} onClick={()=>{void skip()}}>Skip stale card</button>
-    <button className={button} onClick={()=>{void cards.refetch()}}>Retry card lookup</button>
+    <button className={button} onClick={()=>{void lookup.refetch()}}>Retry card lookup</button>
    </section>:card?<section className="flex flex-col gap-4">
     {/* N112 (mockup `15__Page`): the card sits on review paper; grades use the mockup grid. */}
     <div data-ui="review-paper" className="min-w-0 break-words p-4 font-math">

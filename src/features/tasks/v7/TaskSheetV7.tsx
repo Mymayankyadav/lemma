@@ -6,7 +6,7 @@ import type {TaskDue,TaskPriority,TaskRecord} from '../../../data/tasks/contract
 import {useToast} from '../../../ui/Toast';
 import {CircleX} from 'lucide-react';
 import {Button,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
-import {taskInput} from '../TaskSheet';
+import {taskInput,type CapturedTaskDraft} from '../taskDraft';
 
 const PRIORITY:Record<string,TaskPriority>={Low:'low',Normal:'normal',High:'high'};
 const DUE:Record<string,TaskDue['kind']>={None:'none',Date:'date','Date & time':'instant'};
@@ -24,26 +24,27 @@ export function dueTimes(current?:string):string[]{
  * picker and the time its own list (no native select, date or time control); ghost Cancel on the left, indigo Save on
  * the right. Validation and saving reuse the v6 sheet's `taskInput` and API calls unchanged.
  */
-export default function TaskSheetV7({onDismiss,task,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
+export default function TaskSheetV7({onDismiss,task,initialDraft,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;initialDraft?:CapturedTaskDraft;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
  const notify=useToast(),subjects=useSubjects(),projects=useProjects(),settings=useSettings(),busy=useRef(false);
- const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone;
+ const draft=task?undefined:initialDraft?.values;
+ const zone=(!task&&initialDraft?initialDraft.zone:undefined)??settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone;
  const initialInstant=task?.due.kind==='instant'?localWallParts(task.due.at,zone):null;
  const [saving,setSaving]=useState(false),[error,setError]=useState('');
- const [title,setTitle]=useState(task?.title??'');
- const [estimate,setEstimate]=useState(task?.estimateMinutes==null?'':String(task.estimateMinutes));
- const [priority,setPriority]=useState<TaskPriority>(task?.priority??'normal');
- const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??'none');
- const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:initialInstant?initialInstant.day:today());
- const [dueTime,setDueTime]=useState(initialInstant?initialInstant.clock:'17:00');
- const [subjectId,setSubjectId]=useState(task?.subjectId??'');
- const [projectId,setProjectId]=useState(task?.projectId??'');
+ const [title,setTitle]=useState(task?.title??draft?.title??'');
+ const [estimate,setEstimate]=useState(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes));
+ const [priority,setPriority]=useState<TaskPriority>(task?.priority??draft?.priority??'normal');
+ const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??draft?.dueKind??'none');
+ const [dueDate,setDueDate]=useState(task?.due.kind==='date'?task.due.date:initialInstant?initialInstant.day:draft?.dueDate??today());
+ const [dueTime,setDueTime]=useState(initialInstant?initialInstant.clock:draft?.dueInstant.slice(11)??'17:00');
+ const [subjectId,setSubjectId]=useState(task?.subjectId??draft?.subjectId??'');
+ const [projectId,setProjectId]=useState(task?.projectId??draft?.projectId??'');
  const subjectRows=subjects.data??[],projectRows=useMemo(()=>(projects.data??[]).filter(p=>p.status!=='archived'),[projects.data]);
  const subjectNames=['Unassigned',...subjectRows.map(s=>s.name)];
  const projectNames=['No path',...projectRows.map(p=>projectRows.filter(q=>q.title===p.title).length>1?p.title+' · '+p.subject.name:p.title)];
  async function save(){
   if(busy.current)return;
   let input:ReturnType<typeof taskInput>;
-  try{input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant:dueDate+'T'+dueTime,subjectId,projectId},zone);}
+  try{input=taskInput({title,estimate,priority,dueKind,dueDate,dueInstant:dueDate+'T'+dueTime,subjectId,projectId},zone,task?.due.kind==='instant'?task.due.at:undefined);}
   catch(e){setError(e instanceof Error?e.message:'Check the task details.');return;}
   busy.current=true;setSaving(true);setError('');
   try{

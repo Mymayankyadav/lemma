@@ -52,7 +52,12 @@ function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
 export function getApi(): LemmaApi {
  if (getMode() === 'live') return adapters.live ??= lazyLive
  const profile = getDemoProfile()
- if (profile === 'default') return adapters.default ??= new DemoAdapter()
+ if (profile === 'default') {
+  if(adapters.default)return adapters.default
+  let tab:Storage|undefined
+  try{tab=globalThis.sessionStorage}catch{/* browser storage disabled */}
+  return adapters.default=new DemoAdapter({authoredCardStorage:tab})
+ }
  return adapters[profile] ??= createStressAdapter(profile)
 }
 export * from './types'

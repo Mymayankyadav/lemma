@@ -157,6 +157,8 @@ export interface LemmaApi {
  /** Search a single 50-row page with server-side filters and a continuation offset. */
  searchCardsPage(filter: CardSearchFilters): Promise<CardSearchPage>
  /** Read note content, scheduling, history and comments. */
+ /** Exact card read for durable singleton runs. Admission in live mode stays in the run-start command. */
+ getExactReviewCard?(cardId:string, demoAdmission?:boolean): Promise<ReviewItem|null>
  getCard(noteNo: number): Promise<CardDetail>
  /** Read the next 20 owner-scoped reviews of one note, newest first. */
  getCardHistoryPage(noteNo: number, cursor?: string): Promise<CardHistoryPage>

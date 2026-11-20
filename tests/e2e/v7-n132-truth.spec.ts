@@ -149,9 +149,15 @@ test("V38 · Card detail: the date on one line, and Review now when the card is 
  const lines=await next.evaluate(node=>Math.round(node.getBoundingClientRect().height/parseFloat(getComputedStyle(node).lineHeight)));
  expect(lines).toBe(1);
  const bar=page.getByRole("group",{name:"Card actions"});
- await expect(bar.getByRole("link",{name:"Review now"})).toHaveAttribute("href",/#\/review\?path=real-analysis$/);
- await expect(bar.getByRole("link",{name:"Review now"})).toHaveClass(/v7-primary/);
+ const review=bar.getByRole("button",{name:"Review now"});
+ await expect(review).toBeEnabled();
+ await expect(review).toHaveClass(/v7-primary/);
  await expect(bar.getByRole("button",{name:"Edit card"})).not.toHaveClass(/v7-primary/);
+ const front=await page.locator('.v7-card-face-front').innerText();
+ await review.click();
+ await expect(page).toHaveURL(/#\/review\/run\?run=/);
+ await expect(page.getByRole('article',{name:'Review card'})).toContainText(front);
+ await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveText('1 of 1');
 });
 
 test("V39 · the sign-in drawing never crosses the links or the note",async({page})=>{

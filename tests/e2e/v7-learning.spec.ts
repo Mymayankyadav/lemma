@@ -106,3 +106,26 @@ test("§6.11 Cards: Capture opens the editor and the library highlights Paths",a
  await page.getByRole("button",{name:"Capture",exact:true}).click();
  await expect(page.getByRole("dialog",{name:"New card"})).toBeVisible();
 });
+
+test("N189: Review now opens only the newly saved card, even after a reload",async({page})=>{
+ await open(page,"/cards?new=1");
+ const sheet=page.getByRole("dialog",{name:"New card"});
+ await sheet.getByRole("textbox",{name:"Front"}).fill("Singleton N189 question");
+ await sheet.getByRole("textbox",{name:"Back"}).fill("Singleton N189 answer");
+ await sheet.getByRole("button",{name:/^Path/}).click();
+ await page.getByRole("radio",{name:"Real Analysis",exact:true}).click();
+ await sheet.getByRole("button",{name:"Create card"}).click();
+ await page.waitForURL(/#\/cards\/\d+/);
+ await page.getByRole("button",{name:"Review now"}).click();
+ await page.waitForURL(/#\/review\/run\?run=/);
+ const card=page.getByRole("article",{name:"Review card"});
+ await expect(card).toContainText("Singleton N189 question");
+ await expect(page.getByRole("progressbar",{name:"Review progress"})).toHaveText("1 of 1");
+ await page.reload();
+ await expect(card).toContainText("Singleton N189 question");
+ await expect(card).not.toContainText("Singleton N189 answer");
+ await page.getByRole("button",{name:"Show answer"}).click();
+ await expect(card).toContainText("Singleton N189 answer");
+ await page.getByRole("button",{name:/^Good/}).click();
+ await page.waitForURL(/#\/review\/done\?run=/);
+});
