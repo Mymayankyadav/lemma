@@ -1,6 +1,7 @@
 // N191 receipt compatibility baseline in a disposable, in-memory PGlite DB.
 import assert from 'node:assert/strict';
 import {readdir, readFile} from 'node:fs/promises';
+import {checkLocalIngress} from './fixtures/n191-local-ingress.mjs';
 
 const {PGlite} = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
 const db = new PGlite();
@@ -116,6 +117,7 @@ try {
   assert.deepEqual(await audit(serviceResult.actionNo), {user_id: owner, source: 'chatgpt'});
   assert.equal((await receipt(owner, serviceInput.operationId)).resource, 'tasks');
   console.log('N191 existing task/review writers: owner attribution, replay, conflicts and rollback passed');
+  await checkLocalIngress(db, {owner, other, project, precedingReceiptId: input.operationId, operationId});
 } finally {
   await db.close();
 }
