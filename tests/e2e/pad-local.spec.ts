@@ -104,6 +104,10 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await open.click();
   await expect(notes).toBeVisible();
+  // Finish initial precaching before measuring network activity during offline work.
+  await page.evaluate(async () => {await navigator.serviceWorker.ready;});
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state))
+    .toBe('activated');
   await context.setOffline(true);
   expect(await page.evaluate(() => navigator.onLine)).toBe(false);
   const outbound: string[] = [];
