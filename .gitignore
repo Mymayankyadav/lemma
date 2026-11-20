@@ -23,3 +23,6 @@ android/local.properties
 *.jks
 *.keystore
 google-services.json
+
+# UI audit screenshots (npm run audit:ui)
+artifacts/

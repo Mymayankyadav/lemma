@@ -11,6 +11,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run --passWithNoTests",
     "e2e": "playwright test",
+    "audit:ui": "node scripts/ui-audit/capture.mjs",
     "check": "npm run typecheck && npm run test && npm run build",
     "format": "prettier --write .",
     "prebuild": "node scripts/generate-icons.mjs",
