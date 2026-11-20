@@ -134,6 +134,15 @@
     },
     {
       "table_name": "atlas_links"
+    },
+    {
+      "table_name": "evidence_revisions"
+    },
+    {
+      "table_name": "calendar_input_history"
+    },
+    {
+      "table_name": "calendar_occurrence_changes"
     }
   ],
   "access": "security-definer undo_action only; owner RLS policies remain absent; all registered public owner tables are locked and journal-checked dynamically",

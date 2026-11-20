@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readdir, readFile} from 'node:fs/promises';
 import {checkLocalIngress} from './fixtures/n191-local-ingress.mjs';
 import {checkCorrectionParity} from './fixtures/n191-correction-parity.mjs';
+import {checkTrustedCore} from './fixtures/n191-trusted-core.mjs';
 import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
 
 const localPostgres = process.env.NOTIF_TEST_DATABASE_URL;
@@ -124,6 +125,7 @@ try {
   console.log('N191 existing task/review writers: owner attribution, replay, conflicts and rollback passed');
   await checkLocalIngress(db, {owner, other, project, precedingReceiptId: input.operationId, operationId});
   await checkCorrectionParity(db, {owner, project, operationId, as});
+  await checkTrustedCore(db, {owner, other, project, operationId, as});
 } finally {
   await db.close();
 }

@@ -158,6 +158,13 @@
       "exportPolicy": "owner-scoped export (N95)",
       "deletionPolicy": "owner account purge via FK cascade; domain change/undo via N36.2",
       "description": "N169: auto-closed session; its evidence counts but makes no T3 rechecks"
+    },
+    "progress_version": {
+      "classification": "derived",
+      "appPath": "Database-managed concurrency version for canonical session updates",
+      "mcpPath": "public.lemma_session_progress_command checks the signed owner and expected session version",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows"
     }
   }
 }

@@ -15,6 +15,21 @@ export async function checkCorrectionParity(db, {owner, project, operationId, as
 
   const live = async () => (await q(`select session_event_id::text as event, outcome from public.evidence
     where user_id=$1 and session_id=$2 and voided_at is null order by id`, [owner, session]));
+  const snapshots = [];
+  const visible = async (cutoff = null, watermark = null) => {
+    await as('authenticated', owner);
+    const [row] = await q('select public.lemma_evidence_snapshot($1,$2,$3) as snapshot', [project, cutoff, watermark]);
+    await as();
+    const snap = row.snapshot;
+    const active = replayEvidence(owner, snap.events, snap.asOf).active
+      .filter(event => event.source === 'evidence' && event.payload.session_id === session);
+    return {snap, outcomes: active.map(event => event.payload.outcome)};
+  };
+  const expectPersisted = async expected => {
+    const {snap, outcomes} = await visible();
+    assert.deepEqual(outcomes, expected);
+    snapshots.push({snap, expected});
+  };
   const entries = [];
   // Deterministic capture times for this parity test only, not inferred historical clocks.
   const capture = (outcome, revision, day) => {
@@ -43,15 +58,19 @@ export async function checkCorrectionParity(db, {owner, project, operationId, as
   };
 
   assert.deepEqual(await live(), [{event: String(original), outcome: 'pass'}]);
+  await expectPersisted(['pass']);
   capture('pass', 1, 11);
   const corrected = await command('correct', original, {reason: 'Incorrect grade', outcome: 'failed'}, 21);
   assert.deepEqual(await live(), [{event: String(corrected.revisedEventId), outcome: 'fail'}]);
+  await expectPersisted(['fail']);
   capture('fail', 2, 12);
   const removed = await command('void', corrected.revisedEventId, {reason: 'Discard this attempt'}, 22);
   assert.deepEqual(await live(), []);
+  await expectPersisted([]);
   capture(null, 3, 13);
   await undo(removed.actionNo);
   assert.deepEqual(await live(), [{event: String(corrected.revisedEventId), outcome: 'fail'}]);
+  await expectPersisted(['fail']);
   capture('fail', 4, 14);
   assert.deepEqual([11, 12, 13, 14].map(day =>
     replayEvidence(owner, entries, t(day)).active.map(event => event.payload.outcome)),
@@ -71,5 +90,10 @@ export async function checkCorrectionParity(db, {owner, project, operationId, as
     {event: String(standalone), outcome: 'pass'});
   assert.equal((await q('select count(*)::int n from public.evidence where session_id=$1 and session_event_id=$2',
     [session, standaloneFix.revisedEventId]))[0].n, 0, 'legacy undo removes the corrected evidence row');
-  console.log('N191 canonical correct/void/undo RPC and candidate historical snapshots agree');
+  for (const {snap, expected} of snapshots) {
+    const historical = await visible(snap.asOf, snap.watermark);
+    assert.deepEqual(historical.outcomes, expected);
+    assert.deepEqual(historical.snap.events, snap.events);
+  }
+  console.log('N191 canonical correct/void/undo RPC and persisted historical snapshots agree');
 }
