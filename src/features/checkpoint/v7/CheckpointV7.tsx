@@ -17,6 +17,7 @@ import {MathText} from '../../../ui/MathText';
 import {FastTex as Tex} from '../../../ui/FastTex';
 import {chatLink,studyPrompt} from '../../../lib/chat';
 import {ownerZone} from '../../../lib/format';
+import {CheckpointTutor} from '../../tutor/DemoCheckpointTutor';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {nodeStateOf,nodeWord} from '../../project/v7/pathModel';
@@ -96,6 +97,7 @@ export default function CheckpointV7(){
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
+  <CheckpointTutor scope={{pathId:slug,checkpointId:view.id,title:view.title,objective:detail.objective,sourceShort:detail.sourceShort,linkedSessions:detail.sessions.filter(s=>s.display!=='ended'),authScope:detail.authScope}}/>
   <Link className="v7-learn-row" to={'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>

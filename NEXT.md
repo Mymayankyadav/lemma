@@ -1,5 +1,22 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N194 Master plan P1: validate the first-path/card vertical preview
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Build · Status: done · Needs: — · Assigned: chat-84293#kzbq
+Done = In the isolated first-use demo, truly empty Review and Cards offer one first-card flow; retain entered content, prove one path/card on replay, then reopen and explicitly grade the exact saved card. Back up the flow with repeat-submit, reload, and rollback fixtures.
+Scope: preview-only demo profile, shared first-card panel, local authored-card and review fixture storage, targeted tests and docs/current/N194.md.
+Not: live writes, app-production enablement, SQL migrations, receipt permission changes, or a production grade-acknowledgement guarantee.
+
+## N193 Durable tutor turns and manual handoff (Owner task)
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Build · Status: done · Needs: N189, N191 · Assigned: chat-84293#kzbq
+Done = Nov 20 plan P6: saved selected-context snapshots and durable tutor turns, one pending turn/thread and one final reply/turn, working manual import and recoverable race loser, reviewed suggestions, and a tested owner-scoped narrow MCP route only for verified host capabilities.
+Tests: deterministic tutor lifecycle fixtures, transaction/parity/race checks and foreground-recovery journeys.
+Scope: tutor domain/UI and authenticated adapters, the narrow tutor MCP profile, focused tests, and docs/current/N193.md.
+Not: provider inference or OAuth, production data writes, host activation, default-on flags, or changes to the broad MCP connector's established capabilities.
+
 ## N190 Settings search destinations and keyboard history (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
