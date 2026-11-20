@@ -12,7 +12,7 @@ export async function readDemoAgenda(){
   const tasks:TaskRecord[]=[]
   let cursor:string|null=null
   do{
-    const page=await getTaskApi().listTasks({status:['backlog','in_progress'],limit:100,cursor})
+    const page=await getTaskApi().listTasks({status:['backlog','in_progress'],limit:50,cursor})
     tasks.push(...page.items)
     cursor=page.nextCursor
   }while(cursor)
@@ -25,9 +25,9 @@ export async function readDemoAgenda(){
   const intervals=blocks.filter(b=>b.status==='planned').map(b=>({id:b.id,revision:b.version,startsAt:b.startsAt,endsAt:b.endsAt,
     projectId:b.projectId,kind:b.kind,taskId:b.taskId}))
   const available=intervals.filter(b=>b.kind==='study'),watermark='demo/'+asOf
-  const {decision,label}=ownerAgenda('demo',{asOf,watermark,rows:{...rows,settings:{...rows.settings,scheduling_algorithm:settings.schedulingAlgorithm}},
+  const {decision,label,baselineLabel,practice}=ownerAgenda('demo',{asOf,watermark,rows:{...rows,settings:{...rows.settings,scheduling_algorithm:settings.schedulingAlgorithm}},
     calendar:{asOf,watermark,horizonEnd,status:'ok',fixed:intervals.filter(b=>b.kind==='busy'),availability:available.length?available:null},
     occupied:!!active,tasks:tasks.map(t=>({id:t.id,title:t.title,project_id:t.projectId??null,estimate_minutes:t.estimateMinutes??null,
       deadline:deadline(t),priority:t.priority})),reservations:available.filter(b=>b.taskId).map(b=>({task_id:b.taskId!,starts_at:b.startsAt,ends_at:b.endsAt}))},true)
-  return {decision,label}
+  return {decision,label,baselineLabel,practice}
 }

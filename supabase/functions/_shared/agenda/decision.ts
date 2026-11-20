@@ -43,7 +43,7 @@ export function holdReceipt(asOf:string,watermark:string,requested:SchedulingAlg
 }
 /** Both policies see exactly the same snapshot. This operation never edits a session, queue or assignment. */
 export function decideAgenda(facts:DecisionFacts,requested:SchedulingAlgorithm,
-  clock:()=>number=()=>performance.now(),budgetMs=120):ShadowResult {
+  clock:()=>number=()=>performance.now(),budgetMs=100):ShadowResult {
   const started=clock(), {asOf,watermark,state} = facts;
   let violations=0;
   const finish=(candidate:AgendaDecision,served=candidate):ShadowResult =>
@@ -65,7 +65,9 @@ export function decideAgenda(facts:DecisionFacts,requested:SchedulingAlgorithm,
     }
     const native=outcome(state,baseline);
     const legacy:AgendaDecision={asOf,snapshotVersion:watermark,requested,effective:native.kind==='action'?'legacy':'hold',
-      policyVersion:BASELINE_VERSION,reason:baseline.reason,outcome:native,baseline:native};
+      policyVersion:BASELINE_VERSION,reason:baseline.reason,outcome:native,baseline:native,
+      unresolved:[...prepared.expired.map(taskId=>({taskId,reason:'Deadline or expiry has passed'})),
+        ...prepared.pendingTutor.map(row=>({taskId:row.id,reason:row.state}))]};
     const fallback=(reason:string)=>{const candidate={...legacy,reason};return finish(candidate,requested==='new'?candidate:legacy);};
     const timed:Snapshot={...state,checkDeadline(){if(clock()-started>=budgetMs)throw Error('Decision budget exceeded');}};
     let result:Ranked;

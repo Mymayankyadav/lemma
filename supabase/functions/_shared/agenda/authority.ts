@@ -18,4 +18,3 @@ export function canOfferTip({atBoundary, alreadyMixed, urgent, offered, headroom
   const leftover = headroom - promptMinutes - switchMinutes - alternativeMinutes;
   return ordinary >= 1 && leftover >= 0 && 1 + Math.floor(leftover / typicalMinutes) >= ordinary;
 }
-

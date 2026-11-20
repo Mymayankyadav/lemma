@@ -3,7 +3,7 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX, studyRules } from './rules.ts';
-import { readAgenda } from './agenda.ts';
+import { readAgenda, agendaQueue } from './agenda.ts';
 import { stateOf, flagOn, resumeBlocks, timeLine, flagLines, tokens, briefNodes } from './adaptive.ts';
 import { renderQueue } from '../_shared/adaptive/queue.ts';
 import { sourceLine, visibleProjects, scheduleHint } from './v3.ts';
@@ -154,5 +154,7 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
  // Fixture (system) projects are outside the adaptive state (visibleProjects), so v2 has no TIME or QUEUE for them:
  // they keep the legacy packet. Real projects get v2 with the same ADAPT data line the legacy packet carries.
  if(v2&&!p?.system)return [owner,await packetV2(c,args,st,adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),300):undefined)].filter(Boolean).join('\n');
- let body=await basePacket(c,args);const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
+ let body=await basePacket(c,args);
+ if(args.project||args.mix){const {agenda}=await readAgenda(c,st.scheduling_algorithm);if(agenda)body=agendaQueue(agenda)+'\n'+body;}
+ const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
 }

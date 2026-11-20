@@ -172,6 +172,10 @@ export {addDays,cut};
 /** get(what=time|queue|feasibility|forecast): server-computed, never stored (I1). */
 export async function readAdaptive(c:Context,a:any):Promise<string>{
   const slug=a.project?(await project(c,a.project)).slug:undefined;
+  if(a.what==='queue'){
+    const {agenda}=await readAgenda(c);
+    if(agenda)return agendaQueue(agenda);
+  }
   const {state,rows}=await stateOf(c);
   if((ATLAS_READS as readonly string[]).includes(a.what)||(rows.settings?.atlas_migrated_at&&['node','calibration'].includes(a.what)))return renderAtlasRead(rows,a);
   if(rows.settings?.atlas_migrated_at&&a.what==='feasibility')return JSON.stringify(assembleAtlas(rows,new Date()).fits);
@@ -181,7 +185,7 @@ export async function readAdaptive(c:Context,a:any):Promise<string>{
   }
   if(a.what==='node')return renderNode(state,rows,{id:a.id,depth:a.depth,trail:a.trail===true,cursor:a.cursor});
   if(a.what==='calibration')return renderCalibration(state);
-  if(a.what==='queue'){const {agenda}=await readAgenda(c,rows.settings?.scheduling_algorithm);return agenda?agendaQueue(agenda):renderQueue(state.queue,Math.min(Math.max(a.limit||8,1),50));}
+  if(a.what==='queue')return renderQueue(state.queue,Math.min(Math.max(a.limit||8,1),50));
   if(a.what==='feasibility')return renderFeasibility(state,slug);
   return renderForecast(state,rows,slug);
 }

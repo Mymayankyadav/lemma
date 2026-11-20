@@ -8,13 +8,16 @@ declare
   watermark text := pg_current_snapshot()::text;
   calendar jsonb; evidence jsonb := '[]'; page jsonb; after_id bigint := 0;
   owner_settings jsonb; zone text; native jsonb := '{}'; items jsonb; name text; projection text; owned_query text;
-  task_rows jsonb; reserved jsonb; durations jsonb; attendance jsonb; occupied boolean;
+  task_rows jsonb; reserved jsonb; spent jsonb; durations jsonb; attendance jsonb; bank_rows jsonb:='[]'; occupied boolean;
 begin
   if current_setting('role',true) is distinct from 'service_role' or p_owner is null then
     raise exception 'Verified owner required' using errcode='42501'; end if;
   select jsonb_build_object('atlas',s.atlas,'capacity',s.capacity,'planning',s.planning,
     'time_zone',s.time_zone,'review_budget',s.review_budget,'scheduling_algorithm',to_jsonb(s)->'scheduling_algorithm'),
     s.time_zone into strict owner_settings,zone from public.settings s where s.user_id=p_owner;
+  if to_regprocedure('public.lemma_planning_snapshot_mcp(uuid,text,jsonb)') is null then
+    return jsonb_build_object('asOf',cutoff,'watermark',watermark,'reason','Evidence foundation unavailable');
+  end if;
   calendar:=public.lemma_planning_snapshot_mcp(p_owner,'calendar',jsonb_build_object(
     'p_as_of',cutoff,'p_watermark',watermark,'p_horizon_end',horizon));
   if calendar->>'status' is distinct from 'ok' then return jsonb_build_object(
@@ -31,7 +34,7 @@ begin
   -- Every identifier/projection below is a constant in the migration. Project
   -- only the model's numerical/identity inputs and the names used for decisions.
   for name,projection,owned_query in select * from (values
-    ('projects','id,last_study_on,share_weight','projects where user_id=$1 and not system and status<>''archived'' order by id'),
+    ('projects','id,last_study_on,share_weight,time_confirmed','projects where user_id=$1 and not system and status<>''archived'' order by id'),
     ('checkpoints','id,project_id,title,position,status,plan_state,tier,estimate_minutes,kind,self_reported,demonstrated_at','checkpoints where user_id=$1 order by project_id,position,id'),
     ('cpConcepts','checkpoint_id,concept_id','checkpoint_concepts where user_id=$1 order by checkpoint_id,concept_id'),
     ('prereqs','checkpoint_id,prereq_id','checkpoint_prereqs where user_id=$1 order by checkpoint_id,prereq_id'),
@@ -57,8 +60,13 @@ begin
            when t.due_kind='date' then (t.due_date+1)::timestamp at time zone zone end deadline
     from public.tasks t where t.user_id=p_owner and t.status in ('backlog','in_progress')) r;
   select coalesce(jsonb_agg(to_jsonb(r) order by r.starts_at,r.task_id),'[]') into reserved from (
+    select b.task_id,b.starts_at,b.ends_at from public.calendar_blocks b join public.tasks t on t.id=b.task_id and t.user_id=b.user_id
+    where b.user_id=p_owner and b.task_id is not null and b.status='planned' and b.ends_at>cutoff and b.starts_at<horizon
+      and t.status in ('backlog','in_progress')
+    union
     select d.task_id,b.starts_at,b.ends_at from public.day_plan_items d
     join public.day_plans p on p.user_id=d.user_id and p.id=d.plan_id
+    join public.tasks t on t.user_id=d.user_id and t.id=d.task_id and t.status in ('backlog','in_progress')
     join public.calendar_blocks b on b.user_id=d.user_id and b.id=d.calendar_block_id
     where d.user_id=p_owner and p.status='committed' and d.disposition='placed'
       and b.status='planned' and b.ends_at>cutoff and b.starts_at<horizon) r;
@@ -73,11 +81,25 @@ begin
       where e.user_id=b.user_id and e.calendar_block_id=b.id and e.status='saved' and e.saved_at<=cutoff) as kept
     from public.calendar_blocks b where b.user_id=p_owner and b.kind='study' and b.status<>'cancelled' and b.ends_at<=cutoff
     order by b.ends_at desc,b.id desc limit 24) r;
+  -- A civil day's cap covers all its project windows together. Merge overlaps before counting saved focus time.
+  with day as (select (cutoff at time zone zone)::date as d),
+    ranges as (select range_agg(tstzrange(greatest(i.started_at,day.d::timestamp at time zone zone),least(i.ended_at,cutoff),'[)')) as used
+      from public.study_intervals i join public.study_entries e on e.id=i.entry_id and e.user_id=i.user_id cross join day
+      where i.user_id=p_owner and i.kind='focus' and e.status='saved' and e.saved_at<=cutoff and i.ended_at is not null
+        and i.started_at<cutoff and i.ended_at>day.d::timestamp at time zone zone),
+    minutes as (select coalesce(sum(extract(epoch from (upper(span)-lower(span)))/60.),0) as used
+      from ranges cross join lateral unnest(ranges.used) span)
+    select jsonb_build_object(day.d::text,minutes.used) into spent from day,minutes;
   select exists(select 1 from public.study_entries e where e.user_id=p_owner and e.status in ('running','paused'))
     into occupied;
+  -- A bank/monitor outage cannot invalidate the legal calendar recommendation.
+  if to_regprocedure('public.lemma_practice_bank_snapshot(uuid,timestamptz)') is not null then
+    begin bank_rows:=public.lemma_practice_bank_snapshot(p_owner,cutoff);
+    exception when others then bank_rows:='[]'; end;
+  end if;
   return jsonb_build_object('asOf',cutoff,'watermark',watermark,'calendar',calendar,'evidence',evidence,
     'rows',native||jsonb_build_object('settings',owner_settings),'tasks',task_rows,'reservations',reserved,
-    'history',durations||attendance,'occupied',occupied);
+    'history',durations||attendance,'occupied',occupied,'spentByDate',spent,'practiceBank',bank_rows);
 end
 $agenda$;
 revoke all on function public.lemma_agenda_snapshot(uuid) from public,anon,authenticated;

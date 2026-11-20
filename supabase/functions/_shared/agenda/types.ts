@@ -9,7 +9,7 @@ export interface Fixed extends Window {
   role?: string; cancelled?: boolean;
 }
 export interface Task {
-  id: string; kind: 'course'|'card'|'personal'|'tutor'; remaining: number; projectId?: string;
+  id: string; nativeId?:string; kind: 'course'|'card'|'personal'|'tutor'; remaining: number; projectId?: string;
   release?: number; due?: number; needBy?: number; expiry?: number; importance?: number; severity?: number;
   required?: boolean; core?: boolean; unannounced?: boolean; splittable?: boolean; minChunk?: number;
   resumeMinutes?: number; progressWeight?: number; authority?: string; declined?: boolean;

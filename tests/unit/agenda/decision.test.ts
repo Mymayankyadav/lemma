@@ -49,6 +49,10 @@ describe('service boundary',()=>{
     expect(ownerAgenda('owner',host,true).decision.outcome.kind).toBe('hold')
     const allowed=ownerAgenda('owner',{...host,tasks:[{...host.tasks[0],estimate_minutes:5}]},true)
     expect(allowed.label).toBe('Read the statement')
+    const daily=ownerAgenda('owner',{...host,spentByDate:{'2026-11-20':4},calendar:{...calendar,availability:[
+      {...calendar.availability[0],capacityDate:'2026-11-20',endsAt:iso(3)},{...calendar.availability[0],id:'b',startsAt:iso(4),capacityDate:'2026-11-20'}]},
+      tasks:[{...host.tasks[0],estimate_minutes:2}]},true)
+    expect(daily.decision.outcome.kind).toBe('hold')
     expect(allowed.decision.outcome).toEqual({kind:'action',taskId:'task/task',start:now,end:now+5})
   })
 })

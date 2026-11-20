@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { admin, adminClient } from './db.ts';
+import { browserAgenda } from './agenda-http.ts';
 import { readAgenda } from './agenda.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer } from './server.ts';
@@ -30,20 +31,10 @@ Deno.serve(async (req:Request)=>{
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
   const path=new URL(req.url).pathname.split('/');
   const i=path.indexOf('mcp');
-  // This read-only browser route takes no owner, policy, calendar, evidence or time parameters.
-  if(i>=0 && path[i+1]==='agenda' && path.length===i+2) {
-    const headers={...cors,'Cache-Control':'private, no-store'};
-    if(req.method!=='POST')return new Response(null,{status:405,headers});
-    if(new URL(req.url).search)return new Response(null,{status:400,headers});
-    const bearer=req.headers.get('Authorization')??'';
-    if(!/^Bearer [A-Za-z0-9_.-]+$/i.test(bearer))return new Response(null,{status:401,headers});
-    try {
-      if (req.body && (await req.text()).trim().length) return new Response(null,{status:400,headers});
-      const db=adminClient(), {data,error}=await db.auth.getUser(bearer.slice(7));
-      if(error||!data.user)return new Response(null,{status:401,headers});
-      return Response.json(await readAgenda({db:admin(),userId:data.user.id}),{headers});
-    } catch {return Response.json({error:'Agenda temporarily unavailable'},{status:503,headers});}
-  }
+  if(i>=0 && path[i+1]==='agenda' && path.length===i+2) return browserAgenda(req,{
+    verify: async token=>{const {data,error}=await adminClient().auth.getUser(token);return error?null:data.user?.id??null;},
+    read: userId=>readAgenda({db:admin(),userId}),
+  },cors);
   const secret=i>=0?path[i+1]:null;
   if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
   try{

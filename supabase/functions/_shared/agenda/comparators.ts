@@ -43,7 +43,7 @@ export function atlasChoice(state:State,legal:Legal) {
       throw new TypeError('Invalid Atlas action evidence')
     }
     const minutes = fitting(task,state.now,window,nextBoundary(state,window)) || full
-    return {...atlas,id:task.id,minutes:minutes+task.pending,
+    return {...atlas,id:task.nativeId??task.id,minutes:minutes+task.pending,
       needAt:atlas.needAt ?? at(task.deadline),
       project_id:atlas.kind === 'review' ? undefined : task.projectId,home:task.projectId}
   })
@@ -62,7 +62,9 @@ export function atlasChoice(state:State,legal:Legal) {
   const shares = projects.size > 1 ? Object.fromEntries(allocateProjects([...projects.values()],block)
     .map(allocation => [allocation.id,allocation.minutes])) : undefined
   const queue = sessionQueue(model,study,block,state.input.cardCap ?? .125,shares)
-  const nextStudy = todo.find(({task}) => task.id === queue.items[0]?.id)
+  const first = queue.items[0]
+  const nextStudy = todo.find(({task}) => first && (task.nativeId??task.id)===first.id &&
+    (!task.nativeId || task.projectId===(first.project_id??first.home)))
   const pick = !nextStudy ? other : !other ? nextStudy
     : byDeadline(nextStudy.task,other.task) <= 0 ? nextStudy : other
   if (pick) return {...decision(state,window,pick),

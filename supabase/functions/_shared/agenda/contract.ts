@@ -20,4 +20,5 @@ export interface AgendaDecision {
   reason: string;
   outcome: AgendaOutcome;
   baseline: AgendaOutcome;
+  unresolved?: {taskId:string;reason:string}[];
 }
