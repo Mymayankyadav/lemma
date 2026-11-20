@@ -14,14 +14,14 @@ export type SavedTutorTurn=
 export type TutorThreadView={
  head:{threadId:string|null;lastSequence:number;pendingTurnId:string|null}
  turns:readonly SavedTutorTurn[]
- recoveredDrafts:readonly {turnId:string;messageId:string;body:string}[]
+ recoveredDrafts:readonly {turnId:string;messageId:string;body:string;draftId?:string}[]
  offline?:boolean
  confirmedAt?:string
  before?:number|null
  canSubmit?:boolean
  canConnect?:boolean
- reconciled?:readonly {operation:string;status:string;text:string;turnId?:string}[]
- outbox?:readonly {operationId:string;operation:string;text:string;turnId?:string;localExcerpt?:string}[]
+ reconciled?:readonly {operation:string;status:string;text:string;turnId?:string;localExcerpt?:string;source?:TutorContextSelection}[]
+ outbox?:readonly {operationId:string;operation:string;text:string;turnId?:string;localExcerpt?:string;source?:TutorContextSelection}[]
 }
 export type ManualTutor={
  close:()=>void
@@ -31,6 +31,7 @@ export type ManualTutor={
  previewSource?:(page:number)=>Promise<TutorContextSelection>
  retry?:(operationId:string)=>Promise<string>
  issueGrant?:(turnId:string,version:number)=>Promise<{token:string;endpoint:string;grantId:string}>
+ revokeGrant?:(turnId:string,version:number,grantId:string)=>Promise<void>
  stopGrants?:(turnId:string,version:number)=>Promise<void>
  cancel?:(turnId:string,version:number)=>Promise<void>
  proposeCard?:(turnId:string,version:number,front:string,back:string)=>Promise<void>

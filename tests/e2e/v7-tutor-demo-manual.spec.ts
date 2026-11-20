@@ -10,6 +10,7 @@ declare global {
 
 const adapter = buildSync({
   entryPoints: ['src/data/tutor/demo-manual.ts'],
+  define: {'import.meta.env':JSON.stringify({MODE:'test',DEV:false,VITE_ALLOW_FLAG_OVERRIDES:'1'})},
   bundle: true, write: false, format: 'iife', globalName: 'tutorDemo',
 }).outputFiles[0].text
 

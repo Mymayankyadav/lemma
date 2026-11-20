@@ -51,6 +51,9 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
     return route.fulfill({json:{status:'completed',operationId:c.operationId}})
    }
    if(c.operation==='suggest_card'&&turn.status==='completed'){
+    const first={id:'77777777-7777-4777-8777-777777777777',kind:'card',project_id:projectId,user_id:owner,origin:'other',
+     status:'pending',created_at:'2026-10-01',payload:{type:'basic',kind:'other',front:'Earlier unrelated card',back:'Earlier answer'}}
+    payload.proposals=[first,{...first,id:proposalId,created_at:'2026-10-02',payload:{...first.payload,front:c.front,back:c.back}}]
     thread={...thread,turns:[{...turn,finalReply:{...turn.finalReply,suggestions:[{kind:'card',proposalId,intentId:'suggestion',status:'pending',summary:'From a reviewed tutor reply'}]}}]}
     return route.fulfill({json:{status:'proposed',operationId:c.operationId}})
    }
@@ -83,5 +86,7 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  await result.getByLabel('Back').fill('It needs a separate proof.')
  await result.getByRole('button',{name:'Send to proposal review'}).click()
  await expect(result.getByRole('link',{name:'Review proposal'})).toHaveAttribute('href',new RegExp('/proposals[?]card='+proposalId+'$'))
+ await result.getByRole('link',{name:'Review proposal'}).click()
+ await expect(page.locator('[data-proposal="'+proposalId+'"]')).toContainText('Is the converse always true?')
  expect(errors).toEqual([])
 })

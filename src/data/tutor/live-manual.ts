@@ -6,7 +6,7 @@ import type {ManualTutor,TutorThreadView} from './manual-api'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string}
 type Command={operation:string;operationId:string;[key:string]:unknown}
-type RpcResult={status:string;operationId:string}
+type RpcResult={status:string;operationId:string;grantId?:string}
 
 export function tutorScopeActive(scope:Pick<Scope,'ownerId'|'generation'>) {
  return authOwner()===scope.ownerId && authGeneration()===scope.generation
@@ -38,7 +38,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  }
  function outbox(){
   return pending().map(c=>({operation:c.operation,operationId:c.operationId,text:String(c.body??c.question??c.front??''),
-   turnId:typeof c.turnId==='string'?c.turnId:undefined,localExcerpt:typeof c.localExcerpt==='string'?c.localExcerpt:undefined}))
+   turnId:typeof c.turnId==='string'?c.turnId:undefined,localExcerpt:typeof c.localExcerpt==='string'?c.localExcerpt:undefined,source:c.source as TutorContextSelection|undefined}))
  }
  function cached():TutorThreadView|undefined {
   try {return JSON.parse(localStorage.getItem(cacheKey)??'null')??undefined} catch {return undefined}
@@ -48,7 +48,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   return {...saved,head:saved?.head??{threadId:null,lastSequence:0,pendingTurnId:null},
    turns:saved?.turns??[],recoveredDrafts:saved?.recoveredDrafts??[],canSubmit:saved?.canSubmit??false,canConnect:false,offline:true,outbox:outbox()}
  }
- async function dispatch(command:Command,persist=false):Promise<string>{
+ async function dispatch(command:Command,persist=false):Promise<RpcResult>{
   active()
   if(persist){
    // One immutable entry per operation. Another tab cannot replace this request.
@@ -69,7 +69,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   const result=data as RpcResult
   if(!result||result.operationId!==command.operationId||typeof result.status!=='string')throw new Error('Unconfirmed tutor response.')
   if(persist)localStorage.removeItem(prefix+command.operationId)
-  return result.status
+  return result
  }
  function write(operation:string,turnId:string,version:number,patch:Record<string,unknown>={}):Command {
   return {operation,operationId:crypto.randomUUID(),turnId,expectedVersion:version,...patch}
@@ -100,9 +100,11 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(reconcile){
     for(const operation of pending()){
      try {
-      const status=await dispatch(operation,true)
+      const {status}=await dispatch(operation,true)
       reconciled.push({operation:operation.operation,status,text:String(operation.question??operation.body??operation.front??''),
-       turnId:typeof operation.turnId==='string'?operation.turnId:undefined})
+       turnId:typeof operation.turnId==='string'?operation.turnId:undefined,
+       ...(typeof operation.localExcerpt==='string'?{localExcerpt:operation.localExcerpt}:{}),
+       ...(operation.source?{source:operation.source as TutorContextSelection}:{})})
      } catch {active()}
     }
     if(reconciled.length)thread=await read()
@@ -122,12 +124,12 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   async submit(id,draft,sequence){
    const objective=draft.selectedContext.find(s=>s.kind==='checkpoint')?.excerpt
    const source=draft.selectedContext.find(s=>s.kind==='source')
-   const status=await dispatch({operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
+   const {status}=await dispatch({operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
     ...(draft.localExcerpt?{localExcerpt:draft.localExcerpt.text}:{}),...(objective?{objective}:{}),...(source?{source}:{})},true)
    return {kind:status}
   },
   async confirmImport(turnId,version,messageId,body){
-   const status=await dispatch({operation:'manual',operationId:messageId,turnId,messageId,expectedVersion:version,body},true)
+   const {status}=await dispatch({operation:'manual',operationId:messageId,turnId,messageId,expectedVersion:version,body},true)
    return {kind:status}
   },
   async previewSource(page){
@@ -140,7 +142,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   async retry(operationId){
    const command=pending().find(c=>c.operationId===operationId)
    if(!command)return 'resolved'
-   return dispatch(command,true)
+   return (await dispatch(command,true)).status
   },
   async issueGrant(turnId,version){
    active()
@@ -149,18 +151,21 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    const token=hex(bytes)
    const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(token)))
    const cmd=write('grant',turnId,version,{tokenHash:hex(digest)})
-   const status=await dispatch(cmd)
-   if(status!=='granted')throw new Error('The connector grant was not issued.')
-   return {token,endpoint:supabaseUrl+'/functions/v1/mcp/tutor',grantId:cmd.operationId}
+   const {status,grantId}=await dispatch(cmd)
+   if(status!=='granted'||!grantId)throw new Error('The connector grant was not issued.')
+   return {token,endpoint:supabaseUrl+'/functions/v1/mcp/tutor',grantId}
+  },
+  async revokeGrant(turnId,version,grantId){
+   if((await dispatch(write('revoke',turnId,version,{grantId}))).status!=='revoke')throw new Error('Could not revoke this grant.')
   },
   async stopGrants(turnId,version){
-   if(await dispatch(write('switch',turnId,version))!=='switch')throw new Error('Could not revoke this turn’s grants.')
+   if((await dispatch(write('switch',turnId,version))).status!=='switch')throw new Error('Could not revoke this turn’s grants.')
   },
   async cancel(turnId,version){
-   if(await dispatch(write('cancel',turnId,version))!=='cancel')throw new Error('Could not cancel this turn.')
+   if((await dispatch(write('cancel',turnId,version))).status!=='cancel')throw new Error('Could not cancel this turn.')
   },
   async proposeCard(turnId,version,front,back){
-   if(await dispatch(write('suggest_card',turnId,version,{front,back}),true)!=='proposed')throw new Error('Card proposal was not saved.')
+   if((await dispatch(write('suggest_card',turnId,version,{front,back}),true)).status!=='proposed')throw new Error('Card proposal was not saved.')
   },
  }
 }

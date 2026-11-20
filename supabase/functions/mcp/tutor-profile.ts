@@ -8,7 +8,6 @@ const suggestion=z.union([
  z.object({kind:z.literal('card'),front:z.string().min(1).max(1500),back:z.string().max(3000),summary:z.string().min(1).max(300)}).strict(),
  z.object({kind:z.literal('plan'),summary:z.string().min(1).max(300),checkpoints:z.array(z.object({title:z.string().min(1).max(80),objective:z.string().min(1).max(400),criterion:z.string().min(1).max(400),steps:z.array(z.string().min(1).max(80)).min(1).max(8)}).strict()).min(1).max(5)}).strict(),
  z.object({kind:z.literal('change'),objective:z.string().min(1).max(400),version:z.number().int().positive(),summary:z.string().min(1).max(300)}).strict(),
- z.object({kind:z.literal('existing'),proposalId:uuid,version:z.number().int().positive(),summary:z.string().min(1).max(300)}).strict(),
 ])
 const tools=[
  ['get_tutor_turn','get',z.object({turnId:uuid}).strict()],

@@ -23,7 +23,7 @@ const cmd=(operation,fields)=>({operation,operationId:randomUUID(),...fields});
 const denied=(promise,code='42501')=>assert.rejects(promise,error=>error.code===code);
 const hash='a'.repeat(64),altHash='b'.repeat(64);
 const firstQuestion=cmd('start',{expectedVersion:0,question:'Show the converse.',objective,localExcerpt:'  ∀ x: x=x\n'});
-const turnId=firstQuestion.operationId;
+let turnId=firstQuestion.operationId;
 const tableNames=['tutor_release_controls','tutor_threads','tutor_turns','tutor_grants','tutor_grant_credentials','tutor_attempts',
  'tutor_replies','tutor_suggestions','tutor_recovered_replies'];
 
@@ -38,7 +38,13 @@ try {
   create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
- for(const name of (await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort()){
+ const names=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
+ // --include-all can install this migration after the previously deployed, future-dated chain.
+ if(process.env.N193_TEST_MIGRATION_LAST==='1'){
+  const index=names.findIndex(name=>name.endsWith('_n193_tutor_threads.sql'));
+  names.push(...names.splice(index,1));
+ }
+ for(const name of names){
   await db.exec(await readFile(new URL(name,dir),'utf8'));
  }
  await q('insert into auth.users(id) values ($1),($2)',[owner,other]);
@@ -55,6 +61,8 @@ try {
     has_table_privilege('anon',oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') anon,
     has_table_privilege('service_role',oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE') service from pg_class where oid=$1::regclass`,['public.'+table]);
   assert.deepEqual(row,{rls:true,authed:false,anon:false,service:false},table);
+  if(!['tutor_release_controls','tutor_grant_credentials'].includes(table))
+   assert.equal(await one("select count(*)::int result from pg_trigger where tgrelid=$1::regclass and tgname='lemma_account_delete_write_guard'",['public.'+table]),1);
  }
  await as('anon');await denied(state());await denied(ownerCmd(firstQuestion));await denied(hostCmd(hash,{operation:'get',turnId}));
  await as('authenticated',other);await denied(state());await denied(ownerCmd(firstQuestion));
@@ -77,7 +85,11 @@ try {
  await denied(ownerCmd({...firstQuestion,localExcerpt:'😀'.repeat(601)}),'22023');
  await denied(ownerCmd({...firstQuestion,objective:'Unreviewed changes'}),'40001');
  await denied(ownerCmd({...firstQuestion,account:other}),'22023');
- const first=await ownerCmd(firstQuestion);assert.equal(first.status,'submitted');
+ const first=await ownerCmd(firstQuestion);assert.equal(first.status,'submitted');turnId=first.turnId;
+ await as('authenticated',other);
+ const unrelated=await ownerCmd({operation:'start',operationId:firstQuestion.operationId,question:'Other owner',expectedVersion:0},db,otherCheckpoint,other);
+ assert.equal(unrelated.status,'submitted');assert.notEqual(unrelated.turnId,turnId);
+ await as('authenticated',owner);
  assert.deepEqual(await ownerCmd(firstQuestion),first);
  assert.equal((await ownerCmd({...firstQuestion,question:'Changed question'})).status,'conflict');
  assert.equal((await ownerCmd(cmd('start',{expectedVersion:1,question:'Second active turn'}))).status,'turn-pending');
@@ -137,7 +149,7 @@ try {
  await as('authenticated',owner);assert.deepEqual(await ownerCmd(manual),lost);
  let view=await state();const saved=view.turns[0].finalReply;
  assert.deepEqual(saved.citations,[citation,sourceCitation]);assert.equal(saved.provenance.reportedHost,'Example host');assert.equal(saved.provenance.kind,'connector');assert.equal(saved.provenance.hostVerified,false);
- assert.equal(view.recoveredDrafts[0].body,manual.body);assert.equal(view.head.pendingTurnId,null);
+ assert.equal(view.recoveredDrafts[0].body,manual.body);assert.equal(view.recoveredDrafts[0].messageId,manual.messageId);assert.equal(view.head.pendingTurnId,null);
  assert.equal(saved.suggestions.length,3);
  const proposed=saved.suggestions.find(s=>s.kind==='card');assert.equal(proposed.status,'pending');
  await as();assert.equal(await one('select count(*)::int result from public.cards'),0);
@@ -152,8 +164,8 @@ try {
  await one('select public.approve_proposal($1) result',[proposed.proposalId]);
  assert.equal((await state()).turns[0].finalReply.suggestions.find(s=>s.kind==='card').status,'approved');
  await as();assert.equal(await one('select count(*)::int result from public.cards'),1);
- const second=cmd('start',{expectedVersion:1,question:'Identify a sufficient condition.'});const secondId=second.operationId;
- await as('authenticated',owner);await ownerCmd(second);
+ const second=cmd('start',{expectedVersion:1,question:'Identify a sufficient condition.'});
+ await as('authenticated',owner);const secondId=(await ownerCmd(second)).turnId;
  const secondHash='c'.repeat(64);
  await ownerCmd(cmd('grant',{turnId:secondId,expectedVersion:1,tokenHash:secondHash}));
  await as('service_role');const secondClaim=await hostCmd(secondHash,cmd('claim',{turnId:secondId,expectedVersion:1}));
@@ -175,7 +187,7 @@ try {
  for(const plan of plans)await one('select public.approve_proposal($1) result',[plan.proposalId]);
  await as();assert.equal(await one('select count(*)::int result from public.checkpoints where user_id=$1',[owner]),2);
  await as('authenticated',owner);const third=cmd('start',{expectedVersion:2,question:'A cancellable question.'});
- await ownerCmd(third);const thirdId=third.operationId,thirdHash='d'.repeat(64);
+ const thirdId=(await ownerCmd(third)).turnId,thirdHash='d'.repeat(64);
  const issued=await ownerCmd(cmd('grant',{turnId:thirdId,expectedVersion:1,tokenHash:thirdHash}));
  await as('service_role');const thirdCmd=cmd('claim',{turnId:thirdId,expectedVersion:1});await hostCmd(thirdHash,thirdCmd);
  await as('authenticated',owner);await ownerCmd(cmd('revoke',{turnId:thirdId,expectedVersion:2,grantId:issued.grantId}));
@@ -191,8 +203,10 @@ try {
  const exported=await one("select public.owner_export_page($1,'tutor_replies') result",[exportId]);
  assert.deepEqual(new Set(exported.rows.map(r=>r.body)),new Set([final.body,secondLocal.body]));
  await as('authenticated',other);await assert.rejects(one("select public.owner_export_page($1,'tutor_replies') result",[exportId]));
+ await as('authenticated',owner);const recovery=await ownerCmd(cmd('start',{expectedVersion:3,question:'Recover if transport disabled.'}));
  await as();await db.exec("update public.tutor_release_controls set enabled=false");
- await as('authenticated',owner);assert.equal((await state()).turns.length,3);
+ await as('authenticated',owner);assert.equal((await state()).turns.length,4);
+ assert.equal((await ownerCmd(cmd('manual',{turnId:recovery.turnId,expectedVersion:1,messageId:randomUUID(),body:'Recovered after rollback.'}))).status,'completed');
  await denied(ownerCmd(cmd('start',{question:'Disabled',expectedVersion:3})),'55000');
  await as('service_role');await denied(hostCmd(hash,{operation:'get',turnId}));
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);

@@ -11,7 +11,7 @@ Not: live writes, app-production enablement, SQL migrations, receipt permission 
 ## N193 Durable tutor turns and manual handoff (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
-Stage: Build · Status: open · Needs: N189, N191 · Assigned: chat-526047#t6w9
+Stage: Build · Status: done · Needs: N189, N191 · Assigned: chat-84293#kzbq
 Done = Nov 20 plan P6: saved selected-context snapshots and durable tutor turns, one pending turn/thread and one final reply/turn, working manual import and recoverable race loser, reviewed suggestions, and a tested owner-scoped narrow MCP route only for verified host capabilities.
 Tests: deterministic tutor lifecycle fixtures, transaction/parity/race checks and foreground-recovery journeys.
 Scope: tutor domain/UI and authenticated adapters, the narrow tutor MCP profile, focused tests, and docs/current/N193.md.

@@ -10,7 +10,7 @@ import {openDemoManualTutor} from '../../data/tutor/demo-manual'
 import {isFlagOn} from '../../flags'
 import {Button,Sheet} from '../../ui/v7/components'
 
-type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;authScope?:{ownerId:string;generation:number;checkpointId:string}}
+type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
 type EntryProps = {scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
 const subscribe=(refresh:()=>void)=>onAccountChange(refresh)
@@ -83,10 +83,12 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   const {pathId,checkpointId}=scope
   const excerpt=scope.objective.slice(0,1200)
   const [history,setHistory]=useState<TutorThreadView['turns']>([])
+  const [historyDrafts,setHistoryDrafts]=useState<TutorThreadView['recoveredDrafts']>([])
   const [historyCursor,setHistoryCursor]=useState<number|null>()
+  useEffect(()=>{setHistoryCursor(undefined)},[session?.thread.before])
   const [draftNext,setDraftNext]=useState(false)
   const [showLocal,setShowLocal]=useState(false)
-  const [grant,setGrant]=useState<{token:string;endpoint:string}>()
+  const [grant,setGrant]=useState<{token:string;endpoint:string;grantId:string}>()
   const consumed=useRef('')
   useEffect(()=>{
     if(!padHandoff||consumed.current===padHandoff.requestId)return
@@ -122,14 +124,18 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     if(!thread?.reconciled?.length||processed.current===thread)return
     processed.current=thread
     for(const item of thread.reconciled){
-      if(item.operation==='start'&&item.status==='submitted')question.clearIfUnchanged(item.text)
+      if(item.operation==='start'&&item.status==='submitted'){
+        question.clearIfUnchanged(item.text)
+        if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
+        if(item.source)sourceDraft.clearIfUnchanged(JSON.stringify(item.source))
+      }
       if(item.operation==='manual'&&['completed','already-completed'].includes(item.status)){
         const key=draftKey+':reply:'+item.turnId
         try {if(localStorage.getItem(key)===item.text)localStorage.removeItem(key)} catch {/* Keep the existing draft on failure. */}
       }
       if(item.status==='conflict'||item.status==='turn-pending')setError('A saved submission conflicted. Your draft was kept.')
     }
-  },[session,draftKey,question])
+  },[session,draftKey,question,attachedLocal,sourceDraft])
   const pendingId=session?.thread.head.pendingTurnId
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{
@@ -156,7 +162,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
       if(result.kind==='submitted') {
         question.clearIfUnchanged(question.text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
       }
-      await refresh(session.api)
+      await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
     } catch (err) {
       await refresh(session.api).catch(()=>{})
@@ -170,7 +176,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     setBusy(true);setError('')
     try {
       const result=await session.api.confirmImport(turnId,version,draftId,body)
-      await refresh(session.api)
+      await refresh(session.api).catch(()=>setError('Reply confirmed. Reconnect to refresh the conversation.'))
       if (result.kind==='completed') return true
       if (result.kind==='already-completed') {
         setError('Another reply was already imported. Your paste was kept under Recoverable replies.')
@@ -187,6 +193,8 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   }
 
   const thread=session?.thread,last=thread?.turns.at(-1)
+  const allTurns=Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence)
+  const recovered=Array.from(new Map([...historyDrafts,...(thread?.recoveredDrafts??[])].map(d=>[d.draftId??d.messageId,d])).values())
   const pending=last?.status==='awaiting-tutor'?last:null
   const localExcerpt=pending?.snapshot.localExcerpt
   const handoff=pending?[pending.snapshot.question,...pending.snapshot.selectedContext.map(x=>x.excerpt),
@@ -195,7 +203,11 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   async function action(run:()=>Promise<unknown>) {
     if(!session||busy)return false
     setBusy(true);setError('')
-    try {await run();await refresh(session.api);return true}
+    try {
+      await run()
+      await refresh(session.api).catch(()=>setError('Operation confirmed. Reconnect to refresh the conversation.'))
+      return true
+    }
     catch (err){await refresh(session.api).catch(()=>{});setError(err instanceof Error?err.message:'This operation could not be confirmed.');return false}
     finally {setBusy(false)}
   }
@@ -206,7 +218,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   return <>
     <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
     {error&&<p role="alert">{error}</p>}
-    {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Last confirmed conversation: '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
+    {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Conversation last checked '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
     {!session&&!error&&<p role="status">Opening saved tutor preview…</p>}
     {session?.thread.outbox?.map(item=><section key={item.operationId} aria-label="Pending tutor submission">
       <p>A saved submission is waiting for confirmation.</p><p style={{whiteSpace:'pre-wrap'}}>{item.text}</p>
@@ -215,6 +227,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
         if(status==='submitted'){
           question.clearIfUnchanged(item.text)
           if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
+          if(item.source)sourceDraft.clearIfUnchanged(JSON.stringify(item.source))
         }
         if(status==='conflict'||status==='turn-pending')throw new Error('The submission conflicted. Your draft was kept.')
       })}>Check and retry submission</Button>
@@ -285,6 +298,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
           <p>Use this address and bearer token with a compatible host. The grant covers this question for one day.</p>
           <label>Connector address<input value={grant.endpoint} readOnly/></label>
           <label>Turn reference<input value={pending.id} readOnly/></label>
+          <Button disabled={busy} onClick={()=>void action(async()=>{await session.api.revokeGrant!(pending.id,pending.version,grant.grantId);setGrant(undefined)})}>Revoke this grant</Button>
           <Button onClick={()=>void navigator.clipboard.writeText(grant.token).then(()=>setCopyStatus('Bearer token copied.')).catch(()=>setCopyStatus('Clipboard unavailable.'))}>Copy bearer token</Button>
         </section>}
         <Button disabled={busy} onClick={()=>void action(async()=>{await session.api.stopGrants?.(pending.id,pending.version);setGrant(undefined)})}>Revoke access and switch tutor</Button>
@@ -294,9 +308,9 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     </div>}
     {pending&&<ReplyEditor live={live} key={pending.id} draftKey={draftKey+':reply:'+pending.id} busy={busy}
       completed={false} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
-    {thread?.turns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
+    {allTurns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
       <h3>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':'Tutor reply'}</h3>
-      {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>Host reported by the connector: {turn.finalReply.provenance.reportedHost} (unverified)</p>}
+      {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
       <p className="v7-field-hint">{turn.snapshot.question}</p>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.finalReply.body}</p>
       {!!turn.finalReply.citations.length&&<details><summary>Selected citations</summary>
@@ -311,18 +325,23 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
           ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
           :<span>{suggestion.status}</span>)}
       </p>)}
+      {live&&!!scope.linkedSessions?.length&&<details><summary>Continue in a linked study session</summary>
+        <p>Open the session to record your own evidence or summary.</p>
+        <ul>{scope.linkedSessions.map(study=><li key={study.number}><Link to={'/s/'+encodeURIComponent(scope.pathId)+'/'+study.number}>
+          Session {study.number} · {study.goal}</Link></li>)}</ul>
+      </details>}
       {session?.api.proposeCard&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
     </article>)}
-    {thread?.turns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
+    {allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
     {session&&thread?.before&&<Button onClick={()=>void action(async()=>{
       const older=await session.api.resume(historyCursor??thread.before!)
       setHistory(seen=>[...older.turns,...seen])
+      setHistoryDrafts(seen=>[...older.recoveredDrafts,...seen])
       setHistoryCursor(older.before??null)
     })} disabled={busy||historyCursor===null}>Load earlier questions</Button>}
-    {history.map(t=><article key={t.id}><h3>{t.snapshot.question}</h3>{t.status==='completed'&&<p style={{whiteSpace:'pre-wrap'}}>{t.finalReply.body}</p>}</article>)}
-    {!!thread?.recoveredDrafts.length&&<details><summary>Recoverable replies</summary>
-      {thread.recoveredDrafts.map((item,i)=><div key={i} className="v7-field-group">
+    {!!recovered.length&&<details><summary>Recoverable replies</summary>
+      {recovered.map((item,i)=><div key={item.draftId??item.messageId} className="v7-field-group">
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </details>}

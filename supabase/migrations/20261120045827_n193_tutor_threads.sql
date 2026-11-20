@@ -16,17 +16,17 @@ create table public.tutor_threads (
  foreign key(user_id,checkpoint_id) references public.checkpoints(user_id,id) on delete cascade
 );
 create table public.tutor_turns (
- id uuid primary key, user_id uuid not null, thread_id uuid not null,
+ id uuid primary key default gen_random_uuid(), client_turn_id uuid not null, user_id uuid not null, thread_id uuid not null,
  sequence bigint not null check(sequence>0), version integer not null default 1,
  generation integer not null default 0, snapshot jsonb not null,
  status text not null default 'pending' check(status in ('pending','completed','cancelled')),
  created_at timestamptz not null default clock_timestamp(),
- unique(user_id,id), unique(thread_id,sequence),
+ unique(user_id,id), unique(user_id,client_turn_id), unique(thread_id,sequence),
  foreign key(user_id,thread_id) references public.tutor_threads(user_id,id) on delete cascade
 );
 create unique index tutor_one_pending on public.tutor_turns(thread_id) where status='pending';
 create table public.tutor_grants (
- id uuid primary key, user_id uuid not null, turn_id uuid not null,
+ id uuid primary key default gen_random_uuid(), user_id uuid not null, turn_id uuid not null,
  created_at timestamptz not null default clock_timestamp(),
  expires_at timestamptz not null, revoked_at timestamptz,
  unique(user_id,id), unique(user_id,turn_id,id),
@@ -46,7 +46,7 @@ create table public.tutor_attempts (
  foreign key(user_id,turn_id,grant_id) references public.tutor_grants(user_id,turn_id,id) on delete cascade
 );
 create table public.tutor_replies (
- turn_id uuid primary key, id uuid not null unique, user_id uuid not null,
+ turn_id uuid primary key, id uuid not null, user_id uuid not null, unique(user_id,id),
  body text not null check(char_length(body) between 1 and 12000),
  provenance text not null check(provenance in ('manual','connector')),
  reported_host text check(reported_host is null or (char_length(reported_host) between 1 and 100 and provenance='connector')),
@@ -60,7 +60,7 @@ create table public.tutor_suggestions (
  foreign key(user_id,proposal_id) references public.proposals(user_id,id) on delete cascade
 );
 create table public.tutor_recovered_replies (
- id uuid primary key, user_id uuid not null, turn_id uuid not null,
+ id uuid not null, message_id uuid not null, user_id uuid not null, turn_id uuid not null, primary key(user_id,id),
  body text not null, created_at timestamptz not null default clock_timestamp(),
  foreign key(user_id,turn_id) references public.tutor_turns(user_id,id) on delete cascade
 );
@@ -76,6 +76,18 @@ alter table public.tutor_recovered_replies enable row level security;
 revoke all on public.tutor_release_controls,public.tutor_threads,public.tutor_turns,public.tutor_grants,
  public.tutor_grant_credentials,public.tutor_attempts,public.tutor_replies,public.tutor_suggestions,
  public.tutor_recovered_replies from public,anon,authenticated,service_role;
+
+-- Existing installations already have the account-deletion guard. On a fresh
+-- database its later migration installs the same trigger on every owner table.
+do $tutor_delete_guards$
+declare name text;
+begin
+ if to_regprocedure('public.lemma_block_account_deletion_writes()') is not null then
+  foreach name in array array['tutor_threads','tutor_turns','tutor_grants','tutor_attempts','tutor_replies','tutor_suggestions','tutor_recovered_replies'] loop
+   execute format('create trigger lemma_account_delete_write_guard before insert or update or delete on public.%I for each row execute function public.lemma_block_account_deletion_writes()',name);
+  end loop;
+ end if;
+end $tutor_delete_guards$;
 
 -- Only owner-scoped, exportable records enter the existing snapshot registry.
 -- These sealed tables have no study-journal triggers or generic write routes.
@@ -129,7 +141,7 @@ begin
   'turns',coalesce(items,'[]'::jsonb),'before',case when first_sequence>1 then first_sequence end,
   'canSubmit',public.lemma_plan_released() and exists(select 1 from public.tutor_release_controls where capability='manual' and enabled),
   'canConnect',public.lemma_plan_released() and exists(select 1 from public.tutor_release_controls where capability='mcp' and enabled),
-  'recoveredDrafts',coalesce((select jsonb_agg(jsonb_build_object('messageId',d.id,'turnId',d.turn_id,'body',d.body) order by d.created_at)
+  'recoveredDrafts',coalesce((select jsonb_agg(jsonb_build_object('draftId',d.id,'messageId',d.message_id,'turnId',d.turn_id,'body',d.body) order by d.created_at)
    from public.tutor_recovered_replies d join public.tutor_turns t on t.id=d.turn_id
    where t.thread_id=h.id and t.sequence>=first_sequence and (p_before is null or t.sequence<p_before)),'[]'::jsonb));
 end $state$;
@@ -156,7 +168,7 @@ end $page$;
 revoke all on function public.tutor_source_preview(uuid,text,uuid,integer) from public,anon,service_role;
 grant execute on function public.tutor_source_preview(uuid,text,uuid,integer) to authenticated;
 
--- A suggestion creates or links a pending proposal. The normal owner review still
+-- A suggestion creates a pending proposal. The normal owner review still
 -- owns the approval. No direct mode, arbitrary resource, source or cross-project link.
 create function public.tutor_add_suggestion(p_user uuid,p_turn uuid,p_project uuid,p_cp public.checkpoints,p jsonb)
 returns uuid language plpgsql security invoker set search_path='' as $suggest$
@@ -166,12 +178,6 @@ begin
  if jsonb_typeof(p) is distinct from 'object' or reason is null or (reason) !~ '[^[:space:]]' or length(reason)>300 then
   raise exception 'Suggestion needs a bounded summary' using errcode='22023';
  end if;
- if kind='existing' then
-  if (p-array['kind','summary','proposalId','version'])<>'{}' then raise exception 'Unexpected suggestion fields'; end if;
-  select id into proposal from public.proposals where user_id=p_user and project_id=p_project
-   and id=(p->>'proposalId')::uuid and status='pending' and version=(p->>'version')::integer;
-  if not found then raise exception 'Proposed study change is unavailable' using errcode='40001'; end if;
- else
   if kind='card' and (p-array['kind','summary','front','back'])='{}' then
    if jsonb_typeof(p->'front') is distinct from 'string' or (p->>'front') !~ '[^[:space:]]' or length(p->>'front')>1500
     or jsonb_typeof(p->'back') is distinct from 'string' or length(p->>'back')>3000 then raise exception 'Invalid proposed card'; end if;
@@ -198,7 +204,6 @@ begin
    kind:='plan_change';
   else raise exception 'Unsupported study suggestion' using errcode='22023'; end if;
   insert into public.proposals(user_id,project_id,kind,payload,reason,origin,base_target_versions) values(p_user,p_project,kind,payload,reason,'other',base_versions) returning id into proposal;
- end if;
  insert into public.tutor_suggestions(user_id,turn_id,proposal_id) values(p_user,p_turn,proposal);
  return proposal;
 end $suggest$;
@@ -304,7 +309,7 @@ begin
   snapshot:=jsonb_build_object('question',p->>'question','selectedContext',selected);
   if excerpt is not null then snapshot:=snapshot||jsonb_build_object('localExcerpt',jsonb_build_object('kind','local-excerpt','text',excerpt)); end if;
   update public.tutor_threads set last_sequence=last_sequence+1,updated_at=stamp where id=h.id returning * into h;
-  insert into public.tutor_turns(id,user_id,thread_id,sequence,snapshot)
+  insert into public.tutor_turns(client_turn_id,user_id,thread_id,sequence,snapshot)
    values(opid,u,h.id,h.last_sequence,snapshot) returning * into t;
   output:=jsonb_build_object('status','submitted','sequence',t.sequence);
 
@@ -313,9 +318,9 @@ begin
    raise exception 'Tutor connector is unavailable' using errcode='55000'; end if;
   if t.status<>'pending' or expected is distinct from t.version then raise exception 'Turn changed' using errcode='40001'; end if;
   if (p->>'tokenHash') is null or (p->>'tokenHash') !~ '^[a-f0-9]{64}$' then raise exception 'Invalid grant' using errcode='22023'; end if;
-  insert into public.tutor_grants(id,user_id,turn_id,expires_at) values(opid,u,t.id,stamp+interval '1 day');
-  insert into public.tutor_grant_credentials(grant_id,token_hash) values(opid,p->>'tokenHash');
-  output:=jsonb_build_object('status','granted','grantId',opid,'expiresAt',stamp+interval '1 day');
+  insert into public.tutor_grants(user_id,turn_id,expires_at) values(u,t.id,stamp+interval '1 day') returning * into g;
+  insert into public.tutor_grant_credentials(grant_id,token_hash) values(g.id,p->>'tokenHash');
+  output:=jsonb_build_object('status','granted','grantId',g.id,'expiresAt',stamp+interval '1 day');
 
  elsif op in ('switch','revoke','cancel') then
   if expected is distinct from t.version then raise exception 'Turn changed' using errcode='40001'; end if;
@@ -352,7 +357,7 @@ begin
   if msg is null or jsonb_typeof(p->'body') is distinct from 'string' or (response) !~ '[^[:space:]]' or length(response)>12000 then
    raise exception 'A valid reply is required' using errcode='22023'; end if;
   if t.status='completed' then
-   insert into public.tutor_recovered_replies(id,user_id,turn_id,body) values(opid,u,t.id,response);
+   insert into public.tutor_recovered_replies(id,message_id,user_id,turn_id,body) values(opid,msg,u,t.id,response);
    if op='reply' then update public.tutor_attempts set reason='manual-recovered' where id=a.id; end if;
    output:=jsonb_build_object('status','already-completed','draftId',opid);
   else

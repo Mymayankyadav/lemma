@@ -64,6 +64,13 @@
       "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
       "exportPolicy": "Included in the authenticated owner snapshot",
       "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "client_turn_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Internal owner-scoped client operation identity; grants use the server turn reference",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
     }
   }
 }
