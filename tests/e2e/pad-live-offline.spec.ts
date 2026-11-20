@@ -17,7 +17,7 @@ const session = (id: string, seconds = 3600, sessionId = '00000000-0000-4000-800
   };
 };
 
-async function openCheckpoint(page: Page, context: BrowserContext, released = true) {
+async function openCheckpoint(page: Page, context: BrowserContext, released = true, tutor = false) {
   const auth = session(owner);
   await page.addInitScript(({key, auth}) => {
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(auth));
@@ -39,6 +39,12 @@ async function openCheckpoint(page: Page, context: BrowserContext, released = tr
     let data: unknown;
     if (url.pathname === '/auth/v1/user') data = auth.user;
     else if (url.pathname === '/rest/v1/rpc/lemma_plan_released') data = state.released;
+    else if (tutor && url.pathname === '/rest/v1/rpc/tutor_thread_state') data = {
+      head:{threadId:null, pendingTurnId:null, lastSequence:0}, turns:[], recoveredDrafts:[], canSubmit:true, canConnect:false,
+    };
+    else if (tutor && url.pathname === '/rest/v1/rpc/tutor_owner_command') data = {
+      status:'submitted', operationId:req.postDataJSON().p_command.operationId,
+    };
     else if (url.pathname === '/rest/v1/settings' || url.pathname === '/rest/v1/rpc/bootstrap') data = settings;
     else if (url.pathname === '/rest/v1/rpc/begin_owner_export') data = 'fixture-snapshot';
     else if (url.pathname === '/rest/v1/rpc/end_owner_export') data = null;
@@ -54,7 +60,7 @@ async function openCheckpoint(page: Page, context: BrowserContext, released = tr
     else return route.abort();
     return route.fulfill({json:data, headers:{'content-range':'0-0/1'}});
   });
-  await page.goto('./?demo=0&flags=v7Shell,padLocal#/p/analysis/cp/CP4');
+  await page.goto('./?demo=0&flags=v7Shell,padLocal' + (tutor ? ',tutorThreads' : '') + '#/p/analysis/cp/CP4');
   if (released) await page.getByRole('button', {name:'Open Local Pad'}).click();
   return {state, external, payloads};
 }
@@ -98,6 +104,32 @@ test('an owner-verified checkpoint Pad can cold-open offline and stays private a
   await expect(notes).toHaveCount(0);
   await expect(page.getByText('Open Local Pad from a checkpoint while signed in to use it here.')).toBeVisible();
   expect(external).toEqual([]);
+});
+
+test('the live tutor receives the reviewed excerpt only on explicit submission', async ({page, context}) => {
+  const {payloads} = await openCheckpoint(page, context, true, true);
+  const field = page.getByRole('textbox', {name:'Pad notes'});
+  const excerpt = '  $x^2$ grows.\nFor x > 0.  ', privateText = 'Private working around the selection.';
+  await field.fill(privateText + excerpt + privateText);
+  await field.evaluate((input: HTMLTextAreaElement, range) => {
+    input.focus(); input.setSelectionRange(range[0], range[1]); input.dispatchEvent(new Event('select', {bubbles:true}));
+  }, [privateText.length, privateText.length + excerpt.length]);
+  const commands = () => payloads.map(raw => JSON.parse(raw)).filter(body => body?.p_command?.operation === 'start');
+  await page.getByRole('button', {name:'Send selection to tutor'}).click();
+  const dialog = page.getByRole('dialog', {name:'Checkpoint tutor'});
+  const preview = dialog.getByRole('region', {name:'Local excerpt preview'});
+  expect(await preview.locator('p').textContent()).toBe(excerpt);
+  await dialog.getByLabel('Question', {exact:true}).fill('Is this argument correct?');
+  await expect(dialog.getByRole('button', {name:'Save question'})).toBeDisabled();
+  expect(commands()).toEqual([]);
+  await dialog.getByRole('button', {name:'Add local excerpt'}).click();
+  expect(commands()).toEqual([]);
+  await dialog.getByRole('button', {name:'Save question'}).click();
+  await expect.poll(() => commands().length).toBe(1);
+  const [request] = commands();
+  expect(request).toMatchObject({p_owner:owner, p_slug:'analysis', p_checkpoint:checkpointId,
+    p_command:{question:'Is this argument correct?', localExcerpt:excerpt}});
+  expect(payloads.join('\n')).not.toContain(privateText);
 });
 
 test('the shared server release must be open for a new live Pad', async ({page, context}) => {

@@ -18,6 +18,7 @@ import {FastTex as Tex} from '../../../ui/FastTex';
 import {chatLink,studyPrompt} from '../../../lib/chat';
 import {ownerZone} from '../../../lib/format';
 import {CheckpointTutor} from '../../tutor/DemoCheckpointTutor';
+import {getMode} from '../../../data/mode';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import {nodeStateOf,nodeWord} from '../../project/v7/pathModel';
@@ -50,6 +51,9 @@ export default function CheckpointV7(){
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
  const step=Math.max(0,view.currentStep);
+ const tutorScope={pathId:slug,checkpointId:view.id,title:view.title,objective:detail.objective,sourceShort:detail.sourceShort,
+  linkedSessions:detail.sessions.filter(session=>session.display!=='ended'),authScope:detail.authScope};
+ const tutorEnabled=getMode()==='live'?isFlagOn('tutorThreads'):isFlagOn('tutorManualDemo');
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>
@@ -89,7 +93,7 @@ export default function CheckpointV7(){
    </div></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
   {isFlagOn('padLocal')&&<Suspense fallback={null}>
-   <CheckpointPad slug={slug} code={code} detail={detail}/>
+   <CheckpointPad slug={slug} code={code} detail={detail} renderTutor={tutorEnabled?props=><CheckpointTutor scope={tutorScope} {...props}/>:undefined}/>
   </Suspense>}
   <CheckpointReady checkpointId={detail.view.id}/>
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
@@ -97,7 +101,7 @@ export default function CheckpointV7(){
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
-  <CheckpointTutor scope={{pathId:slug,checkpointId:view.id,title:view.title,objective:detail.objective,sourceShort:detail.sourceShort,linkedSessions:detail.sessions.filter(s=>s.display!=='ended'),authScope:detail.authScope}}/>
+  {!isFlagOn('padLocal')&&<CheckpointTutor scope={tutorScope}/>}
   <Link className="v7-learn-row" to={'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
