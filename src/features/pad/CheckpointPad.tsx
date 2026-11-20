@@ -49,7 +49,7 @@ function PadEntry({binding, checkpointId, slug, code, renderTutor, fullPage}: {
   const [visibility, setVisibility] = useState<'closed' | 'open' | 'hidden'>(fullPage ? 'open' : 'closed');
   const [handoff, setHandoff] = useState<Handoff>();
   const send = renderTutor ? (text: string) => setHandoff({text, requestId: crypto.randomUUID()}) : undefined;
-  return <><section className="v7-learn-card" aria-label="Local Pad">
+  return <><section className="v7-learn-card local-pad-entry" aria-label="Local Pad" data-pad-open={visibility === 'open'}>
     {!fullPage && <><Link to={'/pad?path=' + encodeURIComponent(slug) + '&checkpoint=' + encodeURIComponent(code)}>
       Open full Pad page
     </Link><Button aria-expanded={visibility === 'open'}

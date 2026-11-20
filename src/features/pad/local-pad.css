@@ -17,6 +17,12 @@
   border-radius:.5rem; background:var(--raised, transparent); color:inherit;
 }
 .local-pad-controls button:disabled {opacity:.55}
+/* The checkpoint's floating tutor bar must not cover Save or the ink controls.
+   Keep its actions in the document while this editor is open; putting the Pad
+   away restores the checkpoint's normal floating bar without unmounting work. */
+.v7-learn:has(> .local-pad-entry[data-pad-open="true"]) > .v7-learn-bar {
+  position:static; inset:auto; width:auto; max-width:none; margin-inline:0; transform:none;
+}
 .local-pad-preview {
   white-space:pre-wrap; overflow-wrap:anywhere; overflow:auto; max-height:24rem;
   contain:layout paint;

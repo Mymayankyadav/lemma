@@ -57,11 +57,20 @@ test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local re
   await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
   await expect(open).toHaveCount(0);
   await page.goto(checkpoint('CP4'));
+  const checkpointActions = page.getByRole('group',{name:'Checkpoint actions',exact:true});
+  await expect(checkpointActions).toHaveCSS('position','fixed');
   await open.click();
+  await expect(checkpointActions).toHaveCSS('position','static');
   const notes = page.getByRole('textbox',{name:'Pad notes'}), save = page.getByRole('button',{name:'Save draft'});
   await notes.fill('First compactness proof');
   await save.click();
   await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Put away Local Pad',exact:true}).click();
+  await expect(checkpointActions).toHaveCSS('position','fixed');
+  await expect(notes).toBeHidden();
+  await open.click();
+  await expect(checkpointActions).toHaveCSS('position','static');
+  await expect(notes).toHaveValue('First compactness proof');
   await page.getByLabel('Import a Pad JSON backup').setInputFiles({
     name:'lemma-pad.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(backup)),
   });
@@ -120,8 +129,17 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, {steps:4});
     await page.mouse.up();
     await expect(strokes).toHaveCount(1);
+    await expect(paper.locator('path[opacity="0.65"]')).toHaveCount(0);
     const path = await strokes.first().getAttribute('d');
     expect(path).toBeTruthy();
+    // The checkpoint's fixed action bar used to receive this click instead of Save.
+    const save = page.getByRole('button',{name:'Save draft'});
+    await save.scrollIntoViewIfNeeded();
+    expect(await save.evaluate(button => {
+      const box = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2,box.y + box.height / 2);
+      return hit === button || !!hit && button.contains(hit);
+    })).toBe(true);
     await page.getByRole('button',{name:'Save draft'}).click();
     await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
     return path;

@@ -48,6 +48,10 @@ test('math keys remain local and reachable at narrow widths and landscape with l
   await page.getByRole('button',{name:'Open Local Pad',exact:true}).click();
   const notes = page.getByRole('textbox',{name:'Pad notes'});
   await notes.fill('');
+  // Finish the app's initial offline-cache installation before disconnecting.
+  await page.evaluate(async () => {await navigator.serviceWorker.ready;});
+  await expect.poll(() => page.evaluate(async () => (await navigator.serviceWorker.getRegistration())?.active?.state))
+    .toBe('activated');
   await context.setOffline(true);
   const requests: string[] = [];
   context.on('request', request => {
