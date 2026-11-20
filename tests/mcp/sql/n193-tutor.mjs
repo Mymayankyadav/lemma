@@ -197,12 +197,34 @@ try {
  await ownerCmd(cmd('cancel',{turnId:thirdId,expectedVersion:switched.version}));
  assert.equal((await state()).turns.at(-1).status,'cancelled');
  assert.deepEqual((await state(owner,checkpoint,2)).turns.map(t=>t.id),[turnId]);
+ const privateTables=['tutor_release_controls','tutor_grant_credentials'];
+ const exportable=tableNames.filter(name=>!privateTables.includes(name));
+ const expectedBodies=new Set([final.body,secondLocal.body]);
  const exportId=await one('select public.begin_owner_export() result');
  const tables=(await one('select public.owner_export_page($1) result',[exportId])).rows.map(r=>r.table_name);
- assert.ok(tables.includes('tutor_turns'));assert.ok(!tables.includes('tutor_grant_credentials'));
+ for(const name of exportable)assert.ok(tables.includes(name),name);
+ for(const name of privateTables)assert.ok(!tables.includes(name),name);
  const exported=await one("select public.owner_export_page($1,'tutor_replies') result",[exportId]);
- assert.deepEqual(new Set(exported.rows.map(r=>r.body)),new Set([final.body,secondLocal.body]));
- await as('authenticated',other);await assert.rejects(one("select public.owner_export_page($1,'tutor_replies') result",[exportId]));
+ assert.deepEqual(new Set(exported.rows.map(r=>r.body)),expectedBodies);
+ const memberPage=(table,cursor=null)=>one('select public.lemma_export_page($1,$2,1) result',[table,cursor]);
+ const servicePage=(id,table,cursor=null)=>one('select public.lemma_export_page_for($1,$2,$3,1) result',[id,table,cursor]);
+ async function checkReplyPages(read){
+  const first=await read('tutor_replies'),second=await read('tutor_replies',first.nextCursor);
+  assert.deepEqual(new Set([...first.rows,...second.rows].map(r=>r.body)),expectedBodies);
+  assert.equal((await read('tutor_replies',second.nextCursor)).rows.length,0);
+  for(const name of privateTables)await assert.rejects(read(name),/not registered/i);
+ }
+ await checkReplyPages(memberPage);
+ await as('authenticated',other);
+ await assert.rejects(one("select public.owner_export_page($1,'tutor_replies') result",[exportId]));
+ assert.deepEqual((await memberPage('tutor_replies')).rows,[]);
+ await denied(servicePage(owner,'tutor_replies'));
+ await as('service_role');
+ await checkReplyPages((table,cursor)=>servicePage(owner,table,cursor));
+ assert.deepEqual((await servicePage(other,'tutor_replies')).rows,[]);
+ await as();
+ assert.equal(await one('select count(*)::int result from public.lemma_undo_tables where table_name=any($1::text[])',[tableNames]),0);
+ assert.equal(await one('select count(*)::int result from lemma_export_private.additional_tables where table_name=any($1::text[])',[exportable]),exportable.length);
  await as('authenticated',owner);const recovery=await ownerCmd(cmd('start',{expectedVersion:3,question:'Recover if transport disabled.'}));
  await as();await db.exec("update public.tutor_release_controls set enabled=false");
  await as('authenticated',owner);assert.equal((await state()).turns.length,4);

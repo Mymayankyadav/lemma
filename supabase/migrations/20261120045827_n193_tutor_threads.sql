@@ -89,11 +89,21 @@ begin
  end if;
 end $tutor_delete_guards$;
 
--- Only owner-scoped, exportable records enter the existing snapshot registry.
--- These sealed tables have no study-journal triggers or generic write routes.
-insert into public.lemma_undo_tables(table_name) values
+-- A fresh chain can introduce tutor rows before the shared N191 export helpers.
+-- N191 later reads this private metadata for both keyset exports and owner snapshots.
+create schema if not exists lemma_export_private;
+create table if not exists lemma_export_private.additional_tables (
+ table_name text primary key check (table_name ~ '^[a-z_][a-z0-9_]*$'),
+ owner_column text not null default 'user_id' check (owner_column ~ '^[a-z_][a-z0-9_]*$'),
+ redact_columns text[] not null default '{}'
+);
+alter table lemma_export_private.additional_tables enable row level security;
+revoke all on schema lemma_export_private from public,anon,authenticated,service_role;
+revoke all on lemma_export_private.additional_tables from public,anon,authenticated,service_role;
+insert into lemma_export_private.additional_tables(table_name) values
  ('tutor_threads'),('tutor_turns'),('tutor_grants'),('tutor_attempts'),
- ('tutor_replies'),('tutor_suggestions'),('tutor_recovered_replies');
+ ('tutor_replies'),('tutor_suggestions'),('tutor_recovered_replies')
+ on conflict(table_name) do nothing;
 
 -- Private serializer. The host profile gets the pending question from its own turn;
 -- only an authenticated owner can retrieve the thread, replies and recovery history.
