@@ -602,6 +602,12 @@
    ],
    "covers": [
     {
+     "resource": "session_progress",
+     "operations": [
+      "save"
+     ]
+    },
+    {
      "resource": "session_event_corrections",
      "operations": [
       "correct",
