@@ -39,3 +39,43 @@ test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local re
   await open.click();
   await expect(notes).toHaveValue('');
 });
+
+test('a saved Pad reopens offline after leaving its checkpoint and retains ink across rotation', async ({page, context}) => {
+  await page.route('https://**/*', route => route.abort());
+  const open = page.getByRole('button',{name:'Open Local Pad',exact:true});
+  const notes = page.getByRole('textbox',{name:'Pad notes'});
+  const paper = page.getByRole('img',{name:'Pad drawing'});
+  const strokes = paper.locator('path');
+  await page.goto(checkpoint('CP4'));
+  await open.click();
+  await notes.fill('Compactness notes saved offline');
+  await context.setOffline(true);
+  expect(await page.evaluate(() => navigator.onLine)).toBe(false);
+
+  await paper.scrollIntoViewIfNeeded();
+  const box = await paper.boundingBox();
+  if (!box) throw new Error('Pad drawing has no bounds');
+  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, {steps:4});
+  await page.mouse.up();
+  await expect(strokes).toHaveCount(1);
+  const path = await strokes.first().getAttribute('d');
+  expect(path).toBeTruthy();
+  await page.getByRole('button',{name:'Save draft'}).click();
+  await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
+
+  await page.setViewportSize({width:844,height:390});
+  await expect(strokes.first()).toHaveAttribute('d',path ?? '');
+  // Hash-only navigation remounts the fixture without depending on a service worker.
+  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP2';});
+  await expect(page.getByRole('button',{name:'Put away Local Pad'})).toHaveCount(0);
+  await open.click();
+  await expect(notes).toHaveValue('');
+  await expect(strokes).toHaveCount(0);
+  await page.evaluate(() => {location.hash = '#/p/real-analysis/cp/CP4';});
+  await expect(page.getByRole('heading',{name:'Compactness',level:1})).toBeVisible();
+  await open.click();
+  await expect(notes).toHaveValue('Compactness notes saved offline');
+  await expect(strokes.first()).toHaveAttribute('d',path ?? '');
+});
