@@ -16,7 +16,7 @@
       "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
       "deletionPolicy": "Owner account deletion erases linked records by cascade."
     },
-    "owner_id": {
+    "user_id": {
       "classification": "command-managed",
       "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
       "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",

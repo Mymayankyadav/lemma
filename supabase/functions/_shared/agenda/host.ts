@@ -1,6 +1,6 @@
 import { assembleAtlas, type AtlasRows } from '../adaptive/atlas.ts';
 import type { Action } from '../adaptive/kg.ts';
-import { productForecast, type ForecastPractice } from '../forecast/product.ts';
+import { productForecast, type ForecastPractice, type PreloggedForecast } from '../forecast/product.ts';
 import type { BankItem } from '../practice/questions.ts';
 import { requestedAlgorithm, type AgendaDecision } from './contract.ts';
 import { decideAgenda, holdReceipt, type ShadowResult } from './decision.ts';
@@ -21,7 +21,7 @@ interface Event {
 export interface HostData {
   asOf:string;watermark:string;reason?:string;rows?:AtlasRows;tasks?:HostTask[];evidence?:Event[];
   calendar?:{asOf:string;watermark:string;horizonEnd:string;status:string;fixed:CalendarBlock[];availability:CalendarBlock[]|null};
-  practiceBank?:Omit<BankItem,'nativeProbability'|'nativeAsOf'>[];spentByDate?:Record<string,number>;history?:Observation[];occupied?:boolean;reservations?:{task_id:string;starts_at:string;ends_at:string}[];
+  forecastEnabled?:boolean;prelogged?:PreloggedForecast[];practiceBank?:Omit<BankItem,'nativeProbability'|'nativeAsOf'>[];spentByDate?:Record<string,number>;history?:Observation[];occupied?:boolean;reservations?:{task_id:string;starts_at:string;ends_at:string}[];
 }
 const minute=(value:string)=>Date.parse(value)/60000;
 const isNumber=(n:unknown):n is number=>typeof n==='number'&&Number.isFinite(n);
@@ -134,7 +134,7 @@ export function ownerAgenda(owner:string,host:HostData,released:boolean,clock?:(
   const picked=read.decision.outcome;
   const action=picked.kind==='action'?actionsById.get(picked.taskId):undefined;
   if(action&&picked.kind==='action'){
-    try {read.practice=productForecast(owner,host.asOf,action,picked.end-picked.start,view,nativeRows,host.practiceBank??[]);}
+    try {read.practice=productForecast(owner,host.asOf,action,picked.end-picked.start,view,nativeRows,host.practiceBank??[],host.forecastEnabled===true,host.prelogged);}
     catch {read.practice={status:'unavailable',reason:'Forecast or bank inputs unavailable',version:'atlas-latent-guard-2026-11-20.1',native:action.p,arm:'atlas80'};}
   }
   return read;

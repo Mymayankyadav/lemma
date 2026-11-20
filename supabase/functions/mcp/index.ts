@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { admin, adminClient } from './db.ts';
 import { browserAgenda } from './agenda-http.ts';
-import { readAgenda } from './agenda.ts';
+import { readAgenda, openPractice, validPracticeRequest } from './agenda.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer } from './server.ts';
 import { selftest } from './selftest.ts';
@@ -31,10 +31,14 @@ Deno.serve(async (req:Request)=>{
   if(req.method==='OPTIONS')return new Response(null,{status:204,headers:cors});
   const path=new URL(req.url).pathname.split('/');
   const i=path.indexOf('mcp');
-  if(i>=0 && path[i+1]==='agenda' && path.length===i+2) return browserAgenda(req,{
-    verify: async token=>{const {data,error}=await adminClient().auth.getUser(token);return error?null:data.user?.id??null;},
-    read: userId=>readAgenda({db:admin(),userId}),
-  },cors);
+  if(i>=0&&path.length===i+2&&['agenda','practice-question'].includes(path[i+1])){
+    const delivery=path[i+1]==='practice-question',requestId=req.headers.get('Idempotency-Key');
+    if(delivery&&!validPracticeRequest(requestId))return new Response(null,{status:400,headers:cors});
+    return browserAgenda(req,{
+      verify:async token=>{const {data,error}=await adminClient().auth.getUser(token);return error?null:data.user?.id??null;},
+      read:async userId=>delivery?openPractice({db:admin(),userId},requestId!):readAgenda({db:admin(),userId}),
+    },cors);
+  }
   const secret=i>=0?path[i+1]:null;
   if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
   try{

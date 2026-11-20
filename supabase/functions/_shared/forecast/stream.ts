@@ -17,7 +17,7 @@ export function scopedForecast(events:readonly StreamEvent[],request:ForecastReq
   let wins=0,total=0;
   for(const e of [...events].filter(e=>key(e.scope)===scope&&Date.parse(e.knownAt)<=cutoff&&Date.parse(e.at)<=Date.parse(e.knownAt))
       .sort((a,b)=>Date.parse(a.at)-Date.parse(b.at)||a.id.localeCompare(b.id))){
-    if(e.actor==='tutor'||seen.has(e.id)||origins.has(e.origin)||!e.id||!e.origin||
+    if(e.actor==='tutor'&&e.kind!=='lesson'||seen.has(e.id)||origins.has(e.origin)||!e.id||!e.origin||
       (e.kind!=='lesson'&&(e.outcome===null||e.reliability<=0||e.hint===4||e.worked)))continue;
     const q:Query={day:day(e.at),kc:scope,kind:e.kind,hint:e.hint,reliability:e.reliability,difficulty:e.difficulty};
     const ref=e.kind==='attempt'&&validProbability(e.nativeProbability)?e.nativeProbability:undefined;

@@ -87,6 +87,8 @@ export function eligiblePractice(anchors:readonly number[],certificate:Certifica
     !civilDay(day)||!civilDay(certificate.validThrough)||day>certificate.validThrough)return NATIVE;
   try{
     const group=intake(anchors),arm=certificate.routes[group],result=certificate.evidence[group]?.[arm];
-    return ARMS.includes(arm)&&result?.eligible===true&&result.n>=100?arm:NATIVE;
+    const control=certificate.evidence[group]?.[NATIVE],b=result?.bounds;
+    return ARMS.includes(arm)&&!!b&&result?.eligible===true&&result.n>=100&&(control?.n??0)>=100&&
+      b.transfer7.lower>caps.transfer7&&metrics.every(k=>k==='transfer7'||b[k].upper<=caps[k])?arm:NATIVE;
   }catch{return NATIVE;}
 }

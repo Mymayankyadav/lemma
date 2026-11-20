@@ -9,7 +9,7 @@ const event:ProofEvent={scope,at:'2026-11-12T12:00:00Z',knownAt:'2026-11-12T12:0
 it('preserves native item order, scope and urgent full-proof eligibility; falls back for a missing arm-specific score',()=>{
   const unusable={...item,form:'micro' as const,nativeOrder:0,id:'short'}
   const read=selectPracticeQuestion([unusable,item,{...item,id:'newer',nativeOrder:2}],[],scope,at,15,'whole')
-  expect(read?.id).toBe('first');expect(read?.forecast.status).toBe('uncertain')
+  expect(read?.id).toBe('first');expect(read?.forecast?.status).toBe('uncertain')
   expect(selectPracticeQuestion([item],[],{...scope,rubric:'changed'},at,15,'whole')).toBeNull()
   expect(selectPracticeQuestion([item],[],scope,at,10,'whole')).toBeNull()
   expect(selectPracticeQuestion([{...item,arm:'guided80'}],[],scope,at,15,'whole')?.arm).toBe('atlas80')

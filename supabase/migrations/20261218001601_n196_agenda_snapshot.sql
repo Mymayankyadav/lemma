@@ -8,7 +8,7 @@ declare
   watermark text := pg_current_snapshot()::text;
   calendar jsonb; evidence jsonb := '[]'; page jsonb; after_id bigint := 0;
   owner_settings jsonb; zone text; native jsonb := '{}'; items jsonb; name text; projection text; owned_query text;
-  task_rows jsonb; reserved jsonb; spent jsonb; durations jsonb; attendance jsonb; bank_rows jsonb:='[]'; occupied boolean;
+  task_rows jsonb; reserved jsonb; spent jsonb; durations jsonb; attendance jsonb; bank_rows jsonb:='[]'; forecast_enabled boolean:=false; prelogged jsonb:='[]'; occupied boolean;
 begin
   if current_setting('role',true) is distinct from 'service_role' or p_owner is null then
     raise exception 'Verified owner required' using errcode='42501'; end if;
@@ -94,12 +94,17 @@ begin
     into occupied;
   -- A bank/monitor outage cannot invalidate the legal calendar recommendation.
   if to_regprocedure('public.lemma_practice_bank_snapshot(uuid,timestamptz)') is not null then
-    begin bank_rows:=public.lemma_practice_bank_snapshot(p_owner,cutoff);
-    exception when others then bank_rows:='[]'; end;
+    begin
+      select c.forecast_enabled into forecast_enabled from public.atlas_practice_controls c where c.singleton;
+      bank_rows:=public.lemma_practice_bank_snapshot(p_owner,cutoff);
+      select coalesce(jsonb_agg(to_jsonb(r) order by r.at,r."requestId"),'[]') into prelogged from (
+        select request_id as "requestId",item_id as "itemId",item_version as version,served_at as at,scope,native_probability as native
+        from public.atlas_practice_exposures where user_id=p_owner and served_at<cutoff and native_probability is not null) r;
+    exception when others then bank_rows:='[]';forecast_enabled:=false;end;
   end if;
   return jsonb_build_object('asOf',cutoff,'watermark',watermark,'calendar',calendar,'evidence',evidence,
     'rows',native||jsonb_build_object('settings',owner_settings),'tasks',task_rows,'reservations',reserved,
-    'history',durations||attendance,'occupied',occupied,'spentByDate',spent,'practiceBank',bank_rows);
+    'history',durations||attendance,'occupied',occupied,'spentByDate',spent,'practiceBank',bank_rows,'forecastEnabled',coalesce(forecast_enabled,false),'prelogged',prelogged);
 end
 $agenda$;
 revoke all on function public.lemma_agenda_snapshot(uuid) from public,anon,authenticated;

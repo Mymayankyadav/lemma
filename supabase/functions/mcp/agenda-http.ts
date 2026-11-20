@@ -1,5 +1,5 @@
-import type { AgendaResponse } from './agenda.ts';
-type AgendaAuth={verify:(bearer:string)=>Promise<string|null>;read:(owner:string)=>Promise<AgendaResponse>};
+import type { AgendaResponse, PracticeDelivery } from './agenda.ts';
+type AgendaAuth={verify:(bearer:string)=>Promise<string|null>;read:(owner:string)=>Promise<AgendaResponse|PracticeDelivery>};
 /** The browser does not send a connector credential, a user ID, a clock or proposed learning evidence. */
 export async function browserAgenda(req:Request,auth:AgendaAuth,cors:Record<string,string>):Promise<Response>{
   const headers={...cors,'Cache-Control':'private, no-store'};

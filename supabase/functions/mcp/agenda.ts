@@ -33,3 +33,19 @@ export function agendaQueue(read:AgendaRead):string{
   const body=action.kind==='action'?'1. '+(label??'Study')+' · '+Math.round((action.end-action.start)*10)/10+' min':'Hold · '+decision.reason;
   return 'QUEUE\n'+body;
 }
+
+export type PracticeDelivery = {status:'unavailable'}|{status:'available';question:string;arm:string;itemId:string;itemVersion:number;requestId:string};
+export const validPracticeRequest=(id:unknown):id is string=>typeof id==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+/** An explicit delivery opens an approved question and records its actual arm. Agenda previews stay read-only. */
+export async function openPractice(c:Context,requestId:string):Promise<PracticeDelivery>{
+  if(!validPracticeRequest(requestId))throw Error('A UUID request ID is required');
+  const {released,agenda}=await readAgenda(c,undefined,false);
+  if(!released)return {status:'unavailable'};
+  const p=agenda?.practice;
+  const selection=p?.status==='available'?{scope:p.scope,arm:p.arm,questionId:p.questionId,itemVersion:p.itemVersion,
+    nativeQuestionId:p.nativeQuestionId,nativeVersion:p.nativeVersion,native:p.native,nativeItemProbability:p.nativeItemProbability}:null;
+  const result=await c.db.rpc('lemma_deliver_practice',{p_owner:c.userId,p_request:requestId,p_selection:selection});
+  if(result.error||!result.data)throw Error('Question delivery is temporarily unavailable');
+  return result.data;
+}

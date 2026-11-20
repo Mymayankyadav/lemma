@@ -1,4 +1,5 @@
 import type { Context } from '../db.ts';
+import {openPractice} from '../agenda.ts';
 import {validateConversion} from '../../_shared/adaptive/convert.ts';
 
 /** The connector owner is established by the secret-authenticated request, never tool input. */
@@ -32,6 +33,12 @@ export type StudyInput = {
 /** Forward the exact v6 command to the security-definer, owner-bound RPC.
  * The receipt (including actionNo / conflict) is not transformed or truncated. */
 export async function study(c: Context, input: StudyInput): Promise<unknown> {
+  if(input.command.resource==='practice_questions'){
+    const cmd=input.command;
+    if(cmd.schemaVersion!==1||cmd.operation!=='open'||Object.keys(cmd).some(k=>!['operationId','schemaVersion','resource','operation'].includes(k)))
+      throw Error('Open a question with its operation ID only');
+    return openPractice(c,cmd.operationId);
+  }
   if((input.command.resource==='proposal_drafts'&&input.command.patch?.kind==='plan_conversion')||input.command.resource==='plan_conversions'){
     const cmd=input.command,patch=cmd.patch??{};
     if(cmd.operation==='create'){

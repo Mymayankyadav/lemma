@@ -5,35 +5,49 @@ import { NATIVE, type Arm, type Scope } from './router.ts';
 export interface BankItem extends Scope {
   id:string;project:string;concept:string;facet:string;context:string;family:string;
   form:'whole'|'step'|'micro'|'recall'|'worked'; minutes:number;uncued:boolean;novel:boolean;approved:boolean;
-  registeredAt:string; nativeOrder?:number; nativeAsOf:string; nativeProbability:number; difficulty:number;
+  registeredAt:string; itemVersion?:number;nativeOrder?:number; nativeAsOf:string; nativeProbability:number; difficulty:number;
   expertProbabilities?:Partial<Record<Arm,number>>;expertAsOf?:string;arm:Arm;
 }
 export interface SelectionScope extends ForecastScope {track:string;policy:string;bank:string}
 export function selectPracticeQuestion(items:readonly BankItem[],events:readonly StreamEvent[],scope:SelectionScope,
-  asOf:string,minutes:number,must:'independent'|'whole'|'worked'){
+  asOf:string,minutes:number,must:'independent'|'whole'|'worked',forecastEnabled=true){
   const when=Date.parse(asOf);
   const group=items.filter(i=>i.approved&&i.track===scope.track&&i.policy===scope.policy&&i.bank===scope.bank&&i.rubric===scope.rubric&&
     i.project===scope.project&&i.concept===scope.concept&&i.facet===scope.facet&&i.context===scope.context&&
     Date.parse(i.registeredAt)<=when&&Number.isFinite(i.minutes)&&i.minutes>0&&i.minutes<=minutes&&
     (must==='worked'?i.form==='worked':i.form!=='worked'&&i.uncued&&(must!=='whole'||i.form==='whole'&&i.novel)));
   if(!group.length)return null;
-  const forecasts=new Map(group.map(i=>[i.id,scopedForecast(events,{scope,asOf,
-    kind:i.form==='recall'||i.form==='micro'?'recall':'attempt',difficulty:i.difficulty,
-    nativeProbability:i.nativeProbability,nativeAsOf:i.nativeAsOf})]));
-  const arms=new Set(group.map(i=>i.arm));
-  let arm:Arm=arms.size===1?group[0].arm:NATIVE,choices=group;
-  if(arm!==NATIVE&&arm!=='hard72'&&arm!=='easy88'){
-    const specialized=group.filter(i=>validProbability(i.expertProbabilities?.[arm])&&i.expertAsOf&&Date.parse(i.expertAsOf)<=when);
-    if(specialized.length)choices=specialized;else arm=NATIVE;
-  }
-  const target=arm==='hard72'?.72:arm==='easy88'?.88:.80;
-  const score=(i:BankItem)=>{
-    if(arm===NATIVE&&Number.isInteger(i.nativeOrder)&&Date.parse(i.nativeAsOf)<=when)return [0,i.nativeOrder!];
-    const predicted=arm===NATIVE||arm==='hard72'||arm==='easy88'?forecasts.get(i.id)!.probability:i.expertProbabilities![arm]!;
-    return [1,Math.abs(predicted-target)];
+  const timelyNative=(i:BankItem)=>Date.parse(i.nativeAsOf)<=when;
+  const nativeScore=(i:BankItem)=>{
+    if(timelyNative(i)&&Number.isInteger(i.nativeOrder))return [0,i.nativeOrder!];
+    if(timelyNative(i)&&validProbability(i.nativeProbability))return [1,Math.abs(i.nativeProbability-.80)];
+    return [2,Infinity];
   };
-  const chosen=choices.slice().sort((a,b)=>{const x=score(a),y=score(b);return x[0]-y[0]||x[1]-y[1]||a.id.localeCompare(b.id);})[0];
-  return {id:chosen.id,form:chosen.form,minutes:chosen.minutes,arm,scope,forecast:forecasts.get(chosen.id)!};
+  const compare=(a:BankItem,b:BankItem,score:(i:BankItem)=>number[])=>{
+    const x=score(a),y=score(b);
+    return x[0]-y[0]||x[1]-y[1]||a.id.localeCompare(b.id);
+  };
+  const native=group.filter(i=>nativeScore(i)[0]<2).sort((a,b)=>compare(a,b,nativeScore))[0];
+  if(!native)return null;
+  const forecasts=new Map(forecastEnabled?group.map(i=>[i.id,scopedForecast(events,{scope,asOf,
+    kind:i.form==='recall'||i.form==='micro'?'recall':'attempt',difficulty:i.difficulty,
+    nativeProbability:i.nativeProbability,nativeAsOf:i.nativeAsOf})] as const):[]);
+  const arms=new Set(group.map(i=>i.arm));
+  let arm:Arm=arms.size===1?group[0].arm:NATIVE;
+  let selected=native;
+  if(arm!==NATIVE){
+    const target=arm==='hard72'?.72:arm==='easy88'?.88:.80;
+    const estimates=group.map(i=>{
+      const probability=arm==='hard72'||arm==='easy88'?(forecasts.get(i.id)?.probability??(timelyNative(i)?i.nativeProbability:null)):
+        (i.expertAsOf&&Date.parse(i.expertAsOf)<=when?i.expertProbabilities?.[arm]:null);
+      return {i,probability};
+    }).filter(x=>validProbability(x.probability)).sort((a,b)=>
+      Math.abs(a.probability!-target)-Math.abs(b.probability!-target)||a.i.id.localeCompare(b.i.id));
+    if(estimates.length)selected=estimates[0].i;
+    else arm=NATIVE;
+  }
+  return {id:selected.id,itemVersion:selected.itemVersion,nativeId:native.id,nativeVersion:native.itemVersion,form:selected.form,minutes:selected.minutes,arm,scope,
+    native:selected.nativeProbability,nativeItemProbability:native.nativeProbability,forecast:forecasts.get(selected.id)??null};
 }
 export interface ProofEvent extends StreamEvent {
   session:string;item:string;family:string;form:BankItem['form'];novel:boolean;
@@ -47,7 +61,7 @@ export function proofCertificate(events:readonly ProofEvent[],scope:ForecastScop
   if(!days.size||[...days].some(d=>!Number.isInteger(d)||d<0||d>6))return no('Study days unavailable');
   const date=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'});
   const cut=Date.parse(asOf),relevant=events.filter(e=>e.scope.owner===scope.owner&&e.scope.project===scope.project&&e.scope.concept===scope.concept&&
-    e.scope.context===scope.context&&e.scope.rubric===scope.rubric&&e.actor!=='tutor'&&Date.parse(e.knownAt)<=cut&&Date.parse(e.at)<=Date.parse(e.knownAt));
+    e.scope.context===scope.context&&e.scope.rubric===scope.rubric&&(e.actor!=='tutor'||e.kind==='lesson')&&Date.parse(e.knownAt)<=cut&&Date.parse(e.at)<=Date.parse(e.knownAt));
   const lessons=relevant.filter(e=>e.kind==='lesson').map(e=>date.format(new Date(e.at))).sort();
   const direct=relevant.filter(e=>e.kind==='attempt'&&e.outcome===true&&e.reliability===1&&e.scope.facet===scope.facet&&e.novel&&
     !e.worked&&!e.hint&&e.form!=='worked'&&e.origin&&e.item&&e.family&&e.session&&

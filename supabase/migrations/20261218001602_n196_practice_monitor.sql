@@ -1,4 +1,28 @@
 -- Separate registered practice trials. No rows, campaigns or assignments are created by deployment.
+-- Independent operational switches. Only the service operator may change the singleton.
+create table public.atlas_practice_controls (
+  singleton boolean primary key check(singleton), forecast_enabled boolean not null default false,
+  challenger_enabled boolean not null default false, admission_enabled boolean not null default false
+);
+insert into public.atlas_practice_controls(singleton) values(true);
+alter table public.atlas_practice_controls enable row level security;
+revoke all on public.atlas_practice_controls from public,anon,authenticated,service_role;
+create function public.lemma_practice_controls(p_forecast boolean,p_challenger boolean,p_admission boolean)
+returns void language plpgsql security definer set search_path='' as $controls$
+begin
+  if current_setting('role',true) is distinct from 'service_role' then raise exception 'Research service required' using errcode='42501';end if;
+  update public.atlas_practice_controls set forecast_enabled=p_forecast,challenger_enabled=p_challenger,
+    admission_enabled=p_admission where singleton;
+end
+$controls$;
+revoke all on function public.lemma_practice_controls(boolean,boolean,boolean) from public,anon,authenticated;
+grant execute on function public.lemma_practice_controls(boolean,boolean,boolean) to service_role;
+
+-- The live clock has no caller inputs. Historic simulation overrides it only in a disposable test database.
+create function public.lemma_trial_clock() returns timestamptz language sql stable set search_path='' as
+  $$select pg_catalog.statement_timestamp()$$;
+revoke all on function public.lemma_trial_clock() from public,anon,authenticated,service_role;
+
 create table public.atlas_practice_trials (
   id uuid primary key, track text not null unique, challenger text not null, start_day date not null,
   protocol text not null check (length(btrim(protocol))>0), certificate jsonb not null
@@ -9,16 +33,16 @@ create table public.atlas_practice_pairs (
 );
 create index atlas_practice_pairs_due on public.atlas_practice_pairs(trial,assigned_on) where challenger_index is not null;
 create table public.atlas_practice_enrollments (
-  trial uuid not null, pair uuid not null, owner_id uuid not null references auth.users(id) on delete cascade,
+  trial uuid not null, pair uuid not null, user_id uuid not null references auth.users(id) on delete cascade,
   position smallint not null check(position between 0 and 1), anchors jsonb not null, arm text not null,
-  primary key(trial,owner_id), unique(trial,pair,position),
+  primary key(trial,user_id), unique(trial,pair,position),
   foreign key(trial,pair) references public.atlas_practice_pairs(trial,id)
 );
-create index atlas_practice_enrollments_owner on public.atlas_practice_enrollments(owner_id);
+create index atlas_practice_enrollments_owner on public.atlas_practice_enrollments(user_id);
 create table public.atlas_practice_outcomes (
-  trial uuid not null, owner_id uuid not null, assessed_on date not null, reported_on date not null,
-  score double precision not null check(score between 0 and 1), known_at timestamptz not null default clock_timestamp(), primary key(trial,owner_id),
-  foreign key(trial,owner_id) references public.atlas_practice_enrollments(trial,owner_id) on delete cascade,
+  trial uuid not null, user_id uuid not null, assessed_on date not null, reported_on date not null,
+  score double precision not null check(score between 0 and 1), known_at timestamptz not null default clock_timestamp(), primary key(trial,user_id),
+  foreign key(trial,user_id) references public.atlas_practice_enrollments(trial,user_id) on delete cascade,
   check(reported_on>=assessed_on)
 );
 create table public.atlas_practice_checkpoints (
@@ -38,7 +62,12 @@ revoke all on public.atlas_practice_trials,public.atlas_practice_pairs,public.at
 create function public.lemma_trial_immutable() returns trigger language plpgsql set search_path='' as $immutable$
 begin
   -- Account deletion erases that owner's intake, scored evidence and linkage. Closed aggregate checkpoints persist.
-  if TG_OP='DELETE' and pg_trigger_depth()>1 and TG_TABLE_NAME in ('atlas_practice_enrollments','atlas_practice_outcomes') then return old; end if;
+  if TG_OP='DELETE' and TG_TABLE_NAME in ('atlas_practice_enrollments','atlas_practice_outcomes','atlas_practice_exposures') then
+    if pg_trigger_depth()>1 then return old;end if;
+    if to_regprocedure('public.lemma_evidence_purge_active(uuid)') is not null then
+      if current_setting('role',true)='service_role' and public.lemma_evidence_purge_active(old.user_id) then return old;end if;
+    end if;
+  end if;
   raise exception 'Registered trial records are immutable' using errcode='55000';
 end
 $immutable$;
@@ -93,6 +122,8 @@ begin
       (track_id,p_challenger,p_start,p_protocol,p_certificate) then raise exception 'Conflicting trial registration';end if;
     return;
   end if;
+  if p_start is distinct from (public.lemma_trial_clock() at time zone 'UTC')::date then
+    raise exception 'Registration must start on the current UTC day';end if;
   insert into public.atlas_practice_trials values(p_trial,track_id,p_challenger,p_start,p_protocol,p_certificate);
   insert into public.atlas_practice_checkpoints values(p_trial,p_start,true,array[0.,0.,0.],'[]',false,'',array[0,0,0]);
 end
@@ -110,25 +141,26 @@ begin
   if p_pair is null or p_day is null or cardinality(p_owners) is distinct from 2 or p_owners[1] is null or
     p_owners[2] is null or p_owners[1]=p_owners[2] or jsonb_array_length(p_anchors) is distinct from 2 then raise exception 'Invalid pair'; end if;
   group_a:=public.lemma_trial_group(p_anchors->0); group_b:=public.lemma_trial_group(p_anchors->1);
-  if group_a is null or group_b is null then raise exception 'Invalid intake'; end if;
   select * into strict registry from public.atlas_practice_trials where id=p_trial for update;
   select * into prior from public.atlas_practice_pairs where trial=p_trial and id=p_pair;
   if found then
-    select array_agg(owner_id order by position),jsonb_agg(anchors order by position),array_agg(arm order by position)
+    select array_agg(user_id order by position),jsonb_agg(anchors order by position),array_agg(arm order by position)
       into owners,original,arms from public.atlas_practice_enrollments where trial=p_trial and pair=p_pair;
     if (prior.assigned_on,owners,original) is distinct from (p_day,p_owners,p_anchors) then raise exception 'Conflicting pair retry'; end if;
     return arms;
   end if;
+  if p_day is distinct from (public.lemma_trial_clock() at time zone 'UTC')::date then
+    raise exception 'New pair must use the current UTC day';end if;
+  if not coalesce((select admission_enabled from public.atlas_practice_controls where singleton for share),false) then return arms;end if;
   select * into strict state from public.atlas_practice_checkpoints where trial=p_trial order by day desc limit 1;
-  if p_day<state.day then raise exception 'Closed assignment date';end if;
   select count(*) filter(where assigned_on=p_day),count(*) filter(where assigned_on>state.day-21)
-    into today,pending from public.atlas_practice_pairs where trial=p_trial and challenger_index is not null;
-  if state.stop='' and state.day=p_day and p_day-registry.start_day<224 and group_a=group_b and
-     public.lemma_trial_certified(registry.certificate,group_a,p_day)=registry.challenger and
-     today<(case when state.promoted then 64 else 24 end) and pending<(case when state.promoted then 144 else 72 end) then
-    -- UUIDv4 random bits from the database. Callers never choose or learn the bit before assignment.
-    bit:=get_byte(uuid_send(gen_random_uuid()),0)%2; arms[bit+1]:=registry.challenger;
-  end if;
+    into today,pending from public.atlas_practice_pairs where trial=p_trial;
+  if state.stop<>'' or state.day<>p_day or p_day-registry.start_day>=224 or group_a is null or group_a is distinct from group_b or
+     public.lemma_trial_certified(registry.certificate,group_a,p_day)<>registry.challenger or
+     today>=(case when state.promoted then 64 else 24 end) or pending>=(case when state.promoted then 144 else 72 end)
+    then return arms;end if;
+  -- A denied admission leaves both learners free for a later eligible pair. The DB chooses one random challenger.
+  bit:=get_byte(uuid_send(gen_random_uuid()),0)%2; arms[bit+1]:=registry.challenger;
   insert into public.atlas_practice_pairs values(p_trial,p_pair,p_day,bit);
   insert into public.atlas_practice_enrollments values
     (p_trial,p_pair,p_owners[1],0,p_anchors->0,arms[1]),(p_trial,p_pair,p_owners[2],1,p_anchors->1,arms[2]);
@@ -145,13 +177,18 @@ begin
   if current_setting('role',true) is distinct from 'service_role' then raise exception 'Research service required' using errcode='42501'; end if;
   perform 1 from public.atlas_practice_trials where id=p_trial for update;
   select p.assigned_on into strict assigned from public.atlas_practice_enrollments e join public.atlas_practice_pairs p
-    on p.trial=e.trial and p.id=e.pair where e.trial=p_trial and e.owner_id=p_owner and p.challenger_index is not null;
+    on p.trial=e.trial and p.id=e.pair where e.trial=p_trial and e.user_id=p_owner and p.challenger_index is not null;
   if p_assessed is distinct from assigned+20 or p_reported<p_assessed or p_reported is null or p_score is null or not(p_score between 0 and 1)
     then raise exception 'Invalid assessment or report date';end if;
-  select * into prior from public.atlas_practice_outcomes where trial=p_trial and owner_id=p_owner;
+  select * into prior from public.atlas_practice_outcomes where trial=p_trial and user_id=p_owner;
   if found then
     if (prior.assessed_on,prior.reported_on,prior.score) is distinct from (p_assessed,p_reported,p_score) then raise exception 'Conflicting immutable outcome'; end if;
-  else insert into public.atlas_practice_outcomes(trial,owner_id,assessed_on,reported_on,score) values(p_trial,p_owner,p_assessed,p_reported,p_score);end if;
+    return;
+  end if;
+  if greatest(p_assessed,p_reported)>(public.lemma_trial_clock() at time zone 'UTC')::date then
+    raise exception 'Future assessment or report date';end if;
+  insert into public.atlas_practice_outcomes(trial,user_id,assessed_on,reported_on,score,known_at)
+    values(p_trial,p_owner,p_assessed,p_reported,p_score,public.lemma_trial_clock());
 end
 $grade$;
 revoke all on function public.lemma_trial_outcome(uuid,uuid,date,date,double precision) from public,anon,authenticated;
@@ -178,17 +215,20 @@ begin
     if prior.available is distinct from p_available then raise exception 'Conflicting checkpoint retry'; end if;
     return to_jsonb(prior);
   end if;
+  if p_day>(public.lemma_trial_clock() at time zone 'UTC')::date then raise exception 'Future checkpoint';end if;
   select * into strict state from public.atlas_practice_checkpoints where trial=p_trial order by day desc limit 1;
   if p_day<>state.day+7 then raise exception 'Advance in registered weekly order'; end if;
   state.day:=p_day;state.available:=p_available;
-  if state.stop='' and not p_available then state.stop:='monitor_unavailable'; end if;
+  if state.stop='' and not p_available and exists(select 1 from public.atlas_practice_pairs
+    where trial=p_trial and assigned_on=p_day-21 and challenger_index is not null)
+    then state.stop:='monitor_unavailable';end if;
   if state.stop='' then
     for pair in
       select p.id,max(o.score) filter(where e.position=p.challenger_index) as challenger,
         max(o.score) filter(where e.position<>p.challenger_index) as control
       from public.atlas_practice_pairs p
       left join public.atlas_practice_enrollments e on e.trial=p.trial and e.pair=p.id
-      left join public.atlas_practice_outcomes o on o.trial=e.trial and o.owner_id=e.owner_id and o.reported_on<=p_day
+      left join public.atlas_practice_outcomes o on o.trial=e.trial and o.user_id=e.user_id and o.reported_on<=p_day
         and (o.known_at at time zone 'UTC')::date<=p_day
       where p.trial=p_trial and p.assigned_on=p_day-21 and p.challenger_index is not null
       group by p.id order by p.id
@@ -230,10 +270,11 @@ returns text language plpgsql stable security definer set search_path='' as $ser
 declare r record; d date:=(p_at at time zone 'UTC')::date; g text;
 begin
   if current_setting('role',true) is distinct from 'service_role' then raise exception 'Verified owner required' using errcode='42501';end if;
-  if p_at>statement_timestamp() or p_at is null then return 'atlas80'; end if;
+  if p_at>public.lemma_trial_clock() or p_at is null or not coalesce((select challenger_enabled
+    from public.atlas_practice_controls where singleton),false) then return 'atlas80'; end if;
   g:=public.lemma_trial_group(p_anchors);
   select e.arm,e.anchors,p.assigned_on,t.certificate,a.day,a.stop into r
-    from public.atlas_practice_trials t join public.atlas_practice_enrollments e on e.trial=t.id and e.owner_id=p_owner
+    from public.atlas_practice_trials t join public.atlas_practice_enrollments e on e.trial=t.id and e.user_id=p_owner
     join public.atlas_practice_pairs p on p.id=e.pair and p.trial=t.id and p.challenger_index is not null
     join lateral(select day,stop from public.atlas_practice_checkpoints where trial=t.id and day<=d order by day desc limit 1) a on true
     where t.track=p_track and t.certificate->>'policy'=p_policy and t.certificate->>'bank'=p_bank and t.certificate->>'rubric'=p_rubric;
