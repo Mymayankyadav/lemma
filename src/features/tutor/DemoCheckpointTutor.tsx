@@ -43,27 +43,31 @@ export function CheckpointTutor(props:EntryProps) {
   useSyncExternalStore(subscribe,authKey)
   const {scope}=props
   const live=getMode()==='live',released=usePlanRelease('tutorThreads')
+  let readOnly=false,entryScope=scope
   if(live){
     const verified=scope.authScope
-    if(!released||!verified||verified.ownerId!==authOwner()||
-      verified.generation!==authGeneration()||verified.checkpointId!==scope.checkpointId)return null
+    if(!isFlagOn('tutorThreads')||!verified||verified.ownerId!==authOwner()||verified.checkpointId!==scope.checkpointId)return null
+    // A cached checkpoint proves only which owner's saved history to read. Fresh
+    // checkpoint authorization and the release capability are both needed to write.
+    readOnly=!released||verified.generation!==authGeneration()
+    entryScope={...scope,authScope:{...verified,generation:authGeneration()}}
   }else if(!isFlagOn('tutorManualDemo'))return null
-  const account=live?[scope.authScope!.ownerId,scope.authScope!.generation]:[getDemoProfile()]
-  return <TutorEntry key={JSON.stringify([live,...account,scope.pathId,scope.checkpointId])} {...props} live={live}/>
+  const account=live?[entryScope.authScope!.ownerId,entryScope.authScope!.generation]:[getDemoProfile()]
+  return <TutorEntry key={JSON.stringify([live,...account,scope.pathId,scope.checkpointId])} {...props} scope={entryScope} live={live} readOnly={readOnly}/>
 }
 
-function TutorEntry(props:EntryProps & {live:boolean}) {
+function TutorEntry(props:EntryProps & {live:boolean;readOnly:boolean}) {
   const [open,setOpen] = useState(false)
   useEffect(()=>{if(props.handoff)setOpen(true)},[props.handoff])
   return <section className="v7-learn-card" aria-label={props.live?'Checkpoint tutor':'Manual tutor preview'}>
     <Button onClick={()=>setOpen(true)}>{props.live?'Open checkpoint tutor':'Open manual tutor'}</Button>
     <Sheet title={props.live?'Checkpoint tutor':'Manual tutor'} eyebrow={props.live?undefined:'Demo preview'} open={open} onClose={()=>setOpen(false)}>
-      {open && <TutorBody {...props}/>}
+      {open && <TutorBody key={String(props.readOnly)} {...props}/>}
     </Sheet>
   </section>
 }
 
-function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean}) {
+function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean;readOnly:boolean}) {
   const draftKey=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+
     JSON.stringify([live?scope.authScope!.ownerId:getDemoProfile(),scope.pathId,scope.checkpointId])
   const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
@@ -91,11 +95,11 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   const [grant,setGrant]=useState<{token:string;endpoint:string;grantId:string}>()
   const consumed=useRef('')
   useEffect(()=>{
-    if(!padHandoff||consumed.current===padHandoff.requestId)return
+    if(readOnly||!padHandoff||consumed.current===padHandoff.requestId)return
     consumed.current=padHandoff.requestId
     setDraftNext(true);setShowLocal(true);setSelectedLocal(padHandoff.text);setPreview(previewLocalTutorExcerpt(padHandoff.text))
     onHandoffConsumed?.(padHandoff.requestId)
-  },[padHandoff,onHandoffConsumed])
+  },[readOnly,padHandoff,onHandoffConsumed])
   const readVersion=useRef(0)
   const refresh=useCallback(async(api:ManualTutor,reconcile=false)=>{
     const request=++readVersion.current
@@ -108,7 +112,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     async function connect() {
       try {
         api=live?(await import('../../data/tutor/live-manual')).openLiveManualTutor({
-          pathId,checkpointId,ownerId:ownerId!,generation:generation!,
+          pathId,checkpointId,ownerId:ownerId!,generation:generation!,readOnly,
         }):await openDemoManualTutor({pathId,checkpointId})
         if(!active){api.close();return}
         await refresh(api,true)
@@ -116,7 +120,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     }
     void connect()
     return ()=>{active=false;readVersion.current++;api?.close()}
-  },[pathId,checkpointId,live,ownerId,generation,refresh])
+  },[pathId,checkpointId,live,readOnly,ownerId,generation,refresh])
   const activeApi=session?.api
   const processed=useRef<TutorThreadView|undefined>(undefined)
   useEffect(()=>{
@@ -150,7 +154,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
     return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);document.removeEventListener('visibilitychange',update)}
   },[live,activeApi,pendingId,refresh])
   async function saveQuestion() {
-    if (!session || busy || !question.text.trim()) return
+    if (!session || busy || readOnly || !question.text.trim()) return
     setBusy(true);setError('');setCopyStatus('')
     try {
       const local=attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
@@ -172,7 +176,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   }
 
   async function confirm(body:string,turnId:string,version:number,draftId:string) {
-    if (!session || busy) return false
+    if (!session || busy || readOnly) return false
     setBusy(true);setError('')
     try {
       const result=await session.api.confirmImport(turnId,version,draftId,body)
@@ -193,6 +197,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   }
 
   const thread=session?.thread,last=thread?.turns.at(-1)
+  const recoveryOnly=readOnly||Boolean(thread?.offline)
   const allTurns=Array.from(new Map([...history,...(thread?.turns??[])].map(t=>[t.id,t])).values()).sort((a,b)=>a.sequence-b.sequence)
   const recovered=Array.from(new Map([...historyDrafts,...(thread?.recoveredDrafts??[])].map(d=>[d.draftId??d.messageId,d])).values())
   const pending=last?.status==='awaiting-tutor'?last:null
@@ -217,24 +222,31 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
   }
   return <>
     <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
+    {readOnly&&<p role="status">Tutor changes are unavailable. You can read saved history and check pending submissions without sending anything new.</p>}
     {error&&<p role="alert">{error}</p>}
     {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Conversation last checked '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
     {!session&&!error&&<p role="status">Opening saved tutor preview…</p>}
     {session?.thread.outbox?.map(item=><section key={item.operationId} aria-label="Pending tutor submission">
       <p>A saved submission is waiting for confirmation.</p><p style={{whiteSpace:'pre-wrap'}}>{item.text}</p>
-      <Button disabled={busy} onClick={()=>void action(async()=>{
+      <Button disabled={busy||Boolean(thread?.offline)} onClick={()=>void action(async()=>{
         const status=await session.api.retry?.(item.operationId)
         if(status==='submitted'){
           question.clearIfUnchanged(item.text)
           if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
           if(item.source)sourceDraft.clearIfUnchanged(JSON.stringify(item.source))
         }
+        if(status==='unconfirmed')throw new Error('No saved receipt was found. Your submission is still kept on this device.')
         if(status==='conflict'||status==='turn-pending')throw new Error('The submission conflicted. Your draft was kept.')
-      })}>Check and retry submission</Button>
+      })}>{readOnly?'Check saved receipt':'Check and retry submission'}</Button>
     </section>)}
+    {recoveryOnly&&question.text&&<section aria-label="Saved question draft"><p>Unsent question draft</p>
+      <textarea className="v7-field" aria-label="Saved question draft" readOnly value={question.text}/>
+      {attachedLocal.text&&<p style={{whiteSpace:'pre-wrap'}}>{attachedLocal.text}</p>}
+      {attachedSource&&<p style={{whiteSpace:'pre-wrap'}}>{attachedSource.excerpt}</p>}
+    </section>}
     {session?.thread.canSubmit===false&&!session.thread.offline&&!pending&&<p>New tutor questions are unavailable.</p>}
-    {live&&pending&&!draftNext&&<Button onClick={()=>setDraftNext(true)}>Draft next question</Button>}
-    {session&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
+    {live&&pending&&!draftNext&&!recoveryOnly&&<Button onClick={()=>setDraftNext(true)}>Draft next question</Button>}
+    {session&&!recoveryOnly&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
       <label htmlFor={questionId}>Question</label>
       <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
         disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
@@ -291,6 +303,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
       {copyStatus&&<p role="status">{copyStatus}</p>}
       {live&&session&&<>
         <Button disabled={busy} onClick={()=>void action(()=>Promise.resolve())}>Check for reply</Button>
+        {!recoveryOnly&&<>
         {thread?.canConnect&&session.api.issueGrant&&<Button disabled={busy} onClick={()=>void action(async()=>{
           setGrant(await session.api.issueGrant!(pending.id,pending.version))
         })}>Create a connector grant for this question</Button>}
@@ -303,11 +316,12 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
         </section>}
         <Button disabled={busy} onClick={()=>void action(async()=>{await session.api.stopGrants?.(pending.id,pending.version);setGrant(undefined)})}>Revoke access and switch tutor</Button>
         <Button disabled={busy} onClick={()=>void action(()=>session.api.cancel!(pending.id,pending.version))}>Cancel question</Button>
+        </>}
       </>}
 
     </div>}
     {pending&&<ReplyEditor live={live} key={pending.id} draftKey={draftKey+':reply:'+pending.id} busy={busy}
-      completed={false} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
+      completed={false} readOnly={recoveryOnly} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
     {allTurns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
       <h3>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':'Tutor reply'}</h3>
       {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
@@ -330,7 +344,7 @@ function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps 
         <ul>{scope.linkedSessions.map(study=><li key={study.number}><Link to={'/s/'+encodeURIComponent(scope.pathId)+'/'+study.number}>
           Session {study.number} · {study.goal}</Link></li>)}</ul>
       </details>}
-      {session?.api.proposeCard&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
+      {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
     </article>)}
     {allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
@@ -357,26 +371,26 @@ function CardSuggestion({disabled,onPropose}:{disabled:boolean;onPropose:(front:
   </details>
 }
 
-function ReplyEditor({draftKey,live,busy,completed,onConfirm}:{
-  live:boolean;draftKey:string;busy:boolean;completed:boolean;onConfirm:(body:string,id:string)=>Promise<boolean>;
+function ReplyEditor({draftKey,live,busy,completed,readOnly=false,onConfirm}:{
+  live:boolean;draftKey:string;busy:boolean;completed:boolean;readOnly?:boolean;onConfirm:(body:string,id:string)=>Promise<boolean>;
 }) {
   const draft=useDraft(draftKey,live)
   const labelId=useId()
   const [preview,setPreview]=useState<{body:string;id:string}>()
-  if (completed&&!draft.text&&!preview) return null
+  if ((completed||readOnly)&&!draft.text&&!preview) return null
   return <div className="v7-field-group">
-    {completed&&<p>A reply is already saved. You can still copy your unfinished paste.</p>}
+    {(completed||readOnly)&&<p>{completed?'A reply is already saved.':'Reply imports are unavailable.'} You can still copy your unfinished paste.</p>}
     <label htmlFor={labelId}>Paste reply</label>
     <textarea id={labelId} className="v7-field" rows={5} maxLength={12000} value={draft.text}
-      onChange={e=>draft.change(e.currentTarget.value)} disabled={busy||Boolean(preview)}/>
+      onChange={e=>draft.change(e.currentTarget.value)} readOnly={readOnly} disabled={busy||Boolean(preview)}/>
     {draft.unsaved&&<p role="alert">This draft may not survive a reload.</p>}
-    {!preview&&!completed&&<Button disabled={busy||!draft.text.trim()}
+    {!preview&&!completed&&!readOnly&&<Button disabled={busy||!draft.text.trim()}
       onClick={()=>setPreview({body:draft.text,id:crypto.randomUUID()})}>Preview import</Button>}
     {preview&&<section aria-label="Import preview">
       <p>Imported by you</p>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{preview.body}</p>
       <Button disabled={busy} onClick={()=>setPreview(undefined)}>Cancel import</Button>
-      <Button disabled={busy||completed} onClick={()=>{
+      <Button disabled={busy||completed||readOnly} onClick={()=>{
         void onConfirm(preview.body,preview.id).then(saved=>{
           if(saved){draft.clearIfUnchanged(preview.body);setPreview(undefined)}
         })

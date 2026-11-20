@@ -98,12 +98,32 @@ create table if not exists lemma_export_private.additional_tables (
  redact_columns text[] not null default '{}'
 );
 alter table lemma_export_private.additional_tables enable row level security;
-revoke all on schema lemma_export_private from public,anon,authenticated,service_role;
-revoke all on lemma_export_private.additional_tables from public,anon,authenticated,service_role;
+-- A new private schema has no client access. N191 owns this shared registry;
+-- do not rewrite its ACLs when this migration is applied after the foundation.
+-- Refuse an unexpectedly exposed registry instead of weakening that boundary.
+do $tutor_export_boundary$
+begin
+ if exists(select 1 from unnest(array['anon','authenticated','service_role']) r(role_name)
+   where has_schema_privilege(r.role_name,'lemma_export_private','USAGE,CREATE')
+      or has_table_privilege(r.role_name,'lemma_export_private.additional_tables',
+        'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')) then
+  raise exception 'Tutor requires a private owner export registry' using errcode='42501';
+ end if;
+end $tutor_export_boundary$;
 insert into lemma_export_private.additional_tables(table_name) values
  ('tutor_threads'),('tutor_turns'),('tutor_grants'),('tutor_attempts'),
  ('tutor_replies'),('tutor_suggestions'),('tutor_recovered_replies')
  on conflict(table_name) do nothing;
+
+-- The tutor may be installed before N191 on an existing deployment. Resolve
+-- the shared launch capability at call time and keep access closed until then.
+create function public.tutor_plan_released() returns boolean
+language plpgsql stable security invoker set search_path='' as $release$
+begin
+ if to_regprocedure('public.lemma_plan_released()') is null then return false; end if;
+ return public.lemma_plan_released();
+end $release$;
+revoke all on function public.tutor_plan_released() from public,anon,authenticated,service_role;
 
 -- Private serializer. The host profile gets the pending question from its own turn;
 -- only an authenticated owner can retrieve the thread, replies and recovery history.
@@ -147,10 +167,11 @@ begin
   order by sequence desc limit 40) x;
  select id into pending from public.tutor_turns where thread_id=h.id and status='pending';
  return jsonb_build_object(
+  'readAt',statement_timestamp(),
   'head',jsonb_build_object('threadId',h.id,'lastSequence',coalesce(h.last_sequence,0),'pendingTurnId',pending),
   'turns',coalesce(items,'[]'::jsonb),'before',case when first_sequence>1 then first_sequence end,
-  'canSubmit',public.lemma_plan_released() and exists(select 1 from public.tutor_release_controls where capability='manual' and enabled),
-  'canConnect',public.lemma_plan_released() and exists(select 1 from public.tutor_release_controls where capability='mcp' and enabled),
+  'canSubmit',public.tutor_plan_released() and exists(select 1 from public.tutor_release_controls where capability='manual' and enabled),
+  'canConnect',public.tutor_plan_released() and exists(select 1 from public.tutor_release_controls where capability='mcp' and enabled),
   'recoveredDrafts',coalesce((select jsonb_agg(jsonb_build_object('draftId',d.id,'messageId',d.message_id,'turnId',d.turn_id,'body',d.body) order by d.created_at)
    from public.tutor_recovered_replies d join public.tutor_turns t on t.id=d.turn_id
    where t.thread_id=h.id and t.sequence>=first_sequence and (p_before is null or t.sequence<p_before)),'[]'::jsonb));
@@ -165,7 +186,7 @@ returns jsonb language plpgsql stable security definer set search_path='' as $pa
 declare u uuid:=auth.uid(); selection jsonb;
 begin
  if current_setting('role',true) is distinct from 'authenticated' or u is null or u is distinct from p_owner
-  or not public.lemma_plan_released() or exists(select 1 from public.account_deletion_requests d where d.user_id=u) then
+  or not public.tutor_plan_released() or exists(select 1 from public.account_deletion_requests d where d.user_id=u) then
   raise exception 'Authenticated tutor owner required' using errcode='42501'; end if;
  select jsonb_build_object('kind','source','refId',s.id,'version',pg.version::text,'page',pg.page,'excerpt',left(pg.body,1000))
   into selection from public.checkpoints c join public.projects proj on proj.id=c.project_id and proj.user_id=u
@@ -221,7 +242,7 @@ revoke all on function public.tutor_add_suggestion(uuid,uuid,uuid,public.checkpo
 
 -- Called only from the session and grant boundaries below. Serialize a checkpoint
 -- across transports, then use the shared owner-wide operation receipt transaction.
-create function public.tutor_apply(u uuid, cp_id uuid, target_slug text, actor_grant uuid, p jsonb)
+create function public.tutor_apply(u uuid, cp_id uuid, target_slug text, actor_grant uuid, p jsonb,p_recover_only boolean default false)
 returns jsonb language plpgsql security definer set search_path='' as $apply$
 declare
  op text:=p->>'operation'; opid uuid:=(p->>'operationId')::uuid;
@@ -236,7 +257,12 @@ begin
  if jsonb_typeof(p) is distinct from 'object' or pg_column_size(p)>65536 or op is null then
   raise exception 'Invalid tutor operation' using errcode='22023';
  end if;
- if not public.lemma_plan_released() then raise exception 'Tutor is unavailable' using errcode='55000'; end if;
+ -- A launch hold must still let the authenticated owner recover the receipt
+ -- of a committed operation. Grants stay disabled and new writes remain held.
+ if not public.tutor_plan_released() and (actor_grant is not null or
+   to_regprocedure('public.lemma_trusted_receipt_begin(uuid,uuid,text,jsonb)') is null) then
+  raise exception 'Tutor is unavailable' using errcode='55000';
+ end if;
  perform pg_advisory_xact_lock(hashtextextended(u::text||':tutor:'||cp_id::text,0));
  select c.* into cp from public.checkpoints c join public.projects proj on proj.id=c.project_id and proj.user_id=c.user_id
  where c.id=cp_id and c.user_id=u and (target_slug is null or proj.slug=target_slug) for share of c,proj;
@@ -290,6 +316,12 @@ begin
     raise exception 'The claim is no longer current' using errcode='42501'; end if;
   return receipt;
  end if;
+
+ -- Used by a held/offline-recovery UI: checking an unknown acknowledgement
+ -- must never submit a command that did not already commit.
+ if p_recover_only then return jsonb_build_object('operationId',opid,'status','unconfirmed'); end if;
+
+ if not public.tutor_plan_released() then raise exception 'Tutor is unavailable' using errcode='55000'; end if;
 
  if op='reply' and a.finished_at is not null and a.reason in ('reply','manual-recovered') then
   raise exception 'This claim has already submitted its reply' using errcode='40001'; end if;
@@ -402,7 +434,7 @@ begin
  output:=output||jsonb_build_object('operationId',opid,'turnId',t.id,'version',t.version);
  return public.lemma_trusted_receipt_finish(u,opid,'tutor',req,output);
 end $apply$;
-revoke all on function public.tutor_apply(uuid,uuid,text,uuid,jsonb) from public,anon,authenticated,service_role;
+revoke all on function public.tutor_apply(uuid,uuid,text,uuid,jsonb,boolean) from public,anon,authenticated,service_role;
 
 create function public.tutor_owner_command(p_owner uuid,p_slug text,p_checkpoint uuid,p_command jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $owner$
@@ -410,14 +442,30 @@ declare u uuid:=auth.uid();
 begin
  if current_setting('role',true) is distinct from 'authenticated' or u is null or u is distinct from p_owner or p_slug is null then
   raise exception 'Authenticated owner required' using errcode='42501'; end if;
+ -- Browser sessions can pre-set these settings; only the trusted service may
+ -- supply connector provenance. The owner path always records its own context.
+ perform set_config('lemma.source','app',true);
+ perform set_config('lemma.tool','tutor_owner_command',true);
+ perform set_config('lemma.summary','Tutor change',true);
  return public.tutor_apply(u,p_checkpoint,p_slug,null,p_command);
 end $owner$;
 revoke all on function public.tutor_owner_command(uuid,text,uuid,jsonb) from public,anon,service_role;
 grant execute on function public.tutor_owner_command(uuid,text,uuid,jsonb) to authenticated;
 
+create function public.tutor_owner_receipt(p_owner uuid,p_slug text,p_checkpoint uuid,p_command jsonb)
+returns jsonb language plpgsql security definer set search_path='' as $receipt$
+declare u uuid:=auth.uid();
+begin
+ if current_setting('role',true) is distinct from 'authenticated' or u is null or u is distinct from p_owner or p_slug is null then
+  raise exception 'Authenticated owner required' using errcode='42501'; end if;
+ return public.tutor_apply(u,p_checkpoint,p_slug,null,p_command,true);
+end $receipt$;
+revoke all on function public.tutor_owner_receipt(uuid,text,uuid,jsonb) from public,anon,service_role;
+grant execute on function public.tutor_owner_receipt(uuid,text,uuid,jsonb) to authenticated;
+
 create function public.tutor_grant_command(p_token_hash text,p_command jsonb)
 returns jsonb language plpgsql security definer set search_path='' as $grant$
-declare g public.tutor_grants%rowtype; cp uuid;
+declare g public.tutor_grants%rowtype; cp uuid; result jsonb;
 begin
  if current_setting('role',true) is distinct from 'service_role' then raise exception 'Restricted tutor transport' using errcode='42501'; end if;
  select x.* into g from public.tutor_grant_credentials cred join public.tutor_grants x on x.id=cred.grant_id
@@ -426,14 +474,22 @@ begin
  if not found then raise exception 'Tutor grant is unavailable' using errcode='42501'; end if;
  select h.checkpoint_id into strict cp from public.tutor_turns t join public.tutor_threads h on h.id=t.thread_id
  where t.id=g.turn_id and t.user_id=g.user_id and h.user_id=g.user_id;
- return public.tutor_apply(g.user_id,cp,null,g.id,p_command);
+ -- The grant proves connector access, not a particular host's identity.
+ perform set_config('lemma.source','other',true);
+ perform set_config('lemma.tool','tutor_grant_command',true);
+ perform set_config('lemma.summary','Tutor connector change',true);
+ result:=public.tutor_apply(g.user_id,cp,null,g.id,p_command);
+ -- Record only successfully authorized activity, using the grant-derived owner.
+ -- The existing telemetry trigger excludes this bookkeeping from undo history.
+ update public.settings set connector_last_seen_at=clock_timestamp(),connector_last_client='other' where user_id=g.user_id;
+ return result;
 end $grant$;
 revoke all on function public.tutor_grant_command(text,jsonb) from public,anon,authenticated;
 grant execute on function public.tutor_grant_command(text,jsonb) to service_role;
 
 create function public.tutor_grant_active(p_token_hash text) returns boolean
 language sql stable security definer set search_path='' as $active$
- select public.lemma_plan_released() and current_setting('role',true)='service_role'
+ select public.tutor_plan_released() and current_setting('role',true)='service_role'
  and exists(select 1 from public.tutor_release_controls where capability='mcp' and enabled)
  and exists(select 1 from public.tutor_grant_credentials c join public.tutor_grants g on g.id=c.grant_id
             where c.token_hash=p_token_hash and g.revoked_at is null and g.expires_at>statement_timestamp())

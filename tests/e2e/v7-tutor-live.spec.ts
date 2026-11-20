@@ -1,7 +1,7 @@
-import {expect,test} from '@playwright/test'
+import {expect,test,type Page} from '@playwright/test'
 import type {TutorThreadView} from '../../src/data/tutor/manual-api'
 
-test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste and opens its exact card proposal',async({page})=>{
+async function prepareLiveTutor(page:Page,released=true){
  const owner='11111111-1111-4111-8111-111111111111',projectId='22222222-2222-4222-8222-222222222222'
  const cpId='33333333-3333-4333-8333-333333333333',subjectId='44444444-4444-4444-8444-444444444444'
  const proposalId='55555555-5555-4555-8555-555555555555',threadId='66666666-6666-4666-8666-666666666666'
@@ -19,13 +19,18 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
   max_interval_days:36500,fuzz:true,load_balance:true,learn_ahead_minutes:20,fsrs_weights:null,fsrs_tuned_at:null,macros:'',default_style:'socratic',time_zone:'UTC'}
  const subject={id:subjectId,name:'Logic',glyph:'∫',hue:'amber',position:0}
  const payload:Record<string,unknown>={projects:[project],checkpoints:[cp],subjects:[subject],settings:[settings],
-  'rpc/bootstrap':settings,'rpc/lemma_plan_released':true,'rpc/project_summaries':[]}
+  'rpc/bootstrap':settings,'rpc/lemma_plan_released':released,'rpc/project_summaries':[]}
+ await page.route('**/auth/v1/**',route=>route.fulfill({json:user}))
+ return {owner,cpId,threadId,projectId,proposalId,payload}
+}
+
+test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste and opens its exact card proposal',async({page})=>{
+ const {owner,cpId,threadId,projectId,proposalId,payload}=await prepareLiveTutor(page)
  let thread:TutorThreadView={head:{threadId:null,pendingTurnId:null,lastSequence:0},turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false}
  let startCount=0
  let startCommand:Record<string,unknown>|undefined
  const errors:string[]=[]
  page.on('pageerror',error=>errors.push(error.message))
- await page.route('**/auth/v1/**',route=>route.fulfill({json:user}))
  await page.route('**/rest/v1/**',async route=>{
   const request=route.request(),path=new URL(request.url()).pathname.split('/rest/v1/')[1]
   if(path.startsWith('rpc/tutor_')){
@@ -89,4 +94,82 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  await result.getByRole('link',{name:'Review proposal'}).click()
  await expect(page.locator('[data-proposal="'+proposalId+'"]')).toContainText('Is the converse always true?')
  expect(errors).toEqual([])
+})
+
+const savedThread=(threadId:string):TutorThreadView=>({
+ head:{threadId,pendingTurnId:null,lastSequence:1},canSubmit:false,canConnect:false,recoveredDrafts:[],
+ turns:[{id:'saved-turn',threadId,sequence:1,version:2,status:'completed',snapshot:{question:'Previously saved question',selectedContext:[]},
+  finalReply:{turnId:'saved-turn',messageId:'saved-reply',body:'Previously confirmed answer',provenance:{kind:'manual-import',label:'Imported by you'},citations:[],suggestions:[]}}],
+})
+
+test('global hold keeps owner history and receipt recovery available without submitting new work',async({page})=>{
+ const {owner,cpId,threadId,payload}=await prepareLiveTutor(page,false)
+ const state=savedThread(threadId),receipts:string[]=[],writes:unknown[]=[]
+ const committed={operation:'start',operationId:'77777777-7777-4777-8777-777777777777',expectedVersion:0,question:'Previously saved question'}
+ const unconfirmed={operation:'start',operationId:'88888888-8888-4888-8888-888888888888',expectedVersion:1,question:'Never submitted question'}
+ await page.addInitScript(({owner,cpId,committed,unconfirmed})=>{
+  const key=JSON.stringify([owner,'logic',cpId])
+  for(const command of [committed,unconfirmed])localStorage.setItem('lemma.tutor.pending.v1:'+key+':'+command.operationId,JSON.stringify(command))
+  localStorage.setItem('lemma.tutor.draft:'+key+':question','A later unsent question')
+ },{owner,cpId,committed,unconfirmed})
+ await page.route('**/rest/v1/**',async route=>{
+  const request=route.request(),path=new URL(request.url()).pathname.split('/rest/v1/')[1]
+  if(path==='rpc/tutor_thread_state')return route.fulfill({json:state})
+  if(path==='rpc/tutor_owner_receipt'){
+   const args=request.postDataJSON(),command=args.p_command
+   expect([args.p_owner,args.p_slug,args.p_checkpoint]).toEqual([owner,'logic',cpId])
+   receipts.push(command.operationId)
+   return route.fulfill({json:{operationId:command.operationId,status:command.operationId===committed.operationId?'submitted':'unconfirmed'}})
+  }
+  if(path==='rpc/tutor_owner_command'){writes.push(request.postDataJSON());return route.fulfill({status:503,json:{code:'55000'}})}
+  let data=payload[path]??[]
+  if(request.headers()['accept']?.includes('vnd.pgrst.object')&&Array.isArray(data))data=data[0]??null
+  return route.fulfill({json:data})
+ })
+ await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1')
+ await page.getByRole('button',{name:'Open checkpoint tutor'}).click()
+ const dialog=page.getByRole('dialog',{name:'Checkpoint tutor'})
+ await expect(dialog.getByRole('article',{name:'Imported reply'})).toContainText('Previously confirmed answer')
+ await expect(dialog.getByRole('textbox',{name:'Saved question draft'})).toHaveValue('A later unsent question')
+ await expect(dialog.getByRole('region',{name:'Pending tutor submission'})).toContainText('Never submitted question')
+ await expect(dialog.getByRole('button',{name:'Save question',exact:true})).toHaveCount(0)
+ await expect(dialog.getByText('Draft a card from this reply')).toHaveCount(0)
+ await dialog.getByRole('button',{name:'Check saved receipt'}).click()
+ await expect(dialog.getByRole('alert')).toContainText('No saved receipt was found')
+ expect(receipts).toContain(committed.operationId);expect(receipts).toContain(unconfirmed.operationId)
+ expect(writes).toEqual([])
+ const retained=await page.evaluate(({owner,cpId,operationId})=>localStorage.getItem('lemma.tutor.pending.v1:'+JSON.stringify([owner,'logic',cpId])+':'+operationId),{owner,cpId,operationId:unconfirmed.operationId})
+ expect(JSON.parse(retained!)).toEqual(unconfirmed)
+})
+
+test('a previously available checkpoint reopens its confirmed conversation offline in recovery-only mode',async({page,context})=>{
+ const {threadId,payload}=await prepareLiveTutor(page)
+ const saved=savedThread(threadId)
+ const state:TutorThreadView={...saved,head:{threadId,pendingTurnId:'pending-turn',lastSequence:2},canSubmit:true,canConnect:true,
+  turns:[...saved.turns,{id:'pending-turn',threadId,sequence:2,version:1,status:'awaiting-tutor',snapshot:{question:'A sealed pending question',selectedContext:[]}}]}
+ let offline=false
+ const writes:unknown[]=[]
+ await page.route('**/rest/v1/**',async route=>{
+  const request=route.request(),path=new URL(request.url()).pathname.split('/rest/v1/')[1]
+  if(offline)return route.abort('internetdisconnected')
+  if(path==='rpc/tutor_thread_state')return route.fulfill({json:state})
+  if(path==='rpc/tutor_owner_command'){writes.push(request.postDataJSON());return route.fulfill({status:503,json:{code:'55000'}})}
+  let data=payload[path]??[]
+  if(request.headers()['accept']?.includes('vnd.pgrst.object')&&Array.isArray(data))data=data[0]??null
+  return route.fulfill({json:data})
+ })
+ await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1')
+ const open=page.getByRole('button',{name:'Open checkpoint tutor'}),dialog=page.getByRole('dialog',{name:'Checkpoint tutor'})
+ await open.click()
+ await expect(dialog.getByRole('article',{name:'Imported reply'})).toContainText('Previously confirmed answer')
+ await dialog.getByRole('button',{name:'Close',exact:true}).click()
+ offline=true;await context.setOffline(true)
+ await open.click()
+ await expect(dialog.getByRole('status').filter({hasText:'Offline.'})).toBeVisible()
+ await expect(dialog.getByRole('article',{name:'Imported reply'})).toContainText('Previously confirmed answer')
+ await expect(dialog.getByLabel('Text for your tutor')).toHaveValue('A sealed pending question')
+ await expect(dialog.getByRole('button',{name:'Preview import'})).toHaveCount(0)
+ await expect(dialog.getByRole('button',{name:'Create a connector grant for this question'})).toHaveCount(0)
+ await expect(dialog.getByRole('button',{name:'Cancel question',exact:true})).toHaveCount(0)
+ expect(writes).toEqual([])
 })

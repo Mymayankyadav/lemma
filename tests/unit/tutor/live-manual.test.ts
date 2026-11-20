@@ -5,7 +5,7 @@ import type {TutorThreadView} from '../../../src/data/tutor/manual-api'
 
 const rpc=vi.hoisted(()=>vi.fn())
 vi.mock('../../../src/data/live/client',()=>({liveClient:()=>({rpc})}))
-const open=(ownerId='owner',checkpointId='cp')=>openLiveManualTutor({ownerId,checkpointId,pathId:'path',generation:authGeneration()})
+const open=(ownerId='owner',checkpointId='cp',readOnly=false)=>openLiveManualTutor({ownerId,checkpointId,pathId:'path',generation:authGeneration(),readOnly})
 const thread=(head:number,first=head,before:number|null=null):TutorThreadView=>({
  head:{threadId:'thread',lastSequence:head,pendingTurnId:null},canSubmit:true,canConnect:false,before,recoveredDrafts:[],
  turns:Array.from({length:Math.max(0,head-first+1)},(_,i)=>({id:'t'+(first+i),threadId:'thread',sequence:first+i,version:2,status:'cancelled',
@@ -54,6 +54,65 @@ describe('live tutor persistence',()=>{
   await expect(read).rejects.toThrow('account changed')
   await expect(api.retry!('missing')).rejects.toThrow('account changed')
   expect(localStorage.length).toBe(0)
+ })
+ it('keeps the newest confirmed conversation offline when foreground reads finish out of order',async()=>{
+  let older!:(value:unknown)=>void,newer!:(value:unknown)=>void
+  rpc.mockImplementationOnce(()=>new Promise(resolve=>{older=resolve}))
+   .mockImplementationOnce(()=>new Promise(resolve=>{newer=resolve}))
+   .mockResolvedValue(noNetwork)
+  const api=open(),first=api.resume(),second=api.resume()
+  newer(ok(thread(2)))
+  expect((await second).head.lastSequence).toBe(2)
+  older(ok(thread(1)))
+  await first
+  expect(await api.resume()).toMatchObject({offline:true,head:{lastSequence:2}})
+ })
+ it.each(['sequence','version','readAt'] as const)('does not regress the shared cache across adapters by %s',async(kind)=>{
+  let older!:(value:unknown)=>void,newer!:(value:unknown)=>void
+  rpc.mockImplementationOnce(()=>new Promise(resolve=>{older=resolve}))
+   .mockImplementationOnce(()=>new Promise(resolve=>{newer=resolve})).mockResolvedValue(noNetwork)
+  const old=thread(1),latest=thread(kind==='sequence'?2:1)
+  if(kind==='version')old.turns=[{...old.turns[0],version:1}]
+  if(kind==='readAt'){
+   old.readAt='2026-11-20T10:00:00.000001Z';latest.readAt='2026-11-20T10:00:00.000002Z'
+  }
+  const first=open().resume(),second=open().resume()
+  newer(ok(latest));await second
+  older(ok(old));await first
+  expect(await open().resume()).toMatchObject({offline:true,head:latest.head,turns:latest.turns,
+   ...(latest.readAt?{readAt:latest.readAt}:{})})
+ })
+ it('checks only committed receipts in read-only mode and retains every unconfirmed operation',async()=>{
+  const command={operation:'start',operationId:'saved-id',expectedVersion:0,question:'Keep this question'}
+  const key='lemma.tutor.pending.v1:'+JSON.stringify(['owner','path','cp'])+':saved-id'
+  localStorage.setItem(key,JSON.stringify(command))
+  let confirmed=false
+  rpc.mockImplementation(async(name,args)=>{
+   if(name==='tutor_thread_state')return ok(thread(1))
+   expect(name).toBe('tutor_owner_receipt');expect(args.p_command).toEqual(command)
+   return ok({operationId:'saved-id',status:confirmed?'submitted':'unconfirmed'})
+  })
+  const api=open('owner','cp',true)
+  expect(await api.resume(undefined,true)).toMatchObject({canSubmit:false,canConnect:false,outbox:[{operationId:'saved-id'}],reconciled:[]})
+  expect(await api.retry!('saved-id')).toBe('unconfirmed')
+  expect(localStorage.getItem(key)).toBe(JSON.stringify(command))
+  const writes=[()=>api.submit('new',{question:'New question',selectedContext:[]},1),
+   ()=>api.confirmImport('t1',2,'reply','A reply'),()=>api.issueGrant!('t1',2),
+   ()=>api.cancel!('t1',2),()=>api.proposeCard!('t1',2,'Front','Back')]
+  for(const write of writes)await expect(write()).rejects.toThrow('read-only')
+  expect(rpc.mock.calls.some(call=>call[0]==='tutor_owner_command')).toBe(false)
+  confirmed=true
+  expect(await api.resume(undefined,true)).toMatchObject({outbox:[],reconciled:[{operation:'start',status:'submitted',text:command.question}]})
+  expect(localStorage.getItem(key)).toBeNull()
+ })
+ it('retains a pending receipt when its read-only check is rejected or unavailable',async()=>{
+  const command={operation:'manual',operationId:'pending',turnId:'t1',body:'My retained paste'}
+  const key='lemma.tutor.pending.v1:'+JSON.stringify(['owner','path','cp'])+':pending'
+  localStorage.setItem(key,JSON.stringify(command))
+  rpc.mockImplementation(async name=>name==='tutor_thread_state'?ok(thread(1)):
+   {data:null,error:{code:'42501'},status:403})
+  expect(await open('owner','cp',true).resume(undefined,true)).toMatchObject({outbox:[{text:command.body}],reconciled:[]})
+  expect(localStorage.getItem(key)).toBe(JSON.stringify(command))
  })
  it('fills a multi-page sequence gap through the previous confirmed head',async()=>{
   rpc.mockResolvedValueOnce(ok(thread(1))).mockResolvedValueOnce(ok(thread(121,82,82)))

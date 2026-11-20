@@ -17,6 +17,8 @@ async function as(role,uid='',c=db) {
 }
 const ownerCmd=(command,c=db,cp=checkpoint,id=owner)=>one('select public.tutor_owner_command($1,$2,$3,$4::jsonb) result',
  [id,slug,cp,JSON.stringify(command)],c);
+const ownerReceipt=(command,cp=checkpoint,id=owner)=>one('select public.tutor_owner_receipt($1,$2,$3,$4::jsonb) result',
+ [id,slug,cp,JSON.stringify(command)]);
 const state=(id=owner,cp=checkpoint,before=null)=>one('select public.tutor_thread_state($1,$2,$3,$4) result',[id,slug,cp,before]);
 const hostCmd=(hash,command,c=db)=>one('select public.tutor_grant_command($1,$2::jsonb) result',[hash,JSON.stringify(command)],c);
 const cmd=(operation,fields)=>({operation,operationId:randomUUID(),...fields});
@@ -48,11 +50,17 @@ try {
   await db.exec(await readFile(new URL(name,dir),'utf8'));
  }
  await q('insert into auth.users(id) values ($1),($2)',[owner,other]);
+ for(const [id,secret] of [[owner,'1'.repeat(48)],[other,'2'.repeat(48)]])
+  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[id,secret]);
  async function seed(id){
   const project=await one("insert into public.projects(user_id,slug,title,goal,status) values($1,$2,'Logic','Review','active') returning id result",[id,slug]);
   return one("insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps) values($1,$2,'CP1',1,'Logic',$3,'Explain',jsonb_build_array('Explain the proof')) returning id result",[id,project,objective]);
  }
  checkpoint=await seed(owner);otherCheckpoint=await seed(other);
+ for(const role of ['anon','authenticated','service_role']){
+  assert.equal(await one("select has_schema_privilege($1,'lemma_export_private','USAGE,CREATE') result",[role]),false);
+  assert.equal(await one("select has_table_privilege($1,'lemma_export_private.additional_tables','SELECT,INSERT,UPDATE,DELETE,TRUNCATE') result",[role]),false);
+ }
  const sourceId=await one("insert into public.sources(user_id,project_id,title,short,status) select $1,project_id,'Logic reader','Logic','ready' from public.checkpoints where id=$2 returning id result",[owner,checkpoint]);
  await q("insert into public.source_pages(user_id,source_id,page,body) values($1,$2,1,'A selected passage.'),($1,$2,2,'Unselected page.')",[owner,sourceId]);
  await q('update public.checkpoints set source_id=$1 where id=$2',[sourceId,checkpoint]);
@@ -64,8 +72,9 @@ try {
   if(!['tutor_release_controls','tutor_grant_credentials'].includes(table))
    assert.equal(await one("select count(*)::int result from pg_trigger where tgrelid=$1::regclass and tgname='lemma_account_delete_write_guard'",['public.'+table]),1);
  }
- await as('anon');await denied(state());await denied(ownerCmd(firstQuestion));await denied(hostCmd(hash,{operation:'get',turnId}));
+ await as('anon');await denied(state());await denied(ownerCmd(firstQuestion));await denied(ownerReceipt(firstQuestion));await denied(hostCmd(hash,{operation:'get',turnId}));
  await as('authenticated',other);await denied(state());await denied(ownerCmd(firstQuestion));
+ await denied(ownerReceipt(firstQuestion));
  assert.deepEqual((await state(other,otherCheckpoint)).turns,[]);await denied(state(other,checkpoint));
  await as('authenticated',owner);await denied(state(owner,otherCheckpoint));await denied(hostCmd(hash,{operation:'get',turnId}));
  assert.equal((await state()).canSubmit,false);assert.equal((await state()).head.lastSequence,0);
@@ -86,6 +95,11 @@ try {
  await denied(ownerCmd({...firstQuestion,objective:'Unreviewed changes'}),'40001');
  await denied(ownerCmd({...firstQuestion,account:other}),'22023');
  const first=await ownerCmd(firstQuestion);assert.equal(first.status,'submitted');turnId=first.turnId;
+ assert.deepEqual(await ownerReceipt(firstQuestion),first);
+ const notSubmitted=cmd('start',{expectedVersion:1,question:'Receipt lookup must not submit this.'});
+ assert.deepEqual(await ownerReceipt(notSubmitted),{operationId:notSubmitted.operationId,status:'unconfirmed'});
+ assert.equal((await state()).head.lastSequence,1);
+ assert.ok(Number.isFinite(Date.parse((await state()).readAt)));
  await as('authenticated',other);
  const unrelated=await ownerCmd({operation:'start',operationId:firstQuestion.operationId,question:'Other owner',expectedVersion:0},db,otherCheckpoint,other);
  assert.equal(unrelated.status,'submitted');assert.notEqual(unrelated.turnId,turnId);
@@ -102,8 +116,24 @@ try {
  await ownerCmd(cmd('grant',{turnId,expectedVersion:1,tokenHash:altHash}));
  await as('service_role');await denied(state());await denied(ownerCmd(firstQuestion));
  assert.equal(await one('select public.tutor_grant_active($1) result',[hash]),true);
+ await as();
+ const grantExpiry=await one('update public.tutor_grants set expires_at=clock_timestamp()-interval \'1 second\' where id=(select grant_id from public.tutor_grant_credentials where token_hash=$1) returning created_at+interval \'1 day\' result',[hash]);
+ await as('service_role');
+ assert.equal(await one('select public.tutor_grant_active($1) result',[hash]),false);
+ await denied(hostCmd(hash,{operation:'get',turnId}));
+ await as();await q('update public.tutor_grants set expires_at=$2 where id=(select grant_id from public.tutor_grant_credentials where token_hash=$1)',[hash,grantExpiry]);
+ await as('service_role');
  await denied(hostCmd(hash,{operation:'get',turnId:randomUUID()}));
+ await as();assert.equal(await one('select connector_last_seen_at result from public.settings where user_id=$1',[owner]),null);
+ await as('service_role');
  assert.deepEqual((await hostCmd(hash,{operation:'get',turnId})).snapshot,current.turns[0].snapshot);
+ await as();
+ const activity=await one('select connector_last_seen_at::text result from public.settings where user_id=$1',[owner]);
+ assert.ok(activity);assert.equal(await one('select connector_last_client result from public.settings where user_id=$1',[owner]),'other');
+ assert.equal(await one('select connector_last_seen_at result from public.settings where user_id=$1',[other]),null);
+ await as('service_role');await denied(hostCmd(hash,{operation:'get',turnId:randomUUID()}));
+ await as();assert.equal(await one('select connector_last_seen_at::text result from public.settings where user_id=$1',[owner]),activity);
+ await as('service_role');
  await denied(hostCmd(hash,cmd('approve',{turnId})));
  const claim=cmd('claim',{turnId,expectedVersion:1}),firstClaim=await hostCmd(hash,claim);
  assert.deepEqual(await hostCmd(hash,claim),firstClaim);
@@ -121,6 +151,10 @@ try {
  await denied(hostCmd(hash,cmd('reply',{...leased,expectedVersion:3,messageId:randomUUID(),body:'Stale reply.'})));
  const citation={kind:'checkpoint',refId:checkpoint,version:'2'};
  const sourceCitation={kind:'source',refId:sourceId,page:1,version:'1'};
+ await as();await q("update public.source_pages set body='A revised source passage.',version=version+1 where user_id=$1 and source_id=$2 and page=1",[owner,sourceId]);
+ await as('authenticated',owner);
+ assert.deepEqual((await state()).turns[0].snapshot.selectedContext,current.turns[0].snapshot.selectedContext,'sealed context survives source revisions');
+ await as('service_role');
  const card={kind:'card',front:'Is the converse true?',back:'It requires proof.',summary:'Review the converse.'};
  const final=cmd('reply',{...nextLease,expectedVersion:3,messageId:randomUUID(),body:'Tutor reply.',
   reportedHost:'Example host',citations:[citation,sourceCitation],suggestions:[card,{kind:'change',summary:'Clarify the objective.',objective:'Prove the converse.',version:2},
@@ -152,6 +186,9 @@ try {
  assert.equal(view.recoveredDrafts[0].body,manual.body);assert.equal(view.recoveredDrafts[0].messageId,manual.messageId);assert.equal(view.head.pendingTurnId,null);
  assert.equal(saved.suggestions.length,3);
  const proposed=saved.suggestions.find(s=>s.kind==='card');assert.equal(proposed.status,'pending');
+ await as();
+ assert.deepEqual(await q("select a.source,a.tool,a.summary from public.actions a join public.action_changes c on c.action_no=a.no where c.table_name='proposals' and c.row_pk->>'id'=$1",[proposed.proposalId]),
+  [{source:'other',tool:'tutor_grant_command',summary:'Tutor connector change'}]);
  await as();assert.equal(await one('select count(*)::int result from public.cards'),0);
  assert.equal(await one('select count(*)::int result from public.checkpoints where user_id=$1',[owner]),1);
  assert.equal(await one('select count(*)::int result from public.tutor_replies'),1);
@@ -179,7 +216,14 @@ try {
  await as('authenticated',owner);view=await state();
  assert.equal(view.turns[1].finalReply.provenance.label,'Imported by you');assert.equal(view.recoveredDrafts.length,2);
  const suggested=cmd('suggest_card',{turnId:secondId,expectedVersion:manualWin.version,front:'Manual question',back:'Manual answer'});
+ await q("select set_config('lemma.source','claude',false),set_config('lemma.tool','forged-tutor-tool',false),set_config('lemma.summary','forged summary',false)");
  const manualSuggestion=await ownerCmd(suggested);assert.deepEqual(await ownerCmd(suggested),manualSuggestion);
+ assert.deepEqual(await q("select a.source,a.tool,a.summary from public.actions a join public.action_changes c on c.action_no=a.no where c.table_name='proposals' and c.row_pk->>'id'=$1",[manualSuggestion.proposalId]),
+  [{source:'app',tool:'tutor_owner_command',summary:'Tutor change'}]);
+ await q("select set_config('lemma.source','',false),set_config('lemma.tool','',false),set_config('lemma.summary','',false)");
+ const rejectedSuggestion=await ownerCmd(cmd('suggest_card',{turnId:secondId,expectedVersion:manualWin.version,front:'Rejected question',back:'Do not create this card'}));
+ await q('select public.reject_proposal($1)',[rejectedSuggestion.proposalId]);
+ assert.equal((await state()).turns[1].finalReply.suggestions.find(s=>s.proposalId===rejectedSuggestion.proposalId).status,'rejected');
  await one('select public.approve_proposal($1) result',[manualSuggestion.proposalId]);
  await as();assert.equal(await one('select count(*)::int result from public.cards'),2);
  await as('authenticated',owner);
@@ -225,6 +269,19 @@ try {
  await as();
  assert.equal(await one('select count(*)::int result from public.lemma_undo_tables where table_name=any($1::text[])',[tableNames]),0);
  assert.equal(await one('select count(*)::int result from lemma_export_private.additional_tables where table_name=any($1::text[])',[exportable]),exportable.length);
+ // A global launch hold blocks new writes while the owner can still resolve
+ // an acknowledgement lost after an already-committed operation.
+ await db.exec("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select false'");
+ await as('authenticated',owner);
+ assert.deepEqual(await ownerReceipt(firstQuestion),first);
+ assert.deepEqual(await ownerReceipt(notSubmitted),{operationId:notSubmitted.operationId,status:'unconfirmed'});
+ assert.deepEqual(await ownerCmd(firstQuestion),first);
+ assert.deepEqual(await ownerCmd(secondLocal),manualWin);
+ assert.equal((await state()).canSubmit,false);
+ await denied(ownerCmd(cmd('start',{expectedVersion:3,question:'Blocked during global hold'})),'55000');
+ await as('service_role');assert.equal(await one('select public.tutor_grant_active($1) result',[altHash]),false);
+ await denied(hostCmd(altHash,{operation:'get',turnId}),'55000');
+ await as();await db.exec("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select true'");
  await as('authenticated',owner);const recovery=await ownerCmd(cmd('start',{expectedVersion:3,question:'Recover if transport disabled.'}));
  await as();await db.exec("update public.tutor_release_controls set enabled=false");
  await as('authenticated',owner);assert.equal((await state()).turns.length,4);
@@ -234,7 +291,9 @@ try {
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);
  await as('authenticated',owner);await denied(state());
  await as('service_role');await q('select public.lemma_purge_account_rows($1)',[owner]);
- await as();await q('delete from auth.users where id=$1',[owner]);
+ await as();
+ for(const table of exportable)assert.equal(await one(`select count(*)::int result from public.${table} where user_id=$1`,[owner]),0,table+' purged before deleting auth identity');
  assert.equal(await one('select count(*)::int result from public.tutor_grant_credentials'),0);
+ await q('delete from auth.users where id=$1',[owner]);
  console.log('N193 passed '+(db.native?'independent PostgreSQL connection races':'serial PGlite transitions')+', lease fencing, receipt replay, approval, export and rollback.');
 } finally {await db.close()}

@@ -17,6 +17,7 @@ export type TutorThreadView={
  recoveredDrafts:readonly {turnId:string;messageId:string;body:string;draftId?:string}[]
  offline?:boolean
  confirmedAt?:string
+ readAt?:string
  before?:number|null
  canSubmit?:boolean
  canConnect?:boolean

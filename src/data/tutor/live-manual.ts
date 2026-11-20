@@ -4,7 +4,7 @@ import {supabaseUrl} from '../env'
 import type {TutorContextSelection} from './turn-model'
 import type {ManualTutor,TutorThreadView} from './manual-api'
 
-type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string}
+type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
 type Command={operation:string;operationId:string;[key:string]:unknown}
 type RpcResult={status:string;operationId:string;grantId?:string}
 
@@ -17,8 +17,13 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  const scopeKey=JSON.stringify([scope.ownerId,scope.pathId,scope.checkpointId])
  const prefix='lemma.tutor.pending.v1:'+scopeKey+':',cacheKey='lemma.tutor.confirmed.v1:'+scopeKey
  let closed=false
+ let readSequence=0,confirmedRead=0
  function active(){
   if(closed||!tutorScopeActive(scope))throw new Error('The account changed. Reopen the tutor.')
+ }
+ function writable(){
+  active()
+  if(scope.readOnly)throw new Error('The tutor is read-only. Your draft was kept.')
  }
  const target={p_owner:scope.ownerId,p_slug:scope.pathId,p_checkpoint:scope.checkpointId}
  function pending(){
@@ -46,10 +51,24 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  function offlineState():TutorThreadView {
   const saved=cached()
   return {...saved,head:saved?.head??{threadId:null,lastSequence:0,pendingTurnId:null},
-   turns:saved?.turns??[],recoveredDrafts:saved?.recoveredDrafts??[],canSubmit:saved?.canSubmit??false,canConnect:false,offline:true,outbox:outbox()}
+   turns:saved?.turns??[],recoveredDrafts:saved?.recoveredDrafts??[],canSubmit:false,canConnect:false,offline:true,outbox:outbox()}
+ }
+ function usable(thread:TutorThreadView):TutorThreadView {
+  return scope.readOnly?{...thread,canSubmit:false,canConnect:false}:thread
+ }
+ function readTime(value:string){
+  const fraction=/\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/.exec(value)?.[1]??''
+  return Date.parse(value)*1000+Number(fraction.padEnd(6,'0').slice(3,6))
+ }
+ function regresses(thread:TutorThreadView,previous?:TutorThreadView){
+  if(!previous)return false
+  if(previous.readAt&&thread.readAt&&readTime(thread.readAt)<readTime(previous.readAt))return true
+  if(previous.head.threadId!==thread.head.threadId)return Boolean(previous.head.threadId&&!thread.head.threadId)
+  if(thread.head.lastSequence<previous.head.lastSequence)return true
+  return thread.turns.some(turn=>previous.turns.some(old=>old.id===turn.id&&old.version>turn.version))
  }
  async function dispatch(command:Command,persist=false):Promise<RpcResult>{
-  active()
+  writable()
   if(persist){
    // One immutable entry per operation. Another tab cannot replace this request.
    const key=prefix+command.operationId, serialized=JSON.stringify(command)
@@ -71,6 +90,18 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   if(persist)localStorage.removeItem(prefix+command.operationId)
   return result
  }
+ async function recover(command:Command):Promise<RpcResult>{
+  active()
+  // This endpoint only reads committed receipts. It cannot submit an unseen operation.
+  const {data,error}=await client.rpc('tutor_owner_receipt',{...target,p_command:command})
+  active()
+  if(error)throw new Error('Could not check the saved tutor receipt. Your submission was kept.')
+  const result=data as RpcResult
+  if(!result||result.operationId!==command.operationId||typeof result.status!=='string')throw new Error('Unconfirmed tutor response.')
+  if(['submitted','completed','already-completed','proposed','turn-pending'].includes(result.status))
+   localStorage.removeItem(prefix+command.operationId)
+  return result
+ }
  function write(operation:string,turnId:string,version:number,patch:Record<string,unknown>={}):Command {
   return {operation,operationId:crypto.randomUUID(),turnId,expectedVersion:version,...patch}
  }
@@ -78,6 +109,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   close(){closed=true},
   async resume(before,reconcile=false){
    active()
+   const request=++readSequence
    async function read(cursor?:number):Promise<TutorThreadView> {
     const response=await client.rpc('tutor_thread_state',{...target,p_before:cursor??null})
     active()
@@ -94,13 +126,14 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
     if(before===undefined && error instanceof TypeError)return offlineState()
     throw error
    }
-   if(before!==undefined)return thread
+   if(before!==undefined)return usable(thread)
    const previous=cached()
    const reconciled:NonNullable<TutorThreadView['reconciled']>[number][]=[]
    if(reconcile){
     for(const operation of pending()){
      try {
-      const {status}=await dispatch(operation,true)
+      const {status}=await (scope.readOnly?recover(operation):dispatch(operation,true))
+      if(status==='unconfirmed')continue
       reconciled.push({operation:operation.operation,status,text:String(operation.question??operation.body??operation.front??''),
        turnId:typeof operation.turnId==='string'?operation.turnId:undefined,
        ...(typeof operation.localExcerpt==='string'?{localExcerpt:operation.localExcerpt}:{}),
@@ -118,8 +151,18 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
     thread={...thread,turns:[...older.turns,...thread.turns],recoveredDrafts:[...older.recoveredDrafts,...thread.recoveredDrafts],before:older.before}
    }
    thread={...thread,confirmedAt:new Date().toISOString()}
-   try {localStorage.setItem(cacheKey,JSON.stringify(thread))} catch {/* Outbox and drafts take priority over a cached read. */}
-   return {...thread,outbox:outbox(),reconciled}
+   // Compare authoritative versions inside a cross-tab lock where available.
+   // Response arrival order alone cannot determine which snapshot is newest.
+   const remember=()=>{
+    active()
+    if(request>confirmedRead&&!regresses(thread,cached())){
+     confirmedRead=request
+     try {localStorage.setItem(cacheKey,JSON.stringify(thread))} catch {/* Outbox and drafts take priority over a cached read. */}
+    }
+   }
+   if(typeof navigator!=='undefined'&&navigator.locks)await navigator.locks.request(cacheKey,remember)
+   else remember()
+   return {...usable(thread),outbox:outbox(),reconciled}
   },
   async submit(id,draft,sequence){
    const objective=draft.selectedContext.find(s=>s.kind==='checkpoint')?.excerpt
@@ -142,10 +185,10 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   async retry(operationId){
    const command=pending().find(c=>c.operationId===operationId)
    if(!command)return 'resolved'
-   return (await dispatch(command,true)).status
+   return (await (scope.readOnly?recover(command):dispatch(command,true))).status
   },
   async issueGrant(turnId,version){
-   active()
+   writable()
    const bytes=crypto.getRandomValues(new Uint8Array(32))
    const hex=(input:Uint8Array)=>Array.from(input,b=>b.toString(16).padStart(2,'0')).join('')
    const token=hex(bytes)
