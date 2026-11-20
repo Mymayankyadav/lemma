@@ -10,8 +10,12 @@ try{
  await db.exec("create function auth.uid() returns uuid language sql as $$select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,nullif(current_setting('test.uid',true),'')::uuid)$$");
  await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $$select decode(repeat('00',n),'hex')$$;grant usage on schema auth to authenticated,service_role;grant execute on function auth.uid() to authenticated");
  const dir=new URL('../../../supabase/migrations/',import.meta.url),names=(await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort(),mine=names.filter(n=>n.includes('_n172_')||n.includes('_n173_')||n.includes('_n175_')||n.includes('_n178_'));
- for(const n of names.filter(n=>!mine.includes(n))){try{await db.exec(await readFile(new URL(n,dir),'utf8'));}catch(e){throw Error(n+': '+e.message);}}
- for(const n of mine){try{await db.exec(await readFile(new URL(n,dir),'utf8'));}catch(e){throw Error(n+': '+e.message);}}
+ assert.ok(mine.length>0,'Atlas migrations required');
+ const first=names.indexOf(mine[0]),last=names.indexOf(mine.at(-1));
+ assert.deepEqual(names.slice(first,last+1),mine,'the historical Atlas release is a contiguous migration group');
+ const apply=async n=>{try{await db.exec(await readFile(new URL(n,dir),'utf8'));}catch(e){throw Error(n+': '+e.message);}};
+ // Rehearse rollback at the original release boundary. Later schema changes depend on Atlas.
+ for(const n of names.slice(0,last+1))await apply(n);
  const schema=async()=>q("select table_name,column_name,data_type from information_schema.columns where table_schema='public' order by 1,2"),up=await schema();
  await q('insert into auth.users values($1),($2)',[owner,other]);
  await q('insert into public.settings(user_id,connector_secret) values($1,$2)',[owner,'a'.repeat(48)]);
@@ -95,7 +99,8 @@ try{
  assert.equal((await q('select family_id from public.concepts where id=$1',[id(511)]))[0].family_id,null,'deleting a family clears the link');
  await db.exec('reset role');
  await db.exec(await readFile(new URL('../../../supabase/rollback/N172.down.sql',import.meta.url),'utf8'));
- for(const n of mine)await db.exec(await readFile(new URL(n,dir),'utf8'));
+ for(const n of mine)await apply(n);
  assert.deepEqual(await schema(),up,'up → down → up reproduces schema');
+ for(const n of names.slice(last+1))await apply(n);
  console.log('PASS Atlas schema, dry-run counts, idempotency, activation gates, browser revokes and rollback');
 }finally{await db.close();}
