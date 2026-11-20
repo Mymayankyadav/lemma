@@ -32,7 +32,11 @@ describe('v7 charts',()=>{
  });
  it('renders an empty state',async()=>{
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
-  try{await act(async()=>root.render(<Chart title="No data" data={[]} series={[{label:'Time'}]}/>));expect(host.textContent).toContain('No data in this range yet.');}
+  try{
+   await act(async()=>root.render(<Chart title="No data" data={[]} series={[{label:'Time'}]}/>));
+   expect(host.querySelector('.v7-chart-summary')?.textContent).toBe('None yet.');
+   expect(host.querySelector('.v7-plot')).toBeNull();
+  }
   finally{await act(async()=>root.unmount());host.remove();}
  });
 });

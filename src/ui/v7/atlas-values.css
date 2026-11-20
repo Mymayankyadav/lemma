@@ -34,3 +34,13 @@
  .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-legend {grid-area:legend;position:static;pointer-events:auto;justify-self:start}
  .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-controls {grid-area:controls;position:static;pointer-events:auto;justify-self:end}
 }
+
+:where(html[data-v7]) .v7-atlas-panel {
+  font-family:var(--v7-sans);
+  font-size:var(--v7-type-supporting);
+}
+:where(html[data-v7]) .v7-suggested-link {
+  display:grid; gap:var(--v7-space-1); padding-block:var(--v7-space-2);
+  border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);
+}
+:where(html[data-v7]) .v7-suggested-link small {display:block;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}

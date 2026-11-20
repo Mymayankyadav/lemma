@@ -1,17 +1,16 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
-import {Illustration} from '../../../ui/v7/Illustration';
-import {useDockedRuler} from './useDockedRuler';
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ViewMenu} from './ViewMenu';
-import {AtlasSlotSuggestions} from '../../adaptive/AtlasPanels';
+import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {ChevronLeft,ChevronRight} from 'lucide-react';
+import {Clock} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
-import {Segmented} from '../../../ui/v7/components';
+import {Button,DatePicker,Sheet} from '../../../ui/v7/components';
 import {SubjectGlyph,subjectClass} from '../../../ui/v7/Subject';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {formatShortDate} from '../../../lib/format';
@@ -19,16 +18,14 @@ import {useOverdueSummary} from './overdue';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
 import BlockSheetActions from '../block-sheet/BlockSheetActions';
-import type {CalendarBlockDraft} from '../block-sheet/blockDraft';
 import {dueForDay,emptyCalendarDues,type CalendarDues} from '../deadlines/DueDayItems';
 import {loadCalendarDues} from '../deadlines/load';
-import {calendarRange,dayKey,savedSlices,shiftDay,shiftMonth,validDayKey,weekStartDay} from '../model';
+import {calendarRange,dayKey,savedSlices,shiftDay,validDayKey,weekStartDay} from '../model';
 import {formatCalendarTime} from '../views/WeekView';
 import DayGrid,{type BlockLook,type SuggestedBlock} from './DayGrid';
 import WeekGrid from './WeekGrid';
 import MonthGrid from './MonthGrid';
 import AgendaList,{DueRow} from './AgendaList';
-import QuickAddSheet from './QuickAddSheet';
 import OverdueSheetV7 from './OverdueSheetV7';
 import SuggestionsBanner from './SuggestionsBanner';
 import {DEFAULT_LENGTH,lengthFromParam,quickStart} from './quickAddModel';
@@ -36,7 +33,6 @@ import {dotClasses,loadRange,parseView,viewLabel} from './viewModel';
 import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
 import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
-import {isFlagOn} from '../../../flags';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {LoggedSessionSheet} from './LoggedSessionSheet';
 import {EntrySheetV7} from '../../time-log/v7/EntrySheetV7';
@@ -44,7 +40,7 @@ import {EntrySheetV7} from '../../time-log/v7/EntrySheetV7';
 const views=['Day','Week','Month','Agenda'] as const;
 /** PLAN §6.5: the shape of the day, with a week strip above and a time grid below. */
 export default function V7CalendarDay(){
- const room=isFlagOn('v7Room');
+ const atlas=useAtlasModel();
  const navigate=useNavigate();
  const home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams();
@@ -59,11 +55,10 @@ export default function V7CalendarDay(){
  const [now,setNow]=useState(()=>Date.now());
  const [suggested,setSuggested]=useState<SuggestedBlock[]>([]);
  const [scrub,setScrub]=useState<{date:string;minute:number}|null>(null);
- // N161: on a phone the ruler is part of the dock (useDockedRuler).
- const scrubberRef=useRef<HTMLDivElement|null>(null);
- useDockedRuler(scrubberRef);
+ const [browse,setBrowse]=useState(false),[collapsed,setCollapsed]=useState(false);
+ const [addedSlots,setAddedSlots]=useState<Set<string>>(new Set());
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
- const quickOpen=params.get('quick')==='1',planOpen=params.get('plan')==='1';
+ const planOpen=params.get('plan')==='1';
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
  // A1: blocks added after this day and view loaded (an accepted suggestion, a quick add) rise in; a loaded day never animates.
  const enter=useEnterMarks(blocks.map(block=>block.id),phase==='ready',date+'|'+view);
@@ -107,24 +102,13 @@ export default function V7CalendarDay(){
   next.delete('quick');next.delete('task');next.delete('len');next.delete('title');
   setParams(next);
  }
- /** More options keeps what was typed: title, task link and length ride along to the full sheet. */
- function moreParams(draft:CalendarBlockDraft){
-  const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set('new','block');
-  ['edit','quick','start','title','task','len'].forEach(key=>next.delete(key));
-  setParams(next,{replace:true,state:{calendarBlockDraft:draft}});
- }
- /** Quick-add is the default way to make a block; More options hands over to the full sheet. */
- function quickParams(startsAt?:string){
-  const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set('quick','1');next.delete('new');next.delete('edit');
-  if(startsAt)next.set('start',startsAt);else next.delete('start');
-  setParams(next);
- }
- function closeQuick(){const next=new URLSearchParams(params);['quick','task','len','start'].forEach(key=>next.delete(key));setParams(next,{replace:true});restoreFocus();}
  // Today's links: Triage opens the overdue sheet, Details opens a block, Plan tomorrow plans the next day.
  useEffect(()=>{
   const overdueLink=params.get('overdue')==='1',blockLink=params.get('block'),tomorrow=params.get('plan')==='tomorrow';
-  if(!overdueLink&&!blockLink&&!tomorrow)return;
+  const quick=params.get('quick')==='1';
+  if(!overdueLink&&!blockLink&&!tomorrow&&!quick)return;
   const next=new URLSearchParams(params);
+  if(quick){next.set('new','block');next.delete('quick');}
   if(overdueLink){setOverdueOpen(true);next.delete('overdue');}
   if(blockLink){next.set('edit',blockLink);next.delete('block');}
   if(tomorrow){next.set('plan','1');next.set('view','day');next.set('date',shiftDay(today,1));}
@@ -161,17 +145,39 @@ export default function V7CalendarDay(){
   const patch=moveToDay(block,date,day,delta,zone);
   void adjust(block,patch).then(()=>go('date',day));
  };
- const monthWord=monthLabel(date),isToday=date===today;
+ const monthWord=monthLabel(date);
+ useEffect(()=>setCollapsed(false),[date,view]);
+ const visibleSlots=(atlas.data?.slots??[]).flatMap(({slot}):SuggestedBlock[]=>{
+  const range=view==='week'?loadRange(view,date,zone,firstDay):dayRange;
+  if(addedSlots.has(slot.id)||Date.parse(slot.starts_at)<Date.parse(range.start)||Date.parse(slot.ends_at)>Date.parse(range.end)
+   ||blocks.some(block=>block.status!=='cancelled'&&Date.parse(block.startsAt)<Date.parse(slot.ends_at)&&Date.parse(block.endsAt)>Date.parse(slot.starts_at))
+   ||suggested.some(item=>Date.parse(item.start)<Date.parse(slot.ends_at)&&Date.parse(item.end)>Date.parse(slot.starts_at)))return [];
+  return [{id:slot.id,start:slot.starts_at,end:slot.ends_at,title:'Study time',busy:saving,onAccept:()=>{void acceptSlot(slot);}}];
+ });
+ async function acceptSlot(slot:{id:string;starts_at:string;ends_at:string}) {
+  if(saving)return;
+  setSaving(true);
+  try{
+   const api=getStudyApi(),receipt=await api.createCalendarBlock({kind:'study',title:'Study block',startsAt:slot.starts_at,endsAt:slot.ends_at,timeZone:zone});
+   setAddedSlots(values=>new Set(values).add(slot.id));setReload(value=>value+1);
+   notify('Study block added',{tone:'success',action:{label:'Undo',onClick:()=>{
+    void api.deleteCalendarBlock(receipt.record.id,receipt.record.version).then(()=>{
+     setAddedSlots(values=>new Set([...values].filter(id=>id!==slot.id)));setReload(value=>value+1);
+    }).catch(()=>notify('Could not undo the block.',{tone:'danger'}));
+   }}});
+  }catch{notify('Could not add the study block.',{tone:'danger'});}
+  finally{setSaving(false);}
+ }
  const stripDots=(day:string)=>{
   const range=calendarRange(day,zone);
   return dotClasses(blocks.filter(block=>Date.parse(block.startsAt)<Date.parse(range.end)&&Date.parse(block.endsAt)>Date.parse(range.start)),block=>lookOf(block).subjectClass);
  };
- const unit=view==='month'?'month':'week',step=(direction:1|-1)=>view==='month'?shiftMonth(date,direction):shiftDay(date,direction*7);
+
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
-  {!(room&&view==='day')&&<HubHeader title={room?'Schedule':'Calendar'}
+  <HubHeader title="Calendar" titleControl={<DatePicker compact label="Calendar date" value={date} today={today} onChange={day=>go('date',day)}/>}
    control={<ViewMenu value={viewLabel(view)} options={views} onChange={value=>go('view',value.toLowerCase())}/>}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
-  </HubHeader>}
+  </HubHeader>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">
@@ -182,20 +188,7 @@ export default function V7CalendarDay(){
    {phase==='loading'?<p role="status" className="v7-meta">Loading due items…</p>:dueToday.length?<ul className="v7-mini-dues">{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul>:<p className="v7-meta">Nothing due on this day.</p>}
    {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
   </aside>}
-  {/* B4/CD2: one line at 320–390 px — the month label between chevrons, a Today pill only when away. New blocks come from the
-      Capture button or a tap on the grid, so there is no "+ New block" in the top third. */}
-  {room&&view==='day'?<header className="v7-cal-compact">
-   <button type="button" className="v7-icon-button" aria-label="Previous week" onClick={()=>go('date',step(-1))}><ChevronLeft aria-hidden="true"/></button>
-   <h1>{formatShortDate(date,{zone})}</h1>
-   <button type="button" className="v7-icon-button" aria-label="Next week" onClick={()=>go('date',step(1))}><ChevronRight aria-hidden="true"/></button>
-   <select className="v7-cal-view-menu" aria-label="Calendar view" value={view} onChange={event=>event.target.value==='tasks'?navigate('/tasks'):go('view',event.target.value)}>{views.map(label=><option key={label} value={label.toLowerCase()}>{label}</option>)}<option value="tasks">Tasks</option></select>
-  </header>:<div className="v7-cal-dateRow">
-   <button type="button" className="v7-icon-button" aria-label={'Previous '+unit} onClick={()=>go('date',step(-1))}><ChevronLeft aria-hidden="true"/></button>
-   <h2 className="v7-cal-month" aria-live="polite">{monthWord}</h2>
-   <button type="button" className="v7-icon-button" aria-label={'Next '+unit} onClick={()=>go('date',step(1))}><ChevronRight aria-hidden="true"/></button>
-   {!isToday&&<button type="button" className="v7-button v7-secondary v7-small v7-cal-today" onClick={()=>go('date',today)}><span>Today</span></button>}
-  </div>}
-  {(view==='day'||view==='agenda')&&<nav className="v7-cal-strip" aria-label="Week">
+  {view==='day'&&!collapsed&&<nav className="v7-cal-strip" aria-label="Week">
    {cells.map(cell=>{const dots=stripDots(cell.day);
     return <button key={cell.day} type="button" data-strip-day={cell.day} aria-label={cell.long+(cell.day===today?', today':'')} aria-pressed={cell.day===date}
      data-today={cell.day===today?'true':'false'} className="v7-cal-cell" onClick={()=>go('date',cell.day)}>
@@ -203,48 +196,42 @@ export default function V7CalendarDay(){
      <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
     </button>;})}
   </nav>}
-  {/* N161: on a phone the view choice is the header's menu (ViewMenu); wide screens keep this segmented control. */}
-  {!(room&&view==='day')&&<div className="v7-cal-views-wide"><Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={value=>go('view',value.toLowerCase())}/></div>}
-  {!(room&&view==='day')&&phase==='ready'&&(view==='day'||view==='agenda')&&(overdueCount>0||dueToday.length>0)&&<div className="v7-cal-lane" aria-label="All day">
-   {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
-   {dueToday.map(item=><span key={item.key} className="v7-badge v7-tone-info">{item.type==='deadline'?<MEANING_ICON.deadline aria-hidden="true"/>:<MEANING_ICON.practice aria-hidden="true"/>}<span>{item.value.title}</span></span>)}
+  {(view==='day'||view==='week'||planOpen)&&phase==='ready'&&<div className="v7-cal-grid-actions" data-view={view}>
+   {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue</StatusBadge>}
+   {view==='day'&&<Button small variant="ghost" aria-label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></Button>}
+   {(date>=today||planOpen)&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen}
+    onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)}
+    onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
   </div>}
   {phase==='loading'&&<div className="v7-cal-skeleton" role="status" aria-label="Loading calendar"><span/><span/><span/></div>}
   {phase==='error'&&<div role="alert" className="v7-alert"><p>{message}</p><button type="button" className="v7-button v7-secondary v7-small" onClick={()=>setReload(value=>value+1)}><span>Reload</span></button></div>}
   {!!actionError&&<div role="alert" className="v7-alert"><p>{actionError}</p><button type="button" className="v7-button v7-secondary v7-small" onClick={()=>{setActionError('');setReload(value=>value+1);}}><span>Reload</span></button></div>}
-  {phase==='ready'&&view==='week'&&<WeekGrid weekStart={weekStart} date={date} today={today} zone={zone} clock={clock} entries={entries} blocks={blocks} now={now} lookOf={lookOf} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry}/>}
+  {phase==='ready'&&view==='week'&&<WeekGrid weekStart={weekStart} date={date} today={today} zone={zone} clock={clock} entries={entries} blocks={blocks} now={now} lookOf={lookOf} suggested={[...suggested,...visibleSlots]} onDay={openDay} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry}/>}
   {phase==='ready'&&view==='month'&&<MonthSection date={date} today={today} zone={zone} firstDay={firstDay} clock={clock} entries={entries} blocks={blocks} dues={dues} lookOf={lookOf}
    onPick={day=>go('date',day)} onOpen={openDay} onEdit={block=>sheetParams(undefined,block.id)}/>}
   {phase==='ready'&&view==='agenda'&&<AgendaList date={date} today={today} zone={zone} clock={clock} clock24h={clock24h} entries={entries} blocks={blocks} dues={dues} projects={projects}
    lookOf={lookOf} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdd={day=>{
     const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.set('quick','1');next.delete('new');next.delete('edit');next.delete('start');setParams(next);}}/>}
-  {!(room&&view==='day')&&phase==='ready'&&view==='day'&&date>=today&&<SuggestionsBanner date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested}
-   onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
-  {phase==='ready'&&view==='day'&&<div className="v7-cal-day-stack">
-   {room&&<div className="v7-cal-grid-actions">
-    {!isToday&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>go('date',today)}><span>Today</span></button>}
-    {overdueCount>0&&<button type="button" className="v7-button v7-secondary v7-small" onClick={()=>setOverdueOpen(true)} aria-label={overdueCount+' overdue. Triage'}><span>{overdueCount} overdue</span></button>}
-    {dueToday.length>0&&<details className="v7-room-due"><summary className="v7-meta">{dueToday.length} due today</summary><ul>{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul></details>}
-    {date>=today&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen} onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)} onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
-   </div>}
-   {isFlagOn('v7Ruler')&&<div ref={scrubberRef} className="v7-cal-scrubber"><RulerSlider label="Browse day" min={0} max={Math.round((Date.parse(dayRange.end)-Date.parse(dayRange.start))/60000)-5}
-    value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
-    onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/></div>}
-   <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={suggested} draft={quickOpen?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
-    onCreate={startsAt=>quickParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={(block,patch)=>{void adjust(block,patch);}}
+  {phase==='ready'&&view==='day'&&<div className="v7-cal-day-stack" onWheel={()=>setCollapsed(true)} onTouchMove={()=>setCollapsed(true)}>
+   <Sheet open={browse} onClose={()=>setBrowse(false)} title="Browse day">
+    <RulerSlider label="Time" min={0} max={Math.round((Date.parse(dayRange.end)-Date.parse(dayRange.start))/60000)-5}
+     value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
+     onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/>
+   </Sheet>
+   <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={[...suggested,...visibleSlots]} draft={params.get('new')==='block'?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
+    onCreate={startsAt=>sheetParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}
-   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&<div className="v7-cal-empty-state"><Illustration name="calendar" width={120}/><p className="v7-cal-empty">Nothing planned. Tap the grid to add a block.</p></div>}
+   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&!suggested.length&&!visibleSlots.length&&
+    <div className="v7-cal-empty-state"><EmptyMoment art="calendar" title="Nothing planned" action={{label:'Add a block',onClick:()=>sheetParams()}}/></div>}
   </div>}
-  <QuickAddSheet open={quickOpen} date={date} zone={zone} start={params.get('start')} taskId={params.get('task')} length={lengthFromParam(params.get('len'))} projects={projects}
-   onClose={closeQuick} onSaved={()=>setReload(value=>value+1)} onMore={moreParams}/>
   <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>
   {loggedEntry&&<LoggedSessionSheet key={loggedEntry.id+'-'+loggedEntry.version} entry={loggedEntry} look={lookOf({projectId:loggedEntry.projectId} as CalendarBlockRecord)} zone={zone} clock={clock}
    onClose={closeEntry} onChanged={()=>setReload(value=>value+1)} onEdit={entry=>{const next=new URLSearchParams(params);next.delete('logged');setParams(next,{replace:true});setEditingEntry(entry);}}/>}
   {editingEntry&&<EntrySheetV7 key={editingEntry.id+'-'+editingEntry.version} entry={editingEntry} busy={false} onClose={()=>{setEditingEntry(null);restoreFocus();}}
    onChange={async()=>{setEditingEntry(null);setReload(value=>value+1);notify('Session updated',{tone:'success'});}}/>}
   <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
- <AtlasSlotSuggestions/></main>;
+ </main>;
 }
 
 /** Month's day list: the picked day's items as Agenda-style rows with an Open day button. */
@@ -258,14 +245,14 @@ function MonthSection({date,today,zone,firstDay,clock,entries,blocks,dues,lookOf
  return <>
   <MonthGrid date={date} today={today} zone={zone} firstDay={firstDay} entries={entries} blocks={blocks} dues={dues} lookOf={lookOf} onPick={onPick}/>
   <section className="v7-mo-day" aria-label="Selected day">
-   <div className="v7-mo-day-head"><h2 className="v7-subhead">{date===today?'Today · ':''}{formatShortDate(date,{zone})}</h2>
+   <div className="v7-mo-day-head"><h2 className="v7-subhead">{date===today?'Today':formatShortDate(date,{zone})}</h2>
     <button type="button" className="v7-button v7-secondary v7-small" onClick={()=>onOpen(date)}><span>Open day</span></button></div>
    {items.length===0&&due.length===0&&logged.length===0&&<p className="v7-cal-empty">Nothing planned.</p>}
    <ul className="v7-ag-list">{logged.map((slice,index)=><li key={slice.entry.id+':'+index} className="v7-ag-row" data-kind="logged"><span className="v7-ag-time">{clock(slice.start)}–{clock(slice.end)}</span>
      <span className="v7-ag-body"><strong>{slice.entry.intent||'Study'}</strong><small>Logged</small></span></li>)}{items.map(block=>{const look=lookOf(block);
     return <li key={block.id} className={'v7-ag-row '+look.subjectClass} data-kind={block.kind==='busy'?'busy':block.status==='done'?'done':'study'}>
      <button type="button" aria-label={'Edit block '+block.title} onClick={()=>onEdit(block)}><span className="v7-ag-time">{clock(block.startsAt)}–{clock(block.endsAt)}</span>
-      <span className="v7-ag-body"><strong>{block.title}</strong><small>{block.kind==='busy'?'Busy':block.status==='done'?'Done':'Planned study'}{look.path?' · '+look.path:''}</small></span></button></li>;})}
+      <span className="v7-ag-body"><strong>{block.title}</strong><small>{block.kind==='busy'?'Busy':block.status==='done'?'Done':look.path??'Study'}</small></span></button></li>;})}
     {due.map(item=><DueRow key={item.key} item={item} zone={zone}/>)}</ul>
  </section></>;
 }

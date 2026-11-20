@@ -218,6 +218,16 @@ export function createLiveTaskApi():TaskApi {
       return write('update',{target:{id:key},expectedVersion,patch:columns},
         async changed=>(await readTask(changed.id))??fail('not_found','Updated task not found'));
     },
+    async restoreDeletedTask(task,actionNo) {
+      if(!actionNo||!Number.isSafeInteger(actionNo)||actionNo<1)return fail('invalid','Missing task deletion receipt');
+      const db=await client(),{data,error}=await db.auth.getUser();
+      if(error||!data.user)throw new LemmaError('auth','Sign in to restore this task');
+      const restored=await db.rpc('undo_action',{p_user:data.user.id,p_no:actionNo});
+      if(restored.error)throw restored.error;
+      const fresh=await this.getTask(task.id);
+      if(!fresh)return fail('server','The restored task was not found');
+      return fresh;
+    },
     async deleteTask(key:string,expectedVersion:number) {
       version(expectedVersion);
       return write('delete',{target:{id:key},expectedVersion,patch:{}},async changed=>({id:changed.id}));

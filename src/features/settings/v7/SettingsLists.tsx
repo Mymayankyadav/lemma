@@ -1,3 +1,6 @@
+import {RulerTime} from '../../../ui/v7/RulerTime';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {WeekdayCapacity} from '../../adaptive/WeekdayCapacity';
 import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {Check,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
@@ -73,20 +76,18 @@ export function PickSheet<T extends string|number>({title,eyebrow,options,value,
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
 /** Form sheet for one 24-hour time (F51: the app's own field, not a native time input). */
 export function TimeSheet({title,eyebrow,value,onSave,onClose,hint}:{title:string;eyebrow?:string;value:string;onSave:(value:string)=>void;onClose:()=>void;hint?:string}){
- const [draft,setDraft]=useState(value),[error,setError]=useState('');
- const save=()=>{const v=draft.length===4&&/^\d{4}$/.test(draft)?draft.slice(0,2)+':'+draft.slice(2):draft;if(!CLOCK.test(v)){setError('Use 24-hour time, for example 07:30.');return;}onClose();if(v!==value)onSave(v);};
- return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Save</Button></>}>
-  <form className="v7-form-stack" noValidate onSubmit={event=>{event.preventDefault();save();}}>
-   <Field label={title} inputMode="numeric" maxLength={5} autoFocus value={draft} onChange={event=>{setDraft(event.target.value);setError('');}} error={error||undefined} hint={hint??'24-hour time'}/>
-   <button type="submit" hidden/>
-  </form>
+ const [draft,setDraft]=useState(value);
+ return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow}
+  footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
+  <RulerTime label={title} value={draft} onChange={setDraft}/>
+  {hint&&<p className="v7-meta">{hint}</p>}
  </Sheet>;
 }
 /** Form sheet for one whole number, with the shared stepper (F14) and a typed field for large jumps. */
 export function NumberSheet({title,eyebrow,value,min,max,unit,step=1,onSave,onClose}:{title:string;eyebrow?:string;value:number;min:number;max:number;unit:string|((n:number)=>string);step?:number;onSave:(value:number)=>void;onClose:()=>void}){
  const [draft,setDraft]=useState(value);
  return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
-  <div className="v7-form-stack"><Stepper label={title} unit={unit} value={draft} min={min} max={max} onChange={next=>setDraft(Math.round(next/step)*step||next)}/></div>
+  <div className="v7-form-stack"><RulerSlider label={title} value={draft} min={min} max={max} step={step} onChange={setDraft} format={value=>typeof unit==='string'?value+' '+unit:unit(value)} tickFormat={String}/></div>
  </Sheet>;
 }
 
@@ -156,7 +157,7 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
 
 const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 /** Planning: the day window and calendar as rows; gaps and continuous limits behind Advanced. */
-export function PlanningLists({settings}:{settings:Settings}){
+export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{settings:Settings;capacityRequested?:boolean;onCapacityOpen?:()=>void}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Planning'),notify=useToast();
  const agendaReleased=usePlanRelease('atlasAgendaV1');
  const algorithm=requestedAlgorithm(settings.schedulingAlgorithm,agendaReleased);
@@ -171,6 +172,7 @@ export function PlanningLists({settings}:{settings:Settings}){
  };
  const minimums=[0,10,15,20,30,45,60,90,120,180];
  return <div className="v7-settings-body">
+  <WeekdayCapacity requested={capacityRequested} onOpen={onCapacityOpen}/>
   {agendaReleased&&<Group title="Scheduling">
    <ValueRow label="Scheduling algorithm" value={algorithm==='new'?'New':'Legacy'} onOpen={()=>editor.setOpen({
     kind:'pick',title:'Scheduling algorithm',value:algorithm,

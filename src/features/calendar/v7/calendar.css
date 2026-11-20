@@ -257,3 +257,32 @@
 :where(html[data-v7]) .v7-session-stretches li:not([data-stretch="focus"]) {color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-session-time {white-space:nowrap;}
 :where(html[data-v7]) .v7-session-minutes {white-space:nowrap;text-align:right;}
+
+:where(html[data-v7]) .v7-date-pill .v7-field {
+ border-radius:var(--v7-round);min-height:44px;padding-inline:var(--v7-space-2);
+ font-size:var(--v7-type-supporting);white-space:nowrap;
+}
+:where(html[data-v7]) .v7-cal .v7-hub-extra {padding-block:0;}
+:where(html[data-v7]) .v7-cal :is(.v7-cal-strip,.v7-cal-grid-actions) {margin-block:0;}
+:where(html[data-v7]) .v7-cal-strip {min-height:56px;}
+:where(html[data-v7]) .v7-cal-grid-actions {
+ display:flex;align-items:center;gap:var(--v7-space-1);min-height:44px;
+}
+:where(html[data-v7]) .v7-cal-day-stack {display:grid;min-width:0;position:relative;}
+:where(html[data-v7]) .v7-cal-empty-state {pointer-events:none;}
+:where(html[data-v7]) .v7-cal-empty-state .v7-button {pointer-events:auto;}
+:where(html[data-v7]) .v7-cal-block[data-kind="busy"],
+:where(html[data-v7]) .v7-wk-block[data-kind="busy"] {
+ background:linear-gradient(135deg,transparent 35%,var(--v7-role-surface-muted) 35% 55%,transparent 55%) 0 0 / 10px 10px;
+ z-index:var(--v7-z-base);
+}
+:where(html[data-v7]) .v7-cal-block:not([data-kind="busy"]) {z-index:1;}
+:where(html[data-v7]) .v7-cal-block[data-kind="suggested"] button {
+ display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);width:100%;
+}
+:where(html[data-v7]) .v7-wk-block[data-kind="suggested"] {border:1px dashed var(--v7-role-selection-fg);color:var(--v7-role-selection-fg);}
+
+:where(html[data-v7]) .v7-cal-grid-actions[data-view="week"] {min-height:0;padding-block:0;margin-bottom:0;}
+:where(html[data-v7]) .v7-cal[data-calendar-view="week"] .v7-wk-head {min-height:40px;}
+:where(html[data-v7]) .v7-cal[data-calendar-view="week"] {--v7-gap:0px;}
+:where(html[data-v7]) .v7-mo-key {display:flex;justify-content:flex-end;}

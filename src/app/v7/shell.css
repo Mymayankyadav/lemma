@@ -11,8 +11,6 @@
  :where(html[data-v7]) .v7-dock {position:fixed;left:var(--v7-space-3);right:var(--v7-space-3);bottom:calc(var(--v7-space-3) + env(safe-area-inset-bottom));z-index:20;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;
   border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);overflow:hidden;
   background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
- /* Immersive screens keep the landmark for keyboard users only. */
- :where(html[data-v7]) .v7-shell[data-immersive="true"] .v7-dock:not(:focus-within) {clip-path:inset(50%);width:1px;height:1px;overflow:hidden;border:0;box-shadow:none;}
  :where(html[data-v7]) .v7-tabbar {position:relative;display:grid;grid-template-columns:repeat(5,1fr);height:64px;padding:var(--v7-space-1) var(--v7-space-2);}
  :where(html[data-v7]) .v7-dock-row {display:flex;align-items:center;}
  :where(html[data-v7]) .v7-dock-row > .v7-tabbar {flex:1;min-width:0;}
@@ -190,7 +188,6 @@
  }
 }
 @layer v7-components {
- :where(html[data-v7]) .v7-shell[data-immersive="true"] :is(.v7-rail-head,.v7-rail-library,.v7-rail-settings) {display:none;}
 /* R0 · F04 stacking contract: a sheet sits above everything and the tab bar and Capture hide while it is open; content
    clears the tab bar plus any sticky action bar plus 16 px. */
 @media (max-width:699px){:where(html[data-v7]):has(dialog.v7-sheet[open]) .v7-dock,:where(html[data-v7]):has(dialog.v7-sheet[open]) .v7-capture {visibility:hidden;}}
@@ -207,3 +204,25 @@
 /* N157 · AW3: a newer Lemma.apk exists (the app's daily check). */
 :where(html[data-v7]) .v7-page-actions a {position:relative;}
 :where(html[data-v7]) .v7-update-dot {position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:var(--v7-round);background:var(--v7-role-selection-fg);box-shadow:0 0 0 2px var(--v7-role-surface-page);}
+
+:where(html[data-v7]) .v7-offline-notice {
+ color: var(--v7-role-status-warning);
+ font-size: var(--v7-type-supporting);
+ background: var(--v7-role-surface-sunken);
+}
+@media (max-width:699px) {
+ :where(html[data-v7]) .v7-shell[data-session="true"]:not([data-immersive="true"]) {
+  --v7-dock-height:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom));
+ }
+ :where(html[data-v7]) .v7-dock-row .v7-session-row { padding:0; border:0; }
+ :where(html[data-v7]) .v7-dock-row .v7-session-open { padding:0; width:44px; justify-content:center; }
+ :where(html[data-v7]) .v7-dock-row :is(.v7-session-title,.v7-session-word,.v7-session-time,.v7-session-toggle) { display:none; }
+}
+
+:where(html[data-v7]) .v7-library-search {min-height:44px;width:min(26vw,160px);font-size:var(--v7-type-supporting);}
+:where(html[data-v7]) .v7-hub-row:has(.v7-library-search) {gap:var(--v7-space-1);}
+:where(html[data-v7]) .v7-search-create {display:grid;justify-items:start;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-task-sentence {display:flex;flex-wrap:wrap;align-items:end;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-task-sentence > * {flex:1 1 90px;min-width:0;}
+:where(html[data-v7]) .v7-paths-filters button,
+:where(html[data-v7]) :is(.v7-cards-filters,.v7-tk-filters) .v7-filter-chip {min-height:44px;}

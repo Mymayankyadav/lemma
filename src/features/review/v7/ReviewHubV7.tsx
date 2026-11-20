@@ -1,3 +1,5 @@
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {formatShortDate} from '../../../lib/format';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useEffect,useMemo,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
@@ -40,11 +42,12 @@ export default function ReviewHubV7(){
  const forecast=useQuery({queryKey:['path-review-forecast',decks.dataUpdatedAt,settings.dataUpdatedAt],queryFn:()=>getApi().getPathReviewForecast(),staleTime:60_000,
   // A new deck/settings fetch time is a new key: keep the last chart up while it refetches, never blank it to "Loading".
   placeholderData:previous=>previous,enabled:decks.isSuccess&&settings.isSuccess});
+ const [restored,setRestored]=useState(false),[autoStarted,setAutoStarted]=useState(false);
  const [active,setActive]=useState<DurableRun|null>(null),[selected,setSelected]=useState<Set<string>|null>(null),[sheet,setSheet]=useState(false);
  const {start,busy,issue}=useStartRound();
  useEffect(()=>{
   let live=true;
-  void resumeRun().then(run=>{if(live)setActive(run);}).catch(()=>{/* No saved run is not an error. */});
+  void resumeRun().then(run=>{if(live)setActive(run);}).catch(()=>{}).finally(()=>{if(live)setRestored(true);});
   return()=>{live=false;};
  },[]);
  const nodes=useMemo(()=>(decks.data??[]).filter(visibleDue),[decks.data]);
@@ -88,17 +91,29 @@ export default function ReviewHubV7(){
   enabled:repair&&!pathSlug&&!loading&&!failed&&totalDue===0,queryFn:async()=>await getApi().getNextStudyDue?.()??null});
  // V20: the count counts to its new value when the round changes (a subject, a deck, a refresh); shown at once on load.
  const shownCount=useAnimatedNumber(count,!loading&&!failed);
+ const libraryCount=(home.data?.projects??[]).reduce((sum,project)=>sum+project.cardsCount,0);
+ const empty=!loading&&!failed&&restored&&!active&&count===0&&totalDue===0;
+ useEffect(()=>{
+  if(params.get('start')!=='1'||autoStarted||!restored||loading||failed)return;
+  setAutoStarted(true);
+  if(active)navigate('/review/run?run='+encodeURIComponent(active.id),{replace:true});
+  else if(result.batch.length)void start(result.batch,[...enabled]);
+ },[params,autoStarted,restored,loading,failed,active,result.batch,enabled,navigate,start]);
  const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):totalDue>0?'Choose decks to review in Customise this round':'Nothing is due right now';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
   <HubHeader title="Review">
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
-  {!pathSlug&&<FirstCardPanel/>}
+  {empty&&(libraryCount===0?<FirstCardPanel reviewEmpty fallback={<EmptyMoment art="review" title="No cards yet"
+   action={{label:'Create your first card',to:'/cards?new=1'}}/>}/>
+   :<EmptyMoment art="review" title="Nothing due" action={{label:'Practice instead',to:'/practice'}}>
+    {nextDue.data?'Next: '+nextDue.data.count+' '+(nextDue.data.count===1?'card':'cards')+' · '+formatShortDate(nextDue.data.day,{zone:settings.data?.timeZone}):null}
+   </EmptyMoment>)}
   {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
   {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Erratum: your review decks didn’t load. Try again.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
-  {!loading&&!failed&&<>
+  {!loading&&!failed&&!empty&&<>
    <section className="v7-rv-hero" aria-label="Review counts">
     {/* A2 · IL-03: all caught up. */}
     {count===0&&totalDue===0&&<Illustration name="review" width={120} className="v7-rv-art"/>}
@@ -134,7 +149,7 @@ export default function ReviewHubV7(){
     {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Erratum: the forecast didn’t load. Try again.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
      :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
       series={outlook.series} format={value=>String(Math.round(value))}
-      summary={'Cards due over the next 14 days: '+(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' in all. Stacked by subject; includes overdue cards today.'}/>
+      summary={(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' due in 14 days'}/>
      :<p role="status" className="v7-rv-note">Loading the forecast…</p>}
    </div>
    <section className="v7-rv-section" aria-label="Memory, last 30 days">

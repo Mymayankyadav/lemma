@@ -2,7 +2,9 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
-import {Sheet} from '../../ui/v7/components';
+import {Button,Sheet} from '../../ui/v7/components';
+import {tutorHref} from '../../features/tutor/tutorHref';
+import {chatLink} from '../../lib/chat';
 import {FastTex} from '../../ui/FastTex';
 import {canonicalSearchItem,search,settingResults,type Matched,type SearchGroupName,type SearchItem,type SearchSnapshot} from './searchModel';
 import {searchActionIcon,searchGroupIcon} from './searchIcons';
@@ -129,7 +131,14 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
    </>:results.groups.length?results.groups.map(group=><section key={group.name} className="v7-search-group" aria-label={group.name}>
     <h2 className="v7-eyebrow">{group.name}</h2><ul>{group.items.map(item=>row(item,cursor++,item))}</ul>
     {group.total>group.items.length&&<button type="button" className="v7-button v7-ghost v7-small" onClick={()=>setExpanded(new Set([...expanded,group.name]))}><span>Show all {group.total}</span></button>}
-   </section>):<p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>}
+   </section>):<div className="v7-search-create">
+    <p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>
+    <Button small onClick={()=>onPick({id:'add-task-from-search',group:'Actions',title:'Add task',to:'/tasks?new=1&title='+encodeURIComponent(query.trim().slice(0,200))},{query,activeId,expanded:[...expanded]})}>Add task “{query.trim()}”</Button>
+    {projects.find(project=>project.current)?<Button small onClick={()=>{
+     const path=projects.find(project=>project.current)!;
+     onPick({id:'ask-tutor-from-search',group:'Actions',title:'Ask your tutor',to:tutorHref(path.slug,path.current!.code)+'?question='+encodeURIComponent(query.trim())},{query,activeId,expanded:[...expanded]});
+    }}>Ask your tutor</Button>:<a className="v7-button v7-small v7-secondary" target="_blank" rel="noopener noreferrer" href={chatLink('claude','Help me with '+query.trim())}>Ask your tutor</a>}
+   </div>}
   </div>
   <span className="v7-sr-only" role="status">{idle?'':results.flat.length+' results in '+results.groups.length+' groups'}</span>
  </Sheet>;

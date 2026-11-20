@@ -63,9 +63,9 @@ it('interprets a task due time in the configured account zone, as the Tasks list
  h.tasks={...h.tasks,createTask:create};
  await act(async()=>root.render(<TaskSheet onDismiss={()=>{}}/>));
  await input('Title','Proof deadline');
- await act(async()=>button('Date & time').click());
+ await input('Due','Date & time');
  await input('Due date','2026-11-16');
- await input('Due time','17:00');
+ await input('Due time','1020');
  await act(async()=>button('Save task').click());
  expect(create).toHaveBeenCalledTimes(1);
  expect(create.mock.calls[0][0].due).toEqual({kind:'instant',at:'2026-11-16T11:30:00.000Z'});

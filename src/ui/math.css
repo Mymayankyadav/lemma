@@ -9,6 +9,8 @@ html[data-v7] .lemma-math .cz.czq { border-bottom-color:var(--v7-role-selection-
 html[data-v7] .lemma-math .cz.cza { background:var(--v7-role-selection-subtle); color:var(--v7-role-selection-fg); box-shadow:none; }
 .lemma-math a { color:var(--amber); text-decoration:underline; text-underline-offset:3px; }
 .lemma-math code { font-size:.87em; border-radius:var(--r-s); background:var(--well); padding:.12em .3em; }
+html[data-v7] .lemma-math:not(.lemma-tex-inline) {font-size:var(--v7-type-body);line-height:var(--v7-leading-body);}
+html[data-v7] .lemma-math code {font-family:var(--v7-mono);font-size:var(--v7-type-supporting);}
 
 /* Preserve the visual and linguistic bond between an inline formula and punctuation. */
 .lemma-math-punct { white-space: nowrap; }

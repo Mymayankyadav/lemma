@@ -1,3 +1,4 @@
+import {Disclosure} from '../../../ui/v7/Disclosure';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
@@ -42,8 +43,9 @@ export default function TasksV7(){
  const room=isFlagOn('v7Room'),repair=useStudyUi();
  const navigate=useNavigate(),notify=useToast(),home=useHome(),settings=useSettings();
  const location=useLocation(),initialDraft=readCapturedTaskDraft(location.state);
+ const [filtersOpen,setFiltersOpen]=useState(false);
  const [params,setParams]=useSearchParams(),creating=params.get('new')==='1';
- const closeNew=()=>{const next=new URLSearchParams(params);next.delete('new');setParams(next,{replace:true,state:null});};
+ const closeNew=()=>{const next=new URLSearchParams(params);next.delete('new');next.delete('title');setParams(next,{replace:true,state:null});};
  const zone=ownerZone(settings.data);
  const [{rows,total,cursor},setPage]=useState<{rows:TaskRecord[];total:number;cursor:string|null}>({rows:[],total:0,cursor:null});
  const [phase,setPhase]=useState<'loading'|'ready'|'error'>('loading'),[message,setMessage]=useState(''),[reload,setReload]=useState(0),[busy,setBusy]=useState(false);
@@ -99,7 +101,14 @@ export default function TasksV7(){
  async function remove(task:TaskRecord){
   if(busy)return;
   setBusy(true);
-  try{await getTaskApi().deleteTask(task.id,task.version);if(!repair)drop(task.id);notify('Task deleted',{tone:'success'});}
+  try{
+   const api=getTaskApi(),receipt=await api.deleteTask(task.id,task.version);
+   if(!repair)drop(task.id);
+   notify('Task deleted',{tone:'success',action:{label:'Undo',onClick:()=>{
+    void api.restoreDeletedTask?.(task,receipt.actionNo).then(record=>{if(!repair)add(record);})
+     .catch(()=>notify('Could not restore the task.',{tone:'danger'}));
+   }}});
+  }
   catch(error){setMessage(error instanceof Error?error.message:'Could not delete this task.');}
   finally{setBusy(false);}
  }
@@ -157,13 +166,16 @@ export default function TasksV7(){
   <div className="v7-tk-bar">
    {!board&&<Segmented label="Task status" options={[...segments]} value={segment} onChange={value=>setSegment(value as Segment)}/>}
   </div>
+  <Button small aria-haspopup="dialog" onClick={()=>setFiltersOpen(true)}>Filter</Button>
+  <Sheet open={filtersOpen} onClose={()=>setFiltersOpen(false)} title="Task filters">
   <div className="v7-tk-filters" role="group" aria-label="Filters">
    <Chip selected={!!filter.projectId} onClick={()=>setPicker(true)}>{filterTitle}</Chip>
    {(overdueCount>0||filter.overdueOnly)&&<Chip selected={filter.overdueOnly} onClick={()=>setFilter(old=>({...old,overdueOnly:!old.overdueOnly}))}>{'Overdue '+overdueCount}</Chip>}
    <Chip selected={filter.highOnly} onClick={()=>setFilter(old=>({...old,highOnly:!old.highOnly}))}>High priority</Chip>
    {/* TK3/KC10: "Plan these" sits in the filter row, not alone and centred. */}
    {unscheduled&&(board||segment==='To do')&&<Button variant="ghost" small className="v7-tk-plan" onClick={()=>navigate('/calendar?view=day&plan=1')}>Plan these</Button>}
-  </div>
+  </div>  </Sheet>
+
   {!!message&&<p role="alert" className="v7-alert">{message}</p>}
   {phase==='loading'&&<><Skeleton/><Skeleton/></>}
   {phase==='error'&&<div role="alert" className="v7-tk-empty"><p>{message||'Erratum: tasks didn’t load. Try again.'}</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
@@ -174,7 +186,7 @@ export default function TasksV7(){
      :<EmptyMoment art={total===0?undefined:'tasks'} title={total===0?'No tasks yet':'Nothing to do here'}>{total===0?'Use Capture to add one; it lands here.':'Tasks that match this view will appear here.'}</EmptyMoment>;
     const doingBlock=doing.length?<section className="v7-tk-card" aria-label="Doing"><h2 className="v7-eyebrow">Doing · {doing.length}</h2><ul>{doing.map(task=>rowFor(task,doing))}</ul></section>:<EmptyMoment title="Nothing in progress">Move a task here from its ⋯ menu when you start it.</EmptyMoment>;
     const doneBlock=<>{done.length?<section className="v7-tk-card" aria-label="Done"><h2 className="v7-eyebrow">Done · {done.length}</h2><ul>{done.map(task=>rowFor(task,done))}</ul></section>:<EmptyMoment title="Nothing completed yet">Finished tasks gather here.</EmptyMoment>}
-    {cancelled.length>0&&<details className="v7-tk-cancelled"><summary>Cancelled ({cancelled.length})</summary><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></details>}</>;
+    {cancelled.length>0&&<Disclosure label={'Cancelled ('+cancelled.length+')'}><section className="v7-tk-card" aria-label="Cancelled"><ul>{cancelled.map(task=>rowFor(task,cancelled))}</ul></section></Disclosure>}</>;
     return board?<div className="v7-tk-board">
      <div className="v7-tk-column" data-tk-column="backlog"><h2 className="v7-tk-column-title">To do</h2>{todoBlock}</div>
      <div className="v7-tk-column" data-tk-column="in_progress"><h2 className="v7-tk-column-title">Doing</h2>{doingBlock}</div>
@@ -192,7 +204,7 @@ export default function TasksV7(){
   </Sheet>
   {editing&&<TaskSheet key={editing.id+':'+editing.version} task={editing} onDismiss={()=>setEditing(null)} onSaved={put}
    onConflict={()=>{setMessage('Task changed elsewhere. The latest version was loaded.');setReload(value=>value+1);setEditing(null);}}/>}
-  {creating&&<TaskSheet initialDraft={initialDraft} onDismiss={closeNew} onSaved={repair?undefined:add}/>}
+  {creating&&<TaskSheet initialTitle={params.get('title')??undefined} initialDraft={initialDraft} onDismiss={closeNew} onSaved={repair?undefined:add}/>}
  </main>;
 }
 

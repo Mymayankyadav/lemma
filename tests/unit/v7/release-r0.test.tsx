@@ -42,7 +42,7 @@ describe('R0 · F09 focus timer',()=>{
   expect(focusedMinutes(entry(25*60_000),0)).toBe(25);
  });
  it('never shows raw validation text',()=>{
-  expect(focusError(new Error('End must follow start'))).toBe('This session is too short to save. Discard it, or keep going and finish later.');
+   expect(focusError(new Error('End must follow start'))).toBe('Less than a minute. Keep going or discard?');
   expect(focusError(new Error('weird internal message'))).not.toContain('internal');
  });
 });

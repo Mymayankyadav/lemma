@@ -46,7 +46,9 @@ describe('N19 flag-gated v6 visual contracts',()=>{
   setV6Root(false);
   expect(root.hasAttribute('data-v6')).toBe(false);
   expect(app).toContain('setV6Root(v6)');
-  expect(app).toContain("import '../ui/v6/tokens.css'");
+  expect(app).toContain("import('./LegacyStyles')");
+  expect(app).not.toContain("import '../ui/v6/tokens.css'");
+  expect(readFileSync('src/app/LegacyStyles.tsx','utf8')).toContain("import '../ui/v6/tokens.css'");
  });
  it('defines every v6 shell variable in the base and both explicit theme schemes',()=>{
   const refs=[...css.matchAll(/var\((--v6-[\w-]+)/g)].map(m=>m[1]);

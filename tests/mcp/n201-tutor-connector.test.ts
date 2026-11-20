@@ -4,7 +4,7 @@ import {tutorConnectorGrantHash} from '../../supabase/functions/_shared/tutor-co
 import type {Context} from '../../supabase/functions/mcp/db.ts'
 import {createMcpHandler} from '../../supabase/functions/mcp/deps.ts'
 import {buildServer, TOOL_NAMES} from '../../supabase/functions/mcp/server.ts'
-import {tutorConnector} from '../../supabase/functions/mcp/tutor-connector.ts'
+import {TUTOR_NEXT_WAIT_MS,tutorConnector} from '../../supabase/functions/mcp/tutor-connector.ts'
 
 Deno.test('ordinary connector discovers, reads, claims and returns a learner answer through get and study', async () => {
   const secret = '1'.repeat(48)
@@ -84,6 +84,9 @@ Deno.test('ordinary connector discovers, reads, claims and returns a learner ans
   assert.equal(turn.previousTutorQuestion, 'What is the value?')
   assert.match(turn.instructions, /tutor_turns/)
   assert.match(turn.instructions, /nextQuestion/)
+  assert.match(turn.instructions, /If id is null, call tutor_next again/)
+  assert.match(turn.instructions, /10 minutes/)
+  assert.equal(TUTOR_NEXT_WAIT_MS,25_000)
   const envelope = {resource: 'tutor_turns', schemaVersion: 1, target: {id: handoffId}}
   const claimOp = randomUUID()
   const bad = await call('study', {command: {...envelope, operation: 'claim', operationId: claimOp, expectedVersion: 1,

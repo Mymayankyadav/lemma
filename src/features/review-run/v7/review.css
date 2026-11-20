@@ -30,7 +30,7 @@
   color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);box-shadow:var(--v7-shadow-1);}
  :where(html[data-v7]) .v7-review-hint {text-align:center;color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  /* The dock sits 16 px above the bottom safe area, on every card length. */
- :where(html[data-v7]) .v7-review-dock {position:fixed;left:var(--v7-page-margin);right:var(--v7-page-margin);bottom:calc(var(--v7-space-4) + env(safe-area-inset-bottom));z-index:10;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;display:grid;}
+ :where(html[data-v7]) .v7-review-dock {left:var(--v7-page-margin);right:var(--v7-page-margin);bottom:calc(var(--v7-space-4) + env(safe-area-inset-bottom));z-index:10;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;display:grid;}
  :where(html[data-v7]) .v7-review-dock > .v7-button {min-height:var(--v7-button);width:100%;}
  :where(html[data-v7]) .v7-review-grades {display:grid;grid-template-columns:repeat(4,1fr);gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-review-grades button {min-height:64px;min-width:0;display:grid;justify-items:center;align-content:center;gap:2px;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-top:3px solid var(--v7-grade);

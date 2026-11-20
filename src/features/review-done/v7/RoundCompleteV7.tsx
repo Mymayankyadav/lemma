@@ -13,11 +13,11 @@ import {offerNotificationsOnce} from '../../../platform/permissions';
 import {defaultSelection,reviewBatch} from '../../review/v6/selection';
 import {clock,roundSummary,type GradeSplit} from '../../review/v7/reviewModel';
 import {useStartRound} from '../../review/v7/useStartRound';
-import {LottieMoment} from '../../../ui/v7/LottieMoment';
 import '../../review/v7/review-hub.css';
 import {Loader} from '../../../ui/v7/Loader';
-import {isFlagOn} from '../../../flags';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
+import {DetailHeader} from '../../../app/v7/V7Shell';
+import {haptic} from '../../../ui/v7/haptics';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
 const grades:(keyof GradeSplit)[]=['again','hard','good','easy'];
@@ -32,10 +32,12 @@ export default function RoundCompleteV7(){
  useEffect(()=>{if(run)void offerNotificationsOnce();},[run]);
  // N131 · A5: a page turn once per finished round, when Sounds is on.
  const sounds=soundsOn(useSettings().data?.ui),turned=useRef('');
- useEffect(()=>{if(run?.progress.done&&turned.current!==run.id){turned.current=run.id;void playSound('page',sounds);}},[run,sounds]);
+ useEffect(()=>{if(run?.progress.done&&turned.current!==run.id){
+  turned.current=run.id;haptic('complete');void playSound('page',sounds);
+ }},[run,sounds]);
  useEffect(()=>{
   let live=true;
-  if(!id){setError('No completed review-run ID');return;}
+  if(!id)return;
   void getRun(id).then(value=>{if(live)setRun(value);if(live&&!value)setError('This review round was not found.');})
    .catch(failure=>{if(live)setError(failure instanceof Error?failure.message:'Could not restore results');});
   return()=>{live=false;};
@@ -53,11 +55,13 @@ export default function RoundCompleteV7(){
  const tomorrow=forecast.data?.[1]?.due;
  const showBar=!!summary&&summary.counted>0;
  return <main id="main-content" className="v7-page v7-rc" aria-label="Review results">
-  {run?.progress.done?(isFlagOn('v7Qed')?<ProofEnd large/>:<LottieMoment name="round" animation="round-complete" width={160} className="v7-rc-art" feel/>)
+  <DetailHeader title="Review results" back="/review"/>
+  {run?.progress.done?<ProofEnd large/>
    :<span className="v7-rc-proof" aria-hidden="true"><Check/></span>}
-  <h1 className="v7-rc-title">{run&&!run.progress.done?'Round paused':'Round complete'}</h1>
+  <h1 className="v7-rc-title">{run&&!run.progress.done?'Round paused':id?'Round complete':'Review results'}</h1>
   {error&&<p role="alert" className="v7-rv-note">{error}</p>}
-  {!run&&!error&&<Loader className="v7-rv-note" label="Loading saved review results…"/>}
+  {id&&!run&&!error&&<Loader className="v7-rv-note" label="Loading saved review results…"/>}
+  {!id&&<p className="v7-rv-note">Finish a review round to see your results.</p>}
   {run&&summary&&<>
    {run.progress.skipped>0&&<p className="v7-rv-note">{run.progress.skipped} {run.progress.skipped===1?'card was':'cards were'} skipped because {run.progress.skipped===1?'it':'they'} changed since you started.</p>}
    {!run.progress.done&&<p role="status" className="v7-rv-note">{run.progress.remaining} cards are still waiting in this round.</p>}

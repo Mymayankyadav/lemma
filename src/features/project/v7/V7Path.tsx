@@ -1,6 +1,9 @@
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
-import {PathEstimates} from '../../adaptive/AtlasPanels';
+import {hoursEstimate,usePathEstimates} from '../../adaptive/panels/PathEstimates';
+import {Disclosure} from '../../../ui/v7/Disclosure';
+import {LemmaError} from '../../../data/api';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ProofEnd} from '../../../ui/v7/ProofEnd';
@@ -30,9 +33,9 @@ import {currentStudyStep,dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,short
 import './path.css';
 import {isFlagOn} from '../../../flags';
 
-const SourcesPanel=lazy(()=>import('../SourcesPanel').then(module=>({default:module.SourcesPanel})));
+const SourcesPanel=lazy(()=>import('./SourcesV7'));
 const ProjectSwitcher=lazy(()=>import('../ProjectSwitcher').then(module=>({default:module.ProjectSwitcher})));
-const tabs=['Map','Sessions','Sources','Cards'] as const;
+const tabs=['Plan','Sessions','Sources','Cards'] as const;
 type Tab=typeof tabs[number];
 const star='M10 2.2l2.2 5 5.4.5-4.1 3.6 1.2 5.3L10 13.9l-4.7 2.7 1.2-5.3-4.1-3.6 5.4-.5z';
 
@@ -47,18 +50,17 @@ function NodeMark({state}:{state:NodeState}){
   {state==='locked'&&<circle cx="10" cy="10" r="4" className="v7-path-dim"/>}
  </svg>;
 }
-function Row({slug,cps,index,step,reached,onContinue}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean;onContinue?:()=>void}){
+function Row({slug,cps,index,step,reached}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean}){
  const settings=useSettings();
- const studyRepair=useStudyUi();
- const cp=cps[index],text=nodeText(cps,index,step,studyRepair),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
+ const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
  return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
   <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
    <strong>{cp.title}</strong>
-   <small>{checkpointLabel(cp,settings.data?.flags,text.detail)}</small><PlanDisposition view={cp}/>
+   {text.state!=='up_next'&&text.state!=='proposed'&&<small>{checkpointLabel(cp,settings.data?.flags,text.detail.replace(/^Step (\d+) of (\d+):/,'$1/$2 ·'))}</small>}<PlanDisposition view={cp}/>
   </Link>
-  {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals">Proposed</StatusBadge>}
-  {current&&(onContinue?<Button variant="primary" small onClick={onContinue}>Continue with tutor</Button>:<Link className="v7-button v7-secondary v7-small" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}><span>Continue</span></Link>)}
+  {text.state==='proposed'&&<StatusBadge tone="info" to="/proposals?tab=plan">Review</StatusBadge>}
+  {current&&cp.dueCards>0&&<span className="v7-meta-chip">{cp.dueCards} due</span>}
   <span className="v7-sr-only">{checkpointLabel(cp,settings.data?.flags,text.label)}</span>
  </li>;
 }
@@ -101,13 +103,14 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
  const [switcher,setSwitcher]=useState(false);
- const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Map';
+ const tab:Tab=params.get('tab')==='sessions'?'Sessions':params.get('tab')==='sources'?'Sources':params.get('tab')==='cards'?'Cards':'Plan';
  const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
+ const estimates=usePathEstimates(cps);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const detail=useCheckpoint(slug,current?.code??'');
- const step=current?(detail.data?.steps??[])[studyRepair?currentStudyStep(current).index:Math.max(0,current.currentStep-1)]??null:null;
+ const step=current?(detail.data?.steps??[])[currentStudyStep(current).index]??null:null;
  useEffect(()=>{
-  if(!room||!data||tab!=='Map'||!current)return;
+  if(!room||!data||tab!=='Plan'||!current||window.innerWidth<700)return;
   const frame=requestAnimationFrame(()=>{
    const row=document.querySelector<HTMLElement>('.v7-path-row[data-state="current"]'),box=row?.getBoundingClientRect();
    // Keep the current checkpoint in view without scrolling when it already fits.
@@ -117,7 +120,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  },[room,!!data,slug,tab,current?.id]);
  if(query.isPending)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/><Skeleton/><Skeleton/></main>;
  if(query.error||!data)return <main id="main-content" className="v7-page v7-path" aria-label="Path"><DetailHeader title="Path" back="/projects"/>
-  <div role="alert" className="v7-path-empty"><p>Path unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
+  {query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This path doesn't exist." action={{label:'Back to Paths',to:'/projects'}}/>
+   :<div role="alert" className="v7-path-empty"><p>{navigator.onLine?'Could not open this path.':'You’re offline.'}</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
  const project=data.project,subject=kitSubject(data.subject.name),klass=subjectClass(subject);
  const stages=groupCheckpointStages(cps),end=lineEnd(cps);
  const due=dueTotal(cps),cards=home.data?.projects.find(item=>item.id===project.id)?.cardsCount??0;
@@ -143,13 +147,13 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  }
  function setTab(label:string){
   const next=new URLSearchParams(params),value=label.split(' ')[0].toLowerCase();
-  if(value==='map')next.delete('tab');else next.set('tab',value);setParams(next);
+  if(value==='plan')next.delete('tab');else next.set('tab',value);setParams(next);
  }
- const counts:Record<Tab,string>={Map:'Map',Sessions:'Sessions '+data.sessions.length,Sources:'Sources '+data.sources.length,Cards:'Cards '+cards};
+ const counts:Record<Tab,string>={Plan:'Plan',Sessions:'Sessions',Sources:'Sources',Cards:'Cards'};
  const label=counts[tab];
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
-   action={<><Link className="v7-header-pill" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
+   extraAction={<MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<MEANING_ICON.concepts aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),
@@ -157,7 +161,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     ?{label:'Resume path',hint:'Bring it back into Today and reviews',icon:<Play aria-hidden="true"/>,onClick:()=>{void setStatus('active','Path resumed');}}
     :{label:'Pause path',hint:'Hide it from Today until you resume',icon:<Pause aria-hidden="true"/>,onClick:()=>{void setStatus('paused','Path paused');}},
    {label:'Archive path',hint:'You can restore it from Paths',destructive:true,icon:<Archive aria-hidden="true"/>,onClick:()=>{void setStatus('archived','Path archived');}},
-  ]}/></>}/>
+  ]}/>}/>
   {/* N157 · U1 S11 (flag v7Margin): the path's sources and its last sessions, beside the page. */}
   <Margin notes={[
    ...(data.sources.length?[{title:'Sources',body:<ul>{data.sources.slice(0,6).map(source=><li key={source.id}>{source.short||source.title}{source.pageCount?' · '+source.pageCount+' pages':''}</li>)}</ul>}]:[]),
@@ -165,31 +169,36 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
     <li key={session.id}><Link to={'/s/'+encodeURIComponent(slug)+'/'+session.number}>{'Session '+session.number}</Link> · {shortDate(session.startedAt)}</li>)}</ul>}]:[]),
   ]}/>
   <header className="v7-path-head">
-   <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={164} animate={false}/></span>
+   <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={40} tier="tile" animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
-   <p className="v7-path-goal">{project.goal?.trim()||'Your tutor fills this in.'}</p>
+   {project.goal?.trim()&&<p className="v7-path-goal">{project.goal.trim()}</p>}
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
-    aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong>{data.done} of {data.total}</strong></div>
-   <div className="v7-path-chips">{target&&<MetaChip kind="target">{'Target '+target}</MetaChip>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
+    aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong aria-hidden="true">{data.done}/{data.total}</strong></div>
+   <div className="v7-path-chips">{target&&<span title="Target date"><MEANING_ICON.targetDate size={14} aria-label="Target date"/> {target}</span>}
+    {!!estimates.total&&<span title={'About '+hoursEstimate(estimates.total)+' left'}>~{hoursEstimate(estimates.total).replace(' ','')} left</span>}
+    {!!estimates.total&&!estimates.hasCapacity&&<Link to="/settings?section=planning&capacity=1">Set time</Link>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
    {isFlagOn('v7Qed')&&(project.status==='done'||data.total>0&&data.done>=data.total)&&<p className="v7-subhead"><ProofEnd/> Q.E.D.</p>}
   </header>
-  {params.get('new')==='1'&&<section className="v7-path-tell" aria-label="Tell your tutor">
-   <p className="v7-eyebrow">Tell your tutor</p>
-   <p>Ask your tutor to read the sources and plan this path with you.</p>
+  {params.get('new')==='1'&&cps.length>0&&<section className="v7-path-tell" aria-label="Tell your tutor">
+   <p className="v7-eyebrow">Plan with your tutor</p>
    <Button variant="primary" onClick={()=>{void navigator.clipboard?.writeText(planPrompt(project.title)).then(()=>notify('Prompt copied',{tone:'success'})).catch(()=>notify('Copy was unavailable'));}}><Copy aria-hidden="true"/>Copy prompt</Button>
   </section>}
-  <ProjectScheduler projectId={project.id}/>
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
-  {studyRepair&&tab==='Map'&&current&&<div className="v7-path-current">
-   <Link className="v7-button v7-primary" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(current.code)}>Continue · {current.title}</Link>
-   {currentStudyStep(current).ordinal!==null&&<p>Step {currentStudyStep(current).ordinal} of {current.stepsTotal}{step?' · '+step:''}</p>}
-  </div>}
-  {(!studyRepair||tab==='Map')&&<PathEstimates projectId={project.id}/>}
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
-   {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
-    {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>navigate(tutorHref(slug,cp.code)):undefined}/>;})}</ol>;
-     return <li key={stage.key} className="v7-path-stage">{room&&stage.checkpoints.every(cp=>isDemonstrated(cp.ui))?<details><summary className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)} · Finished</summary>{rows}</details>:<><h2 className="v7-eyebrow">{stageLabel(stage.name,stage.checkpoints)}</h2>{rows}</>}</li>;})}
-   </ol>:<EmptyMoment title="A plan is waiting to be written">Ask your tutor to break your goal into checkpoints.</EmptyMoment>)}
+   {tab==='Plan'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
+    {stages.map(stage=>{
+     const active=stage.checkpoints.some(cp=>cp.id===current?.id),minutes=estimates.minutes(stage.checkpoints);
+     const title=stageLabel(stage.name,stage.checkpoints).replace(/(\d+) of (\d+)$/,'$1/$2')+(minutes>0?' · ~'+hoursEstimate(minutes).replace(' ',''):'');
+     const rows=<ol>{stage.checkpoints.map((cp,offset)=>{
+      const index=stage.start+offset;
+      return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end}/>;
+     })}</ol>;
+     return <li key={stage.key} className="v7-path-stage">
+      {active?<><h2 className="v7-eyebrow">{title}</h2>{rows}</>:<Disclosure label={title}>{rows}</Disclosure>}
+     </li>;
+    })}
+   </ol>:<EmptyMoment title="No plan yet." action={{label:'Plan with your tutor',to:tutorHref(slug)}}/>)}
+   {tab==='Plan'&&settings.data?.flags?.recheck_v2&&<Disclosure label="Rechecks"><ProjectScheduler projectId={project.id}/></Disclosure>}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id} focusSourceId={studyRepair?params.get('source'):null}/></Suspense>}
    {tab==='Cards'&&<ul className="v7-path-cards" aria-label="Cards by checkpoint">
@@ -200,9 +209,10 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
    {tab==='Cards'&&<PathCards slug={slug}/>}
   </section>
   {/* R2 · F11: one floating layer above the tab bar — the Continue pill; Review lives in the header actions. */}
-  {(!room||!current)&&<div className="v7-path-bar" role="group" aria-label="Path actions">
+  {cps.length>0&&<Dock className="v7-path-bar" role="group" aria-label="Path actions">
    <Button variant="primary" onClick={()=>navigate(tutorHref(slug,current?.code))}>Continue with tutor</Button>
-  </div>}
+   {due>0&&<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)}>Review {due}</Link>}
+  </Dock>}
   {switcher&&<Suspense fallback={null}><ProjectSwitcher open onClose={()=>setSwitcher(false)} current={slug}/></Suspense>}
  </main>;
 }

@@ -81,3 +81,14 @@
 :where(html[data-v7]) .v7-connector-actions {display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-space-3);margin-top:var(--v7-space-3);}
 :where(html[data-v7]) .v7-connector-actions > .v7-button {justify-content:center;width:100%;}
 :where(html[data-v7]) .v7-connector-actions > .v7-button:last-child {grid-column:1 / -1;}
+:where(html[data-v7]) [data-connector-address] {font-family:var(--v7-mono);}
+:where(html[data-v7]) .v7-settings .text-title-s {font-family:var(--v7-serif);font-size:var(--v7-type-lead);}
+
+:where(html[data-v7]) .v7-capacity-painter {
+ display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:var(--v7-space-1);margin-block:var(--v7-space-3);
+}
+:where(html[data-v7]) .v7-capacity-painter label {display:grid;justify-items:center;gap:var(--v7-space-1);font-size:var(--v7-type-caption);}
+:where(html[data-v7]) .v7-capacity-painter input {
+ writing-mode:vertical-lr;direction:rtl;inline-size:96px;block-size:100%;min-block-size:28px;accent-color:var(--v7-role-action-bg);
+}
+:where(html[data-v7]) .v7-capacity-presets {display:flex;flex-wrap:wrap;gap:var(--v7-space-1);}

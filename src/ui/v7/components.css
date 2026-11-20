@@ -187,5 +187,25 @@
 
 /* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
    website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
-html[data-v7][data-native-app] {--v7-touch:48px;}
 
+
+
+:where(html[data-v7]) .v7-disclosure-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:var(--v7-space-2);
+  width:100%; min-height:var(--v7-touch); padding:var(--v7-space-2) 0;
+  text-align:start; font-size:var(--v7-type-supporting); font-weight:600;
+}
+:where(html[data-v7]) .v7-disclosure-trigger[aria-expanded="true"] > svg { transform:rotate(180deg); }
+
+.v7-fine-pointer-hint {display:none;}
+@media (pointer:fine) {
+  .v7-fine-pointer-hint {display:block;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}
+}
+:where(html[data-v7]) .v7-first-card-form :is(input,textarea) {inline-size:100%;min-inline-size:0;}
+
+
+@layer v7-reset {
+ :where(html[data-v7]) :where(h1, h2, h3, h4) {font-family:var(--v7-serif);}
+}
+
+html[data-v7][data-native-app] {--v7-touch:48px;}

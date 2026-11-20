@@ -20,6 +20,8 @@ export const FLAG_DEFAULTS = {
   tutorManualDemo: false,
   /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
+  todayNextStep: false,
+  tutorScratch: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */

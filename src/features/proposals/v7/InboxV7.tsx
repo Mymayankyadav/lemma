@@ -1,7 +1,8 @@
+import {Disclosure} from '../../../ui/v7/Disclosure';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {isFlagOn} from '../../../flags';
 import {useAtlasModel} from '../../../data/adaptive/atlas-api';
-import {LinkProposals} from '../../adaptive/AtlasPanels';
+import {SuggestedLinks} from '../../adaptive/panels/SuggestedLinks';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {fromEdge} from '../../../ui/v7/edges';
 import {nameCodes} from '../../../lib/codeNames';
@@ -68,10 +69,10 @@ function TopCard({proposal,project,onDecide,onSkip,haptics,stamped}:{proposal:Pr
   <div className="v7-inbox-front"><MathText source={face.front} cloze={isCloze(proposal)?{ord:1,revealed:true}:undefined}/></div>
   <hr/>
   <div className="v7-inbox-back"><MathText source={face.back}/></div>
-  {(proposal.reason||citations.length>0)&&<details className="v7-inbox-why"><summary>Why this card?</summary>
+  {(proposal.reason||citations.length>0)&&<Disclosure label="Why this card?">
    {proposal.reason&&<p>{nameCodes(proposal.reason)}</p>}
    {citations.length>0&&<p className="v7-meta">{citations.map(item=>item.source+(item.pages?' · p. '+item.pages:'')).join('; ')}</p>}
-  </details>}
+  </Disclosure>}
  </article>;
 }
 
@@ -206,7 +207,7 @@ export default function InboxV7(){
      <span><button type="button" className="v7-inbox-round" data-kind="approve" aria-label="Approve" onClick={()=>act('approve')}><Check aria-hidden="true"/></button><small aria-hidden="true">Approve</small></span>
     </div>
     {peers.length>1&&<Button variant="ghost" className="v7-inbox-all" onClick={()=>setBatch(peers)}>{'Approve all '+peers.length+' from Session '+top.sessionNumber}</Button>}
-    <p className="v7-sr-only">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
+    <p className="v7-fine-pointer-hint">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
    </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/>{cardEnd}</div>)}
    {query.isSuccess&&tab==='cards'&&list&&(queue.length?<>
     {groupBySession(queue,titleOf).map(group=><section key={group.key} className="v7-inbox-group" aria-label={group.label}>
@@ -215,10 +216,10 @@ export default function InboxV7(){
       <Checkbox label={<MathText source={firstProposalFrontLine(faces(p).front)} cloze={isCloze(p)?{ord:1,revealed:true}:undefined}/>} checked={selected.has(p.id)} onChange={checked=>setSelected(previous=>{const next=new Set(previous);if(checked)next.add(p.id);else next.delete(p.id);return next;})}/>
      </li>)}</ul>
     </section>)}
-    <div className="v7-learn-bar v7-inbox-batch" role="group" aria-label="Batch decision">
+    {!!selected.size&&<div className="v7-inbox-batch" role="group" aria-label="Batch decision">
      <Button disabled={!selected.size} onClick={()=>{act('reject',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Reject '+selected.size}</Button>
      <Button variant="primary" disabled={!selected.size} onClick={()=>{act('approve',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Approve '+selected.size}</Button>
-    </div>
+    </div>}
    </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/>{cardEnd}</div>)}
    {query.isSuccess&&tab==='plan'&&(plans.length?<ul className="v7-inbox-plans">{plans.map(p=><PlanCard key={p.id} proposal={p} project={bySlug.get(p.projectSlug)} onDecide={action=>act(action,[p])}/>)}</ul>
     :<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>No plan changes</h2><p>When your tutor proposes a plan or a change, it appears here.</p></div>)}
@@ -236,5 +237,5 @@ export default function InboxV7(){
    initial={{noteId:'',noteNo:editing.cardEdit.note_no,front:faces(editing).front,back:faces(editing).back,type:editing.cardEdit.type??'basic',kind:'other',tags:[],status:'active',origin:editing.origin,
     projectSlug:editing.projectSlug,checkpointCode:null,sessionNumber:editing.sessionNumber,sourceShort:null,pageLabel:null}}
    onSubmit={value=>{const target=editing;setEditing(null);haptic('decision',haptics);decide([target],'approve',{front:value.front,back:value.back,type:value.type,kind:value.kind});}}/>}
- <LinkProposals/></main>;
+ <SuggestedLinks/></main>;
 }

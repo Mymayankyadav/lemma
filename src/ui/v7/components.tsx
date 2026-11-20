@@ -356,6 +356,7 @@ export function Picker({
     id = useId(),
     ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if(typeof matchMedia!=="function")return;
     const media = matchMedia("(min-width:700px)");
     const update = () => {
       setDesktop(media.matches);
@@ -480,9 +481,11 @@ export function DatePicker({
   onChange,
   label = "Date",
   today,
+  compact = false,
 }: {
   value: string;
   today?: string;
+  compact?: boolean;
   onChange: (v: string) => void;
   label?: string;
 }) {
@@ -502,14 +505,14 @@ export function DatePicker({
     pick(date);
   }
   return (
-    <div className="v7-field-group">
-      <span>{label}</span>
+    <div className={compact?"v7-date-pill":"v7-field-group"}>
+      {!compact&&<span>{label}</span>}
       <button
         type="button"
         className="v7-field v7-picker"
         aria-label={`${label}: ${value}`}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {setMonth(new Date(value + "T12:00:00"));setOpen(true);}}
       >
         {/* F51: one date format ("Sat 7 Nov"), with Today/Tomorrow/Yesterday in front when it applies. */}
         {pickerDate(value)}
@@ -1001,6 +1004,7 @@ export function Menu({
     interacted = useRef(false),
     ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if(typeof matchMedia!=="function")return;
     const media = matchMedia("(min-width:700px)");
     const update = () => setDesktop(media.matches);
     update();media.addEventListener("change", update);

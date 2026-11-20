@@ -63,6 +63,7 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  const [search,setSearch]=useState(params.get('q')??''),[query,setQuery]=useState(search);
  const [slug,setSlug]=useState(params.get('path')??''),[checkpoint,setCheckpoint]=useState('');
  const [state,setState]=useState<CardStateFilter>('all'),[comments,setComments]=useState(false),[sort,setSort]=useState<CardSort>('due');
+ const [filtersOpen,setFiltersOpen]=useState(false);
  const [sheet,setSheet]=useState<'path'|'state'|'checkpoint'|'sort'|null>(null),[creating,setCreating]=useState(params.get('new')==='1');
  const sentinel=useRef<HTMLDivElement>(null);
  useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return()=>clearTimeout(timer);},[search]);
@@ -98,9 +99,9 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  const due=home.data?.due??0;
  const Tag=embedded?'section':'main';
  return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-cards" aria-label="Cards">
-  <HubHeader title={isFlagOn('v7Room')?'Cards':'Paths'}><PathsTabs current="cards"/></HubHeader>
-  <label className="v7-cards-search"><span className="v7-sr-only">Search cards</span>
-   <input type="search" className="v7-search-field" placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/></label>
+  <HubHeader title="Cards" control={<input type="search" className="v7-search-field v7-library-search" aria-label="Search cards"
+   placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/>}><PathsTabs current="cards"/></HubHeader>
+  <Sheet open={filtersOpen} title="Card filters" onClose={()=>setFiltersOpen(false)}>
   <div className="v7-cards-filters" role="group" aria-label="Card filters">
    <button type="button" className="v7-filter-chip" aria-pressed={!!slug} aria-haspopup="dialog" onClick={()=>setSheet('path')}>{pathTitle||'Path'}</button>
    <button type="button" className="v7-filter-chip" aria-pressed={state!=='all'} aria-haspopup="dialog" onClick={()=>setSheet('state')}>{state==='all'?'State':stateWords[state]}</button>
@@ -108,10 +109,11 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
    <button type="button" className="v7-filter-chip" aria-pressed={comments} onClick={()=>setComments(value=>!value)}>Has comments</button>
    <button type="button" className="v7-filter-chip v7-cards-sort" aria-haspopup="dialog" onClick={()=>setSheet('sort')}>{sort==='due'?'Due first':'Newest'}</button>
   </div>
-  <div className="v7-cards-count">
+  </Sheet>
+  {(rows.length>0||active)&&<div className="v7-cards-count">
    <span aria-live="polite">{cardCountLabel({shown:rows.length,more:!!cards.hasNextPage,exact:slug&&!checkpoint&&state==='all'&&!comments&&!search?bySlug.get(slug)?.cardsCount??null:!active?(projects.data??[]).reduce((sum,row)=>sum+row.cardsCount,0):null})}{due>0&&!active?' · '+due.toLocaleString('en-GB')+' due':''}</span>
-   {active&&<Button variant="ghost" small onClick={()=>{setSlug('');setCheckpoint('');setState('all');setComments(false);setSearch('');}}>Clear filters</Button>}
-  </div>
+   <Button small aria-haspopup="dialog" onClick={()=>setFiltersOpen(true)}>Filter{active?' · '+[slug,checkpoint,state!=='all',comments].filter(Boolean).length:''}</Button>
+  </div>}
   {cards.isPending&&<><Skeleton/><Skeleton/></>}
   {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Erratum: cards didn’t load. Try again.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}
   {cards.isSuccess&&(rows.length?<ul className="v7-cards-list" aria-label="Cards">{rows.map(row=><Row key={row.noteNo} row={row} project={bySlug.get(row.projectSlug)} now={now} zone={zone} selected={selected}/>)}</ul>

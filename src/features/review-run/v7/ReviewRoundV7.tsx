@@ -1,10 +1,12 @@
+import {FirstUseHint} from '../../../ui/v7/FirstUseHint';
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 // PLAN §6.4 B: the v7 review round. The durable-run engine is the N83 one used by v6:
 // a grade's committed reviewId is stored BEFORE any advance, so a retry never records it twice.
 import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
 import {fromEdge} from '../../../ui/v7/edges';
 import {haptic} from '../../../ui/v7/haptics';
-import {warmMoment} from '../../../ui/v7/LottieMoment';
+import {useToast} from '../../../ui/Toast';
 import {useEffect,useMemo,useRef,useState,useSyncExternalStore,type CSSProperties,type PointerEvent as ReactPointerEvent} from 'react';
 import {useNavigate,useSearchParams} from 'react-router';
 import {Undo2,X} from 'lucide-react';
@@ -48,12 +50,14 @@ function writeGrades(runId:string,grades:Record<string,Rating>){try{sessionStora
 
 export default function ReviewRoundV7(){
  const studyRepair=useStudyUi();
+ const notify=useToast();
  const navigate=useNavigate(),[search]=useSearchParams(),queries=useQueryClient(),home=useHome();
  const settings=useSettings(),cards=useReviewItems(filter),record=useRecordReview();
  const [run,setRun]=useState<DurableRun|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
  const [message,setMessage]=useState<string|null>(null),[revealed,setRevealed]=useState(false),[confidence,setConfidence]=useState<Confidence>(null);
  const [startTime,setStartTime]=useState(Date.now()),[pending,setPending]=useState<PendingGrade|null>(null);
  const [grades,setGrades]=useState<Record<string,Rating>>({});
+ const [redo,setRedo]=useState<{runId:string;version:number;itemId:string;rating:Rating}|null>(null);
  const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
  const dragStart=useRef<{x:number;y:number}|null>(null);
  const runId=search.get('run'),link=search.toString(),repair=studyRepair;
@@ -181,8 +185,12 @@ export default function ReviewRoundV7(){
   if(!run||busy||pending||frozen||!lastGraded(run))return;setBusy(true);setMessage(null);
   try{
    const graded=lastGraded(run),result=await undoLast(run);
+   const rating=graded?grades[graded.id]:undefined;
    if(graded){const nextGrades={...grades};delete nextGrades[graded.id];setGrades(nextGrades);writeGrades(run.id,nextGrades);}
-   setRun(result);setMessage('Answer undone. Grade this card again.');await queries.invalidateQueries();
+   setRun(result);await queries.invalidateQueries();
+   notify('Answer undone',{action:graded&&rating?{label:'Redo',onClick:()=>setRedo({
+    runId:result.id,version:result.version,itemId:graded.id,rating,
+   })}:undefined});
   }catch(error){setMessage(error instanceof Error?error.message:'Could not undo the last answer');}
   finally{setBusy(false);}
  }
@@ -202,9 +210,13 @@ export default function ReviewRoundV7(){
  // Keyboard: Space reveals, 1–4 grade, U undoes.
  // AW6: revealing the answer is one soft tick.
  const reveal=()=>{if(!revealed)haptic('reveal');setRevealed(true);};
- // LT7: with one card left, Round complete is one grade away: fetch its player in idle time.
- const left=run?run.progress.total-run.progress.position:0;
- useEffect(()=>{if(left===1)warmMoment('round-complete');},[left]);
+ useEffect(()=>{
+  if(!redo||!run||busy||pending||frozen)return;
+  if(redo.runId!==run.id||redo.version!==run.version||redo.itemId!==item?.id){setRedo(null);return;}
+  if(!card||!choices)return;
+  setRedo(null);
+  void grade(redo.rating);
+ },[redo,run,item,card,choices,busy,pending,frozen]);
  const keys=useRef({revealed,grade,undo,reveal});keys.current={revealed,grade,undo,reveal};
  useEffect(()=>{
   const handler=(event:KeyboardEvent)=>{
@@ -261,8 +273,8 @@ export default function ReviewRoundV7(){
       <p className="v7-eyebrow">{noteKindText(card.kind)}</p>
      </div>
      <div className="v7-review-front"><MathText source={faces.front} variant="card" interactiveMath/></div>
-     {!revealed?<div className="v7-review-confidence"><p>How sure are you? <span className="v7-meta">Optional</span></p>
-      <div role="radiogroup" aria-label="How sure are you?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
+     {!revealed?<div className="v7-review-confidence"><p>How sure? <span className="v7-meta">Optional</span></p>
+      <div role="radiogroup" aria-label="How sure?">{(['sure','unsure','guess'] as const).map(value=><button key={value} type="button" role="radio" aria-checked={confidence===value}
        className="v7-filter-chip" onClick={()=>setConfidence(confidence===value?null:value)}>{value[0].toUpperCase()+value.slice(1)}</button>)}</div></div>
      :<div className="v7-review-back"><p className="v7-eyebrow">Answer</p><MathText source={faces.back} variant="answer" interactiveMath/>
       <p className="v7-review-source">{card.sourceShort&&<span className="v7-meta">{card.sourceShort}{card.pageLabel?' p. '+card.pageLabel:''}</span>}
@@ -270,15 +282,15 @@ export default function ReviewRoundV7(){
      {swiping&&choices&&<p className="v7-review-swipe-label" aria-hidden="true">{gradeNames[swiping-1]} · {formatInterval(choices[swiping].delay/86_400_000)}</p>}
     </article>
     {isFlagOn('v7Scratch')&&<ScratchPad cardKey={item.id}/>}
-    {revealed&&run.progress.graded<3&&<p className="v7-review-hint">Swipe right for Good, left for Again, up for Easy.</p>}
+    <FirstUseHint key={run.id} name="review-swipe" active={revealed}><p className="v7-review-hint">Swipe: right Good · left Again · up Easy</p></FirstUseHint>
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
-  {item&&card&&changedItem!==item.id&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
+  {item&&card&&changedItem!==item.id&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<Dock className="v7-review-dock">
    {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}
      aria-label={label+(choice?', next in '+formatInterval(choice.delay/86_400_000):'')+' ('+(index+1)+')'}>
      <span><GradeGlyph grade={label.toLowerCase() as GradeKey} size={14}/>{label}</span><small>{choice?formatInterval(choice.delay/86_400_000):'—'}</small><kbd className="v7-review-key" aria-hidden="true">{index+1}</kbd></button>;})}</div>}
-  </div>}
+  </Dock>}
  </main>;
 }

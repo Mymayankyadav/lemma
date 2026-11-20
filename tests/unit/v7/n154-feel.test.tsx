@@ -96,9 +96,10 @@ describe('LT7 · Lottie guard rails', () => {
     warmMoment('day-closed');
     expect(idle).toHaveBeenCalledTimes(1);
   });
-  it('the three screens warm their ending when it is one step away', () => {
+  it('warms the remaining animations and keeps Review on the synchronous kit end mark', () => {
     expect(source('src/features/proposals/v7/InboxV7.tsx')).toContain("if(tab==='cards'&&queue.length===1)warmMoment('inbox-zero');");
-    expect(source('src/features/review-run/v7/ReviewRoundV7.tsx')).toContain("if(left===1)warmMoment('round-complete');");
+    expect(source('src/features/review-run/v7/ReviewRoundV7.tsx')).not.toContain("warmMoment('round-complete')");
+    expect(source('src/features/review-done/v7/RoundCompleteV7.tsx')).toContain('<ProofEnd large/>');
     expect(source('src/features/ritual/v7/CloseDayV7.tsx')).toContain("warmMoment('day-closed');");
   });
 });
@@ -151,7 +152,7 @@ describe('LT7 · LT8 · the moment on screen', () => {
     const inbox = source('src/features/proposals/v7/InboxV7.tsx');
     expect(inbox).toContain('if(queue.length>0)hadCards.current=true;');
     expect(inbox.match(/feel=\{hadCards\.current\}/g)).toHaveLength(2);
-    expect(source('src/features/review-done/v7/RoundCompleteV7.tsx')).toMatch(/animation="round-complete"[^>]*feel\/>/);
+    expect(source('src/features/review-done/v7/RoundCompleteV7.tsx')).toMatch(/run\?\.progress\.done&&turned\.current!==run\.id[\s\S]*?haptic\('complete'\)/);
     expect(source('src/features/ritual/v7/CloseDayV7.tsx')).toMatch(/animation="day-closed"[^>]*feel\/>/);
   });
 });

@@ -4,13 +4,16 @@ import { isFlagOn } from "../flags";
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
 export type V7Screen = "not-found" | "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path" | "paths" | "checkpoint" | "tutor" | "pad" | "session" | "cards" | "card" | "inbox" | "plan-proposal" | "progress" | "log" | "settings" | "sign-in" | "welcome" | "week";
+export const V7_DETAIL_SCREENS: ReadonlySet<V7Screen> = new Set([
+  "path", "checkpoint", "card", "session", "plan-proposal", "tutor", "focus", "close-day", "review-run", "review-done", "pad",
+]);
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
   return at < 0 ? { path: raw, search: "" } : { path: raw.slice(0, at), search: raw.slice(at) };
 };
 /** Which v7 screen owns a route, regardless of the flag. */
-export function v7ScreenFor(path: string, search = ""): V7Screen | null {
+export function v7ScreenFor(path: string, _search = ""): V7Screen | null {
   if (path === "/kit") return "kit";
   if (path === "/atlas") return "atlas";
   if (path === "/" || path === "") return "today";
@@ -20,8 +23,7 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (path === "/tasks") return "tasks";
   if (path === "/today/close") return "close-day";
   if (path === "/review/run") return "review-run";
-  // Only durable runs have a v7 results screen; a local round keeps its existing Done page.
-  if (path === "/review/done") return new URLSearchParams(search).has("run") ? "review-done" : null;
+  if (path === "/review/done") return "review-done";
   // Day, Week, Month and Agenda are all v7; an unknown view falls back to Day.
   if (path === "/calendar") return "calendar";
   if (/^\/p\/[^/]+$/.test(path)) return "path";

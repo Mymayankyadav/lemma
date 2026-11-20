@@ -1,12 +1,13 @@
-import {useRef,useState} from 'react';
+import {useEffect,useRef,useState} from 'react';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {readWeekdayMinutes,saveWeekdayMinutes,weekdayOwner,type WeekdayEdit} from '../../data/study-weekdays';
 import {Button,Sheet} from '../../ui/v7/components';
 import {studyDay} from '../../lib/calendar';
 import {useSettings} from '../../data/hooks';
+import {formatDuration} from '../../lib/format';
 
 const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-export function WeekdayCapacity(){
+export function WeekdayCapacity({requested=false,onOpen}: {requested?:boolean;onOpen?:()=>void}={}){
  const [open,setOpen]=useState(false),[inputs,setInputs]=useState<string[]>([]),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const owner=weekdayOwner(),cache=useQueryClient(),settings=useSettings(),lock=useRef(false);
  const pref=useQuery({queryKey:['study-weekdays',owner],queryFn:readWeekdayMinutes,enabled:!!owner});
@@ -21,6 +22,21 @@ export function WeekdayCapacity(){
    setInputs((pending?.ownerId===owner?pending.minutes:values??Array<number>(7).fill(0)).map(String));
   }catch{setError('Availability could not be reopened.');return;}
   setOpen(true);
+ }
+ useEffect(()=>{
+  if(!requested||!pref.isSuccess)return;
+  edit();
+  onOpen?.();
+ },[requested,pref.isSuccess]);
+ const first=settings.data?.weekStart??1;
+ const order=Array.from({length:7},(_,index)=>(first+index)%7);
+ function setMinutes(index:number,minutes:number) {
+  setInputs(before=>before.map((value,at)=>at===index?String(minutes):value));
+ }
+ function applyPreset(preset:'weekday'|'weekend'|'last') {
+  const prior=values??Array<number>(7).fill(0);
+  setInputs(before=>days.map((_,index)=>String(preset==='last'?prior[index]??0:
+   preset==='weekday'&&index>=1&&index<=5?60:preset==='weekend'&&(index===0||index===6)?120:Number(before[index]??0))));
  }
  async function save(){
   if(!owner||!pref.isSuccess||lock.current)return;
@@ -44,14 +60,27 @@ export function WeekdayCapacity(){
   finally{lock.current=false;setBusy(false);}
  }
  return <div>
-  <p role="status">{values?'Available today · '+values[day]+' min':'Set weekday study minutes to plan your time.'}</p>
+  <p role="status">{values?'Available today · '+values[day]+' min':'Set your study time to get a plan.'}</p>
   {pref.isError?<Button onClick={()=>{void pref.refetch();}}>Retry study availability</Button>:
    <Button disabled={!pref.isSuccess} onClick={edit}>{values?'Edit weekday minutes':'Set weekday minutes'}</Button>}
   {!open&&error&&<p role="alert">{error}</p>}
   {open&&<Sheet open onClose={()=>{if(!busy)setOpen(false);}} title="Weekday study minutes" footer={<>
    <Button disabled={busy} onClick={()=>setOpen(false)}>Cancel</Button>
    <Button variant="primary" loading={busy} onClick={()=>{void save();}}>Save availability</Button></>}>
-   {days.map((label,index)=><label key={label} className="v7-field-group">{label}<input className="v7-field" type="number" min="0" max="1440" inputMode="numeric" value={inputs[index]} onChange={e=>setInputs(before=>before.map((v,i)=>i===index?e.target.value:v))}/></label>)}
+   <div className="v7-capacity-painter" aria-label="Weekday study time">
+    {order.map(index=><label key={index}>
+     <span aria-hidden="true">{formatDuration(Number(inputs[index]??0))}</span>
+     <input type="range" min={0} max={Math.max(240,Number(inputs[index]??0))} step={5}
+      value={Number(inputs[index]??0)} aria-label={days[index]} aria-valuetext={formatDuration(Number(inputs[index]??0))}
+      onChange={event=>setMinutes(index,event.target.valueAsNumber)}/>
+     <span>{days[index].slice(0,3)}</span>
+    </label>)}
+   </div>
+   <div className="v7-capacity-presets">
+    <Button small onClick={()=>applyPreset('weekday')}>Weekdays 1 h</Button>
+    <Button small onClick={()=>applyPreset('weekend')}>Weekends 2 h</Button>
+    <Button small onClick={()=>applyPreset('last')}>Copy last week</Button>
+   </div>
    {error&&<p role="alert">{error}</p>}
   </Sheet>}
  </div>;

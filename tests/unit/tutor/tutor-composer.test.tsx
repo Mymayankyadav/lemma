@@ -21,14 +21,14 @@ afterEach(async () => {
   setHapticsEnabled(true);
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
-  onConnection = () => {}, hintLevel, pending = false}: {
+  hintLevel, pending = false}: {
   initial?: string; onSend?: (text: string) => void; onAsk?: (kind: 'hint' | 'stuck' | 'notation') => void;
-  onChange?: (value: string) => void; onConnection?: () => void; hintLevel?: number; pending?: boolean;
+  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
     canSend={!pending} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
-    onContext={() => {}} onConnection={onConnection}
+    onContext={() => {}}
     notationContext={['What is the preimage f⁻¹(B)?']}/>;
 }
 const button = (name: string, group: ParentNode = host) => [...group.querySelectorAll('button')]
@@ -77,8 +77,8 @@ test('completes proof notation and asks for help without consuming a draft', asy
   const onSend = vi.fn();
   const onAsk = vi.fn();
   await act(async () => root.render(<Harness onAsk={onAsk} onSend={onSend}/>));
-  expect(button('f⁻¹(B)', suggestion())).toBeDefined();
   await act(async () => field().focus());
+  expect(button('f⁻¹(B)', suggestion())).toBeDefined();
   await input('prei');
   await click('preimage', suggestion());
   expect(field().value).toBe('preimage ');
@@ -89,7 +89,7 @@ test('completes proof notation and asks for help without consuming a draft', asy
   expect(field().value).toBe('for all');
   await click('Hint 1/4');
   await click('Stuck');
-  await click('Ask');
+  await click('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
   expect(field().value).toBe('for all');
@@ -98,12 +98,13 @@ test('completes proof notation and asks for help without consuming a draft', asy
 test('shows both numeric layouts and permits a one-step native IME edit', async () => {
   const onChange = vi.fn();
   await act(async () => root.render(<Harness onChange={onChange}/>));
+  await click('Keys');
   await click('?123', keyboard());
   await click('=\\<', keyboard());
   await click('²', keyboard());
   await click('Hide keyboard');
   expect(host.querySelector('.rows')).toBeNull();
-  await click('Show keyboard');
+  await click('Keys');
   await click('Use device keyboard');
   expect(field().inputMode).toBe('text');
   onChange.mockClear();
@@ -123,6 +124,7 @@ test('shows both numeric layouts and permits a one-step native IME edit', async 
 test('touch holds choose the small digit and repeat Delete without a trailing duplicate', async () => {
   vi.useFakeTimers();
   await act(async () => root.render(<Harness initial="abc"/>));
+  await click('Keys');
   const press = (name: string, type: 'pointerdown' | 'pointerup' | 'pointercancel') => act(async () =>
     button(name, keyboard()).dispatchEvent(new PointerEvent(type, {pointerId: 1, isPrimary: true, button: 0, bubbles: true, pointerType: 'touch'})));
   const trailingClick = (name: string) => act(async () =>
@@ -140,19 +142,18 @@ test('touch holds choose the small digit and repeat Delete without a trailing du
   expect(field().value).toBe('ab');
 });
 
-test('shows connection recovery instead of Ask while the tutor is responding', async () => {
+test('keeps the draft and suspends help requests while the tutor is responding', async () => {
   const onAsk = vi.fn();
-  const onConnection = vi.fn();
-  await act(async () => root.render(<Harness initial="Unfinished □" onAsk={onAsk} onConnection={onConnection} hintLevel={3}/>));
+  await act(async () => root.render(<Harness initial="Unfinished □" onAsk={onAsk} hintLevel={3}/>));
+  await click('Keys');
   expect(button('Hint 3/4').disabled).toBe(false);
-  await click('Ask');
+  await click('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['notation']]);
   expect(field().value).toBe('Unfinished □');
-  await act(async () => root.render(<Harness onAsk={onAsk} onConnection={onConnection} hintLevel={3} pending/>));
-  expect(button('Ask')).toBeUndefined();
+  await act(async () => root.render(<Harness onAsk={onAsk} hintLevel={3} pending/>));
+  expect(host.querySelector('[aria-label="Answer keyboard"]')).not.toBeNull();
+  expect(button('Ask about notation')).toBeUndefined();
   expect(button('Hint 3/4').disabled).toBe(true);
-  await click('Connect');
-  expect(onConnection).toHaveBeenCalledTimes(1);
   expect(onAsk).toHaveBeenCalledTimes(1);
   expect(field().value).toBe('Unfinished □');
 });
@@ -162,7 +163,7 @@ test('keeps the conversation open on a compact phone and reveals the math keyboa
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 360, 510));
   await act(async () => root.render(<div className="lemma-tutor"><Harness/></div>));
   expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('hidden');
-  await click('Show keyboard');
+  await click('Keys');
   expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('math');
   await click('q', keyboard());
   expect(field().value).toBe('q');
@@ -177,13 +178,14 @@ test('fits a focused native composer above an overlaid IME and restores normal s
   vi.stubGlobal('visualViewport', viewport);
   await act(async () => root.render(<div className="lemma-tutor"><Harness initial="Draft"/></div>));
   const page = host.querySelector<HTMLElement>('.lemma-tutor')!;
+  await click('Keys');
   await click('Use device keyboard');
   expect(document.activeElement).toBe(field());
   expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('native');
   viewport.height = 430;
   await act(async () => viewport.dispatchEvent(new Event('resize')));
   expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('430px');
-  await click('Show keyboard');
+  await click('Keys');
   expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('');
   expect(field().inputMode).toBe('none');
   expect(field().value).toBe('Draft');
@@ -201,7 +203,7 @@ test('reveals a clipped keyboard by scrolling only the outer tutor pane', async 
   const chat = host.querySelector<HTMLElement>('.chat')!;
   chat.scrollTop = 23;
   expect(page.scrollTop).toBe(0);
-  await click('Show keyboard');
+  await click('Keys');
   expect(page.scrollTop).toBe(12);
   expect(chat.scrollTop).toBe(23);
   expect(host.querySelector<HTMLElement>('.kb')!.scrollTop).toBe(0);
@@ -242,6 +244,8 @@ test('uses the existing haptics switch for virtual keys, suggestions and mode ch
   Object.defineProperty(navigator, 'vibrate', {configurable: true, value: vibrate});
   try {
     await act(async () => root.render(<Harness/>));
+    await act(async () => field().focus());
+    vibrate.mockClear();
     await click('p', keyboard());
     await click('Symbols');
     await click('∀', suggestion());
@@ -258,6 +262,7 @@ test('uses the existing haptics switch for virtual keys, suggestions and mode ch
 
 test('rejecting autocorrect leaves the previous learner edit at the top of Undo', async () => {
   await act(async () => root.render(<Harness initial="te"/>));
+  await click('Keys');
   await click('h', keyboard());
   await click('Space', keyboard());
   expect(field().value).toBe('the ');

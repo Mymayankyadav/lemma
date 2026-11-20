@@ -1023,9 +1023,20 @@ export class LiveAdapter implements LemmaApi {
   const checkAccount=()=>{if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The export account changed')}
   if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
   const savedPads=authOwner()===uid?await (await import('../../features/pad/padDraftStore')).exportSavedPadDrafts(uid,checkAccount):[]
+  const tutorImages=[];
+  for(const attachment of tables.tutor_turn_attachments??[]){
+   checkAccount();
+   const downloaded=await db.storage.from('tutor-ink').download(uid+'/'+String(attachment.id));
+   const file=checked(downloaded);
+   if(file.size!==Number(attachment.byte_size))throw new LemmaError('server','Tutor image backup is incomplete');
+   const {imageData}=await import('../tutor/ink-storage');
+   tutorImages.push({id:attachment.id,data:await imageData(file)});
+  }
+  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
   result=new Blob([JSON.stringify({
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
    manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+   ...(tutorImages.length?{tutorImages}:{}),
    ...(savedPads.length?{devicePad:{version:1,checkpoints:savedPads}}:{})
   },null,2)],{type:'application/json'})
   }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}

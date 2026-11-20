@@ -69,10 +69,10 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
   // KC5: ticks on round numbers (1, 2, 2.5 or 5 × 10ⁿ), at most four steps, and the top tick is the first round step above the data.
   const step = percentage ? 25 : ([1, 2, 2.5, 5, 10].map(value => value * scale).find(value => observed / value <= 4) ?? 10 * scale);
   const maximum = percentage ? 100 : Math.max(step, Math.ceil(observed / step) * step);
-  const ticks = Array.from({ length: Math.round(maximum / step) + 1 }, (_, index) => index * step);
+  const ticks = compact ? [0, maximum] : Array.from({ length: Math.round(maximum / step) + 1 }, (_, index) => index * step);
   const total = data.reduce((value, row) => value + sum(row.values), 0);
   const peak = data.reduce((best, row, index) => sum(row.values) > sum(data[best].values) ? index : best, 0);
-  const summary = suppliedSummary ?? (!data.length ? "No data in this range yet." : percentage ?
+  const summary = suppliedSummary ?? (!data.length || !percentage && total<=0 ? "None yet." : percentage ?
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
     // F43: per-metric wording. Time totals read "You studied 3 h 55 min"; counts read "413 reviews in this range".
     // IL5: no "most on …" when nothing was studied.
@@ -111,8 +111,8 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
   }
   return <section ref={measureRef} className="v7-chart" data-chart="plot" data-study-ui={studyRepair?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{summary}</p>
     {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
@@ -155,15 +155,17 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
       </svg> : null}
   </section>;
 }
-export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string }[]; format?: (value: number) => string }) {
+export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string; subject?: Subject }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
   const max = Math.max(1, ...data.map(item => finite(item.value))), total = data.reduce((value, item) => value + finite(item.value), 0);
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} {data.length===1?'subject':'subjects'}, most in {data.reduce((best,item)=>item.value>best.value?item:best,data[0]??{label:'',value:0}).label}.</p>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{total>0
+      ? `You studied ${format(total)} across ${data.length} ${data.length===1?'subject':'subjects'}, most in ${data.reduce((best,item)=>item.value>best.value?item:best).label}.`
+      : 'None yet.'}</p>
     {table ? <table><thead><tr><th scope="col">Subject</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.label}><th scope="row">{item.label}</th><td>{format(item.value)}</td></tr>)}</tbody></table> :
       <ul className="v7-horizontal-bars">{data.map((item, index) => <li key={item.label}><button type="button" data-chart-point="" onKeyDown={event => { movePoint(event, index, data.length); }} onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)}>
-        <span className="v7-subject-label">{subjectFor(item.label) && <SubjectMark subject={subjectFor(item.label)!} />}{item.label}</span><span>{format(item.value)}</span>
+        <span className="v7-subject-label">{(item.subject??subjectFor(item.label)) && <SubjectMark subject={(item.subject??subjectFor(item.label))!} />}{item.label}</span><span>{format(item.value)}</span>
         <span className="v7-horizontal-track"><span style={{ width: `${bounded(item.value / max) * 100}%`, background: item.color ?? "var(--v7-role-subject-analysis)" }} /></span>
       </button></li>)}</ul>}
     {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {data[selected].label}</p>}
@@ -218,7 +220,7 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
   };
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
     {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
       <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>

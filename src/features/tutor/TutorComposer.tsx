@@ -1,5 +1,7 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode} from 'react';
-import {ArrowBigUp, ArrowBigUpDash, ArrowDown, ArrowUp, ChevronDown, CornerDownLeft, Delete, HelpCircle, Keyboard, Paperclip, Plug, Sparkle, Undo2} from 'lucide-react';
+import {ArrowBigUp, ArrowBigUpDash, ArrowDown, ArrowUp, ChevronDown, CornerDownLeft, Delete, HelpCircle, Keyboard, Paperclip, Camera, Pencil, Undo2} from 'lucide-react';
+import {TutorInkTray,type TutorInkState} from './TutorInk';
+import {Button,IconButton} from '../../ui/v7/components';
 import {MathText} from '../../ui/MathText';
 import {haptic} from '../../ui/v7/haptics';
 import {
@@ -21,15 +23,16 @@ interface Props {
   readOnly: boolean;
   pending: boolean;
   onContext: () => void;
-  onConnection: () => void;
   hasContext: boolean;
   notationContext?: readonly string[];
+  ink?: TutorInkState;
+  canQueueImage?: boolean;
 }
 
 export function TutorComposer(props: Props) {
   const field = useRef<HTMLTextAreaElement>(null);
-  const compactStart = useRef(false);
-  const [shown, setShown] = useState(true);
+  const [scratch,setScratch]=useState(false),[photo,setPhoto]=useState(false);
+  const [shown, setShown] = useState(false);
   const [view, setView] = useState('abc');
   const [lastMath, setLastMath] = useState('∀∃');
   const [native, setNative] = useState(false);
@@ -47,16 +50,10 @@ export function TutorComposer(props: Props) {
   const context = props.notationContext ?? EMPTY_CONTEXT;
   const suggestions = useMemo(() => notationSuggestions(cursor, context, recent), [cursor, context, recent]);
   const incomplete = props.value.includes('□');
-  const blocked = !props.canSend || props.readOnly || incomplete || composing;
+  const hasImage=Boolean(props.ink?.draft.strokes.length||props.ink?.draft.photos.length);
+  const queue=props.canQueueImage&&hasImage;
+  const blocked = !queue&&(!props.canSend || props.readOnly) || incomplete || composing;
   const editingDisabled = props.readOnly || composing;
-
-  useLayoutEffect(() => {
-    const pageHeight = field.current?.closest('.lemma-tutor')?.getBoundingClientRect().height;
-    if (window.innerWidth < 700 && pageHeight && pageHeight < 560) {
-      compactStart.current = true;
-      setShown(false);
-    }
-  }, []);
 
   useLayoutEffect(() => {
     const input = field.current;
@@ -118,7 +115,7 @@ export function TutorComposer(props: Props) {
   useLayoutEffect(() => {
     const board = keyboard.current;
     const page = board?.closest<HTMLElement>('.lemma-tutor');
-    if (compactStart.current || !board || !page?.clientHeight) return;
+    if (!board || !page?.clientHeight) return;
     const bottom = page.getBoundingClientRect().top + page.clientTop + page.clientHeight;
     const clipped = Math.ceil(board.getBoundingClientRect().bottom - bottom);
     // Move only the outer tutor pane. The transcript and the key rows each
@@ -202,9 +199,15 @@ export function TutorComposer(props: Props) {
     if (notation[next]) setLastMath(next);
   }
   function send() {
-    if (!blocked && props.value.trim()) props.onSend(props.value);
+    if (!blocked && (props.value.trim()||hasImage)) props.onSend(props.value);
   }
 
+  function keys() {
+    setScratch(false);
+    if (native) field.current?.blur();
+    setNative(false);
+    setShown(true);
+  }
   return <div className="keyboard-composer" data-keyboard={native ? 'native' : shown ? 'math' : 'hidden'}>
     {props.value.includes('$') && <div className="composer-preview"><MathText source={props.value}/></div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
@@ -212,10 +215,12 @@ export function TutorComposer(props: Props) {
       <div className="field">
         <textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode={native ? 'text' : 'none'} rows={1} maxLength={2000} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
-          value={compositionText ?? props.value} readOnly={props.readOnly} onSelect={remember} onClick={remember} onFocus={remember}
+          value={compositionText ?? props.value} readOnly={props.readOnly} onSelect={remember} onClick={remember} onFocus={event=>{
+            remember();
+            if(event.currentTarget.inputMode!=='text'&&!props.readOnly){setShown(true);setScratch(false);}
+          }}
           onPointerDown={() => {
             if (!shown && !native && !props.readOnly) {
-              compactStart.current = false;
               setShown(true);
             }
           }}
@@ -265,31 +270,31 @@ export function TutorComposer(props: Props) {
             if (event.key === 'Backspace' && undoAutomatic(false)) event.preventDefault();
             if (/^[ ,.;]$/.test(event.key) && typeText(edit, event.key, false, true)) event.preventDefault();
           }}/>
-        <button className="send" type="submit" aria-label="Send" disabled={blocked || !props.value.trim()}
-          onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></button>
+        <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
+          onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
       </div>
     </form>
     <div className="tbar" role="group" aria-label="Answer tools">
-      <button type="button" className={'tb' + (props.hasContext ? ' on' : '')} onClick={props.onContext}><Paperclip/><small>Context</small></button>
-      <button type="button" className="tb" disabled={!props.canSend || editingDisabled} onClick={() => props.onAsk('hint')}><HelpCircle/><small>Hint {Math.max(1, Math.min(4, props.hintLevel ?? 1))}/4</small></button>
-      <button type="button" className="tb" disabled={!props.canSend || editingDisabled} onClick={() => props.onAsk('stuck')}><ArrowDown/><small>Stuck</small></button>
-      <button type="button" className="tb" disabled={!history.current.past.length || editingDisabled}
-        onPointerDown={keepSelection} onClick={() => undo()}><Undo2/><small>Undo</small></button>
-      <button type="button" className={'tb' + (view !== 'abc' && shown ? ' on' : '')}
-        aria-label="Symbols" aria-pressed={view !== 'abc' && shown} disabled={composing} onClick={() => {
-          haptic('snap');
-          compactStart.current = false;
-          if (native) field.current?.blur();
-          setNative(false);
-          setShown(true);
-          changeView(!shown || view === 'abc' ? lastMath : 'abc');
-        }}><span className="sg" aria-hidden="true">∑</span><small>Symbols</small></button>
-      {props.pending
-        ? <button type="button" className="tb" onClick={props.onConnection}><Plug/><small>Connect</small></button>
-        : <button type="button" className="tb" disabled={!props.canSend || editingDisabled}
-            onClick={() => props.onAsk('notation')}><Sparkle/><small>Ask</small></button>}
+      {props.ink ? <>
+        <Button small variant="ghost" disabled={Boolean(props.ink.draft.queuedText!==undefined)} aria-pressed={scratch}
+          onClick={()=>{field.current?.blur();setNative(false);setShown(false);setScratch(value=>!value);}}><Pencil aria-hidden="true"/>Scratch</Button>
+        <Button small variant="ghost" disabled={Boolean(props.ink.draft.queuedText!==undefined)} onClick={()=>setPhoto(true)}><Camera aria-hidden="true"/>Photo</Button>
+      </>:<>
+        <Button small variant="ghost" onClick={props.onContext}><Paperclip aria-hidden="true"/>Context</Button>
+        <Button small variant="ghost" disabled={!history.current.past.length||editingDisabled}
+          onPointerDown={keepSelection} onClick={()=>undo()}><Undo2 aria-hidden="true"/>Undo</Button>
+      </>}
+      <Button small variant="ghost" disabled={!props.canSend||editingDisabled} onClick={()=>props.onAsk('hint')}>
+        <HelpCircle aria-hidden="true"/>Hint {Math.max(1,Math.min(4,props.hintLevel??1))}/4
+      </Button>
+      <Button small variant="ghost" disabled={!props.canSend||editingDisabled} onClick={()=>props.onAsk('stuck')}><ArrowDown aria-hidden="true"/>Stuck</Button>
+      <Button small variant="ghost" aria-label="Symbols" aria-pressed={view!=='abc'&&shown} disabled={composing}
+        onClick={()=>{haptic('snap');keys();changeView(!shown||view==='abc'?lastMath:'abc');}}>∑ Symbols</Button>
+      <Button small variant="ghost" aria-pressed={shown&&!native} disabled={editingDisabled}
+        onClick={()=>shown&&!native?setShown(false):keys()}><Keyboard aria-hidden="true"/>Keys</Button>
     </div>
-    {shown ? <div className="kb" ref={keyboard} role="group" aria-label="Answer keyboard">
+    {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)} onKeys={keys}/>}
+    {shown ? <div className="kb" data-v7-keyboard="" ref={keyboard} role="group" aria-label="Answer keyboard">
       <div className="strip">
         <div className="sugg" ref={strip} role="group" aria-label="Suggestions">
           {incomplete && <button type="button" className="next" disabled={editingDisabled}
@@ -304,6 +309,8 @@ export function TutorComposer(props: Props) {
               change(applyNotationSuggestion(edit, next), true);
               noteRecent(item.text);
             }} aria-description={item.kind === 'fix' ? 'Spelling correction' : undefined}>{item.text}</button>)}
+          {!props.pending&&<button type="button" aria-label="Ask about notation" disabled={!props.canSend||editingDisabled}
+            onPointerDown={keepSelection} onClick={()=>props.onAsk('notation')}>Ask</button>}
         </div>
         <button className="sbtn" type="button" aria-label="Use device keyboard" disabled={editingDisabled} onClick={() => {
           haptic('snap');
@@ -331,16 +338,9 @@ export function TutorComposer(props: Props) {
           for (let step = 0; step < count; step++) edit = movePadCaret(edit, direction);
           change(edit, true);
         }}/>
-    </div> : <button className="btn ghost" type="button" disabled={composing} onClick={() => {
-      haptic('snap');
-      compactStart.current = false;
-      if (native) field.current?.blur();
-      setNative(false);
-      setShown(true);
-    }}>Show keyboard</button>}
+    </div> : null}
   </div>;
 }
-
 interface KeyHold {
   key: string;
   pointer: number;

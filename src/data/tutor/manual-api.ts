@@ -2,7 +2,7 @@ import type {TutorComposerDraft,TutorContextSelection,TutorTurn} from './turn-mo
 
 type PendingTurn=Extract<TutorTurn,{status:'awaiting-tutor'}>
 type CompletedTurn=Extract<TutorTurn,{status:'completed'}>
-type SavedReply=Omit<CompletedTurn['finalReply'],'suggestions'> & {suggestions:readonly {
+type SavedReply=Omit<CompletedTurn['finalReply'],'suggestions'> & {nextQuestion?:string;suggestions:readonly {
   intentId:string;summary:string;status:string;proposalId?:string;kind?:string
 }[]}
 
@@ -22,6 +22,7 @@ export type TutorThreadView={
  turns:readonly SavedTutorTurn[]
  recoveredDrafts:readonly {turnId:string;messageId:string;body:string;draftId?:string}[]
  offline?:boolean
+ listenerSeenAt?:string | null
  confirmedAt?:string
  readAt?:string
  before?:number|null

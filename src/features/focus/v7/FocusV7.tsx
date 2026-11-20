@@ -12,7 +12,9 @@ import {getStudyApi} from '../../../data/study';
 import {getThoughtApi} from '../../../data/parked-thoughts';
 import {getStudyEventApi} from '../../../data/study-events';
 import type {StudyEntryRecord} from '../../../data/study/contract';
-import {Button,Sheet,Stepper} from '../../../ui/v7/components';
+import {Button,Sheet} from '../../../ui/v7/components';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {formatDuration} from '../../../lib/format';
 import {Emblem} from '../../../ui/v7/Emblem';
 import {SubjectMark,subjectClass} from '../../../ui/v7/Subject';
 import {ImmersiveHeader} from '../../../app/v7/V7Shell';
@@ -41,7 +43,7 @@ export function focusedMinutes(entry:StudyEntryRecord,now:number):number{
 export function focusError(reason:unknown,action:'save'|'other'='other'):string{
  const message=reason instanceof Error?reason.message:'';
  if(/another device|changed/i.test(message))return 'This session changed on another device. Refresh to see where it is now.';
- if(/end must follow start|interval|minutes/i.test(message))return 'This session is too short to save. Discard it, or keep going and finish later.';
+ if(/end must follow start|interval|minutes/i.test(message))return 'Less than a minute. Keep going or discard?';
  return action==='save'?'We couldn’t save this session. It is still running, so nothing is lost; try again.':'That didn’t work. Your session is still running; try again.';
 }
 
@@ -206,14 +208,14 @@ export default function FocusV7(){
     <div><button type="button" className={'v7-focus-control'+(clock.progress!==null&&clock.progress>=1?' v7-focus-finish':'')} disabled={busy} onClick={openFinish} aria-label="Finish"><Check aria-hidden="true"/></button><span>Finish</span></div>
    </div>
   </section>
-  {finishing&&minutes<1?<Sheet open onClose={()=>setFinishing(false)} title="Nothing to log yet" eyebrow={eyebrow}
+  {finishing&&minutes<1?<Sheet open onClose={()=>setFinishing(false)} title="Less than a minute" eyebrow={eyebrow}
    footer={<><Button variant="ghost" onClick={()=>setFinishing(false)}>Keep going</Button><Button variant="primary" destructive loading={busy} onClick={()=>{void discard();}}>Discard session</Button></>}>
-   <p>Less than a minute was focused, so there is no time to save. Discard this session, or keep going and finish later.</p>
+   <p>Keep going or discard this session.</p>
   </Sheet>:
   <Sheet open={finishing} onClose={()=>setFinishing(false)} title="Log this session" eyebrow={eyebrow}
    footer={<Button variant="primary" disabled={busy} onClick={()=>{void save();}}>Save</Button>}>
    <div className="v7-focus-finish-form">
-    <Stepper label="Focused time" unit="min" value={minutes} min={1} max={1440} onChange={setMinutes}/>
+    <RulerSlider label="Focused time" value={minutes} min={1} max={1440} step={1} onChange={setMinutes} format={formatDuration}/>
     <fieldset className="v7-focus-rating"><legend>How did it go?</legend>
      <div role="radiogroup" aria-label="How did it go?">{ratings.map((label,index)=><button key={label} type="button" role="radio" aria-checked={rating===index+1} aria-label={label} onClick={()=>setRating(index+1)}>
       <span aria-hidden="true"/></button>)}</div>

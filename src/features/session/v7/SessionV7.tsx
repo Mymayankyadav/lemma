@@ -1,4 +1,4 @@
-import {AttemptHistory} from '../../adaptive/AtlasPanels';
+import {Dock} from '../../../ui/v7/Dock';
 import {useState} from 'react';
 import {Link,useParams} from 'react-router';
 import {ChevronRight,Copy} from 'lucide-react';
@@ -22,7 +22,7 @@ import '../../project/v7/learning.css';
 
 const clientName=(client:string)=>client==='claude'?'Claude':client==='chatgpt'?'ChatGPT':'Tutor';
 
-/** PLAN §6.9 Session: goal as the title with its chips, a summary card, the timeline with times, and "Start another session". */
+/** PLAN §6.9 Session: goal as the title with its chips, a summary card, the timeline with times, and "Continue with tutor". */
 export default function SessionV7(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings(),notify=useToast();
  const resolve=useResolveMisconception();
@@ -61,7 +61,6 @@ export default function SessionV7(){
     <StatusBadge tone={goal.tone}>{goal.text}</StatusBadge>
    </div>
   </header>
-  <AttemptHistory sessionId={session.summary.id}/>
   <section className="v7-learn-card" aria-label="Summary">
    <p className="v7-eyebrow">Summary</p>
    {session.summaryText?<MathText source={session.summaryText}/>:<p className="v7-meta">Your tutor has not written a summary yet.</p>}
@@ -84,8 +83,8 @@ export default function SessionV7(){
    {cards<session.cards.length&&<Button onClick={()=>setCards(value=>value+20)}>Show {Math.min(20,session.cards.length-cards)} more cards</Button>}
   </section>}
   {pending>0&&<Link className="v7-learn-row" to="/proposals"><span>{pending} {pending===1?'proposal':'proposals'} waiting in your Inbox</span><ChevronRight aria-hidden="true"/></Link>}
-  <div className="v7-learn-bar v7-learn-bar-single" role="group" aria-label="Session actions">
-   <Button variant="primary" onClick={launch}>{summary.display==='ended'?'Start another session':'Resume session'}</Button>
-  </div>
+  <Dock className="v7-learn-bar v7-learn-bar-single" role="group" aria-label="Session actions">
+   <Button variant="primary" onClick={launch}>{summary.display==='ended'?'Continue with tutor':'Resume session'}</Button>
+  </Dock>
  </main>;
 }

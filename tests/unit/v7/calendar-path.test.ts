@@ -45,7 +45,7 @@ describe('v7 Calendar Day model',()=>{
 });
 
 describe('v7 Path map model',()=>{
- const cps=[cp('CP1','done',{demonstratedAt:'2026-11-02'}),cp('CP2','done'),cp('CP3','now',{currentStep:3,stepsTotal:4,dueCards:4}),cp('CP4','proposed'),cp('CP5','next',{dueCards:2}),cp('CP6','locked')];
+ const cps=[cp('CP1','done',{demonstratedAt:'2026-11-02'}),cp('CP2','done'),cp('CP3','now',{currentStep:2,stepsTotal:4,dueCards:4}),cp('CP4','proposed'),cp('CP5','next',{dueCards:2}),cp('CP6','locked')];
  it('maps every checkpoint state to one of the five nodes, with a size each',()=>{
   expect(cps.map(item=>nodeStateOf(item.ui))).toEqual(['demonstrated','demonstrated','current','proposed','up_next','locked']);
   expect(nodeStateOf('revisit')).toBe('demonstrated');
@@ -57,7 +57,7 @@ describe('v7 Path map model',()=>{
   expect(nodeText(cps,2,'Use a finite subcover').detail).toBe('Step 3 of 4: Use a finite subcover');
   expect(nodeText(cps,3).label).toBe('Proposed');
   expect(nodeText(cps,4).detail).toBe('Up next');
-  expect(nodeText(cps,5).detail).toBe('Needs Title CP5');
+  expect(nodeText(cps,5).detail).toBe('After Title CP5');
   expect(nodeText([cp('CP1','revisit',{demonstratedAt:'2026-11-02',recheckDue:'2026-11-20'})],0).detail).toBe('Demonstrated 2 Nov · recheck due 20 Nov');
   expect(nodeText([cp('CP1','revisit')],0).detail).toBe('Demonstrated · recheck due');
  });

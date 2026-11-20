@@ -5,7 +5,7 @@ import {calendarRange,shiftDay} from '../model';
 import {dayMinutes,layoutDayIntervals} from '../grid/layout';
 import {dayCapacity} from '../model';
 import {weekCells} from './dayModel';
-import {SessionGaps,type BlockLook} from './DayGrid';
+import {SessionGaps,type BlockLook,type SuggestedBlock} from './DayGrid';
 import {loggedSessions,sessionCaption} from './loggedSessions';
 import {formatDuration} from '../../../lib/format';
 import {loggedCaption,showWeekGlyph,weekShortTitle} from './viewModel';
@@ -15,11 +15,12 @@ export const WEEK_HOUR_PX=48;
 const MINUTE=60_000;
 /** PLAN §6.5 Week: the strip is the column header, an hour is 48 px, blocks are bars (two-word titles from a 44 px
  *  block, whole titles from 600 px, V42). */
-export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks,now,lookOf,onDay,onEdit,onOpenEntry}:{
+export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks,now,lookOf,onDay,onEdit,onOpenEntry,suggested=[]}:{
  weekStart:string;date:string;today:string;zone:string;clock:(instant:string)=>string;entries:StudyEntryRecord[];blocks:CalendarBlockRecord[];now:number;
  lookOf:(block:CalendarBlockRecord)=>BlockLook;onDay:(day:string)=>void;onEdit:(block:CalendarBlockRecord)=>void;
  /** N168: tapping logged study opens its session sheet. */
  onOpenEntry?:(entry:StudyEntryRecord)=>void;
+ suggested?:readonly SuggestedBlock[];
 }){
  const scroll=useRef<HTMLDivElement>(null);
  const cells=useMemo(()=>weekCells(weekStart),[weekStart]);
@@ -78,6 +79,11 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
         <SessionGaps session={session} from={Math.max(Date.parse(range.start),Date.parse(session.start))} height={shown} hourPx={WEEK_HOUR_PX}/>{inner}</button>
        :<div key={item.id} role="img" aria-label={spoken} data-kind={kind} className={'v7-wk-block '+look.subjectClass} style={style}>{inner}</div>;
       })}
+      {suggested.filter(item=>Date.parse(item.start)>=Date.parse(range.start)&&Date.parse(item.end)<=Date.parse(range.end)).map(item=>
+       <button key={item.id} type="button" className="v7-wk-block v7-cal-suggested" data-kind="suggested"
+        style={{top:(Date.parse(item.start)-Date.parse(range.start))/MINUTE*WEEK_HOUR_PX/60-first*WEEK_HOUR_PX/60,
+         height:Math.max(22,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*WEEK_HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}
+        disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title}>Add</button>)}
      </div>)}
     </div>
    </div>
