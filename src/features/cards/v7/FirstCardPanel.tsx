@@ -9,12 +9,14 @@ import {Button} from '../../../ui/v7/components';
 const pendingKey='lemma.first-use.first-card.pending.v1';
 type Path={kind:'new';title:string}|{kind:'existing';slug:string};
 type Pending={operationId:string;path:Path;front:string;back:string};
+type StoredDraft=Pending&{rejection?:string};
 let saving=false;
 
-function readPending():Pending|null{
+function readPending():StoredDraft|null{
  try{
-  const value=JSON.parse(sessionStorage.getItem(pendingKey)??'null') as Pending|null;
+  const value=JSON.parse(sessionStorage.getItem(pendingKey)??'null') as StoredDraft|null;
   if(!value||typeof value.operationId!=='string'||typeof value.front!=='string'||typeof value.back!=='string')return null;
+  if(value.rejection!==undefined&&typeof value.rejection!=='string')return null;
   if(value.path?.kind==='new'&&typeof value.path.title==='string'||
      value.path?.kind==='existing'&&typeof value.path.slug==='string')return value;
  }catch{/* A new write must still confirm durable draft storage below. */}
@@ -49,6 +51,7 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
   if(saving||!api)return;
   setError('');
   let draft=readPending()??pending;
+  if(draft?.rejection)return;
   if(!draft&&(!empty||!projects.isSuccess))return;
   if(!draft){
    if(!front.trim()||!back.trim()||path.kind==='new'&&!path.title)return;
@@ -62,6 +65,14 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
   try{
    const request=draft;
    const receipt=await api.createFirstCard(request).catch((failure:unknown)=>{
+    if(failure instanceof LemmaError&&failure.code==='conflict'){
+     const rejected={...request,rejection:failure.message};
+     // Keep the entered values across reload without dispatching this rejected intent again.
+     try{sessionStorage.setItem(pendingKey,JSON.stringify(rejected));}catch{/* Values remain available in this view. */}
+     if(live.current)setPending(rejected);
+     void queryClient.invalidateQueries({queryKey:['first-use','first-card-library']});
+     return null;
+    }
     // Known validation failures have not written anything; keep the text editable.
     if(live.current&&failure instanceof LemmaError&&(failure.code==='invalid'||failure.code==='not_found')){
      sessionStorage.removeItem(pendingKey);setPending(null);setOpen(true);
@@ -71,6 +82,7 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
     }
     throw failure;
    });
+   if(!receipt)return;
    const detail=await api.getCard(receipt.noteNo);
    if(detail.note.noteNo!==receipt.noteNo||detail.note.noteId!==receipt.noteId||
       detail.note.projectSlug!==receipt.projectSlug||detail.note.front!==draft.front||detail.note.back!==draft.back||
@@ -97,6 +109,24 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
   requestAnimationFrame(()=>trigger.current?.focus());
  }
 
+ if(pending?.rejection)return <section className="v7-cards-empty" aria-labelledby={heading}>
+  <h2 id={heading} className="v7-headline">First card draft</h2>
+  <p role="alert">{pending.rejection}. You can copy your entries before dismissing this draft.</p>
+  <label className="v7-field-group">Path<input readOnly className="v7-field" value={pending.path.kind==='new'?pending.path.title:pending.path.slug}/></label>
+  <div className="v7-field-group">
+   <label htmlFor={heading+'-front'}>Front</label>
+   <textarea id={heading+'-front'} readOnly className="v7-field" value={pending.front}/>
+  </div>
+  <div className="v7-field-group">
+   <label htmlFor={heading+'-back'}>Back</label>
+   <textarea id={heading+'-back'} readOnly className="v7-field" value={pending.back}/>
+  </div>
+  <Button onClick={()=>{
+   try{sessionStorage.removeItem(pendingKey);}catch{setError('The draft could not be dismissed.');return;}
+   setPending(null);close();
+  }}>Dismiss draft</Button>
+  {error&&<p role="alert">{error}</p>}
+ </section>;
  if(!api||!pending&&!open&&(!empty||!projects.isSuccess))return fallback;
  const callToAction=paths.length?'Create your first card':'Create a path and card';
  return <section className="v7-cards-empty" aria-labelledby={heading}>

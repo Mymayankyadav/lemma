@@ -84,3 +84,37 @@ test('empty Cards offers first use, while a filtered seeded library does not',as
  await expect(page.getByText(/No cards match these filters/)).toBeVisible();
  await expect(page.getByRole('region',{name:'First card'})).toHaveCount(0);
 });
+
+test('a rejected pending save keeps its text through reload and can be dismissed',async({page})=>{
+ await page.goto(firstUseAt('/cards'));
+ const panel=page.getByRole('region',{name:'First card',exact:true});
+ await panel.getByRole('button',{name:'Create a path and card'}).click();
+ await panel.getByLabel('Path name').fill(title);
+ await panel.getByLabel('Front',{exact:true}).fill(front);
+ await panel.getByLabel('Back',{exact:true}).fill(back);
+ await panel.getByRole('button',{name:'Save card'}).click();
+ await expect(page).toHaveURL(/#\/cards\/[1-9]\d*$/);
+
+ // Restore an unacknowledged intent after a different operation filled the library.
+ await page.evaluate(()=>sessionStorage.setItem('lemma.first-use.first-card.pending.v1',JSON.stringify({
+  operationId:'3ef4d1ae-23a6-477e-ae21-a610a67d0410',path:{kind:'new',title:'Another path'},
+  front:'Another question',back:'Another answer',
+ })));
+ await page.goto(firstUseAt('/cards'));
+ await panel.getByRole('button',{name:'Retry saving card'}).click();
+ const recovery=page.getByRole('region',{name:'First card draft',exact:true});
+ await expect(recovery.getByRole('alert')).toContainText('Your card library is no longer empty');
+ await page.reload();
+ await expect(recovery.getByLabel('Path',{exact:true})).toHaveValue('Another path');
+ await expect(recovery.getByLabel('Front',{exact:true})).toHaveValue('Another question');
+ await expect(recovery.getByLabel('Back',{exact:true})).toHaveValue('Another answer');
+ await expect(page.getByRole('button',{name:'Retry saving card'})).toHaveCount(0);
+ await recovery.getByRole('button',{name:'Dismiss draft'}).click();
+ await page.reload();
+ await expect(page.getByRole('list',{name:'Cards',exact:true})).toBeVisible();
+ await expect(recovery).toHaveCount(0);
+ expect(await page.evaluate(()=>{
+  const stored=JSON.parse(sessionStorage.getItem('lemma.demo.first-use.authored.v1')??'null');
+  return [stored.projects.length,stored.notes.length,sessionStorage.getItem('lemma.first-use.first-card.pending.v1')];
+ })).toEqual([1,1,null]);
+});

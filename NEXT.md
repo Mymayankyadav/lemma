@@ -4,7 +4,7 @@
 ## N194 Master plan P1: validate the first-path/card vertical preview
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
-Stage: Build · Status: open · Needs: — · Assigned: chat-71388050#6aam
+Stage: Build · Status: done · Needs: — · Assigned: chat-84293#kzbq
 Done = In the isolated first-use demo, truly empty Review and Cards offer one first-card flow; retain entered content, prove one path/card on replay, then reopen and explicitly grade the exact saved card. Back up the flow with repeat-submit, reload, and rollback fixtures.
 Scope: preview-only demo profile, shared first-card panel, local authored-card and review fixture storage, targeted tests and docs/current/N194.md.
 Not: live writes, app-production enablement, SQL migrations, receipt permission changes, or a production grade-acknowledgement guarantee.
