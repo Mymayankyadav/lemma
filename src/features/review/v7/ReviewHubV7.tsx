@@ -22,6 +22,7 @@ import {useReviewEstimate} from '../v6/estimate';
 import {defaultSelection,reviewBatch} from '../v6/selection';
 import {activeSubject,subjectForecast,memoryStats,selectionFor,selectionForSlug,slugOf} from './reviewModel';
 import {useStartRound} from './useStartRound';
+import FirstCardPanel from '../../cards/v7/FirstCardPanel';
 import './review-hub.css';
 
 const allFilter:QueueFilter={decks:[],sessionId:null,conceptSlug:null,includeNew:true,newOnly:false};
@@ -92,6 +93,7 @@ export default function ReviewHubV7(){
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
+  {!pathSlug&&<FirstCardPanel/>}
   {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
   {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Erratum: your review decks didn’t load. Try again.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
