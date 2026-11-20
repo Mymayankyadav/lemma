@@ -109,22 +109,22 @@
     },
     "weekly_rule": {
       "classification": "owner-editable",
-      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.study_command creates and updates owner-scoped calendar blocks; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_blocks, create/update) uses public.study_command; get(calendar_blocks) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows"
     },
     "buffer_before_minutes": {
       "classification": "owner-editable",
-      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.study_command creates and updates owner-scoped calendar blocks; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_blocks, create/update) uses public.study_command; get(calendar_blocks) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows"
     },
     "buffer_after_minutes": {
       "classification": "owner-editable",
-      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.study_command creates and updates owner-scoped calendar blocks; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_blocks, create/update) uses public.study_command; get(calendar_blocks) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows"
     }

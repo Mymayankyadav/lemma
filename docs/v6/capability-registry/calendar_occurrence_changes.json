@@ -4,78 +4,78 @@
   "columns": {
     "id": {
       "classification": "derived",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "user_id": {
       "classification": "derived",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "series_id": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "original_date": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "original_zone": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "revision": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "kind": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "starts_local": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "ends_local": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "start_fold": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     },
     "end_fold": {
       "classification": "owner-editable",
-      "appPath": "Owner-scoped calendar exception input consumed by public.lemma_calendar_snapshot",
-      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "appPath": "public.calendar_occurrence_changes_command appends versioned owner exceptions; public.lemma_calendar_snapshot reads their history",
+      "mcpPath": "study(calendar_occurrence_changes, create) uses the registered command; get(calendar_occurrence_changes) and public.lemma_planning_snapshot_mcp read owner-scoped data",
       "exportPolicy": "Included in the live owner-scoped export registry",
       "deletionPolicy": "Owner account deletion cascades all rows. Removing a series cascades its exceptions"
     }

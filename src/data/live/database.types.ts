@@ -1381,6 +1381,7 @@ export type Database = {
         Returns: Json
       }
       lemma_session_progress_command: { Args: { p: Json }; Returns: Json }
+      calendar_occurrence_changes_command: { Args: { p: Json }; Returns: Json }
       approve_proposal: { Args: { p_edit?: Json; p_id: string }; Returns: Json }
       bootstrap: {
         Args: never
