@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {randomUUID} from 'node:crypto';
 import {tsImport} from 'tsx/esm/api';
 
 export async function checkTrustedCore(db, {owner, other, project, as, operationId}) {
@@ -11,6 +12,8 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
     [owner, 'evidence', JSON.stringify({p_project_id: project})]);
   const failCode = code => error => error.code === code;
   await as();
+  assert.equal(await scalar(`select has_function_privilege(p.proowner,'public.lemma_session_progress_command(jsonb)','EXECUTE') result
+    from pg_proc p where p.oid='public.mcp_command(uuid,text,jsonb)'::regprocedure`),true);
   const registry = (await q("select table_name from public.lemma_undo_tables")).map(row => row.table_name);
   for (const table of ['evidence_revisions','calendar_input_history','calendar_occurrence_changes']) {
     assert.ok(registry.includes(table));
@@ -127,6 +130,20 @@ export async function checkTrustedCore(db, {owner, other, project, as, operation
   await assert.rejects(call(request),failCode('55000'));
   await as();
   await db.exec("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select true'");
+  // Permission drift after installation closes admission before a write or
+  // replay. SET-only memberships are invisible to the role's inherited ACL.
+  const alternate='n191_receipt_rights_'+randomUUID().replaceAll('-','');
+  for (const setup of [
+    'grant trigger on public.command_receipts to authenticated',
+    `create role ${alternate}; grant insert(result) on public.command_receipts to ${alternate};
+     grant ${alternate} to authenticated with inherit false, set true`,
+  ]) {
+    await db.exec('begin');
+    try {
+      await db.exec(setup); await as('service_role');
+      await assert.rejects(call(request),failCode('55000'));
+    } finally { await db.exec('rollback'); await as(); }
+  }
   await as('service_role');
   const first = await call(request);
   assert.equal(first.status,'ok'); assert.equal(first.version,2); assert.equal(first.events,1); assert.ok(first.actionNo>0);

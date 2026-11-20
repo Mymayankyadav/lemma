@@ -60,6 +60,21 @@ end
 $command$;
 revoke all on function public.lemma_session_progress_command(jsonb) from public,anon,authenticated;
 grant execute on function public.lemma_session_progress_command(jsonb) to service_role;
+
+-- mcp_command executes a registered function with its historical definer's
+-- permissions. A later authorized installer may own the new command.
+do $dispatcher_acl$
+declare dispatcher_owner name;
+begin
+  select pg_catalog.pg_get_userbyid(p.proowner) into strict dispatcher_owner from pg_catalog.pg_proc p
+    where p.oid='public.mcp_command(uuid,text,jsonb)'::pg_catalog.regprocedure and p.prosecdef;
+  if pg_catalog.pg_has_role('anon',dispatcher_owner,'SET') or pg_catalog.pg_has_role('anon',dispatcher_owner,'USAGE')
+    or pg_catalog.pg_has_role('authenticated',dispatcher_owner,'SET') or pg_catalog.pg_has_role('authenticated',dispatcher_owner,'USAGE') then
+    raise exception 'Verified dispatcher must use a server-owned role';
+  end if;
+  execute pg_catalog.format('grant execute on function public.lemma_session_progress_command(jsonb) to %I',dispatcher_owner);
+end
+$dispatcher_acl$;
 insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
   values('session_progress','lemma_session_progress_command',true,
     '{"operations":["save"],"fields":["step","events","misconception","resolved","next_question"]}'::jsonb);

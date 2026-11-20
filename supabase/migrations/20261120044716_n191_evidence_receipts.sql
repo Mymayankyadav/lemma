@@ -37,9 +37,11 @@ begin
       where attrelid='public.command_receipts'::pg_catalog.regclass
         and attname='trusted_writer_version' and not attisdropped
     ) or exists (
-      select 1 from (values ('anon'), ('authenticated')) as r(role_name)
-      where pg_catalog.has_table_privilege(r.role_name,'public.command_receipts','INSERT, UPDATE, DELETE, TRUNCATE')
-        or pg_catalog.has_any_column_privilege(r.role_name,'public.command_receipts','INSERT, UPDATE')
+      select 1 from pg_catalog.pg_roles r
+      where (pg_catalog.pg_has_role('authenticated',r.oid,'SET') or pg_catalog.pg_has_role('anon',r.oid,'SET'))
+        and (pg_catalog.has_any_column_privilege(r.oid,'public.command_receipts','INSERT,UPDATE')
+          or pg_catalog.has_table_privilege(r.oid,'public.command_receipts','DELETE,TRUNCATE,TRIGGER')
+          or pg_catalog.has_schema_privilege(r.oid,pg_catalog.to_regnamespace('lemma_receipt_dispatch'),'USAGE'))
     ) then
     raise exception 'Trusted command receipts are unavailable' using errcode='55000';
   end if;
