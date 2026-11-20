@@ -1,27 +1,30 @@
 // N83 demo-only durable review state. Isolated to one tab and persisted
 // before the UI moves to the next card.
+import {getDemoProfile} from '../../../data/mode';
 import type {ReviewItem} from '../../../data/types';
 import type {DurableRun,StartRunInput} from './transport';
 type Store={schema:1;runs:DurableRun[]};
 const KEY='lemma.v6.demo.review-runs.v1';
+const tabKey=()=>getDemoProfile()==='first-use'?KEY+'.first-use':KEY;
 let serial=0;
 const clone=<T>(x:T):T=>structuredClone(x);
 const id=()=>globalThis.crypto?.randomUUID?.()??'demo-review-'+(++serial)+'-'+Date.now();
 const initial=():Store=>({schema:1,runs:[]});
-let memory=initial(),inMemoryOnly=false;
+const memory=new Map<string,{store:Store;fallback:boolean}>();
 function load():Store{
+ const key=tabKey(),prior=memory.get(key);
  try{
-  const raw=sessionStorage.getItem(KEY);
-  if(!raw)return inMemoryOnly?memory:initial();
+  const raw=sessionStorage.getItem(key);
+  if(!raw)return prior?.fallback?prior.store:initial();
   const value=JSON.parse(raw) as Store;
   if(value.schema!==1||!Array.isArray(value.runs))throw Error('bad storage');
   return value;
- }catch{return memory;}
+ }catch{return prior?.store??initial();}
 }
 function save(store:Store){
- memory=clone(store);
- try{sessionStorage.setItem(KEY,JSON.stringify(store));inMemoryOnly=false;}
- catch{inMemoryOnly=true;/* tab storage unavailable */}
+ const key=tabKey(),snapshot=clone(store);
+ try{sessionStorage.setItem(key,JSON.stringify(snapshot));memory.set(key,{store:snapshot,fallback:false});}
+ catch{memory.set(key,{store:snapshot,fallback:true});}
 }
 function get(id:string):DurableRun|null{
  return clone(load().runs.find(x=>x.id===id)??null);

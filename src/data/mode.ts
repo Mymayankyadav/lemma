@@ -1,31 +1,21 @@
 export type DataMode = 'live' | 'demo'
-export type DemoProfile = 'default' | 'stress' | 'extreme'
+export type DemoProfile = 'default' | 'stress' | 'extreme' | 'first-use'
 const DEMO_KEY = 'lemma.demo'
-/** Explicit demo=0 exits demo; demo=1 selects the small fixed fixture. */
-export function getDemoProfile(): DemoProfile {
- if (typeof window === 'undefined') return 'default'
- const query = new URLSearchParams(window.location.search).get('demo')
- const profile = query === 'stress' || query === 'extreme' ? query : 'default'
- try {
-  if (query === '0') { sessionStorage.removeItem(DEMO_KEY); return 'default' }
-  if (query === '1' || query === 'stress' || query === 'extreme') {
-   sessionStorage.setItem(DEMO_KEY, query)
-   return profile
-  }
-  const remembered = sessionStorage.getItem(DEMO_KEY)
-  return remembered === 'stress' || remembered === 'extreme' ? remembered : 'default'
- } catch { return profile }
+const allowFirstUse=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1'
+const explicit=(value:string|null):DemoProfile|null=>{
+ if(value==='1')return 'default'
+ if(value==='stress'||value==='extreme')return value
+ return value==='first-use'&&allowFirstUse?'first-use':null
+}
+function selectedDemo():DemoProfile|null{
+ if(typeof window==='undefined')return null
+ const query=new URLSearchParams(window.location.search).get('demo'),profile=explicit(query)
+ try{
+  if(query==='0'){sessionStorage.removeItem(DEMO_KEY);return null}
+  if(profile&&query){sessionStorage.setItem(DEMO_KEY,query);return profile}
+  return explicit(sessionStorage.getItem(DEMO_KEY))
+ }catch{return profile}
 }
 /** Remember the chosen demo profile only for this browser tab. */
-export function getMode(): DataMode {
- if (typeof window === 'undefined') return 'live'
- const query = new URLSearchParams(window.location.search).get('demo')
- try {
-  if (query === '0') { sessionStorage.removeItem(DEMO_KEY); return 'live' }
-  if (query === '1' || query === 'stress' || query === 'extreme') {
-   sessionStorage.setItem(DEMO_KEY, query)
-   return 'demo'
-  }
-  return sessionStorage.getItem(DEMO_KEY) ? 'demo' : 'live'
- } catch { return query === '1' || query === 'stress' || query === 'extreme' ? 'demo' : 'live' }
-}
+export function getDemoProfile():DemoProfile{return selectedDemo()??'default'}
+export function getMode():DataMode{return selectedDemo()?'demo':'live'}
