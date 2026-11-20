@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useEffect,useId,useRef,useState,useSyncExternalStore,type FormEvent,type ReactNode} from 'react';
 import {useNavigate} from 'react-router';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
@@ -6,7 +7,6 @@ import {useProjects} from '../../../data/hooks';
 import {getDemoProfile,getMode} from '../../../data/mode';
 import {authGeneration,authOwner,onAccountChange} from '../../../data/authBoundary';
 import type {FirstStudyCardInput} from '../../../data/types';
-import {isFlagOn} from '../../../flags';
 import {Button} from '../../../ui/v7/components';
 
 const demoPendingKey='lemma.first-use.first-card.pending.v1';
@@ -29,10 +29,11 @@ function readPending(pendingKey:string,ownerId:string|null):StoredDraft|null{
 }
 
 export default function FirstCardPanel(props:PanelProps){
+ const studyRepair=useStudyUi();
  const epoch=useSyncExternalStore(onAccountChange,authGeneration,authGeneration);
  const fixture=getMode()==='demo'&&getDemoProfile()==='first-use';
  const ownerId=fixture?null:authOwner();
- if(!fixture&&(!isFlagOn('uiRepairV1')||getMode()!=='live'||!ownerId))return props.fallback??null;
+ if(!fixture&&(!studyRepair||getMode()!=='live'||!ownerId))return props.fallback??null;
  return <CardPanel key={fixture?'fixture':epoch} {...props} epoch={epoch} ownerId={ownerId}/>;
 }
 function CardPanel({fallback=null,initial,onCancel,onSaved,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){

@@ -1,3 +1,5 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
+import {CheckpointEdit} from './CheckpointEdit';
 import {useMemo,useState} from 'react';
 import {useNavigate,useParams} from 'react-router';
 import {Link as LinkIcon,Minus,MoveRight,Pencil,Plus,Unlink} from 'lucide-react';
@@ -46,6 +48,7 @@ function PlanMap({title,nodes,existing,adds,changed}:{title:string;nodes:readonl
 /** PLAN §6.10 Plan proposal: what changes first, the whole plan as a path map (before and after side by side on desktop),
  *  sources, the advanced draft editor (#1343) and Reject / Approve in a sticky bar (Reject on the left, V17). */
 export default function PlanProposalV7(){
+ const studyRepair=useStudyUi();
  const {id=''}=useParams(),navigate=useNavigate(),proposal=useProposal(id),projects=useProjects();
  const p=proposal.data,project=useProject(p?.projectSlug??'');
  const approve=useApproveProposal(),reject=useRejectProposal(),wide=useMinWidth(900);
@@ -91,13 +94,14 @@ export default function PlanProposalV7(){
   {comparison&&comparison.citations.length>0&&<section aria-label="Sources"><h2 className="v7-learn-h2">Sources</h2>
    <div className="v7-learn-chiprow">{comparison.citations.map(item=><span key={item} className="v7-learn-chip">{item}</span>)}</div></section>}
   {draft.draftSupported&&<details className="v7-learn-card v7-planp-draft">
-   <summary>Edit before approving (advanced)</summary>
+   <summary>{studyRepair?'Edit before approving':'Edit before approving (advanced)'}</summary>
    {draft.status==='loading'&&<Skeleton/>}
    {draft.status==='error'&&<Button onClick={()=>draft.setReload(value=>value+1)}>Retry drafts</Button>}
    {draft.status==='ready'&&<>
     {draft.draft?<p className="v7-meta">{'Draft '+draft.draft.status+' · version '+draft.draft.draftVersion}</p>:<p className="v7-meta">No saved edit yet. Write the change you want your tutor's plan to include, then send it.</p>}
     {draft.draft?.status==='submitted'&&<p role="status">Edit sent. Sending it does not approve the plan; that decision stays below.</p>}
-    {draft.editor?<label className="v7-field-group"><span>Edit (JSON)</span><textarea aria-label="Full draft payload" className="v7-field v7-planp-json" value={draft.text} onChange={event=>draft.setText(event.target.value)}/></label>
+    {draft.editor&&studyRepair?<CheckpointEdit text={draft.text} onChange={draft.setText} checkpoints={project.data?.checkpoints??[]}/>:
+    draft.editor?<label className="v7-field-group"><span>Edit (JSON)</span><textarea aria-label="Full draft payload" className="v7-field v7-planp-json" value={draft.text} onChange={event=>draft.setText(event.target.value)}/></label>
      :draft.draft&&<pre className="v7-planp-json">{payloadText(draft.draft.payload)}</pre>}
     <div className="v7-learn-chips">
      {!draft.draft&&(draft.editor?<><Button onClick={()=>{void draft.create();}} loading={draft.pending}>Save edit</Button><Button variant="ghost" onClick={()=>draft.setEditor(false)}>Cancel</Button></>

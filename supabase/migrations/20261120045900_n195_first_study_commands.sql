@@ -87,6 +87,28 @@ $first$;
 revoke all on function public.create_first_study_card(uuid,uuid,jsonb,text,text) from public,anon,service_role;
 grant execute on function public.create_first_study_card(uuid,uuid,jsonb,text,text) to authenticated;
 
+-- Called while the authenticated command holds the run and current-item row locks.
+create function public.lemma_advance_study_item(p_owner uuid,p_run uuid,p_item uuid,p_review bigint,p_reason text)
+returns integer language plpgsql security invoker set search_path='' as $advance$
+declare
+ item_position integer;
+ is_last boolean;
+ run_version integer;
+begin
+ update public.review_run_items set state=case when p_review is null then 'stale' else 'graded' end,
+  review_id=p_review,stale_reason=p_reason,version=version+1,source='app',updated_at=pg_catalog.now()
+  where user_id=p_owner and run_id=p_run and id=p_item and state='pending' returning position into strict item_position;
+ select not exists(select 1 from public.review_run_items where user_id=p_owner and run_id=p_run
+  and position>item_position) into is_last;
+ update public.review_runs set position=position+1,revealed=false,version=version+1,
+  status=case when is_last then 'exhausted' else 'running' end,
+  ended_at=case when is_last then pg_catalog.now() else null end,source='app',updated_at=pg_catalog.now()
+  where user_id=p_owner and id=p_run and status='running' and position=item_position returning version into strict run_version;
+ return run_version;
+end
+$advance$;
+revoke all on function public.lemma_advance_study_item(uuid,uuid,uuid,bigint,text) from public,anon,authenticated,service_role;
+
 create function public.grade_study_run_item(
   p_operation_id uuid, p_run uuid, p_item uuid, p_card uuid,
   p_run_version integer, p_card_version integer, p_rating integer,
@@ -101,7 +123,7 @@ declare
   receipt jsonb;
   review_no bigint;
   journal_no bigint;
-  is_last boolean;
+  advanced_version integer;
 begin
   if owner_id is null or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
     raise exception 'Sign in to grade' using errcode='42501';
@@ -141,17 +163,10 @@ begin
     -- Use the same FSRS mutation and action journal as ordinary review.
     review_no := public.record_review(p_card,p_rating,p_confidence,p_duration_ms,
       p_next||pg_catalog.jsonb_build_object('expected_version',p_card_version));
-    update public.review_run_items set state='graded',review_id=review_no,version=version+1,
-      source='app',updated_at=pg_catalog.now() where user_id=owner_id and id=p_item returning * into item_row;
-    select not exists(select 1 from public.review_run_items
-      where user_id=owner_id and run_id=p_run and position>item_row.position) into is_last;
-    update public.review_runs set position=position+1,revealed=false,version=version+1,
-      status=case when is_last then 'exhausted' else 'running' end,
-      ended_at=case when is_last then pg_catalog.now() else null end,source='app',updated_at=pg_catalog.now()
-      where user_id=owner_id and id=p_run returning * into run_row;
+    advanced_version := public.lemma_advance_study_item(owner_id,p_run,p_item,review_no,null);
     select no into strict journal_no from public.actions where user_id=owner_id and txid=pg_catalog.txid_current();
     receipt := pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','applied','actionNo',journal_no,
-      'runId',p_run,'itemId',p_item,'cardId',p_card,'reviewId',review_no,'runVersion',run_row.version);
+      'runId',p_run,'itemId',p_item,'cardId',p_card,'reviewId',review_no,'runVersion',advanced_version);
   end if;
   return public.lemma_trusted_receipt_finish(owner_id,p_operation_id,'study_run_grade',request,receipt);
 end

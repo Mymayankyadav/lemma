@@ -1,4 +1,4 @@
-import {isFlagOn} from '../../../flags';
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useState} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
@@ -33,8 +33,8 @@ const keysFor=(node:DeckNode)=>[node.key,...node.children.filter(child=>child.du
 export function roundSplit(count:number,fresh:number):string{return (count-fresh)+' due + '+fresh+' new';}
 /** PLAN §6.4 A: the review hub. One count, one button, then the shape of the week and the decks behind it. */
 export default function ReviewHubV7(){
+ const repair=useStudyUi();
  const navigate=useNavigate(),[params]=useSearchParams(),pathSlug=params.get('path');
- const repair=isFlagOn('uiRepairV1');
  const decks=useDeckTree(),cards=useReviewItems(allFilter),settings=useSettings(),home=useHome(),insights=useInsightData(30);
  // A successful deck/settings refresh also refreshes scheduling buckets. This
  // includes returning from a grade, Undo or a note/path edit within one minute.

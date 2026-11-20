@@ -1,3 +1,6 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
+import {getApi} from '../../../data';
+import {useQuery} from '@tanstack/react-query';
 import {reviewHref} from '../../../data/review-target';
 import {currentStudyStep} from '../../project/v7/pathModel';
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
@@ -31,6 +34,7 @@ const stateText=(ui:CheckpointView['ui'])=>ui==='revisit'?'Recheck due':nodeWord
 /** PLAN §6.9 Checkpoint: the statement, the steps as a stepper, prerequisites and sources, evidence by session, and the
  *  primary "Work on this with your tutor" in a sticky bar with Demonstrate and Defer behind ⋯. */
 export default function CheckpointV7(){
+ const studyRepair=useStudyUi();
  const {slug:rawSlug,code:rawCode}=useParams(),slug=rawSlug??'',code=rawCode??'';
  const query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),notify=useToast();
  const [more,setMore]=useState(false);
@@ -45,10 +49,12 @@ export default function CheckpointV7(){
   void navigator.clipboard?.writeText(prompt).then(()=>notify('Tutor prompt copied',{tone:'success'})).catch(()=>notify('Prompt copy unavailable; opening your tutor'));
   window.open(chatLink(client,prompt),'_blank','noopener,noreferrer');
  }
+ const due=useQuery({queryKey:['checkpoint-review-count',view?.id],enabled:studyRepair&&!!view,
+  queryFn:async()=>await getApi().getStudyTargetDue?.({kind:'checkpoint',id:view!.id})??0});
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/><Skeleton/><Skeleton/></main>;
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
- const step=isFlagOn('uiRepairV1')?currentStudyStep(view).index:Math.max(0,view.currentStep);
+ const step=studyRepair?currentStudyStep(view).index:Math.max(0,view.currentStep);
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>
@@ -93,7 +99,7 @@ export default function CheckpointV7(){
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
   </section>
-  <Link className="v7-learn-row" to={isFlagOn('uiRepairV1')?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{detail.cardsCount} {detail.cardsCount===1?'card':'cards'} · Review</span><ChevronRight aria-hidden="true"/></Link>
+  <Link className="v7-learn-row" to={studyRepair?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{studyRepair?(due.isSuccess?due.data+' due · Review '+view.title:'Review '+view.title):detail.cardsCount+' '+(detail.cardsCount===1?'card':'cards')+' · Review'}</span><ChevronRight aria-hidden="true"/></Link>
   <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :<Button variant="primary" onClick={()=>launch()}>Work on this with your tutor</Button>}

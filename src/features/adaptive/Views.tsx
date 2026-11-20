@@ -1,3 +1,6 @@
+import {useStudyUi} from '../../data/StudyUiRelease';
+import {isFlagOn} from '../../flags';
+import {WeekdayCapacity} from './WeekdayCapacity';
 import {Link} from 'react-router';
 import type {CheckpointView,Settings} from '../../data/types';
 import type {AdaptiveView} from '../../data/adaptive/contract';
@@ -55,6 +58,7 @@ export function Rechecks({data,projectId}:{data:AdaptiveView;projectId:string}){
  </section>;
 }
 export function TodaySchedulerView({data}:{data:AdaptiveView}){
+ const repair=useStudyUi();
  const {state}=data;
  if(!state.flags.time_block&&!state.flags.recheck_v2)return null;
  const projects=data.rows.projects.filter(p=>state.projects[p.id]);
@@ -77,7 +81,7 @@ export function TodaySchedulerView({data}:{data:AdaptiveView}){
    {q.items.length?<ol>{q.items.slice(0,8).map((item,index)=><li key={index}>{item.ref} · {item.est_minutes} min</li>)}</ol>:<p>No queued work.</p>}
    {q.items.length>8&&<p>+{q.items.length-8} more</p>}
    {q.tail.length>0&&<p>If time permits: {q.tail.map(item=>item.ref).join(', ')}</p>}
-   {state.capacityUnset&&<p>Set minutes per weekday with your tutor to schedule capacity.</p>}
+   {state.capacityUnset&&(repair?(isFlagOn('atlasV3')?null:<WeekdayCapacity/>):<p>Set minutes per weekday with your tutor to schedule capacity.</p>)}
   </section>}
  </section>;
 }

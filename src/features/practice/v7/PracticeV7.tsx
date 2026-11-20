@@ -1,4 +1,4 @@
-import {isFlagOn} from '../../../flags';
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Link} from 'react-router';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -82,7 +82,8 @@ export default function PracticeV7(){
 
 function RecordSheet({topic,busy,onClose,onSave}:{topic:PracticeTopicRecord;busy:boolean;onClose:()=>void;
  onSave:(input:{rating:PracticeRating;response:string|null;minutes:number|null})=>Promise<void>}){
- const [rating,setRating]=useState<PracticeRating|null>(()=>isFlagOn('uiRepairV1')?null:3),[notes,setNotes]=useState(''),[minutes,setMinutes]=useState('');
+ const studyRepair=useStudyUi();
+ const [rating,setRating]=useState<PracticeRating|null>(()=>studyRepair?null:3),[notes,setNotes]=useState(''),[minutes,setMinutes]=useState('');
  const [seconds,setSeconds]=useState(0),[running,setRunning]=useState(false),[problem,setProblem]=useState('');
  useEffect(()=>{
   if(!running)return;

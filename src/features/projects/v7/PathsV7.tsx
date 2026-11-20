@@ -1,4 +1,4 @@
-import {isFlagOn} from '../../../flags';
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {lazy,Suspense,useMemo,useState} from 'react';
@@ -30,6 +30,7 @@ export function PathsTabs({current}:{current:'paths'|'cards'|'atlas'}){
 }
 
 function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due:number;pinnedCount:number;selected?:string}){
+ const studyRepair=useStudyUi();
  const subject=kitSubject(project.subject?.name??''),klass=subjectClass(subject),update=useUpdateProject(),notify=useToast();
  const schedule=scheduleTone(project.scheduleHeadline),href='/p/'+encodeURIComponent(project.slug);
  async function change(patch:{pinned?:boolean;status?:ProjectStatus},message:string,undo:{pinned?:boolean;status?:ProjectStatus}){
@@ -63,7 +64,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
     <small>{project.done} of {project.total}</small></div>
    <div className="v7-paths-chips">
     {schedule&&<StatusBadge tone={schedule.tone}>{schedule.text}</StatusBadge>}
-    {due>0&&<Link className="v7-paths-due" to={isFlagOn('uiRepairV1')?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(project.slug)} aria-label={'Review '+due+' due on '+project.title}>{due} due</Link>}
+    {due>0&&<Link className="v7-paths-due" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(project.slug)} aria-label={'Review '+due+' due on '+project.title}>{due} due</Link>}
     {project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}
    </div>
   </div>
@@ -72,6 +73,7 @@ function PathCard({project,due,pinnedCount,selected}:{project:ProjectSummary;due
 
 /** PLAN §6.8: the Paths hub. Search, status chips, path cards with cover, meter and chips, and "Start a new path". */
 export default function PathsV7({embedded=false,selected}:{embedded?:boolean;selected?:string}={}){
+ const studyRepair=useStudyUi();
  const projects=useProjects(),decks=useDeckTree(),location=useLocation(),navigate=useNavigate();
  const [filter,setFilter]=useState<PathFilter>('active'),[query,setQuery]=useState(''),[limit,setLimit]=useState(PAGE);
  const all=useMemo(()=>ownPaths(projects.data),[projects.data]);
@@ -105,7 +107,7 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
     </section>)}</div>}
    {shown.length<visible.length&&<Button className="v7-paths-moreButton" onClick={()=>setLimit(value=>value+PAGE)}>Show {Math.min(PAGE,visible.length-shown.length)} more</Button>}
   </>}
-  <Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>
+  {(!studyRepair||all.length>0)&&<Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>}
   {creating&&<Suspense fallback={null}><NewPathSheet onClose={()=>navigate('/projects')}/></Suspense>}
  </Tag>;
 }

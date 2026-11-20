@@ -2138,8 +2138,19 @@ export class DemoAdapter implements LemmaApi {
       }
     return count;
   }
+  async getStudyTargetDue(target:import('../review-target').ReviewDomainTarget){
+    return (await this.getReviewTargetItems(target)).length;
+  }
   async getReviewTargetItems(target:import('../review-target').ReviewDomainTarget){
     return clone(this.eligible(target.kind==='card'?target.id:undefined,target));
+  }
+  getReviewTargetLabel(target:import('../review-target').ReviewDomainTarget){
+    switch(target.kind){
+      case 'card':return 'Saved card';
+      case 'path':return this.store.projects.find(row=>row.id===target.id)?.title;
+      case 'checkpoint':return this.store.checkpoints.find(row=>row.id===target.id)?.title;
+      case 'concept':return this.store.concepts.find(row=>row.id===target.id)?.name;
+    }
   }
   async getReviewItems(filter: QueueFilter) {
     const eligible = this.eligible();

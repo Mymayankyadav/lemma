@@ -15,10 +15,10 @@ export async function openStudyTarget(target:ReviewTarget):Promise<DurableRun|nu
  if(getMode()==='demo'){
   const existing=demoScopedRun(domain);
   if(existing)return existing;
-  const selected=await getApi().getReviewTargetItems?.(domain);
+  const api=getApi(),selected=await api.getReviewTargetItems?.(domain);
   if(!selected)throw Error('Review target unavailable');
   if(!selected.length)return null;
-  const run=demoStart({selectedDeckIds:[],filters:{target:domain,...(domain.kind==='card'?{cardId:domain.id}:{})},
+  const run=demoStart({selectedDeckIds:[],filters:{target:domain,targetLabel:api.getReviewTargetLabel?.(domain),...(domain.kind==='card'?{cardId:domain.id}:{})},
    cardBudget:1440,minuteBudget:1440,schedulerVersion:'fsrs-v6',settingsVersion:1},selected);
   return run.items.length?run:null;
  }
@@ -52,4 +52,20 @@ export async function targetFromLink(search:URLSearchParams):Promise<ReviewTarge
   return reviewTarget('concept',rows[0].id);
  }
  return null;
+}
+
+export async function skipChangedStudyItem(run:DurableRun,itemId:string):Promise<DurableRun>{
+ const {liveClient}=await import('../../../data/live/client');
+ const {owner,checked}=await import('../../../data/live/helpers');
+ const db=liveClient(),uid=await owner(db),generation=authGeneration();
+ if(uid!==authOwner())throw Error('The signed-in account changed.');
+ const key=['lemma.study.skip.v1',uid,run.id,itemId,run.version].join('.');
+ const operationId=sessionStorage.getItem(key)??crypto.randomUUID();sessionStorage.setItem(key,operationId);
+ const result=checked(await db.rpc('skip_changed_study_item',{p_operation_id:operationId,p_run:run.id,p_item:itemId,p_version:run.version}));
+ if(result.operationId!==operationId||result.status!=='applied'&&result.status!=='conflict')throw Error('Could not confirm the changed item.');
+ const saved=await getRun(run.id);
+ if(!saved||authGeneration()!==generation||authOwner()!==uid)throw Error('Reload the signed-in review round.');
+ sessionStorage.removeItem(key);
+ if(result.status==='conflict'&&saved.version===run.version)throw Error('This card is still available in the current review.');
+ return saved;
 }

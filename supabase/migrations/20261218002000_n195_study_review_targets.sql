@@ -144,7 +144,7 @@ language plpgsql security definer set search_path='' as $target$
 declare
  owner_id uuid:=(select auth.uid());
  target jsonb:=pg_catalog.jsonb_build_object('kind',p_kind,'id',p_id);
- allowed boolean;
+ target_label text;
  receipt jsonb;
  run_row public.review_runs%rowtype;
  settings_version integer;
@@ -156,13 +156,13 @@ begin
  end if;
  if not public.lemma_plan_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
  case p_kind
-  when 'card' then select exists(select 1 from public.cards where user_id=owner_id and id=p_id) into allowed;
-  when 'path' then select exists(select 1 from public.projects where user_id=owner_id and id=p_id) into allowed;
-  when 'checkpoint' then select exists(select 1 from public.checkpoints where user_id=owner_id and id=p_id) into allowed;
-  when 'concept' then select exists(select 1 from public.concepts where user_id=owner_id and id=p_id) into allowed;
+  when 'card' then select 'Saved card' into target_label from public.cards where user_id=owner_id and id=p_id;
+  when 'path' then select title into target_label from public.projects where user_id=owner_id and id=p_id;
+  when 'checkpoint' then select title into target_label from public.checkpoints where user_id=owner_id and id=p_id;
+  when 'concept' then select name into target_label from public.concepts where user_id=owner_id and id=p_id;
   else raise exception 'Unknown review target' using errcode='22023';
  end case;
- if not allowed then raise exception 'Review target unavailable' using errcode='P0002'; end if;
+ if target_label is null then raise exception 'Review target unavailable' using errcode='P0002'; end if;
  receipt:=public.lemma_trusted_receipt_begin(owner_id,p_operation_id,'study_review_target',target);
  if receipt is not null then return receipt; end if;
  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('study-target:'||owner_id::text||':'||p_kind||':'||p_id::text,0));
@@ -183,7 +183,7 @@ begin
   -- requested scope never creates a run or action.
   begin
    insert into public.review_runs(user_id,filters,card_budget,minute_budget,scheduler_version,settings_version)
-    values(owner_id,pg_catalog.jsonb_build_object('target',target)||
+    values(owner_id,pg_catalog.jsonb_build_object('target',target,'targetLabel',target_label)||
       case when p_kind='card' then pg_catalog.jsonb_build_object('cardId',p_id) else '{}'::jsonb end,
       1440,1440,'fsrs-v6',settings_version) returning * into run_row;
    insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version)
@@ -227,3 +227,95 @@ create function public.next_study_due() returns jsonb language sql stable securi
 $$;
 revoke all on function public.next_study_due() from public,anon,service_role;
 grant execute on function public.next_study_due() to authenticated;
+
+create function public.study_target_due_count(p_kind text,p_id uuid) returns integer
+language sql stable security invoker set search_path='' as $$
+ select count(*)::integer from public.lemma_ranked_review_items('{}',null,null,true,false,p_kind,p_id)
+ where p_kind in ('card','path','checkpoint','concept') and p_id is not null
+$$;
+revoke all on function public.study_target_due_count(text,uuid) from public,anon,service_role;
+grant execute on function public.study_target_due_count(text,uuid) to authenticated;
+
+create function public.skip_changed_study_item(p_operation_id uuid,p_run uuid,p_item uuid,p_version integer)
+returns jsonb language plpgsql security definer set search_path='' as $skip$
+declare
+ owner_id uuid:=(select auth.uid());
+ item_row public.review_run_items%rowtype;
+ run_row public.review_runs%rowtype;
+ current_card_version integer;
+ request jsonb:=pg_catalog.jsonb_build_object('runId',p_run,'itemId',p_item,'runVersion',p_version);
+ result jsonb;
+ next_version integer;
+ action_no bigint;
+begin
+ if owner_id is null or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
+  raise exception 'Sign in to review' using errcode='42501';
+ end if;
+ if not public.lemma_plan_released() then raise exception 'Scoped review unavailable' using errcode='55000'; end if;
+ if not exists(select 1 from public.review_run_items where user_id=owner_id and run_id=p_run and id=p_item) then
+  raise exception 'Review item unavailable' using errcode='P0002';
+ end if;
+ result:=public.lemma_trusted_receipt_begin(owner_id,p_operation_id,'skip_changed_study_item',request);
+ if result is not null then return result; end if;
+ select * into strict run_row from public.review_runs where user_id=owner_id and id=p_run for update;
+ select * into strict item_row from public.review_run_items where user_id=owner_id and id=p_item and run_id=p_run for update;
+ select version into current_card_version from public.cards where user_id=owner_id and id=item_row.card_id for share;
+ if p_version is distinct from run_row.version or run_row.status<>'running' or item_row.state<>'pending'
+  or item_row.position<>run_row.position or (current_card_version=item_row.expected_card_version
+    and public.study_run_item_available(p_run,p_item,item_row.card_id)) then
+  result:=pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','conflict');
+ else
+  perform pg_catalog.set_config('lemma.source','app',true);
+  perform pg_catalog.set_config('lemma.tool','skip_changed_study_item',true);
+  perform pg_catalog.set_config('lemma.summary','Skip changed review item',true);
+  next_version:=public.lemma_advance_study_item(owner_id,p_run,p_item,null,'Card changed or left the review selection');
+  select no into strict action_no from public.actions where user_id=owner_id and txid=pg_catalog.txid_current();
+  result:=pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','applied','runId',p_run,'itemId',p_item,
+    'runVersion',next_version,'actionNo',action_no);
+ end if;
+ return public.lemma_trusted_receipt_finish(owner_id,p_operation_id,'skip_changed_study_item',request,result);
+end
+$skip$;
+revoke all on function public.skip_changed_study_item(uuid,uuid,uuid,integer) from public,anon,service_role;
+grant execute on function public.skip_changed_study_item(uuid,uuid,uuid,integer) to authenticated;
+
+-- Update the weekly preference only. A parallel review-share or unrelated
+-- settings change is preserved, while a competing weekday edit conflicts.
+create function public.set_study_weekday_minutes(p_operation_id uuid,p_expected_owner uuid,p_previous jsonb,p_minutes integer[])
+returns jsonb language plpgsql security definer set search_path='' as $minutes$
+declare
+ owner_id uuid:=(select auth.uid());
+ pref jsonb;
+ request jsonb:=pg_catalog.jsonb_build_object('previous',p_previous,'minutes',p_minutes);
+ result jsonb;
+ saved_version integer;
+ journal_no bigint;
+begin
+ if owner_id is null or p_expected_owner is distinct from owner_id
+  or pg_catalog.current_setting('role',true) is distinct from 'authenticated' then
+  raise exception 'Sign in to set study time' using errcode='42501';
+ end if;
+ if not public.lemma_plan_released() then raise exception 'Study availability is unavailable' using errcode='55000'; end if;
+ if pg_catalog.cardinality(p_minutes) is distinct from 7 or pg_catalog.array_ndims(p_minutes) is distinct from 1
+   or exists(select 1 from pg_catalog.unnest(p_minutes) m where m is null or m not between 0 and 1440) then
+  raise exception 'Enter 0 to 1440 whole minutes for each day' using errcode='22023';
+ end if;
+ result:=public.lemma_trusted_receipt_begin(owner_id,p_operation_id,'study_weekday_minutes',request);
+ if result is not null then return result; end if;
+ select capacity into strict pref from public.settings where user_id=owner_id for update;
+ if coalesce(pref->'weekday_minutes','null'::jsonb) is distinct from coalesce(p_previous,'null'::jsonb) then
+  result:=pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','conflict');
+ else
+  perform pg_catalog.set_config('lemma.source','app',true);
+  perform pg_catalog.set_config('lemma.tool','set_study_weekday_minutes',true);
+  perform pg_catalog.set_config('lemma.summary','Set weekday study minutes',true);
+  update public.settings set capacity=pg_catalog.jsonb_set(coalesce(pref,'{}'),'{weekday_minutes}',pg_catalog.to_jsonb(p_minutes))
+   where user_id=owner_id returning version into saved_version;
+  select no into journal_no from public.actions where user_id=owner_id and txid=pg_catalog.txid_current();
+  result:=pg_catalog.jsonb_build_object('operationId',p_operation_id,'status','applied','settingsVersion',saved_version,'actionNo',journal_no);
+ end if;
+ return public.lemma_trusted_receipt_finish(owner_id,p_operation_id,'study_weekday_minutes',request,result);
+end
+$minutes$;
+revoke all on function public.set_study_weekday_minutes(uuid,uuid,jsonb,integer[]) from public,anon,service_role;
+grant execute on function public.set_study_weekday_minutes(uuid,uuid,jsonb,integer[]) to authenticated;

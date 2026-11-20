@@ -39,6 +39,7 @@ test('signed-in first card and grade recover both lost acknowledgements through 
    expect(body).toEqual(graded[0]);
    return answer({operationId:body.p_operation_id,status:'applied',runId:run,itemId:item,cardId:card,reviewId:44,runVersion:2,actionNo:3});
   }
+  if(table==='rpc/lemma_plan_released')return answer(true);
   if(table==='rpc/study_run_item_available')return answer(true);
   if(table==='rpc/bootstrap'||table==='settings')return answer(settings);
   if(table==='rpc/home_summary')return answer({projects:[],current:null,proposals:0,activeSession:null});

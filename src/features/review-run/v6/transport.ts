@@ -19,12 +19,12 @@ export type DurableRunStatus='running'|'paused'|'exhausted'|'completed'|'abandon
 export interface DurableRun{
  id:string;status:DurableRunStatus;position:number;version:number;
  startedAt:string;endedAt:string|null;progress:DurableRunProgress;
- targetCardId?:string; target?:ReviewDomainTarget;
+ targetCardId?:string; scopeLabel?:string; target?:ReviewDomainTarget;
  items:ReadonlyArray<DurableRunItem&{id:string;cardId:string;expectedCardVersion:number}>;
 }
 export interface StartRunInput{
  selectedDeckIds:string[];
- filters:{target?:ReviewDomainTarget;cardId?:string;sessionId?:string|null;conceptSlug?:string|null;
+ filters:{target?:ReviewDomainTarget;targetLabel?:string;cardId?:string;sessionId?:string|null;conceptSlug?:string|null;
   includeNew?:boolean;newOnly?:boolean};
  cardBudget:number;minuteBudget:number;schedulerVersion:string;settingsVersion:number;
 }
@@ -90,7 +90,7 @@ export async function readDurableRun(id:string):Promise<DurableRun|null>{
  return {id:key,status,position,version:version(Number(record.version)),
   startedAt:String(record.started_at),
   endedAt:record.ended_at==null?null:String(record.ended_at),items,progress,
-  ...(scope?{target:scope as ReviewDomainTarget}:{}),...(typeof target==='string'?{targetCardId:target}:{})};
+  ...(scope?{target:scope as ReviewDomainTarget,scopeLabel:typeof (record.filters as Row).targetLabel==='string'?String((record.filters as Row).targetLabel):undefined}:{}),...(typeof target==='string'?{targetCardId:target}:{})};
 }
 export async function resumeDurableRun():Promise<DurableRun|null>{
  const c=await db();

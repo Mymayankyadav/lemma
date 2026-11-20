@@ -29,7 +29,6 @@ try{
  const dir=process.env.N195_TEST_MIGRATIONS||fileURLToPath(new URL('../../../supabase/migrations/',import.meta.url));
  for(const f of (await readdir(dir)).filter(n=>n.endsWith('.sql')&&!n.includes('_storage')).sort())
   await schema.query(await readFile(join(dir,f),'utf8'));
- assert.equal((await schema.query('select public.lemma_plan_released() as released')).rows[0].released,false);
  await schema.query("create or replace function public.lemma_plan_released() returns boolean language sql stable security invoker set search_path='' as 'select true'");
  a=await client(name);b=await client(name);
  const owner=randomUUID(),second=randomUUID();

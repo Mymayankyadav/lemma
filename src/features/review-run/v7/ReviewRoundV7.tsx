@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 // PLAN §6.4 B: the v7 review round. The durable-run engine is the N83 one used by v6:
 // a grade's committed reviewId is stored BEFORE any advance, so a retry never records it twice.
 import {GradeGlyph,type GradeKey} from '../../../ui/v7/grades';
@@ -11,7 +12,7 @@ import {useQuery,useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
 import {authOwner,onAccountChange} from '../../../data/authBoundary';
 import {getMode} from '../../../data/mode';
-import {openStudyTarget,targetFromLink} from './scopedRound';
+import {openStudyTarget,skipChangedStudyItem,targetFromLink} from './scopedRound';
 import {saveGrade,savedGrade,confirmGrade,type GradeIntent} from './gradeIntent';
 import {useHome,useRecordReview,useReviewItems,useSettings} from '../../../data/hooks';
 import type {Confidence,QueueFilter,Rating} from '../../../data/types';
@@ -46,6 +47,7 @@ function readGrades(runId:string):Record<string,Rating>{try{return JSON.parse(se
 function writeGrades(runId:string,grades:Record<string,Rating>){try{sessionStorage.setItem(gradesKey(runId),JSON.stringify(grades));}catch{/* colour memory only */}}
 
 export default function ReviewRoundV7(){
+ const studyRepair=useStudyUi();
  const navigate=useNavigate(),[search]=useSearchParams(),queries=useQueryClient(),home=useHome();
  const settings=useSettings(),cards=useReviewItems(filter),record=useRecordReview();
  const [run,setRun]=useState<DurableRun|null>(null),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
@@ -54,10 +56,10 @@ export default function ReviewRoundV7(){
  const [grades,setGrades]=useState<Record<string,Rating>>({});
  const [drag,setDrag]=useState<{dx:number;dy:number}|null>(null);
  const dragStart=useRef<{x:number;y:number}|null>(null);
- const runId=search.get('run'),link=search.toString(),repair=isFlagOn('uiRepairV1');
+ const runId=search.get('run'),link=search.toString(),repair=studyRepair;
  const signedIn=useSyncExternalStore(onAccountChange,authOwner,authOwner);
- const atomic=isFlagOn('uiRepairV1')&&getMode()==='live';
- const [frozen,setFrozen]=useState<GradeIntent|null>(null);
+ const atomic=studyRepair&&getMode()==='live';
+ const [frozen,setFrozen]=useState<GradeIntent|null>(null),[changedItem,setChangedItem]=useState<string|null>(null);
  const item=run?.items[run.position],exactId=run?.targetCardId??(run?.target?item?.cardId:undefined);
  // Do not fetch singleton faces from the global quota-ranked prefix.
  const exact=useQuery({queryKey:['review-exact-card',run?.id,exactId],enabled:!!exactId&&!!item,
@@ -85,14 +87,15 @@ export default function ReviewRoundV7(){
     navigate('/review/run?run='+encodeURIComponent(loaded.id),{replace:true});return;
    }
    setGrades(readGrades(loaded.id));setRun(loaded);
-   const intent=atomic&&signedIn?savedGrade(signedIn,loaded.id):null;
+   const intent=getMode()==='live'&&signedIn?savedGrade(signedIn,loaded.id):null;
    if(intent){
     setFrozen(intent);
+    if(!atomic){setMessage('Reconnect to confirm your saved grade.');return;}
     try{
      const confirmed=await confirmGrade(intent);
      if(!cancelled){
       setFrozen(null);setRun(confirmed.run);
-      if(!confirmed.applied)setMessage('The round changed. Your saved selection did not add a grade.');
+      if(!confirmed.applied){setChangedItem(intent.itemId);setMessage('The round changed. Your saved selection did not add a grade.');}
       else void queries.invalidateQueries();
      }
     }catch{if(!cancelled)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
@@ -121,11 +124,11 @@ export default function ReviewRoundV7(){
    const nextGrades={...grades,[intent.itemId]:intent.rating};
    setGrades(nextGrades);writeGrades(intent.runId,nextGrades);
    void queries.invalidateQueries();
-  }else setMessage('The round changed. Your saved selection did not add a grade.');
+  }else{setChangedItem(intent.itemId);setMessage('The round changed. Your saved selection did not add a grade.');}
   done(saved.run);
  }
  async function retryGrade(){
-  if(!frozen||busy)return;
+  if(!frozen||busy||!atomic)return;
   setBusy(true);setMessage(null);
   try{await recover(frozen);}
   catch{if(authOwner()===frozen.ownerId)setMessage('The grade could not be confirmed. Retry to recover this answer.');}
@@ -139,6 +142,9 @@ export default function ReviewRoundV7(){
   // AW6: Good, Hard or Easy is one click, Again two light ticks.
   haptic(rating===1?'gradeAgain':'grade');
   try{
+   if(getMode()==='live'&&run.target&&!atomic){
+    setMessage('Reconnect to confirm review is available.');return;
+   }
    if(atomic){
     let intent:GradeIntent;
     try{intent=saveGrade(run,{cardId:item.cardId,rating,confidence,durationMs:Math.min(600000,Math.max(0,Date.now()-startTime)),next:choices[rating].card});}
@@ -176,7 +182,7 @@ export default function ReviewRoundV7(){
  }
  async function skip(){
   if(!run||!item||busy||pending||frozen)return;setBusy(true);setMessage(null);
-  try{done(await advanceSkip(run,item.id,'Card missing or changed since run snapshot'));setMessage('Stale card skipped.');}
+  try{done(atomic?await skipChangedStudyItem(run,item.id):await advanceSkip(run,item.id,'Card missing or changed since run snapshot'));setMessage('Stale card skipped.');}
   catch(error){setMessage(error instanceof Error?error.message:'Could not skip stale card');}
   finally{setBusy(false);}
  }
@@ -225,6 +231,7 @@ export default function ReviewRoundV7(){
    center={<p className="v7-review-count" role="progressbar" aria-label="Review progress" aria-valuemin={0} aria-valuemax={total} aria-valuenow={run.progress.position}>{shown} of {run.progress.total}</p>}
    more={<button type="button" className="v7-icon-button" aria-label="Undo last answer" title="Undo last answer (U)" disabled={busy||!!pending||!!frozen||!lastGraded(run)} onClick={()=>{void undo();}}><Undo2 aria-hidden="true"/></button>}/>
   <ol className="v7-review-progress" aria-hidden="true">{run.items.map(entry=><li key={entry.id} data-grade={grades[entry.id]?gradeNames[grades[entry.id]-1].toLowerCase():entry.state==='graded'?'answered':entry.state==='stale'?'stale':undefined}/>)}</ol>
+  {run.scopeLabel&&<p className="v7-review-message">{run.scopeLabel}</p>}
   {message&&<p role="alert" className="v7-review-message">{message}</p>}
   {/* N157 · U1 S11 (flag v7Margin): why this card and its source, beside the round; never the answer. */}
   {card&&revealed&&<Margin notes={[
@@ -233,12 +240,12 @@ export default function ReviewRoundV7(){
   ]} sheet={false}/>}
   {run.status==='paused'&&<Button onClick={()=>{setBusy(true);void unpauseRun(run).then(setRun).catch(error=>setMessage(String(error))).finally(()=>setBusy(false));}}>Resume this round</Button>}
   {frozen?<section className="v7-review-state"><p role="status">Your grade selection is saved on this device.</p>
-   <Button disabled={busy} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button></section>
+   <Button disabled={busy||!atomic} onClick={()=>{void retryGrade();}}>Retry grade confirmation</Button></section>
   :run.progress.done?<section className="v7-review-state"><p role="status">Round saved. {run.progress.graded} graded; {run.progress.skipped} skipped.</p>
    <Button variant="primary" onClick={()=>navigate('/review/done?run='+encodeURIComponent(run.id))}>See results</Button></section>
   :item&&run.status==='running'?<>
    {pending?<section className="v7-review-state"><p role="status">Your answer is recorded. Advance without grading again.</p><Button disabled={busy} onClick={()=>{void retryAdvance();}}>Retry advance</Button></section>
-   :!card&&!lookup.isPending?<section className="v7-review-state"><p role="status">{lookup.isError?'Could not load this card. Retry the lookup.':'This card is no longer available for this review.'}</p>
+   :(!card&&!lookup.isPending||changedItem===item.id)?<section className="v7-review-state"><p role="status">{lookup.isError?'Could not load this card. Retry the lookup.':'This card is no longer available for this review.'}</p>
     <Button disabled={busy||lookup.isError} onClick={()=>{void skip();}}>Skip stale card</Button><Button onClick={()=>{void lookup.refetch();}}>Retry card lookup</Button></section>
    :card?<section className="v7-review-stage">
     <article className={'v7-review-card '+subjectClass(subject)} aria-label="Review card" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={()=>{dragStart.current=null;setDrag(null);}}
@@ -260,7 +267,7 @@ export default function ReviewRoundV7(){
     {revealed&&run.progress.graded<3&&<p className="v7-review-hint">Swipe right for Good, left for Again, up for Easy.</p>}
    </section>:<p role="status" className="v7-review-state">Loading the card…</p>}
   </>:null}
-  {item&&card&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
+  {item&&card&&changedItem!==item.id&&!pending&&!frozen&&run.status==='running'&&!run.progress.done&&<div className="v7-review-dock">
    {!revealed?<Button variant="primary" onClick={reveal}>Show answer<kbd className="v7-review-key" aria-hidden="true">Space</kbd></Button>
    :<div className="v7-review-grades" role="group" aria-label="Grade answer">{gradeNames.map((label,index)=>{const choice=choices?.[(index+1) as Rating];
     return <button key={label} type="button" data-grade={label.toLowerCase()} disabled={busy||!choices} onClick={()=>{void grade((index+1) as Rating);}}

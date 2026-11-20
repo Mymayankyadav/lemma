@@ -58,7 +58,7 @@ export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const run:DurableRun={
   id:id(),status:items.length?'running':'exhausted',
   position:0,version:1,startedAt:now,endedAt:items.length?null:now,
-  ...(target===undefined?{}:{targetCardId:target}),...(scope?{target:scope}:{}),
+  ...(target===undefined?{}:{targetCardId:target}),...(scope?{target:scope,scopeLabel:input.filters.targetLabel}:{}),
   items,progress:{position:0,total:items.length,graded:0,skipped:0,
    remaining:items.length,done:items.length===0},
  };

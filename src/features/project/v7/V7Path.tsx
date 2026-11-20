@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
 import {PathEstimates} from '../../adaptive/AtlasPanels';
 import {ProjectScheduler,PlanDisposition,checkpointLabel,inactiveCheckpoint} from '../../adaptive/Views';
@@ -47,7 +48,8 @@ function NodeMark({state}:{state:NodeState}){
 }
 function Row({slug,cps,index,step,reached,onContinue}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean;onContinue?:()=>void}){
  const settings=useSettings();
- const cp=cps[index],text=nodeText(cps,index,step,isFlagOn('uiRepairV1')),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
+ const studyRepair=useStudyUi();
+ const cp=cps[index],text=nodeText(cps,index,step,studyRepair),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
  return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
   <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
@@ -93,6 +95,7 @@ function ProgressRing({done,total}:{done:number;total:number}){
   <circle cx="10" cy="10" r={r} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-share)} transform="rotate(-90 10 10)" className="v7-progress-ring-fill"/></svg>;
 }
 export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
+ const studyRepair=useStudyUi();
  const room=isFlagOn('v7Room');
  const {slug:raw}=useParams(),slug=selectedSlug??raw??'',query=useProject(slug),home=useHome(),settings=useSettings(),notify=useToast();
  const [params,setParams]=useSearchParams(),navigate=useNavigate(),queryClient=useQueryClient();
@@ -101,7 +104,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const detail=useCheckpoint(slug,current?.code??'');
- const step=current?(detail.data?.steps??[])[isFlagOn('uiRepairV1')?currentStudyStep(current).index:Math.max(0,current.currentStep-1)]??null:null;
+ const step=current?(detail.data?.steps??[])[studyRepair?currentStudyStep(current).index:Math.max(0,current.currentStep-1)]??null:null;
  useEffect(()=>{
   if(!room||!data||tab!=='Map'||!current)return;
   const frame=requestAnimationFrame(()=>{
@@ -149,7 +152,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const label=counts[tab];
  return <main id="main-content" className={'v7-page v7-path '+klass} aria-label="Path">
   <DetailHeader title={project.title} back="/projects" compact={<><Emblem subject={subject} seed={project.id} size={24} tier="glyph" animate={false}/><ProgressRing done={data.done} total={data.total}/></>}
-   action={<><Link className="v7-header-pill" to={isFlagOn('uiRepairV1')?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
+   action={<><Link className="v7-header-pill" to={studyRepair?reviewHref({kind:'path',id:project.id}):'/review?path='+encodeURIComponent(slug)} aria-label={due>0?'Review '+due+' cards on this path':'Review this path'}>{due>0?'Review '+due:'Review'}</Link><MoreActions label="More path actions" title={project.title} items={[
    {label:'Switch path',hint:'Open another path in the same place',icon:<MEANING_ICON.switchPath aria-hidden="true"/>,onClick:()=>setSwitcher(true)},
    {label:'View in Atlas',icon:<MEANING_ICON.concepts aria-hidden="true"/>,onClick:()=>{window.location.assign('#/atlas');}},
    ...(data.total>0&&data.done>=data.total?[{label:'Share this path',hint:'An image of the completed path',icon:<Share2 aria-hidden="true"/>,onClick:()=>{void sharePath();}}]:[]),
@@ -180,7 +183,11 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   </section>}
   <ProjectScheduler projectId={project.id}/>
   <div className="v7-path-tabs"><Segmented label="Path sections" tabs panelId="v7-path-panel" options={tabs.map(item=>counts[item])} value={label} onChange={setTab}/></div>
-  <PathEstimates projectId={project.id}/>
+  {studyRepair&&tab==='Map'&&current&&<div className="v7-path-current">
+   <Link className="v7-button v7-primary" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(current.code)}>Continue · {current.title}</Link>
+   {currentStudyStep(current).ordinal!==null&&<p>Step {currentStudyStep(current).ordinal} of {current.stepsTotal}{step?' · '+step:''}</p>}
+  </div>}
+  {(!studyRepair||tab==='Map')&&<PathEstimates projectId={project.id}/>}
   <section id="v7-path-panel" role="tabpanel" aria-label={tab} className="v7-path-panel">
    {tab==='Map'&&(cps.length?<ol className="v7-path-map" aria-label="Checkpoints" data-line-end={end}>
     {stages.map(stage=>{const rows=<ol>{stage.checkpoints.map((cp,offset)=>{const index=stage.start+offset;return <Row key={cp.id} slug={slug} cps={cps} index={index} step={index===currentIndex?step:null} reached={index<=end} onContinue={room?()=>setPrompt(true):undefined}/>;})}</ol>;

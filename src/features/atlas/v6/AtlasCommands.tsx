@@ -1,3 +1,4 @@
+import {useAtlasDialog} from './useAtlasDialog';
 import {useState,type FormEvent} from 'react';
 import {getApi} from '../../../data';
 import type {AtlasGraph} from '../../../data/types';
@@ -10,6 +11,7 @@ type Concept=AtlasGraph['concepts'][number]&{version?:number};
 export default function AtlasCommands({graph,sourceId,onClose,onSaved}:{
  graph:AtlasGraph;sourceId:string|null;onClose:()=>void;onSaved:()=>Promise<void>|void
 }){
+ const dialog=useAtlasDialog();
  const source=sourceId?graph.concepts.find(c=>c.id===sourceId) as Concept|undefined:null;
  const choices=graph.concepts.filter(c=>c.id!==sourceId&&
   (!source||c.subjectId===source.subjectId));
@@ -73,7 +75,7 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved}:{
  };
  const targetLabel=mode==='reparent'?'New parent concept':
   mode==='merge'?'Keep this concept':'Target concept';
- return <dialog open aria-label={source?'Edit Atlas idea '+source.name:'Create Atlas idea'}
+ return <dialog {...dialog} aria-label={source?'Edit Atlas idea '+source.name:'Create Atlas idea'}
   onCancel={event=>{event.preventDefault();if(!busy)onClose()}}
   onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();if(!busy)onClose()}}}
   className="fixed inset-0 z-50 m-auto max-h-[90vh] w-[min(95vw,540px)] overflow-y-auto rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-lg">

@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams,Link} from 'react-router';
 import {MoreHorizontal,Pause,Play,Trash2,BookOpen} from 'lucide-react';
@@ -32,6 +33,7 @@ const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
 /** PLAN §6.11 Card detail: the card as in a review, Memory (three stats over a real recall chart), History, notes for the tutor,
  *  and a sticky bar: "Review now" when the card is due, and "Edit card" (V38). */
 export default function CardV7({selectedNo}:{selectedNo?:number}={}){
+ const studyRepair=useStudyUi();
  const {no='0'}=useParams(),number=selectedNo??Number(no),query=useCard(number),projects=useProjects(),settings=useSettings(),notify=useToast(),navigate=useNavigate();
  const update=useUpdateNote(),status=useSetNoteStatus(),add=useAddComment(),dismiss=useDismissComment();
  const [editing,setEditing]=useState(false),[more,setMore]=useState(false),[deleting,setDeleting]=useState(false),[message,setMessage]=useState('');
@@ -50,7 +52,7 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
   if(!first?.cardId){notify('This card is unavailable for review.',{tone:'danger'});return;}
   starting.current=true;setReviewing(true);
   try{
-   const run=isFlagOn('uiRepairV1')?await openStudyTarget({kind:'card',id:first.cardId}):await startExactCard(first.cardId);
+   const run=studyRepair?await openStudyTarget({kind:'card',id:first.cardId}):await startExactCard(first.cardId);
    if(!run)throw Error('No eligible card');
    navigate('/review/run?run='+encodeURIComponent(run.id));
   }catch{notify('Could not start review for this card. Check that it is due and you have room in today’s review limit.',{tone:'danger'});}

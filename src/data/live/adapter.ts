@@ -189,6 +189,10 @@ export class LiveAdapter implements LemmaApi {
  }
  /** KC4: a Review-only metadata read. No card bodies, search cap, quota or
   * sibling collapse; RLS and explicit owner filters apply to every page. */
+ async getStudyTargetDue(target:import('../review-target').ReviewDomainTarget):Promise<number>{
+  const db=liveClient();await owner(db)
+  return checked(await db.rpc('study_target_due_count',{p_kind:target.kind,p_id:target.id}))
+ }
  async getNextStudyDue():Promise<{day:string;count:number}|null>{
   const db=liveClient();await owner(db)
   const result=await db.rpc('next_study_due')

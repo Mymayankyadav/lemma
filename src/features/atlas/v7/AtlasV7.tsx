@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {Illustration} from '../../../ui/v7/Illustration';
@@ -57,6 +58,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  model:AtlasModel;index:number;expanded:boolean;onExpand:(open:boolean)=>void;onClose:()=>void;onPick:(index:number)=>void;
  onPin:()=>void;onEdit:()=>void;onPreview:()=>void;
 }){
+ const studyRepair=useStudyUi();
  const star=model.stars[index],checkpoint=star.checkpoints[0];
  const drag=useRef<{y:number;moved:boolean}|null>(null),dragged=useRef(false),[offset,setOffset]=useState(0);
  const sheetRef=useRef<HTMLElement|null>(null);
@@ -84,7 +86,7 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   <h3 className="v7-atlas-eyebrow">{title} · {items.length}</h3>
   <ul>{items.map(other=><li key={model.stars[other].id}><button type="button" onClick={()=>onPick(other)}>
    <StarMark state={model.stars[other].state} subjectClassName={subjectClass(model.clusters.find(c=>c.index===model.stars[other].cluster)?.subject??'Other')}/>
-   <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>)}</ul>
+   <span className="v7-atlas-row-name"><FastTex source={model.stars[other].name}/></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>
  </div>;
  return <section ref={sheetRef} className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
@@ -99,11 +101,11 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className="v7-atlas-counts" data-testid="atlas-counts">{starCounts(model,index)}</p>
   {/* N161: the actions show when the sheet is pulled up; a peek shows only whole rows, never half-hidden buttons. */}
-  {(expanded||isFlagOn('uiRepairV1'))&&<div className="v7-atlas-actions">
+  {(expanded||studyRepair)&&<div className="v7-atlas-actions">
    {checkpoint?<Link className="v7-button v7-primary" to={'/p/'+checkpoint.projectSlug+'/cp/'+checkpoint.code}
      aria-label={'Open '+checkpointName(checkpoint.code)}><span>Open checkpoint</span></Link>
     :<StateButton variant="primary" disabledReason="Unavailable · No checkpoint uses this concept yet.">Open checkpoint</StateButton>}
-   {star.due>0?<Link className="v7-button v7-secondary" to={isFlagOn('uiRepairV1')?reviewHref({kind:'concept',id:star.id}):'/review/run?concept='+encodeURIComponent(star.slug)}><span>{isFlagOn('uiRepairV1')?'Review '+star.due:'Review cards'}</span></Link>
+   {star.due>0?<Link className="v7-button v7-secondary" to={studyRepair?reviewHref({kind:'concept',id:star.id}):'/review/run?concept='+encodeURIComponent(star.slug)}><span>{studyRepair?'Review '+star.due:'Review cards'}</span></Link>
     :<StateButton disabledReason="Unavailable · No cards are due.">Review cards</StateButton>}
   </div>}
   {expanded&&<div id="v7-atlas-sheet-more" className="v7-atlas-sheet-more">
@@ -123,10 +125,17 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
 export function atlasTooDense(stars:number,edges:number):boolean{return stars>250||edges>600;}
 /** v7 Atlas (PLAN §6.12): a seeded, searchable star map with a list view for assistive technology. */
 export default function AtlasV7(){
- const [atlasView,setAtlasView]=useState<'map'|'themes'|'bridges'>('map'),[atlasFilter,setAtlasFilter]=useState<AtlasFilter>('all'),[atlasKind,setAtlasKind]=useState<string>('any');
+ const studyRepair=useStudyUi();
+ const [legacyView,setLegacyView]=useState<'map'|'themes'|'bridges'>('map'),[atlasFilter,setAtlasFilter]=useState<AtlasFilter>('all'),[atlasKind,setAtlasKind]=useState<string>('any');
  const room=isFlagOn('v7Room'),home=useHome();
  const [subset,setSubset]=useState<'All'|'Tonight'|'Shaky'|'Demonstrated'>('All');
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
+ const repair=studyRepair,urlView=params.get('view');
+ const atlasView=repair?(urlView==='themes'||urlView==='bridges'?urlView:'map'):legacyView;
+ const setAtlasView=(value:'map'|'themes'|'bridges')=>{
+  if(!repair){setLegacyView(value);return;}
+  const next=new URLSearchParams(params);next.set('view',value);setParams(next);
+ };
  const atlasModel=useAtlasModel();
  const reduced=useReducedMotion();
  const model=useMemo(()=>query.data?buildAtlasModel({...query.data,concepts:query.data.concepts.map(c=>({...c,kind:atlasModel.data?.model.index[c.id]?.kind??c.kind,facets:atlasModel.data?.facets[c.id],gap:atlasModel.data?{p:Math.max(.05,...(atlasModel.data.facets[c.id]??[]).map(f=>f.gap)),lastAt:(d=>d?.length?new Date(d[d.length-1].at).toISOString():null)(atlasModel.data.model.direct[c.id])}:undefined}))}):null,[query.data,atlasModel.data]);
@@ -173,7 +182,8 @@ export default function AtlasV7(){
   const out=new URLSearchParams(params);out.delete('focus');
   const nextView=next.view??view;if(nextView==='list'&&!dense)out.set('view','list');else if(nextView==='map'&&dense)out.set('view','map');else if(nextView==='map')out.delete('view');else out.delete('view');
   const id=next.id===undefined?params.get('id'):next.id;if(id)out.set('id',id);else out.delete('id');
-  setParams(out,{replace:true});
+  if(repair&&next.view)out.set('view',next.view);
+  setParams(out,{replace:!repair||!next.view});
  };
  const select=(index:number|null,fly=false)=>{
   if(!model)return;setExpanded(false);
@@ -209,7 +219,7 @@ export default function AtlasV7(){
 
  const summary=atlasSummary(model);
  const selectedStar=selected===null?null:model.stars[selected];
- return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
+ return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-study-ui={repair?'':undefined} data-view={view} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}
   <AtlasExplore view={atlasView} onView={setAtlasView}/>
   {room&&<nav className="v7-room-atlas-subsets" aria-label="Concept subsets">{(['All','Tonight','Shaky','Demonstrated'] as const).map(label=><button key={label} className="v7-filter-chip" type="button" aria-pressed={subset===label} onClick={()=>{setSubset(label);setShown(PAGE);}}>{label}</button>)}</nav>}
@@ -223,14 +233,19 @@ export default function AtlasV7(){
     <span className="v7-atlas-row-name"><FastTex source={model.stars[i].name}/></span>
     <span className="v7-atlas-meta">{model.clusters.find(c=>c.index===model.stars[i].cluster)?.name}</span></button></li>)}</ul>
   </div>}
+  {repair&&highlighted!==null&&<div className="v7-atlas-filter-summary" role="status">
+   {rows.length+' matching '+(rows.length===1?'concept':'concepts')}
+   {rows.length===0&&<Button small onClick={()=>{setAtlasFilter('all');setAtlasKind('any');setSubset('All');}}>Clear filters</Button>}
+  </div>}
   {atlasView!=='map'?null:view==='map'?<section className="v7-atlas-map" aria-label="Atlas map" aria-describedby="v7-atlas-map-summary">
-   <AtlasFilters floating filter={atlasFilter} onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind}/>
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} focusCluster={focusCluster} highlighted={highlighted}
      insets={{top:room?120:72,right:0,bottom:DOCK+(selectedStar?PEEK+16:0),left:0}} onSelect={index=>select(index)}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
       <Button onClick={()=>update({view:'list'})}>Show the list</Button></div>
     :<p role="status" className="v7-atlas-state">Arranging the sky…</p>}
+   <div className="v7-atlas-map-tools">
+   <AtlasFilters floating filter={atlasFilter} onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind}/>
    <div className="v7-atlas-legend">
     <button type="button" className="v7-atlas-chip" aria-expanded={legend} aria-controls="v7-atlas-legend" onClick={()=>setLegend(open=>!open)}>Legend</button>
     {legend&&<ul id="v7-atlas-legend" aria-label="Star states">{legendOrder.map(state=><li key={state}><StarMark state={state} subjectClassName={subjectClass('Other')}/>{stateLabel[state]}</li>)}
@@ -241,19 +256,19 @@ export default function AtlasV7(){
     <IconButton label="Zoom in" onClick={()=>map.current?.zoomBy(1.5)}><Plus aria-hidden="true"/></IconButton>
     <IconButton label="Zoom out" onClick={()=>map.current?.zoomBy(1/1.5)}><Minus aria-hidden="true"/></IconButton>
     <IconButton label="Recentre map" onClick={()=>map.current?.recentre()}><Crosshair aria-hidden="true"/></IconButton>
-   </div>
+   </div></div>
   </section>
   :<section className="v7-atlas-list" aria-label="Concept list">
    <AtlasFilters filter={atlasFilter} onFilter={setAtlasFilter} kind={atlasKind} onKind={setAtlasKind}/>
    <p className="v7-atlas-meta">{summary}</p>
    {dense&&params.get('view')!=='list'&&<p className="v7-atlas-meta" role="note">Your sky has {model.stars.length.toLocaleString('en-GB')} concepts, so it opens as a list. Choose Map to see the whole sky.</p>}
    {room&&<nav className="v7-room-atlas-index" aria-label="Subject index">{model.clusters.filter(cluster=>rows.some(index=>model.stars[index].cluster===cluster.index)).map(cluster=><button type="button" key={cluster.id} aria-label={'Jump to '+cluster.name} onClick={()=>{setShown(rows.length);requestAnimationFrame(()=>document.getElementById('room-atlas-'+cluster.index)?.scrollIntoView({block:'start'}));}}>{cluster.name[0]}</button>)}</nav>}
-   {room?model.clusters.map(cluster=>{const members=rows.slice(0,shown).filter(index=>model.stars[index].cluster===cluster.index);return members.length>0&&<section key={cluster.id} id={'room-atlas-'+cluster.index} className="v7-room-atlas-subject" aria-label={cluster.name}><h2 className="v7-headline">{cluster.name}</h2><ul>{members.map(i=>{const star=model.stars[i];return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}><StarMark state={star.state} subjectClassName={subjectClass(cluster.subject)}/><span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span><small>{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}</small></span><ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul></section>;}):<ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
+   {room?model.clusters.map(cluster=>{const members=rows.slice(0,shown).filter(index=>model.stars[index].cluster===cluster.index);return members.length>0&&<section key={cluster.id} id={'room-atlas-'+cluster.index} className="v7-room-atlas-subject" aria-label={cluster.name}><h2 className="v7-headline">{cluster.name}</h2><ul>{members.map(i=>{const star=model.stars[i];return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}><StarMark state={star.state} subjectClassName={subjectClass(cluster.subject)}/><span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span><small>{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}</small></span><ChevronRight aria-hidden="true"/></button>{studyRepair&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul></section>;}):<ul>{rows.slice(0,shown).map(i=>{const star=model.stars[i],cluster=model.clusters.find(c=>c.index===star.cluster);
     return <li key={star.id} id={'v7-atlas-row-'+star.id}><button type="button" aria-current={i===selected?'true':undefined} onClick={()=>select(i)}>
      <StarMark state={star.state} subjectClassName={subjectClass(cluster?.subject??'Other')}/>
      <span className="v7-atlas-row-text"><span className="v7-atlas-row-name"><FastTex source={star.name}/></span>
       <span className="v7-atlas-meta">{stateLabel[star.state]}{star.due?' · '+star.due+' due':''}{cluster?' · '+cluster.name:''}</span></span>
-     <ChevronRight aria-hidden="true"/></button>{isFlagOn('uiRepairV1')&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul>}
+     <ChevronRight aria-hidden="true"/></button>{studyRepair&&star.due>0&&<Link className="v7-button v7-secondary v7-small" to={reviewHref({kind:'concept',id:star.id})}>Review {star.due}</Link>}</li>;})}</ul>}
    {room&&rows.length===0&&<p role="status">No concepts in this subset.</p>}
    {rows.length>shown&&<Button onClick={()=>setShown(count=>count+PAGE)}>Show more concepts ({rows.length-shown} left)</Button>}
    <Button onClick={()=>setDialog('new')}>New concept</Button>
