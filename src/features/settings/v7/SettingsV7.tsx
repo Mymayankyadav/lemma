@@ -8,6 +8,7 @@ import {Bell,CalendarClock,ChevronRight,Copy,Database,Eye,EyeOff,LogOut,MessageC
 import {useRotateConnectorSecret,useSettings,useSignOut,useSubjects,useUpdateSettings,useUpdateSubject} from '../../../data/hooks';
 import type {Settings,Subject as DataSubject,UiPreferences} from '../../../data/types';
 import {getMode} from '../../../data/mode';
+import {usePlanRelease} from '../../../data/usePlanRelease';
 import {applyAppearance,readAppearance} from '../../../styles/appearance';
 import {DetailHeader,HubHeader} from '../../../app/v7/V7Shell';
 import {chooseForSession,chosenColours,effectiveColours} from '../../../app/v7/subjectColours';
@@ -21,7 +22,7 @@ import {ConnectorAddress} from '../ConnectorAddress';
 import StudyDefaults from '../v6/StudyDefaults';
 import Activities from '../v6/Activities';
 import Focus from '../v6/Focus';
-import {PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
+import {Group,InfoRow,PlanningLists,ReminderLists,StudyLists} from './SettingsLists';
 import {DataAccount} from './DataAccount';
 import './settings.css';
 import {isNative} from '../../../platform/native';
@@ -40,11 +41,13 @@ export const sectionOf=(value:string|null):Section|null=>value?legacySection[val
 const modeWord:Record<Mode,string>={auto:'Auto',day:'Day',night:'Night'};
 
 /** One line per index row with the current value (PLAN §6.14 "Done when"). */
-export function settingsSummary(section:Section,settings:Settings|undefined,subjectCount:number,mode:Mode,systemNight:boolean):string{
+export function settingsSummary(section:Section,settings:Settings|undefined,subjectCount:number,mode:Mode,systemNight:boolean,tutorReleased=false):string{
  if(!settings)return '';
  switch(section){
   case 'appearance':return mode==='auto'?(systemNight?'Night':'Day')+' · follows the system':modeWord[mode];
-  case 'tutor':return (settings.connectorUrl?'Connected':'Not connected')+' · '+(settings.preferredChat==='chatgpt'?'ChatGPT':'Claude');
+  case 'tutor':
+   if(tutorReleased)return settings.connectorLastSeenAt?'Manual handoff · Connector used':'Manual handoff';
+   return (settings.connectorUrl?'Connected':'Not connected')+' · '+(settings.preferredChat==='chatgpt'?'ChatGPT':'Claude');
   case 'study':return 'Target recall '+Math.round(settings.desiredRetention*100)+'% · '+settings.newPerDay+' new cards a day';
   case 'planning':{const p=settings.planning;return p?'Daily minimum '+formatDuration(p.daily_minimum_minutes)+' · day ends '+p.window_end:'Daily minimum and working hours';}
   case 'reminders':return settings.notify?.enabled?'On · '+(settings.notify.mode==='daily'?'daily':settings.notify.mode==='weekly'?'weekly':'as they happen')+(settings.notify.studyTime?' at '+settings.notify.studyTime:''):'Off';
@@ -144,9 +147,15 @@ function Subjects({settings}:{settings:Settings}){
   {open&&<SubjectSheet subject={open} taken={taken} current={colourOf(open)} onClose={()=>setOpen(null)}/>}
  </div>;
 }
-function Tutor({settings}:{settings:Settings}){
+function Tutor({settings,released}:{settings:Settings;released:boolean}){
  const rotate=useRotateConnectorSecret(),notify=useToast(),[revealed,setRevealed]=useState(false);
+ const lastUsed=settings.connectorLastSeenAt?new Date(settings.connectorLastSeenAt):null;
  return <div className="v7-settings-body">
+  {released&&<Group title="Checkpoint tutor">
+   <InfoRow label="Manual handoff" hint="Open a checkpoint to copy a question and import a reply."/>
+   <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Lemma needs provider approval for direct access to a ChatGPT plan."/>
+   <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
+  </Group>}
   <div className="v7-settings-card">
    <p className="v7-eyebrow">Connector address</p>
    <ConnectorAddress value={revealed?settings.connectorUrl:settings.connectorUrl.replace(/\/[^/]+$/,'/••••••')}/>
@@ -166,6 +175,7 @@ function Legacy({children}:{children:ReactNode}){return <div className="v7-setti
  *  their forms on v7 pages with their `?section=` links. */
 export default function SettingsV7(){
  const [params]=useSearchParams(),navigate=useNavigate(),settings=useSettings(),subjects=useSubjects(),signOut=useSignOut();
+ const tutorReleased=usePlanRelease('tutorThreads');
  const section=sectionOf(params.get('section'));
  const location=useLocation(),navigation=useNavigationType(),heading=useRef<HTMLHeadingElement>(null);
  const focusResult=location.state?.v7SearchDestination===true&&navigation!=='POP';
@@ -185,12 +195,12 @@ export default function SettingsV7(){
   {settings.isError&&<div role="alert" className="v7-progress-error"><p>Erratum: your settings didn’t load. Try again.</p><Button onClick={()=>{void settings.refetch();}}>Retry</Button></div>}
   {settings.data&&groups.map((group,index)=><ul key={index} className="v7-settings-card">{group.map(item=>{const Icon=icons[item];return <li key={item}>
    <Link className="v7-settings-row" to={'/settings?section='+item} aria-current={item===current?'page':undefined}><span className="v7-settings-icon" aria-hidden="true"><Icon/></span>
-    <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
+    <span><strong>{sectionTitle[item]}</strong><small>{settingsSummary(item,settings.data,subjects.data?.length??0,mode,systemNight,tutorReleased)}</small></span><ChevronRight aria-hidden="true"/></Link></li>;})}</ul>)}
  </>;
  const content=(section:Section)=>!data?<Skeleton/>:<>
   {section==='appearance'&&<Appearance settings={data}/>}
   {section==='subjects'&&<Subjects settings={data}/>}
-  {section==='tutor'&&<Tutor settings={data}/>}
+  {section==='tutor'&&<Tutor settings={data} released={tutorReleased}/>}
   {section==='study'&&(params.get('advanced')==='1'
    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}

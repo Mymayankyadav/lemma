@@ -3,6 +3,7 @@ import { admin } from './db.ts';
 import { createMcpHandler } from './deps.ts';
 import { buildServer } from './server.ts';
 import { selftest } from './selftest.ts';
+import {serveTutor} from './tutor-profile.ts';
 
 const cors={'Access-Control-Allow-Origin':'*','Access-Control-Allow-Headers':'*','Access-Control-Allow-Methods':'GET,POST,OPTIONS,DELETE','Access-Control-Expose-Headers':'Mcp-Session-Id','Vary':'Origin'};
 const cache=new Map<string,{userId:string;until:number}>();
@@ -30,8 +31,15 @@ Deno.serve(async (req:Request)=>{
   const path=new URL(req.url).pathname.split('/');
   const i=path.indexOf('mcp');
   const secret=i>=0?path[i+1]:null;
-  if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
   try{
+    if(secret==='tutor'&&path.length===i+2){
+      const response=await serveTutor(req,admin());
+      const headers=new Headers(response.headers);
+      for(const [k,v] of Object.entries(cors))headers.set(k,v);
+      headers.set('Cache-Control','no-store');
+      return new Response(response.body,{status:response.status,headers});
+    }
+    if(!secret||!(/^[0-9a-f]{48}$/i.test(secret)))return new Response(null,{status:404,headers:cors});
     const userId=await owner(secret);
     if(!userId)return new Response(null,{status:404,headers:cors});
     const c={db:admin(),userId};

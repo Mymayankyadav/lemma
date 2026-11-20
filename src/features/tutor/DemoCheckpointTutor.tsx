@@ -1,79 +1,148 @@
-import {useEffect,useId,useState} from 'react'
+import {useCallback,useEffect,useId,useRef,useState,useSyncExternalStore} from 'react'
+import {Link} from 'react-router'
+import {usePlanRelease} from '../../data/usePlanRelease'
+import {authGeneration,authOwner,onAccountChange} from '../../data/authBoundary'
+import type {TutorContextSelection} from '../../data/tutor/turn-model'
+import type {ManualTutor,TutorThreadView} from '../../data/tutor/manual-api'
 import {getDemoProfile,getMode} from '../../data/mode'
 import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt'
 import {openDemoManualTutor} from '../../data/tutor/demo-manual'
 import {isFlagOn} from '../../flags'
 import {Button,Sheet} from '../../ui/v7/components'
 
-type Scope = { pathId: string; checkpointId: string; title: string; objective: string }
-type Tutor = Awaited<ReturnType<typeof openDemoManualTutor>>
-type Thread = Awaited<ReturnType<Tutor['resume']>>
+type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;authScope?:{ownerId:string;generation:number;checkpointId:string}}
+type Handoff = {text:string;requestId:string}
+type EntryProps = {scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
+const subscribe=(refresh:()=>void)=>onAccountChange(refresh)
+const authKey=()=>JSON.stringify([authOwner(),authGeneration()])
 
-function useDraft(key: string) {
+function useDraft(key:string,live=false) {
+  const storage=()=>live?localStorage:sessionStorage
   const [text,setText] = useState(() => {
-    try { return sessionStorage.getItem(key) ?? '' } catch { return '' }
+    try { return storage().getItem(key) ?? '' } catch { return '' }
   })
   const [unsaved,setUnsaved] = useState(false)
   function change(value: string) {
     setText(value)
     try {
-      if (value) sessionStorage.setItem(key,value)
-      else sessionStorage.removeItem(key)
+      if (value) storage().setItem(key,value)
+      else storage().removeItem(key)
       setUnsaved(false)
     } catch { setUnsaved(true) }
   }
   function clearIfUnchanged(expected: string) {
     setText(current=>current===expected?'':current)
     try {
-      if(sessionStorage.getItem(key)===expected) sessionStorage.removeItem(key)
+      if(storage().getItem(key)===expected) storage().removeItem(key)
     } catch {setUnsaved(true)}
   }
   return {text,change,clearIfUnchanged,unsaved}
 }
 
-export function DemoCheckpointTutor({scope}:{scope:Scope}) {
-  if (!isFlagOn('tutorManualDemo') || getMode() !== 'demo') return null
-  return <TutorEntry key={JSON.stringify([getDemoProfile(),scope.pathId,scope.checkpointId])} scope={scope}/>
+export function CheckpointTutor(props:EntryProps) {
+  useSyncExternalStore(subscribe,authKey)
+  const {scope}=props
+  const live=getMode()==='live',released=usePlanRelease('tutorThreads')
+  if(live){
+    const verified=scope.authScope
+    if(!released||!verified||verified.ownerId!==authOwner()||
+      verified.generation!==authGeneration()||verified.checkpointId!==scope.checkpointId)return null
+  }else if(!isFlagOn('tutorManualDemo'))return null
+  const account=live?[scope.authScope!.ownerId,scope.authScope!.generation]:[getDemoProfile()]
+  return <TutorEntry key={JSON.stringify([live,...account,scope.pathId,scope.checkpointId])} {...props} live={live}/>
 }
 
-function TutorEntry({scope}:{scope:Scope}) {
+function TutorEntry(props:EntryProps & {live:boolean}) {
   const [open,setOpen] = useState(false)
-  return <section className="v7-learn-card" aria-label="Manual tutor preview">
-    <Button onClick={()=>setOpen(true)}>Open manual tutor</Button>
-    <Sheet title="Manual tutor" eyebrow="Demo preview" open={open} onClose={()=>setOpen(false)}>
-      {open && <TutorBody scope={scope}/>}
+  useEffect(()=>{if(props.handoff)setOpen(true)},[props.handoff])
+  return <section className="v7-learn-card" aria-label={props.live?'Checkpoint tutor':'Manual tutor preview'}>
+    <Button onClick={()=>setOpen(true)}>{props.live?'Open checkpoint tutor':'Open manual tutor'}</Button>
+    <Sheet title={props.live?'Checkpoint tutor':'Manual tutor'} eyebrow={props.live?undefined:'Demo preview'} open={open} onClose={()=>setOpen(false)}>
+      {open && <TutorBody {...props}/>}
     </Sheet>
   </section>
 }
 
-function TutorBody({scope}:{scope:Scope}) {
-  const draftKey='lemma.demo-tutor:'+JSON.stringify([getDemoProfile(),scope.pathId,scope.checkpointId])
-  const question=useDraft(draftKey+':question'), context=useDraft(draftKey+':context')
+function TutorBody({scope,live,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean}) {
+  const draftKey=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+
+    JSON.stringify([live?scope.authScope!.ownerId:getDemoProfile(),scope.pathId,scope.checkpointId])
+  const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
+  const [sourcePage,setSourcePage]=useState('1')
+  const [sourcePreview,setSourcePreview]=useState<TutorContextSelection>()
+  const sourceDraft=useDraft(draftKey+':source',live)
+  let attachedSource:TutorContextSelection|undefined
+  try {attachedSource=sourceDraft.text?JSON.parse(sourceDraft.text):undefined} catch {/* Restore only a saved selection. */}
   const [selectedLocal,setSelectedLocal]=useState('')
-  const attachedLocal=useDraft(draftKey+':attached-local')
+  const attachedLocal=useDraft(draftKey+':attached-local',live)
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
-  const [session,setSession]=useState<{api:Tutor; thread:Thread}>()
+  const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
   const [busy,setBusy]=useState(false)
   const [error,setError]=useState('')
   const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
   const {pathId,checkpointId}=scope
   const excerpt=scope.objective.slice(0,1200)
+  const [history,setHistory]=useState<TutorThreadView['turns']>([])
+  const [historyCursor,setHistoryCursor]=useState<number|null>()
+  const [draftNext,setDraftNext]=useState(false)
+  const [showLocal,setShowLocal]=useState(false)
+  const [grant,setGrant]=useState<{token:string;endpoint:string}>()
+  const consumed=useRef('')
   useEffect(()=>{
-    let active=true
-    let api:Tutor|undefined
+    if(!padHandoff||consumed.current===padHandoff.requestId)return
+    consumed.current=padHandoff.requestId
+    setDraftNext(true);setShowLocal(true);setSelectedLocal(padHandoff.text);setPreview(previewLocalTutorExcerpt(padHandoff.text))
+    onHandoffConsumed?.(padHandoff.requestId)
+  },[padHandoff,onHandoffConsumed])
+  const readVersion=useRef(0)
+  const refresh=useCallback(async(api:ManualTutor,reconcile=false)=>{
+    const request=++readVersion.current
+    const thread=await api.resume(undefined,reconcile)
+    if(request===readVersion.current){setSession({api,thread});setError('')}
+  },[])
+  const ownerId=scope.authScope?.ownerId,generation=scope.authScope?.generation
+  useEffect(()=>{
+    let active=true,api:ManualTutor|undefined
     async function connect() {
       try {
-        api=await openDemoManualTutor({pathId,checkpointId})
-        if (!active) {api.close();return}
-        const thread=await api.resume()
-        if (active) setSession({api,thread})
-      } catch { if (active) setError('Could not open the tutor preview. Close it and try again.') }
+        api=live?(await import('../../data/tutor/live-manual')).openLiveManualTutor({
+          pathId,checkpointId,ownerId:ownerId!,generation:generation!,
+        }):await openDemoManualTutor({pathId,checkpointId})
+        if(!active){api.close();return}
+        await refresh(api,true)
+      } catch {if(active)setError('Could not open the saved tutor thread. Close it and try again.')}
     }
     void connect()
-    return ()=>{active=false;api?.close()}
-  },[pathId,checkpointId])
-
+    return ()=>{active=false;readVersion.current++;api?.close()}
+  },[pathId,checkpointId,live,ownerId,generation,refresh])
+  const activeApi=session?.api
+  const processed=useRef<TutorThreadView|undefined>(undefined)
+  useEffect(()=>{
+    const thread=session?.thread
+    if(!thread?.reconciled?.length||processed.current===thread)return
+    processed.current=thread
+    for(const item of thread.reconciled){
+      if(item.operation==='start'&&item.status==='submitted')question.clearIfUnchanged(item.text)
+      if(item.operation==='manual'&&['completed','already-completed'].includes(item.status)){
+        const key=draftKey+':reply:'+item.turnId
+        try {if(localStorage.getItem(key)===item.text)localStorage.removeItem(key)} catch {/* Keep the existing draft on failure. */}
+      }
+      if(item.status==='conflict'||item.status==='turn-pending')setError('A saved submission conflicted. Your draft was kept.')
+    }
+  },[session,draftKey,question])
+  const pendingId=session?.thread.head.pendingTurnId
+  useEffect(()=>{setGrant(undefined)},[pendingId])
+  useEffect(()=>{
+    if(!live||!activeApi)return
+    let active=true
+    const update=()=>{if(document.visibilityState!=='hidden')void refresh(activeApi,true).catch(()=>{
+      if(active)setError('Could not refresh. Showing the last confirmed conversation.')
+    })}
+    window.addEventListener('focus',update);window.addEventListener('online',update)
+    document.addEventListener('visibilitychange',update)
+    const timer=pendingId?window.setInterval(update,15000):undefined
+    return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);document.removeEventListener('visibilitychange',update)}
+  },[live,activeApi,pendingId,refresh])
   async function saveQuestion() {
     if (!session || busy || !question.text.trim()) return
     setBusy(true);setError('');setCopyStatus('')
@@ -82,15 +151,17 @@ function TutorBody({scope}:{scope:Scope}) {
       const result=await session.api.submit(crypto.randomUUID(),{
         question:question.text,
         ...(local?.kind==='preview' ? {localExcerpt:addLocalTutorExcerpt(local)} : {}),
-        selectedContext:context.text && excerpt ? [{kind:'checkpoint',refId:checkpointId,version:'demo',excerpt}] : [],
-      })
+        selectedContext:[...(context.text && excerpt ? [{kind:'checkpoint' as const,refId:checkpointId,version:'demo',excerpt}] : []),...(attachedSource?[attachedSource]:[])],
+      },session.thread.head.lastSequence)
       if(result.kind==='submitted') {
-        question.clearIfUnchanged(question.text);attachedLocal.clearIfUnchanged(attachedLocal.text)
+        question.clearIfUnchanged(question.text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
       }
-      else setError('A question is already waiting. Your new text was kept.')
-      const thread=await session.api.resume()
-      setSession({api:session.api,thread})
-    } catch { setError('Could not confirm the saved question. Reopen to check before retrying.') }
+      await refresh(session.api)
+      if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
+    } catch (err) {
+      await refresh(session.api).catch(()=>{})
+      setError(err instanceof Error?err.message:'Could not confirm the saved question. Check its pending submission.')
+    }
     finally {setBusy(false)}
   }
 
@@ -99,8 +170,7 @@ function TutorBody({scope}:{scope:Scope}) {
     setBusy(true);setError('')
     try {
       const result=await session.api.confirmImport(turnId,version,draftId,body)
-      const thread=await session.api.resume()
-      setSession({api:session.api,thread})
+      await refresh(session.api)
       if (result.kind==='completed') return true
       if (result.kind==='already-completed') {
         setError('Another reply was already imported. Your paste was kept under Recoverable replies.')
@@ -108,7 +178,11 @@ function TutorBody({scope}:{scope:Scope}) {
       }
       setError('The reply was not confirmed. Your paste was kept.')
       return false
-    } catch { setError('Could not confirm the saved reply. Reopen to check before retrying.');return false }
+    } catch (err) {
+      await refresh(session.api).catch(()=>{})
+      setError(err instanceof Error?err.message:'Could not confirm the saved reply. Your paste was kept.')
+      return false
+    }
     finally {setBusy(false)}
   }
 
@@ -118,15 +192,36 @@ function TutorBody({scope}:{scope:Scope}) {
   const handoff=pending?[pending.snapshot.question,...pending.snapshot.selectedContext.map(x=>x.excerpt),
     ...(localExcerpt ? ['Local excerpt (learner-provided; not a citation):\n'+localExcerpt.text] : []),
   ].join('\n\n'):''
+  async function action(run:()=>Promise<unknown>) {
+    if(!session||busy)return false
+    setBusy(true);setError('')
+    try {await run();await refresh(session.api);return true}
+    catch (err){await refresh(session.api).catch(()=>{});setError(err instanceof Error?err.message:'This operation could not be confirmed.');return false}
+    finally {setBusy(false)}
+  }
   async function copy() {
     try { await navigator.clipboard.writeText(handoff);setCopyStatus('Question copied.') }
     catch { setCopyStatus('Clipboard unavailable. Select and copy the text yourself.') }
   }
   return <>
-    <p>{scope.title}. This demo stays in this browser. Nothing is sent to a tutor.</p>
+    <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
     {error&&<p role="alert">{error}</p>}
+    {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Last confirmed conversation: '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
     {!session&&!error&&<p role="status">Opening saved tutor preview…</p>}
-    {session&&!pending&&<div className="v7-field-group">
+    {session?.thread.outbox?.map(item=><section key={item.operationId} aria-label="Pending tutor submission">
+      <p>A saved submission is waiting for confirmation.</p><p style={{whiteSpace:'pre-wrap'}}>{item.text}</p>
+      <Button disabled={busy} onClick={()=>void action(async()=>{
+        const status=await session.api.retry?.(item.operationId)
+        if(status==='submitted'){
+          question.clearIfUnchanged(item.text)
+          if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
+        }
+        if(status==='conflict'||status==='turn-pending')throw new Error('The submission conflicted. Your draft was kept.')
+      })}>Check and retry submission</Button>
+    </section>)}
+    {session?.thread.canSubmit===false&&!session.thread.offline&&!pending&&<p>New tutor questions are unavailable.</p>}
+    {live&&pending&&!draftNext&&<Button onClick={()=>setDraftNext(true)}>Draft next question</Button>}
+    {session&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
       <label htmlFor={questionId}>Question</label>
       <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
         disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
@@ -135,9 +230,21 @@ function TutorBody({scope}:{scope:Scope}) {
           onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
-      <details>
+      {scope.sourceShort&&session.api.previewSource&&<details><summary>Add a page from {scope.sourceShort}</summary>
+        <label>Page number<input type="number" min={1} step={1} value={sourcePage} disabled={busy}
+          onChange={e=>{setSourcePage(e.currentTarget.value);setSourcePreview(undefined)}}/></label>
+        <Button disabled={busy||!Number.isInteger(Number(sourcePage))||Number(sourcePage)<1}
+          onClick={()=>void action(async()=>setSourcePreview(await session.api.previewSource!(Number(sourcePage))))}>Preview linked source page</Button>
+        {sourcePreview&&<section aria-label="Source excerpt preview"><p style={{whiteSpace:'pre-wrap'}}>{sourcePreview.excerpt}</p>
+          <Button disabled={busy} onClick={()=>{sourceDraft.change(JSON.stringify(sourcePreview));setSourcePreview(undefined)}}>Add source excerpt</Button>
+        </section>}
+      </details>}
+      {attachedSource&&<section aria-label="Attached source excerpt"><p>{scope.sourceShort}, page {attachedSource.page}</p>
+        <p style={{whiteSpace:'pre-wrap'}}>{attachedSource.excerpt}</p><Button disabled={busy} onClick={()=>sourceDraft.change('')}>Remove source excerpt</Button>
+      </section>}
+      <details open={showLocal} onToggle={event=>setShowLocal(event.currentTarget.open)}>
         <summary>Add selected local text</summary>
-        <p>Paste only the text you selected. It stays local until you choose to copy the saved question.</p>
+        <p>{live?'Add the selected excerpt, then save your question to include it in the tutor thread.':'Paste only the text you selected. It stays local until you choose to copy the saved question.'}</p>
         <label htmlFor={selectionId}>Paste selected local text</label>
         <textarea id={selectionId} className="v7-field" rows={3} value={selectedLocal} disabled={busy}
           onChange={e=>{setSelectedLocal(e.currentTarget.value);setPreview(undefined)}}/>
@@ -160,24 +267,60 @@ function TutorBody({scope}:{scope:Scope}) {
         <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{attachedLocal.text}</p>
         <Button disabled={busy} onClick={()=>attachedLocal.change('')}>Remove local excerpt</Button>
       </section>}
-      <Button disabled={busy||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
+      <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
       {(question.unsaved||context.unsaved||attachedLocal.unsaved)&&<p role="alert">This draft may not survive a reload.</p>}
     </div>}
     {pending&&<div className="v7-field-group">
-      <p role="status">Saved. Waiting for a reply.</p>
+      <p role="status">{pending.claimExpiresAt?'Tutor is answering until '+new Date(pending.claimExpiresAt).toLocaleTimeString()+'.':'Saved. Waiting for a reply.'}</p>
       <label htmlFor={copyId}>Text for your tutor</label>
       <textarea id={copyId} className="v7-field" value={handoff} rows={4} readOnly/>
       <Button onClick={()=>{void copy()}}>Copy for tutor</Button>
       {copyStatus&&<p role="status">{copyStatus}</p>}
+      {live&&session&&<>
+        <Button disabled={busy} onClick={()=>void action(()=>Promise.resolve())}>Check for reply</Button>
+        {thread?.canConnect&&session.api.issueGrant&&<Button disabled={busy} onClick={()=>void action(async()=>{
+          setGrant(await session.api.issueGrant!(pending.id,pending.version))
+        })}>Create a connector grant for this question</Button>}
+        {grant&&<section aria-label="Private tutor connector grant">
+          <p>Use this address and bearer token with a compatible host. The grant covers this question for one day.</p>
+          <label>Connector address<input value={grant.endpoint} readOnly/></label>
+          <label>Turn reference<input value={pending.id} readOnly/></label>
+          <Button onClick={()=>void navigator.clipboard.writeText(grant.token).then(()=>setCopyStatus('Bearer token copied.')).catch(()=>setCopyStatus('Clipboard unavailable.'))}>Copy bearer token</Button>
+        </section>}
+        <Button disabled={busy} onClick={()=>void action(async()=>{await session.api.stopGrants?.(pending.id,pending.version);setGrant(undefined)})}>Revoke access and switch tutor</Button>
+        <Button disabled={busy} onClick={()=>void action(()=>session.api.cancel!(pending.id,pending.version))}>Cancel question</Button>
+      </>}
+
     </div>}
-    {pending&&<ReplyEditor key={pending.id} draftKey={draftKey+':reply:'+pending.id} busy={busy}
+    {pending&&<ReplyEditor live={live} key={pending.id} draftKey={draftKey+':reply:'+pending.id} busy={busy}
       completed={false} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
-    {thread?.turns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label="Imported reply">
-      <h3>Imported by you</h3>
+    {thread?.turns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
+      <h3>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':'Tutor reply'}</h3>
+      {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>Host reported by the connector: {turn.finalReply.provenance.reportedHost} (unverified)</p>}
       <p className="v7-field-hint">{turn.snapshot.question}</p>
       <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.finalReply.body}</p>
-      <ReplyEditor draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
+      {!!turn.finalReply.citations.length&&<details><summary>Selected citations</summary>
+        <ul>{turn.finalReply.citations.map((citation,index)=>{
+          const selection=turn.snapshot.selectedContext.find(s=>s.kind===citation.kind&&s.refId===citation.refId&&s.version===citation.version&&s.page===citation.page)
+          return selection&&<li key={index}>{selection.kind==='source'?'Source page '+selection.page:'Checkpoint objective'} · version {selection.version}
+            <p style={{whiteSpace:'pre-wrap'}}>{selection.excerpt}</p></li>
+        })}</ul>
+      </details>}
+      {turn.finalReply.suggestions.map(suggestion=><p key={suggestion.intentId}>
+        {suggestion.summary} {suggestion.proposalId&&(suggestion.status==='pending'
+          ?<Link to={suggestion.kind==='card'||suggestion.kind==='card_edit'?'/proposals?card='+encodeURIComponent(suggestion.proposalId):'/proposals/'+encodeURIComponent(suggestion.proposalId)}>Review proposal</Link>
+          :<span>{suggestion.status}</span>)}
+      </p>)}
+      {session?.api.proposeCard&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
+      <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
     </article>)}
+    {thread?.turns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
+    {session&&thread?.before&&<Button onClick={()=>void action(async()=>{
+      const older=await session.api.resume(historyCursor??thread.before!)
+      setHistory(seen=>[...older.turns,...seen])
+      setHistoryCursor(older.before??null)
+    })} disabled={busy||historyCursor===null}>Load earlier questions</Button>}
+    {history.map(t=><article key={t.id}><h3>{t.snapshot.question}</h3>{t.status==='completed'&&<p style={{whiteSpace:'pre-wrap'}}>{t.finalReply.body}</p>}</article>)}
     {!!thread?.recoveredDrafts.length&&<details><summary>Recoverable replies</summary>
       {thread.recoveredDrafts.map((item,i)=><div key={i} className="v7-field-group">
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
@@ -186,10 +329,19 @@ function TutorBody({scope}:{scope:Scope}) {
   </>
 }
 
-function ReplyEditor({draftKey,busy,completed,onConfirm}:{
-  draftKey:string;busy:boolean;completed:boolean;onConfirm:(body:string,id:string)=>Promise<boolean>;
+function CardSuggestion({disabled,onPropose}:{disabled:boolean;onPropose:(front:string,back:string)=>Promise<boolean>}) {
+  const [front,setFront]=useState(''),[back,setBack]=useState('')
+  return <details><summary>Draft a card from this reply</summary>
+    <label>Front<textarea disabled={disabled} value={front} maxLength={1500} onChange={e=>setFront(e.target.value)}/></label>
+    <label>Back<textarea disabled={disabled} value={back} maxLength={3000} onChange={e=>setBack(e.target.value)}/></label>
+    <Button disabled={disabled||!front.trim()} onClick={()=>void onPropose(front,back).then(saved=>{if(saved){setFront('');setBack('')}})}>Send to proposal review</Button>
+  </details>
+}
+
+function ReplyEditor({draftKey,live,busy,completed,onConfirm}:{
+  live:boolean;draftKey:string;busy:boolean;completed:boolean;onConfirm:(body:string,id:string)=>Promise<boolean>;
 }) {
-  const draft=useDraft(draftKey)
+  const draft=useDraft(draftKey,live)
   const labelId=useId()
   const [preview,setPreview]=useState<{body:string;id:string}>()
   if (completed&&!draft.text&&!preview) return null

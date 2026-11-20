@@ -1,0 +1,69 @@
+{
+  "table": "tutor_attempts",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "Derived server-side from the grant",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "grant_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "generation": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "lease_until": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "finished_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "reason": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    },
+    "created_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts via owner-scoped tutor commands",
+      "mcpPath": "supabase/functions/mcp/tutor-profile.ts via per-turn grants and server-validated lease",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the owner, checkpoint or thread"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import type { LemmaApi } from '../api'
 import { textKind } from '../../pdf/text-source'
 import { liveClient } from './client'
+import {authGeneration, authOwner} from '../authBoundary'
 import { checked, fail, owner, rows, toDb, settingsRow, styleRow, subjectRow, projectRow, sourceRow, sessionRow, checkpointRow, cardState, cardStateDb, commentRow, slugify, noteOrds, type Row } from './helpers'
 import { projectProgress, conceptStatus } from '../../lib/derive'
 import {buildAtlasEnvelope,runAtlasMutation,runAtlasPreview} from './atlas-command'
@@ -349,6 +350,7 @@ export class LiveAdapter implements LemmaApi {
  }
  async getCheckpoint(...args: Parameters<LemmaApi['getCheckpoint']>): ReturnType<LemmaApi['getCheckpoint']> {
   const [slug,code]=args,db=liveClient(),uid=await owner(db)
+  const generation=authGeneration()
   const project=await this.getProject(slug)
   const row=checked(await db.from('checkpoints').select('*').eq('project_id',project.project.id).eq('code',code).eq('user_id',uid).single()) as Row
   const [prereqs,cpConcepts,concepts,sources,events,notes,sessions]=await Promise.all([
@@ -358,7 +360,10 @@ export class LiveAdapter implements LemmaApi {
   const cpRows=await rows(db,'checkpoints',uid)
   const linked=cpConcepts.filter(x=>x.checkpoint_id===row.id).map(x=>concepts.find(c=>c.id===x.concept_id)).filter(Boolean) as Row[]
   const cpById=new Map(cpRows.map(c=>[c.id,c]))
-  return {view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
+  if(authGeneration()!==generation || (authOwner()!==null && authOwner()!==uid))
+   throw new LemmaError('auth','The account changed. Reopen the checkpoint.')
+  const authScope=authOwner()===uid?{ownerId:uid,generation,checkpointId:row.id as string}:undefined
+  return {authScope,view:project.checkpoints.find(x=>x.id===row.id)!,objective:row.objective,criterion:row.criterion,
     steps:row.steps??[],pages:row.pages,sourceShort:sources.find(x=>x.id===row.source_id)?.short??null,
     prereqs:prereqs.filter(x=>x.checkpoint_id===row.id).map(x=>cpById.get(x.prereq_id)?.code).filter(Boolean) as string[],
     concepts:linked.map(x=>({slug:x.slug,name:x.name})),recheckPrompt:row.recheck_prompt,

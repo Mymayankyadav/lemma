@@ -1,0 +1,20 @@
+{
+  "table": "tutor_release_controls",
+  "version": 1,
+  "columns": {
+    "capability": {
+      "classification": "command-managed",
+      "appPath": "Database release configuration",
+      "mcpPath": "Internal release check for grant availability",
+      "exportPolicy": "Deployment policy excluded from account exports",
+      "deletionPolicy": "Managed by the database release owner"
+    },
+    "enabled": {
+      "classification": "command-managed",
+      "appPath": "Database release configuration",
+      "mcpPath": "Internal release check for grant availability",
+      "exportPolicy": "Deployment policy excluded from account exports",
+      "deletionPolicy": "Managed by the database release owner"
+    }
+  }
+}

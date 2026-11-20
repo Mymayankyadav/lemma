@@ -8,6 +8,7 @@ import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
 export type TutorContextSelection = Readonly<{
   kind: 'path' | 'checkpoint' | 'session' | 'source' | 'card' | 'task'
   refId: string
+  page?: number
   version: string
   excerpt: string
 }>
@@ -49,7 +50,7 @@ export type TutorReplyProvenance =
   | Readonly<{ kind: 'manual-import'; label: 'Imported by you' }>
   | Readonly<{ kind: 'connector'; reportedHost: string | null; hostVerified: false }>
 
-type TutorCitation = Readonly<Pick<TutorContextSelection, 'kind' | 'refId' | 'version'>>
+type TutorCitation = Readonly<Pick<TutorContextSelection, 'kind' | 'refId' | 'version' | 'page'>>
 type SuggestedActionIntent = Readonly<{
   intentId: string
   kind: 'card' | 'plan' | 'change'
@@ -92,8 +93,8 @@ export function submitTutorTurn(
   const snapshot: TutorQuestionSnapshot = Object.freeze({
     question: draft.question,
     ...(localExcerpt ? {localExcerpt} : {}),
-    selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt }) =>
-      Object.freeze({ kind, refId, version, excerpt }))),
+    selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt, page }) =>
+      Object.freeze({ kind, refId, version, excerpt, ...(kind==='source'&&page!==undefined?{page}:{}) }))),
   })
   return {
     kind: 'submitted',
@@ -120,7 +121,7 @@ function copyReplyDraft(draft: TutorReplyDraft): TutorReplyDraft {
     provenance: provenance.kind === 'manual-import'
       ? Object.freeze({ kind: 'manual-import' as const, label: 'Imported by you' as const })
       : Object.freeze({ kind: 'connector' as const, reportedHost: provenance.reportedHost, hostVerified: false as const }),
-    citations: Object.freeze(citations.map(({ kind, refId, version }) => Object.freeze({ kind, refId, version }))),
+    citations: Object.freeze(citations.map(({ kind, refId, version, page }) => Object.freeze({ kind, refId, version,...(kind==='source'&&page!==undefined?{page}:{}) }))),
     suggestions: Object.freeze(suggestions.map(({ intentId, kind, summary }) =>
       Object.freeze({ intentId, kind, summary }))),
   })
@@ -152,7 +153,7 @@ export function finalizeTutorTurn(
   if (head.pendingTurnId !== turn.id || turn.version !== expectedVersion) return retain('stale-turn')
   if (!draft.body.trim()) return retain('empty-reply')
   if (draft.citations.some(citation => !turn.snapshot.selectedContext.some(selected =>
-    selected.kind === citation.kind && selected.refId === citation.refId && selected.version === citation.version,
+    selected.kind === citation.kind && selected.refId === citation.refId && selected.version === citation.version && selected.page === citation.page,
   ))) return retain('unselected-citation')
 
   const finalReply: TutorFinalReply = Object.freeze({
