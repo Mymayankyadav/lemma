@@ -2,9 +2,12 @@
 import assert from 'node:assert/strict';
 import {readdir, readFile} from 'node:fs/promises';
 import {checkLocalIngress} from './fixtures/n191-local-ingress.mjs';
+import {checkCorrectionParity} from './fixtures/n191-correction-parity.mjs';
+import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
 
-const {PGlite} = await import(process.env.PGLITE_MODULE || '@electric-sql/pglite');
-const db = new PGlite();
+const localPostgres = process.env.NOTIF_TEST_DATABASE_URL;
+const db = localPostgres ? await openN191Postgres(localPostgres) :
+  new (await import(process.env.PGLITE_MODULE || '@electric-sql/pglite')).PGlite();
 const owner = '11111111-1111-1111-1111-111111111111';
 const other = '22222222-2222-2222-2222-222222222222';
 const operationId = n => `0c211901-0000-4000-8000-${String(n).padStart(12, '0')}`;
@@ -28,8 +31,10 @@ const audit = async no => (await q('select user_id, source from public.actions w
 const count = async sql => (await q(sql))[0].n;
 
 try {
-  await db.exec(`create role anon; create role authenticated; create role service_role;
-    create schema auth; create schema extensions; create table auth.users(id uuid primary key);
+  for (const role of ['anon', 'authenticated', 'service_role']) {
+    if (!(await q('select 1 from pg_roles where rolname=$1', [role])).length) await db.exec('create role ' + role);
+  }
+  await db.exec(`create schema auth; create schema extensions; create table auth.users(id uuid primary key);
     create function auth.uid() returns uuid language sql as $auth$
       select coalesce(nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,
                       nullif(current_setting('test.uid',true),'')::uuid) $auth$;
@@ -118,6 +123,7 @@ try {
   assert.equal((await receipt(owner, serviceInput.operationId)).resource, 'tasks');
   console.log('N191 existing task/review writers: owner attribution, replay, conflicts and rollback passed');
   await checkLocalIngress(db, {owner, other, project, precedingReceiptId: input.operationId, operationId});
+  await checkCorrectionParity(db, {owner, project, operationId, as});
 } finally {
   await db.close();
 }

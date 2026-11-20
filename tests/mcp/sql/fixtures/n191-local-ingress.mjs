@@ -15,7 +15,7 @@ export async function checkLocalIngress(db, {owner, other, project, precedingRec
   };
 
   // In a service adapter this closure is bound to the verified auth context, not JSON.
-  function store(actor, {failBeforeReceipt = false} = {}) {
+  function store(actor, {failBeforeReceipt = false, onOperation, beforeReceipt} = {}) {
     return {
       transact: run => db.transaction(async tx => {
         const rows = async (sql, values = []) => (await tx.query(sql, values)).rows;
@@ -26,7 +26,10 @@ export async function checkLocalIngress(db, {owner, other, project, precedingRec
             const found = await rows('select 1 from public.projects where user_id=$1 and id=$2', [actor, target]);
             return found.length ? {ownerId: actor, source: 'n191-fixture'} : null;
           },
-          lockOperation: (uid, op) => lock(uid + ':' + op),
+          async lockOperation(uid, op) {
+            if (onOperation) onOperation((await rows('select pg_backend_pid() as pid'))[0].pid);
+            await lock(uid + ':' + op);
+          },
           async readReceipt(uid, op) {
             const first = (await rows('select resource,result from public.command_receipts where user_id=$1 and operation_id=$2',
               [uid, op]))[0];
@@ -71,6 +74,7 @@ export async function checkLocalIngress(db, {owner, other, project, precedingRec
               JSON.stringify({n191Fixture: event})]);
           },
           async saveReceipt(uid, op, saved) {
+            if (beforeReceipt) await beforeReceipt();
             if (failBeforeReceipt) throw Error('injected receipt failure');
             await rows(`insert into public.command_receipts(user_id,operation_id,resource,result)
               values ($1,$2,$3,$4::jsonb)`, [uid, op, saved.resource,
@@ -110,4 +114,46 @@ export async function checkLocalIngress(db, {owner, other, project, precedingRec
   assert.equal((await db.query('select count(*)::int n from public.command_receipts where user_id=$1 and operation_id=$2',
     [owner, failing.operationId])).rows[0].n, 0);
   console.log('N191 local server adapter: repeat delivery, authorization, cutoff and atomic rollback passed');
+
+  if (db.native) {
+    for (const failedFirst of [false, true]) {
+      const n = failedFirst ? 16 : 15;
+      const raced = {...input, operationId: operationId(n),
+        event: {...input.event, eventId: 'race-' + n, lineageId: 'race-' + n}};
+      const release = Promise.withResolvers();
+      const appended = Promise.withResolvers();
+      const peerEntered = Promise.withResolvers();
+      let firstPid;
+      const first = ingestEvidence(store(owner, {
+        failBeforeReceipt: failedFirst, onOperation: pid => { firstPid = pid; },
+        beforeReceipt: () => { appended.resolve(); return release.promise; },
+      }), raced);
+      // Do not wait forever for a latch if the writer fails before reaching it.
+      const writer = first.then(value => ({value}), error => ({error}));
+      const count = await journal();
+      let peer;
+      try {
+        const early = await Promise.race([appended.promise, writer]);
+        if (early) throw early.error ?? Error('N191 writer committed before barrier');
+        peer = ingestEvidence(store(owner, {onOperation: peerEntered.resolve}), raced)
+          .then(value => ({value}), error => ({error}));
+        const peerPid = await Promise.race([peerEntered.promise, peer]);
+        if (typeof peerPid !== 'number') throw peerPid.error ?? Error('N191 peer ran before barrier');
+        assert.notEqual(peerPid, firstPid, 'distinct Postgres sessions participate');
+        await db.waitForBlockedLock(peerPid);
+      } finally {
+        release.resolve();
+        await Promise.all([writer, peer]);
+      }
+      const [a, b] = await Promise.all([writer, peer]);
+      if (b.error) throw b.error;
+      assert.equal(b.value.operationId, raced.operationId);
+      if (failedFirst) assert.match(a.error?.message ?? '', /injected receipt failure/);
+      else assert.deepEqual(a.value, b.value);
+      assert.equal(await journal(), count + 1);
+      assert.equal((await facts()).filter(event => event.eventId === raced.event.eventId).length, 1);
+      assert.deepEqual(await ingestEvidence(store(owner), raced), b.value);
+    }
+    console.log('N191 independent Postgres connections: blocked duplicate and rollback takeover passed');
+  }
 }
