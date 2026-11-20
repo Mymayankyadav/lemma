@@ -14,7 +14,7 @@ export type AgendaOutcome =
 export interface AgendaDecision {
   asOf: string;
   snapshotVersion: string;
-  requested: SchedulingAlgorithm;
+  requested: SchedulingAlgorithm | 'unknown';
   effective: SchedulingAlgorithm | 'hold';
   policyVersion: string;
   reason: string;

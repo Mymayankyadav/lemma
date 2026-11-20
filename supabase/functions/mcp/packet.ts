@@ -104,7 +104,8 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
   const rules=st.tutor_rules||studyRules(st.flags||{});
   const ps=visibleProjects(await all(c,'projects','*'));
   if(!args.project&&!args.mix){
-    const lines=[timeLine(state),renderQueue(state.queue,8)];
+    const {agenda}=await readAgenda(c,st.scheduling_algorithm);
+    const lines=[timeLine(state),agenda?agendaQueue(agenda):renderQueue(state.queue,8)];
     const f=flagLines(state);if(f.length)lines.push('FLAGS\n'+f.slice(0,8).map(x=>'- '+x).join('\n'));
     const l=await list(c,st);
     return capped([l,...lines].join('\n'),RESUME_BUDGET_CHARS);
@@ -155,6 +156,6 @@ export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?
  // they keep the legacy packet. Real projects get v2 with the same ADAPT data line the legacy packet carries.
  if(v2&&!p?.system)return [owner,await packetV2(c,args,st,adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),300):undefined)].filter(Boolean).join('\n');
  let body=await basePacket(c,args);
- if(args.project||args.mix){const {agenda}=await readAgenda(c,st.scheduling_algorithm);if(agenda)body=agendaQueue(agenda)+'\n'+body;}
+ if(!p?.system){const {agenda}=await readAgenda(c,st.scheduling_algorithm);if(agenda)body=agendaQueue(agenda)+'\n'+body;}
  const extra=[...(adapt.length||fresh.length?['ADAPT '+cut([...adapt,...fresh].join('; '),300)]:[]),args.brief?'':ADAPT].filter(Boolean).join('\n');body=body.replace('RULES\n','RULES\n'+(args.brief?'':ADAPT+'\n'));const budget=2340;const line=adapt.length||fresh.length?'ADAPT '+cut([...adapt,...fresh].join('; '),Math.max(50,budget-body.length-1)):'';return [owner,capped(body+(line?'\n'+line:''),budget)].filter(Boolean).join('\n');
 }

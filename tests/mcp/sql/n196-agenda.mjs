@@ -1,15 +1,14 @@
 // Isolated SQL gate. PGLite runs locally; NOTIF_TEST_DATABASE_URL uses the existing native PG17 fixture.
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
-import {readdir,readFile,access} from 'node:fs/promises';
+import {readdir,readFile} from 'node:fs/promises';
 import {dirname,resolve} from 'node:path';
-import {fileURLToPath,pathToFileURL} from 'node:url';
+import {fileURLToPath} from 'node:url';
+import {openN196Postgres} from './fixtures/n196-pg-fixture.mjs';
 const here=dirname(fileURLToPath(import.meta.url));
 const root=resolve(here,'../../..');
 const foundation=process.env.N196_FOUNDATION_DIR||root;
-const fixture=pathToFileURL(resolve(foundation,'tests/mcp/sql/fixtures/n191-pg-fixture.mjs'));
-const nativeFixture=await access(fixture).then(()=>true,()=>false);
-const db=process.env.NOTIF_TEST_DATABASE_URL && nativeFixture ? await (await import(fixture)).openN191Postgres(process.env.NOTIF_TEST_DATABASE_URL)
+const db=process.env.NOTIF_TEST_DATABASE_URL ? await openN196Postgres(process.env.NOTIF_TEST_DATABASE_URL)
   : new (await import(process.env.PGLITE_MODULE||'@electric-sql/pglite')).PGlite();
 const q=async(sql,args=[])=>(await db.query(sql,args)).rows;
 try {
@@ -26,6 +25,12 @@ try {
       if(name.endsWith('.sql')&&!name.includes('_storage')) paths.set(name,resolve(migrations,name));
   }
   for(const name of [...paths.keys()].sort()) await db.exec(await readFile(paths.get(name),'utf8'));
+  for(const role of ['anon','authenticated','service_role']){
+    await db.exec('set role '+role);
+    await assert.rejects(q('select * from lemma_export_private.additional_tables'),/permission denied/,
+      'Installer-owned export registrations stay private without changing existing ACLs');
+    await db.exec('reset role');
+  }
   const owner='11111111-1111-4111-8111-111111111111',other='22222222-2222-4222-8222-222222222222';
   for(const [id,key] of [[owner,'a'],[other,'b']]){
     await q('insert into auth.users(id) values($1)',[id]);
@@ -153,7 +158,31 @@ try {
     arm:'hard72',questionId:challenge,itemVersion:1,nativeQuestionId:base,nativeVersion:1,native:.74,nativeItemProbability:.81};
   const request=randomUUID(),request2=randomUUID(),delivery=[participant,request,JSON.stringify(selection)];
   assert.equal((await q(deliver,[partner,randomUUID(),JSON.stringify(selection)]))[0].receipt.status,'unavailable');
-  const [opened]=await q(deliver,delivery);assert.equal(opened.receipt.question,'Question A');assert.equal(opened.receipt.arm,'hard72');
+  let opened;
+  if(db.native){
+    const independent=()=>db.transaction(async client=>{await client.query('set local role service_role');return (await client.query(deliver,delivery)).rows[0];});
+    const [a,b]=await Promise.all([independent(),independent()]);assert.deepEqual(a,b);opened=a;
+  }else [opened]=await q(deliver,delivery);
+  assert.equal(opened.receipt.question,'Question A');assert.equal(opened.receipt.arm,'hard72');
+  assert.equal(opened.receipt.projectId,project2);
+  assert.deepEqual((await q(deliver,delivery))[0].receipt,opened.receipt);
+  await db.exec('reset role');
+  assert.equal((await q('select count(*)::int as n from public.atlas_practice_exposures where user_id=$1 and request_id=$2',[participant,request]))[0].n,1);
+  assert.equal((await q('select count(*)::int as n from public.command_receipts where user_id=$1 and operation_id=$2',[participant,request]))[0].n,1);
+  const crossCommand=randomUUID();
+  for(const resource of ['tasks','study_entries','session_progress']){
+    const operation=randomUUID();
+    await q('insert into public.command_receipts(user_id,operation_id,resource,result) values($1,$2,$3,$4::jsonb)',
+      [participant,operation,resource,JSON.stringify({status:'ok',_request:{resource}})]);
+    await db.exec('set role service_role');
+    await assert.rejects(q(deliver,[participant,operation,JSON.stringify(selection)]),/operationId payload conflict/);
+    await db.exec('reset role');
+    assert.equal((await q('select count(*)::int as n from public.atlas_practice_exposures where user_id=$1 and request_id=$2',[participant,operation]))[0].n,0);
+  }
+  await q('insert into public.command_receipts(user_id,operation_id,resource,result) values($1,$2,\'tasks\',\'{"status":"ok"}\')',[participant,crossCommand]);
+  // A legacy receipt is never an authoritative question response.
+  await q("update public.command_receipts set result=jsonb_set(result,'{question}','\"Forged receipt text\"') where user_id=$1 and operation_id=$2",[participant,request]);
+  await db.exec('set role service_role');
   assert.deepEqual((await q(deliver,delivery))[0].receipt,opened.receipt);
   await q(switches,[false,true,false]); // Disabling forecast and enrollment leaves qualifying serving and follow-up intact.
   assert.equal((await q(armSql,[participant,course,JSON.stringify(anchors),start+'T12:00:00Z']))[0].arm,'hard72');
@@ -165,6 +194,126 @@ try {
   const exposures=await q('select assigned_arm,actual_arm,native_probability from public.atlas_practice_exposures where user_id=$1 order by actual_arm',[participant]);
   assert.deepEqual(exposures,[{assigned_arm:'hard72',actual_arm:'atlas80',native_probability:.81},{assigned_arm:'hard72',actual_arm:'hard72',native_probability:.74}]);
   await assert.rejects(q("update public.atlas_practice_exposures set actual_arm='atlas80' where user_id=$1",[participant]),/immutable/);
+  // A populated round is a materialized decision. Planning changes may only affect future decisions.
+  const reviewRun=randomUUID(),reviewNote=randomUUID(),reviewCard=randomUUID();
+  await q("insert into public.notes(id,user_id,project_id,front,back) values($1,$2,$3,'Existing question','Existing answer')",[reviewNote,participant,project2]);
+  await q('insert into public.cards(id,user_id,note_id,ord) values($1,$2,$3,1)',[reviewCard,participant,reviewNote]);
+  await q("insert into public.review_runs(id,user_id,scheduler_version,settings_version) values($1,$2,'native-v3',1)",[reviewRun,participant]);
+  await q('insert into public.review_run_items(user_id,run_id,position,card_id,expected_card_version) values($1,$2,0,$3,1)',[participant,reviewRun,reviewCard]);
+  const frozenRound=()=>q(`select to_jsonb(r) as run,(select jsonb_agg(to_jsonb(i) order by position) from public.review_run_items i where i.run_id=r.id) as items,
+    (select to_jsonb(c) from public.cards c where c.id=$2) as card from public.review_runs r where r.id=$1`,[reviewRun,reviewCard]);
+  const beforePreference=await frozenRound();
+  await q("update public.settings set scheduling_algorithm='legacy' where user_id=$1",[participant]);
+  await db.exec('set role service_role');
+  await q(switches,[true,true,false]);
+  assert.equal((await q(deliver,delivery))[0].receipt.status,'unavailable','Legacy opt-out prevents reissuing a challenger');
+  const legacyRequest=randomUUID(),legacyDelivery=[participant,legacyRequest,JSON.stringify(selection)];
+  assert.equal((await q(deliver,legacyDelivery))[0].receipt.arm,'atlas80','Legacy preference overrides independently qualified randomized serving');
+  assert.ok((await q(bankSql,[participant]))[0].bank.every(i=>i.arm==='atlas80'));
+  await db.exec('reset role');
+  await q("update public.settings set scheduling_algorithm='new' where user_id=$1",[participant]);
+  await db.exec('set role service_role');
+  assert.deepEqual((await q(deliver,delivery))[0].receipt,opened.receipt,'Returning to New retains the original immutable assignment');
+  assert.equal((await q(deliver,legacyDelivery))[0].receipt.arm,'atlas80','Changing preference preserves a materialized native question');
+  await q(switches,[true,false,false]);
+  await db.exec('reset role');
+  assert.deepEqual(await frozenRound(),beforePreference,'New/Legacy preferences preserve every materialized round, item and FSRS field');
+  await q("update public.atlas_practice_bank set valid_until=$3::date where user_id=$1 and item_id=$2",[participant,base,shift(start,1)]);
+  await db.exec('set role service_role');
+  assert.equal((await q(deliver,[participant,request2,JSON.stringify(selection)]))[0].receipt.status,'unavailable','Expired bank cannot reissue a native question');
+  await db.exec('reset role');
+  await q("update public.atlas_practice_bank set valid_until=$3::date where user_id=$1 and item_id=$2",[participant,base,shift(today,7)]);
+  await q("update public.items set text='Withdrawn original question' where user_id=$1 and id=$2",[participant,base]);
+  await db.exec('set role service_role');
+  assert.equal((await q(deliver,[participant,request2,JSON.stringify(selection)]))[0].receipt.status,'unavailable','A revised item cannot reissue an old delivery');
+  await db.exec('reset role');
+  const session=randomUUID();
+  await q("insert into public.sessions(id,user_id,project_id,number,goal,style) values($1,$2,$3,1,'Practice','socratic')",[session,participant,project2]);
+  const score='select public.lemma_record_practice($1,$2,$3,$4::jsonb) as receipt';
+  const scoreOperation=randomUUID(),outcome={result:'ok',hintLevel:0,novelty:'novel',minutes:12,sessionId:session};
+  const scoreArgs=[participant,scoreOperation,request,JSON.stringify(outcome)];
+  await db.exec('set role authenticated');
+  await assert.rejects(q(score,scoreArgs),/permission denied|Verified owner/);
+  await assert.rejects(q('select * from public.atlas_practice_scores'),/denied/);
+  await db.exec('reset role;set role service_role');
+  await assert.rejects(q(score,[partner,randomUUID(),request,JSON.stringify(outcome)]),/Question delivery not found/);
+  await assert.rejects(q(score,[participant,crossCommand,request,JSON.stringify(outcome)]),/operationId payload conflict/);
+  await assert.rejects(q(score,[participant,randomUUID(),request,JSON.stringify({...outcome,sessionId:randomUUID()})]),/Practice session outside owner/);
+  await db.exec('reset role');
+  const closedSession=randomUUID(),futureSession=randomUUID();
+  await q("insert into public.sessions(id,user_id,project_id,number,goal,style,state,ended_at) values($1,$2,$3,2,'Old practice','socratic','ended',now())",[closedSession,participant,project2]);
+  await q("insert into public.sessions(id,user_id,project_id,number,goal,style,started_at) values($1,$2,$3,3,'Future practice','socratic',now()+interval '1 day')",[futureSession,participant,project2]);
+  await db.exec('set role service_role');
+  await assert.rejects(q(score,[participant,randomUUID(),request,JSON.stringify({...outcome,sessionId:closedSession})]),/not open/);
+  await assert.rejects(q(score,[participant,randomUUID(),request,JSON.stringify({...outcome,sessionId:futureSession})]),/not open yet/);
+  for(const patch of [{result:'partial'},{hintLevel:1.5},{hintLevel:5},{novelty:'inferred'},{minutes:-1},{itemId:base}])
+    await assert.rejects(q(score,[participant,randomUUID(),request,JSON.stringify({...outcome,...patch})]),/Invalid practice|Unknown practice/);
+  let scored;
+  if(db.native){
+    const independent=()=>db.transaction(async client=>{await client.query('set local role service_role');return (await client.query(score,scoreArgs)).rows[0].receipt;});
+    const [a,b]=await Promise.all([independent(),independent()]);assert.deepEqual(a,b);scored=a;
+  }else scored=(await q(score,scoreArgs))[0].receipt;
+  assert.equal(scored.status,'ok');assert.equal(scored.requestId,request);assert.ok(scored.actionNo);
+  assert.deepEqual((await q(score,scoreArgs))[0].receipt,scored,'Lost score acknowledgement safely replays');
+  await assert.rejects(q(score,[participant,randomUUID(),request,JSON.stringify(outcome)]),/already scored/);
+  await assert.rejects(q(score,[participant,scoreOperation,request,JSON.stringify({...outcome,result:'fail'})]),/already scored/);
+  await db.exec('reset role');
+  const [canonical]=await q('select * from public.attempts where user_id=$1 and id=$2',[participant,scored.attemptId]);
+  assert.equal((await q('select source from public.actions where user_id=$1 and no=$2',[participant,scored.actionNo]))[0].source,'app');
+  assert.equal(canonical.grader,'learner');assert.equal(canonical.origin,'user');assert.equal(canonical.session_id,session);
+  assert.equal(canonical.weight,1);
+  assert.equal(canonical.project_id,project2);assert.equal(canonical.item_id,challenge);
+  assert.deepEqual(canonical.context,{practice_request_id:request,item_version:1,novelty:'novel'});
+  assert.ok(new Date(canonical.occurred_at)>new Date((await q('select served_at from public.atlas_practice_exposures where user_id=$1 and request_id=$2',[participant,request]))[0].served_at));
+  const [tag]=await q('select concept_id,facet,role,result,hint_level from public.attempt_tags where user_id=$1 and attempt_id=$2',[participant,scored.attemptId]);
+  assert.deepEqual(tag,{concept_id:concept2,facet:'use',role:'target',result:'ok',hint_level:0});
+  assert.equal((await q('select count(*)::int as n from public.atlas_practice_scores where user_id=$1',[participant]))[0].n,1);
+  await assert.rejects(q('update public.atlas_practice_scores set outcome=$1 where user_id=$2',[JSON.stringify({result:'fail'}),participant]),/immutable/);
+  // A caller with old receipt privileges can neither forge a saved score nor repeat the canonical write.
+  await q("update public.command_receipts set result='{}'::jsonb where user_id=$1 and operation_id=$2",[participant,scoreOperation]);
+  await db.exec('set role service_role');
+  assert.deepEqual((await q(score,scoreArgs))[0].receipt,scored);
+  await db.exec('reset role');
+  await q('delete from public.command_receipts where user_id=$1 and operation_id=any($2::uuid[])',[participant,[request,scoreOperation]]);
+  await db.exec('set role service_role');
+  await assert.rejects(q(score,[participant,request,request2,JSON.stringify(outcome)]),/operationId payload conflict/,
+    'Deleting a legacy open receipt cannot reuse its immutable exposure ID for a score');
+  await assert.rejects(q(deliver,[participant,scoreOperation,JSON.stringify(selection)]),/operationId payload conflict/,
+    'Deleting a legacy score receipt cannot reuse its protected operation ID for an open');
+  assert.deepEqual((await q(score,scoreArgs))[0].receipt,scored,'Protected acceptance still replays after a legacy receipt is removed');
+  const scoreMcp='select public.lemma_record_practice($1,$2,$3,$4::jsonb,$5) as receipt';
+  const noSessionArgs=[participant,randomUUID(),request2,JSON.stringify({result:'fail',hintLevel:2,novelty:'familiar'})];
+  await assert.rejects(q(scoreMcp,[...noSessionArgs,'system']),/Invalid practice source/);
+  const noSession=await q(scoreMcp,[...noSessionArgs,'chatgpt']);
+  assert.equal(noSession[0].receipt.status,'ok','Native follow-up remains recordable after challenger rollback');
+  assert.deepEqual((await q(score,noSessionArgs))[0].receipt,noSession[0].receipt,'Cross-client acknowledgement replay preserves the original action');
+  await db.exec('reset role');
+  assert.equal((await q('select source from public.actions where user_id=$1 and no=$2',[participant,noSession[0].receipt.actionNo]))[0].source,'chatgpt');
+  assert.equal((await q('select weight from public.attempts where user_id=$1 and id=$2',[participant,noSession[0].receipt.attemptId]))[0].weight,.5);
+  await db.exec('set role service_role');
+  const [seen]=await q(score,[participant,randomUUID(),legacyRequest,JSON.stringify({result:'ok',hintLevel:0,novelty:'seen_solution'})]);
+  await db.exec('reset role');
+  assert.equal((await q('select weight from public.attempts where user_id=$1 and id=$2',[participant,seen.receipt.attemptId]))[0].weight,.2,
+    'Seeing a solution never becomes full-strength clean evidence');
+  await db.exec('set role service_role');
+  await q('select public.undo_action($1,$2)',[participant,scored.actionNo]);
+  assert.deepEqual((await q(score,scoreArgs))[0].receipt,scored,'Undo does not let an old retry re-add evidence');
+  await db.exec('reset role');
+  assert.equal((await q('select count(*)::int as n from public.attempts where user_id=$1 and id=$2',[participant,scored.attemptId]))[0].n,0);
+  if(realCore){
+    const transitions=await q("select kind from public.evidence_revisions where user_id=$1 and source='attempts' and fact_id=$2 order by revision",[participant,scored.attemptId]);
+    assert.deepEqual(transitions.map(x=>x.kind),['record','void'],'Canonical score and undo enter immutable evidence history');
+    await db.exec('set role service_role');
+    const [latest]=await q('select public.lemma_agenda_snapshot($1) as host',[participant]);
+    assert.deepEqual(latest.host.prelogged.find(p=>p.requestId===request).details,{form:'whole',family:'f',uncued:true,novel:true});
+    const acceptedEvent=latest.host.evidence.find(e=>e.source==='attempts'&&e.payload?.context?.practice_request_id===request2);
+    assert.ok(acceptedEvent,
+      'The next authoritative decision receives the accepted native outcome through canonical evidence');
+    assert.ok(Date.parse(acceptedEvent.occurredAt)<=Date.parse(acceptedEvent.reportedAt)&&Date.parse(acceptedEvent.reportedAt)<=Date.parse(acceptedEvent.knownAt),
+      'Server-created practice evidence retains occurrence, reporting and acceptance order');
+    await db.exec('reset role');
+  }
+  console.log('N196 shared command collision, concurrent open/score, canonical learner evidence, owner binding and undo passed');
   await db.exec('set role service_role');
   for(const n of [7,14]){
     const d=shift(start,n);await clock(d);
@@ -217,7 +366,7 @@ try {
     if(mode!=='expired')assert.equal(step.state.stop,mode==='late'?'coverage':'harm');
   }
   if(realCore){
-    const own=['atlas_practice_enrollments','atlas_practice_outcomes','atlas_practice_exposures','atlas_practice_bank'];
+    const own=['atlas_practice_enrollments','atlas_practice_outcomes','atlas_practice_exposures','atlas_practice_bank','atlas_practice_scores'];
     await q("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:participant,role:'authenticated'})]);
     await db.exec('reset role;set role authenticated');
     const [handle]=await q('select public.begin_owner_export() as id');
@@ -234,6 +383,12 @@ try {
       assert.ok(service.page.rows.every(x=>x.user_id===partner));
     }
     await q('select public.lemma_begin_account_delete($1)',[participant]);
+    await assert.rejects(q(score,[participant,randomUUID(),request2,JSON.stringify({result:'ok',hintLevel:0,novelty:'novel'})]),/already scored|deletion/);
+    await db.exec('reset role');
+    await assert.rejects(q(`insert into public.atlas_practice_exposures select user_id,$2::uuid,trial,assigned_arm,actual_arm,
+      item_id,item_version,question_text,served_at,scope,item_details,native_probability from public.atlas_practice_exposures
+      where user_id=$1 limit 1`,[participant,randomUUID()]),/Account deletion/);
+    await db.exec('set role service_role');
     assert.equal((await q('select public.lemma_purge_account_rows($1) as result',[participant]))[0].result.status,'purged');
     await db.exec('reset role');
     for(const name of own)assert.equal((await q('select count(*)::int as n from public.'+name+' where user_id=$1',[participant]))[0].n,0);

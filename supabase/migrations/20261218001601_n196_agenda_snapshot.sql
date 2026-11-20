@@ -98,7 +98,7 @@ begin
       select c.forecast_enabled into forecast_enabled from public.atlas_practice_controls c where c.singleton;
       bank_rows:=public.lemma_practice_bank_snapshot(p_owner,cutoff);
       select coalesce(jsonb_agg(to_jsonb(r) order by r.at,r."requestId"),'[]') into prelogged from (
-        select request_id as "requestId",item_id as "itemId",item_version as version,served_at as at,scope,native_probability as native
+        select request_id as "requestId",item_id as "itemId",item_version as version,served_at as at,scope,item_details as details,native_probability as native
         from public.atlas_practice_exposures where user_id=p_owner and served_at<cutoff and native_probability is not null) r;
     exception when others then bank_rows:='[]';forecast_enabled:=false;end;
   end if;

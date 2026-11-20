@@ -62,11 +62,10 @@ revoke all on public.atlas_practice_trials,public.atlas_practice_pairs,public.at
 create function public.lemma_trial_immutable() returns trigger language plpgsql set search_path='' as $immutable$
 begin
   -- Account deletion erases that owner's intake, scored evidence and linkage. Closed aggregate checkpoints persist.
-  if TG_OP='DELETE' and TG_TABLE_NAME in ('atlas_practice_enrollments','atlas_practice_outcomes','atlas_practice_exposures') then
+  if TG_OP='DELETE' and TG_TABLE_NAME in ('atlas_practice_enrollments','atlas_practice_outcomes','atlas_practice_exposures','atlas_practice_scores') then
     if pg_trigger_depth()>1 then return old;end if;
-    if to_regprocedure('public.lemma_evidence_purge_active(uuid)') is not null then
-      if current_setting('role',true)='service_role' and public.lemma_evidence_purge_active(old.user_id) then return old;end if;
-    end if;
+    if current_setting('role',true)='service_role' and exists(select 1 from public.account_deletion_requests d
+      where d.user_id=old.user_id and d.cleanup_txid=txid_current() and d.cleanup_pid=pg_backend_pid()) then return old;end if;
   end if;
   raise exception 'Registered trial records are immutable' using errcode='55000';
 end
@@ -76,6 +75,10 @@ create trigger immutable_trial before update or delete on public.atlas_practice_
 create trigger immutable_pair before update or delete on public.atlas_practice_pairs for each row execute function public.lemma_trial_immutable();
 create trigger immutable_enrollment before update or delete on public.atlas_practice_enrollments for each row execute function public.lemma_trial_immutable();
 create trigger immutable_outcome before update or delete on public.atlas_practice_outcomes for each row execute function public.lemma_trial_immutable();
+create trigger lemma_account_delete_write_guard before insert or update or delete on public.atlas_practice_enrollments
+  for each row execute function public.lemma_block_account_deletion_writes();
+create trigger lemma_account_delete_write_guard before insert or update or delete on public.atlas_practice_outcomes
+  for each row execute function public.lemma_block_account_deletion_writes();
 create trigger immutable_checkpoint before update or delete on public.atlas_practice_checkpoints for each row execute function public.lemma_trial_immutable();
 
 create function public.lemma_trial_group(a jsonb) returns text language plpgsql immutable set search_path='' as $intake$

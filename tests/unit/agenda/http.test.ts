@@ -25,3 +25,22 @@ it('keeps the original queue on missing release and holds on missing evidence af
   expect(agendaQueue(read.agenda!)).toMatch(/^QUEUE\nHold/)
   expect(db.rpc).toHaveBeenNthCalledWith(2,'lemma_agenda_snapshot',{p_owner:'own'})
 })
+it('uses the durable owner preference on a failed snapshot, and reports an unread preference as unknown',async()=>{
+  const maybeSingle=vi.fn().mockResolvedValue({data:{scheduling_algorithm:'legacy'},error:null})
+  const eq=vi.fn(()=>({maybeSingle})),select=vi.fn(()=>({eq})),from=vi.fn(()=>({select}))
+  const db={from,rpc:vi.fn(async(name:string)=>name==='lemma_plan_released'?{data:true,error:null}:{data:null,error:{message:'down'}})}
+  const read=await readAgenda({db,userId:'own'} as unknown as Context,undefined,false)
+  expect(eq).toHaveBeenCalledWith('user_id','own');expect(select).toHaveBeenCalledWith('scheduling_algorithm')
+  expect(read.agenda?.decision.requested).toBe('legacy');expect(agendaQueue(read.agenda!)).toContain('Planning · Legacy')
+  maybeSingle.mockResolvedValueOnce({data:null,error:{message:'down'}} as never)
+  const unknown=await readAgenda({db,userId:'own'} as unknown as Context,undefined,false)
+  expect(unknown.agenda?.decision.requested).toBe('unknown');expect(agendaQueue(unknown.agenda!)).toContain('Planning preference unavailable')
+  expect(agendaQueue(unknown.agenda!)).not.toContain('Planning · New')
+})
+it('makes a native fallback and its cause visible in MCP action queues',()=>{
+  const action={kind:'action' as const,taskId:'task',start:0,end:5}
+  const text=agendaQueue({label:'Solve the next question',decision:{asOf:'2026-11-20T00:00:00Z',snapshotVersion:'s',
+    requested:'new',effective:'legacy',policyVersion:'v1',reason:'Computation budget reached',outcome:action,baseline:action}})
+  expect(text).toContain('QUEUE\n1. Solve the next question · 5 min')
+  expect(text).toContain('Planning · New · native fallback · Computation budget reached')
+})

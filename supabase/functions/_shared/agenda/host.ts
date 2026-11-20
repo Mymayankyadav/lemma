@@ -2,6 +2,7 @@ import { assembleAtlas, type AtlasRows } from '../adaptive/atlas.ts';
 import type { Action } from '../adaptive/kg.ts';
 import { productForecast, type ForecastPractice, type PreloggedForecast } from '../forecast/product.ts';
 import type { BankItem } from '../practice/questions.ts';
+import { NATIVE } from '../practice/router.ts';
 import { requestedAlgorithm, type AgendaDecision } from './contract.ts';
 import { decideAgenda, holdReceipt, type ShadowResult } from './decision.ts';
 import type { Commitment, Fixed, Observation, Snapshot, Task, Window } from './types.ts';
@@ -134,7 +135,10 @@ export function ownerAgenda(owner:string,host:HostData,released:boolean,clock?:(
   const picked=read.decision.outcome;
   const action=picked.kind==='action'?actionsById.get(picked.taskId):undefined;
   if(action&&picked.kind==='action'){
-    try {read.practice=productForecast(owner,host.asOf,action,picked.end-picked.start,view,nativeRows,host.practiceBank??[],host.forecastEnabled===true,host.prelogged);}
+    // The owner's engine choice covers learning as well as scheduling. Keep trial enrollment intact while opting out of serving it.
+    const newLearning=requested==='new',bank=host.practiceBank??[];
+    const selectedBank:typeof bank=newLearning?bank:bank.map(item=>({...item,arm:NATIVE}));
+    try {read.practice=productForecast(owner,host.asOf,action,picked.end-picked.start,view,nativeRows,selectedBank,newLearning&&host.forecastEnabled===true,host.prelogged);}
     catch {read.practice={status:'unavailable',reason:'Forecast or bank inputs unavailable',version:'atlas-latent-guard-2026-11-20.1',native:action.p,arm:'atlas80'};}
   }
   return read;

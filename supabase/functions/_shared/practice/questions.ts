@@ -1,5 +1,5 @@
 import type { ForecastScope, StreamEvent } from '../forecast/stream.ts';
-import { scopedForecast } from '../forecast/stream.ts';
+import { scopedForecast, sameForecastScope } from '../forecast/stream.ts';
 import { validProbability } from '../forecast/guard.ts';
 import { NATIVE, type Arm, type Scope } from './router.ts';
 export interface BankItem extends Scope {
@@ -60,8 +60,9 @@ export function proofCertificate(events:readonly ProofEvent[],scope:ForecastScop
   const days=new Set(studyWeekdays);
   if(!days.size||[...days].some(d=>!Number.isInteger(d)||d<0||d>6))return no('Study days unavailable');
   const date=new Intl.DateTimeFormat('en-CA',{timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit'});
-  const cut=Date.parse(asOf),relevant=events.filter(e=>e.scope.owner===scope.owner&&e.scope.project===scope.project&&e.scope.concept===scope.concept&&
-    e.scope.context===scope.context&&e.scope.rubric===scope.rubric&&(e.actor!=='tutor'||e.kind==='lesson')&&Date.parse(e.knownAt)<=cut&&Date.parse(e.at)<=Date.parse(e.knownAt));
+  // Teaching another facet of this target may reset its proof, but a different bank, policy or track cannot certify it.
+  const cut=Date.parse(asOf),relevant=events.filter(e=>sameForecastScope({...e.scope,facet:scope.facet},scope)&&
+    (e.actor!=='tutor'||e.kind==='lesson')&&Date.parse(e.knownAt)<=cut&&Date.parse(e.at)<=Date.parse(e.knownAt));
   const lessons=relevant.filter(e=>e.kind==='lesson').map(e=>date.format(new Date(e.at))).sort();
   const direct=relevant.filter(e=>e.kind==='attempt'&&e.outcome===true&&e.reliability===1&&e.scope.facet===scope.facet&&e.novel&&
     !e.worked&&!e.hint&&e.form!=='worked'&&e.origin&&e.item&&e.family&&e.session&&

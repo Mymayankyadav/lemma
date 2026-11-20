@@ -78,6 +78,13 @@
       "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
       "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
       "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "item_details": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
     }
   }
 }

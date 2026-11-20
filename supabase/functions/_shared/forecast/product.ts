@@ -2,11 +2,15 @@ import type { Action } from '../adaptive/kg.ts';
 import type { AtlasReadModel, AtlasRows } from '../adaptive/atlas.ts';
 import { predict } from '../adaptive/measure.ts';
 import { FACETS, type Facet } from '../adaptive/kc.ts';
-import { FORECAST_VERSION } from './stream.ts';
+import { FORECAST_VERSION, sameForecastScope } from './stream.ts';
+import { validProbability } from './guard.ts';
 import { proofCertificate, selectPracticeQuestion, type BankItem, type ProofEvent, type SelectionScope } from '../practice/questions.ts';
 import { NATIVE, type Arm } from '../practice/router.ts';
 
-export interface PreloggedForecast {requestId:string;itemId:string;version:number;at:string;scope:SelectionScope;native:number}
+export interface PreloggedForecast {
+  requestId:string;itemId:string;version:number;at:string;scope:SelectionScope;native:number;
+  details?:Pick<BankItem,'form'|'family'|'uncued'|'novel'>;
+}
 type StoredBank = Omit<BankItem,'nativeProbability'|'nativeAsOf'>;
 export type ForecastPractice =
   | {status:'unavailable';reason:string;version:string;native:number|null;arm:'atlas80'}
@@ -26,7 +30,7 @@ export function productForecast(owner:string,asOf:string,action:Action,minutes:n
   const items:BankItem[]=registered.map(i=>({...i,nativeAsOf:asOf,
     nativeProbability:predict(view.model,i.concept,i.facet as Facet,view.model.now,i.difficulty)}));
   const byId=new Map(items.map(i=>[i.id,i])),events:ProofEvent[]=[];
-  const bound=new Map(prelogged.filter(p=>Object.entries(scope).every(([k,v])=>p.scope[k as keyof SelectionScope]===v)).map(p=>[p.requestId,p]));
+  const bound=new Map(prelogged.filter(p=>sameForecastScope(p.scope,scope)).map(p=>[p.requestId,p]));
   const uses=new Map<string,number>();
   for(const a of rows.attempts??[])if(a.context?.practice_request_id&&!a.voided_at&&!a.superseded_by){
     const key=a.context.practice_request_id;uses.set(key,(uses.get(key)??0)+1);
@@ -44,21 +48,26 @@ export function productForecast(owner:string,asOf:string,action:Action,minutes:n
     const item=byId.get(a.item_id);
     if(!item||item.project!==a.project_id||a.grader!=='learner'||a.origin!=='user'||a.voided_at||a.superseded_by||
       Date.parse(item.registeredAt)>Date.parse(a.occurred_at))continue;
+    const request=a.context?.practice_request_id,offered=bound.get(request),details=offered?.details;
+    // Only an actual delivery can establish this bank's outcome. Historical unbound attempts remain native Atlas evidence.
+    // Invalid, duplicated or cross-version bindings must not train the new forecast or qualify a proof without its safeguard.
+    if(!offered||uses.get(request)!==1||offered.itemId!==item.id||offered.version!==item.itemVersion||
+      !Number.isInteger(offered.version)||offered.version<1||a.context?.item_version!==offered.version||
+      !(Date.parse(offered.at)<Date.parse(a.occurred_at))||!validProbability(offered.native)||!details||
+      !['whole','step','micro','recall','worked'].includes(details.form)||!details.family?.trim()||
+      typeof details.uncued!=='boolean'||typeof details.novel!=='boolean')continue;
     const tags=(rows.attemptTags??[]).filter(t=>String(t.attempt_id)===String(a.id)&&t.role==='target'&&t.concept_id===item.concept&&t.facet===item.facet);
     const graded=tags.filter(t=>t.result==='ok'||t.result==='fail');
     if(!graded.length)continue;
     const outcome=graded.every(t=>t.result==='ok'),hint=Math.max(...graded.map(t=>Number(t.hint_level??0)));
-    const request=a.context?.practice_request_id,offered=bound.get(request);
-    const native=offered&&uses.get(request)===1&&offered.itemId===item.id&&offered.version===item.itemVersion&&
-      Date.parse(offered.at)<Date.parse(a.occurred_at)?offered.native:undefined;
     const observations=graded.map(t=>Number(t.confidence??1));
     const reliability=Math.max(0,Math.min(1,Number(a.weight??1)*Math.min(...observations)));
     const knownAt=[a.knownAt??a.occurred_at,...graded.map(t=>t.knownAt??a.occurred_at)].sort((x,y)=>Date.parse(y)-Date.parse(x))[0];
     events.push({scope,id:'attempt/'+a.id,origin:a.source_evidence_id?'evidence/'+a.source_evidence_id:'attempt/'+a.id,
-      at:a.occurred_at,knownAt,actor:'owner',kind:item.form==='micro'||item.form==='recall'?'recall':'attempt',
-      outcome,hint,reliability,uncued:item.uncued&&Array.isArray(a.cued)&&!a.cued.includes(item.concept),worked:item.form==='worked',
-      feedback:false,nativeProbability:native,difficulty:item.difficulty,session:a.session_id??'',item:item.id,family:item.family,
-      form:item.form,novel:item.novel&&a.context?.novelty==='novel'});
+      at:a.occurred_at,knownAt,actor:'owner',kind:details.form==='micro'||details.form==='recall'?'recall':'attempt',
+      outcome,hint,reliability,uncued:details.uncued&&Array.isArray(a.cued)&&!a.cued.includes(item.concept),worked:details.form==='worked',
+      feedback:false,nativeProbability:offered.native,difficulty:item.difficulty,session:a.session_id??'',item:item.id,family:details.family,
+      form:details.form,novel:details.novel&&a.context?.novelty==='novel'});
   }
   const question=selectPracticeQuestion(items,events,scope,asOf,minutes,action.kind==='teach'?'worked':action.kind==='check'?'whole':'independent',forecastEnabled);
   if(!question)return unavailable('No approved question fits the declared scope and minutes',action.p);

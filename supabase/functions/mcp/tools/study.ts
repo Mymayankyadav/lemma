@@ -1,5 +1,6 @@
 import type { Context } from '../db.ts';
-import {openPractice} from '../agenda.ts';
+import {openPractice,recordPractice} from '../agenda.ts';
+import {validPracticeScore} from '../../_shared/practice/delivery.ts';
 import {validateConversion} from '../../_shared/adaptive/convert.ts';
 
 /** The connector owner is established by the secret-authenticated request, never tool input. */
@@ -35,6 +36,14 @@ export type StudyInput = {
 export async function study(c: Context, input: StudyInput): Promise<unknown> {
   if(input.command.resource==='practice_questions'){
     const cmd=input.command;
+    if(cmd.operation==='score'){
+      if(cmd.schemaVersion!==1||Object.keys(cmd).some(k=>!['operationId','schemaVersion','resource','operation','target','patch'].includes(k))||
+        !cmd.target||Object.keys(cmd.target).some(k=>k!=='id'))throw Error('Score only the delivered question with an explicit learner assessment');
+      const {learnerConfirmed,...outcome}=cmd.patch??{};
+      const request={operationId:cmd.operationId,requestId:cmd.target.id,learnerConfirmed,outcome};
+      if(!validPracticeScore(request))throw Error('Ask the learner to confirm the result, hints and question familiarity; never infer a score');
+      return recordPractice(c,request,input.client??'other');
+    }
     if(cmd.schemaVersion!==1||cmd.operation!=='open'||Object.keys(cmd).some(k=>!['operationId','schemaVersion','resource','operation'].includes(k)))
       throw Error('Open a question with its operation ID only');
     return openPractice(c,cmd.operationId);
