@@ -41,6 +41,14 @@ Done = owner/checkpoint-scoped text and completed strokes resume offline, with b
 Tests: Local Pad editor and rendering, owner/checkpoint isolation and recovery, offline reopen and export, mobile rotation and IME, and exact reviewed selection handoff.
 Scope: P8 Local Pad and its tests, optionally a default-off entry after integration, docs/current/N192.md.
 Not: changing the ephemeral Review ScratchPad, OCR, provider auth, MCP or schema work, or enabling a production entry by default.
+## N191 Build the durable evidence, time and owner core (Owner task)
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Build · Status: done · Needs: N189 · Assigned: chat-84293#kzbq
+Done = replay validated owner-bound evidence as of an explicit cutoff with distinct occurred/reported/known clocks, idempotent exact delivery and deterministic corrections; reconcile fixed occurrences with explicit DST handling; integrate existing evidence/session writes and owner operation receipts, and verify owner isolation and replay parity before activation.
+Tests: deterministic evidence clock/delivery/correction/durable receipt and fixed-occurrence normalization tests; cross-owner transaction acceptance tests.
+Scope: pure evidence/calendar modules, existing shared adaptive evidence/session integration, additive schema and receipt integration as needed, tests and docs/current/N191.md.
+Not: deleting history, activating any policy, adding a new receipt store, or changing protected paths or production data.
 
 ## N188 MCP smoke fits the reused Edge worker lifetime (Owner task)
 

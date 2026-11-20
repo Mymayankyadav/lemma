@@ -1,0 +1,55 @@
+{
+  "table": "calendar_input_history",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "user_id": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "source": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "source_key": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "known_at": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "writer_xid": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    },
+    "input": {
+      "classification": "derived",
+      "appPath": "public.lemma_calendar_snapshot reads owner settings and commitments",
+      "mcpPath": "public.lemma_planning_snapshot_mcp binds the connector owner before reading",
+      "exportPolicy": "Included in the live owner-scoped export registry",
+      "deletionPolicy": "Owner account deletion cascades all rows. Later calendar changes append projections"
+    }
+  }
+}
