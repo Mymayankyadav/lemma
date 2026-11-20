@@ -1,3 +1,4 @@
+import {isFlagOn} from '../../flags';
 import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { bounded } from "../charts/types";
 import { formatDay } from "../../lib/format";
@@ -108,7 +109,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     labels[labels.length-1].labelY=bottom-8;
     for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
   }
-  return <section ref={measureRef} className="v7-chart" data-chart="plot" aria-labelledby={id} aria-describedby={`${id}-summary`}>
+  return <section ref={measureRef} className="v7-chart" data-chart="plot" data-study-ui={isFlagOn('uiRepairV1')?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
     <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
     {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {

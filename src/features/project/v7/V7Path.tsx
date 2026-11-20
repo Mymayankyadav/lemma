@@ -23,7 +23,7 @@ import {formatMinutes} from '../../../lib/text';
 import {groupCheckpointStages} from '../../../ui/timeline/progress';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
-import {dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
+import {currentStudyStep,dueTotal,isDemonstrated,lineEnd,nodeSize,nodeText,shortDate,stageLabel,type NodeState} from './pathModel';
 import './path.css';
 import {isFlagOn} from '../../../flags';
 
@@ -46,7 +46,7 @@ function NodeMark({state}:{state:NodeState}){
 }
 function Row({slug,cps,index,step,reached,onContinue}:{slug:string;cps:CheckpointView[];index:number;step:string|null;reached:boolean;onContinue?:()=>void}){
  const settings=useSettings();
- const cp=cps[index],text=nodeText(cps,index,step),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
+ const cp=cps[index],text=nodeText(cps,index,step,isFlagOn('uiRepairV1')),current=text.state==='current'&&!inactiveCheckpoint(cp,settings.data?.flags);
  return <li className="v7-path-row" data-adaptive-state={inactiveCheckpoint(cp,settings.data?.flags)?cp.planState:undefined} data-checkpoint-code={cp.code} data-state={text.state} data-reached={reached?'true':'false'}>
   <NodeMark state={text.state}/>
   <Link className="v7-path-body" to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(cp.code)}>
@@ -100,7 +100,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
  const data=query.data,cps=useMemo(()=>data?.checkpoints??[],[data]);
  const currentIndex=cps.findIndex(cp=>cp.ui==='now'),current=currentIndex>=0?cps[currentIndex]:null;
  const detail=useCheckpoint(slug,current?.code??'');
- const step=current?(detail.data?.steps??[])[Math.max(0,current.currentStep-1)]??null:null;
+ const step=current?(detail.data?.steps??[])[isFlagOn('uiRepairV1')?currentStudyStep(current).index:Math.max(0,current.currentStep-1)]??null:null;
  useEffect(()=>{
   if(!room||!data||tab!=='Map'||!current)return;
   const frame=requestAnimationFrame(()=>{

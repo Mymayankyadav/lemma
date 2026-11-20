@@ -126,7 +126,7 @@ export default function CloseDayV7(){
    // N131 · A5: the low chime, when Sounds is on.
    void playSound('chime',soundsOn(settings.data?.ui));
    // LT3 (E20): Day closed stays until Done, or DAY_CLOSED_MS, the same with or without motion.
-   timer.current=window.setTimeout(()=>navigate('/'),DAY_CLOSED_MS);
+   if(!isFlagOn('uiRepairV1'))timer.current=window.setTimeout(()=>navigate('/'),DAY_CLOSED_MS);
   }catch(failure){setError(failure instanceof Error?failure.message:'Could not close the day.');setReload(value=>value+1);}
   finally{setBusy(false);}
  }

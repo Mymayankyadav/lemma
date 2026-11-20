@@ -1,3 +1,4 @@
+import {currentStudyStep} from '../../project/v7/pathModel';
 import {CheckpointReady} from '../../adaptive/AtlasPanels';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
 import {useMemo,useState} from 'react';
@@ -46,7 +47,7 @@ export default function CheckpointV7(){
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/><Skeleton/><Skeleton/></main>;
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
   <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
- const step=Math.max(0,view.currentStep);
+ const step=isFlagOn('uiRepairV1')?currentStudyStep(view).index:Math.max(0,view.currentStep);
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>

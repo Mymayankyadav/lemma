@@ -24,7 +24,11 @@ export function waitingFor(checkpoints:readonly CheckpointView[],index:number):s
 }
 export interface NodeText{state:NodeState;label:string;detail:string}
 /** The text beside each node. The label always carries the state in words, never the mark alone. */
-export function nodeText(checkpoints:readonly CheckpointView[],index:number,step?:string|null):NodeText{
+export function currentStudyStep(checkpoint:Pick<CheckpointView,'currentStep'|'stepsTotal'>){
+ const total=Math.max(0,checkpoint.stepsTotal),index=Math.min(Math.max(0,checkpoint.currentStep),total);
+ return {index,ordinal:index<total?index+1:null,total};
+}
+export function nodeText(checkpoints:readonly CheckpointView[],index:number,step?:string|null,canonical=false):NodeText{
  const cp=checkpoints[index],state=nodeStateOf(cp.ui);
  if(state==='demonstrated'){
   const date=shortDate(cp.demonstratedAt),due=shortDate(cp.recheckDue);
@@ -33,8 +37,8 @@ export function nodeText(checkpoints:readonly CheckpointView[],index:number,step
   return {state,label:'Demonstrated',detail:parts.join(' · ')};
  }
  if(state==='current'){
-  const total=Math.max(0,cp.stepsTotal),at=total?Math.min(Math.max(1,cp.currentStep),total):0;
-  return {state,label:'In progress',detail:total?'Step '+at+' of '+total+(step?': '+step:''):'Step details are not written yet'};
+  const total=Math.max(0,cp.stepsTotal),at=canonical?currentStudyStep(cp).ordinal:total?Math.min(Math.max(1,cp.currentStep),total):0;
+  return {state,label:'In progress',detail:total&&at===null?'All steps completed':total?'Step '+at+' of '+total+(step?': '+step:''):'Step details are not written yet'};
  }
  if(state==='proposed')return {state,label:'Proposed',detail:'Proposed by your tutor'};
  if(state==='locked'){const need=waitingFor(checkpoints,index);return {state,label:'Locked',detail:need?'Needs '+need:'Locked'};}
