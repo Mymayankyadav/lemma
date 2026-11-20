@@ -1,4 +1,4 @@
-import {insertPadText, padEdit, type PadEdit} from '../pad/padEdit';
+import {insertPadText, padEdit, scanPad, type PadEdit} from '../pad/padEdit';
 
 // Symbol and proof-phrase layouts from the supplied tutor keyboard.
 export const notation: Readonly<Record<string, readonly (readonly string[])[]>> = {
@@ -90,7 +90,7 @@ const BASE_NEXT: Readonly<Record<string, readonly string[]>> = {
 export interface NotationSuggestion {
   text: string;
   start: number;
-  kind: 'sym' | 'word' | 'next' | 'kit';
+  kind: 'sym' | 'word' | 'next' | 'kit' | 'fix' | 'recent';
 }
 
 export function insertNotation(edit: PadEdit, text: string): PadEdit {
@@ -110,7 +110,7 @@ export function findNotationSlot(edit: PadEdit, backward = false): PadEdit | und
 
 function phraseSuggestions(edit: PadEdit, automatic = false): NotationSuggestion[] {
   const before = edit.text.slice(0, edit.start);
-  if (edit.start !== edit.end || /[\p{L}\p{N}]/u.test(edit.text[edit.end] ?? '')) return [];
+  if (edit.start !== edit.end || /[\p{L}\p{N}_]/u.test(edit.text[edit.end] ?? '')) return [];
   const words = before.slice(-100).match(/\b[A-Za-z]+(?:[ -]+[A-Za-z]+)*$/);
   if (!words) return [];
   const matches = PHRASES.flatMap(([phrase, text, auto, post]) => {
@@ -124,22 +124,82 @@ function phraseSuggestions(edit: PadEdit, automatic = false): NotationSuggestion
   return matches.filter(match => match.start === matches[0]?.start);
 }
 
+const ROWS = ['qwertyuiop', 'asdfghjkl', 'zxcvbnm'];
+const KEY_POSITIONS = new Map(ROWS.flatMap((row, y) => [...row].map((letter, x) => [letter, [x + y * 0.5, y]] as const)));
+const WORD_BANK = new Set([...VOCAB, ...PHRASES.flatMap(([phrase]) => phrase.split(' '))]);
+
+function wordAtCaret(edit: PadEdit) {
+  if (edit.start !== edit.end || /[\p{L}\p{N}_]/u.test(edit.text[edit.end] ?? '')) return undefined;
+  const word = edit.text.slice(0, edit.start).match(/[a-z][a-z'-]*$/i)?.[0];
+  if (word && !/[\p{L}\p{N}_]/u.test(edit.text[edit.start - word.length - 1] ?? '')) return word;
+}
+
+function caseLike(word: string, candidate: string) {
+  if (word.length > 1 && word === word.toUpperCase()) return candidate.toUpperCase();
+  return /^[A-Z]/.test(word) ? candidate[0].toUpperCase() + candidate.slice(1) : candidate;
+}
+
+function typoCost(word: string, candidate: string) {
+  if (Math.abs(word.length - candidate.length) > 1) return Infinity;
+  const first = [...word].findIndex((letter, index) => letter !== candidate[index]);
+  const offset = first < 0 ? Math.min(word.length, candidate.length) : first;
+  const left = word.slice(offset), right = candidate.slice(offset);
+  if (left.length === right.length) {
+    if (left[0] === right[1] && left[1] === right[0] && left.slice(2) === right.slice(2)) return 1;
+    const a = KEY_POSITIONS.get(left[0]), b = KEY_POSITIONS.get(right[0]);
+    if (a && b && left.slice(1) === right.slice(1) && Math.abs(a[0] - b[0]) <= 1.1 && Math.abs(a[1] - b[1]) <= 1) return 2;
+    return Infinity;
+  }
+  const [long, short] = left.length > right.length ? [left, right] : [right, left];
+  if (long.slice(1) !== short) return Infinity;
+  return left === long && (long[0] === long[1] || word[offset - 1] === long[0]) ? 1 : 3;
+}
+
+function correction(word: string, pool: ReadonlySet<string>, automatic: boolean) {
+  const lower = word.toLowerCase();
+  if (!/^[a-z]{3,24}$/i.test(word) || pool.has(lower)) return;
+  // A valid prefix is still being typed. Keep it intact, including on a separator.
+  if ([...pool].some(candidate => candidate.startsWith(lower))) return;
+  let best = '';
+  let cost = Infinity;
+  let tied = false;
+  for (const candidate of automatic ? WORD_BANK : pool) {
+    if (candidate[0] !== lower[0] && candidate[1] !== lower[1]) continue;
+    const next = typoCost(lower, candidate);
+    if (next < cost) {
+      best = candidate;
+      cost = next;
+      tied = false;
+    } else if (next === cost && Number.isFinite(next)) tied = true;
+  }
+  if (best && (!automatic || (!tied && cost === 1))) return caseLike(word, best);
+}
+
+function vocabulary(context: readonly string[], edit: PadEdit, prefix?: string) {
+  const text = context.map(source => source.slice(0, 2000)).join(' ').slice(0, 6000);
+  // Include previously typed words as local vocabulary without treating the
+  // current token, which may be unfinished or mistyped, as a known word.
+  const draft = edit.text.slice(0, edit.start - (prefix?.length ?? 0)) + ' ' + edit.text.slice(edit.end);
+  const words = (text + ' ' + draft).toLowerCase().match(/\b[a-z]{3,24}\b/g) ?? [];
+  return {text, pool: new Set([...words, ...WORD_BANK])};
+}
+
 export function notationSuggestions(edit: PadEdit, context: readonly string[], recent: readonly string[]): NotationSuggestion[] {
   const before = edit.text.slice(0, edit.start);
   const items = new Map<string, NotationSuggestion>();
   const add = (text: string, kind: NotationSuggestion['kind'], start = edit.start) => {
     if (!items.has(text) && items.size < 14) items.set(text, {text, kind, start});
   };
-  const prefix = before.match(/[a-z][a-z'-]*$/i)?.[0];
-  const canComplete = prefix && edit.start === edit.end && !/[\p{L}\p{N}]/u.test(edit.text[edit.end] ?? '');
-  const contextText = context.join(' ').slice(0, 6000);
-  const terms = [...new Set(contextText.match(/\b[a-z]{3,}\b/gi) ?? [])];
+  const prefix = wordAtCaret(edit);
+  const {text: contextText, pool} = vocabulary(context, edit, prefix);
   phraseSuggestions(edit).forEach(({text, start}) => add(text, 'sym', start));
-  if (canComplete) {
+  if (prefix) {
     const lower = prefix.toLowerCase();
-    for (const word of [...terms, ...VOCAB]) {
-      if (word.length > prefix.length && word.toLowerCase().startsWith(lower)) {
-        add(prefix + word.slice(prefix.length), 'word', edit.start - prefix.length);
+    const fix = correction(prefix, pool, false);
+    if (fix) add(fix, 'fix', edit.start - prefix.length);
+    for (const word of pool) {
+      if (word.length > prefix.length && word.startsWith(lower)) {
+        add(caseLike(prefix, word), 'word', edit.start - prefix.length);
         if (items.size >= 6) break;
       }
     }
@@ -157,7 +217,7 @@ export function notationSuggestions(edit: PadEdit, context: readonly string[], r
   }
   const snippets = contextText.match(/\b[A-Za-z]⁻¹\([A-Za-z]\)|\b[A-Za-z]\([A-Za-z]\)|[ℕℤℚℝℂ]/gu) ?? [];
   snippets.forEach(text => add(text, 'kit'));
-  recent.forEach(text => add(text, 'sym'));
+  recent.forEach(text => add(text, 'recent'));
   ['∀', '∃', '∈', '⊆', '⇒', 'ℝ'].forEach(text => add(text, 'sym'));
   return [...items.values()];
 }
@@ -165,14 +225,21 @@ export function notationSuggestions(edit: PadEdit, context: readonly string[], r
 export function applyNotationSuggestion(edit: PadEdit, {text, start, kind}: NotationSuggestion): PadEdit {
   const before = edit.text.slice(0, start);
   const postfix = POSTFIX.has(text) || /^[⁻(,.;:)\]]/u.test(text);
-  const space = kind !== 'word' && before && !/[\s([{]$/u.test(before) && !postfix ? ' ' : '';
-  const trail = /[\s(□]$/u.test(text) || /^\s/u.test(edit.text.slice(edit.end)) ? '' : ' ';
+  const space = kind !== 'word' && kind !== 'fix' && before && !/[\s([{]$/u.test(before) && !postfix ? ' ' : '';
+  const trail = /[\s(□]$/u.test(text) || /^[\s,.;:!?%…)}\]]/u.test(edit.text.slice(edit.end)) ? '' : ' ';
   return insertNotation(padEdit(edit.text, start, edit.end), space + text + trail);
 }
 
-export function typedNotation(edit: PadEdit, text: string): PadEdit {
-  const match = /^[ ,.;]$/u.test(text) ? phraseSuggestions(edit, true)[0] : undefined;
-  if (!match) return insertNotation(edit, text);
+export function typedNotation(edit: PadEdit, text: string, context: readonly string[] = [], keptWords: ReadonlySet<string> = new Set()): PadEdit {
+  if (!/^[ ,.;]$/u.test(text) || scanPad(edit.text.slice(0, edit.start)).at(-1)?.kind === 'unfinished') {
+    return insertNotation(edit, text);
+  }
+  const match = phraseSuggestions(edit, true)[0];
+  if (!match) {
+    const word = wordAtCaret(edit);
+    const fix = word && !keptWords.has(word.toLowerCase()) ? correction(word, vocabulary(context, edit, word).pool, true) : undefined;
+    return word && fix ? insertNotation(padEdit(edit.text, edit.start - word.length, edit.end), fix + text) : insertNotation(edit, text);
+  }
   const applied = applyNotationSuggestion(edit, match);
   if (applied.start !== applied.end) return applied;
   if (text === ' ') return applied;

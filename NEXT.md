@@ -10,8 +10,8 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
 Stage: Harden · Status: done · Needs: — · Assigned: chat-174602#75tl
-Done = Both Continue with tutor entry points open the supplied chat design for the selected checkpoint inside Lemma's normal navigation, shared header, search and theme. Sending an answer grants the connected Lemma MCP tutor that turn. The next tutor question appears in the same conversation. Navigation away and back preserves the conversation and draft. Existing saved Pad notes remain accessible through Settings.
-Tests: phone and desktop navigation, keyboard editing, persisted drafts, signed-in grant and reply recovery, ordinary MCP tool discovery and PostgreSQL owner/lease/reply isolation.
+Done = Both Continue with tutor entry points open the supplied chat design for the selected checkpoint inside Lemma's shared app shell. Navigation hides on phone and desktop to enlarge the conversation; shared Back, Search and session controls remain available. The Gboard-style keyboard provides local autocomplete and respects the app's haptics setting and theme tokens. Sending an answer grants the connected Lemma MCP tutor that turn. The next tutor question appears in the same conversation. Leaving and returning preserves the conversation and draft. Existing saved Pad notes remain accessible through Settings.
+Tests: phone and desktop chat space, full question reading, navigation recovery, keyboard layout and autocomplete, haptics setting, persisted drafts, signed-in grant and reply recovery, ordinary MCP tool discovery and PostgreSQL owner/lease/reply isolation.
 Scope: app routing and v7 navigation, tutor UI, browser adapters, checkpoint and Settings entry points, existing Lemma MCP tutor tools, an additive grant lookup migration and their regression tests.
 
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release

@@ -1,6 +1,7 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, CornerDownLeft, Delete, HelpCircle, Keyboard, Paperclip, Plug, Sparkle, Undo2} from 'lucide-react';
+import {ArrowBigUp, ArrowBigUpDash, ArrowDown, ArrowUp, ChevronDown, CornerDownLeft, Delete, HelpCircle, Keyboard, Paperclip, Plug, Sparkle, Undo2} from 'lucide-react';
 import {MathText} from '../../ui/MathText';
+import {haptic} from '../../ui/v7/haptics';
 import {
   changePadText, createPadTextHistory, deletePadBackward, movePadCaret, padEdit, redoPadText, undoPadText,
   type PadEdit, type PadTextHistory,
@@ -39,6 +40,8 @@ export function TutorComposer(props: Props) {
   const [cursor, setCursor] = useState(history.current.present);
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
   const [recent, setRecent] = useState<string[]>([]);
+  const [keptWords, setKeptWords] = useState<readonly string[]>([]);
+  const automatic = useRef<{before: PadTextHistory; after: PadEdit} | null>(null);
   const strip = useRef<HTMLDivElement>(null);
   const keyboard = useRef<HTMLDivElement>(null);
   const context = props.notationContext ?? EMPTY_CONTEXT;
@@ -96,6 +99,7 @@ export function TutorComposer(props: Props) {
     input.style.height = '44px';
     input.style.height = Math.min(120, Math.max(44, input.scrollHeight)) + 'px';
     if (history.current.present.text !== props.value) {
+      automatic.current = null;
       history.current = createPadTextHistory(padEdit(props.value));
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
@@ -142,6 +146,7 @@ export function TutorComposer(props: Props) {
     history.current = next;
     setCursor(edit);
     if (changed) {
+      automatic.current = null;
       if (restore) pendingSelection.current = edit;
       props.onChange(edit.text);
     } else if (restore) {
@@ -156,11 +161,33 @@ export function TutorComposer(props: Props) {
     if (!symbol || symbol.includes('□') || /^[\w\s]+$/u.test(symbol) || symbol.length > 12) return;
     setRecent(old => [symbol, ...old.filter(item => item !== symbol)].slice(0, 6));
   }
+  function typeText(edit: PadEdit, text: string, focus: boolean, onlyAutomatic = false) {
+    const plain = insertNotation(edit, text);
+    const replacement = typedNotation(edit, text, context, new Set(keptWords));
+    const corrected = replacement.text !== plain.text;
+    if (onlyAutomatic && !corrected) return false;
+    if (replacement.text.length > 2000) return false;
+    const before = history.current;
+    change(replacement, focus);
+    if (corrected) automatic.current = {before, after: replacement};
+    return true;
+  }
   function insert(text: string, typed = false) {
     remember();
     const edit = history.current.present;
-    change(typed ? typedNotation(edit, text) : insertNotation(edit, text), true);
+    if (typed) typeText(edit, text, true);
+    else change(insertNotation(edit, text), true);
     if (!typed || /[^\w\s]/u.test(text)) noteRecent(text);
+  }
+  function undoAutomatic(focus: boolean) {
+    const fix = automatic.current;
+    const edit = history.current.present;
+    if (!fix || edit.text !== fix.after.text || edit.start !== fix.after.start || edit.end !== fix.after.end) return false;
+    const {text, start} = fix.before.present;
+    const word = text.slice(0, start).match(/[a-z]{3,24}$/i)?.[0]?.toLowerCase();
+    if (word) setKeptWords(old => [word, ...old.filter(item => item !== word)].slice(0, 32));
+    commit(fix.before, focus);
+    return true;
   }
   function nextSlot(backward = false) {
     remember();
@@ -187,7 +214,7 @@ export function TutorComposer(props: Props) {
           inputMode={native ? 'text' : 'none'} rows={1} maxLength={2000} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? props.value} readOnly={props.readOnly} onSelect={remember} onClick={remember} onFocus={remember}
           onPointerDown={() => {
-            if (compactStart.current && !props.readOnly) {
+            if (!shown && !native && !props.readOnly) {
               compactStart.current = false;
               setShown(true);
             }
@@ -234,13 +261,9 @@ export function TutorComposer(props: Props) {
                 change(slot);
               }
             }
-            if (!modified && !event.altKey && /^[ ,.;]$/.test(event.key)) {
-              const replacement = typedNotation(edit, event.key);
-              if (replacement.text !== insertNotation(edit, event.key).text) {
-                event.preventDefault();
-                change(replacement);
-              }
-            }
+            if (modified || event.altKey) return;
+            if (event.key === 'Backspace' && undoAutomatic(false)) event.preventDefault();
+            if (/^[ ,.;]$/.test(event.key) && typeText(edit, event.key, false, true)) event.preventDefault();
           }}/>
         <button className="send" type="submit" aria-label="Send" disabled={blocked || !props.value.trim()}
           onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></button>
@@ -254,6 +277,7 @@ export function TutorComposer(props: Props) {
         onPointerDown={keepSelection} onClick={() => undo()}><Undo2/><small>Undo</small></button>
       <button type="button" className={'tb' + (view !== 'abc' && shown ? ' on' : '')}
         aria-label="Symbols" aria-pressed={view !== 'abc' && shown} disabled={composing} onClick={() => {
+          haptic('snap');
           compactStart.current = false;
           if (native) field.current?.blur();
           setNative(false);
@@ -269,17 +293,20 @@ export function TutorComposer(props: Props) {
       <div className="strip">
         <div className="sugg" ref={strip} role="group" aria-label="Suggestions">
           {incomplete && <button type="button" className="next" disabled={editingDisabled}
-            onPointerDown={keepSelection} onClick={() => nextSlot()}>Next □</button>}
+            onPointerDown={keepSelection} onClick={() => {haptic('snap'); nextSlot();}}>Next □</button>}
           {suggestions.map(item => <button className={item.kind} type="button" key={item.text}
             disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {
               remember();
               const edit = history.current.present;
               const next = notationSuggestions(edit, context, recent).find(suggestion => suggestion.text === item.text);
-              if (next) change(applyNotationSuggestion(edit, next), true);
+              if (!next) return;
+              haptic('snap');
+              change(applyNotationSuggestion(edit, next), true);
               noteRecent(item.text);
-            }}>{item.text}</button>)}
+            }} aria-description={item.kind === 'fix' ? 'Spelling correction' : undefined}>{item.text}</button>)}
         </div>
         <button className="sbtn" type="button" aria-label="Use device keyboard" disabled={editingDisabled} onClick={() => {
+          haptic('snap');
           setNative(true);
           setShown(false);
           const input = field.current;
@@ -291,12 +318,12 @@ export function TutorComposer(props: Props) {
             input.focus();
           }
         }}><Keyboard aria-hidden="true"/></button>
-        <button className="sbtn" type="button" aria-label="Hide keyboard" onClick={() => setShown(false)}><ChevronDown aria-hidden="true"/></button>
+        <button className="sbtn" type="button" aria-label="Hide keyboard" onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
         onDelete={() => {
           remember();
-          change(deletePadBackward(history.current.present), true);
+          if (!undoAutomatic(true)) change(deletePadBackward(history.current.present), true);
         }}
         onMove={(direction, count) => {
           remember();
@@ -305,6 +332,7 @@ export function TutorComposer(props: Props) {
           change(edit, true);
         }}/>
     </div> : <button className="btn ghost" type="button" disabled={composing} onClick={() => {
+      haptic('snap');
       compactStart.current = false;
       if (native) field.current?.blur();
       setNative(false);
@@ -330,6 +358,7 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
   const lastShift = useRef(0);
   const hold = useRef<KeyHold | null>(null);
   const skipClick = useRef<string | null>(null);
+  const pressTick = useRef<string | null>(null);
   const actions = useRef({onInsert, onDelete, onMove, disabled});
   useLayoutEffect(() => {actions.current = {onInsert, onDelete, onMove, disabled};}, [onInsert, onDelete, onMove, disabled]);
   useEffect(() => () => clearTimeout(hold.current?.timer), [view, disabled]);
@@ -352,7 +381,7 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
       clearTimeout(current.timer);
       if (current.fired) skipClick.current = current.key;
       hold.current = null;
-      event.currentTarget.classList.remove('pressed', 'sliding');
+      event.currentTarget.classList.remove('down', 'pressed', 'sliding');
     };
     return <button type="button" key={label} className={'k ' + style} aria-label={label} disabled={disabled}
       aria-pressed={label === 'Shift' || label === 'Caps lock on' ? shift !== 'off' : undefined}
@@ -361,16 +390,19 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
         if (!event.isPrimary || event.button !== 0) return;
         keepSelection(event);
         skipClick.current = null;
+        pressTick.current = haptic('snap') ? label : null;
+        event.currentTarget.classList.add('down');
         const current: KeyHold = {key: label, pointer: event.pointerId, x: event.clientX, fired: false};
         hold.current = current;
         if (printable) event.currentTarget.classList.add('pressed');
         if (label === 'Space' || label === 'Delete') event.currentTarget.setPointerCapture?.(event.pointerId);
         if (label === 'Delete') {
+          const started = Date.now();
           function repeat() {
             if (actions.current.disabled) return;
             actions.current.onDelete();
             current.fired = true;
-            current.timer = setTimeout(repeat, 75);
+            current.timer = setTimeout(repeat, Date.now() - started > 1300 ? 40 : 75);
           }
           current.timer = setTimeout(repeat, 420);
           actions.current.onDelete();
@@ -378,6 +410,7 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
         } else if (alt) {
           current.timer = setTimeout(() => {
             if (actions.current.disabled) return;
+            haptic('reveal');
             actions.current.onInsert(alt, true);
             current.fired = true;
           }, 380);
@@ -391,12 +424,15 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
         current.x += steps * 12;
         current.fired = true;
         event.currentTarget.classList.add('sliding');
+        haptic('snap');
         actions.current.onMove(steps > 0 ? 'right' : 'left', Math.abs(steps));
       }}
       onPointerUp={swallowing} onPointerCancel={swallowing} onLostPointerCapture={swallowing}
       onPointerLeave={event => {if (!event.currentTarget.hasPointerCapture?.(event.pointerId)) swallowing(event);}}
       onClick={event => {
         if (event.detail && skipClick.current === label) {skipClick.current = null; return;}
+        if (!event.detail || pressTick.current !== label) haptic('snap');
+        pressTick.current = null;
         action();
       }}>
       <span className="kl">{icon ?? label}</span>{alt && <sup>{alt}</sup>}
@@ -429,7 +465,7 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
         <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
           <button key={name} type="button" className={view === name ? 'cur' : ''} aria-pressed={view === name}
             ref={view === name ? activeCategory : undefined}
-            onPointerDown={keepSelection} onClick={() => onView(name)}>{name}</button>)}</div>
+            onPointerDown={keepSelection} onClick={() => {haptic('snap'); onView(name);}}>{name}</button>)}</div>
         {back}
       </div>
     </> : <>
@@ -440,7 +476,7 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
           const now = Date.now();
           setShift(shift === 'off' ? 'once' : shift === 'once' && now - lastShift.current < 350 ? 'locked' : 'off');
           lastShift.current = now;
-        }, {style: 'fn w15' + (shift === 'off' ? '' : ' lit'), icon: <ArrowUp/>})}{letters('zxcvbnm')}{back}</div>
+        }, {style: 'fn w15' + (shift === 'off' ? '' : ' lit'), icon: shift === 'locked' ? <ArrowBigUpDash fill="currentColor"/> : <ArrowBigUp fill={shift === 'once' ? 'currentColor' : 'none'}/>})}{letters('zxcvbnm')}{back}</div>
       </> : view === 'num' ? <>
         <div className="row">{chars([...'1234567890'])}</div>
         <div className="row">{chars(['+', '−', '×', '÷', '=', '<', '>', '(', ')', '/'])}</div>

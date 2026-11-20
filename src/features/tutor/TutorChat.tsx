@@ -1,8 +1,7 @@
 import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import type {SavedTutorTurn} from '../../data/tutor/manual-api';
 import {MathText} from '../../ui/MathText';
-import {Tex} from '../../ui/Tex';
-import {Sheet} from '../../ui/v7/components';
+import {Button, Sheet} from '../../ui/v7/components';
 import {TutorComposer} from './TutorComposer';
 import {TutorLayout, TutorOverview, type TutorPageContext} from './TutorLayout';
 
@@ -33,7 +32,7 @@ type Props = {
   transcript: ReactNode;
 };
 
-// Tutors usually end their feedback with the next question. Pin that paragraph.
+// Tutors usually end their feedback with the next question. Use it as notation context.
 function questionPreview(body: string) {
   const paragraphs = body.trim().split(/\n\s*\n/);
   return (paragraphs.filter(p => p.includes('?')).at(-1) || paragraphs.at(-1) || '').trim();
@@ -45,11 +44,12 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
   const [panel, setPanel] = useState<'context' | 'connection' | 'close'>();
   const chat = useRef<HTMLDivElement>(null), follow = useRef(true);
   const previousHeight = useRef(0), previousFirst = useRef<string | undefined>(undefined);
+  const previousReply = useRef<string | undefined>(undefined);
   const last = turns.at(-1), first = turns.at(0)?.id;
   const hintIndex = Math.min(hints.length - 1, hints.indexOf(last?.snapshot.question ?? '') + 1);
   const overview = (view ?? (last || draft ? 'chat' : 'overview')) === 'overview';
   const latestReply = turns.filter(turn => turn.status === 'completed').at(-1);
-  const pinned = latestReply?.status === 'completed' ? questionPreview(latestReply.finalReply.body) : '';
+  const question = latestReply?.status === 'completed' ? questionPreview(latestReply.finalReply.body) : '';
   const step = page.detail.steps[page.detail.view.currentStep] || page.detail.objective;
   useLayoutEffect(() => {
     const element = chat.current;
@@ -57,26 +57,38 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     if (previousFirst.current && first !== previousFirst.current) {
       element.scrollTop += element.scrollHeight - previousHeight.current;
     } else if (follow.current) {
-      element.scrollTop = element.scrollHeight;
+      const reply = latestReply?.id !== previousReply.current
+        ? element.querySelector<HTMLElement>('[data-latest-reply]') : null;
+      if (reply && reply.offsetHeight > element.clientHeight) {
+        follow.current = false;
+        element.scrollTop += reply.getBoundingClientRect().top - element.getBoundingClientRect().top;
+      } else {
+        element.scrollTop = element.scrollHeight;
+      }
     }
     previousHeight.current = element.scrollHeight;
     previousFirst.current = first;
-  }, [first, last?.id, last?.version, overview]);
+    previousReply.current = latestReply?.id;
+  }, [first, last?.id, last?.version, latestReply?.id, overview]);
+  useLayoutEffect(() => {
+    const element = chat.current;
+    if (!element || overview || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => {
+      if (follow.current) element.scrollTop = element.scrollHeight;
+    });
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [overview]);
   function send(text: string, options?: SendOptions) {
     follow.current = true;
     setView('chat');
     void onSend(text, options);
   }
   const openConnection = () => setPanel('connection');
-  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline}
-    onOverview={!overview ? () => setView('overview') : undefined} onCloseSession={() => setPanel('close')} onConnection={openConnection}>
-    {!overview && pinned && <div className="ontable">
-      <span className="ot-l">On the table</span><span className="ot-q" inert><b>Q{latestReply?.sequence}</b> · <Tex source={pinned}/></span>
-      <button className="pinned-question" aria-label="The question on the table" aria-description={pinned}
-        onClick={() => chat.current?.querySelector('[data-latest-reply]')?.scrollIntoView({block:'start'})}>
-        <span className="sr">{pinned}</span>
-      </button>
-    </div>}
+  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline} overview={overview}
+    onOverview={!overview ? () => setView('overview') : undefined}
+    onQuestion={!overview && question ? () => chat.current?.querySelector('[data-latest-reply]')?.scrollIntoView({block:'start'}) : undefined}
+    onCloseSession={() => setPanel('close')} onConnection={openConnection}>
     <div className="chat" ref={chat} role="log" aria-label="Conversation" aria-live="polite"
       onScroll={event => {const node = event.currentTarget; follow.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;}}>
       {status}
@@ -105,7 +117,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
             'Which symbols or proof phrases would help me write my answer to the current question?';
           send(request, {keepDraft:true});
         }}
-        notationContext={[page.detail.view.title, step, pinned]} readOnly={readOnly} pending={pending} hasContext={hasContext}
+        notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
         onContext={() => setPanel('context')} onConnection={openConnection}/>
     </>}
     <Sheet open={panel === 'context'} title="Context for your tutor" onClose={() => setPanel(undefined)}>
@@ -116,10 +128,10 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     </Sheet>
     <Sheet open={panel === 'close'} title="Close the session" onClose={() => setPanel(undefined)}>
       <p>Ask your tutor for three recall questions and a summary of this session.</p>
-      <button className="v7-button v7-primary" disabled={!canSend} onClick={() => {
+      <Button variant="primary" disabled={!canSend} onClick={() => {
         setPanel(undefined);
         send('Let’s close this session. Ask me three short recall questions, one at a time, then summarize what I demonstrated and what to revisit.', {keepDraft:true});
-      }}>Start recall</button>
+      }}>Start recall</Button>
     </Sheet>
   </TutorLayout>;
 }

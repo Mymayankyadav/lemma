@@ -1,6 +1,6 @@
 import {useState, type ReactNode} from 'react';
 import {Link} from 'react-router';
-import {ArrowRight, Plug, Timer} from 'lucide-react';
+import {ArrowRight, Ellipsis} from 'lucide-react';
 import type {CheckpointDetail, ProjectDetail} from '../../data/types';
 import {useStudyUi} from '../../data/StudyUiRelease';
 import {reviewHref} from '../../data/review-target';
@@ -17,14 +17,15 @@ import {TutorMark} from './TutorMark';
 export type TutorPageContext = {project: ProjectDetail; detail: CheckpointDetail; client: 'claude' | 'chatgpt'};
 type Props = {
   page: TutorPageContext; sequence: number; children: ReactNode;
-  offline?: boolean; onOverview?: () => void; onCloseSession?: () => void; onConnection?: () => void;
+  overview?: boolean; offline?: boolean; onOverview?: () => void; onQuestion?: () => void;
+  onCloseSession?: () => void; onConnection?: () => void;
 };
 
-export function TutorLayout({page, sequence, children, offline, onOverview, onCloseSession, onConnection}: Props) {
-  const [panel, setPanel] = useState<'plan' | 'timer' | 'checks' | 'practice'>();
+export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection}: Props) {
+  const [panel, setPanel] = useState<'session' | 'plan' | 'timer' | 'checks' | 'practice'>();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
-  const title = project.project.title + ' · ' + detail.view.code + ' tutor';
+  const title = detail.view.code + ' · ' + (offline ? 'Offline' : detail.view.title);
   const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
   const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
@@ -47,20 +48,18 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
     } catch {focus.refresh(); setError('Could not update the timer. Try again.');}
     finally {setBusy(false);}
   }
+  const sessionAction = (action: () => void) => {
+    setPanel(undefined);
+    action();
+  };
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
-    <DetailHeader title={title} back={checkpoint}/>
-    <h1 className="v7-sr-only">{title}</h1>
-    <div className="tutor-context">
-      <p>{step.ordinal ? 'Step ' + step.ordinal + ' of ' + step.total : detail.view.title}{offline && ' · Offline'}</p>
-      {onOverview && <Button small variant="ghost" onClick={onOverview}>Next up</Button>}
-      {onConnection && <IconButton label="Tutor connection" onClick={onConnection} aria-haspopup="dialog">
-        <Plug aria-hidden="true"/>
-      </IconButton>}
-      <IconButton label="Study timer" onClick={() => setPanel('timer')} aria-haspopup="dialog">
-        <Timer aria-hidden="true"/>
+    <DetailHeader title={title} back={checkpoint} extraAction={
+      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog">
+        <Ellipsis aria-hidden="true"/>
       </IconButton>
-    </div>
-    <nav className="rail" aria-label="Session parts">
+    }/>
+    <h1 className="v7-sr-only">{project.project.title} · {detail.view.code} · {detail.view.title}{offline && ' · Offline'}</h1>
+    {overview && <nav className="rail" aria-label="Session parts">
       <button className={'seg-r' + (checking ? ' cur' : sequence && !detail.view.dueCards ? ' done' : '')}
         aria-current={checking ? 'step' : undefined} aria-haspopup="dialog" onClick={() => setPanel('checks')}>
         <b>Checks</b><small>{detail.view.dueCards ? detail.view.dueCards + ' due' : 'none due'}</small></button>
@@ -68,8 +67,21 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
         aria-haspopup="dialog" onClick={() => setPanel('plan')}><b>Learn</b><small>{sequence ? 'Q' + sequence : step.ordinal ? step.ordinal + ' of ' + step.total : 'Start here'}</small></button>
       <button className="seg-r" aria-haspopup="dialog" onClick={() => setPanel('practice')}><b>Practice</b><small>after Learn</small></button>
       {onCloseSession && <button className="seg-r" aria-haspopup="dialog" onClick={onCloseSession}><b>Close</b><small>at the end</small></button>}
-    </nav>
+    </nav>}
     {children}
+    <Sheet open={panel === 'session'} onClose={() => setPanel(undefined)} title="Study session">
+      <p><strong>{project.project.title}</strong><br/>{detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
+      <div className="tutor-session-actions">
+        {onOverview && <Button small onClick={() => sessionAction(onOverview)}>Next up</Button>}
+        {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
+        <Button small onClick={() => setPanel('plan')}>Learn plan</Button>
+        <Button small onClick={() => setPanel('checks')}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
+        <Button small onClick={() => setPanel('practice')}>Practice</Button>
+        <Button small onClick={() => setPanel('timer')}>Study timer</Button>
+        {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Tutor connection</Button>}
+        {onCloseSession && <Button small onClick={() => sessionAction(onCloseSession)}>Close session</Button>}
+      </div>
+    </Sheet>
     <Sheet open={panel === 'plan'} onClose={() => setPanel(undefined)} title={detail.view.title}>
       <div className="tutor-plan">
         <MathText source={detail.objective}/>

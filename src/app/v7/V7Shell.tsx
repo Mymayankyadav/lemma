@@ -129,7 +129,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
- useEffect(()=>{
+ useLayoutEffect(()=>{
   if(!isFlagOn('v7Room'))return;
   const path=location.pathname,to=path+location.search;
   if(/^\/p\/[^/]+(?:\/cp\/[^/]+)?\/tutor$/.test(path))return;
@@ -275,7 +275,7 @@ export function HubHeader({title,date,settings=false,display=false,control,child
  </header>;
 }
 /** B. Detail header: a sticky glass bar with Back, a short title and one action. */
-export function DetailHeader({title,back,action,compact}:{title:string;back?:string;action?:ReactNode;
+export function DetailHeader({title,back,action,extraAction,compact}:{title:string;back?:string;action?:ReactNode;extraAction?:ReactNode;
  /** R2 · F11: shown beside the bar title once the page's large title has scrolled away (an emblem thumbnail, a progress ring). */
  compact?:ReactNode}){
  const navigate=useNavigate(),location=useLocation(),ref=useRef<HTMLElement>(null);
@@ -292,7 +292,7 @@ export function DetailHeader({title,back,action,compact}:{title:string;back?:str
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
   <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default'&&window.history.state?.idx>0)navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
-  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
+  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}{extraAction}</nav>
  </header>;
 }
 /** C. Immersive header: leave on the left, progress in the centre, more on the right. */

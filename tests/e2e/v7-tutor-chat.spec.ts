@@ -25,6 +25,13 @@ async function openComposer(page:Page) {
  await expect(answer(page)).toBeEditable()
 }
 
+async function sessionActions(page:Page) {
+ await tutor(page).getByRole('button',{name:'Session actions',exact:true}).click()
+ const actions=page.getByRole('dialog',{name:'Study session',exact:true})
+ await expect(actions).toBeVisible()
+ return actions
+}
+
 test('Continue with tutor opens the current checkpoint and keeps demo turns after reloading',async({page})=>{
  await continueFromPath(page,'real-analysis')
  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/)
@@ -52,18 +59,31 @@ test('Continue with tutor opens the current checkpoint and keeps demo turns afte
  await expect(transcript(page).getByRole('article',{name:'Imported reply'})).toHaveCount(1)
 })
 
-test('Tutor uses Lemma navigation, search and appearance while retaining the conversation and draft',async({page})=>{
+test('Tutor hides main navigation and keeps conversation and draft through Back, Search and Appearance',async({page})=>{
+ await page.addInitScript(()=>{
+  const pulses:number[]=[]
+  Object.assign(window,{tutorVibrationPulses:pulses})
+  Object.defineProperty(navigator,'vibrate',{value:(pattern:number)=>{pulses.push(pattern);return true}})
+ })
+ const vibrationCount=()=>page.evaluate(()=>(window as Window & {tutorVibrationPulses:number[]}).tutorVibrationPulses.length)
  await continueFromPath(page,'real-analysis')
  await openComposer(page)
+ const q=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true}).getByRole('button',{name:'q',exact:true})
+ const beforeFirstKey=await vibrationCount()
+ await q.click()
+ await expect(answer(page)).toHaveValue('q')
+ expect(await vibrationCount()).toBe(beforeFirstKey+1)
  await answer(page).fill(firstAnswer)
  await send(page).click()
  await expect(transcript(page)).toContainText(firstAnswer)
  const draft='My next answer is still a draft.'
  await answer(page).fill(draft)
 
- await mainNavigation(page).getByRole('link',{name:'Today',exact:true}).click()
- await expect(page).toHaveURL(/#\/$/)
- await page.goBack()
+ await expect(mainNavigation(page)).not.toBeInViewport()
+ await tutor(page).getByRole('button',{name:'Back',exact:true}).click()
+ await expect(page).toHaveURL(/#\/p\/real-analysis$/)
+ await expect(mainNavigation(page)).toBeInViewport()
+ await page.goForward()
  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/)
  await expect(transcript(page)).toContainText(firstAnswer)
  await expect(answer(page)).toHaveValue(draft)
@@ -73,16 +93,26 @@ test('Tutor uses Lemma navigation, search and appearance while retaining the con
  await search.getByRole('combobox',{name:'Search'}).fill('appearance')
  await search.getByRole('option',{name:'Appearance',exact:true}).click()
  await expect(page).toHaveURL(/#\/settings\?section=appearance$/)
+ await expect(mainNavigation(page)).toBeInViewport()
  await page.getByRole('radio',{name:/^Day/}).click()
  await expect(page.locator('html')).toHaveAttribute('data-appearance-mode','day')
+ const haptics=page.getByRole('switch',{name:'Haptics',exact:true})
+ await haptics.click()
+ await expect(haptics).not.toBeChecked()
  await page.goBack()
  await expect(search.getByRole('combobox',{name:'Search'})).toHaveValue('appearance')
  await search.getByRole('button',{name:'Close',exact:true}).click()
  await expect(search).not.toBeVisible()
  await expect(tutor(page)).toBeVisible()
+ await expect(mainNavigation(page)).not.toBeInViewport()
  await expect(page.locator('html')).toHaveAttribute('data-appearance-mode','day')
  await expect(transcript(page)).toContainText(firstAnswer)
  await expect(answer(page)).toHaveValue(draft)
+ await answer(page).press('End')
+ const beforeSilentKey=await vibrationCount()
+ await q.click()
+ await expect(answer(page)).toHaveValue(draft+'q')
+ expect(await vibrationCount()).toBe(beforeSilentKey)
 })
 
 test('Back from a direct tutor link opens the checkpoint inside Lemma',async({page})=>{
@@ -111,30 +141,30 @@ test('Continue with tutor lets the learner choose a checkpoint when the path has
  await expect(tutor(page).getByText('Choose a checkpoint to continue with your tutor.')).toBeVisible()
  await tutor(page).getByRole('link',{name:'Implications'}).click()
  await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
- await expect(tutor(page).getByRole('heading',{name:'Implications'})).toBeVisible()
+ await expect(tutor(page).getByRole('heading',{name:'Implications',exact:true})).toBeVisible()
 })
 
-for(const viewport of [{width:360,height:640},{width:1440,height:900}]) {
- test('Tutor navigation, chat and keyboard stay usable at ' + viewport.width + ' px',async({page})=>{
-  await page.setViewportSize(viewport)
+for(const {width,height,minTranscriptHeight} of [
+ {width:320,height:640,minTranscriptHeight:160},
+ {width:390,height:844,minTranscriptHeight:350},
+ {width:1440,height:900,minTranscriptHeight:350},
+]) {
+ test('Tutor leaves room for the question, transcript and full keyboard at ' + width + ' px',async({page})=>{
+  await page.setViewportSize({width,height})
   await continueFromPath(page,'real-analysis')
-  const navigation=mainNavigation(page)
   await expect(tutor(page).getByRole('button',{name:'Begin session',exact:true})).toBeVisible()
-  await expect(navigation).toBeInViewport()
-  await expect(navigation.getByRole('link',{name:'Paths',exact:true})).toHaveAttribute('aria-current','page')
+  await expect(mainNavigation(page)).not.toBeInViewport()
   await expect(page.locator('iframe')).toHaveCount(0)
   await openComposer(page)
-  await expect(navigation).toBeInViewport()
-  await expect(navigation.getByRole('link',{name:'Paths',exact:true})).toHaveAttribute('aria-current','page')
-  const focus=page.getByRole('button',{name:/^Open focus: Compactness/})
-  if(viewport.width===360){
-   await tutor(page).getByRole('button',{name:/^Study timer/}).click()
+  await expect(mainNavigation(page)).not.toBeInViewport()
+  if(width===390){
+   const actions=await sessionActions(page)
+   await actions.getByRole('button',{name:'Study timer',exact:true}).click()
    const timer=page.getByRole('dialog',{name:'Study timer',exact:true})
    await timer.getByRole('button',{name:'Start timer',exact:true}).click()
+   await timer.getByRole('button',{name:'Pause timer',exact:true}).click()
+   await expect(timer.getByRole('button',{name:'Resume timer',exact:true})).toBeVisible()
    await timer.getByRole('button',{name:'Close',exact:true}).click()
-   await expect(focus).toBeInViewport()
-   await page.getByRole('button',{name:'Pause focus',exact:true}).click()
-   await expect(page.getByRole('button',{name:'Resume focus',exact:true})).toBeVisible()
   }
   const symbols=tutor(page).getByRole('button',{name:'Symbols',exact:true})
   await symbols.click()
@@ -143,35 +173,60 @@ for(const viewport of [{width:360,height:640},{width:1440,height:900}]) {
   await expect(answer(page)).toHaveValue('∀')
   await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
   await expect(answer(page)).toHaveValue('')
+  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
+  await keyboard.getByRole('button',{name:'ABC',exact:true}).click()
+  for(const key of ['q','a','z','Space']){
+   await keyboard.getByRole('button',{name:key,exact:true}).click({trial:true})
+  }
+
   const line='Start with an arbitrary open cover and show where a finite subcover arises.'
   const text=Array(22).fill(line).join('\n')
   await answer(page).fill(text)
   await send(page).click()
-  await expect(transcript(page)).toContainText(line)
   const log=transcript(page)
+  await expect(log).toContainText(line)
   await expect.poll(()=>log.evaluate(node=>node.scrollHeight>node.clientHeight)).toBe(true)
   await log.evaluate(node=>{node.scrollTop=node.scrollHeight})
   await expect.poll(()=>log.evaluate(node=>node.scrollTop)).toBeGreaterThan(0)
-  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
-  // Short phones can scroll the composer, including the bottom key row, above the active dock.
+
+  await tutor(page).getByRole('button',{name:'Connect',exact:true}).click()
+  const connection=page.getByRole('dialog',{name:'Tutor connection'})
+  await connection.getByLabel('Paste reply').fill(nextQuestion)
+  await connection.getByRole('button',{name:'Preview import'}).click()
+  await connection.getByRole('button',{name:'Confirm import'}).click()
+  await connection.getByRole('button',{name:'Close',exact:true}).click()
+  const latestQuestion=log.getByRole('article',{name:'Imported reply'}).getByText(nextQuestion,{exact:true})
+  await expect(latestQuestion).toBeVisible()
+  await log.evaluate(node=>{node.scrollTop=0})
+  const actions=await sessionActions(page)
+  await actions.getByRole('button',{name:'Latest question',exact:true}).click()
+  await expect(latestQuestion).toBeInViewport()
+
   await keyboard.scrollIntoViewIfNeeded()
-  await keyboard.getByRole('button',{name:'ABC',exact:true}).click({trial:true})
-  const navBox=(await navigation.boundingBox())!
-  const focusBox=viewport.width===360?(await focus.boundingBox())!:null
-  const controls=[send(page),keyboard]
-  for(const control of controls){
-   await expect(control).toBeInViewport({ratio:.99})
-   const box=(await control.boundingBox())!
-   if(focusBox){
-    expect(box.y+box.height,'composer controls must sit above the active focus row').toBeLessThanOrEqual(focusBox.y)
-    expect(focusBox.y+focusBox.height,'active focus row must sit above the main navigation').toBeLessThanOrEqual(navBox.y)
-   }else{
-    expect(box.x,'composer controls must sit beside the desktop sidebar').toBeGreaterThanOrEqual(navBox.x+navBox.width)
-   }
-  }
+  await expect(keyboard).toBeInViewport({ratio:.99})
+  await expect(send(page)).toBeInViewport({ratio:.99})
+  await expect(latestQuestion).toBeInViewport()
+  const logBox=(await log.boundingBox())!
+  const sendBox=(await send(page).boundingBox())!
+  const availableQuestionSpace=Math.min(logBox.y+logBox.height,sendBox.y)-Math.max(0,logBox.y)
+  expect(availableQuestionSpace,'visible transcript above the answer controls').toBeGreaterThanOrEqual(minTranscriptHeight)
   await expect.poll(()=>page.evaluate(()=>document.documentElement.scrollWidth-innerWidth)).toBeLessThanOrEqual(1)
  })
 }
+
+test('Keyboard autocomplete completes only the text before the caret',async({page})=>{
+ await page.goto(path('real-analysis',true,'/cp/CP4/tutor'),{waitUntil:'domcontentloaded'})
+ await openComposer(page)
+ const editor=answer(page)
+ await editor.fill('prei suffix')
+ await editor.press('Home')
+ for(let step=0;step<4;step++)await editor.press('ArrowRight')
+ const suggestions=tutor(page).getByRole('group',{name:'Suggestions',exact:true})
+ await suggestions.getByRole('button',{name:'preimage',exact:true}).click()
+ await expect(editor).toHaveValue('preimage suffix')
+ await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
+ await expect(editor).toHaveValue('prei suffix')
+})
 
 test('a signed-in learner can retry connector delivery, receive the next question, and answer it',async({page})=>{
  const {owner,cpId,threadId,payload}=await prepareLiveTutor(page)
@@ -256,7 +311,7 @@ test('a signed-in learner can retry connector delivery, receive the next questio
  await expect(send(page)).toBeDisabled()
  replyAvailable=true
  await expect(transcript(page).getByRole('article',{name:'Tutor reply'})).toContainText(tutorQuestion,{timeout:10000})
- await expect(tutor(page).getByRole('button',{name:'The question on the table'})).toContainText(tutorQuestion)
+ await expect(transcript(page).getByText(tutorQuestion,{exact:true})).toBeInViewport()
  await expect(answer(page)).toHaveValue(secondAnswer)
  await send(page).click()
  await expect(transcript(page)).toContainText(secondAnswer)
