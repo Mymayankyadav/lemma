@@ -17,17 +17,6 @@ Scope: supabase/migrations/** (new authorized migration only); tests/mcp/sql/**;
 Not: New learning policy or UI; Co-mingling unrelated feature migrations; Changing protected CI permissions to hide failures.
 Agent packet: [N197.md](docs/implementation/2026-11-20/tasks/N197.md). 
 
-## N193 Finish durable checkpoint tutoring, MCP grants and recovery
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-84293#kzbq
-Existing PR: #1537 (https://github.com/Mymayankyadav/lemma/pull/1537)
-Done = Complete existing PR #1537 so each checkpoint has an owner-bound conversation, one accepted answer per sealed turn, explicit context and source citations, retained losing/manual replies, recoverable ambiguous acknowledgements, narrow per-turn MCP authorization and owner-reviewed change proposals. Expose the canonical receiving contract for Pad excerpts.
-Tests: `node tests/mcp/sql/n193-tutor.mjs`; `tests/mcp/n193-tutor-profile.test.ts`; `tests/e2e/v7-tutor-{live,route-status,local-excerpt,demo-manual}.spec.ts`; `tests/unit/tutor/{live-manual,local-excerpt,turn-model}.test.ts`; `combined export/deletion and real-permission check after N197`.
-Scope: src/features/tutor/DemoCheckpointTutor.tsx; src/data/tutor/{manual-api,live-manual,turn-model,local-excerpt}.ts; supabase/functions/mcp/tutor-profile.ts; supabase/migrations/20261120045827_n193_tutor_threads.sql; docs/current/N193.md.
-Not: Automatic inference using an unverified provider; Implicit Pad submission; Broad connected-host access or new secret exposure.
-Agent packet: [N193.md](docs/implementation/2026-11-20/tasks/N193.md). 
-
 ## N195 Complete live first study, scoped review, UI and accessibility repairs
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"

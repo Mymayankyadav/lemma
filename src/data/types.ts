@@ -136,6 +136,8 @@ export interface ProjectDetail {
  sources: Source[]; sessions: SessionSummary[]; pendingProposals: number
 }
 export interface CheckpointDetail {
+ /** Present only on a live result verified for this owner and account generation. */
+ authScope?: {ownerId:string;generation:number;checkpointId:string}
  view: CheckpointView; objective: string; criterion: string; steps: string[]; pages: string | null
  sourceShort: string | null; prereqs: string[]; concepts: {slug: string; name: string}[]
  recheckPrompt: string | null; events: SessionEvent[]; cardsCount: number; sessions: SessionSummary[]
