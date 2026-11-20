@@ -1,0 +1,35 @@
+.pad-math-keyboard {
+  min-width:0; border:1px solid var(--line, currentColor); border-radius:.75rem;
+  background:var(--well, transparent); padding:.5rem;
+  padding-bottom:max(.5rem, env(safe-area-inset-bottom));
+}
+.pad-keyboard-bar {display:flex; flex-wrap:wrap; gap:.4rem; align-items:center}
+.pad-keyboard-bar strong {margin-right:auto}
+.pad-math-keyboard button {
+  box-sizing:border-box; min-width:44px; min-height:44px; padding:.35rem .5rem;
+  border:1px solid var(--line, currentColor); border-radius:.5rem;
+  background:var(--raised, transparent); color:inherit; font:inherit;
+  touch-action:manipulation;
+}
+.pad-math-keyboard button:focus-visible {outline:2px solid var(--accent, currentColor); outline-offset:2px}
+.pad-math-keyboard button:disabled {opacity:.5}
+.pad-keyboard-mode {font-size:.8rem; line-height:1.35; margin:.4rem 0}
+.pad-keyboard-body {max-height:min(23rem, 44dvh); overflow:auto; padding:2px; overscroll-behavior:contain}
+.pad-keyboard-body[hidden] {display:none}
+.pad-keyboard-tabs {display:flex; gap:.3rem; overflow-x:auto; padding:2px 2px .4rem}
+.pad-keyboard-tabs button {flex:0 0 auto; font-size:.82rem}
+.pad-keyboard-tabs button[aria-selected="true"] {border-width:2px; background:var(--active, var(--well, transparent)); font-weight:700}
+.pad-keyboard-grid {display:grid; grid-template-columns:repeat(auto-fit, minmax(44px, 1fr)); gap:.3rem}
+.pad-keyboard-grid button {font-size:1.1rem}
+.pad-keyboard-templates {display:flex; flex-wrap:wrap; gap:.3rem; margin-block:.4rem}
+.pad-keyboard-templates button {flex:1 1 auto; font-size:.85rem}
+.pad-keyboard-actions {border-top:1px solid var(--line, currentColor); padding-top:.4rem}
+.pad-keyboard-actions button {font-size:.82rem; padding-inline:.2rem}
+.local-pad-paper {scroll-margin-block:1rem; font-size:max(16px, 1em)}
+.pad-edit-warning {margin:.2rem 0; font-size:.9rem}
+html[data-native-app] .pad-math-keyboard button {min-width:48px; min-height:48px}
+html[data-native-app] .pad-keyboard-grid {grid-template-columns:repeat(auto-fit, minmax(48px, 1fr))}
+@media (orientation:landscape) and (max-height:500px) {
+  .pad-keyboard-body {max-height:38dvh}
+  .local-pad-paper {min-height:7rem; max-height:40dvh}
+}

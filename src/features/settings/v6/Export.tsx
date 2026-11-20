@@ -1,6 +1,7 @@
 import {useState} from 'react';
 import {Download} from 'lucide-react';
 import {getApi} from '../../../data';
+import {authGeneration} from '../../../data/authBoundary';
 import {useToast} from '../../../ui/Toast';
 import {isNative} from '../../../platform/native';
 
@@ -17,9 +18,10 @@ export function useBackup(){
   if(busy)return;
   setBusy(true);setError('');setShared(false);
   try{
+   const generation=authGeneration();
    const blob=await getApi().exportAll();
    const files=await import('../../../platform/files');
-   await files.shareFile(blob,files.backupFileName());
+   if(!await files.shareFile(blob,files.backupFileName(),undefined,()=>generation===authGeneration()))throw Error('Share sheet unavailable');
    setShared(true);
    notify('Choose where to keep your backup',{tone:'success'});
   }catch{

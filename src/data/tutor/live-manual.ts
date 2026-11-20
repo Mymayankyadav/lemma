@@ -1,6 +1,6 @@
-import {authGeneration,authOwner} from '../authBoundary'
 import {liveClient} from '../live/client'
 import {supabaseUrl} from '../env'
+import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorContextSelection} from './turn-model'
 import type {ManualTutor,TutorThreadView} from './manual-api'
 
@@ -9,7 +9,7 @@ type Command={operation:string;operationId:string;[key:string]:unknown}
 type RpcResult={status:string;operationId:string;grantId?:string}
 
 export function tutorScopeActive(scope:Pick<Scope,'ownerId'|'generation'>) {
- return authOwner()===scope.ownerId && authGeneration()===scope.generation
+ return tutorLocalScopeActive(scope)
 }
 
 export function openLiveManualTutor(scope:Scope):ManualTutor {
@@ -75,7 +75,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    const remembered=localStorage.getItem(key)
    if(remembered===null && pending().length)throw new Error('Check the pending submission before sending another.')
    if(remembered!==null && remembered!==serialized)throw new Error('This pending operation changed.')
-   localStorage.setItem(key,serialized)
+   writeTutorLocal(scope,key,serialized)
   }
   const {data,error}=await client.rpc('tutor_owner_command',{...target,p_command:command})
   active()
@@ -157,7 +157,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
     active()
     if(request>confirmedRead&&!regresses(thread,cached())){
      confirmedRead=request
-     try {localStorage.setItem(cacheKey,JSON.stringify(thread))} catch {/* Outbox and drafts take priority over a cached read. */}
+     try {writeTutorLocal(scope,cacheKey,JSON.stringify(thread))} catch {active() /* Outbox and drafts take priority over a cached read. */}
     }
    }
    if(typeof navigator!=='undefined'&&navigator.locks)await navigator.locks.request(cacheKey,remember)

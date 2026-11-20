@@ -7,30 +7,40 @@ import type {ManualTutor,TutorThreadView} from '../../data/tutor/manual-api'
 import {getDemoProfile,getMode} from '../../data/mode'
 import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt'
 import {openDemoManualTutor} from '../../data/tutor/demo-manual'
+import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner,writeTutorLocal} from '../../data/tutor/local-storage'
 import {isFlagOn} from '../../flags'
 import {Button,Sheet} from '../../ui/v7/components'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
 type EntryProps = {scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
-const subscribe=(refresh:()=>void)=>onAccountChange(refresh)
-const authKey=()=>JSON.stringify([authOwner(),authGeneration()])
+const subscribe=(refresh:()=>void)=>{
+  const account=onAccountChange(refresh),cleanup=subscribeTutorLocalCleanup(refresh)
+  return ()=>{account();cleanup()}
+}
+const authKey=()=>JSON.stringify([authOwner(),authGeneration(),Boolean(authOwner()&&tutorOwnerDeleted(authOwner()!))])
 
 function useDraft(key:string,live=false) {
   const storage=()=>live?localStorage:sessionStorage
+  const captured=useRef({key,ownerId:live?tutorStorageOwner(key):null,generation:authGeneration()}).current
+  const active=()=>!live||(captured.key===key&&captured.ownerId!==null&&tutorLocalScopeActive({ownerId:captured.ownerId,generation:captured.generation}))
   const [text,setText] = useState(() => {
+    if(!active())return ''
     try { return storage().getItem(key) ?? '' } catch { return '' }
   })
   const [unsaved,setUnsaved] = useState(false)
   function change(value: string) {
+    if(!active())return
     setText(value)
     try {
-      if (value) storage().setItem(key,value)
+      if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
+      else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
       setUnsaved(false)
     } catch { setUnsaved(true) }
   }
   function clearIfUnchanged(expected: string) {
+    if(!active())return
     setText(current=>current===expected?'':current)
     try {
       if(storage().getItem(key)===expected) storage().removeItem(key)
@@ -46,7 +56,7 @@ export function CheckpointTutor(props:EntryProps) {
   let readOnly=false,entryScope=scope
   if(live){
     const verified=scope.authScope
-    if(!isFlagOn('tutorThreads')||!verified||verified.ownerId!==authOwner()||verified.checkpointId!==scope.checkpointId)return null
+    if(!isFlagOn('tutorThreads')||!verified||verified.ownerId!==authOwner()||verified.checkpointId!==scope.checkpointId||tutorOwnerDeleted(verified.ownerId))return null
     // A cached checkpoint proves only which owner's saved history to read. Fresh
     // checkpoint authorization and the release capability are both needed to write.
     readOnly=!released||verified.generation!==authGeneration()
@@ -126,6 +136,7 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
   useEffect(()=>{
     const thread=session?.thread
     if(!thread?.reconciled?.length||processed.current===thread)return
+    if(live&&(!ownerId||generation===undefined||!tutorLocalScopeActive({ownerId,generation})))return
     processed.current=thread
     for(const item of thread.reconciled){
       if(item.operation==='start'&&item.status==='submitted'){
@@ -139,7 +150,7 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
       }
       if(item.status==='conflict'||item.status==='turn-pending')setError('A saved submission conflicted. Your draft was kept.')
     }
-  },[session,draftKey,question,attachedLocal,sourceDraft])
+  },[session,draftKey,question,attachedLocal,sourceDraft,live,ownerId,generation])
   const pendingId=session?.thread.head.pendingTurnId
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{

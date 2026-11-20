@@ -930,9 +930,11 @@ export class LiveAdapter implements LemmaApi {
  }
  async exportAll(...args: Parameters<LemmaApi['exportAll']>): ReturnType<LemmaApi['exportAll']> {
   const db=liveClient(),uid=await owner(db)
+  const generation=authGeneration()
   // Only the owner-scoped SECURITY DEFINER function reads the private registry.
   // The browser never selects undo metadata or other users' domain tables.
   const snapshot=checked(await db.rpc('begin_owner_export')) as string
+  let result:Blob
   try{
   const load=async(table:string|null)=>{
    const accumulated:unknown[]=[]
@@ -978,10 +980,16 @@ export class LiveAdapter implements LemmaApi {
    })
    manifest.push({table,count:tables[table].length})
   }
-  return new Blob([JSON.stringify({
+  const checkAccount=()=>{if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The export account changed')}
+  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
+  const savedPads=authOwner()===uid?await (await import('../../features/pad/padDraftStore')).exportSavedPadDrafts(uid,checkAccount):[]
+  result=new Blob([JSON.stringify({
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
-   manifest:{registry:'lemma_undo_tables',tables:manifest},tables
+   manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+   ...(savedPads.length?{devicePad:{version:1,checkpoints:savedPads}}:{})
   },null,2)],{type:'application/json'})
   }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}
+  if(authGeneration()!==generation)throw new LemmaError('auth','The export account changed')
+  return result
  }
 }

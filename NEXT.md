@@ -28,17 +28,6 @@ Scope: src/data/StudyUiRelease.tsx; src/features/practice/v7/PracticeV7.tsx; src
 Not: Rewriting N191 evidence core; Moving the scheduler default into the wrong PR; Skipping tests because a shared dependency is absent.
 Agent packet: [N195.md](docs/implementation/2026-11-20/tasks/N195.md). 
 
-## N192 Ship dedicated Lemma Pad page, custom math keyboard and offline editor
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N193 · Assigned: chat-84293#kzbq
-Existing PR: #1535 (https://github.com/Mymayankyadav/lemma/pull/1535)
-Done = Extend existing PR #1535 into a shipped, discoverable full-page Lemma Pad—not merely an embedded checkpoint panel or hidden offline shortcut. Add a first-class route, in-app entry and deep-link recovery; ship a usable custom mathematics keyboard while retaining native keyboard/IME and caret support. Preserve current revisioned offline text, KaTeX preview, ink, backup/export, owner isolation and explicit tutor selection.
-Tests: `tests/e2e/pad-{local,live-offline}.spec.ts plus dedicated route/math-keyboard flows`; `tests/unit/pad/{local-pad-editor,pad-draft,pad-edit,pad-ink,pad-checkpoint,pad-import}.test.ts[x]`; `Android export unit tests and POCO M8 Power Android 16 physical acceptance`; `offline PWA cold start, keyboard IME, TalkBack and landscape reachability`.
-Scope: src/features/pad/{OfflinePadPage,LocalPadWorkspace,LocalPadEditor,LocalPadInk,CheckpointPad,LocalPadDraftPanel}.tsx; new PadMathKeyboard component and CSS in src/features/pad; src/app/routes.tsx; src/app/v7/V7Shell.tsx; src/features/pad/padDraftStore.ts; src/data/tutor/local-excerpt.ts; docs/current/N192.md.
-Not: Only offering Pad as a checkpoint subsection; Removing native keyboard or keyboard accessibility; A cloud-sync rewrite or insecure offline authorization; Unrequested automatic tutor submission.
-Agent packet: [N192.md](docs/implementation/2026-11-20/tasks/N192.md). 
-
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"

@@ -11,9 +11,10 @@ export function backupFileName(now: Date = new Date()): string {
 }
 
 /** Hand `blob` to the share sheet as `name`. Resolves true when the sheet opened; rejects when it could not. */
-export async function shareFile(blob: Blob, name: string, title = 'Save your Lemma backup'): Promise<boolean> {
+export async function shareFile(blob: Blob, name: string, title = 'Save your Lemma backup', isCurrent?: () => boolean): Promise<boolean> {
   const text = await blob.text();
   const native = await lemmaNative();
+  if (isCurrent && !isCurrent()) return false;
   const {shared} = await native.shareFile({name, mime: blob.type || 'application/json', text, title});
   return shared === true;
 }

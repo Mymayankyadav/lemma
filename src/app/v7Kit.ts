@@ -3,7 +3,7 @@ import { isFlagOn } from "../flags";
  * Screens rebuilt for v7 so far. Every other route keeps the v6/legacy shell until it is
  * migrated, so v7 can be turned off (or a screen rolled back) by one flag.
  */
-export type V7Screen = "not-found" | "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path" | "paths" | "checkpoint" | "session" | "cards" | "card" | "inbox" | "plan-proposal" | "progress" | "log" | "settings" | "sign-in" | "welcome" | "week";
+export type V7Screen = "not-found" | "kit" | "atlas" | "today" | "focus" | "review" | "review-run" | "review-done" | "practice" | "tasks" | "close-day" | "calendar" | "path" | "paths" | "checkpoint" | "pad" | "session" | "cards" | "card" | "inbox" | "plan-proposal" | "progress" | "log" | "settings" | "sign-in" | "welcome" | "week";
 const hashLocation = () => {
   if (typeof location === "undefined") return { path: "", search: "" };
   const raw = location.hash.replace(/^#/, ""), at = raw.indexOf("?");
@@ -27,6 +27,7 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
   if (/^\/p\/[^/]+$/.test(path)) return "path";
   if (path === "/projects" || path === "/projects/new") return "paths";
   if (/^\/p\/[^/]+\/cp\/[^/]+$/.test(path)) return "checkpoint";
+  if (/^\/pad(?:\/[^/]+)?$/.test(path)) return "pad";
   if (/^\/s\/[^/]+\/[^/]+$/.test(path)) return "session";
   if (path === "/cards") return "cards";
   if (/^\/cards\/[^/]+$/.test(path)) return "card";
@@ -43,7 +44,8 @@ export function v7ScreenFor(path: string, search = ""): V7Screen | null {
 export function v7Screen(path?: string, search?: string): V7Screen | null {
   if (!isFlagOn("v7Shell")) return null;
   const current = hashLocation();
-  return v7ScreenFor(path ?? current.path, search ?? (path === undefined ? current.search : ""));
+  const screen = v7ScreenFor(path ?? current.path, search ?? (path === undefined ? current.search : ""));
+  return screen === "pad" && !isFlagOn("padLocal") ? null : screen;
 }
 export function isV7Route(path?: string, search?: string): boolean {
   return v7Screen(path, search) !== null;
