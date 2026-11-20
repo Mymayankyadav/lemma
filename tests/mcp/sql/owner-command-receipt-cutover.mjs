@@ -16,6 +16,7 @@ async function rehearse(db) {
   const result = async (sql, parameters) => (await one(sql, parameters)).result;
   const as = async (role, owner = '') => {
     await db.exec('reset role');
+    if (db.historicalRole) await db.exec('set role ' + db.historicalRole);
     await rows("select set_config('test.uid',$1,false), set_config('request.jwt.claims','{}',false)", [owner]);
     if (role) await db.exec('set role ' + role);
   };
@@ -33,7 +34,12 @@ async function rehearse(db) {
   const cutover = files.indexOf(cutoverFile);
   assert.ok(cutover > 0);
   const migrate = async file => {
-    try { await db.exec(await readFile(new URL(file, migrationDir), 'utf8')); }
+    const distinctInstaller = file === cutoverFile && db.historicalRole;
+    try {
+      if (distinctInstaller) await db.exec('reset role');
+      await db.exec(await readFile(new URL(file, migrationDir), 'utf8'));
+      if (distinctInstaller) await db.exec('set role ' + db.historicalRole);
+    }
     catch (error) { throw new Error(file + ': ' + error.message, {cause: error}); }
   };
 
@@ -104,6 +110,13 @@ async function rehearse(db) {
   }
   for (const file of files.slice(cutover)) await migrate(file);
   assert.deepEqual(await signatures(), beforeSignatures);
+  if(db.historicalRole) {
+    const owners=await one(`select
+      (select pg_get_userbyid(proowner) from pg_proc where oid='public.lemma_study_command_v2_compat(jsonb)'::regprocedure) historical,
+      (select pg_get_userbyid(proowner) from pg_proc where oid='public.study_command_lifecycle(jsonb,uuid,uuid)'::regprocedure) installer`);
+    assert.equal(owners.historical,db.historicalRole);
+    assert.notEqual(owners.installer,owners.historical);
+  }
   assert.deepEqual(await registered(), beforeRegistration, 'export registry membership is preserved');
   const markerShape = await one(`select atttypid::regtype::text type, attnotnull, atthasdef
     from pg_attribute where attrelid='public.command_receipts'::regclass and attname='trusted_writer_version'`);
@@ -218,7 +231,8 @@ if (!url) {
   const control = new Client({connectionString:endpoint.href});
   const database = 'lemma_receipt_cutover_' + randomUUID().replaceAll('-','');
   const deployer = 'lemma_receipt_admin_' + randomUUID().replaceAll('-','');
-  let client, created=false, createdDeployer=false, existingRoles;
+  const historicalRole = 'lemma_receipt_old_' + randomUUID().replaceAll('-','');
+  let client, created=false, createdDeployer=false, createdHistorical=false, existingRoles;
   await control.connect();
   try {
     // PostgreSQL roles are cluster-wide. Serialize concurrent runs and remove
@@ -230,6 +244,9 @@ if (!url) {
     }
     await control.query('create role ' + deployer + ' nologin nosuperuser createrole nobypassrls');
     createdDeployer=true;
+    await control.query('create role ' + historicalRole + ' nologin nosuperuser createrole nobypassrls');
+    createdHistorical=true;
+    await control.query('grant ' + historicalRole + ' to ' + deployer + ' with inherit true, set true');
     await control.query('grant authenticated to ' + deployer + ' with admin true, inherit false, set true');
     await control.query('grant anon, service_role to ' + deployer + ' with inherit false, set true');
     if(existingRoles.has(legacyRole)) {
@@ -237,13 +254,14 @@ if (!url) {
       // role. Give only this disposable NOLOGIN administrator migration rights.
       await control.query('grant ' + legacyRole + ' to ' + deployer + ' with admin true, inherit false, set true');
     }
-    await control.query('create database ' + database + ' owner ' + deployer + ' template template0');
+    await control.query('create database ' + database + ' owner ' + historicalRole + ' template template0');
     created=true;
     endpoint.pathname = '/' + database;
     client = new Client({connectionString:endpoint.href});
     await client.connect();
     await client.query('set session authorization ' + deployer);
-    await rehearse({query:(sql,args)=>client.query(sql,args),exec:sql=>client.query(sql)});
+    await client.query('set role ' + historicalRole);
+    await rehearse({historicalRole,query:(sql,args)=>client.query(sql,args),exec:sql=>client.query(sql)});
   } finally {
     try {
       if(client) await client.end();
@@ -256,6 +274,7 @@ if (!url) {
         await control.query('revoke authenticated from ' + legacyRole + ' granted by ' + deployer);
       }
       if(createdDeployer) await control.query('drop role ' + deployer);
+      if(createdHistorical) await control.query('drop role ' + historicalRole);
       if(existingRoles) {
         for(const role of runtimeRoles) if(!existingRoles.has(role)) {
           await control.query('drop role if exists ' + role);

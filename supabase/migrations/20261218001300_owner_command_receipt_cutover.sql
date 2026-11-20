@@ -223,17 +223,6 @@ alter function public.study_command_correction(jsonb, uuid, uuid) set schema lem
 alter function public.lemma_study_timer_command(jsonb, uuid, uuid) set schema lemma_receipt_dispatch;
 revoke all on all functions in schema lemma_receipt_dispatch from public, anon, authenticated, service_role;
 
-do $dispatcher$
-declare
-  dispatcher_owner name;
-begin
-  select pg_get_userbyid(proowner) into strict dispatcher_owner
-  from pg_proc where oid = 'public.lemma_study_command_v2_compat(jsonb)'::regprocedure and prosecdef;
-  execute format('grant usage on schema lemma_receipt_dispatch to %I', dispatcher_owner);
-  execute format('grant execute on all functions in schema lemma_receipt_dispatch to %I', dispatcher_owner);
-end;
-$dispatcher$;
-
 create function public.study_command_lifecycle(p jsonb, v_owner uuid, v_operation_id uuid)
 returns jsonb language plpgsql security invoker set search_path = '' as $lifecycle$
 declare
@@ -298,6 +287,21 @@ revoke all on function public.study_command_lifecycle(jsonb,uuid,uuid),
 grant execute on function public.study_command_lifecycle(jsonb,uuid,uuid),
   public.study_command_correction(jsonb,uuid,uuid), public.lemma_study_timer_command(jsonb,uuid,uuid)
   to authenticated, service_role;
+
+do $dispatcher$
+declare
+  dispatcher_owner name;
+begin
+  select pg_get_userbyid(proowner) into strict dispatcher_owner
+  from pg_proc where oid = 'public.lemma_study_command_v2_compat(jsonb)'::regprocedure and prosecdef;
+  execute format('grant usage on schema lemma_receipt_dispatch to %I', dispatcher_owner);
+  execute format('grant execute on all functions in schema lemma_receipt_dispatch to %I', dispatcher_owner);
+  -- A separately authorized installer owns the new public entry points. The
+  -- historical dispatcher must be able to call each of those wrappers first.
+  execute format('grant execute on function public.study_command_lifecycle(jsonb,uuid,uuid),
+    public.study_command_correction(jsonb,uuid,uuid), public.lemma_study_timer_command(jsonb,uuid,uuid) to %I', dispatcher_owner);
+end;
+$dispatcher$;
 
 -- Grants at the relation and column level are independent. A project may have
 -- explicit column grants in addition to Supabase's table defaults.
