@@ -92,7 +92,7 @@ function currentEnv(): FlagEnv {
   const allow = Boolean(meta.DEV) || meta.MODE === 'test' || meta.VITE_ALLOW_FLAG_OVERRIDES === '1';
   return {
     allowOverrides: allow,
-    search: typeof window === 'undefined' ? '' : window.location.search,
+    search: '',
     envFlags: typeof meta.VITE_FLAGS === 'string' ? meta.VITE_FLAGS : '',
   };
 }

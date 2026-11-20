@@ -7,10 +7,8 @@ def keystoreFile = System.getenv('ANDROID_KEYSTORE_FILE')
 def runNumber = Integer.parseInt(System.getenv('GITHUB_RUN_NUMBER') ?: '0')
 
 // N163 · Firebase Cloud Messaging from four public values (no Google services plugin). Blank values turn FCM off.
-def firebase = new Properties()
-def firebaseFile = file('firebase.properties')
-if (firebaseFile.exists()) firebaseFile.withInputStream { firebase.load(it) }
-def firebaseValue = { String key -> (firebase.getProperty(key, '') ?: '').trim().replaceAll('[^A-Za-z0-9:._-]', '') }
+// Offline acceptance has no Firebase project or sender.
+def firebaseValue = { String unused -> '' }
 
 android {
     namespace = "io.github.mymayankyadav.lemma"
@@ -45,7 +43,15 @@ android {
             }
         }
     }
+    // Use Android's normal local debug key unless the tester supplies their own.
+    def acceptanceKey = System.getenv('LEMMA_ACCEPTANCE_DEBUG_KEYSTORE')
+    if (acceptanceKey) signingConfigs.debug.storeFile = file(acceptanceKey)
     buildTypes {
+        debug {
+            applicationIdSuffix '.pocoacceptance'
+            versionNameSuffix '-poco-b58afb8'
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

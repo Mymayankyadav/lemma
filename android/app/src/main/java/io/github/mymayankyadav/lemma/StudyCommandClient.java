@@ -1,12 +1,5 @@
 package io.github.mymayankyadav.lemma;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -60,33 +53,7 @@ public final class StudyCommandClient {
     }
 
     public static int runAction(SessionStore.Session session, JSONObject action) {
-        HttpURLConnection connection = null;
-        try {
-            byte[] payload = new JSONObject().put("p",action).toString().getBytes(StandardCharsets.UTF_8);
-            connection = (HttpURLConnection) new URL(session.url.replaceAll("/+$", "") + "/rest/v1/rpc/replay_timer_action").openConnection();
-            connection.setConnectTimeout(TIMEOUT_MS);
-            connection.setReadTimeout(TIMEOUT_MS);
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("apikey", session.key);
-            connection.setRequestProperty("Authorization", "Bearer " + session.accessToken);
-            try (OutputStream out = connection.getOutputStream()) {
-                out.write(payload);
-            }
-            if (connection.getResponseCode() / 100 != 2) return -1;
-            try (InputStream in = connection.getInputStream()) {
-                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-                byte[] chunk = new byte[4096];
-                int read;
-                while ((read = in.read(chunk)) != -1 && buffer.size() < 256 * 1024) buffer.write(chunk, 0, read);
-                JSONObject receipt=new JSONObject(buffer.toString(StandardCharsets.UTF_8.name()));
-                return "applied".equals(receipt.optString("outcome"))||"finish".equals(receipt.optString("outcome"))?receipt.optInt("version",-1):-1;
-            }
-        } catch (IOException | JSONException | RuntimeException e) {
-            return -1;
-        } finally {
-            if (connection != null) connection.disconnect();
-        }
+        // The offline candidate reports the unavailable transport to the caller.
+        return -1;
     }
 }

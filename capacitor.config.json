@@ -1,6 +1,6 @@
 {
-  "appId": "io.github.mymayankyadav.lemma",
-  "appName": "Lemma",
+  "appId": "io.github.mymayankyadav.lemma.pocoacceptance",
+  "appName": "Lemma POCO Acceptance",
   "webDir": "dist-android",
   "server": {
     "androidScheme": "https",

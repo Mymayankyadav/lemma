@@ -26,3 +26,12 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+// The isolated acceptance toolchain installs Android Build Tools 36.0.0.
+subprojects { candidateProject ->
+    ['com.android.application', 'com.android.library'].each { pluginId ->
+        candidateProject.plugins.withId(pluginId) {
+            candidateProject.android.buildToolsVersion = '36.0.0'
+        }
+    }
+}

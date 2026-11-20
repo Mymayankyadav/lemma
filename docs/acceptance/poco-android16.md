@@ -1,0 +1,7 @@
+## POCO Android 16 offline acceptance build
+
+This branch packages the integrated study UI at `b58afb8e5671021b23d331f93dc6f868ecf88b42` as **Lemma POCO Acceptance**, application ID `io.github.mymayankyadav.lemma.pocoacceptance`. It starts at the local Real Analysis / CP4 / Compactness example. Local Pad, manual tutor and agenda flags are fixed at build time. The Android manifest removes Internet permission and external app links, and the acceptance native transports return their offline result. The original packaged UI still handles the Android share sheet for explicit exports.
+
+Use Node with npm, a full JDK 21, Android platform 36 and Build Tools 36.0.0. Run `npm ci`, followed by `npm run build:poco-acceptance`. A Gradle cache containing the required dependencies supports `npm run build:poco-acceptance -- --offline`. The result is `android/app/build/outputs/apk/debug/app-debug.apk`. Android supplies its ordinary debug signing key, or a tester can set `LEMMA_ACCEPTANCE_DEBUG_KEYSTORE` to a local Android-format debug keystore. Store signing material outside the repository.
+
+On the phone, enable airplane mode and open **Compactness**. Exercise Tab and Enter to open the Pad, edit a line and save. Check the on-screen keyboard, TalkBack labels, focus return, recovery after restart, selection handoff to the manual tutor, an explicitly imported sample reply, and saving both exports through an on-device file manager. Record the installed APK hash, model, OS, WebView, IME and TalkBack versions with each device result.

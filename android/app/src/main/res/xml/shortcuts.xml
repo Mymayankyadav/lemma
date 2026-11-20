@@ -3,12 +3,12 @@
      shortcut ("Review" or "Review 12", Shortcuts.java), so it is never listed twice; every icon follows one recipe. -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut android:shortcutId="focus" android:enabled="true" android:icon="@drawable/shortcut_focus" android:shortcutShortLabel="@string/shortcut_focus">
-        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/?quick=1"/>
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma.pocoacceptance" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://localhost/lemma/#/?quick=1"/>
     </shortcut>
     <shortcut android:shortcutId="capture" android:enabled="true" android:icon="@drawable/shortcut_capture" android:shortcutShortLabel="@string/shortcut_capture">
-        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/?capture=1"/>
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma.pocoacceptance" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://localhost/lemma/#/?capture=1"/>
     </shortcut>
     <shortcut android:shortcutId="inbox" android:enabled="true" android:icon="@drawable/shortcut_inbox" android:shortcutShortLabel="@string/shortcut_inbox">
-        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://mymayankyadav.github.io/lemma/#/proposals"/>
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="io.github.mymayankyadav.lemma.pocoacceptance" android:targetClass="io.github.mymayankyadav.lemma.MainActivity" android:data="https://localhost/lemma/#/proposals"/>
     </shortcut>
 </shortcuts>

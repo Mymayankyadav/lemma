@@ -1,12 +1,6 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!--
-  N123 · Lemma for Android (Capacitor). Same package and Play listing as the former Trusted Web Activity.
-  Permissions are only those the plan allows (05_ANDROID_APP_PLAN.md §6): no camera, location, contacts, microphone
-  (the system speech dialog records, not Lemma) or usage access.
--->
+<?xml version='1.0' encoding='utf-8'?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
-
-    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
@@ -15,80 +9,25 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.WRITE_CALENDAR" />
-
     <queries>
-        <intent><action android:name="android.speech.action.RECOGNIZE_SPEECH" /></intent>
-        <intent><action android:name="android.support.customtabs.action.CustomTabsService" /></intent>
+        <intent>
+            <action android:name="android.speech.action.RECOGNIZE_SPEECH" />
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
     </queries>
-
-    <application
-        android:name=".LemmaApplication"
-        android:allowBackup="false"
-        android:dataExtractionRules="@xml/data_extraction_rules"
-        android:fullBackupContent="false"
-        android:icon="@mipmap/ic_launcher"
-        android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
-        android:localeConfig="@xml/locales_config"
-        android:enableOnBackInvokedCallback="true"
-        android:theme="@style/AppTheme"
-        tools:targetApi="36">
-
-        <activity
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
-            android:name=".MainActivity"
-            android:label="@string/title_activity_main"
-            android:theme="@style/AppTheme.NoActionBarLaunch"
-            android:launchMode="singleTask"
-            android:resizeableActivity="true"
-            android:windowSoftInputMode="adjustResize"
-            android:exported="true">
-
+    <application android:name=".LemmaApplication" android:allowBackup="false" android:dataExtractionRules="@xml/data_extraction_rules" android:fullBackupContent="false" android:icon="@mipmap/ic_launcher" android:label="@string/app_name" android:roundIcon="@mipmap/ic_launcher_round" android:supportsRtl="true" android:localeConfig="@xml/locales_config" android:enableOnBackInvokedCallback="true" android:theme="@style/AppTheme" tools:targetApi="36">
+        <activity android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density" android:name=".MainActivity" android:label="@string/title_activity_main" android:theme="@style/AppTheme.NoActionBarLaunch" android:launchMode="singleTask" android:resizeableActivity="true" android:windowSoftInputMode="adjustResize" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <!-- App Links: https://mymayankyadav.github.io/lemma/… opens the app (assetlinks at the origin root). -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="mymayankyadav.github.io" android:pathPrefix="/lemma" />
-            </intent-filter>
-
-            <!-- Google sign-in returns here from the Custom Tab (Supabase redirect URL). -->
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="io.github.mymayankyadav.lemma" android:host="auth" android:path="/callback" />
-            </intent-filter>
-
-            <!-- Share to Lemma: text and links, PDF, .tex and .md files. -->
-            <intent-filter android:label="@string/share_label">
-                <action android:name="android.intent.action.SEND" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="text/plain" />
-            </intent-filter>
-            <intent-filter android:label="@string/share_label">
-                <action android:name="android.intent.action.SEND" />
-                <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <data android:mimeType="application/pdf" />
-                <data android:mimeType="application/x-tex" />
-                <data android:mimeType="text/x-tex" />
-                <data android:mimeType="text/markdown" />
-                <data android:mimeType="text/x-markdown" />
-            </intent-filter>
-
-            <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
-
-        <!-- N163: the push function's timer messages (Firebase Cloud Messaging). -->
         <service android:name=".LemmaMessagingService" android:exported="false">
-            <intent-filter><action android:name="com.google.firebase.MESSAGING_EVENT" /></intent-filter>
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
         </service>
         <receiver android:name=".TimerActionReceiver" android:exported="false" />
         <receiver android:name=".NoticeActionReceiver" android:exported="false" />
@@ -99,33 +38,21 @@
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
             </intent-filter>
         </receiver>
-
-        <service
-            android:name=".FocusTileService"
-            android:exported="true"
-            android:icon="@drawable/tile_focus"
-            android:label="@string/tile_focus"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+        <service android:name=".FocusTileService" android:exported="true" android:icon="@drawable/tile_focus" android:label="@string/tile_focus" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
             <meta-data android:name="android.service.quicksettings.TOGGLEABLE_TILE" android:value="true" />
         </service>
-        <service
-            android:name=".CaptureTileService"
-            android:exported="true"
-            android:icon="@drawable/tile_capture"
-            android:label="@string/tile_capture"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter><action android:name="android.service.quicksettings.action.QS_TILE" /></intent-filter>
+        <service android:name=".CaptureTileService" android:exported="true" android:icon="@drawable/tile_capture" android:label="@string/tile_capture" android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
         </service>
-
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/file_paths"></meta-data>
+        <provider android:name="androidx.core.content.FileProvider" android:authorities="${applicationId}.fileprovider" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" />
         </provider>
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
     </application>
 </manifest>

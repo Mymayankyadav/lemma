@@ -15,12 +15,37 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(LemmaNativePlugin.class);
         super.onCreate(savedInstanceState);
+        getBridge().setWebViewClient(new com.getcapacitor.BridgeWebViewClient(getBridge()) {
+            @Override
+            public boolean shouldOverrideUrlLoading(android.webkit.WebView view, android.webkit.WebResourceRequest request) {
+                return !local(request.getUrl()) || super.shouldOverrideUrlLoading(view, request);
+            }
+            @Override
+            public android.webkit.WebResourceResponse shouldInterceptRequest(android.webkit.WebView view, android.webkit.WebResourceRequest request) {
+                android.net.Uri uri = request.getUrl();
+                if (("http".equals(uri.getScheme()) || "https".equals(uri.getScheme())) && !local(uri)) {
+                    return new android.webkit.WebResourceResponse("text/plain", "utf-8", 403, "Offline fixture",
+                        java.util.Collections.emptyMap(), new java.io.ByteArrayInputStream(new byte[0]));
+                }
+                return super.shouldInterceptRequest(view, request);
+            }
+        });
         applyOrientation(getResources().getConfiguration());
         applyPaper();
         applyTextZoom(getResources().getConfiguration());
         keepRunningOnBack();
         Channels.create(this);
         ShareIntake.capture(this, getIntent());
+    }
+
+    private static boolean local(android.net.Uri uri) {
+        return uri != null && "https".equals(uri.getScheme()) && "localhost".equals(uri.getHost());
+    }
+
+    @Override
+    public void startActivity(android.content.Intent intent, android.os.Bundle options) {
+        if (android.content.Intent.ACTION_VIEW.equals(intent.getAction()) && !local(intent.getData())) return;
+        super.startActivity(intent, options);
     }
 
     @Override
