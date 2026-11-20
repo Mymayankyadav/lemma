@@ -104,9 +104,10 @@ test("E14 · E15 · on the web Data and account still downloads and has no About
  await expect(page.getByRole("region",{name:"About this app"})).toHaveCount(0);
 });
 
-async function closeDay(page:Page){
+async function closeDay(page:Page,{studyRepair=true}={}){
  await page.clock.setFixedTime(NOW);
- await page.goto(at("/today/close?date=2026-11-08"));
+ const route=at("/today/close?date=2026-11-08");
+ await page.goto(studyRepair?route:route.replace("flags=","flags=-uiRepairV1,"));
  await page.getByRole("button",{name:"Next",exact:true}).click();
  await page.getByRole("button",{name:"Next",exact:true}).click();
  await page.getByRole("button",{name:"Close the day",exact:true}).click();
@@ -123,9 +124,9 @@ test("E20 · LT3 · under reduced motion Day closed stays until Done",async({pag
  await expect(page).toHaveURL(/#\/$/);
 });
 
-test("E20 · LT3 · without Done, Day closed returns to Today after 5 s",async({page})=>{
+test("E20 · LT3 · legacy Day closed returns to Today after 5 s without Done",async({page})=>{
  await page.emulateMedia({reducedMotion:"reduce"});
- await closeDay(page);
+ await closeDay(page,{studyRepair:false});
  await page.waitForTimeout(4000);
  await expect(page.getByRole("heading",{name:"Day closed",exact:true})).toBeVisible();
  await expect(page).toHaveURL(/#\/$/,{timeout:4000});
