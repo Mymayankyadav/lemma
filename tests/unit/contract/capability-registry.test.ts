@@ -161,6 +161,22 @@ function inventoryDocs():Map<string,Inventory>{
   return docs;
 }
 describe('N40 complete capability registry',()=>{
+  it('keeps trusted receipt provenance in the v1 owner-table inventory',()=>{
+    const receipt=JSON.parse(readFileSync(
+      'docs/v6/capability-registry/command_receipts.json','utf8')) as Inventory;
+    expect(receipt.table).toBe('command_receipts');
+    // Adding a provenance column does not change the inventory file format.
+    expect(receipt.version).toBe(1);
+    expect(Object.keys(receipt.columns).sort()).toEqual([
+      'created_at','operation_id','resource','result','trusted_writer_version','user_id'
+    ]);
+    expect(receipt.columns.trusted_writer_version.classification).toBe('derived');
+    const columns=columnsFromMigrations(migrationSources()).get(receipt.table)!;
+    expect(columns.has('trusted_writer_version')).toBe(true);
+    expect(()=>enforceCoverage(
+      new Map([[receipt.table,columns]]),new Map([[receipt.table,receipt]])
+    )).not.toThrow();
+  });
   it('classifies every existing public column from every CREATE TABLE/ADD COLUMN migration',()=>{
     const schema=columnsFromMigrations(migrationSources());
     const docs=inventoryDocs();
