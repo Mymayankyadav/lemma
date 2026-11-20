@@ -1,3 +1,4 @@
+import {useAtlasDialog} from './useAtlasDialog';
 import {useState,type FormEvent} from 'react';
 
 /** Pins are the only Atlas mutations exposed by LemmaApi today.
@@ -9,6 +10,7 @@ export default function ConceptPin({
  onSave:(id:string,x:number|null,y:number|null)=>Promise<void>;
  onClose:()=>void;
 }){
+ const dialog=useAtlasDialog();
  const [coordinateX,setCoordinateX]=useState(String(x??0));
  const [coordinateY,setCoordinateY]=useState(String(y??0));
  const [busy,setBusy]=useState(false);
@@ -32,13 +34,13 @@ export default function ConceptPin({
   try{const {xx,yy}=parse();void save(xx,yy);}
   catch(e){setError(e instanceof Error?e.message:'Invalid map coordinates');}
  }
- return <dialog open aria-label={'Edit map pin for '+name}
+ return <dialog {...dialog} aria-label={'Edit map pin for '+name}
   onCancel={e=>{e.preventDefault();if(!busy)onClose()}}
   className="fixed inset-0 z-50 m-auto w-[min(92vw,430px)] rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-lg">
   <h2 className="text-headline font-semibold">Map pin: {name}</h2>
   <p className="mt-1 text-label text-ink-2">
    {pinned?'Pinned at ('+x+', '+y+').':'Not pinned.'}
-   {' '}Pinning uses the existing owner-authorized Atlas write path.
+   {' '}Choose a position for this concept on the map.
   </p>
   <form onSubmit={submit} className="mt-3 grid gap-3">
    <label className="text-label">X coordinate

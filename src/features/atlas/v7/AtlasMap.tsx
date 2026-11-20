@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useEffect,useImperativeHandle,useRef,useState,type Ref} from 'react';
 import type {LayoutResult} from './layout';
 import type {LayoutSource} from './layoutClient';
@@ -25,6 +26,7 @@ const ease=(t:number)=>1-Math.pow(1-t,3);
 
 /** The Atlas sky: canvas only, hidden from assistive technology (the List view is the accessible path). */
 export default function AtlasMap({model,layout,source,selected,reduced,insets,onSelect,ref,focusCluster=null,highlighted=null}:Props){
+ const studyRepair=useStudyUi();
  const wrap=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),scene=useRef<AtlasScene|null>(null);
  const frame=useRef(0),animation=useRef<{from:Camera;to:Camera;start:number;duration:number}|null>(null);
  const [zoom,setZoom]=useState(1);
@@ -57,6 +59,7 @@ export default function AtlasMap({model,layout,source,selected,reduced,insets,on
  useEffect(()=>{
   const element=canvas.current,box=wrap.current;if(!element||!box)return;
   const created=new AtlasScene(element,model,layout,readPalette(box,model));
+  created.strongEdges=studyRepair;
   scene.current=created;created.setInsets(insets);created.select(selected);created.labelCluster=focusCluster;created.highlighted=highlighted?new Set(highlighted):null;
   const measure=()=>{const rect=box.getBoundingClientRect();created.setSize(rect.width,rect.height,Math.min(2,window.devicePixelRatio||1));};
   measure();created.camera=selected!==null?created.focusCamera(selected,1.4):focusCluster!==null?created.clusterCamera(focusCluster):created.fitCamera();paint();
@@ -65,7 +68,7 @@ export default function AtlasMap({model,layout,source,selected,reduced,insets,on
   theme.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-contrast']});
   return ()=>{resize.disconnect();theme.disconnect();cancelAnimationFrame(frame.current);frame.current=0;scene.current=null;};
   // Selection and insets are applied by their own effects below.
- },[model,layout,focusCluster]);
+ },[model,layout,focusCluster,studyRepair]);
  useEffect(()=>{if(scene.current){scene.current.highlighted=highlighted?new Set(highlighted):null;paint();}},[highlighted]);
  useEffect(()=>{scene.current?.setInsets(insets);paint();},[insets.top,insets.right,insets.bottom,insets.left]);
  useEffect(()=>{scene.current?.select(selected);paint();},[selected]);

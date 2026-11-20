@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {AtlasSettings} from '../../adaptive/AtlasPanels';
 import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
@@ -135,12 +136,15 @@ function SubjectSheet({subject,taken,current,onClose}:{subject:DataSubject;taken
  </Sheet>;
 }
 function Subjects({settings}:{settings:Settings}){
+ const studyRepair=useStudyUi();
  const list=useSubjects(),[open,setOpen]=useState<DataSubject|null>(null);
  const picked=effectiveColours(settings.ui);
  const colourOf=(row:DataSubject)=>picked[row.id]??kitSubject(row.name);
  const taken=new Map<Subject,string>((list.data??[]).map(row=>[colourOf(row),row.id] as const));
  if(list.isPending)return <Skeleton/>;
- return <div className="v7-settings-body"><ul className="v7-settings-card v7-subject-rows">{(list.data??[]).map(row=><li key={row.id}>
+ return <div className="v7-settings-body">
+  {studyRepair&&list.isSuccess&&!list.data.length&&<p>Your tutor adds subjects when it sets up a study path. <Link to="/projects/new">Start a new path</Link></p>}
+  <ul className="v7-settings-card v7-subject-rows">{(list.data??[]).map(row=><li key={row.id}>
   <button type="button" className={'v7-settings-row '+subjectClass(colourOf(row))} onClick={()=>setOpen(row)}>
    <span className="v7-subject-dot" aria-hidden="true"><SubjectMark subject={colourOf(row)}/></span>
    <span><strong>{row.name}</strong><small>{colourOf(row)+' · '+row.glyph}</small></span><ChevronRight aria-hidden="true"/></button></li>)}</ul>

@@ -11,6 +11,7 @@ import type { ProjectSummary, CheckpointView, ReviewItem, Proposal, AtlasGraph, 
 import { LemmaError, notImplemented } from '../api'
 import { decodeCardPageCursor, encodeCardPageCursor, uuidCardPageId } from '../card-cursor'
 import {pathForecast} from '../path-review-forecast'
+import {SOURCE_SEARCH_LIMIT,sourceSearchFilter,sourceSearchTerm} from '../source-search'
 
 type HomeReviewOutlook={
  decks:import('../types').DeckNode[]
@@ -126,6 +127,25 @@ export class LiveAdapter implements LemmaApi {
   if(sourceId===targetId)throw new LemmaError('invalid','Choose two different subjects to merge')
   checked(await db.rpc('merge_subjects',{p_source:sourceId,p_target:targetId}))
  }
+ async createFirstCard(input:import('../types').FirstStudyCardInput):Promise<import('../types').FirstStudyCardReceipt>{
+  const db=liveClient(),uid=await owner(db)
+  if(input.expectedOwner!==uid)throw new LemmaError('auth','The signed-in account changed')
+  const result=await db.rpc('create_first_study_card',{p_operation_id:input.operationId,p_expected_owner:uid,
+   p_path:input.path,p_front:input.front,p_back:input.back})
+  if(result.error?.code==='P0002')throw new LemmaError('not_found','Choose an available path')
+  if(result.error?.code==='22023')throw new LemmaError('invalid',result.error.message)
+  const receipt=checked(result)
+  if(receipt.operationId!==input.operationId)throw new LemmaError('server','The first card receipt could not be verified')
+  if(receipt.status==='conflict'){
+   const message=receipt.reason==='library_changed'?'Your card library is no longer empty':
+    receipt.reason==='path_changed'?'The selected path has changed':'This first-card operation already has different values'
+   throw new LemmaError('conflict',message)
+  }
+  if(receipt.status!=='applied'||!Number.isSafeInteger(receipt.noteNo)||receipt.noteNo<1||
+    !uuidCardPageId.test(receipt.noteId)||!uuidCardPageId.test(receipt.cardId)||typeof receipt.projectSlug!=='string')
+   throw new LemmaError('server','The first card receipt could not be verified')
+  return {noteNo:receipt.noteNo,noteId:receipt.noteId,cardId:receipt.cardId,projectSlug:receipt.projectSlug}
+ }
  async createProjectDraft(...args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
   const [input]=args,db=liveClient(),uid=await owner(db)
   const title=input.title.trim(),base=slugify(title)
@@ -171,6 +191,16 @@ export class LiveAdapter implements LemmaApi {
  }
  /** KC4: a Review-only metadata read. No card bodies, search cap, quota or
   * sibling collapse; RLS and explicit owner filters apply to every page. */
+ async getStudyTargetDue(target:import('../review-target').ReviewDomainTarget):Promise<number>{
+  const db=liveClient();await owner(db)
+  return checked(await db.rpc('study_target_due_count',{p_kind:target.kind,p_id:target.id}))
+ }
+ async getNextStudyDue():Promise<{day:string;count:number}|null>{
+  const db=liveClient();await owner(db)
+  const result=await db.rpc('next_study_due')
+  if(result.error)fail(result.error)
+  return result.data
+ }
  async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
   const db=liveClient(),uid=await owner(db),settings=await this.getSettings();
   const forecast=pathForecast(settings),size=500;
@@ -670,6 +700,16 @@ export class LiveAdapter implements LemmaApi {
  }
  async resetCard(...args:Parameters<LemmaApi['resetCard']>):ReturnType<LemmaApi['resetCard']>{
   const [noteNo,ordinal]=args;return this.cardSchedule('reset',noteNo,ordinal)
+ }
+ async searchSources(...args:Parameters<LemmaApi['searchSources']>):ReturnType<LemmaApi['searchSources']>{
+  const term=sourceSearchTerm(args[0]);if(!term)return []
+  const db=liveClient(),generation=authGeneration(),uid=await owner(db)
+  if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The signed-in account changed.')
+  const result=checked(await db.from('sources').select('id,title,short,filename,projects!inner(slug,title,user_id,status,system)')
+   .eq('user_id',uid).eq('projects.user_id',uid).neq('projects.status','archived').eq('projects.system',false)
+   .or(sourceSearchFilter(term)).order('title',{ascending:true}).order('id',{ascending:true}).limit(SOURCE_SEARCH_LIMIT)) as Row[]
+  if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The signed-in account changed.')
+  return result.map(row=>({id:row.id,title:row.title,short:row.short??'',filename:row.filename??'',projectSlug:row.projects.slug,projectTitle:row.projects.title}))
  }
  async searchCards(...args: Parameters<LemmaApi['searchCards']>): ReturnType<LemmaApi['searchCards']> {
   const [query,slug]=args,db=liveClient()

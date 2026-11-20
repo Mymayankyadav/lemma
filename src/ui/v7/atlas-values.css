@@ -16,3 +16,21 @@
 .v7-atlas-bridge{margin:.35rem 0}.v7-atlas-bridge summary{min-height:44px;display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;cursor:pointer}.v7-atlas-bridge[data-dashed=true] summary span{text-decoration:underline dashed;text-underline-offset:.3rem}.v7-atlas-bridge[data-thick=true] summary span{font-weight:700}
 /* N182 · AN4 book posture: a panel below a list-beside-detail page (the Inbox's link proposals) sits on the right screen, with the detail, never across the hinge. Unlayered like the rule above, so it wins over its margin. */
 @media (horizontal-viewport-segments:2){html[data-v7] .v7-page:has(.v7-inbox-desk,.v7-settings-split)>.v7-atlas-panel{margin-inline-start:calc(var(--v7-hinge-end) - var(--v7-rail-width,0px))}}
+
+.v7-atlas-map-tools {display:contents}
+@media (max-width: 767px) {
+ .v7-atlas[data-study-ui] .v7-atlas-map-tools {
+  display:grid;grid-template-areas:"filters filters" "legend controls";grid-template-columns:minmax(0,1fr) auto;
+  gap:var(--v7-space-2);align-items:end;position:absolute;
+  inset:auto var(--v7-space-3) calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-3));
+  z-index:2;pointer-events:none;
+ }
+ .v7-atlas[data-study-ui][data-sheet="peek"] .v7-atlas-map-tools {
+  bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-3) + var(--v7-atlas-sheet-h));
+ }
+ .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-filters-floating {
+  grid-area:filters;position:static;margin:0;width:auto;max-width:100%;max-height:5.5rem;overflow:auto;
+ }
+ .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-legend {grid-area:legend;position:static;pointer-events:auto;justify-self:start}
+ .v7-atlas[data-study-ui] .v7-atlas-map-tools .v7-atlas-controls {grid-area:controls;position:static;pointer-events:auto;justify-self:end}
+}

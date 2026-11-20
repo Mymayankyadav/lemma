@@ -8,6 +8,7 @@ import {canonicalSearchItem,search,settingResults,type Matched,type SearchGroupN
 import {searchActionIcon,searchGroupIcon} from './searchIcons';
 import {isFlagOn} from '../../flags';
 import {readRoomRecent,rememberRoomItem} from '../../ui/v7/room';
+import {useStudyUi} from '../../data/StudyUiRelease';
 
 const recentKey='lemma.v7.recent';
 const readRecent=():SearchItem[]=>{try{
@@ -17,11 +18,12 @@ const readRecent=():SearchItem[]=>{try{
 const writeRecent=(item:SearchItem)=>{try{localStorage.setItem(recentKey,JSON.stringify([item,...readRecent().filter(entry=>entry.id!==item.id)].slice(0,5)));}catch{/* recents are a convenience */}};
 /** PLAN §6.1 G: search or jump to a path, checkpoint, card, concept, task, setting or action from the data the screens already load. */
 export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;onClose:()=>void;onPick:(item:SearchItem,snapshot:SearchSnapshot)=>void;initial?:SearchSnapshot}){
- const room=isFlagOn('v7Room');
+ const room=isFlagOn('v7Room'),studyRepair=useStudyUi();
  const home=useHome(),atlas=useAtlas();
  const [query,setQuery]=useState(initial?.query??''),[activeId,setActiveId]=useState(initial?.activeId??null);
  const [expanded,setExpanded]=useState<ReadonlySet<SearchGroupName>>(()=>new Set(initial?.expanded));
  const [checkpoints,setCheckpoints]=useState<SearchItem[]>([]),[tasks,setTasks]=useState<SearchItem[]>([]),[cards,setCards]=useState<SearchItem[]>([]);
+ const [sources,setSources]=useState<SearchItem[]>([]);
  const projects=useMemo(()=>(home.data?.projects??[]).filter(project=>!project.system),[home.data]);
  // Checkpoints and tasks load once, when search first opens; cards are searched as the query grows.
  useEffect(()=>{
@@ -34,6 +36,15 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
   return()=>{live=false;};
  },[open,projects]);
  useEffect(()=>{
+  setSources([]);
+  if(!open||!studyRepair||query.trim().length<2)return;
+  let live=true;
+  const timer=window.setTimeout(()=>{void getApi().searchSources(query).then(rows=>{
+   if(live)setSources(rows.map(source=>({id:'source:'+source.id,group:'Sources',title:source.title,parent:source.projectTitle,aliases:[source.short,source.filename],to:'/p/'+encodeURIComponent(source.projectSlug)+'?tab=sources&source='+encodeURIComponent(source.id)})));
+  }).catch(()=>{});},120);
+  return()=>{live=false;window.clearTimeout(timer);};
+ },[open,studyRepair,query]);
+ useEffect(()=>{
   const text=query.trim();
   if(!open||text.length<2){setCards([]);return;}
   let live=true;
@@ -44,12 +55,12 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  },[query,open,projects]);
  const items=useMemo<SearchItem[]>(()=>[
   ...projects.map(project=>({id:'path:'+project.slug,group:'Paths' as const,title:project.title,parent:project.subject.name,to:'/p/'+project.slug})),
-  ...checkpoints,...cards,
+  ...checkpoints,...(studyRepair?sources:[]),...cards,
   ...(atlas.data?.concepts??[]).map(concept=>({id:'concept:'+concept.id,group:'Concepts' as const,title:concept.name,to:'/atlas?id='+concept.id})),
   ...tasks,
   ...settingResults,
   ...actions(home.data?.due??0),
- ],[projects,checkpoints,cards,atlas.data,tasks,home.data]);
+ ],[projects,checkpoints,sources,studyRepair,cards,atlas.data,tasks,home.data]);
  const results=useMemo(()=>search(items,query,expanded),[items,query,expanded]);
  const recent=useMemo(()=>open?(room?readRoomRecent():readRecent()):[],[open,room]);
  const idle=!query.trim(),list:SearchItem[]=idle?[...recent,...items.filter(item=>item.group==='Actions')]:results.flat;
@@ -84,7 +95,11 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
  },[open,keepActiveVisible,active,activeItem,results.flat]);
  function openItem(raw:SearchItem){
   const item=canonicalSearchItem(raw);
-  if(room)rememberRoomItem(item);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});
+  // Source names stay within the current search visit. Existing recents are not
+  // owner-keyed, so do not persist a newly exposed private source title there.
+  if(item.group!=='Sources'){
+   if(room)rememberRoomItem(item);else writeRecent({id:item.id,group:item.group,title:item.title,parent:item.parent,to:item.to});
+  }
   onPick(item,{query,activeId:item.id,expanded:[...expanded]});
  }
  const row=(item:SearchItem,index:number,hit?:Matched)=>{const Icon=(item.group==='Actions'?searchActionIcon[item.id]:undefined)??searchGroupIcon[item.group];

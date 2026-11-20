@@ -1,3 +1,4 @@
+import {StudyUiRelease} from '../data/StudyUiRelease';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {lazy,Suspense} from 'react'
 import { createHashRouter, RouterProvider, Navigate } from 'react-router'
@@ -49,6 +50,6 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
   <Suspense fallback={<RouteFallback/>}><OfflinePadPage/></Suspense>, errorElement: <RouteError/>}] : [])])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>
-  <RouterProvider router={router} /><ToastHost /><OfflineBanner /><PwaStatus />
+  <StudyUiRelease><RouterProvider router={router} /></StudyUiRelease><ToastHost /><OfflineBanner /><PwaStatus />
  </QueryClientProvider></ErrorBoundary>
 }

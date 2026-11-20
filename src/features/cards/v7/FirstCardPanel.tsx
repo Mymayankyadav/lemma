@@ -1,21 +1,26 @@
-import {useEffect,useId,useRef,useState,type FormEvent,type ReactNode} from 'react';
+import {useStudyUi} from '../../../data/StudyUiRelease';
+import {useEffect,useId,useRef,useState,useSyncExternalStore,type FormEvent,type ReactNode} from 'react';
 import {useNavigate} from 'react-router';
 import {useQuery,useQueryClient} from '@tanstack/react-query';
-import {getFirstCardDemoApi,LemmaError} from '../../../data';
+import {getApi,getFirstCardDemoApi,LemmaError} from '../../../data';
 import {useProjects} from '../../../data/hooks';
 import {getDemoProfile,getMode} from '../../../data/mode';
+import {authGeneration,authOwner,onAccountChange} from '../../../data/authBoundary';
+import type {FirstStudyCardInput} from '../../../data/types';
 import {Button} from '../../../ui/v7/components';
 
-const pendingKey='lemma.first-use.first-card.pending.v1';
-type Path={kind:'new';title:string}|{kind:'existing';slug:string};
-type Pending={operationId:string;path:Path;front:string;back:string};
+const demoPendingKey='lemma.first-use.first-card.pending.v1';
+type Path=FirstStudyCardInput['path'];
+type Pending=FirstStudyCardInput;
+type PanelProps={fallback?:ReactNode;initial?:{front:string;back:string;slug?:string};onCancel?:()=>void;onSaved?:()=>void};
 type StoredDraft=Pending&{rejection?:string};
-let saving=false;
+const saving=new Set<string>();
 
-function readPending():StoredDraft|null{
+function readPending(pendingKey:string,ownerId:string|null):StoredDraft|null{
  try{
   const value=JSON.parse(sessionStorage.getItem(pendingKey)??'null') as StoredDraft|null;
   if(!value||typeof value.operationId!=='string'||typeof value.front!=='string'||typeof value.back!=='string')return null;
+  if(ownerId&&value.expectedOwner!==ownerId)return null;
   if(value.rejection!==undefined&&typeof value.rejection!=='string')return null;
   if(value.path?.kind==='new'&&typeof value.path.title==='string'||
      value.path?.kind==='existing'&&typeof value.path.slug==='string')return value;
@@ -23,45 +28,49 @@ function readPending():StoredDraft|null{
  return null;
 }
 
-/** Only the isolated first-use demo can render this shared Cards/Review form. */
-export default function FirstCardPanel({fallback=null}:{fallback?:ReactNode}){
- if(getMode()!=='demo'||getDemoProfile()!=='first-use')return fallback;
- return <DemoFirstCardPanel fallback={fallback}/>;
+export default function FirstCardPanel(props:PanelProps){
+ const studyRepair=useStudyUi();
+ const epoch=useSyncExternalStore(onAccountChange,authGeneration,authGeneration);
+ const fixture=getMode()==='demo'&&getDemoProfile()==='first-use';
+ const ownerId=fixture?null:authOwner();
+ if(!fixture&&(!studyRepair||getMode()!=='live'||!ownerId))return props.fallback??null;
+ return <CardPanel key={fixture?'fixture':epoch} {...props} epoch={epoch} ownerId={ownerId}/>;
 }
-
-function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
+function CardPanel({fallback=null,initial,onCancel,onSaved,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){
  const navigate=useNavigate(),queryClient=useQueryClient(),heading=useId();
- const api=getFirstCardDemoApi(),projects=useProjects();
- const library=useQuery({queryKey:['first-use','first-card-library'],
-  queryFn:()=>{if(!api)throw new Error('First-use fixture unavailable');return api.searchCardsPage({query:'',offset:0});},
-  enabled:!!api});
- const [pending,setPending]=useState(readPending),[open,setOpen]=useState(false);
- const [front,setFront]=useState(''),[back,setBack]=useState(''),[title,setTitle]=useState('');
- const [chosenPath,setChosenPath]=useState<string|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState('');
+ const api=ownerId?getApi():getFirstCardDemoApi(),projects=useProjects();
+ const pendingKey=ownerId?'lemma.study.first-card.v1.'+ownerId:demoPendingKey;
+ const library=useQuery({queryKey:['first-use','first-card-library',ownerId],
+  queryFn:()=>{if(!api)throw new Error('First card unavailable');return api.searchCardsPage({query:'',offset:0});},enabled:!!api});
+ const [pending,setPending]=useState(()=>readPending(pendingKey,ownerId)),[open,setOpen]=useState(!!initial);
+ const [front,setFront]=useState(initial?.front??''),[back,setBack]=useState(initial?.back??''),[title,setTitle]=useState('');
+ const [chosenPath,setChosenPath]=useState<string|null>(initial?.slug??null),[busy,setBusy]=useState(false),[error,setError]=useState('');
  const trigger=useRef<HTMLButtonElement>(null),first=useRef<HTMLTextAreaElement>(null),live=useRef(false);
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  useEffect(()=>{if(open&&!pending)first.current?.focus();},[open,pending]);
  const paths=(projects.data??[]).filter(path=>!path.system&&path.status!=='archived');
- const slug=chosenPath??paths[0]?.slug??'';
- const path:Path=slug?{kind:'existing',slug}:{kind:'new',title:title.trim()};
+ const available=chosenPath===null?paths[0]:paths.find(row=>row.id===chosenPath||row.slug===chosenPath);
+ const slug=available?.slug??'';
+ const path:Path=available?{kind:'existing',slug,...(ownerId?{id:available.id}:{})}:{kind:'new',title:title.trim()};
+ const active=()=>live.current&&(!ownerId||ownerId===authOwner()&&epoch===authGeneration());
  const empty=library.isSuccess&&!library.isFetching&&library.data.rows.length===0&&library.data.nextOffset===null;
 
  async function save(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
-  if(saving||!api)return;
+  if(saving.has(pendingKey)||!api?.createFirstCard||!active())return;
   setError('');
-  let draft=readPending()??pending;
+  let draft=readPending(pendingKey,ownerId)??pending;
   if(draft?.rejection)return;
   if(!draft&&(!empty||!projects.isSuccess))return;
   if(!draft){
    if(!front.trim()||!back.trim()||path.kind==='new'&&!path.title)return;
    try{
-    draft={operationId:crypto.randomUUID(),path,front:front.trim(),back:back.trim()};
+    draft={operationId:crypto.randomUUID(),...(ownerId?{expectedOwner:ownerId}:{}),path,front:front.trim(),back:back.trim()};
     // Fail closed before dispatch if the retry key cannot survive a reload.
     sessionStorage.setItem(pendingKey,JSON.stringify(draft));
    }catch{setError('This tab cannot keep a recoverable draft. No card was saved.');return;}
   }
-  saving=true;setBusy(true);setPending(draft);
+  saving.add(pendingKey);setBusy(true);setPending(draft);
   try{
    const request=draft;
    const receipt=await api.createFirstCard(request).catch((failure:unknown)=>{
@@ -69,12 +78,12 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
      const rejected={...request,rejection:failure.message};
      // Keep the entered values across reload without dispatching this rejected intent again.
      try{sessionStorage.setItem(pendingKey,JSON.stringify(rejected));}catch{/* Values remain available in this view. */}
-     if(live.current)setPending(rejected);
+     if(active())setPending(rejected);
      void queryClient.invalidateQueries({queryKey:['first-use','first-card-library']});
      return null;
     }
     // Known validation failures have not written anything; keep the text editable.
-    if(live.current&&failure instanceof LemmaError&&(failure.code==='invalid'||failure.code==='not_found')){
+    if(active()&&failure instanceof LemmaError&&(failure.code==='invalid'||failure.code==='not_found')){
      sessionStorage.removeItem(pendingKey);setPending(null);setOpen(true);
      setChosenPath(request.path.kind==='existing'?request.path.slug:'');
      if(request.path.kind==='new')setTitle(request.path.title);
@@ -82,30 +91,31 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
     }
     throw failure;
    });
-   if(!receipt)return;
+   if(!receipt||!active())return;
    const detail=await api.getCard(receipt.noteNo);
    if(detail.note.noteNo!==receipt.noteNo||detail.note.noteId!==receipt.noteId||
       detail.note.projectSlug!==receipt.projectSlug||detail.note.front!==draft.front||detail.note.back!==draft.back||
       !detail.cards.some(card=>card.cardId===receipt.cardId))
     throw new Error('The saved card could not be verified');
+   if(!active())return;
    const keys=new Set(['first-use','card','cards','v7-cards','decks','home','projects','project','subjects','path-review-forecast']);
    void queryClient.invalidateQueries({predicate:query=>keys.has(String(query.queryKey[0]))});
    // If the learner navigated away mid-save, leave the recoverable receipt keyed to the draft.
-   if(live.current){
-    navigate('/cards/'+receipt.noteNo);
+   if(active()){
+    onSaved?.();navigate('/cards/'+receipt.noteNo);
     sessionStorage.removeItem(pendingKey);
     setPending(null);setOpen(false);
    }
   }catch(failure){
-   if(live.current)setError(failure instanceof LemmaError&&(failure.code==='invalid'||failure.code==='not_found')
+   if(active())setError(failure instanceof LemmaError&&(failure.code==='invalid'||failure.code==='not_found')
      ?failure.message:'The save could not be confirmed. Retry to recover the same card without duplicating it.');
   }finally{
-   saving=false;
-   if(live.current)setBusy(false);
+   saving.delete(pendingKey);
+   if(active())setBusy(false);
   }
  }
  function close(){
-  setOpen(false);setError('');
+  setOpen(false);setError('');onCancel?.();
   requestAnimationFrame(()=>trigger.current?.focus());
  }
 
@@ -135,8 +145,8 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
   :<form onSubmit={save} className="v7-form-stack">
    {pending?<p role="status">Your draft is saved in this tab. Retry to open the exact saved card.</p>:<>
     {paths.length>0&&<label className="v7-field-group">Path
-     <select className="v7-field" value={slug} onChange={event=>setChosenPath(event.target.value)}>
-      {paths.map(row=><option key={row.slug} value={row.slug}>{row.title}</option>)}
+     <select className="v7-field" value={ownerId?available?.id??'':slug} onChange={event=>setChosenPath(event.target.value)}>
+      {paths.map(row=><option key={row.slug} value={ownerId?row.id:row.slug}>{row.title}</option>)}
       <option value="">Create a new path</option>
      </select></label>}
     {!slug&&<label className="v7-field-group">Path name<input className="v7-field" value={title}

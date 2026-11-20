@@ -6,17 +6,6 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N195 Complete live first study, scoped review, UI and accessibility repairs
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-671983#wxm1
-Existing PR: #1546 (https://github.com/Mymayankyadav/lemma/pull/1546)
-Done = Finish existing PR #1546's live first-card and exact grading, task/calendar write recovery, frozen per-scope review, Today/Atlas/capture repairs and accessibility. Demonstrate 1-card, 23-card, 90-future-card, lost-ack, account-switch and focus/keyboard pathways.
-Tests: `npx tsc -b; node scripts/ci/lint.mjs`; `node tests/mcp/sql/first-study.mjs`; `node tests/mcp/sql/first-study-concurrency.mjs`; `tests/e2e/v7-n195-{live-first-study,study-repairs,task-live,task-planner}.spec.ts`; `full affected unit/browser suites and physical phone acceptance`.
-Scope: src/data/StudyUiRelease.tsx; src/features/practice/v7/PracticeV7.tsx; src/features/atlas/v7/{AtlasV7,AtlasMap}.tsx; src/features/settings/v7/SettingsV7.tsx; supabase/migrations/20261218002000_n195_study_review_targets.sql; docs/current/N195.md.
-Not: Rewriting N191 evidence core; Moving the scheduler default into the wrong PR; Skipping tests because a shared dependency is absent.
-Agent packet: [N195.md](docs/implementation/2026-11-20/tasks/N195.md). 
-
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"

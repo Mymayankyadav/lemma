@@ -1,0 +1,20 @@
+[
+  {
+    "file": "20261120044716_n191_evidence_receipts.sql",
+    "commit": "77e4c23ca7e1775ab36e767df808e07a31732e3e",
+    "blob": "c4be827d5d324244551f59ab162642ea2693417c",
+    "source": "https://github.com/Mymayankyadav/lemma/blob/77e4c23ca7e1775ab36e767df808e07a31732e3e/supabase/migrations/20261120044716_n191_evidence_receipts.sql"
+  },
+  {
+    "file": "20261120045749_n191_plan_release_capability.sql",
+    "commit": "77e4c23ca7e1775ab36e767df808e07a31732e3e",
+    "blob": "208b0dec283807186d99fb0a4f03c09ce6c314a5",
+    "source": "https://github.com/Mymayankyadav/lemma/blob/77e4c23ca7e1775ab36e767df808e07a31732e3e/supabase/migrations/20261120045749_n191_plan_release_capability.sql"
+  },
+  {
+    "file": "20261218001300_owner_command_receipt_cutover.sql",
+    "commit": "6f0534453a8b7d6c0094abe34033da93a75a5cee",
+    "blob": "d68221fe5d4cfe7416c073f658c3b7efccb67952",
+    "source": "https://github.com/Mymayankyadav/lemma/blob/6f0534453a8b7d6c0094abe34033da93a75a5cee/supabase/migrations/20261218001300_owner_command_receipt_cutover.sql"
+  }
+]

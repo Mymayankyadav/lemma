@@ -1,6 +1,7 @@
 // N68 v6 owner planner: read-only preview first, no unattended block writes.
 // A day-plan commit always rechecks task/block versions in one server command.
 import {useEffect,useMemo,useRef,useState} from 'react';
+import {useStudyUi} from '../../data/StudyUiRelease';
 import {getDayPlanApi} from '../../data/day-plans';
 import {getTaskApi,type TaskRecord} from '../../data/tasks';
 import {getStudyApi,type CalendarBlockRecord,type StudyEntryRecord} from '../../data/study';
@@ -29,15 +30,15 @@ function ownerDay(zone:string):string{
  return pick('year')+'-'+pick('month')+'-'+pick('day');
 }
 export {readTasks} from './readTasks';
-import {readTasks} from './readTasks';
-export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed,v7=false}:{
+import {plannerCandidates,readTasks} from './readTasks';
+export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed,onChanged,v7=false}:{
  date?:string;zone?:string;
  /** v7 (Night critique B1): the same planner drawn as the kit's bottom sheet with kit controls only. */
  v7?:boolean;
  /** v7: open the planner as soon as it mounts (Adjust on the suggestions banner, `?plan=1`). */
- autoOpen?:boolean;hideTrigger?:boolean;onClosed?:()=>void;
+ autoOpen?:boolean;hideTrigger?:boolean;onClosed?:()=>void;onChanged?:()=>void;
 }){
- const notify=useToast();
+ const notify=useToast(),repair=useStudyUi();
  const loadEpoch=useRef(0);
  const commitEpoch=useRef(0);
  const pendingOperation=useRef<string|null>(null);
@@ -86,10 +87,7 @@ export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=fals
    ]);
    const result=planTaskPlacements({
     from:anchor,through:shiftDay(anchor,days-1),timeZone:ownerZone,now:new Date().toISOString(),
-    tasks:taskRows.map(task=>({
-     id:task.id,priority:task.priority,due:task.due,
-     estimateMinutes:task.estimateMinutes,status:task.status,
-    })),
+    tasks:v7&&repair?plannerCandidates(taskRows,blockRows,true):taskRows,
     blocks:blockRows.map(block=>({
      id:block.id,startsAt:block.startsAt,endsAt:block.endsAt,
      kind:block.kind,status:block.status,
@@ -117,12 +115,16 @@ export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=fals
   setOpened(false);setLoading(false);setPreview(null);
   onClosed?.();
  }
- const autoOpened=useRef(false);
+ const autoOpened=useRef(false),lastRelease=useRef(repair);
  useEffect(()=>{
+  if(lastRelease.current!==repair){
+   lastRelease.current=repair;
+   if(v7&&opened){void load();return;}
+  }
   if(!autoOpen||autoOpened.current)return;
   autoOpened.current=true;show();
  // eslint-disable-next-line react-hooks/exhaustive-deps
- },[autoOpen]);
+ },[autoOpen,repair]);
  /** N121 B8: Date, Start and End in the owner zone; moving the start keeps the allotted length. */
  function changeMove(key:string,part:'date'|'start'|'end',value:string,original:Move){
   setOverrides(previous=>{
@@ -167,7 +169,7 @@ export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=fals
    notify((added===1?'Added 1 block':'Added '+added+' blocks')+' to your calendar',{tone:'success',
     ...(actionNo!==null?{action:{label:'Undo',onClick:()=>{
      void plans.undoPlacements(actionNo).then(
-      ()=>notify('Removed the planned blocks',{tone:'success'}),
+      ()=>{onChanged?.();notify('Removed the planned blocks',{tone:'success'});},
       (e:unknown)=>notify(e instanceof Error?e.message:'Could not undo the planner commit',
        {tone:'danger'}));
     }}}:{})});

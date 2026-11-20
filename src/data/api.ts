@@ -40,6 +40,11 @@ export interface AtlasMergePreview {
  sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact
 }
 export interface LemmaApi {
+ getNextStudyDue?():Promise<{day:string;count:number}|null>
+ getStudyTargetDue?(target:import('./review-target').ReviewDomainTarget):Promise<number>
+ getReviewTargetItems?(target:import('./review-target').ReviewDomainTarget):Promise<ReviewItem[]>
+ getReviewTargetLabel?(target:import('./review-target').ReviewDomainTarget):string|undefined
+ createFirstCard?(input:import('./types').FirstStudyCardInput):Promise<import('./types').FirstStudyCardReceipt>
  getAdaptiveData(now?:Date): Promise<import('./adaptive/contract').AdaptiveData>
  readonly mode: 'live' | 'demo'
  /** Read the signed-in owner, or null. */
@@ -118,6 +123,8 @@ export interface LemmaApi {
  deleteSource(id: string): Promise<void>
  /** Get transcription counts without loading whole page text. */
  getSourceTranscriptionStats(projectId:string):Promise<SourceTranscriptionStat[]>
+ /** A bounded title, short-name or filename search across the owner's active paths. */
+ searchSources(query:string):Promise<import('./source-search').SourceSearchRow[]>
  /** Load exactly one PDF page rather than all pages of a long scan. */
  getSourcePage(sourceId:string,page:number):Promise<TranscribedSourcePage|null>
  /** Export reads all transcribed pages only when the owner explicitly requests a download. */

@@ -1,4 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {getDayPlanApi} from '../../../data/day-plans';
 import {getStudyApi} from '../../../data/study';
 import {getTaskApi} from '../../../data/tasks';
@@ -22,13 +23,13 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
  onSuggest?:(items:SuggestedBlock[])=>void;
  inline?:boolean;
 }){
- const notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(openPlanner),[busy,setBusy]=useState(false);
+ const repair=useStudyUi(),notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(openPlanner),[busy,setBusy]=useState(false);
  const operation=useRef<{key:string;id:string}|null>(null),locked=useRef(false);
  useEffect(()=>{
   let live=true;setData(null);
-  void loadSuggestions(date,zone).then(next=>{if(live)setData(next);}).catch(()=>{if(live)setData(null);});
+  void loadSuggestions(date,zone,repair).then(next=>{if(live)setData(next);}).catch(()=>{if(live)setData(null);});
   return()=>{live=false;};
- },[date,zone]);
+ },[date,zone,repair]);
  useEffect(()=>{if(openPlanner)setAdjusting(true);},[openPlanner]);
  const count=data?.result.placements.length??0;
  useEffect(()=>{
@@ -44,7 +45,7 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
     const study=getStudyApi(),done=await acceptSuggestion(data,only,date,zone,study,getTaskApi());
     setData({...data,result:{...data.result,placements:data.result.placements.filter(place=>place.taskId+':'+place.part!==only)}});onChanged();
     notify(done.created?'Added 1 block to your calendar':'This block is already planned',{tone:'success',...(done.created?{action:{label:'Undo',onClick:()=>{
-     void study.deleteCalendarBlock(done.record.id,done.record.version).then(()=>{onChanged();void loadSuggestions(date,zone).then(setData,()=>setData(null));},()=>notify('Could not undo the block. It may have changed.',{tone:'danger'}));
+     void study.deleteCalendarBlock(done.record.id,done.record.version).then(()=>{onChanged();void loadSuggestions(date,zone,repair).then(setData,()=>setData(null));},()=>notify('Could not undo the block. It may have changed.',{tone:'danger'}));
     }}}:{})});
     return;
    }
@@ -65,6 +66,6 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
    <p>{suggestionLabel(count)}{date===dayKey(new Date(),zone)?'':' for '+formatShortDate(date,{zone})} · <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></p>
    <Button small variant="secondary" disabled={busy} onClick={()=>{void addAll();}}>{busy?'Adding…':'Add all'}</Button>
   </div>}
-  {adjusting&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
+  {adjusting&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onChanged={repair?onChanged:undefined} onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
  </>;
 }

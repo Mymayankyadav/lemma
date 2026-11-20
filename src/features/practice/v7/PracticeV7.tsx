@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Link} from 'react-router';
 import {useHome,useSettings} from '../../../data/hooks';
@@ -81,7 +82,8 @@ export default function PracticeV7(){
 
 function RecordSheet({topic,busy,onClose,onSave}:{topic:PracticeTopicRecord;busy:boolean;onClose:()=>void;
  onSave:(input:{rating:PracticeRating;response:string|null;minutes:number|null})=>Promise<void>}){
- const [rating,setRating]=useState<PracticeRating>(3),[notes,setNotes]=useState(''),[minutes,setMinutes]=useState('');
+ const studyRepair=useStudyUi();
+ const [rating,setRating]=useState<PracticeRating|null>(()=>studyRepair?null:3),[notes,setNotes]=useState(''),[minutes,setMinutes]=useState('');
  const [seconds,setSeconds]=useState(0),[running,setRunning]=useState(false),[problem,setProblem]=useState('');
  useEffect(()=>{
   if(!running)return;
@@ -89,6 +91,7 @@ function RecordSheet({topic,busy,onClose,onSave}:{topic:PracticeTopicRecord;busy
   return()=>window.clearInterval(timer);
  },[running]);
  function save(){
+  if(rating===null)return;
   let value:number|null=null;
   if(minutes.trim()){
    if(!/^(0|[1-9][0-9]*)$/.test(minutes.trim())||Number(minutes)>1440){setProblem('Minutes must be a whole number from 0 to 1440.');return;}
@@ -98,7 +101,7 @@ function RecordSheet({topic,busy,onClose,onSave}:{topic:PracticeTopicRecord;busy
   void onSave({rating,response:notes.trim()||null,minutes:value});
  }
  return <Sheet open onClose={onClose} title={'Practice: '+topic.title} eyebrow="How did it go?"
-  footer={<Button variant="primary" loading={busy} onClick={save}>Save</Button>}>
+  footer={<Button variant="primary" loading={busy} disabled={rating===null} onClick={save}>Save</Button>}>
   <div className="v7-pr-sheet">
    <div className="v7-pr-ratings" role="radiogroup" aria-label="How did it go?">{ratings.map(value=>
     <button key={value} type="button" role="radio" aria-checked={rating===value} className="v7-filter-chip" onClick={()=>setRating(value)}>{ratingNames[value]}</button>)}</div>

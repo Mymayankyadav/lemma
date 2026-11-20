@@ -1,3 +1,4 @@
+import {demoWeekdayMinutes} from '../study-weekdays';
 import {isFlagOn} from '../../flags';
 import type {DemoStore} from '../demo/model';
 import type {AdaptiveData} from './contract';
@@ -5,7 +6,7 @@ import type {AdaptiveData} from './contract';
 export function demoAdaptiveData(store:DemoStore):AdaptiveData{
  const cps=store.checkpoints;
  const targets=store.concepts.filter(c=>c.level==='planet').slice(0,4),attempts=targets.flatMap((c,i)=>Array.from({length:8},(_,j)=>({id:i*8+j+1,occurred_at:'2026-11-'+String(10+j).padStart(2,'0')+'T10:00:00Z',session_id:'atlas-demo-session-'+j,project_id:cps[0]?.projectId,checkpoint_id:cps[0]?.id,item_kind:'practice',weight:1,cued:[],tags:[{concept_id:c.id,facet:'use',role:'target',stage:'E',result:j===0?'fail':'ok',hint_level:0}]})));
- return {rows:{settings:{...store.settings,time_zone:store.settings.timeZone,rollover_hour:store.settings.rolloverHour,
+ return {rows:{settings:{...store.settings,...(demoWeekdayMinutes()?{capacity:{weekday_minutes:demoWeekdayMinutes()}}:{}),time_zone:store.settings.timeZone,rollover_hour:store.settings.rolloverHour,
   ...(isFlagOn('atlasV3')?{planning:{window_start:'18:00',window_end:'21:00'}}:{}),fsrs_weights:store.settings.fsrsWeights,desired_retention:store.settings.desiredRetention,review_budget:store.settings.reviewBudget},
   projects:store.projects.filter(p=>!p.system&&p.status!=='archived').map(p=>({...p,target_date:p.targetDate})),
   checkpoints:cps.map(c=>({...c,project_id:c.projectId,current_step:c.currentStep+1,due_on:c.dueOn,

@@ -14,6 +14,8 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
+  /** P1/P2 study repairs ship together at the owner-approved release. */
+  uiRepairV1: false,
   /** Manual copy/paste tutoring is a default-off, demo-only preview. */
   tutorManualDemo: false,
   /** N193: live owner-bound checkpoint threads, released with the new study UI. */

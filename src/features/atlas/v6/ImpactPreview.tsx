@@ -1,3 +1,4 @@
+import {useAtlasDialog} from './useAtlasDialog';
 import {useMemo,useState} from 'react';
 import type {AtlasGraph} from '../../../data/types';
 import {checkAtlasLink,describeAtlasMergeImpact,type AtlasEditNode} from './impact';
@@ -7,6 +8,7 @@ import {checkAtlasLink,describeAtlasMergeImpact,type AtlasEditNode} from './impa
 export default function AtlasImpactPreview({
  graph,sourceId,onClose,
 }:{graph:AtlasGraph;sourceId:string;onClose:()=>void}){
+ const dialog=useAtlasDialog();
  const source=graph.concepts.find(c=>c.id===sourceId);
  const [targetId,setTargetId]=useState(
   graph.concepts.find(c=>c.id!==sourceId)?.id??'');
@@ -28,7 +30,7 @@ export default function AtlasImpactPreview({
   .map(link=>({leftId:link.fromId,rightId:link.toId}));
  const impact=choice?describeAtlasMergeImpact(nodes,sourceId,targetId,related):null;
  if(!source)return null;
- return <dialog open aria-label={'Preview Atlas edits for '+source.name}
+ return <dialog {...dialog} aria-label={'Preview Atlas edits for '+source.name}
   onCancel={e=>{e.preventDefault();onClose()}}
   onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();onClose()}}}
   className="fixed inset-0 z-50 m-auto w-[min(94vw,540px)] rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-lg">

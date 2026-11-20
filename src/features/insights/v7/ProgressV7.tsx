@@ -1,3 +1,4 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
 import {AtlasProgress} from '../../adaptive/AtlasPanels';
 import {GRADES,GRADE_KEYS} from '../../../ui/v7/grades';
 import {Illustration} from '../../../ui/v7/Illustration';
@@ -66,6 +67,7 @@ function GoalSheet({goal,onClose,onSaved}:{goal:GoalRecord;onClose:()=>void;onSa
 
 /** PLAN §6.13 Progress: one range control above everything it affects; Overview, Learning and Time. */
 export default function ProgressV7(){
+ const studyRepair=useStudyUi();
  const [params,setParams]=useSearchParams(),settings=useSettings(),subjects=useSubjects(),notify=useToast();
  const tab:Tab=params.get('tab')==='learning'?'learning':params.get('tab')==='time'?'time':'overview';
  const range:ProgressRange=asRange(params.get('range'));
@@ -154,13 +156,16 @@ export default function ProgressV7(){
    {insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')}).map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
   </>}
   {status==='ready'&&tab==='learning'&&(learn?<>
-   <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
+   {studyRepair&&learn.reviews===0?<p role="status">No reviews yet. Grade a card to see recall and confidence for this period.</p>:<>
+   <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.filter(bucket=>!studyRepair||bucket.recall!==null).map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
    <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
     series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:isFlagOn('v7Room')&&index>0?'color-mix(in srgb, var(--v7-role-text-primary) '+[0,35,60,85][index]+'%, var(--v7-role-surface-page))':gradeColors[index]}))}/>
    <section className="v7-chart" aria-label="When you said"><h3 className="v7-headline">When you said</h3>
-    {learn.calibration.map(row=><Meter key={row.confidence} label={confidenceWord[row.confidence]+(row.total?' · '+row.total+' answers':' · no answers')} value={row.rate==null?0:Math.round(row.rate*100)} max={100}/>)}
+    {studyRepair&&!learn.calibration.some(row=>row.total>0)&&<p className="v7-meta">Choose a confidence before revealing an answer to see this summary.</p>}
+    {learn.calibration.filter(row=>!studyRepair||row.total>0).map(row=><Meter key={row.confidence} label={confidenceWord[row.confidence]+(row.total?' · '+row.total+' answers':' · no answers')} value={row.rate==null?0:Math.round(row.rate*100)} max={100}/>)}
     {learn.calibrationMessage&&<p className="v7-meta">{learn.calibrationMessage}</p>}
    </section>
+   </>}
    <Chart title="Checkpoints demonstrated" kind="bars" data={groups.map(days=>({label:columnLabel({from:days[0],to:days[days.length-1]}),tickLabel:tick(days[0]),values:[checkpoints.filter(event=>{const day=civilDay(new Date(event.at),zone);return day>=days[0]&&day<=days[days.length-1];}).length]}))} series={[{label:'Demonstrated'}]}/>
    <StatTile label="Tutor sessions" value={formatDuration(learn.minutes)}/>
   </>:<Skeleton/>)}

@@ -66,6 +66,7 @@ import type {
   DemoStore,
 } from "./model";
 import fixtureText from "./fixture.json?raw";
+import {SOURCE_SEARCH_LIMIT,sourceSearchTerm} from '../source-search';
 import { hydrateFixture } from "./hydrate";
 import {
   checkpointUi,
@@ -219,6 +220,22 @@ export class DemoAdapter implements LemmaApi {
     // Home, DeckTree and the seven-day forecast share one exact due-card pass.
     // Return a copy so a consumer cannot mutate the cached daily buckets.
     return this.dueSnapshot().forecastDays.map(day=>({...day}));
+  }
+  async getNextStudyDue():Promise<{day:string;count:number}|null>{
+    const settings=this.store.settings,today=studyDay(this.now(),settings.timeZone,settings.rolloverHour);
+    let next:{day:string;count:number}|null=null;
+    const paths=new Set(this.store.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
+    for(const note of this.store.notes){
+      if(note.note.status!=='active'||!paths.has(note.projectId))continue;
+      for(const {state} of note.cards){
+        if(state.state===0)continue;
+        const day=studyDay(Date.parse(state.due),settings.timeZone,settings.rolloverHour);
+        if(day<=today)continue;
+        if(!next||day<next.day)next={day,count:1};
+        else if(day===next.day)next.count++;
+      }
+    }
+    return next;
   }
   async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
     const forecast=pathForecast(this.store.settings,this.now());
@@ -674,7 +691,7 @@ export class DemoAdapter implements LemmaApi {
     const now = this.now();
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
-  private eligible(cardId?:string): ReviewItem[] {
+  private eligible(cardId?:string,scope?:import('../review-target').ReviewDomainTarget): ReviewItem[] {
     const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
@@ -689,7 +706,15 @@ export class DemoAdapter implements LemmaApi {
     // dueToday never selects a future scheduled card. Avoid constructing
     // 26,000 cloned ReviewItems only to discard them in the 30k-card fixture.
     // Keep every new card, plus every due/learning card before study-day end.
-    const notes=this.reviewNotes();
+    const checkpoint=scope?.kind==='checkpoint'?this.store.checkpoints.find(cp=>cp.id===scope.id):null;
+    const notes=scope?this.reviewNotes().filter(n=>{
+      switch(scope.kind){
+        case 'path':return n.projectId===scope.id;
+        case 'concept':return n.conceptId===scope.id;
+        case 'checkpoint':return !!checkpoint&&n.projectId===checkpoint.projectId&&n.note.checkpointCode===checkpoint.code;
+        case 'card':return n.cards.some(c=>c.id===scope.id);
+      }
+    }):this.reviewNotes();
     // Private generated stress notes cannot be mutated by the queue read.
     // getReviewItems defensively clones its final response, so cloning all
     // 4,000 intermediate CardState objects here only delays cold Review-run.
@@ -2117,6 +2142,20 @@ export class DemoAdapter implements LemmaApi {
       }
     return count;
   }
+  async getStudyTargetDue(target:import('../review-target').ReviewDomainTarget){
+    return (await this.getReviewTargetItems(target)).length;
+  }
+  async getReviewTargetItems(target:import('../review-target').ReviewDomainTarget){
+    return clone(this.eligible(target.kind==='card'?target.id:undefined,target));
+  }
+  getReviewTargetLabel(target:import('../review-target').ReviewDomainTarget){
+    switch(target.kind){
+      case 'card':return 'Saved card';
+      case 'path':return this.store.projects.find(row=>row.id===target.id)?.title;
+      case 'checkpoint':return this.store.checkpoints.find(row=>row.id===target.id)?.title;
+      case 'concept':return this.store.concepts.find(row=>row.id===target.id)?.name;
+    }
+  }
   async getReviewItems(filter: QueueFilter) {
     const eligible = this.eligible();
     const notes=this.reviewNotes();
@@ -2290,6 +2329,13 @@ export class DemoAdapter implements LemmaApi {
     card.state={state:0,due:this.iso(),stability:0,difficulty:0,
      lastReview:null,step:0,reps:0,lapses:0};
    });
+  }
+  async searchSources(...args:Parameters<LemmaApi['searchSources']>):ReturnType<LemmaApi['searchSources']>{
+    const term=sourceSearchTerm(args[0]).toLowerCase();if(!term)return [];
+    const projects=new Map(this.store.projects.filter(project=>!project.system&&project.status!=='archived').map(project=>[project.id,project]));
+    return this.store.sources.filter(source=>projects.has(source.projectId)&&[source.title,source.short,source.filename].some(value=>value?.toLowerCase().includes(term)))
+      .sort((a,b)=>a.title.localeCompare(b.title)||a.id.localeCompare(b.id)).slice(0,SOURCE_SEARCH_LIMIT)
+      .map(source=>({id:source.id,title:source.title,short:source.short,filename:source.filename,projectSlug:projects.get(source.projectId)!.slug,projectTitle:projects.get(source.projectId)!.title}));
   }
   async searchCards(query: string, slug?: string): Promise<CardRow[]> {
     if (slug) this.project(slug);

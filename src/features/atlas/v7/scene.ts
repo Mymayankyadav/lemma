@@ -52,6 +52,7 @@ export function drawStarMark(ctx:CanvasRenderingContext2D,state:StarState,cx:num
 }
 
 export class AtlasScene{
+ strongEdges=false;
  labelCluster:number|null=null;
  highlighted:ReadonlySet<number>|null=null;
  camera:Camera={x:0,y:0,k:1};
@@ -188,11 +189,13 @@ export class AtlasScene{
    if(length<1)continue;
    const ux=(ex-sx)/length,uy=(ey-sy)/length,startGap=model.stars[edge.from].radius*camera.k+3,endGap=model.stars[edge.to].radius*camera.k+4;
    if(length<=startGap+endGap)continue;
-   ctx.globalAlpha=active?1:dimmed?.4*.6:.6;ctx.strokeStyle=active?palette.selection:palette.link;ctx.lineWidth=active?1.5:1;
+   ctx.globalAlpha=this.strongEdges?1:active?1:dimmed?.4*.6:.6;
+   ctx.strokeStyle=active?palette.selection:this.strongEdges?palette.textSecondary:palette.link;
+   ctx.lineWidth=this.strongEdges?(active?2:1.5):(active?1.5:1);
    ctx.setLineDash(edge.kind==='related'?[2,3]:[]);
    const tx=ex-ux*endGap,ty=ey-uy*endGap;
    ctx.beginPath();ctx.moveTo(sx+ux*startGap,sy+uy*startGap);ctx.lineTo(tx,ty);ctx.stroke();
-   if(edge.kind==='prereq'&&(active||camera.k>=NEAR_ZOOM)){
+   if(edge.kind==='prereq'&&(this.strongEdges||active||camera.k>=NEAR_ZOOM)){
     ctx.setLineDash([]);const head=active?6:5;
     ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-ux*head-uy*head*.55,ty-uy*head+ux*head*.55);ctx.lineTo(tx-ux*head+uy*head*.55,ty-uy*head-ux*head*.55);ctx.closePath();
     ctx.fillStyle=ctx.strokeStyle;ctx.fill();

@@ -1,3 +1,6 @@
+import {useStudyUi} from '../../../data/StudyUiRelease';
+import {isFlagOn} from '../../../flags';
+import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 import {LinkProposals} from '../../adaptive/AtlasPanels';
 import {Illustration} from '../../../ui/v7/Illustration';
 import {fromEdge} from '../../../ui/v7/edges';
@@ -107,8 +110,24 @@ function PlanCard({proposal,project,onDecide}:{proposal:Proposal;project:Project
 
 /** N131 · L-07: how long a stamped card stays before it leaves (the stamp lands in the first 220 ms). */
 export const STAMP_MS=360;
+function InboxZero(){return <><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></>;}
+function AtlasCardEnd(){
+ const atlas=useAtlasModel(),pending=atlas.data?.links.filter(row=>row.status==='proposed').length;
+ if(atlas.isSuccess&&pending===0)return <InboxZero/>;
+ return <><h2>All card proposals reviewed</h2>
+  {pending?<button type="button" className="v7-button v7-secondary" onClick={()=>{const el=document.querySelector<HTMLElement>('[aria-label="Link proposals"]');if(el){el.tabIndex=-1;el.focus();}}}>Review {pending} Atlas {pending===1?'link':'links'}</button>:
+   <><p role="status">{atlas.isError?'Atlas proposals could not be checked.':'Checking Atlas proposals…'}</p>
+    {atlas.isError&&<Button onClick={()=>{void atlas.refetch();}}>Retry Atlas proposals</Button>}</>}
+ </>;
+}
+function CardInboxEnd({plans}:{plans:number}){
+ if(plans>0)return <><h2>All card proposals reviewed</h2><Link className="v7-button v7-secondary" to="/proposals?tab=plan">Review {plans} {plans===1?'plan':'plans'}</Link></>;
+ return isFlagOn('atlasV3')?<AtlasCardEnd/>:<InboxZero/>;
+}
 /** PLAN §6.10 Inbox: a triage stack for cards (swipe, buttons or keys), a list view for batches, and plan cards. */
 export default function InboxV7(){
+ const studyRepair=useStudyUi();
+ const repair=studyRepair;
  const query=useProposals(),projects=useProjects(),settings=useSettings();
  const [params,setParams]=useSearchParams(),tab=params.get('tab')==='plan'?'plan':'cards',list=params.get('view')==='list';
  const [order,setOrder]=useState<string[]>([]),[editing,setEditing]=useState<Proposal|null>(null),[batch,setBatch]=useState<Proposal[]|null>(null);
@@ -122,6 +141,7 @@ export default function InboxV7(){
  const bySlug=useMemo(()=>new Map((projects.data??[]).map(row=>[row.slug,row])),[projects.data]);
  const all=useMemo(()=>(query.data??[]).filter(p=>!held.has(p.id)),[query.data,held]);
  const cards=useMemo(()=>all.filter(isCardProposal),[all]),plans=useMemo(()=>all.filter(isPlanProposal),[all]);
+ const cardEnd=repair?<CardInboxEnd plans={plans.length}/>:<InboxZero/>;
  useEffect(()=>{setOrder(previous=>mergeOrder(previous,cards.map(p=>p.id)));},[cards]);
  const queue=useMemo(()=>{const byId=new Map(cards.map(p=>[p.id,p]));return mergeOrder(order,cards.map(p=>p.id)).map(id=>byId.get(id)!).filter(Boolean);},[order,cards]);
  const requestedCard=params.get('card'),opened=useRef<string|null>(null);
@@ -187,7 +207,7 @@ export default function InboxV7(){
     </div>
     {peers.length>1&&<Button variant="ghost" className="v7-inbox-all" onClick={()=>setBatch(peers)}>{'Approve all '+peers.length+' from Session '+top.sessionNumber}</Button>}
     <p className="v7-sr-only">Keys: A or Right approves, R or Left rejects, E edits, Up skips to the end.</p>
-   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </div></div>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/>{cardEnd}</div>)}
    {query.isSuccess&&tab==='cards'&&list&&(queue.length?<>
     {groupBySession(queue,titleOf).map(group=><section key={group.key} className="v7-inbox-group" aria-label={group.label}>
      <h2 className="v7-eyebrow">{group.label} · {group.items.length}</h2>
@@ -199,7 +219,7 @@ export default function InboxV7(){
      <Button disabled={!selected.size} onClick={()=>{act('reject',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Reject '+selected.size}</Button>
      <Button variant="primary" disabled={!selected.size} onClick={()=>{act('approve',queue.filter(p=>selected.has(p.id)));setSelected(new Set());}}>{'Approve '+selected.size}</Button>
     </div>
-   </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/><h2>Inbox zero</h2><p>Your tutor's next proposals will appear here.</p></div>)}
+   </>:<div className="v7-inbox-empty v7-inbox-zero"><LottieMoment name="inbox" animation="inbox-zero" className="v7-inbox-zero-art" feel={hadCards.current}/>{cardEnd}</div>)}
    {query.isSuccess&&tab==='plan'&&(plans.length?<ul className="v7-inbox-plans">{plans.map(p=><PlanCard key={p.id} proposal={p} project={bySlug.get(p.projectSlug)} onDecide={action=>act(action,[p])}/>)}</ul>
     :<div className="v7-inbox-empty v7-inbox-zero"><Illustration name="inbox" className="v7-inbox-zero-art"/><h2>No plan changes</h2><p>When your tutor proposes a plan or a change, it appears here.</p></div>)}
   </section>

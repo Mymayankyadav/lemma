@@ -17,7 +17,7 @@ const kinds:SourceKind[]=['book','notes','slides','problems','syllabus','exam','
 const limit=50*1024*1024;
 const formatSize=(bytes:number)=>bytes<=0?'0 KB':bytes>=1024*1024?(bytes/1024/1024).toFixed(1)+' MB':Math.max(1,Math.ceil(bytes/1024))+' KB';
 const storageLimit=1024*1024*1024;
-export function SourcesPanel(props:{projectId:string;sources:Source[]}){
+export function SourcesPanel(props:{projectId:string;sources:Source[];focusSourceId?:string|null}){
  return isFlagOn('v6Shell')?<V6Sources {...props} manage={<LegacySourcesPanel {...props}/>}/>:<LegacySourcesPanel {...props}/>;
 }
 function LegacySourcesPanel({projectId,sources}:{projectId:string;sources:Source[]}){
