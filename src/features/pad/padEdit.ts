@@ -8,6 +8,7 @@ export interface PadEdit {
 
 export const PAD_PREVIEW_LIMIT = 8192;
 export const PAD_SLOT = '\\padslot';
+export interface PadSymbol {readonly label: string; readonly glyph: string; readonly tex: string;}
 
 export function padEdit(text: string, start = text.length, end = start, direction: PadEdit['direction'] = 'none'): PadEdit {
   const bound = (offset: number) => Number.isFinite(offset) ? Math.min(text.length, Math.max(0, Math.trunc(offset))) : text.length;
@@ -62,6 +63,13 @@ export const PAD_SYMBOLS = [
 const TEMPLATE_BODY = {
   Fraction: [String.raw`\frac{`, '}{', '}'],
   'Square root': [String.raw`\sqrt{`, '}'],
+  Exponent: ['{', '}^{', '}'],
+  Subscript: ['{', '}_{', '}'],
+  Parentheses: [String.raw`\left(`, String.raw`\right)`],
+  Brackets: [String.raw`\left[`, String.raw`\right]`],
+  'Absolute value': [String.raw`\left|`, String.raw`\right|`],
+  'Definite integral': [String.raw`\int_{`, '}^{', '}{', String.raw`}\,d{`, '}'],
+  Summation: [String.raw`\sum_{`, '}^{', '}', ''],
   '2 × 2 matrix': [String.raw`\begin{pmatrix}`, '&', String.raw`\\`, '&', String.raw`\end{pmatrix}`],
 } as const;
 export type PadTemplate = keyof typeof TEMPLATE_BODY;
@@ -75,8 +83,66 @@ function replace(edit: PadEdit, text: string, selectFrom = text.length, selectTo
   return padEdit(edit.text.slice(0, edit.start) + text + edit.text.slice(edit.end), edit.start + selectFrom, edit.start + selectTo);
 }
 
-export function insertPadSymbol(edit: PadEdit, symbol: (typeof PAD_SYMBOLS)[number]): PadEdit {
-  return replace(edit, inMath(edit) ? symbol.tex + ' ' : symbol.glyph);
+export function insertPadSymbol(edit: PadEdit, symbol: PadSymbol): PadEdit {
+  return replace(edit, inMath(edit) ? symbol.tex + (/^\\[a-z]+$/i.test(symbol.tex) ? ' ' : '') : symbol.glyph);
+}
+
+export function insertPadText(edit: PadEdit, text: string): PadEdit {return replace(edit, text);}
+
+function characterBoundaries(text: string): number[] {
+  // Native selections use UTF-16 offsets, but a key must not split an emoji,
+  // combining mark or other grapheme. Segmenter is available in the app's browsers.
+  const boundaries = [0];
+  for (const part of new Intl.Segmenter(undefined, {granularity: 'grapheme'}).segment(text)) {
+    boundaries.push(part.index + part.segment.length);
+  }
+  return boundaries;
+}
+
+export function deletePadBackward(edit: PadEdit): PadEdit {
+  const boundaries = characterBoundaries(edit.text);
+  // Restored UTF-16 carets and selections can fall inside a grapheme. Expand
+  // both edges so Backspace never leaves a surrogate or combining mark behind.
+  const start = boundaries.filter(offset => edit.start === edit.end ? offset < edit.start : offset <= edit.start).at(-1) ?? 0;
+  const end = boundaries.find(offset => offset >= edit.end) ?? edit.text.length;
+  return replace(padEdit(edit.text, start, end), '');
+}
+
+export function movePadCaret(edit: PadEdit, action: 'left' | 'right' | 'home' | 'end'): PadEdit {
+  const focus = edit.direction === 'backward' ? edit.start : edit.end;
+  const boundaries = characterBoundaries(edit.text);
+  const selected = edit.start !== edit.end;
+  let next: number;
+  if (action === 'left') next = boundaries.filter(offset => selected ? offset <= edit.start : offset < focus).at(-1) ?? 0;
+  else if (action === 'right') next = boundaries.find(offset => selected ? offset >= edit.end : offset > focus) ?? edit.text.length;
+  else if (action === 'home') next = focus === 0 ? 0 : edit.text.lastIndexOf('\n', focus - 1) + 1;
+  else {const end = edit.text.indexOf('\n', focus); next = end < 0 ? edit.text.length : end;}
+  return padEdit(edit.text, next);
+}
+
+export interface PadTextHistory {past: readonly PadEdit[]; present: PadEdit; future: readonly PadEdit[];}
+export const createPadTextHistory = (present: PadEdit): PadTextHistory => ({past: [], present, future: []});
+function boundedHistory(edits: readonly PadEdit[]): PadEdit[] {
+  const result: PadEdit[] = []; let size = 0;
+  for (const edit of edits.slice(-50).reverse()) {
+    if (result.length && size + edit.text.length > 262144) break;
+    result.unshift(edit); size += edit.text.length;
+  }
+  return result;
+}
+/** Selection changes do not consume undo or discard redo; only local text edits do. */
+export function changePadText(history: PadTextHistory, present: PadEdit): PadTextHistory {
+  return history.present.text === present.text ? {...history, present}
+    : {past: boundedHistory([...history.past, history.present]), present, future: []};
+}
+export function undoPadText(history: PadTextHistory): PadTextHistory {
+  const previous = history.past.at(-1);
+  return previous ? {past: history.past.slice(0, -1), present: previous,
+    future: boundedHistory([...history.future].reverse().concat(history.present)).reverse()} : history;
+}
+export function redoPadText(history: PadTextHistory): PadTextHistory {
+  const next = history.future[0];
+  return next ? {past: boundedHistory([...history.past, history.present]), present: next, future: history.future.slice(1)} : history;
 }
 
 export function insertPadTemplate(edit: PadEdit, template: PadTemplate): PadEdit {
@@ -85,9 +151,10 @@ export function insertPadTemplate(edit: PadEdit, template: PadTemplate): PadEdit
   const alreadyMath = inMath(edit);
   const open = alreadyMath ? '' : display ? '\\[' : '\\(';
   const close = alreadyMath ? '' : display ? '\\]' : '\\)';
+  const selectedPart = template === 'Definite integral' || template === 'Summation' ? 3 : 1;
   let text = open + parts[0], first = -1;
   for (let i = 1; i < parts.length; i++) {
-    if (i === 1 && selection) text += selection;
+    if (i === selectedPart && selection) text += selection;
     else {
       if (first < 0) first = text.length;
       text += PAD_SLOT;

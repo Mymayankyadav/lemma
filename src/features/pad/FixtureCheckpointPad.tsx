@@ -34,5 +34,6 @@ export default function FixtureCheckpointPad({checkpointId, profile, onSendSelec
   }, [profile, checkpointId]);
 
   if (!session) return <p role="status">{failed ? 'Could not open the demo Pad.' : 'Opening local demo Pad…'}</p>;
-  return <LocalPadDraftPanel session={session} onSendSelection={onSendSelection}/>;
+  return <LocalPadDraftPanel session={session} onSendSelection={onSendSelection}
+    keyboardPreferenceKey={'lemma.pad-keyboard.fixture:' + profile + ':' + checkpointId}/>;
 }

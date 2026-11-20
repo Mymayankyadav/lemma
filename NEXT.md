@@ -17,17 +17,6 @@ Scope: supabase/migrations/** (new authorized migration only); tests/mcp/sql/**;
 Not: New learning policy or UI; Co-mingling unrelated feature migrations; Changing protected CI permissions to hide failures.
 Agent packet: [N197.md](docs/implementation/2026-11-20/tasks/N197.md). 
 
-## N193 Finish durable checkpoint tutoring, MCP grants and recovery
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-84293#kzbq
-Existing PR: #1537 (https://github.com/Mymayankyadav/lemma/pull/1537)
-Done = Complete existing PR #1537 so each checkpoint has an owner-bound conversation, one accepted answer per sealed turn, explicit context and source citations, retained losing/manual replies, recoverable ambiguous acknowledgements, narrow per-turn MCP authorization and owner-reviewed change proposals. Expose the canonical receiving contract for Pad excerpts.
-Tests: `node tests/mcp/sql/n193-tutor.mjs`; `tests/mcp/n193-tutor-profile.test.ts`; `tests/e2e/v7-tutor-{live,route-status,local-excerpt,demo-manual}.spec.ts`; `tests/unit/tutor/{live-manual,local-excerpt,turn-model}.test.ts`; `combined export/deletion and real-permission check after N197`.
-Scope: src/features/tutor/DemoCheckpointTutor.tsx; src/data/tutor/{manual-api,live-manual,turn-model,local-excerpt}.ts; supabase/functions/mcp/tutor-profile.ts; supabase/migrations/20261120045827_n193_tutor_threads.sql; docs/current/N193.md.
-Not: Automatic inference using an unverified provider; Implicit Pad submission; Broad connected-host access or new secret exposure.
-Agent packet: [N193.md](docs/implementation/2026-11-20/tasks/N193.md). 
-
 ## N195 Complete live first study, scoped review, UI and accessibility repairs
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
@@ -49,17 +38,6 @@ Tests: `npx tsc -b; node scripts/ci/lint.mjs`; `node tests/mcp/sql/n196-agenda.m
 Scope: src/data/adaptive/{agenda-api,demo-agenda}.ts; src/features/settings/v7/SettingsLists.tsx; supabase/functions/_shared/agenda/**; supabase/functions/_shared/practice/{router,questions}.ts; supabase/functions/mcp/{agenda,agenda-http}.ts; supabase/migrations/2026121800160*_n196_*.sql; docs/current/N196.md.
 Not: Quietly defaulting all users to Legacy; Unobservable fallback or a hidden opt-in; Unqualified randomized practice exposure; Changing protected test thresholds or bypassing Owner approval.
 Agent packet: [N196.md](docs/implementation/2026-11-20/tasks/N196.md). 
-
-## N192 Ship dedicated Lemma Pad page, custom math keyboard and offline editor
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N193 · Assigned: chat-84293#kzbq
-Existing PR: #1535 (https://github.com/Mymayankyadav/lemma/pull/1535)
-Done = Extend existing PR #1535 into a shipped, discoverable full-page Lemma Pad—not merely an embedded checkpoint panel or hidden offline shortcut. Add a first-class route, in-app entry and deep-link recovery; ship a usable custom mathematics keyboard while retaining native keyboard/IME and caret support. Preserve current revisioned offline text, KaTeX preview, ink, backup/export, owner isolation and explicit tutor selection.
-Tests: `tests/e2e/pad-{local,live-offline}.spec.ts plus dedicated route/math-keyboard flows`; `tests/unit/pad/{local-pad-editor,pad-draft,pad-edit,pad-ink,pad-checkpoint,pad-import}.test.ts[x]`; `Android export unit tests and POCO M8 Power Android 16 physical acceptance`; `offline PWA cold start, keyboard IME, TalkBack and landscape reachability`.
-Scope: src/features/pad/{OfflinePadPage,LocalPadWorkspace,LocalPadEditor,LocalPadInk,CheckpointPad,LocalPadDraftPanel}.tsx; new PadMathKeyboard component and CSS in src/features/pad; src/app/routes.tsx; src/app/v7/V7Shell.tsx; src/features/pad/padDraftStore.ts; src/data/tutor/local-excerpt.ts; docs/current/N192.md.
-Not: Only offering Pad as a checkpoint subsection; Removing native keyboard or keyboard accessibility; A cloud-sync rewrite or insecure offline authorization; Unrequested automatic tutor submission.
-Agent packet: [N192.md](docs/implementation/2026-11-20/tasks/N192.md). 
 
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
@@ -93,12 +71,3 @@ Tests: `representative formula and handwriting corpus`; `slow/offline device can
 Scope: src/features/pad/**; tests/unit/pad/**; tests/e2e/pad-local.spec.ts; docs/current/N200.md.
 Not: Replacing the custom math keyboard; Shipping an unlicensed model; Requiring the optional OCR for N198.
 Agent packet: [N200.md](docs/implementation/2026-11-20/tasks/N200.md). Do not auto-select: Needs verified model rights, assets, device and representative corpus; remains blocked and optional.
-
-## N192 Build the offline Local Pad (Owner task)
-
-Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
-Stage: Build · Status: done · Needs: — · Assigned: chat-84293#kzbq
-Done = owner/checkpoint-scoped text and completed strokes resume offline, with bounded preview, recoverable drafts, export, and deliberate selected context handoff; prove local editing sends no tutor requests. The staged editor may proceed before P1/P3 storage and P6 sending integration.
-Tests: Local Pad editor and rendering, owner/checkpoint isolation and recovery, offline reopen and export, mobile rotation and IME, and exact reviewed selection handoff.
-Scope: P8 Local Pad and its tests, optionally a default-off entry after integration, docs/current/N192.md.
-Not: changing the ephemeral Review ScratchPad, OCR, provider auth, MCP or schema work, or enabling a production entry by default.

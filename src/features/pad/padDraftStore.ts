@@ -1,8 +1,9 @@
 import {padEdit, type PadEdit} from './padEdit';
 import {initializePadInk, type PadStrokes} from './padInk';
 import {padBackup} from './padExport';
+import {PAD_NOTE_MAX} from './padLimits';
 
-export const PAD_NOTE_MAX = 65_536;
+export {PAD_NOTE_MAX} from './padLimits';
 export const PAD_DB_PREFIX = 'lemma-pad-drafts:';
 export const PAD_FIXTURE_DB_PREFIX = 'lemma-pad-fixture:';
 const UUID = /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;

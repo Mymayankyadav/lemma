@@ -22,7 +22,7 @@ export default function LiveCheckpointPad({scope, checkpoint, onSendSelection, d
   useEffect(() => {
     const authorized = {ownerId, checkpointId, generation};
     const bound = bindPadDraft(() => deviceAccess
-      ? (deviceAccess() && authGeneration() === generation ? authorized : null) : currentPadScope(authorized));
+      ? (deviceAccess() ? authorized : null) : currentPadScope(authorized));
     if (!bound) return;
     const draft = createPadDraftSession(bound);
     if (slug && code) setCanReopen(rememberPad(authorized, {slug, code}));
@@ -30,10 +30,11 @@ export default function LiveCheckpointPad({scope, checkpoint, onSendSelection, d
     return () => draft.close();
   }, [ownerId, checkpointId, generation, slug, code, deviceAccess]);
 
-  if (epoch !== generation || !(deviceAccess ? deviceAccess() : currentPadScope(scope))) return <p role="status">This Pad is no longer available.</p>;
+  if (deviceAccess ? !deviceAccess() : epoch !== generation || !currentPadScope(scope)) return <p role="status">This Pad is no longer available.</p>;
   if (!session) return <p role="status">Opening local Pad…</p>;
   return <>
-    <LocalPadDraftPanel session={session} onSendSelection={onSendSelection}/>
+    <LocalPadDraftPanel session={session} onSendSelection={onSendSelection}
+      keyboardPreferenceKey={'lemma.device-pad.v1:' + ownerId + ':keyboard:' + checkpointId}/>
     {checkpoint && (canReopen
       ? <Link to={'/pad/' + checkpointId}>Open this Pad on its own</Link>
       : <p role="status">This browser could not store the offline shortcut. Export a copy before leaving.</p>)}

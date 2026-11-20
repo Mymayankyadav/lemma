@@ -4,6 +4,7 @@ import {useNavigate} from 'react-router';
 import {getMode} from '../../../data/mode';
 import {authGeneration,authOwner} from '../../../data/authBoundary';
 import {liveClient} from '../../../data/live/client';
+import {removeDeletedOwnerTutorData} from '../../../data/tutor/local-storage';
 import {useToast} from '../../../ui/Toast';
 export const DELETE_CONFIRMATION='DELETE MY ACCOUNT';
 export function canDeleteAccount(confirm:string,exported:boolean,busy:boolean,mode:string){
@@ -28,13 +29,16 @@ export function useAccountDeletion(){
    if(response.error||response.data?.deleted!==true)
     throw Error('Could not verify complete account deletion. Your account may still exist.');
    if(authGeneration()!==generation||authOwner()!==ownerId){
-    notify('Account deleted. Local Pad data may remain on this device because the active account changed.');
+    notify('Account deleted. Local Pad and tutor data may remain on this device because the active account changed.');
     return;
    }
-   const removed=!ownerId||await import('../../pad/padCheckpoint').then(pad=>pad.removeDeletedOwnerPads(ownerId,generation)).catch(()=>false);
+   // Fence tutor callbacks synchronously before the asynchronous Pad cleanup/sign-out.
+   const tutorRemoved=!ownerId||removeDeletedOwnerTutorData(ownerId,generation);
+   const padsRemoved=!ownerId||await import('../../pad/padCheckpoint').then(pad=>pad.removeDeletedOwnerPads(ownerId,generation)).catch(()=>false);
+   const removed=tutorRemoved&&padsRemoved;
    if(authGeneration()!==generation||authOwner()!==ownerId)return;
    await owner.auth.signOut();
-   notify(removed?'Account deleted':'Account deleted. Clear this site’s storage to remove remaining local Pad data.',{tone:removed?'success':'normal'});
+   notify(removed?'Account deleted':'Account deleted. Clear this site’s storage to remove remaining local Pad and tutor data.',{tone:removed?'success':'normal'});
    navigate('/sign-in',{replace:true});
   }catch(e){
    setError(e instanceof Error?e.message:'Account deletion could not be verified');

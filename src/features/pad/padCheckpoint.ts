@@ -94,6 +94,26 @@ export function findEligibleDevicePad(checkpointId?: string) {
   return pad && {...pad, sessionId: session.sessionId};
 }
 
+/** Enumerate only bookmarks authorized for this device's current owner, session and build.
+ * Labels stay local; unrelated account records are never returned. */
+export function listEligibleDevicePads(): Array<RememberedPad & {sessionId: string}> {
+  const session = eligibleDeviceSession();
+  if (!session) return [];
+  try {
+    const prefix = key(session.ownerId, '');
+    const pads: Array<RememberedPad & {sessionId: string}> = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const entry = localStorage.key(i);
+      if (!entry?.startsWith(prefix)) continue;
+      const checkpointId = entry.slice(prefix.length);
+      if (!isPadUuid(checkpointId)) continue;
+      const pad = readOwnerBookmark(session.ownerId, checkpointId);
+      if (pad) pads.push({...pad, sessionId: session.sessionId});
+    }
+    return pads.sort((a, b) => a.slug.localeCompare(b.slug) || a.code.localeCompare(b.code));
+  } catch {return [];}
+}
+
 function readOwnerBookmark(activeOwner: string, checkpointId?: string): RememberedPad | null {
   try {
     const id = checkpointId ?? localStorage.getItem(key(activeOwner, 'last'));

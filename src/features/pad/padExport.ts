@@ -1,5 +1,6 @@
 import {initializePadInk, PAD_PAPER, padStrokePath, type PadStrokes} from './padInk';
 import {padEdit, type PadEdit} from './padEdit';
+import {PAD_BACKUP_MAX_BYTES, PAD_NOTE_MAX} from './padLimits';
 
 interface PadFile {filename: string; type: string; contents: string}
 type Format = 'backup' | 'readable';
@@ -14,8 +15,13 @@ export function makePadFile(edit: PadEdit, strokes: PadStrokes, format: Format):
   if (!ink) throw new Error('Invalid Pad ink');
   const notes = padEdit(edit.text, edit.start, edit.end, edit.direction);
   if (format === 'backup') {
+    if (notes.text.length > PAD_NOTE_MAX) throw new Error('These notes exceed the portable backup limit. Export a readable Pad instead.');
     const envelope = padBackup(notes, ink.strokes);
-    return {filename: 'lemma-pad.json', type: 'application/json', contents: JSON.stringify(envelope)};
+    const contents = JSON.stringify(envelope);
+    if (new TextEncoder().encode(contents).byteLength > PAD_BACKUP_MAX_BYTES) {
+      throw new Error('This Pad exceeds the portable backup limit. Export a readable Pad instead.');
+    }
+    return {filename: 'lemma-pad.json', type: 'application/json', contents};
   }
   const escapeText = (text: string) => text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
   const paths = ink.strokes.map(stroke => '<path d="' + padStrokePath(stroke) + '"/>').join('');

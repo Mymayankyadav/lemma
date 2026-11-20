@@ -1,7 +1,8 @@
 import {PAD_PAPER} from './padInk';
 import {parsePadDraft, type PadDraft} from './padDraftStore';
+import {PAD_BACKUP_MAX_BYTES} from './padLimits';
 
-export const PAD_BACKUP_MAX_BYTES = 1_000_000;
+export {PAD_BACKUP_MAX_BYTES} from './padLimits';
 
 function hasKeys(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value)

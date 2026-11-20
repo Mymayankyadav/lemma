@@ -3,6 +3,7 @@ import {isNative} from '../../platform/native';
 import {LocalPadEditor} from './LocalPadEditor';
 import {LocalPadInk} from './LocalPadInk';
 import {makePadFile, startPadDownload} from './padExport';
+import {PAD_NOTE_MAX} from './padLimits';
 import type {PadEdit} from './padEdit';
 import type {PadInkHistory} from './padInk';
 
@@ -11,11 +12,12 @@ interface Props {
   onEdit: (value: PadEdit) => void;
   onSendSelection?: (text: string) => void;
   canExport?: () => boolean;
+  keyboardPreferenceKey?: string;
   ink: PadInkHistory;
   onInk: (history: PadInkHistory) => void;
 }
 
-export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection, canExport}: Props) {
+export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection, canExport, keyboardPreferenceKey}: Props) {
   const [result, setResult] = useState('');
   const [exporting, setExporting] = useState(false);
   async function exportFile(format: 'backup' | 'readable') {
@@ -33,11 +35,13 @@ export function LocalPadWorkspace({value, onEdit, ink, onInk, onSendSelection, c
         setResult('Pad export started.');
       }
     } catch {
-      setResult('Could not start the export. Your Pad is unchanged.');
+      setResult(format === 'backup' && value.text.length > PAD_NOTE_MAX
+        ? 'These notes exceed the portable backup limit. Export a readable Pad to keep all your text.'
+        : 'Could not start the export. Your Pad is unchanged.');
     } finally {setExporting(false);}
   }
   return <section className="local-pad" aria-label="Local Pad workspace">
-    <LocalPadEditor value={value} onEdit={onEdit} onSendSelection={onSendSelection}/>
+    <LocalPadEditor value={value} onEdit={onEdit} onSendSelection={onSendSelection} keyboardPreferenceKey={keyboardPreferenceKey}/>
     <LocalPadInk history={ink} onInk={onInk}/>
     <div className="local-pad-controls" role="group" aria-label="Pad export">
       <button type="button" disabled={exporting} onClick={() => void exportFile('readable')}>Export readable Pad</button>

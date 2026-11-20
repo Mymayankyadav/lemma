@@ -1,6 +1,8 @@
 package io.github.mymayankyadav.lemma;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 /**
@@ -15,15 +17,28 @@ final class Exports {
 
     private Exports() {}
 
-    /** A previously granted URI must stop resolving before a new export can reuse that file name. */
+    /** Each share has a fresh URI, even if a platform grant could not be revoked. */
+    static File newFile(File directory, String name) throws IOException {
+        if (!directory.isDirectory() && !directory.mkdirs()) throw new IOException("No export folder");
+        File share = new File(directory, UUID.randomUUID().toString());
+        // Never reuse an existing directory, even in the event of a UUID collision.
+        if (!share.mkdir()) throw new IOException("Could not create a fresh export folder");
+        return new File(share, safeName(name));
+    }
+
+    /** Revoke each grant and independently remove its bytes, including legacy flat exports. */
     static boolean clearCache(File directory, Consumer<File> revoke) {
         if (!directory.exists()) return true;
         File[] files = directory.listFiles();
         if (files == null) return false;
         boolean cleared = true;
         for (File file : files) {
+            if (file.isDirectory()) {
+                if (!clearCache(file, revoke)) cleared = false;
+            } else {
+                try {revoke.accept(file);} catch (RuntimeException error) {cleared = false;}
+            }
             try {
-                revoke.accept(file);
                 if (!file.delete() && file.exists()) cleared = false;
             } catch (RuntimeException error) {
                 cleared = false;

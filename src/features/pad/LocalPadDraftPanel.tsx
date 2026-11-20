@@ -1,5 +1,6 @@
 import {useEffect, useId, useRef, useState, type ChangeEvent} from 'react';
 import {LocalPadWorkspace} from './LocalPadWorkspace';
+import {PadNavigationGuard} from './PadNavigationGuard';
 import {PAD_PAPER, initializePadInk, padStrokePath} from './padInk';
 import {PAD_BACKUP_MAX_BYTES, readPadBackup} from './padImport';
 import type {PadDraft} from './padDraftStore';
@@ -18,8 +19,9 @@ const status: Record<PadDraftState['status'], string> = {
   'scope-changed': 'This Pad is no longer available.',
 };
 
-export function LocalPadDraftPanel({session, onSendSelection}: {
+export function LocalPadDraftPanel({session, onSendSelection, keyboardPreferenceKey}: {
   session: ReturnType<typeof createPadDraftSession>; onSendSelection?: (text: string) => void;
+  keyboardPreferenceKey?: string;
 }) {
   const [, redraw] = useState(0);
   const state = session.snapshot();
@@ -64,9 +66,12 @@ export function LocalPadDraftPanel({session, onSendSelection}: {
 
   if (state.status === 'loading' || state.status === 'scope-changed') return <p role="status">{status[state.status]}</p>;
   const canSave = ['unsaved', 'recovered', 'save-failed'].includes(state.status);
+  const dirty = ['unsaved', 'recovered', 'save-failed', 'saving', 'conflict'].includes(state.status)
+    || (state.status === 'load-failed' && (state.draft.edit.text.length > 0 || state.draft.strokes.length > 0));
   return <div className="local-pad">
+    <PadNavigationGuard session={session} dirty={dirty} onSaved={refresh}/>
     <p role="status">{status[state.status]}</p>
-    <LocalPadWorkspace key={workspaceVersion} value={state.draft.edit} ink={ink}
+    <LocalPadWorkspace key={workspaceVersion} value={state.draft.edit} ink={ink} keyboardPreferenceKey={keyboardPreferenceKey}
       canExport={() => session.snapshot().status !== 'scope-changed'}
       onSendSelection={onSendSelection && (text => {
         if (session.snapshot().status !== 'scope-changed') onSendSelection(text);
