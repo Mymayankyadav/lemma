@@ -1,5 +1,5 @@
 import {readFile} from 'node:fs/promises';
-import {expect,test} from '@playwright/test';
+import {expect,test,type Page} from '@playwright/test';
 
 const checkpoint = (code: string, enabled = true) =>
   './?demo=1&flags=v7Shell' + (enabled ? ',padLocal' : '') + '#/p/real-analysis/cp/' + code;
@@ -7,6 +7,47 @@ const backup = {
   format:'lemma-pad', version:1, notes:{text:'Imported compactness proof',start:0,end:0,direction:'none'},
   ink:{width:640,height:400,strokes:[[{x:12,y:14}]]},
 };
+
+/** Keep failure evidence in the JUnit error when the runner cannot publish a trace. */
+async function withPadSaveDiagnostics<T>(page: Page, action: () => Promise<T>): Promise<T> {
+  const observer = await page.evaluateHandle(() => {
+    const inputs: {type:string; target:string; x:number; y:number}[] = [];
+    const record = (event: Event) => {
+      const target = event.target instanceof Element ? event.target : null;
+      const pointer = event as MouseEvent;
+      inputs.push({type:event.type, target:target?.getAttribute('aria-label')
+        || target?.textContent?.trim().slice(0,80) || target?.tagName || '', x:pointer.clientX, y:pointer.clientY});
+      if (inputs.length > 16) inputs.shift();
+    };
+    const types = ['pointerdown','pointerup','click','lostpointercapture'];
+    types.forEach(type => document.addEventListener(type,record,true));
+    return {inputs, stop:() => types.forEach(type => document.removeEventListener(type,record,true))};
+  });
+  try {return await action();}
+  catch (error) {
+    const observed = await page.evaluate(log => {
+      const notes = document.querySelector<HTMLTextAreaElement>('textarea.local-pad-paper');
+      const save = Array.from(document.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Save draft');
+      const bounds = save?.getBoundingClientRect();
+      const hit = bounds && document.elementFromPoint(bounds.x + bounds.width / 2,bounds.y + bounds.height / 2);
+      return {
+        url:location.href, inputs:log.inputs,
+        statuses:Array.from(document.querySelectorAll('[role="status"]'),node => node.textContent),
+        notes:notes && {text:notes.value,start:notes.selectionStart,end:notes.selectionEnd,
+          direction:notes.selectionDirection,inputMode:notes.inputMode},
+        save:save && {disabled:save.disabled,bounds:bounds?.toJSON(),hit:hit?.textContent?.trim().slice(0,100)},
+        focus:document.activeElement?.getAttribute('aria-label') || document.activeElement?.tagName,
+        strokes:Array.from(document.querySelectorAll('svg.local-pad-ink path'),node => ({d:node.getAttribute('d'),opacity:node.getAttribute('opacity')})),
+        viewport:{width:innerWidth,height:innerHeight,visual:visualViewport?.height},
+        dialogs:Array.from(document.querySelectorAll('[role="dialog"]'),node => node.textContent?.slice(0,500)),
+      };
+    },observer).catch(() => 'The page could not be inspected after the failure.');
+    throw new Error('Pad save failed: ' + JSON.stringify(observed),{cause:error});
+  } finally {
+    await observer.evaluate(log => log.stop()).catch(() => undefined);
+    await observer.dispose();
+  }
+}
 
 test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local revisions', async ({page}) => {
   // Keep this fixture browser completely away from any live or external service.
@@ -70,18 +111,21 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   await expect(preview.locator('math mfrac')).toHaveCount(1);
   await expect(preview).toContainText('<proof>');
 
-  await paper.scrollIntoViewIfNeeded();
-  const box = await paper.boundingBox();
-  if (!box) throw new Error('Pad drawing has no bounds');
-  await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
-  await page.mouse.down();
-  await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, {steps:4});
-  await page.mouse.up();
-  await expect(strokes).toHaveCount(1);
-  const path = await strokes.first().getAttribute('d');
-  expect(path).toBeTruthy();
-  await page.getByRole('button',{name:'Save draft'}).click();
-  await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
+  const path = await withPadSaveDiagnostics(page,async () => {
+    await paper.scrollIntoViewIfNeeded();
+    const box = await paper.boundingBox();
+    if (!box) throw new Error('Pad drawing has no bounds');
+    await page.mouse.move(box.x + box.width * 0.25, box.y + box.height * 0.25);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5, {steps:4});
+    await page.mouse.up();
+    await expect(strokes).toHaveCount(1);
+    const path = await strokes.first().getAttribute('d');
+    expect(path).toBeTruthy();
+    await page.getByRole('button',{name:'Save draft'}).click();
+    await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
+    return path;
+  });
 
   await page.setViewportSize({width:844,height:390});
   await expect(strokes.first()).toHaveAttribute('d',path ?? '');

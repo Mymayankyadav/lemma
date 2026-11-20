@@ -1,11 +1,15 @@
 import {act, useState} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
+import {createMemoryRouter, RouterProvider} from 'react-router';
 import {afterEach, beforeEach, expect, test, vi} from 'vitest';
 import {LocalPadEditor} from '../../../src/features/pad/LocalPadEditor';
 import {LocalPadPreview} from '../../../src/features/pad/LocalPadPreview';
+import {LocalPadDraftPanel} from '../../../src/features/pad/LocalPadDraftPanel';
+import {bindPadDraft} from '../../../src/features/pad/padDraftStore';
+import {createPadDraftSession} from '../../../src/features/pad/padDraftSession';
 import {PAD_PREVIEW_LIMIT, PAD_SLOT, padEdit, type PadEdit} from '../../../src/features/pad/padEdit';
 
-let host: HTMLDivElement, root: Root;
+let host: HTMLDivElement, root: Root, disposeRouter: (() => void) | undefined;
 beforeEach(() => {
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
   host = document.createElement('div');
@@ -14,6 +18,7 @@ beforeEach(() => {
 });
 afterEach(async () => {
   await act(async () => root.unmount());
+  disposeRouter?.(); disposeRouter = undefined;
   host.remove();
   vi.unstubAllGlobals();
 });
@@ -112,4 +117,45 @@ test('offers only the explicitly selected bounded text to the tutor, and freezes
   expect(host.textContent).toContain('Select up to 1200 characters.');
   expect(fetch).not.toHaveBeenCalled();
   expect(send.mock.calls).toEqual([[snippet]]);
+});
+
+test.each([false, true])('keeps a note and completed stroke saved through blur and delayed selection events (router: %s)', async routed => {
+  let raw: unknown, completeSave: () => void = () => {};
+  const binding = bindPadDraft(() => ({ownerId:'00000000-0000-4000-8000-000000000001',
+    checkpointId:'00000000-0000-4000-8000-000000000002', generation:1}), {
+    read: async () => raw,
+    update: async (_scope, guard, change) => {
+      await new Promise<void>(resolve => {completeSave = resolve;});
+      guard(); raw = change(raw);
+    },
+  })!;
+  const session = createPadDraftSession(binding);
+  await session.load();
+  const panel = <LocalPadDraftPanel session={session}/>;
+  const router = routed ? createMemoryRouter([{path:'/',element:panel}]) : undefined;
+  disposeRouter = router && (() => router.dispose());
+  await act(async () => root.render(router ? <RouterProvider router={router}/> : panel));
+  const notes = host.querySelector('textarea')!, svg = host.querySelector<SVGSVGElement>('[aria-label="Pad drawing"]')!;
+  const text = 'Compactness notes: $\\frac{1}{2}$ and <proof>';
+  await act(async () => {notes.focus(); input(notes, text);});
+  Object.assign(svg, {setPointerCapture: vi.fn(), getBoundingClientRect: () => ({left:0,top:0,width:640,height:400})});
+  await act(async () => {
+    notes.blur();
+    svg.dispatchEvent(new PointerEvent('pointerdown', {bubbles:true,button:0,pointerId:1,clientX:160,clientY:100}));
+    svg.dispatchEvent(new PointerEvent('pointermove', {bubbles:true,button:0,pointerId:1,clientX:320,clientY:200}));
+    svg.dispatchEvent(new PointerEvent('pointerup', {bubbles:true,button:0,pointerId:1,clientX:320,clientY:200}));
+  });
+  expect(svg.querySelectorAll('path')).toHaveLength(1);
+  await act(async () => {button('Save draft').focus(); button('Save draft').click();});
+  expect(session.snapshot().status).toBe('saving');
+  const lateSelection = () => {
+    notes.dispatchEvent(new Event('select', {bubbles:true}));
+    notes.dispatchEvent(new Event('selectionchange', {bubbles:true}));
+    document.dispatchEvent(new Event('selectionchange'));
+  };
+  await act(async () => {lateSelection(); completeSave();});
+  await act(async () => lateSelection());
+  expect(session.snapshot().status).toBe('saved');
+  expect(host.textContent).toContain('Saved on this device.');
+  expect((await binding.read()).current?.draft).toEqual({edit:padEdit(text), strokes:[[{x:160,y:100},{x:320,y:200}]]});
 });
