@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N194 Master plan P1: validate the first-path/card vertical preview
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Build · Status: done · Needs: — · Assigned: chat-84293#kzbq
+Done = In the isolated first-use demo, truly empty Review and Cards offer one first-card flow; retain entered content, prove one path/card on replay, then reopen and explicitly grade the exact saved card. Back up the flow with repeat-submit, reload, and rollback fixtures.
+Scope: preview-only demo profile, shared first-card panel, local authored-card and review fixture storage, targeted tests and docs/current/N194.md.
+Not: live writes, app-production enablement, SQL migrations, receipt permission changes, or a production grade-acknowledgement guarantee.
+
 ## N193 Durable tutor turns and manual handoff (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
@@ -17,6 +25,13 @@ Done = Notifications and Reminders find the same Settings section; Appearance an
 Tests: `tests/unit/v7/capture-search.test.ts`, `tests/e2e/v7-n190-search.spec.ts`.
 Scope: `src/app/v7/{SearchSheet.tsx,searchModel.ts,V7Shell.tsx}`, `src/features/settings/v7/SettingsV7.tsx`, tests, `docs/current/N190.md`.
 Not: Capture or Review persistence; resume and caught-up checks that depend on N189; new dependencies; server changes.
+
+## N189 Master plan P0/P1: capture integrity and exact-card review
+
+Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
+Stage: Harden · Status: open · Needs: — · Assigned: chat-71388050#6aam
+Done = Quick/full capture preserves task due kind, wall time, block kind and entered fields. Review now opens a durable singleton for the saved eligible card without affecting ordinary queue behavior; demonstrate readback, replay, owner isolation, reload and grade with isolated fixtures.
+Scope: capture and task/block forms, card detail and durable review-run clients, one compatible review_runs_command migration and targeted regression tests. No production access, deployment, auth changes or scheduler policy change.
 
 ## N188 MCP smoke fits the reused Edge worker lifetime (Owner task)
 

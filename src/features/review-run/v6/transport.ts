@@ -18,11 +18,12 @@ export type DurableRunStatus='running'|'paused'|'exhausted'|'completed'|'abandon
 export interface DurableRun{
  id:string;status:DurableRunStatus;position:number;version:number;
  startedAt:string;endedAt:string|null;progress:DurableRunProgress;
+ targetCardId?:string;
  items:ReadonlyArray<DurableRunItem&{id:string;cardId:string;expectedCardVersion:number}>;
 }
 export interface StartRunInput{
  selectedDeckIds:string[];
- filters:{sessionId?:string|null;conceptSlug?:string|null;
+ filters:{cardId?:string;sessionId?:string|null;conceptSlug?:string|null;
   includeNew?:boolean;newOnly?:boolean};
  cardBudget:number;minuteBudget:number;schedulerVersion:string;settingsVersion:number;
 }
@@ -75,13 +76,17 @@ export async function readDurableRun(id:string):Promise<DurableRun|null>{
   if(page.data.length<50)break;
   if(offset===2000)throw new Error('Review-run item bound exceeded');
  }
+ const target=(record.filters as Row|null)?.cardId;
+ if(target!==undefined&&(typeof target!=='string'||items.length!==1||items[0].cardId!==target))
+  throw Error('Exact-card run did not contain the requested card');
  const position=Number(record.position),status=mapStatus(record.status);
  const progress=summarizeDurableRun(items,position);
  if(status==='exhausted'&&!progress.done)
   throw new Error('Exhausted run has unadvanced items');
  return {id:key,status,position,version:version(Number(record.version)),
   startedAt:String(record.started_at),
-  endedAt:record.ended_at==null?null:String(record.ended_at),items,progress};
+  endedAt:record.ended_at==null?null:String(record.ended_at),items,progress,
+  ...(typeof target==='string'?{targetCardId:target}:{})};
 }
 export async function resumeDurableRun():Promise<DurableRun|null>{
  const c=await db();
@@ -135,6 +140,11 @@ export function startDurableRun(input:StartRunInput):Promise<DurableRun>{
   !input.schedulerVersion||!Number.isSafeInteger(input.settingsVersion)||
   input.settingsVersion<1)
   throw new Error('Invalid review-run selection');
+ if(input.filters.cardId!==undefined){
+  checkedId(input.filters.cardId);
+  if(input.selectedDeckIds.length||input.cardBudget!==1||input.minuteBudget!==1)
+   throw Error('Exact-card review requires a singleton selection');
+ }
  return command('start',{
   selected_deck_ids:input.selectedDeckIds,filters:input.filters,
   card_budget:input.cardBudget,minute_budget:input.minuteBudget,

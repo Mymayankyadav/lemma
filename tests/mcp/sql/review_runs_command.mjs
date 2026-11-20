@@ -38,6 +38,7 @@ try {
   const dir=new URL('../../../supabase/migrations/',import.meta.url);
   const files=(await readdir(dir)).filter(x=>x.endsWith('.sql')&&!x.includes('_storage')).sort();
   assert.ok(files.includes('20261111020000_review_runs_command.sql'));
+  assert.ok(files.includes('20261218001000_n189_exact_review_card.sql'));
   for(const file of files)await db.exec(await readFile(new URL(file,dir),'utf8'));
   await q('insert into auth.users(id) values($1),($2)',[owner,other]);
   // The isolated extensions.gen_random_bytes test stub returns zeros; assign
@@ -168,6 +169,67 @@ try {
     /Unsupported filter/);
   await assert.rejects(cmd('start',{...startPatch,selected_deck_ids:['project:rr-a','project:rr-a']}),
     /Invalid or duplicated deck IDs/);
+  // N189: a visible exact card can rank outside the returned general queue.
+  // Use one remaining daily slot: regular selection must choose the first
+  // card, while exact selection spends the same slot on the requested card.
+  const targetCard=eligible[3].id;
+  const outsideDay=await (async()=>{
+    await db.exec('reset role');
+    const seeded=await seed(owner,'rr-future');
+    await q("update public.cards set state=2,due=now()+interval '3 days' where id=$1",[seeded.id]);
+    return seeded.id;
+  })();
+  const settingsVersion=(await q(
+    'update public.settings set reviews_per_day=2,new_per_day=2 where user_id=$1 returning version',[owner]
+  ))[0].version;
+  const targetVersion=(await q('select version from public.cards where id=$1',[targetCard]))[0].version;
+  await as(owner);
+  const rankedPatch={...startPatch,settings_version:settingsVersion,card_budget:1,minute_budget:1};
+  const [ranked]=await cmd('start',rankedPatch);
+  const rankedCards=await q('select card_id from public.review_run_items where run_id=$1',[ranked.run.id]);
+  assert.deepEqual(rankedCards,[{card_id:eligible[0].id}],'unchanged general queue ranks first');
+  const exactPatch={...rankedPatch,selected_deck_ids:[],filters:{cardId:targetCard}};
+  const [exact,exactEnvelope]=await cmd('start',exactPatch);
+  checkEqual(exact.itemCount,1,'exact start snapshots a singleton');
+  checkEqual(exact.run.filters.cardId,targetCard);
+  const exactItems=await q('select id,card_id,expected_card_version from public.review_run_items where run_id=$1',[exact.run.id]);
+  checkEqual(exactItems.length,1);
+  checkEqual(exactItems[0].card_id,targetCard);
+  checkEqual(exactItems[0].expected_card_version,targetVersion);
+  const persistedBeforeFailures=(await q('select count(*)::int n from public.review_runs'))[0].n;
+  for(const cardId of [foreign.id,outsideDay,uid()]){
+    await assert.rejects(cmd('start',{...exactPatch,filters:{cardId}}),/Requested review card is unavailable/);
+  }
+  await assert.rejects(cmd('start',{...exactPatch,filters:{cardId:null}}),/Invalid review card ID/);
+  await assert.rejects(cmd('start',{...exactPatch,selected_deck_ids:['project:rr-a']}),/Exact-card start requires/);
+  await assert.rejects(cmd('start',{...exactPatch,card_budget:0}),/Exact-card start requires/);
+  checkEqual((await q('select count(*)::int n from public.review_runs'))[0].n,persistedBeforeFailures,
+    'rejected exact starts do not create even an empty run');
+  const [exactPaused]=await cmd('pause',{}, {id:exact.run.id},exact.run.version);
+  const [exactResumed]=await cmd('resume',{}, {id:exact.run.id},exactPaused.run.version);
+  const readback=await q('select card_id from public.review_run_items where run_id=$1 and position=$2',
+    [exact.run.id,exactResumed.run.position]);
+  assert.deepEqual(readback,[{card_id:targetCard}],'new read after resume still shows the target');
+  await db.exec('reset role');
+  const exactReview=(await q(
+    "insert into public.reviews(user_id,card_id,rating,state_before,duration_ms,prev) values($1,$2,3,0,1000,'{}'::jsonb) returning id",
+    [owner,targetCard]))[0].id;
+  await q('update public.cards set reps=reps+1 where id=$1',[targetCard]);
+  await as(owner);
+  const [exactAdvanced]=await cmd('advance',
+    {kind:'graded',item_id:exactItems[0].id,review_id:String(exactReview)},{id:exact.run.id},exactResumed.run.version);
+  checkEqual(exactAdvanced.run.status,'exhausted');
+  checkEqual(exactAdvanced.item.card_id,targetCard);
+  checkEqual(String(exactAdvanced.item.review_id),String(exactReview));
+  const retryExact=(await q('select public.review_runs_command($1::jsonb) receipt',
+    [JSON.stringify(exactEnvelope)]))[0].receipt;
+  assert.deepEqual(retryExact,exact,'exact start retry preserves its original receipt after quota fills');
+  await assert.rejects(cmd('start',exactPatch),/Requested review card is unavailable/);
+  checkEqual((await q('select count(*)::int n from public.review_runs'))[0].n,persistedBeforeFailures,
+    'retry and quota rejection create no extra runs');
+  await as(other);
+  assert.deepEqual(await q('select id from public.review_runs where id=$1',[exact.run.id]),[]);
+  await as(owner);
   // No direct authenticated DML even after the command is installed.
   try {
     assert.deepEqual(await q('update public.review_runs set position=99 where id=$1 returning id',[id]),[]);

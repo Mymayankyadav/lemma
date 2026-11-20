@@ -15,6 +15,7 @@ import type {
 } from '../../../data/study/contract';
 import {useToast} from '../../../ui/Toast';
 import {dayKey} from '../model';
+import type {CalendarBlockDraft} from './blockDraft';
 
 const field='min-h-11 w-full min-w-0 rounded-ctl border border-edge bg-fill-1 px-3 py-2 text-body text-ink';
 const action='min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink';
@@ -49,12 +50,15 @@ export function instantInZone(input:string,zone:string):string|null {
 }
 export function blockFormInput(values:{
  title:string;kind:CalendarBlockKind;start:string;end:string;zone:string;
+ original?:Pick<CalendarBlockDraft,'startsAt'|'endsAt'>;
 }):NewCalendarBlock {
  const title=values.title.trim();
  if(!title||title.length>200)throw new Error('Enter a title of at most 200 characters.');
  if(!['study','busy'].includes(values.kind))throw new Error('Choose a block type.');
- const startsAt=instantInZone(values.start,values.zone);
- const endsAt=instantInZone(values.end,values.zone);
+ const keep=(wall:string,original?:string)=>original&&zonedInput(original,values.zone)===wall
+  ?original:instantInZone(wall,values.zone);
+ const startsAt=keep(values.start,values.original?.startsAt);
+ const endsAt=keep(values.end,values.original?.endsAt);
  if(!startsAt||!endsAt||Date.parse(endsAt)<=Date.parse(startsAt))
   throw new Error('Enter a valid start before the end in your time zone.');
  return {title,kind:values.kind,startsAt,endsAt,timeZone:values.zone};
@@ -100,33 +104,34 @@ export interface BlockSheetProps {
  /** v7 shell: the same form, drawn with the kit's sheet and controls. */
  v7?:boolean;
  /** Hand-over from quick-add: keep the typed title, the linked task and the chosen length. */
- initialTitle?:string;initialTaskId?:string;initialMinutes?:number;
+ initialTitle?:string;initialTaskId?:string;initialMinutes?:number;draft?:CalendarBlockDraft;
  block:CalendarBlockRecord|null;
  date:string;zone:string;initialStart?:string;onClose:()=>void;onRefresh:()=>void;
 }
 type Frame=(props:{title:string;eyebrow:string;onClose:()=>void;busy:boolean;footer:ReactNode;children:ReactNode})=>ReactElement;
 const V6Frame:Frame=props=><Dialog {...props}/>;
-export default function BlockSheet({block,date,zone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes}:BlockSheetProps) {
+export default function BlockSheet({block,date,zone:pageZone,initialStart,onClose,onRefresh,v7=false,initialTitle,initialTaskId,initialMinutes,draft}:BlockSheetProps) {
+ const zone=draft?.zone??pageZone;
  const Frame=V6Frame;
  const look={field,action,primary:action+' bg-amber text-amber-ink',danger:action+' lemma-destructive',label:'text-label',error:'text-label text-again',note:'text-label text-ink-2',
   seg:'ui-segmented flex min-h-12 gap-1 rounded-ctl bg-well p-1',segOn:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold bg-raised-2 text-ink',segOff:'min-h-11 flex-1 rounded-ctl px-3 text-label font-semibold text-ink-3',confirm:'rounded-ctl border border-edge p-3'};
  const busy=useRef(false);
  const requested=initialStart&&Number.isFinite(Date.parse(initialStart))&&/Z$|[+-]\d\d:\d\d$/.test(initialStart)
   ?zonedInput(initialStart,zone):null;
- const proposed=requested??suggestedBlockStart(date,zone);
+ const proposed=draft?zonedInput(draft.startsAt,zone):requested??suggestedBlockStart(date,zone);
  const notify=useToast();
  const [current,setCurrent]=useState(block);
- const [title,setTitle]=useState(block?.title??initialTitle??'');
- const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??'study');
+ const [title,setTitle]=useState(block?.title??draft?.title??initialTitle??'');
+ const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??draft?.kind??'study');
  const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
- const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):endAfter(proposed,zone,initialMinutes));
+ const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):draft?zonedInput(draft.endsAt,zone):endAfter(proposed,zone,initialMinutes));
  const [status,setStatus]=useState<CalendarBlockStatus>(block?.status??'planned');
  const [projects,setProjects]=useState<ProjectSummary[]>([]);
  const [tasks,setTasks]=useState<TaskRecord[]>([]);
  const [checkpoints,setCheckpoints]=useState<CheckpointView[]>([]);
- const [projectId,setProjectId]=useState(block?.projectId??'');
+ const [projectId,setProjectId]=useState(block?.projectId??draft?.projectId??'');
  const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
- const [taskId,setTaskId]=useState(block?.taskId??initialTaskId??'');
+ const [taskId,setTaskId]=useState(block?.taskId??(draft?draft.taskId:initialTaskId)??'');
  const [linksError,setLinksError]=useState('');
  useEffect(()=>{
   let active=true;
@@ -188,10 +193,11 @@ export default function BlockSheet({block,date,zone,initialStart,onClose,onRefre
   event.preventDefault();if(busy.current)return;
   let input:NewCalendarBlock;
   try{
-   input=blockFormInput({title,kind,start,end,zone});
+   input=blockFormInput({title,kind,start,end,zone,original:draft});
    const project=projects.find(p=>p.id===projectId);
    input={...input,projectId:projectId||null,
-    subjectId:project?.subject.id??(projectId===current?.projectId?current?.subjectId:null)??null,
+    subjectId:project?.subject.id??(projectId===current?.projectId?current?.subjectId:null)??
+     (projectId===(draft?.projectId??'')?draft?.subjectId:null)??null,
     checkpointId:checkpointId||null,taskId:taskId||null};
   }
   catch(e){setError(e instanceof Error?e.message:'Invalid block details.');return;}

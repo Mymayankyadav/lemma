@@ -236,7 +236,7 @@ export interface CardDetail {
  note: {noteId: string; noteNo: number; front: string; back: string; type: NoteType; kind: NoteKind; tags: string[]
  status: NoteStatus; origin: 'user' | Client; projectSlug: string; checkpointCode: string | null
  sessionNumber: number | null; sourceShort: string | null; pageLabel: string | null}
- cards: {ord: number; state: CardState}[]
+ cards: {ord: number; state: CardState; cardId?: string}[]
  history: {reviewedAt: IsoDate; rating: Rating; confidence: Confidence}[]; comments: CardComment[]
  /** Server-probed continuation for initial 20-row pages; a full page does not imply more. */
  historyNextCursor?: string | null; commentsNextCursor?: string | null

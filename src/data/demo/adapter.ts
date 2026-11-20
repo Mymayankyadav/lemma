@@ -1,3 +1,5 @@
+import {AuthoredCards} from './authored-cards';
+import {firstUseStore,type FirstCardInput,type FirstCardReceipt} from './first-card';
 import {pathForecast} from '../path-review-forecast';
 import {demoConversionProposal} from '../adaptive/demo-conversion';
 import type {
@@ -125,6 +127,8 @@ export interface DemoOptions {
   fixture?: DemoStore;
   /** Only set for a freshly generated private store, never a shared fixture. */
   ownedFixture?: boolean;
+  firstUse?: boolean;
+  authoredCardStorage?: Pick<Storage,"getItem"|"setItem">;
 }
 /** Reuse one pass across the large stress fixture when summarising every
  * project. Single-project reads keep the same standalone summary semantics. */
@@ -134,7 +138,7 @@ interface SummaryIndex {
   sessions: Map<string,number>;
   sourceTitles: Map<string,string[]>;
 }
-/** Per-tab memory only; construction/reload restores the fixed seed. No network writes. */
+/** No network writes. Most fixture state resets on reload; browser-authored cards survive in their tab. */
 export class DemoAdapter implements LemmaApi {
   readonly mode = "demo" as const;
   private notify: ReturnType<typeof makeDemoNotifyData>;
@@ -229,6 +233,8 @@ export class DemoAdapter implements LemmaApi {
     return forecast.result();
   }
   private store: DemoStore;
+  private readonly authoredCards?:AuthoredCards;
+  private readonly firstUse:boolean;
   private stressSourceSeedTitles:Map<string,string[]>|null=null;
   private stressSourceSeedRows:DemoSource[]|null=null;
   private readonly now: () => number;
@@ -359,16 +365,19 @@ export class DemoAdapter implements LemmaApi {
       projectCounts,checkpointCounts,cardCounts,forecastDays};
   }
   constructor(options: DemoOptions = {}) {
+    this.firstUse=options.firstUse===true;
     this.now = options.now ?? Date.now;
     this.notify = makeDemoNotifyData(this.now());
     this.store = hydrateFixture(
-      options.fixture ?? demoSeedFixture,
+      this.firstUse?firstUseStore(demoSeedFixture):(options.fixture ?? demoSeedFixture),
       this.now(),
       options.timeZone ??
         Intl.DateTimeFormat().resolvedOptions().timeZone ??
         "UTC",
       { takeOwnership: options.ownedFixture === true },
     );
+    if(options.authoredCardStorage&&!options.fixture)this.authoredCards=new AuthoredCards(options.authoredCardStorage,this.store,
+      this.firstUse?'lemma.demo.first-use.authored.v1':undefined);
     // Snapshot before installing either lazy getter: spreading an accessor
     // from its own materialization path would recursively invoke itself.
     const original={...this.store};
@@ -441,6 +450,7 @@ export class DemoAdapter implements LemmaApi {
     const before = clone(this.store);
     try {
       const result=write();
+      this.authoredCards?.save(this.store);
       this.dueSnapshotCache=null;
       return result;
     } catch (error) {
@@ -640,7 +650,7 @@ export class DemoAdapter implements LemmaApi {
     }
     return this.virtualReviewNotes;
   }
-  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[], copyState = true) {
+  private allItems(include?: (state: CardState) => boolean, notes?: readonly DemoNote[], copyState = true, cardId?:string) {
     // The extreme fixture has 30,000 cards and 6,000 checkpoints. Resolve
     // identities once instead of scanning all checkpoints for every card.
     const projects = new Map<string, DemoProject>(this.store.projects
@@ -655,7 +665,7 @@ export class DemoAdapter implements LemmaApi {
         const cp = n.note.checkpointCode
           ? checkpoints.get(cpKey(n.projectId, n.note.checkpointCode)) ?? null
           : null;
-        return n.cards.filter(card => !include || include(card.state))
+        return n.cards.filter(card => (!cardId || card.id === cardId) && (!include || include(card.state)))
           .map(card => this.item(n, card, project, cp, copyState));
       });
   }
@@ -664,7 +674,7 @@ export class DemoAdapter implements LemmaApi {
     const now = this.now();
     return this.allItems().filter(item => item.state.state > 0 && Date.parse(item.state.due) <= now);
   }
-  private eligible(): ReviewItem[] {
+  private eligible(cardId?:string): ReviewItem[] {
     const {start,end} = studyDayBounds(
       this.now(),
       this.store.settings.timeZone,
@@ -686,7 +696,7 @@ export class DemoAdapter implements LemmaApi {
     const privateVirtual=notes===this.virtualReviewNotes &&
       typeof Object.getOwnPropertyDescriptor(this.store,'notes')?.get==='function';
     return dueToday(this.allItems(state => state.state === 0 ||
-      this.dueTime(state.due) < end,notes,!privateVirtual), this.store.settings, {
+      this.dueTime(state.due) < end,notes,!privateVirtual,cardId), this.store.settings, {
       now: this.now(),
       answeredToday: today.length,
       newAnsweredToday: today.filter((r) => r.stateBefore === 0).length,
@@ -1269,29 +1279,50 @@ export class DemoAdapter implements LemmaApi {
       return this.projectValue(project);
     });
   }
+  private insertProjectDraft(input:string):DemoProject {
+    text(input.trim(),2,80,"Title");
+    const title=input.trim(),base=slugify(title);
+    if(base.length<2)invalid("Invalid project slug");
+    const draft:DemoProject={
+      id:crypto.randomUUID(),slug:this.freeSlug(base.slice(0,40)),title,
+      goal:"",style:this.store.settings.defaultStyle,status:"planning",subjectId:"",
+      pinned:false,createdAt:this.iso(),lastActivityAt:null,
+    };
+    this.store.projects.push(draft);
+    return draft;
+  }
   async createProjectDraft(input: { title: string; sources?: File[] }): Promise<Project> {
-    text(input.title?.trim(), 2, 80, "Title");
-    const title = input.title.trim();
-    const base = slugify(title);
-    if (base.length < 2) invalid("Invalid project slug");
-    const project = this.transaction(() => {
-      const draft: DemoProject = {
-        id: crypto.randomUUID(),
-        slug: this.freeSlug(base.slice(0, 40)),
-        title,
-        goal: "",
-        style: this.store.settings.defaultStyle,
-        status: "planning",
-        subjectId: "",
-        pinned: false,
-        createdAt: this.iso(),
-        lastActivityAt: null,
-      };
-      this.store.projects.push(draft);
-      return this.projectValue(draft);
-    });
-    for (const file of input.sources ?? []) await this.addSource(project.id, file, () => {});
+    const project=this.transaction(()=>this.projectValue(this.insertProjectDraft(input.title)));
+    for(const file of input.sources??[])await this.addSource(project.id,file,()=>{});
     return project;
+  }
+  /** Fixture-only typed compound command: no RPC, permission or third-party writes. */
+  async createFirstCard(input:FirstCardInput):Promise<FirstCardReceipt>{
+    const journal=this.authoredCards;
+    if(!this.firstUse||!journal)throw new LemmaError("invalid","This first-card preview needs tab storage");
+    const operationId=input.operationId.toLowerCase();
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(operationId))
+      invalid("Invalid first-card operation");
+    const front=input.front.trim(),back=input.back.trim();
+    const path=input.path.kind==='new'?{kind:'new' as const,title:input.path.title.trim()}:
+      {kind:'existing' as const,slug:input.path.slug};
+    const fingerprint=JSON.stringify({path,front,back});
+    const previous=journal.firstCard(operationId);
+    if(previous){
+      if(previous.fingerprint!==fingerprint)throw new LemmaError("conflict","This first-card operation already has different values");
+      return clone(previous.receipt);
+    }
+    text(front,1,1500,"Front");text(back,1,3000,"Back");
+    return this.transaction(()=>{
+      if(this.store.notes.some(n=>n.note.status!=='deleted'))
+        throw new LemmaError("conflict","Your card library is no longer empty");
+      const project=path.kind==='new'?this.insertProjectDraft(path.title):this.project(path.slug);
+      if(project.system||project.status==='archived')invalid("Choose an available path");
+      const n=this.insertNote(project,{front,back,type:'basic',kind:'other'});
+      const receipt={noteNo:n.note.noteNo,noteId:n.note.noteId,cardId:n.cards[0].id,projectSlug:project.slug};
+      journal.commitFirstCard(this.store,operationId,{fingerprint,receipt});
+      return clone(receipt);
+    });
   }
   private planHistory(project: DemoProject): PlanRevision[] {
     const approvals = this.store.proposals
@@ -2195,7 +2226,8 @@ export class DemoAdapter implements LemmaApi {
           note.cards.find((c) => c.id === input.cardId),
           "Card",
         );
-      const id = Math.max(0, ...this.store.reviews.map((r) => r.id)) + 1;
+      const minimum=Math.max(0,...this.store.reviews.map(r=>r.id))+1;
+      const id=this.authoredCards?.nextReviewId(this.store.seed,minimum)??minimum;
       this.store.reviews.push({
         id,
         cardId: card.id,
@@ -2351,20 +2383,26 @@ export class DemoAdapter implements LemmaApi {
     }
     return {rows,nextOffset:hasMore?offset+50:null};
   }
+  async getExactReviewCard(cardId:string,demoAdmission=false):Promise<ReviewItem|null>{
+    if(!cardId)return null;
+    const rows=demoAdmission?this.eligible(cardId):this.allItems(undefined,this.reviewNotes(),true,cardId);
+    return clone(rows[0]??null);
+  }
   async getCard(noteNo: number): Promise<CardDetail> {
     const n=this.readOnlyNote(noteNo);
     const [history,comments]=await Promise.all([
       this.getCardHistoryPage(noteNo),this.getCardCommentsPage(noteNo)
     ]);
-    return {note:clone(n.note),cards:n.cards.map(c=>({ord:c.ord,state:clone(c.state)})),
+    return {note:clone(n.note),cards:n.cards.map(c=>({cardId:c.id,ord:c.ord,state:clone(c.state)})).sort((a,b)=>a.ord-b.ord),
       history:history.rows,comments:comments.rows,
       historyNextCursor:history.nextCursor,commentsNextCursor:comments.nextCursor};
   }
   async createNote(input: CreateNoteInput) {
-    return this.transaction(() => ({
-      noteNo: this.insertNote(this.project(input.projectSlug), input).note
-        .noteNo,
-    }));
+    return this.transaction(() => {
+      const noteNo=this.insertNote(this.project(input.projectSlug), input).note.noteNo;
+      this.authoredCards?.add(noteNo);
+      return {noteNo};
+    });
   }
   async updateNote(noteNo: number, patch: NotePatch) {
     this.transaction(() => {
@@ -2379,6 +2417,7 @@ export class DemoAdapter implements LemmaApi {
     if (!["active", "suspended", "deleted"].includes(status))
       invalid("Unknown note status");
     this.note(noteNo).note.status = status;
+    this.authoredCards?.save(this.store);
     this.dueSnapshotCache=null;
   }
   async addComment(noteNo: number, body: string): Promise<CardComment> {
@@ -2407,6 +2446,7 @@ export class DemoAdapter implements LemmaApi {
       "Comment",
     );
     comment.status = "dismissed";
+    this.authoredCards?.save(this.store);
   }
   async resolveMisconception(id: string) {
     found(

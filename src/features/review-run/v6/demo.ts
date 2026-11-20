@@ -1,27 +1,30 @@
 // N83 demo-only durable review state. Isolated to one tab and persisted
 // before the UI moves to the next card.
+import {getDemoProfile} from '../../../data/mode';
 import type {ReviewItem} from '../../../data/types';
 import type {DurableRun,StartRunInput} from './transport';
 type Store={schema:1;runs:DurableRun[]};
 const KEY='lemma.v6.demo.review-runs.v1';
+const tabKey=()=>getDemoProfile()==='first-use'?KEY+'.first-use':KEY;
 let serial=0;
 const clone=<T>(x:T):T=>structuredClone(x);
 const id=()=>globalThis.crypto?.randomUUID?.()??'demo-review-'+(++serial)+'-'+Date.now();
 const initial=():Store=>({schema:1,runs:[]});
-let memory=initial(),inMemoryOnly=false;
+const memory=new Map<string,{store:Store;fallback:boolean}>();
 function load():Store{
+ const key=tabKey(),prior=memory.get(key);
  try{
-  const raw=sessionStorage.getItem(KEY);
-  if(!raw)return inMemoryOnly?memory:initial();
+  const raw=sessionStorage.getItem(key);
+  if(!raw)return prior?.fallback?prior.store:initial();
   const value=JSON.parse(raw) as Store;
   if(value.schema!==1||!Array.isArray(value.runs))throw Error('bad storage');
   return value;
- }catch{return memory;}
+ }catch{return prior?.store??initial();}
 }
 function save(store:Store){
- memory=clone(store);
- try{sessionStorage.setItem(KEY,JSON.stringify(store));inMemoryOnly=false;}
- catch{inMemoryOnly=true;/* tab storage unavailable */}
+ const key=tabKey(),snapshot=clone(store);
+ try{sessionStorage.setItem(key,JSON.stringify(snapshot));memory.set(key,{store:snapshot,fallback:false});}
+ catch{memory.set(key,{store:snapshot,fallback:true});}
 }
 function get(id:string):DurableRun|null{
  return clone(load().runs.find(x=>x.id===id)??null);
@@ -37,13 +40,19 @@ function update(id:string,expected:number,
 }
 export function demoStart(input:StartRunInput,selected:ReviewItem[]):DurableRun{
  const store=load(),now=new Date().toISOString();
- const items=selected.slice(0,Math.min(input.cardBudget,input.minuteBudget)).map((card,i)=>({
+ const target=input.filters.cardId;
+ const pool=target===undefined?selected:selected.filter(card=>card.cardId===target);
+ if(target!==undefined&&(pool.length!==1||input.selectedDeckIds.length||input.cardBudget<1||input.minuteBudget<1||
+  input.filters.sessionId||input.filters.conceptSlug||input.filters.newOnly||input.filters.includeNew===false))
+  throw Error('Requested review card is unavailable');
+ const items=pool.slice(0,Math.min(input.cardBudget,input.minuteBudget)).map((card,i)=>({
   id:id(),cardId:card.cardId,expectedCardVersion:1,
   position:i,state:'pending' as const,reviewId:null,staleReason:null,
  }));
  const run:DurableRun={
   id:id(),status:items.length?'running':'exhausted',
   position:0,version:1,startedAt:now,endedAt:items.length?null:now,
+  ...(target===undefined?{}:{targetCardId:target}),
   items,progress:{position:0,total:items.length,graded:0,skipped:0,
    remaining:items.length,done:items.length===0},
  };

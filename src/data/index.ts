@@ -33,6 +33,14 @@ const lazyLive: LemmaApi = new Proxy({ mode: 'live' } as LemmaApi, {
 })
 
 const adapters: Partial<Record<'live' | 'default' | 'stress' | 'extreme', LemmaApi>> = {}
+let firstUse:DemoAdapter|undefined
+function tabStorage(){try{return globalThis.sessionStorage}catch{return undefined}}
+
+const firstUseAdapter=()=>firstUse??=new DemoAdapter({firstUse:true,authoredCardStorage:tabStorage()})
+/** Preview-only adapter. Never dispatch first-card mutations to the live adapter. */
+export function getFirstCardDemoApi():DemoAdapter|null{
+ return getMode()==='demo'&&getDemoProfile()==='first-use'?firstUseAdapter():null
+}
 function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
  // Diagnostic-only User Timing entries distinguish 5k/30k fixture creation
  // from date hydration. They do not alter readiness or any hard CPU budget.
@@ -52,7 +60,8 @@ function createStressAdapter(profile: 'stress' | 'extreme'): LemmaApi {
 export function getApi(): LemmaApi {
  if (getMode() === 'live') return adapters.live ??= lazyLive
  const profile = getDemoProfile()
- if (profile === 'default') return adapters.default ??= new DemoAdapter()
+ if(profile==='first-use')return firstUseAdapter()
+ if(profile==='default')return adapters.default??=new DemoAdapter({authoredCardStorage:tabStorage()})
  return adapters[profile] ??= createStressAdapter(profile)
 }
 export * from './types'

@@ -1,7 +1,8 @@
 import {useEffect,useRef,useState,type MouseEvent} from 'react';
-import {useSearchParams} from 'react-router';
+import {useLocation,useSearchParams} from 'react-router';
 import type {CalendarBlockRecord} from '../../../data/study/contract';
 import BlockSheet from './BlockSheet';
+import {readCalendarBlockDraft} from './blockDraft';
 
 const action = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
 
@@ -15,7 +16,8 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
  onClosed?:()=>void;
 }) {
  const [selected,setSelected]=useState<CalendarBlockRecord|null|undefined>(undefined);
- const [params,setParams]=useSearchParams();
+ const [params,setParams]=useSearchParams(),location=useLocation();
+ const draft=params.get('new')==='block'?readCalendarBlockDraft(location.state):undefined;
  // N121: open once per URL request. A refresh after saving must not reopen a dialog
  // while the router is still removing ?new=block or ?edit= from the URL.
  const handled=useRef<string|null>(null);
@@ -52,7 +54,7 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
   });
  };
  return <>
-  {selected!==undefined&&<BlockSheet v7={v7} initialTitle={params.get('title')??undefined} initialTaskId={params.get('task')??undefined} initialMinutes={Number(params.get('len'))||undefined} key={(selected?.id??'new')+':'+(params.get('start')??'')} block={selected}
+  {selected!==undefined&&<BlockSheet v7={v7} draft={draft} initialTitle={params.get('title')??undefined} initialTaskId={params.get('task')??undefined} initialMinutes={Number(params.get('len'))||undefined} key={(selected?.id??'new')+':'+(draft?location.key:params.get('start')??'')} block={selected}
    initialStart={params.get('start')??undefined} date={date} zone={zone} onRefresh={onRefresh} onClose={close}/>}
  </>;
 }
