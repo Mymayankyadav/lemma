@@ -2,7 +2,7 @@ import {readFile} from 'node:fs/promises';
 import {expect,test,type Page} from '@playwright/test';
 
 const checkpoint = (code: string, enabled = true) =>
-  './?demo=1&flags=v7Shell' + (enabled ? ',padLocal' : '') + '#/p/real-analysis/cp/' + code;
+  './?demo=1&flags=v7Shell' + (enabled ? '' : ',-padLocal') + '#/p/real-analysis/cp/' + code;
 const backup = {
   format:'lemma-pad', version:1, notes:{text:'Imported compactness proof',start:0,end:0,direction:'none'},
   ink:{width:640,height:400,strokes:[[{x:12,y:14}]]},
@@ -49,7 +49,7 @@ async function withPadSaveDiagnostics<T>(page: Page, action: () => Promise<T>): 
   }
 }
 
-test('a demo Pad is opt-in, scoped by checkpoint, and restores approved local revisions', async ({page}) => {
+test('the default Pad is scoped by checkpoint and restores approved local revisions', async ({page}) => {
   // Keep this fixture browser completely away from any live or external service.
   await page.route('https://**/*', route => route.abort());
   const open = page.getByRole('button',{name:'Open Local Pad',exact:true});

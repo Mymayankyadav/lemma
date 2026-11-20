@@ -28,7 +28,7 @@ const queryClient = new QueryClient({defaultOptions: {queries: {
  retryDelay: attempt=>Math.min(2_000,250*2**attempt),
 }, mutations: {retry: false}}})
 const allowKit=import.meta.env.DEV||import.meta.env.MODE==='test'||import.meta.env.VITE_ALLOW_FLAG_OVERRIDES==='1';
-const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, errorElement: <RouteError />, children: [
+const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /></StudyUiRelease></AuthGate>, errorElement: <RouteError />, children: [
  ...screenRoutes.filter(route=>route.path!=='/kit'||allowKit),
  calendarRoute,
  tasksRoute,
@@ -50,6 +50,6 @@ const router = createHashRouter([{element: <AuthGate><AppShell /></AuthGate>, er
   <Suspense fallback={<RouteFallback/>}><OfflinePadPage/></Suspense>, errorElement: <RouteError/>}] : [])])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>
-  <StudyUiRelease><RouterProvider router={router} /></StudyUiRelease><ToastHost /><OfflineBanner /><PwaStatus />
+  <RouterProvider router={router} /><ToastHost /><OfflineBanner /><PwaStatus />
  </QueryClientProvider></ErrorBoundary>
 }

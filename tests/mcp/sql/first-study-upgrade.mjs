@@ -28,11 +28,13 @@ try{
  const foundationFiles=new Set(['20261120044716_n191_evidence_receipts.sql','20261120045749_n191_plan_release_capability.sql']);
  const foundation=migrations.filter(({name})=>foundationFiles.has(name));
  assert.equal(foundation.length,2,'the real canonical receipt and release migrations must be installed later');
+ const rollout=migrations.filter(({name})=>name.includes('_n198_'));
  // All other current migrations, including the reviewed N197 cutover, remain
- // present. Defer only the actual foundation to reproduce a dependency-order
- // upgrade; no N191 writer is replaced by a permissive fixture implementation.
- for(const {sql} of migrations.filter(({name})=>!name.includes('_n195_')&&!foundationFiles.has(name)))
+ // present. Defer the foundation and the later rollout that replaces it.
+ for(const {name,sql} of migrations) {
+  if(name.includes('_n195_')||foundationFiles.has(name)||name.includes('_n198_'))continue;
   await db.exec(sql);
+ }
  assert.deepEqual(await one(`select
   to_regprocedure('public.lemma_plan_released()') is null as release_absent,
   to_regprocedure('public.lemma_trusted_receipt_begin(uuid,uuid,text,jsonb)') is null as begin_absent,
@@ -125,7 +127,7 @@ try{
  // foundation SQL. The complete installed stack must retain the default-off
  // behavior, old review contract and existing learner data without replacement.
  await db.exec('drop function public.lemma_plan_released()');
- for(const {sql} of foundation)await db.exec(sql);
+ for(const {sql} of [...foundation,...rollout])await db.exec(sql);
  assert.deepEqual(await signature(),beforeSignature,'canonical foundation retains the upgraded legacy signature and ACL');
  await auth(owner);
  assert.equal((await one('select public.lemma_plan_released() released')).released,false);
