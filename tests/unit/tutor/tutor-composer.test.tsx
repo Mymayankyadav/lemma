@@ -15,6 +15,8 @@ afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
   vi.useRealTimers();
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
   onConnection = () => {}, hintLevel, pending = false}: {
@@ -151,4 +153,51 @@ test('shows connection recovery instead of Ask while the tutor is responding', a
   expect(onConnection).toHaveBeenCalledTimes(1);
   expect(onAsk).toHaveBeenCalledTimes(1);
   expect(field().value).toBe('Unfinished □');
+});
+
+test('keeps the conversation open on a compact phone and reveals the math keyboard on demand', async () => {
+  vi.stubGlobal('innerWidth', 360);
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 360, 510));
+  await act(async () => root.render(<div className="lemma-tutor"><Harness/></div>));
+  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('hidden');
+  await click('Show keyboard');
+  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('math');
+  await click('q', keyboard());
+  expect(field().value).toBe('q');
+});
+
+test('fits a focused native composer above an overlaid IME and restores normal sizing when put away', async () => {
+  vi.stubGlobal('innerHeight', 750);
+  const viewport = Object.assign(new EventTarget(), {height: 750, offsetTop: 0, scale: 1});
+  vi.stubGlobal('visualViewport', viewport);
+  await act(async () => root.render(<div className="lemma-tutor"><Harness initial="Draft"/></div>));
+  const page = host.querySelector<HTMLElement>('.lemma-tutor')!;
+  await click('Use device keyboard');
+  expect(document.activeElement).toBe(field());
+  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('native');
+  viewport.height = 430;
+  await act(async () => viewport.dispatchEvent(new Event('resize')));
+  expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('430px');
+  await click('Show keyboard');
+  expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('');
+  expect(field().inputMode).toBe('none');
+  expect(field().value).toBe('Draft');
+});
+
+test('reveals a clipped keyboard by scrolling only the outer tutor pane', async () => {
+  vi.stubGlobal('innerWidth', 360);
+  vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(510);
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
+    if (this.classList.contains('kb')) return new DOMRect(0, 310 - (this.closest('.lemma-tutor')?.scrollTop ?? 0), 360, 212);
+    return new DOMRect(0, 0, 360, 510);
+  });
+  await act(async () => root.render(<div className="lemma-tutor"><div className="chat"/><Harness/></div>));
+  const page = host.querySelector<HTMLElement>('.lemma-tutor')!;
+  const chat = host.querySelector<HTMLElement>('.chat')!;
+  chat.scrollTop = 23;
+  expect(page.scrollTop).toBe(0);
+  await click('Show keyboard');
+  expect(page.scrollTop).toBe(12);
+  expect(chat.scrollTop).toBe(23);
+  expect(host.querySelector<HTMLElement>('.kb')!.scrollTop).toBe(0);
 });

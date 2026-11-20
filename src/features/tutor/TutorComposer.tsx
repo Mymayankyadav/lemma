@@ -27,6 +27,7 @@ interface Props {
 
 export function TutorComposer(props: Props) {
   const field = useRef<HTMLTextAreaElement>(null);
+  const compactStart = useRef(false);
   const [shown, setShown] = useState(true);
   const [view, setView] = useState('abc');
   const [lastMath, setLastMath] = useState('∀∃');
@@ -39,11 +40,55 @@ export function TutorComposer(props: Props) {
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
   const [recent, setRecent] = useState<string[]>([]);
   const strip = useRef<HTMLDivElement>(null);
+  const keyboard = useRef<HTMLDivElement>(null);
   const context = props.notationContext ?? EMPTY_CONTEXT;
   const suggestions = useMemo(() => notationSuggestions(cursor, context, recent), [cursor, context, recent]);
   const incomplete = props.value.includes('□');
   const blocked = !props.canSend || props.readOnly || incomplete || composing;
   const editingDisabled = props.readOnly || composing;
+
+  useLayoutEffect(() => {
+    const pageHeight = field.current?.closest('.lemma-tutor')?.getBoundingClientRect().height;
+    if (window.innerWidth < 700 && pageHeight && pageHeight < 560) {
+      compactStart.current = true;
+      setShown(false);
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    const input = field.current;
+    const page = input?.closest<HTMLElement>('.lemma-tutor');
+    const viewport = window.visualViewport;
+    if (!native || !input || !page || !viewport) return;
+
+    function fit() {
+      if (!input || !page || !viewport) return;
+      // Mobile Safari and Chrome can leave the layout viewport full-height
+      // while the keyboard covers its lower portion. Android adjustResize
+      // already resizes the layout, so the page continues to use 100dvh.
+      const focused = document.activeElement === input;
+      const covered = viewport.scale === 1 && window.innerHeight - viewport.height > 120;
+      if (focused && covered) page.style.setProperty('--tutor-visual-height', Math.floor(viewport.height) + 'px');
+      else page.style.removeProperty('--tutor-visual-height');
+
+      if (!focused || viewport.scale !== 1) return;
+      const box = input.getBoundingClientRect();
+      const bottom = viewport.height + viewport.offsetTop;
+      if (box.top < viewport.offsetTop || box.bottom > bottom) input.scrollIntoView?.({block: 'nearest'});
+    }
+    fit();
+    viewport.addEventListener('resize', fit);
+    window.addEventListener('resize', fit);
+    input.addEventListener('focus', fit);
+    input.addEventListener('blur', fit);
+    return () => {
+      viewport.removeEventListener('resize', fit);
+      window.removeEventListener('resize', fit);
+      input.removeEventListener('focus', fit);
+      input.removeEventListener('blur', fit);
+      page.style.removeProperty('--tutor-visual-height');
+    };
+  }, [native]);
 
   useLayoutEffect(() => {
     const input = field.current;
@@ -65,6 +110,17 @@ export function TutorComposer(props: Props) {
   useLayoutEffect(() => {
     if (strip.current) strip.current.scrollLeft = 0;
   }, [cursor]);
+
+  useLayoutEffect(() => {
+    const board = keyboard.current;
+    const page = board?.closest<HTMLElement>('.lemma-tutor');
+    if (compactStart.current || !board || !page?.clientHeight) return;
+    const bottom = page.getBoundingClientRect().top + page.clientTop + page.clientHeight;
+    const clipped = Math.ceil(board.getBoundingClientRect().bottom - bottom);
+    // Move only the outer tutor pane. The transcript and the key rows each
+    // have their own scrolling and should retain their positions.
+    if (clipped > 0) page.scrollTop += clipped;
+  }, [shown, view]);
 
   function fieldSelection(input: HTMLTextAreaElement) {
     return padEdit(input.value, input.selectionStart, input.selectionEnd, input.selectionDirection);
@@ -122,7 +178,7 @@ export function TutorComposer(props: Props) {
     if (!blocked && props.value.trim()) props.onSend(props.value);
   }
 
-  return <div className="keyboard-composer">
+  return <div className="keyboard-composer" data-keyboard={native ? 'native' : shown ? 'math' : 'hidden'}>
     {props.value.includes('$') && <div className="composer-preview"><MathText source={props.value}/></div>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
@@ -130,6 +186,12 @@ export function TutorComposer(props: Props) {
         <textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode={native ? 'text' : 'none'} rows={1} maxLength={2000} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? props.value} readOnly={props.readOnly} onSelect={remember} onClick={remember} onFocus={remember}
+          onPointerDown={() => {
+            if (compactStart.current && !props.readOnly) {
+              compactStart.current = false;
+              setShown(true);
+            }
+          }}
           onCompositionStart={event => {
             remember();
             composition.current = true;
@@ -192,6 +254,7 @@ export function TutorComposer(props: Props) {
         onPointerDown={keepSelection} onClick={() => undo()}><Undo2/><small>Undo</small></button>
       <button type="button" className={'tb' + (view !== 'abc' && shown ? ' on' : '')}
         aria-label="Symbols" aria-pressed={view !== 'abc' && shown} disabled={composing} onClick={() => {
+          compactStart.current = false;
           if (native) field.current?.blur();
           setNative(false);
           setShown(true);
@@ -202,7 +265,7 @@ export function TutorComposer(props: Props) {
         : <button type="button" className="tb" disabled={!props.canSend || editingDisabled}
             onClick={() => props.onAsk('notation')}><Sparkle/><small>Ask</small></button>}
     </div>
-    {shown ? <div className="kb" role="group" aria-label="Answer keyboard">
+    {shown ? <div className="kb" ref={keyboard} role="group" aria-label="Answer keyboard">
       <div className="strip">
         <div className="sugg" ref={strip} role="group" aria-label="Suggestions">
           {incomplete && <button type="button" className="next" disabled={editingDisabled}
@@ -219,10 +282,13 @@ export function TutorComposer(props: Props) {
         <button className="sbtn" type="button" aria-label="Use device keyboard" disabled={editingDisabled} onClick={() => {
           setNative(true);
           setShown(false);
-          if (field.current) {
-            // Change input mode synchronously so a mobile browser can open its IME in this gesture.
-            field.current.inputMode = 'text';
-            field.current.focus({preventScroll: true});
+          const input = field.current;
+          if (input) {
+            // Re-focus inside the gesture so iOS can open its IME from an
+            // already-focused field whose input mode was set to none.
+            if (document.activeElement === input) input.blur();
+            input.inputMode = 'text';
+            input.focus();
           }
         }}><Keyboard aria-hidden="true"/></button>
         <button className="sbtn" type="button" aria-label="Hide keyboard" onClick={() => setShown(false)}><ChevronDown aria-hidden="true"/></button>
@@ -239,6 +305,7 @@ export function TutorComposer(props: Props) {
           change(edit, true);
         }}/>
     </div> : <button className="btn ghost" type="button" disabled={composing} onClick={() => {
+      compactStart.current = false;
       if (native) field.current?.blur();
       setNative(false);
       setShown(true);
@@ -268,7 +335,13 @@ function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, on
   useEffect(() => () => clearTimeout(hold.current?.timer), [view, disabled]);
   const activeCategory = useRef<HTMLButtonElement>(null);
   useLayoutEffect(() => {
-    activeCategory.current?.scrollIntoView?.({block: 'nearest', inline: 'center'});
+    const selected = activeCategory.current;
+    const categories = selected?.parentElement;
+    if (!selected || !categories) return;
+    const item = selected.getBoundingClientRect();
+    const strip = categories.getBoundingClientRect();
+    if (item.left < strip.left || item.right > strip.right)
+      categories.scrollLeft += (item.left + item.right - strip.left - strip.right) / 2;
   }, [view]);
 
   function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean} = {}) {

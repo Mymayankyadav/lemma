@@ -1,19 +1,18 @@
 import {useState, type ReactNode} from 'react';
 import {Link} from 'react-router';
-import {ArrowLeft, ArrowRight, BookOpen, ChevronDown, MoreHorizontal} from 'lucide-react';
-import {useProjects} from '../../data/hooks';
+import {ArrowRight, Plug, Timer} from 'lucide-react';
 import type {CheckpointDetail, ProjectDetail} from '../../data/types';
 import {useStudyUi} from '../../data/StudyUiRelease';
 import {reviewHref} from '../../data/review-target';
 import {announceFocusChange, focusClock, focusWord, useActiveFocus, useNow} from '../../app/v7/focus';
 import {useSubjectColours} from '../../app/v7/subjectColours';
+import {DetailHeader} from '../../app/v7/V7Shell';
 import {getStudyApi} from '../../data/study';
 import {MathText} from '../../ui/MathText';
-import {Button, Sheet} from '../../ui/v7/components';
+import {Button, IconButton, Sheet} from '../../ui/v7/components';
 import {kitSubject} from '../atlas/v7/model';
 import {currentStudyStep} from '../project/v7/pathModel';
 import {TutorMark} from './TutorMark';
-import {tutorHref} from './tutorHref';
 
 export type TutorPageContext = {project: ProjectDetail; detail: CheckpointDetail; client: 'claude' | 'chatgpt'};
 type Props = {
@@ -22,9 +21,11 @@ type Props = {
 };
 
 export function TutorLayout({page, sequence, children, offline, onOverview, onCloseSession, onConnection}: Props) {
-  const [panel, setPanel] = useState<'projects' | 'menu' | 'plan' | 'timer' | 'checks' | 'practice'>();
+  const [panel, setPanel] = useState<'plan' | 'timer' | 'checks' | 'practice'>();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
+  const title = project.project.title + ' · ' + detail.view.code + ' tutor';
+  const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
   const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
   const timerState = focus.entry ? focusWord(focus.entry) : null;
@@ -46,21 +47,19 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
     } catch {focus.refresh(); setError('Could not update the timer. Try again.');}
     finally {setBusy(false);}
   }
-  return <main id="main-content" className="lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
-    <header className="top">
-      <button className="markbtn" onClick={onOverview ?? (() => setPanel('plan'))} aria-label="Next up"><TutorMark/></button>
-      <button className="proj" onClick={() => setPanel('projects')} aria-haspopup="dialog">
-        <b><span>{project.project.title}</span><ChevronDown className="chev" aria-hidden="true"/></b>
-        <small><i className={'sv' + (offline ? '' : ' on')} aria-hidden="true"/>
-          <span>{offline ? 'Offline' : detail.view.code}{step.ordinal ? ' · step ' + step.ordinal + ' of ' + step.total : ''}</span></small>
-      </button>
-      <button className={'tpill ' + (!timerState ? 'idle' : timerState === 'Paused' ? 'pause' : timerState === 'Break' ? 'brk' : 'run')}
-        onClick={() => setPanel('timer')} aria-label="Study timer" aria-haspopup="dialog">
-        <svg className="tplay" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
-        <i className="td" aria-hidden="true"/><span>{clock}</span>
-      </button>
-      <button className="iconbtn" onClick={() => setPanel('menu')} aria-label="Settings and more" aria-haspopup="dialog"><MoreHorizontal/></button>
-    </header>
+  return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
+    <DetailHeader title={title} back={checkpoint}/>
+    <h1 className="v7-sr-only">{title}</h1>
+    <div className="tutor-context">
+      <p>{step.ordinal ? 'Step ' + step.ordinal + ' of ' + step.total : detail.view.title}{offline && ' · Offline'}</p>
+      {onOverview && <Button small variant="ghost" onClick={onOverview}>Next up</Button>}
+      {onConnection && <IconButton label="Tutor connection" onClick={onConnection} aria-haspopup="dialog">
+        <Plug aria-hidden="true"/>
+      </IconButton>}
+      <IconButton label="Study timer" onClick={() => setPanel('timer')} aria-haspopup="dialog">
+        <Timer aria-hidden="true"/>
+      </IconButton>
+    </div>
     <nav className="rail" aria-label="Session parts">
       <button className={'seg-r' + (checking ? ' cur' : sequence && !detail.view.dueCards ? ' done' : '')}
         aria-current={checking ? 'step' : undefined} aria-haspopup="dialog" onClick={() => setPanel('checks')}>
@@ -68,12 +67,9 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
       <button className={'seg-r' + (checking ? '' : ' cur')} aria-current={checking ? undefined : 'step'}
         aria-haspopup="dialog" onClick={() => setPanel('plan')}><b>Learn</b><small>{sequence ? 'Q' + sequence : step.ordinal ? step.ordinal + ' of ' + step.total : 'Start here'}</small></button>
       <button className="seg-r" aria-haspopup="dialog" onClick={() => setPanel('practice')}><b>Practice</b><small>after Learn</small></button>
-      <button className="seg-r" aria-haspopup="dialog" onClick={onCloseSession ?? (() => setPanel('menu'))}><b>Close</b><small>at the end</small></button>
+      {onCloseSession && <button className="seg-r" aria-haspopup="dialog" onClick={onCloseSession}><b>Close</b><small>at the end</small></button>}
     </nav>
     {children}
-    <Sheet open={panel === 'projects'} onClose={() => setPanel(undefined)} title="Projects">
-      {panel === 'projects' && <TutorProjects current={project.project.slug} onSelect={() => setPanel(undefined)}/>}
-    </Sheet>
     <Sheet open={panel === 'plan'} onClose={() => setPanel(undefined)} title={detail.view.title}>
       <div className="tutor-plan">
         <MathText source={detail.objective}/>
@@ -90,16 +86,6 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
     <Sheet open={panel === 'practice'} onClose={() => setPanel(undefined)} title="Practice">
       <Link className="v7-button v7-secondary" to="/practice">Open practice</Link>
     </Sheet>
-    <Sheet open={panel === 'menu'} onClose={() => setPanel(undefined)} title={project.project.title}>
-      <div className="tutor-menu">
-        <Link to={path}><ArrowLeft aria-hidden="true"/>Back to path</Link>
-        <button onClick={() => setPanel('plan')}><BookOpen aria-hidden="true"/>Plan</button>
-        <Link to="/">Today</Link>
-        {onConnection && <button onClick={() => {setPanel(undefined); onConnection();}}>Tutor connection</button>}
-        <Link to="/settings?section=appearance">Appearance</Link>
-        <Link to="/settings?section=tutor">Tutor settings</Link>
-      </div>
-    </Sheet>
     <Sheet open={panel === 'timer'} onClose={() => setPanel(undefined)} title="Study timer">
       {focus.entry ? <><p className="tbig">{clock}</p><p>{timerState} · {focus.entry.intent}</p></>
         : <p>Start a timer for {detail.view.title}. You can save the time to your study log when you finish.</p>}
@@ -115,15 +101,6 @@ export function TutorLayout({page, sequence, children, offline, onOverview, onCl
   </main>;
 }
 
-function TutorProjects({current, onSelect}: {current: string; onSelect: () => void}) {
-  const projects = useProjects();
-  if (projects.isPending) return <p role="status">Loading projects…</p>;
-  if (projects.error) return <Button onClick={() => void projects.refetch()}>Try projects again</Button>;
-  return <div className="tutor-menu tutor-projects">{projects.data?.filter(p => !p.system && p.status !== 'archived').map(p =>
-    <Link key={p.id} aria-current={current === p.slug ? 'page' : undefined} to={tutorHref(p.slug)} onClick={onSelect}>
-      <span>{p.title}</span><small>{p.status}</small></Link>)}</div>;
-}
-
 export function TutorOverview({page, busy, hasTurns, onBegin, onContinue, onWrite}: {
   page: TutorPageContext; busy: boolean; hasTurns: boolean; onBegin: () => void; onContinue: () => void; onWrite?: () => void;
 }) {
@@ -133,7 +110,7 @@ export function TutorOverview({page, busy, hasTurns, onBegin, onContinue, onWrit
     <TutorMark className="emblem"/>
     <div className="chips"><span className="chip subjchip"><i className="sd" aria-hidden="true"/>{project.subject.name}</span>
       <span className="chip mute">{detail.view.code}{step.ordinal ? ' · step ' + step.ordinal + ' of ' + step.total : ''}</span></div>
-    <h1>{title}</h1>
+    <h2>{title}</h2>
     {!!subtitle.length && <p className="sub">{subtitle.join(': ')}</p>}
     {!!detail.steps.length && <><ol className="steps" aria-label="Steps of this checkpoint">{detail.steps.map((_, i) =>
       <li key={i} className={i < step.index ? 'done' : i === step.index ? 'cur' : ''} aria-current={i === step.index ? 'step' : undefined}>
@@ -142,10 +119,13 @@ export function TutorOverview({page, busy, hasTurns, onBegin, onContinue, onWrit
     <div className="goal"><span className="eyebrow">Your goal</span><MathText source={detail.criterion || detail.objective}/></div>
     {detail.sourceShort && <div className="facts"><span>Book <b>{detail.sourceShort}</b></span></div>}
     <div className="actions">
-      <button className="cta" disabled={busy} onClick={hasTurns ? onContinue : onBegin}>
-        {hasTurns ? 'Continue conversation' : 'Begin session'}<ArrowRight aria-hidden="true"/></button>
-      <div className="duo"><Link className="btn" to={'/p/' + encodeURIComponent(project.project.slug)}>Plan</Link><Link className="btn" to="/">Today</Link></div>
-      {onWrite && <button className="write-question" onClick={onWrite}>Write a question</button>}
+      <Button className="cta" variant="primary" disabled={busy} onClick={hasTurns ? onContinue : onBegin}>
+        {hasTurns ? 'Continue conversation' : 'Begin session'}<ArrowRight aria-hidden="true"/>
+      </Button>
+      <div className="duo">
+        <Link className="v7-button v7-secondary" to={'/p/' + encodeURIComponent(project.project.slug)}>Plan</Link>
+        {onWrite && <Button onClick={onWrite}>Write a question</Button>}
+      </div>
     </div>
   </section></div>;
 }

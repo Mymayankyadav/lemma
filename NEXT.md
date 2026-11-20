@@ -10,7 +10,7 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
 Stage: Harden · Status: done · Needs: — · Assigned: chat-174602#75tl
-Done = Both Continue with tutor entry points open the supplied chat design for the selected checkpoint. Sending an answer grants the connected Lemma MCP tutor that turn. The next tutor question appears in the same conversation. Existing saved Pad notes remain accessible through Settings.
+Done = Both Continue with tutor entry points open the supplied chat design for the selected checkpoint inside Lemma's normal navigation, shared header, search and theme. Sending an answer grants the connected Lemma MCP tutor that turn. The next tutor question appears in the same conversation. Navigation away and back preserves the conversation and draft. Existing saved Pad notes remain accessible through Settings.
 Tests: phone and desktop navigation, keyboard editing, persisted drafts, signed-in grant and reply recovery, ordinary MCP tool discovery and PostgreSQL owner/lease/reply isolation.
 Scope: app routing and v7 navigation, tutor UI, browser adapters, checkpoint and Settings entry points, existing Lemma MCP tutor tools, an additive grant lookup migration and their regression tests.
 

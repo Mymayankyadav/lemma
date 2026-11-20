@@ -132,6 +132,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  useEffect(()=>{
   if(!isFlagOn('v7Room'))return;
   const path=location.pathname,to=path+location.search;
+  if(/^\/p\/[^/]+(?:\/cp\/[^/]+)?\/tutor$/.test(path))return;
   const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
   if(!group)return;
   const record=()=>{
@@ -289,7 +290,7 @@ export function DetailHeader({title,back,action,compact}:{title:string;back?:str
   observer.observe(heading);return ()=>observer.disconnect();
  },[title,location.pathname,location.search]);
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
-  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default')navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
+  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default'&&window.history.state?.idx>0)navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
   <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
  </header>;

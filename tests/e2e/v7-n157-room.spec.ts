@@ -89,6 +89,20 @@ test('Search shows the three last opened things, action chips and keyboard navig
  await expect(page.getByRole('dialog',{name:'Search'})).toHaveCount(0);
 });
 
+test('Jump back in keeps the checkpoint link after opening its tutor',async({page})=>{
+ await open(page,'/p/real-analysis/cp/CP4');
+ await page.getByRole('button',{name:'Work on this with your tutor',exact:true}).click();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/);
+ const tutor=page.getByRole('main',{name:'Checkpoint tutor'});
+ await expect(tutor.getByRole('heading',{name:'Compactness',exact:true})).toBeVisible();
+ await tutor.getByRole('navigation',{name:'Page actions'}).getByRole('button',{name:'Search',exact:true}).click();
+ const recent=page.getByRole('region',{name:'Jump back in'}).getByRole('option');
+ await expect(recent).toHaveCount(1);
+ await expect(recent).toContainText('Compactness');
+ await recent.click();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4$/);
+});
+
 test('First run is subject, rhythm, then tutor; each step can be skipped',async({page})=>{
  await open(page,'/welcome');
  await expect(page.getByRole('heading',{level:1})).toHaveText('What are you studying?');

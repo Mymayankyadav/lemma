@@ -69,7 +69,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
   }
   const openConnection = () => setPanel('connection');
   return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline}
-    onOverview={() => setView('overview')} onCloseSession={() => setPanel('close')} onConnection={openConnection}>
+    onOverview={!overview ? () => setView('overview') : undefined} onCloseSession={() => setPanel('close')} onConnection={openConnection}>
     {!overview && pinned && <div className="ontable">
       <span className="ot-l">On the table</span><span className="ot-q" inert><b>Q{latestReply?.sequence}</b> · <Tex source={pinned}/></span>
       <button className="pinned-question" aria-label="The question on the table" aria-description={pinned}
@@ -92,7 +92,6 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
           {transcript}
           {pending && <div className="tutor-message-status" role="status">
             {pendingStatus}
-            <button className="btn small ghost" onClick={openConnection}>Tutor connection</button>
           </div>}
         </>}
     </div>

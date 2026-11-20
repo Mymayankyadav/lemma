@@ -1,5 +1,6 @@
 import {useState, useSyncExternalStore} from 'react';
 import {Link, Navigate, useParams} from 'react-router';
+import {DetailHeader} from '../../app/v7/V7Shell';
 import {authGeneration, authOwner, onAccountChange} from '../../data/authBoundary';
 import {useCheckpoint, useProject, useSettings} from '../../data/hooks';
 import {getMode} from '../../data/mode';
@@ -10,12 +11,14 @@ import {CheckpointTutor} from './DemoCheckpointTutor';
 import {TutorLayout, type TutorPageContext} from './TutorLayout';
 import {tutorHref} from './tutorHref';
 import type {ProjectDetail} from '../../data/types';
+import {Button} from '../../ui/v7/components';
 import './tutor.css';
 
 function RouteMessage({slug, message, retry}: {slug: string; message: string; retry?: () => void}) {
-  return <main id="main-content" className="tutor-message" aria-label="Checkpoint tutor">
+  return <main id="main-content" className="v7-page tutor-message" aria-label="Checkpoint tutor">
+    <DetailHeader title="Checkpoint tutor" back={'/p/' + encodeURIComponent(slug)}/>
     <p role="status">{message}</p>
-    {retry && <button className="v7-button v7-secondary" onClick={retry}>Try again</button>}
+    {retry && <Button onClick={retry}>Try again</Button>}
     <Link to={'/p/' + encodeURIComponent(slug)}>Back to path</Link>
   </main>;
 }
@@ -32,7 +35,8 @@ export default function TutorPage() {
   if (!code) {
     const current = checkpoints.find(cp => cp.ui === 'now');
     if (current) return <Navigate replace to={tutorHref(slug, current.code)}/>;
-    return <main id="main-content" className="tutor-message" aria-label="Checkpoint tutor">
+    return <main id="main-content" className="v7-page tutor-message" aria-label="Checkpoint tutor">
+      <DetailHeader title="Checkpoint tutor" back={'/p/' + encodeURIComponent(slug)}/>
       <h1>{project.data.project.title}</h1>
       {checkpoints.length ? <><p>Choose a checkpoint to continue with your tutor.</p>
         {checkpoints.map(cp => <Link key={cp.id} to={tutorHref(slug, cp.code)}>{cp.title}</Link>)}</>
