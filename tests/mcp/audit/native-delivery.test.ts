@@ -45,7 +45,25 @@ it('native Pomodoro Start break must advance the canonical phase and preserve a 
  const preset=(await q("insert into public.presets(user_id,label,mode,focus_minutes,break_minutes,long_break_minutes,cycles) values($1,'Pomo','pomodoro',25,5,15,4) returning id",[uid]))[0].id;
  const id=(await q("insert into public.study_entries(user_id,source,status,preset_id,intent) values($1,'timer','draft',$2,'Proof') returning id",[uid,preset]))[0].id;
  await asOwner();const started=await cmd('start',id,1);
- const broken=(await q('select public.replay_timer_action($1::jsonb) r',[JSON.stringify({id:randomUUID(),entryId:id,version:started.changed[0].version,device:'phone-webview',action:'break',at:Date.now()})]))[0].r;
+ expect(started.status).toBe('ok');
+ // Native actions use whole milliseconds, while SQL records transaction time.
+ // Backdate this isolated fixture so focus start < native break < the next phase.
+ await admin();
+ const [{at,version}]=await q(`with fixture_clock as (
+   select date_trunc('milliseconds',clock_timestamp())-interval '2 seconds' as at
+ ), entry as (
+   update public.study_entries e set started_at=t.at-interval '1 second',
+     phase_ends_at=t.at-interval '1 second'+interval '25 minutes'
+   from fixture_clock t where e.id=$1 returning e.id,e.version
+ ), focus as (
+   update public.study_intervals i set started_at=t.at-interval '1 second'
+   from entry e cross join fixture_clock t where i.entry_id=e.id and i.ended_at is null
+   returning i.id
+ )
+ select (extract(epoch from t.at)*1000)::bigint::text as at,e.version from fixture_clock t cross join entry e cross join focus`,[id]);
+ await asOwner();
+ const broken=(await q('select public.replay_timer_action($1::jsonb) r',[JSON.stringify({id:randomUUID(),entryId:id,version,device:'phone-webview',action:'break',at:Number(at)})]))[0].r;
+ expect(broken.outcome).toBe('applied');
  const entry=(await q('select phase,status,cycle,phase_ends_at,version from public.study_entries where id=$1',[id]))[0];
  const intervals=await q('select kind from public.study_intervals where entry_id=$1 and ended_at is null',[id]);
  const leased=await cmd('take_lease',id,entry.version,{device:'phone-webview'});
