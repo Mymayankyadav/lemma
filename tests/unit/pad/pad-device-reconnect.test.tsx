@@ -95,7 +95,7 @@ test('a new same-owner server session cannot hydrate the old device authorizatio
   await open();
   await act(async () => {online = true; sessionToken(checkpoint); window.dispatchEvent(new Event('online')); auth(owner);});
   expect(host.querySelector('textarea')).toBeNull();
-  expect(host.textContent).toContain('Open Local Pad from a checkpoint while signed in to use it here.');
+  expect(host.textContent).toContain('While signed in, open your device notes in Settings to make them available offline.');
 });
 
 const click = async (label: string) => {await act(async () => {

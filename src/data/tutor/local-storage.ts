@@ -8,7 +8,7 @@ const listeners=new Set<()=>void>()
 
 /** Parse the complete JSON tuple, including quoted colons, brackets and escapes. */
 export function tutorStorageOwner(key:string):string|null {
- const prefix=['lemma.tutor.pending.v1:','lemma.tutor.confirmed.v1:','lemma.tutor.draft:'].find(value=>key.startsWith(value))
+ const prefix=['lemma.tutor.pending.v1:','lemma.tutor.confirmed.v1:','lemma.tutor.connector.v1:','lemma.tutor.draft:'].find(value=>key.startsWith(value))
  if(!prefix)return null
  const value=key.slice(prefix.length)
  if(value[0]!=='[')return null
@@ -23,7 +23,7 @@ export function tutorStorageOwner(key:string):string|null {
    const scope:unknown=JSON.parse(value.slice(0,i+1)),suffix=value.slice(i+1)
    if(!Array.isArray(scope)||scope.length!==3||!scope.every(part=>typeof part==='string')||!scope[0])return null
    const valid=prefix==='lemma.tutor.confirmed.v1:'?suffix==='':
-    prefix==='lemma.tutor.pending.v1:'?suffix.startsWith(':')&&suffix.length>1:
+    (prefix==='lemma.tutor.pending.v1:'||prefix==='lemma.tutor.connector.v1:')?suffix.startsWith(':')&&suffix.length>1:
      [':question',':context',':source',':attached-local'].includes(suffix)||(suffix.startsWith(':reply:')&&suffix.length>7)
    return valid?scope[0]:null
   }catch{return null}

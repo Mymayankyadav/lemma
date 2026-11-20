@@ -63,8 +63,10 @@ test('Path tabs follow the header without a star overview; Map keeps current and
  await expect(current).toBeInViewport();
  await expect(current.getByRole('button',{name:'Continue with tutor'})).toBeVisible();
  await current.getByRole('button',{name:'Continue with tutor'}).click();
- await expect(page.getByRole('dialog',{name:'Continue with your tutor'})).toBeVisible();
- await page.keyboard.press('Escape');
+ await expect(page.getByRole('main',{name:'Checkpoint tutor'})).toBeVisible();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/);
+ await page.goBack();
+ await expect(page).toHaveURL(/#\/p\/real-analysis$/);
  const folded=page.locator('.v7-path-stage details').first();
  await expect(folded).not.toHaveAttribute('open');
  await folded.locator('summary').focus();await page.keyboard.press('Enter');
@@ -85,6 +87,20 @@ test('Search shows the three last opened things, action chips and keyboard navig
  await page.getByRole('combobox',{name:'Search'}).fill('compact');
  await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
  await expect(page.getByRole('dialog',{name:'Search'})).toHaveCount(0);
+});
+
+test('Jump back in keeps the checkpoint link after opening its tutor',async({page})=>{
+ await open(page,'/p/real-analysis/cp/CP4');
+ await page.getByRole('button',{name:'Work on this with your tutor',exact:true}).click();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/);
+ const tutor=page.getByRole('main',{name:'Checkpoint tutor'});
+ await expect(tutor.getByRole('heading',{name:'Compactness',exact:true})).toBeVisible();
+ await tutor.getByRole('navigation',{name:'Page actions'}).getByRole('button',{name:'Search',exact:true}).click();
+ const recent=page.getByRole('region',{name:'Jump back in'}).getByRole('option');
+ await expect(recent).toHaveCount(1);
+ await expect(recent).toContainText('Compactness');
+ await recent.click();
+ await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4$/);
 });
 
 test('First run is subject, rhythm, then tutor; each step can be skipped',async({page})=>{

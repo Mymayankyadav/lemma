@@ -11,6 +11,7 @@ describe('feature flags',()=>{
   expect([v7Ruler,v7Qed,v7Spread,v7Scratch,v7Paper,v7DeskClock,v7Week].every(Boolean)).toBe(true)
   expect(atlasV3).toBe(true)   // released at the Owner's Atlas v3 activation (N182)
   expect([atlasAgendaV1,padLocal,uiRepairV1,tutorThreads]).toEqual([true,true,true,true])
+  expect(resolveFlags({allowOverrides:true,search:'?flags=-tutorThreads'}).tutorThreads).toBe(false)
   expect(Object.values(rest).every(v=>v===false)).toBe(true)
   expect(resolveFlags({allowOverrides:true})).toEqual(FLAG_DEFAULTS)
  })

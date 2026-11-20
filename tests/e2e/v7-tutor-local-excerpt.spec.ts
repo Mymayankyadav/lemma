@@ -1,7 +1,7 @@
 import {expect,test} from '@playwright/test'
 
 test('only an explicitly added local excerpt is included in a saved tutor handoff',async({page})=>{
- await page.goto('/lemma/?demo=1&flags=v7Shell,tutorManualDemo#/p/real-analysis/cp/CP4')
+ await page.goto('/lemma/?demo=1&flags=v7Shell,padLocal,tutorManualDemo#/pad?path=real-analysis&checkpoint=CP4')
  const open=()=>page.getByRole('button',{name:'Open manual tutor'}).click()
  await open()
  const dialog=page.getByRole('dialog',{name:'Manual tutor'})

@@ -2,11 +2,18 @@ import {expect, test} from '@playwright/test';
 
 const route = (suffix = '') => './?demo=1&flags=v7Shell#/pad' + suffix;
 
-test('Lemma Pad is discoverable from More and opens a full checkpoint workspace', async ({page}) => {
+test('Lemma Pad is accessible from Data and account and opens a full checkpoint workspace', async ({page}) => {
   await page.route('https://**/*', route => route.abort());
   await page.goto('./?demo=1&flags=v7Shell#/');
-  await page.getByRole('button', {name: 'More destinations'}).click();
-  await page.getByRole('menuitem', {name: 'Lemma Pad'}).click();
+  await expect(page.getByRole('main')).toBeVisible();
+  await expect(page.getByRole('button', {name: 'More destinations'})).toHaveCount(0);
+  await page.setViewportSize({width: 1280, height: 844});
+  const library = page.getByRole('navigation', {name: 'Library'});
+  await expect(library).toBeVisible();
+  await expect(library.getByRole('link', {name: 'Lemma Pad'})).toHaveCount(0);
+  await page.getByRole('navigation', {name: 'Page actions'}).getByRole('link', {name: 'Settings', exact: true}).click();
+  await page.getByRole('link', {name: /Data and account/}).click();
+  await page.getByRole('link', {name: 'Open saved notes'}).click();
   await expect(page.getByRole('heading', {name: 'Lemma Pad', level: 1})).toBeVisible();
   await page.getByLabel('Path', {exact: true}).selectOption('real-analysis');
   await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');

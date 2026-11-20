@@ -69,14 +69,14 @@ test("Path draws the constellation map with a text label on every node and the l
  const demonstrated=await rows.evaluateAll(list=>list.filter(row=>row.getAttribute("data-state")==="demonstrated").length);
  await expect(page.getByRole("meter").first()).toHaveAttribute("aria-valuenow",String(demonstrated));
 });
-test("Path keeps its primary action in a sticky bar and Continue with tutor opens the prompt sheet",async({page})=>{
+test("Path keeps its primary action in a sticky bar and Continue with tutor opens the checkpoint tutor",async({page})=>{
  await openFirstPath(page);
  const bar=page.getByRole("group",{name:"Path actions"});
  await expect(bar).toBeVisible();
  await bar.getByRole("button",{name:"Continue with tutor"}).click();
- const sheet=page.getByRole("dialog");
- await expect(sheet.getByRole("button",{name:"Copy prompt"})).toBeVisible();
- await expect(sheet.getByText("Paste it into your tutor.")).toBeVisible();
+ const tutor=page.getByRole("main",{name:"Checkpoint tutor"});
+ await expect(tutor.getByRole("button",{name:"Begin session"})).toBeEnabled();
+ await expect(tutor.getByRole("navigation",{name:"Session parts"})).toBeVisible();
 });
 test("Path tabs switch between Map, Sessions, Sources and Cards",async({page})=>{
  await openFirstPath(page);

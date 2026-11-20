@@ -133,7 +133,7 @@ test('cold offline page lists only the same owner/session/build and makes no API
   expect(fixtures.api.listProjects).not.toHaveBeenCalled();
   await act(async () => {token(owner, second); window.dispatchEvent(new Event('storage'));});
   expect(host.querySelector('[data-cached-pad]')).toBeNull();
-  expect(host.textContent).toContain('Open Local Pad from a checkpoint while signed in to use it here.');
+  expect(host.textContent).toContain('While signed in, open your device notes in Settings to make them available offline.');
 });
 
 

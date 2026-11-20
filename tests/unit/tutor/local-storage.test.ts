@@ -12,6 +12,7 @@ const tuple=(id=owner,path='path',checkpoint='cp')=>JSON.stringify([id,path,chec
 const keys=(id=owner)=>[
  'lemma.tutor.confirmed.v1:'+tuple(id),
  'lemma.tutor.pending.v1:'+tuple(id)+':operation',
+ 'lemma.tutor.connector.v1:'+tuple(id)+':turn',
  ...['question','context','source','attached-local','reply:turn'].map(field=>'lemma.tutor.draft:'+tuple(id)+':'+field),
 ]
 const saved:TutorThreadView={head:{threadId:'thread',lastSequence:1,pendingTurnId:null},canSubmit:true,canConnect:false,
@@ -41,7 +42,7 @@ describe('owner-scoped tutor local cleanup',()=>{
   const unusual='owner]:"\\with:separators'
   expect(tutorStorageOwner('lemma.tutor.pending.v1:'+tuple(unusual,'p]',':c')+':op')).toBe(unusual)
   const malformed=['lemma.tutor.confirmed.v1:'+tuple()+':extra',
-   'lemma.tutor.pending.v1:'+tuple()+':','lemma.tutor.draft:'+tuple()+':reply:',
+   'lemma.tutor.pending.v1:'+tuple()+':','lemma.tutor.connector.v1:'+tuple()+':','lemma.tutor.draft:'+tuple()+':reply:',
    'lemma.tutor.draft:'+tuple()+':unknown','lemma.tutor.draft:'+JSON.stringify([owner,'path'])+':question',
    'lemma.tutor.draft:'+JSON.stringify([owner,{path:'path'},'cp'])+':question',
    'lemma.tutor.draft:["'+owner+'",broken]:question','lemma.demo-tutor:'+tuple()+':question']

@@ -18,7 +18,7 @@ export const FLAG_DEFAULTS = {
   uiRepairV1: true,
   /** Manual copy/paste tutoring is a default-off, demo-only preview. */
   tutorManualDemo: false,
-  /** N193: live owner-bound checkpoint threads, released with the new study UI. */
+  /** Owner-requested tutor page. Live writes also require the server release capability. */
   tutorThreads: true,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
@@ -43,7 +43,7 @@ export const FLAG_DEFAULTS = {
   v7Qed: true,
   /** N157 · U4 S6 scratch paper: a sheet of graph paper for an attempt before the reveal; nothing is stored. */
   v7Scratch: true,
-  /** N198: full-page Pad, checkpoint workspace and device-local offline entry. */
+  /** N198: full-page Pad in Settings and the device-local offline entry. */
   padLocal: true,
   /** N157 · U4 S14 paper and sky: Plain, Graph, Dot or Ruled paper by day; Clear or Stars by night. */
   v7Paper: true,

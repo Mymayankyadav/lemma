@@ -2,7 +2,7 @@ import {useCallback,useEffect,useId,useRef,useState,useSyncExternalStore} from '
 import {Link} from 'react-router'
 import {usePlanRelease} from '../../data/usePlanRelease'
 import {authGeneration,authOwner,onAccountChange} from '../../data/authBoundary'
-import type {TutorContextSelection} from '../../data/tutor/turn-model'
+import type {TutorComposerDraft,TutorContextSelection} from '../../data/tutor/turn-model'
 import type {ManualTutor,TutorThreadView} from '../../data/tutor/manual-api'
 import {getDemoProfile,getMode} from '../../data/mode'
 import {addLocalTutorExcerpt,LOCAL_TUTOR_EXCERPT_LIMIT,previewLocalTutorExcerpt} from '../../data/tutor/local-excerpt'
@@ -10,10 +10,14 @@ import {openDemoManualTutor} from '../../data/tutor/demo-manual'
 import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner,writeTutorLocal} from '../../data/tutor/local-storage'
 import {isFlagOn} from '../../flags'
 import {Button,Sheet} from '../../ui/v7/components'
+import {MathText} from '../../ui/MathText'
+import {chatLink,studyPrompt} from '../../lib/chat'
+import {TutorChat,type SendOptions} from './TutorChat'
+import type {TutorPageContext} from './TutorLayout'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
 type Handoff = {text:string;requestId:string}
-type EntryProps = {scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
+type EntryProps = {page?:TutorPageContext;connectorUrl?:string;connectorLoading?:boolean;scope:Scope;handoff?:Handoff;onHandoffConsumed?:(id:string)=>void}
 const subscribe=(refresh:()=>void)=>{
   const account=onAccountChange(refresh),cleanup=subscribeTutorLocalCleanup(refresh)
   return ()=>{account();cleanup()}
@@ -24,29 +28,34 @@ function useDraft(key:string,live=false) {
   const storage=()=>live?localStorage:sessionStorage
   const captured=useRef({key,ownerId:live?tutorStorageOwner(key):null,generation:authGeneration()}).current
   const active=()=>!live||(captured.key===key&&captured.ownerId!==null&&tutorLocalScopeActive({ownerId:captured.ownerId,generation:captured.generation}))
-  const [text,setText] = useState(() => {
-    if(!active())return ''
-    try { return storage().getItem(key) ?? '' } catch { return '' }
+  const [draft,setDraft] = useState(() => {
+    let text=''
+    try { if(active())text=storage().getItem(key) ?? '' } catch {/* No stored draft is available. */}
+    return {text,unsaved:false}
   })
-  const [unsaved,setUnsaved] = useState(false)
   function change(value: string) {
     if(!active())return
-    setText(value)
     try {
       if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
       else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
-      setUnsaved(false)
-    } catch { setUnsaved(true) }
+      setDraft({text:value,unsaved:false})
+    } catch { setDraft({text:value,unsaved:true}) }
   }
   function clearIfUnchanged(expected: string) {
     if(!active())return
-    setText(current=>current===expected?'':current)
+    let cleared=false,failed=false
     try {
-      if(storage().getItem(key)===expected) storage().removeItem(key)
-    } catch {setUnsaved(true)}
+      const saved=storage().getItem(key)
+      if(saved===expected)storage().removeItem(key)
+      cleared=saved===null||saved===expected
+    } catch {failed=true}
+    setDraft(current=>{
+      if(current.text!==expected)return current
+      return {text:'',unsaved:failed||(!cleared&&current.unsaved)}
+    })
   }
-  return {text,change,clearIfUnchanged,unsaved}
+  return {...draft,change,clearIfUnchanged}
 }
 
 export function CheckpointTutor(props:EntryProps) {
@@ -61,7 +70,7 @@ export function CheckpointTutor(props:EntryProps) {
     // checkpoint authorization and the release capability are both needed to write.
     readOnly=!released||verified.generation!==authGeneration()
     entryScope={...scope,authScope:{...verified,generation:authGeneration()}}
-  }else if(!isFlagOn('tutorManualDemo'))return null
+  }else if(!props.page&&!isFlagOn('tutorManualDemo'))return null
   const account=live?[entryScope.authScope!.ownerId,entryScope.authScope!.generation]:[getDemoProfile()]
   return <TutorEntry key={JSON.stringify([live,...account,scope.pathId,scope.checkpointId])} {...props} scope={entryScope} live={live} readOnly={readOnly}/>
 }
@@ -69,6 +78,7 @@ export function CheckpointTutor(props:EntryProps) {
 function TutorEntry(props:EntryProps & {live:boolean;readOnly:boolean}) {
   const [open,setOpen] = useState(false)
   useEffect(()=>{if(props.handoff)setOpen(true)},[props.handoff])
+  if(props.page)return <TutorBody key={String(props.readOnly)} {...props}/>
   return <section className="v7-learn-card" aria-label={props.live?'Checkpoint tutor':'Manual tutor preview'}>
     <Button onClick={()=>setOpen(true)}>{props.live?'Open checkpoint tutor':'Open manual tutor'}</Button>
     <Sheet title={props.live?'Checkpoint tutor':'Manual tutor'} eyebrow={props.live?undefined:'Demo preview'} open={open} onClose={()=>setOpen(false)}>
@@ -77,7 +87,7 @@ function TutorEntry(props:EntryProps & {live:boolean;readOnly:boolean}) {
   </section>
 }
 
-function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean;readOnly:boolean}) {
+function TutorBody({page,connectorUrl,connectorLoading,scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean;readOnly:boolean}) {
   const draftKey=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+
     JSON.stringify([live?scope.authScope!.ownerId:getDemoProfile(),scope.pathId,scope.checkpointId])
   const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
@@ -88,6 +98,8 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
   try {attachedSource=sourceDraft.text?JSON.parse(sourceDraft.text):undefined} catch {/* Restore only a saved selection. */}
   const [selectedLocal,setSelectedLocal]=useState('')
   const attachedLocal=useDraft(draftKey+':attached-local',live)
+  const draftWarning=question.unsaved||context.unsaved||attachedLocal.unsaved||sourceDraft.unsaved
+    ?'Some draft changes could not be saved on this device and may be lost on reload.':undefined
   const [preview,setPreview]=useState<ReturnType<typeof previewLocalTutorExcerpt>>()
   const [session,setSession]=useState<{api:ManualTutor; thread:TutorThreadView}>()
   const [busy,setBusy]=useState(false)
@@ -95,7 +107,7 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
   const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
   const {pathId,checkpointId}=scope
-  const excerpt=scope.objective.slice(0,1200)
+  const excerpt=scope.objective
   const [history,setHistory]=useState<TutorThreadView['turns']>([])
   const [historyDrafts,setHistoryDrafts]=useState<TutorThreadView['recoveredDrafts']>([])
   const [historyCursor,setHistoryCursor]=useState<number|null>()
@@ -110,12 +122,13 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
     setDraftNext(true);setShowLocal(true);setSelectedLocal(padHandoff.text);setPreview(previewLocalTutorExcerpt(padHandoff.text))
     onHandoffConsumed?.(padHandoff.requestId)
   },[readOnly,padHandoff,onHandoffConsumed])
+  const [connectionVersion,setConnectionVersion]=useState(0)
   const readVersion=useRef(0)
-  const refresh=useCallback(async(api:ManualTutor,reconcile=false)=>{
+  const refresh=useCallback(async(api:ManualTutor,reconcile=Boolean(connectorUrl))=>{
     const request=++readVersion.current
-    const thread=await api.resume(undefined,reconcile)
+    const thread=await api.resume(undefined,reconcile,connectorUrl)
     if(request===readVersion.current){setSession({api,thread});setError('')}
-  },[])
+  },[connectorUrl])
   const ownerId=scope.authScope?.ownerId,generation=scope.authScope?.generation
   useEffect(()=>{
     let active=true,api:ManualTutor|undefined
@@ -126,11 +139,11 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
         }):await openDemoManualTutor({pathId,checkpointId})
         if(!active){api.close();return}
         await refresh(api,true)
-      } catch {if(active)setError('Could not open the saved tutor thread. Close it and try again.')}
+      } catch {if(active)setError('Could not open the saved conversation. Try again.')}
     }
     void connect()
     return ()=>{active=false;readVersion.current++;api?.close()}
-  },[pathId,checkpointId,live,readOnly,ownerId,generation,refresh])
+  },[pathId,checkpointId,live,readOnly,ownerId,generation,refresh,connectionVersion])
   const activeApi=session?.api
   const processed=useRef<TutorThreadView|undefined>(undefined)
   useEffect(()=>{
@@ -155,27 +168,35 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{
     if(!live||!activeApi)return
-    let active=true
-    const update=()=>{if(document.visibilityState!=='hidden')void refresh(activeApi,true).catch(()=>{
+    let active=true,refreshing=false
+    const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true).catch(()=>{
       if(active)setError('Could not refresh. Showing the last confirmed conversation.')
-    })}
+    }).finally(()=>{refreshing=false})}}
     window.addEventListener('focus',update);window.addEventListener('online',update)
     document.addEventListener('visibilitychange',update)
-    const timer=pendingId?window.setInterval(update,15000):undefined
+    const timer=pendingId?window.setInterval(update,3000):undefined
     return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);document.removeEventListener('visibilitychange',update)}
   },[live,activeApi,pendingId,refresh])
-  async function saveQuestion() {
-    if (!session || busy || readOnly || !question.text.trim()) return
+  async function saveQuestion(text=question.text,options:SendOptions={}) {
+    if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
+      session.thread.head.pendingTurnId || session.thread.outbox?.length || !text.trim() || text.length>2000 ||
+      (page && !options.keepDraft && text.includes('□')) || connectorLoading) return
     setBusy(true);setError('');setCopyStatus('')
     try {
-      const local=attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
-      const result=await session.api.submit(crypto.randomUUID(),{
-        question:question.text,
+      const local=!options.keepDraft && attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
+      const includeObjective=options.includeObjective || (!options.keepDraft && Boolean(context.text))
+      const draft:TutorComposerDraft={
+        question:text,
         ...(local?.kind==='preview' ? {localExcerpt:addLocalTutorExcerpt(local)} : {}),
-        selectedContext:[...(context.text && excerpt ? [{kind:'checkpoint' as const,refId:checkpointId,version:'demo',excerpt}] : []),...(attachedSource?[attachedSource]:[])],
-      },session.thread.head.lastSequence)
-      if(result.kind==='submitted') {
-        question.clearIfUnchanged(question.text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
+        selectedContext:[...(includeObjective && excerpt ? [{kind:'checkpoint' as const,refId:checkpointId,version:'demo',excerpt}] : []),
+          ...(!options.keepDraft && attachedSource?[attachedSource]:[])],
+      }
+      const id=crypto.randomUUID(),sequence=session.thread.head.lastSequence
+      const result=session.thread.canConnect && connectorUrl && session.api.submitToConnector
+        ? await session.api.submitToConnector(id,draft,sequence,connectorUrl)
+        : await session.api.submit(id,draft,sequence)
+      if(result.kind==='submitted' && !options.keepDraft) {
+        question.clearIfUnchanged(text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
       }
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')
@@ -231,46 +252,38 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
     try { await navigator.clipboard.writeText(handoff);setCopyStatus('Question copied.') }
     catch { setCopyStatus('Clipboard unavailable. Select and copy the text yourself.') }
   }
-  return <>
-    <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
-    {readOnly&&<p role="status">Tutor changes are unavailable. You can read saved history and check pending submissions without sending anything new.</p>}
-    {error&&<p role="alert">{error}</p>}
-    {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Conversation last checked '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
-    {!session&&!error&&<p role="status">Opening saved tutor preview…</p>}
-    {session?.thread.outbox?.map(item=><section key={item.operationId} aria-label="Pending tutor submission">
-      <p>A saved submission is waiting for confirmation.</p><p style={{whiteSpace:'pre-wrap'}}>{item.text}</p>
-      <Button disabled={busy||Boolean(thread?.offline)} onClick={()=>void action(async()=>{
-        const status=await session.api.retry?.(item.operationId)
-        if(status==='submitted'){
-          question.clearIfUnchanged(item.text)
-          if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
-          if(item.source)sourceDraft.clearIfUnchanged(JSON.stringify(item.source))
-        }
-        if(status==='unconfirmed')throw new Error('No saved receipt was found. Your submission is still kept on this device.')
-        if(status==='conflict'||status==='turn-pending')throw new Error('The submission conflicted. Your draft was kept.')
-      })}>{readOnly?'Check saved receipt':'Check and retry submission'}</Button>
-    </section>)}
-    {recoveryOnly&&question.text&&<section aria-label="Saved question draft"><p>Unsent question draft</p>
-      <textarea className="v7-field" aria-label="Saved question draft" readOnly value={question.text}/>
-      {attachedLocal.text&&<p style={{whiteSpace:'pre-wrap'}}>{attachedLocal.text}</p>}
-      {attachedSource&&<p style={{whiteSpace:'pre-wrap'}}>{attachedSource.excerpt}</p>}
-    </section>}
-    {session?.thread.canSubmit===false&&!session.thread.offline&&!pending&&<p>New tutor questions are unavailable.</p>}
-    {live&&pending&&!draftNext&&!recoveryOnly&&<Button onClick={()=>setDraftNext(true)}>Draft next question</Button>}
-    {session&&!recoveryOnly&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
-      <label htmlFor={questionId}>Question</label>
-      <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
-        disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
+  const canConnect=Boolean(thread?.canConnect && !recoveryOnly && connectorUrl && session?.api.connectTurn)
+  const delivery=thread?.connectorDelivery
+  const clientName=page?.client==='chatgpt'?'ChatGPT':'Claude'
+  const tutorLink=page && delivery && delivery.turnId===pending?.id && canConnect
+    ? chatLink(page.client,'Continue this checkpoint in Lemma. Use the Lemma MCP get tool with '+
+      JSON.stringify({what:'tutor_turn',id:delivery.reference})+
+      '. Follow its claim and reply instructions. Send your feedback and next question back to the learner in Lemma.')
+    : undefined
+  const claimed=pending?.claimExpiresAt && Date.parse(pending.claimExpiresAt)>Date.now()
+  const pendingStatus=pending && <>
+    <p>{recoveryOnly?'Showing the last confirmed turn.':!live?'Saved in this demo. Import a tutor reply to continue.':
+      claimed?'Your tutor is responding…':tutorLink?'Answer ready for your tutor in Lemma MCP.':
+      canConnect?'Answer saved. Connect your tutor to this turn.':'Answer saved. You can import a reply in Tutor connection.'}</p>
+    {tutorLink && !claimed && <>
+      <p>Open {clientName} if your tutor session is idle. Its reply will appear here.</p>
+      <a className="btn primary" href={tutorLink} target="_blank" rel="noopener noreferrer">Open {clientName}</a>
+    </>}
+    {!tutorLink && canConnect && !claimed && <Button disabled={busy} onClick={()=>void action(
+      ()=>session!.api.connectTurn!(pending.id,pending.version,connectorUrl!)
+    )}>Send to tutor</Button>}
+  </>
+  const contextControls=<>
       {excerpt&&<label>
         <input type="checkbox" checked={Boolean(context.text)} disabled={busy}
           onChange={e=>context.change(e.currentTarget.checked?'yes':'')}/> Include this checkpoint’s objective
       </label>}
       {Boolean(context.text)&&excerpt&&<p>{excerpt}</p>}
-      {scope.sourceShort&&session.api.previewSource&&<details><summary>Add a page from {scope.sourceShort}</summary>
+      {scope.sourceShort&&session?.api.previewSource&&<details><summary>Add a page from {scope.sourceShort}</summary>
         <label>Page number<input type="number" min={1} step={1} value={sourcePage} disabled={busy}
           onChange={e=>{setSourcePage(e.currentTarget.value);setSourcePreview(undefined)}}/></label>
         <Button disabled={busy||!Number.isInteger(Number(sourcePage))||Number(sourcePage)<1}
-          onClick={()=>void action(async()=>setSourcePreview(await session.api.previewSource!(Number(sourcePage))))}>Preview linked source page</Button>
+          onClick={()=>void action(async()=>setSourcePreview(await session?.api.previewSource!(Number(sourcePage))))}>Preview linked source page</Button>
         {sourcePreview&&<section aria-label="Source excerpt preview"><p style={{whiteSpace:'pre-wrap'}}>{sourcePreview.excerpt}</p>
           <Button disabled={busy} onClick={()=>{sourceDraft.change(JSON.stringify(sourcePreview));setSourcePreview(undefined)}}>Add source excerpt</Button>
         </section>}
@@ -303,9 +316,27 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
         <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{attachedLocal.text}</p>
         <Button disabled={busy} onClick={()=>attachedLocal.change('')}>Remove local excerpt</Button>
       </section>}
-      <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
-      {(question.unsaved||context.unsaved||attachedLocal.unsaved)&&<p role="alert">This draft may not survive a reload.</p>}
-    </div>}
+  </>
+  const statusControls=<>
+    {readOnly&&<p role="status">Tutor changes are unavailable. You can read saved history and check pending submissions without sending anything new.</p>}
+    {error&&<div role="alert"><p>{error}</p>{!session&&<Button onClick={()=>setConnectionVersion(v=>v+1)}>Try again</Button>}</div>}
+    {thread?.offline&&<p role="status">{thread.confirmedAt?'Offline. Conversation last checked '+new Date(thread.confirmedAt).toLocaleString()+'.':'Offline. Reconnect to read the conversation.'}</p>}
+    {!session&&!error&&<p role="status">Opening your conversation…</p>}
+    {session?.thread.outbox?.map(item=><section key={item.operationId} aria-label="Pending tutor submission">
+      <p>A saved submission is waiting for confirmation.</p><p style={{whiteSpace:'pre-wrap'}}>{item.text}</p>
+      <Button disabled={busy||Boolean(thread?.offline)} onClick={()=>void action(async()=>{
+        const status=await session.api.retry?.(item.operationId)
+        if(status==='submitted'){
+          question.clearIfUnchanged(item.text)
+          if(item.localExcerpt)attachedLocal.clearIfUnchanged(item.localExcerpt)
+          if(item.source)sourceDraft.clearIfUnchanged(JSON.stringify(item.source))
+        }
+        if(status==='unconfirmed')throw new Error('No saved receipt was found. Your submission is still kept on this device.')
+        if(status==='conflict'||status==='turn-pending')throw new Error('The submission conflicted. Your draft was kept.')
+      })}>{readOnly?'Check saved receipt':'Check and retry submission'}</Button>
+    </section>)}
+  </>
+  const manualControls=<>
     {pending&&<div className="v7-field-group">
       <p role="status">{pending.claimExpiresAt?'Tutor is answering until '+new Date(pending.claimExpiresAt).toLocaleTimeString()+'.':'Saved. Waiting for a reply.'}</p>
       <label htmlFor={copyId}>Text for your tutor</label>
@@ -333,11 +364,25 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
     </div>}
     {pending&&<ReplyEditor live={live} key={pending.id} draftKey={draftKey+':reply:'+pending.id} busy={busy}
       completed={false} readOnly={recoveryOnly} onConfirm={(body,id)=>confirm(body,pending.id,pending.version,id)}/>}
-    {allTurns.map(turn=>turn.status==='completed'&&<article key={turn.id} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
-      <h3>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':'Tutor reply'}</h3>
-      {turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
-      <p className="v7-field-hint">{turn.snapshot.question}</p>
-      <p style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere'}}>{turn.finalReply.body}</p>
+  </>
+  const loadEarlier=session&&thread?.before!=null&&thread.before>0&&<Button onClick={()=>void action(async()=>{
+    const older=await session.api.resume(historyCursor??thread.before!)
+    setHistory(seen=>[...older.turns,...seen])
+    setHistoryDrafts(seen=>[...older.recoveredDrafts,...seen])
+    setHistoryCursor(older.before??null)
+  })} disabled={busy||historyCursor===null}>Load earlier questions</Button>
+  const lastReplyId=allTurns.filter(turn=>turn.status==='completed').at(-1)?.id
+  const transcript=<>
+    {page&&loadEarlier}
+    {allTurns.map(turn=>turn.status==='completed'?<article key={turn.id} className={page?"turn":undefined} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
+      {page&&<div className="ans"><div className="msg u"><div className="bd"><MathText source={turn.snapshot.question}/></div></div></div>}
+      <div className={page?"msg a":undefined} data-latest-reply={page&&turn.id===lastReplyId?true:undefined}>
+      <h3 className={page?"who":undefined}>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':page?'Tutor · Q'+turn.sequence:'Tutor reply'}</h3>
+      {!page&&turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
+      {!page&&<p className="v7-field-hint">{turn.snapshot.question}</p>}
+      <div className="bd"><MathText source={turn.finalReply.body}/></div>
+      </div>
+      <div className={page?"tutor-details":undefined}>
       {!!turn.finalReply.citations.length&&<details><summary>Selected citations</summary>
         <ul>{turn.finalReply.citations.map((citation,index)=>{
           const selection=turn.snapshot.selectedContext.find(s=>s.kind===citation.kind&&s.refId===citation.refId&&s.version===citation.version&&s.page===citation.page)
@@ -357,19 +402,59 @@ function TutorBody({scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:En
       </details>}
       {session?.api.proposeCard&&!recoveryOnly&&<CardSuggestion disabled={busy} onPropose={(front,back)=>action(()=>session.api.proposeCard!(turn.id,turn.version,front,back))}/>}
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
-    </article>)}
-    {allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
-    {session&&thread?.before&&<Button onClick={()=>void action(async()=>{
-      const older=await session.api.resume(historyCursor??thread.before!)
-      setHistory(seen=>[...older.turns,...seen])
-      setHistoryDrafts(seen=>[...older.recoveredDrafts,...seen])
-      setHistoryCursor(older.before??null)
-    })} disabled={busy||historyCursor===null}>Load earlier questions</Button>}
+      </div>
+    </article>:page?<div key={turn.id} className="ans">
+      <div className="msg u"><div className="bd"><MathText source={turn.snapshot.question}/></div></div>
+      <span className="ctag">{turn.status==='cancelled'?'Cancelled':'Saved'}</span>
+    </div>:null)}
+    {!page&&allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
+    {!page&&loadEarlier}
     {!!recovered.length&&<details><summary>Recoverable replies</summary>
       {recovered.map((item,i)=><div key={item.draftId??item.messageId} className="v7-field-group">
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
-    </details>}
+    </details>}  </>
+  if(page)return <TutorChat page={page} turns={allTurns} draft={question.text} onChange={question.change}
+    onSend={saveQuestion} readOnly={recoveryOnly} pending={!!pending} offline={!!thread?.offline}
+    draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
+    canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
+    pendingStatus={pendingStatus}
+    status={<>{statusControls}{thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
+      {live&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
+        <a href={chatLink(page.client,studyPrompt(page.project.project.title,page.detail.view.code,page.detail.view.title))}
+          className="btn small" rel="noopener noreferrer" target="_blank">Study in {clientName}</a>}
+      {live&&thread?.canSubmit&&!recoveryOnly&&!connectorLoading&&!canConnect&&
+        <p role="status">MCP delivery is unavailable. You can save a question and import a reply through Tutor connection.</p>}</>}
+    context={<>{readOnly||thread?.offline?<p>Reconnect to add context.</p>:contextControls}</>}
+    connection={<>
+      {!live&&<p>This demo saves the conversation in this browser. You can import a reply to try the conversation.</p>}
+      {!pending&&<p>{recoveryOnly?'Your saved conversation is available to read.':'Send an answer to open the next turn for your tutor.'}</p>}
+      {live&&pending&&pendingStatus}
+      {tutorLink&&delivery&&<details><summary>Handoff reference</summary>
+        <label>Reference for this turn<input className="v7-field" value={delivery.reference} readOnly onFocus={e=>e.currentTarget.select()}/></label>
+      </details>}
+      {live&&pending?<details><summary>Manual handoff and recovery</summary>{manualControls}</details>:manualControls}
+    </>} transcript={transcript}/>
+  return <>
+    <p>{scope.title}{live?'':'. This demo stays in this browser. Nothing is sent to a tutor.'}</p>
+    {statusControls}
+    {recoveryOnly&&question.text&&<section aria-label="Saved question draft"><p>Unsent question draft</p>
+      <textarea className="v7-field" aria-label="Saved question draft" readOnly value={question.text}/>
+      {attachedLocal.text&&<p style={{whiteSpace:'pre-wrap'}}>{attachedLocal.text}</p>}
+      {attachedSource&&<p style={{whiteSpace:'pre-wrap'}}>{attachedSource.excerpt}</p>}
+    </section>}
+    {session?.thread.canSubmit===false&&!session.thread.offline&&!pending&&<p>New tutor questions are unavailable.</p>}
+    {live&&pending&&!draftNext&&!recoveryOnly&&<Button onClick={()=>setDraftNext(true)}>Draft next question</Button>}
+    {session&&!recoveryOnly&&(!pending||(live&&draftNext))&&session.thread.canSubmit!==false&&<div className="v7-field-group">
+      <label htmlFor={questionId}>Question</label>
+      <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
+        disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
+      {contextControls}
+      <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
+    </div>}
+    {draftWarning&&<p role="alert">{draftWarning}</p>}
+    {manualControls}
+    {transcript}
   </>
 }
 

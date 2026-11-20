@@ -3,7 +3,7 @@ import {useHapticsSetting} from '../../ui/v7/useHapticsSetting';
 import {useDeviceCommands} from '../../platform/useDeviceCommands';
 import {Link,useLocation,useNavigate,useNavigationType} from 'react-router';
 import {clearToasts} from '../../ui/Toast';
-import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft,NotebookPen} from 'lucide-react';
+import {CalendarDays,ChartColumn,House,Pause,Play,Plus,Route,Search,Inbox,Settings,ChevronLeft} from 'lucide-react';
 import {MEANING_ICON} from '../../ui/v7/meanings';
 import {useHome} from '../../data/hooks';
 import {getStudyApi} from '../../data/study';
@@ -11,7 +11,6 @@ import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
 import {Button,Sheet} from '../../ui/v7/components';
-import {MoreActions} from '../../ui/v7/ActionSheet';
 import {EllMark} from '../../ui/v7/marks';
 import {SyncMark} from '../../ui/v7/SyncMark';
 import {useDevicePrefValue} from '../../platform/useDevicePref';
@@ -130,9 +129,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
  const settings=useSettings();
- useEffect(()=>{
+ useLayoutEffect(()=>{
   if(!isFlagOn('v7Room'))return;
   const path=location.pathname,to=path+location.search;
+  if(/^\/p\/[^/]+(?:\/cp\/[^/]+)?\/tutor$/.test(path))return;
   const group=path.startsWith('/p/')?(path.includes('/cp/')?'Checkpoints':'Paths'):path.startsWith('/cards/')?'Cards':path.startsWith('/s/')?'Sessions':null;
   if(!group)return;
   const record=()=>{
@@ -220,7 +220,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
    {!immersive&&capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
-    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log'],...(isFlagOn('padLocal')?[['/pad','Lemma Pad']]:[])].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
+    {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
    <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
   </div>
@@ -245,7 +245,6 @@ export function HubHeader({title,date,settings=false,display=false,control,child
   }
  };
  if(isFlagOn('v7Room')&&!display)title=findSelected(children)??title;
- const navigate=useNavigate();
  const pending=useHome().data?.pendingProposals??0;
  // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
  const update=useDevicePrefValue<number|null>('updateAvailable',null);
@@ -260,7 +259,6 @@ export function HubHeader({title,date,settings=false,display=false,control,child
  const actions=<nav aria-label="Page actions" className="v7-page-actions">
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
-    {isFlagOn('padLocal')&&<MoreActions label="More destinations" title="Go to" items={[{label:'Lemma Pad',icon:<NotebookPen aria-hidden="true"/>,onClick:()=>navigate('/pad')}]}/>}
     {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
    </nav>;
  if(!display)return <>
@@ -277,7 +275,7 @@ export function HubHeader({title,date,settings=false,display=false,control,child
  </header>;
 }
 /** B. Detail header: a sticky glass bar with Back, a short title and one action. */
-export function DetailHeader({title,back,action,compact}:{title:string;back?:string;action?:ReactNode;
+export function DetailHeader({title,back,action,extraAction,compact}:{title:string;back?:string;action?:ReactNode;extraAction?:ReactNode;
  /** R2 · F11: shown beside the bar title once the page's large title has scrolled away (an emblem thumbnail, a progress ring). */
  compact?:ReactNode}){
  const navigate=useNavigate(),location=useLocation(),ref=useRef<HTMLElement>(null);
@@ -292,9 +290,9 @@ export function DetailHeader({title,back,action,compact}:{title:string;back?:str
   observer.observe(heading);return ()=>observer.disconnect();
  },[title,location.pathname,location.search]);
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
-  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default')navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
+  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default'&&window.history.state?.idx>0)navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
-  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}</nav>
+  <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}{extraAction}</nav>
  </header>;
 }
 /** C. Immersive header: leave on the left, progress in the centre, more on the right. */

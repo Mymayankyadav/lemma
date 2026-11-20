@@ -17,7 +17,7 @@ const session = (id: string, seconds = 3600, sessionId = '00000000-0000-4000-800
   };
 };
 
-async function openCheckpoint(page: Page, context: BrowserContext, released = true) {
+async function openPad(page: Page, context: BrowserContext, released = true) {
   const auth = session(owner);
   await page.addInitScript(({key, auth}) => {
     if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(auth));
@@ -54,14 +54,13 @@ async function openCheckpoint(page: Page, context: BrowserContext, released = tr
     else return route.abort();
     return route.fulfill({json:data, headers:{'content-range':'0-0/1'}});
   });
-  await page.goto('./?demo=0&flags=v7Shell,padLocal#/p/analysis/cp/CP4');
-  if (released) await page.getByRole('button', {name:'Open Local Pad'}).click();
+  await page.goto('./?demo=0&flags=v7Shell,padLocal#/pad?path=analysis&checkpoint=CP4');
   return {state, external, payloads};
 }
 
 test('an owner-verified checkpoint Pad can cold-open offline and stays private after the device changes accounts', async ({page, context}) => {
   test.setTimeout(90_000);
-  const {state, external} = await openCheckpoint(page, context);
+  const {state, external} = await openPad(page, context);
   const notes = page.getByRole('textbox', {name:'Pad notes'});
   await notes.fill('A device-private proof.');
   await page.getByRole('button', {name:'Save draft'}).click();
@@ -91,24 +90,24 @@ test('an owner-verified checkpoint Pad can cold-open offline and stays private a
   await page.evaluate(({key, auth}) => localStorage.setItem(key, JSON.stringify(auth)),
     {key:authKey, auth:session(owner, 3600, '00000000-0000-4000-8000-000000000019')});
   await page.reload();
-  await expect(page.getByText('Open Local Pad from a checkpoint while signed in to use it here.')).toBeVisible();
+  await expect(page.getByText('While signed in, open your device notes in Settings to make them available offline.')).toBeVisible();
   await page.evaluate(({key, auth}) => localStorage.setItem(key, JSON.stringify(auth)),
     {key:authKey, auth:session(otherOwner)});
   await page.reload();
   await expect(notes).toHaveCount(0);
-  await expect(page.getByText('Open Local Pad from a checkpoint while signed in to use it here.')).toBeVisible();
+  await expect(page.getByText('While signed in, open your device notes in Settings to make them available offline.')).toBeVisible();
   expect(external).toEqual([]);
 });
 
 test('the shared server release must be open for a new live Pad', async ({page, context}) => {
-  const {state} = await openCheckpoint(page, context, false);
-  await expect(page.getByRole('heading', {name:'Compactness'})).toBeVisible();
-  expect(state.verified).toBeGreaterThan(0);
-  await expect(page.getByRole('button', {name:'Open Local Pad'})).toHaveCount(0);
+  const {state} = await openPad(page, context, false);
+  await expect(page.getByText('Local Pad is currently unavailable.')).toBeVisible();
+  await expect(page.getByRole('textbox', {name:'Pad notes'})).toHaveCount(0);
+  expect(state.verified).toBe(0);
 });
 
 test('a confirmed release rollback removes the offline receipt and preserves saved revisions', async ({page, context}) => {
-  const {state} = await openCheckpoint(page, context);
+  const {state} = await openPad(page, context);
   await page.getByRole('textbox', {name:'Pad notes'}).fill('Keep this saved revision');
   await page.getByRole('button', {name:'Save draft'}).click();
   await expect(page.getByText('Saved on this device.', {exact:true})).toBeVisible();
@@ -117,13 +116,13 @@ test('a confirmed release rollback removes the offline receipt and preserves sav
   state.released = false;
   await page.reload();
   await expect.poll(() => page.evaluate(key => localStorage.getItem(key), receipt)).toBeNull();
-  await expect(page.getByRole('button', {name:'Open Local Pad'})).toHaveCount(0);
+  await expect(page.getByRole('textbox', {name:'Pad notes'})).toHaveCount(0);
   expect(await page.evaluate(async () => (await indexedDB.databases()).map(db => db.name))).toContain('lemma-pad-drafts:' + owner);
 });
 
 test('account backup includes both saved Pad revisions locally and only confirmed deletion removes this owner’s data', async ({page, context}) => {
   test.setTimeout(90_000);
-  const {state, payloads} = await openCheckpoint(page, context);
+  const {state, payloads} = await openPad(page, context);
   const notes = page.getByRole('textbox', {name:'Pad notes'});
   for (const revision of ['First private Pad revision', 'Final private Pad revision']) {
     await notes.fill(revision);

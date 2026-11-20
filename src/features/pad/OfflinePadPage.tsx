@@ -177,7 +177,7 @@ function OfflineLibrary() {
     : findEligibleDevicePad(checkpointId);
   const generation = authGeneration();
   return <><CachedPadPicker/>{pad ? <DeviceWorkspace key={JSON.stringify([pad.ownerId, pad.sessionId, pad.checkpointId])}
-    pad={pad} generation={generation}/> : <p role="status">Open Local Pad from a checkpoint while signed in to use it here.</p>}</>;
+    pad={pad} generation={generation}/> : <p role="status">While signed in, open your device notes in Settings to make them available offline.</p>}</>;
 }
 
 function ConnectedRelease({onDecision}: {onDecision: (open: boolean) => void}) {
