@@ -1,0 +1,34 @@
+{
+  "table": "atlas_practice_controls",
+  "version": 1,
+  "columns": {
+    "singleton": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Operational deployment controls are outside owner exports.",
+      "deletionPolicy": "Retain operating controls across individual account deletions."
+    },
+    "forecast_enabled": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Operational deployment controls are outside owner exports.",
+      "deletionPolicy": "Retain operating controls across individual account deletions."
+    },
+    "challenger_enabled": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Operational deployment controls are outside owner exports.",
+      "deletionPolicy": "Retain operating controls across individual account deletions."
+    },
+    "admission_enabled": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Operational deployment controls are outside owner exports.",
+      "deletionPolicy": "Retain operating controls across individual account deletions."
+    }
+  }
+}

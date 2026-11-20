@@ -34,7 +34,7 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
    learn_ahead_minutes:25,fsrs_weights:[...FSRS.DEFAULT_W],
    macros:'\\newcommand{\\N}{\\mathbb{N}}',default_style:'socratic',
    tutor_rules:null,mix_decks:true,preferred_chat:'chatgpt',
-   time_zone:'Asia/Kolkata',master_prompt:'study',
+   time_zone:'Asia/Kolkata',master_prompt:'study',scheduling_algorithm:'legacy',
    ui:{layout:'dense'},notify:{email:{digest:true}},
    week_start:1,clock_24h:true,focus_defaults:{mode:'flowtime'},
    planning:{gap_minutes:15},review_budget:{minutes:30},
@@ -51,6 +51,12 @@ describe('N87 MCP owner settings coverage and optimistic edits',()=>{
   expect(result.notify).toMatchObject({email:{digest:true},
    future:{doNotDrop:true}});
   expect(result).not.toHaveProperty('user_id');
+ });
+ it('accepts either scheduler or the release default and rejects an unknown policy',()=>{
+  for(const choice of ['new','legacy',null]){
+   expect(prepareSettingsEdit(row,{scheduling_algorithm:choice},version).scheduling_algorithm).toBe(choice);
+  }
+  expect(()=>prepareSettingsEdit(row,{scheduling_algorithm:'unknown'},version)).toThrow(/scheduling_algorithm/);
  });
  it('supports explicit FSRS reset, rejects invalid length and nonalgorithm weights',()=>{
   expect(prepareSettingsEdit(row,{fsrs_weights:'default'}).fsrs_weights).toBeNull();

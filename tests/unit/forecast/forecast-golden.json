@@ -1,0 +1,246 @@
+{
+  "tracker": [
+    {
+      "q": {
+        "kc": "pre",
+        "day": 0,
+        "kind": "lesson",
+        "hint": 0
+      },
+      "outcome": null,
+      "id": "0",
+      "ref": null,
+      "before": null
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 0,
+        "kind": "lesson",
+        "hint": 0
+      },
+      "outcome": null,
+      "id": "1",
+      "ref": null,
+      "before": null
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 1,
+        "kind": "attempt",
+        "hint": 0
+      },
+      "outcome": false,
+      "id": "2",
+      "ref": 0.82,
+      "before": {
+        "probability": 0.5358769869353303,
+        "recall": 0.8047240151745172,
+        "execution": 0.47177384107717235,
+        "expert_weights": {
+          "durable": 0.2,
+          "labile": 0.2,
+          "cautious": 0.25,
+          "reference": 0.35
+        },
+        "lesson_observed": true,
+        "unique_observations": 0,
+        "disagreement": 0.4768664761132734
+      }
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 2,
+        "kind": "attempt",
+        "hint": 2
+      },
+      "outcome": true,
+      "id": "3",
+      "ref": 0.52,
+      "before": {
+        "probability": 0.5396222895152077,
+        "recall": 0.7253727163902625,
+        "execution": 0.36061646752107335,
+        "expert_weights": {
+          "durable": 0.24604731653794035,
+          "labile": 0.25776515585747806,
+          "cautious": 0.34759204465500315,
+          "reference": 0.14859548294957836
+        },
+        "lesson_observed": true,
+        "unique_observations": 1,
+        "disagreement": 0.10504179717768214
+      }
+    },
+    {
+      "q": {
+        "kc": "pre",
+        "day": 3,
+        "kind": "recall",
+        "hint": 0
+      },
+      "outcome": true,
+      "id": "4",
+      "ref": null,
+      "before": {
+        "probability": 0.7207607210910443,
+        "recall": 0.7984127856279827,
+        "execution": 0.46288200288210546,
+        "expert_weights": {
+          "durable": 0.5,
+          "labile": 0.5
+        },
+        "lesson_observed": true,
+        "unique_observations": 0,
+        "disagreement": 0.056160929626843825
+      }
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 5,
+        "kind": "execution",
+        "hint": 1
+      },
+      "outcome": false,
+      "id": "5",
+      "ref": null,
+      "before": {
+        "probability": 0.6279388698357076,
+        "recall": 0.7548843040375659,
+        "execution": 0.4502470349028502,
+        "expert_weights": {
+          "durable": 0.5075626972249853,
+          "labile": 0.49243730277501474
+        },
+        "lesson_observed": true,
+        "unique_observations": 2,
+        "disagreement": 0.017279665554990276
+      }
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 13,
+        "kind": "attempt",
+        "hint": 0
+      },
+      "outcome": true,
+      "id": "6",
+      "ref": 0.32,
+      "before": {
+        "probability": 0.27368022095338174,
+        "recall": 0.5649232910773665,
+        "execution": 0.1169620154675224,
+        "expert_weights": {
+          "durable": 0.23851752285573774,
+          "labile": 0.23140968842238158,
+          "cautious": 0.37447221073054665,
+          "reference": 0.15560057799133392
+        },
+        "lesson_observed": true,
+        "unique_observations": 3,
+        "disagreement": 0.21495278921518735
+      }
+    },
+    {
+      "q": {
+        "kc": "target",
+        "day": 21,
+        "kind": "attempt",
+        "hint": 0
+      },
+      "outcome": false,
+      "id": "7",
+      "ref": 0.8,
+      "before": {
+        "probability": 0.45455731000211363,
+        "recall": 0.6869587301147153,
+        "execution": 0.28522932427741554,
+        "expert_weights": {
+          "durable": 0.2119879280205626,
+          "labile": 0.12372588124674938,
+          "cautious": 0.4722666932449032,
+          "reference": 0.19201949748778474
+        },
+        "lesson_observed": true,
+        "unique_observations": 4,
+        "disagreement": 0.6345436730966061
+      }
+    }
+  ],
+  "guard": [
+    {
+      "ref": 0,
+      "challengers": [
+        1,
+        null
+      ],
+      "outcome": true,
+      "p": 0.2500000049999999,
+      "weights": [
+        0.5000000000000001,
+        0.24999999999999994,
+        0.24999999999999994
+      ]
+    },
+    {
+      "ref": 1,
+      "challengers": [
+        0,
+        0.303
+      ],
+      "outcome": false,
+      "p": 0.005302532642899052,
+      "weights": [
+        1.9999999600000043e-08,
+        0.9824999707000006,
+        0.01750000929999982
+      ]
+    },
+    {
+      "ref": 0.12,
+      "challengers": [
+        0.1,
+        0.55
+      ],
+      "outcome": true,
+      "p": 0.11320000319310687,
+      "weights": [
+        2.0106615686511072e-16,
+        0.9706666595708734,
+        0.029333340429126362
+      ]
+    },
+    {
+      "ref": 0.85,
+      "challengers": [
+        0.4,
+        0.45
+      ],
+      "outcome": true,
+      "p": 0.40775162102190965,
+      "weights": [
+        2.131443298871077e-16,
+        0.8449675795618098,
+        0.15503242043819
+      ]
+    },
+    {
+      "ref": 0.1,
+      "challengers": [
+        0.2,
+        0.4
+      ],
+      "outcome": false,
+      "p": 0.2365214891146522,
+      "weights": [
+        4.443211775589922e-16,
+        0.8173925544267383,
+        0.18260744557326122
+      ]
+    }
+  ]
+}

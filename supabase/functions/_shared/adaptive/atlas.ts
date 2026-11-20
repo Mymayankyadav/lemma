@@ -14,7 +14,7 @@ import {bridgeStrength,bridgeCounts,type AtlasLink} from './links.ts';
 import {DAY,logit,clamp} from './math.ts';
 export type AtlasRows={settings:any;concepts:any[];projects:any[];checkpoints:any[];cpConcepts:any[];sessions:any[];attempts?:any[];attemptTags?:any[];instructionEvents?:any[];atlasLinks?:any[];prereqs?:any[];modelFits?:any[];items?:any[];assumptions?:any[];cards?:any[];notes?:any[];reviews?:any[];intervals?:any[];busy?:any[];studyEntries?:any[]};
 export type FacetValue=Estimate&{certified:boolean;status:string};
-export type AtlasReadModel={settings:typeof ATLAS_DEFAULTS;checkpoints:any[];checkpointConcepts:any[];model:MeasurementState;facets:Record<string,FacetValue[]>;health:Health[];fits:Record<string,ReturnType<typeof feasibility>>;durations:Record<string,ReturnType<typeof predictDuration>>;budget:ReturnType<typeof cardBudget>;queue:ReturnType<typeof sessionQueue>;slots:ReturnType<typeof rankSlots>;themes:{id:string;name:string;instances:string[]}[];bridges:{from:string;to:string;strength:ReturnType<typeof bridgeStrength>}[];attempts:any[];links:AtlasLink[];frustration:ReturnType<typeof frustration>;capacity:number|null;finalReviews:FinalReview[];allocation:ReturnType<typeof allocateProjects>};
+export type AtlasReadModel={sessions?:AtlasRows['sessions'];settings:typeof ATLAS_DEFAULTS;checkpoints:any[];checkpointConcepts:any[];model:MeasurementState;facets:Record<string,FacetValue[]>;health:Health[];fits:Record<string,ReturnType<typeof feasibility>>;durations:Record<string,ReturnType<typeof predictDuration>>;budget:ReturnType<typeof cardBudget>;queue:ReturnType<typeof sessionQueue>;slots:ReturnType<typeof rankSlots>;themes:{id:string;name:string;instances:string[]}[];bridges:{from:string;to:string;strength:ReturnType<typeof bridgeStrength>}[];attempts:any[];links:AtlasLink[];frustration:ReturnType<typeof frustration>;capacity:number|null;finalReviews:FinalReview[];allocation:ReturnType<typeof allocateProjects>};
 export function factsForAtlas(rows:AtlasRows):AtlasFacts{
  const notes=new Map((rows.notes??[]).map(n=>[n.id,n]));
  return {concepts:rows.concepts,attempts:(rows.attempts??[]).map(a=>({...a,novelty:a.context?.novelty??a.novelty})),tags:[...(rows.attemptTags??[]),...(rows.attempts??[]).flatMap(a=>(a.tags??[]).map((t:any)=>({...t,attempt_id:a.id})))],instructions:rows.instructionEvents??[],links:rows.atlasLinks??[],items:rows.items??[],sessions:rows.sessions,assumptions:rows.assumptions??[],
@@ -29,7 +29,7 @@ export function declaredBlocks(wd:number|number[],now:Date,last:string|null|unde
  }
  return out;
 }
-export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
+export function assembleAtlas(rows:AtlasRows,now:Date,collectCandidates?:(actions:readonly Action[])=>void):AtlasReadModel{
  const st=rows.settings??{},settings={...ATLAS_DEFAULTS,...st.atlas},time=now.getTime(),facts=factsForAtlas(rows),lastFit=(rows.modelFits??[]).slice().sort((a,b)=>String(b.fitted_at).localeCompare(String(a.fitted_at)))[0],model=replay(facts,lastFit?.params??{},time),health=['attempt','card'].map(stream=>diagnose(model.trace,stream));
  const facets:Record<string,FacetValue[]>={};
  const last=model.trace.filter(x=>x.stream==='attempt').at(-1),h=health[0];
@@ -70,10 +70,11 @@ export function assembleAtlas(rows:AtlasRows,now:Date):AtlasReadModel{
  }
  for(const c of facts.cards??[]){const R=model.hypotheses.reduce((a,h,i)=>a+model.pi[i]*memoryAt(h.cards[c.id],time),0);if(R<.98)actions.push({id:'review:'+c.id,kind:'review',concept_id:c.concept_id,card_id:c.id,home:c.project_id,minutes:.5,p:R});}
  const allocation=allocateProjects(rows.projects.map(pr=>({id:pr.id,pCore:fits[pr.id]?.pCore??1,deadline:pr.last_study_on??null,weight:1,share_weight:pr.share_weight??null,needMinutes:needs[pr.id]??0})),capacity??0);
+ collectCandidates?.(actions);
  const queue=sessionQueue(model,actions,capacity??0,settings.card_cap,rows.projects.length>1?Object.fromEntries(allocation.map(o=>[o.id,o.minutes])):undefined),links=(rows.atlasLinks??[]) as AtlasLink[],themes=rows.concepts.filter(c=>c.kind==='theme').map(c=>({id:c.id,name:c.name,instances:links.filter(l=>l.kind==='instance_of'&&l.to_id===c.id&&l.status==='approved').map(l=>l.from_id)}));
  const bridges=links.filter(l=>l.kind==='instance_of'||l.kind==='analogous').map(l=>({from:l.from_id,to:l.to_id,strength:(c=>bridgeStrength(c.o,c.u))(bridgeCounts(facts,rows.concepts,l.from_id))}));
  const slots=rankSlots(attendance,freeSlots(declaredSlots(time,st.time_zone??'UTC',st.planning?.window_start,st.planning?.window_end),rows.busy??[]),st.user_id??'',now.toISOString().slice(0,10));
- return {settings,checkpoints:rows.checkpoints,checkpointConcepts:rows.cpConcepts,model,facets,health,fits,durations,budget,queue,slots,themes,bridges,attempts:rows.attempts??[],links,frustration:frustration(facts.attempts),capacity,finalReviews:finalReviewList,allocation};
+ return {sessions:rows.sessions,settings,checkpoints:rows.checkpoints,checkpointConcepts:rows.cpConcepts,model,facets,health,fits,durations,budget,queue,slots,themes,bridges,attempts:rows.attempts??[],links,frustration:frustration(facts.attempts),capacity,finalReviews:finalReviewList,allocation};
 }
 export function atlasCard(view:AtlasReadModel,id:string):string{
  const c=view.model.facts.concepts.find(c=>c.id===id);if(!c)return '';

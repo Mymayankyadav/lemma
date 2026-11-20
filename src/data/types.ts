@@ -1,3 +1,5 @@
+import type {SchedulingAlgorithm} from '../../supabase/functions/_shared/agenda/contract'
+
 /** Domain contract (see CURRENT.md, data model). Dates are ISO strings. */
 export type Glyph = string
 export type Hue = 'amber' | 'violet' | 'cyan' | 'rose' | 'lime' | 'slate'
@@ -74,6 +76,7 @@ export interface PlanningPrefs {
  [key:string]:unknown;
 }
 export interface Settings {
+ schedulingAlgorithm?: SchedulingAlgorithm | null
  flags?: Record<string, boolean>;
  focusDefaults?:FocusDefaultsPrefs;
  planning?:PlanningPrefs;

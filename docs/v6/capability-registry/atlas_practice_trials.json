@@ -1,0 +1,48 @@
+{
+  "table": "atlas_practice_trials",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    },
+    "track": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    },
+    "challenger": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    },
+    "start_day": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    },
+    "protocol": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    },
+    "certificate": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts reads the verified owner decision and scoped forecast.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts reads the authenticated owner through the database adapter. Research writes require a separately registered service protocol.",
+      "exportPolicy": "Available through the protocol-controlled research record. Each owner export covers only their own information.",
+      "deletionPolicy": "Retain de-identified study registration, pair IDs or aggregate checkpoints under the registered protocol."
+    }
+  }
+}

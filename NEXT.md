@@ -28,17 +28,6 @@ Scope: src/data/StudyUiRelease.tsx; src/features/practice/v7/PracticeV7.tsx; src
 Not: Rewriting N191 evidence core; Moving the scheduler default into the wrong PR; Skipping tests because a shared dependency is absent.
 Agent packet: [N195.md](docs/implementation/2026-11-20/tasks/N195.md). 
 
-## N196 Ship new scheduler and learning algorithm with default New and Settings override
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: N191 · Assigned: chat-917364#0hiq
-Existing PR: #1547 (https://github.com/Mymayankyadav/lemma/pull/1547)
-Done = Finish PR #1547's owner-bound constrained agenda and four-state forecast/qualified practice routing. Implement a clear persistent Settings > Planning engine choice (New/Legacy). At the coordinated shipping release N198, NEW IS THE DEFAULT for existing and new owners, with no hidden opt-in; user can switch to Legacy and back. Both Today and authenticated MCP queue/resume honor the same choice, preserve already materialized rounds and fail safely to native when invalid.
-Tests: `npx tsc -b; node scripts/ci/lint.mjs`; `node tests/mcp/sql/n196-agenda.mjs`; `tests/e2e/v7-{agenda-decision,scheduling-preference}.spec.ts`; `tests/unit/agenda/** and tests/unit/forecast/parity.test.ts`; `node scripts/atlas/qualify-agenda.mjs with retained reference suite`; `deployment-side read-only shadow, rollback and cross-client tests`.
-Scope: src/data/adaptive/{agenda-api,demo-agenda}.ts; src/features/settings/v7/SettingsLists.tsx; supabase/functions/_shared/agenda/**; supabase/functions/_shared/practice/{router,questions}.ts; supabase/functions/mcp/{agenda,agenda-http}.ts; supabase/migrations/2026121800160*_n196_*.sql; docs/current/N196.md.
-Not: Quietly defaulting all users to Legacy; Unobservable fallback or a hidden opt-in; Unqualified randomized practice exposure; Changing protected test thresholds or bypassing Owner approval.
-Agent packet: [N196.md](docs/implementation/2026-11-20/tasks/N196.md). 
-
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
