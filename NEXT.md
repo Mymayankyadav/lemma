@@ -1,5 +1,13 @@
 # NEXT — ranked by the priority run (2026-11-06 evening: all remaining v6 work, rules v2.1). Take the top open item whose Needs are all done.
 
+## N196 Guarded Atlas scheduling, forecasts and practice evidence
+
+Owner task: "Implement the proposed plan."
+Stage: Build · Status: open · Needs: N191 for integrated reads · Assigned: chat-917364#0hiq
+Done = One owner-bound read serves a legal, reproducible next action or explicit hold. New and Legacy use the stored scheduling preference and qualified release state. Calendar and forecast outputs match pinned fixtures, and practice assignments require an independently qualified certificate and monitored trial.
+Scope: Shared Atlas domain logic, owner-scoped read adapters, practice and decision evidence, focused parity/authorization tests and the N196 handoff.
+Not: Changes to historical grades, existing review rounds, release defaults, global privilege changes, automatic enrollment or calendar writes.
+
 ## N190 Settings search destinations and keyboard history (Owner task)
 
 Owner task: "Yeah so your task is make this changes happen asap. Use work chats to get the work done and you can use parell chats if the implementation can happen in parallel. The goal is to achieve this new implementation below 10 pr. Although models listed in plan can be overkill you take a final judgment call which model to employ if run out of work usage use dots agents. Try minimise the token usage. Good luck"
