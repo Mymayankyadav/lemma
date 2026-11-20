@@ -40,6 +40,7 @@ export interface AtlasMergePreview {
  sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact
 }
 export interface LemmaApi {
+ getNextStudyDue?():Promise<{day:string;count:number}|null>
  getReviewTargetItems?(target:import('./review-target').ReviewDomainTarget):Promise<ReviewItem[]>
  createFirstCard?(input:import('./types').FirstStudyCardInput):Promise<import('./types').FirstStudyCardReceipt>
  getAdaptiveData(now?:Date): Promise<import('./adaptive/contract').AdaptiveData>

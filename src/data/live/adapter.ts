@@ -189,6 +189,12 @@ export class LiveAdapter implements LemmaApi {
  }
  /** KC4: a Review-only metadata read. No card bodies, search cap, quota or
   * sibling collapse; RLS and explicit owner filters apply to every page. */
+ async getNextStudyDue():Promise<{day:string;count:number}|null>{
+  const db=liveClient();await owner(db)
+  const result=await db.rpc('next_study_due')
+  if(result.error)fail(result.error)
+  return result.data
+ }
  async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
   const db=liveClient(),uid=await owner(db),settings=await this.getSettings();
   const forecast=pathForecast(settings),size=500;

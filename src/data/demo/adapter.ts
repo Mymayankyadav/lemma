@@ -220,6 +220,22 @@ export class DemoAdapter implements LemmaApi {
     // Return a copy so a consumer cannot mutate the cached daily buckets.
     return this.dueSnapshot().forecastDays.map(day=>({...day}));
   }
+  async getNextStudyDue():Promise<{day:string;count:number}|null>{
+    const settings=this.store.settings,today=studyDay(this.now(),settings.timeZone,settings.rolloverHour);
+    let next:{day:string;count:number}|null=null;
+    const paths=new Set(this.store.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>p.id));
+    for(const note of this.store.notes){
+      if(note.note.status!=='active'||!paths.has(note.projectId))continue;
+      for(const {state} of note.cards){
+        if(state.state===0)continue;
+        const day=studyDay(Date.parse(state.due),settings.timeZone,settings.rolloverHour);
+        if(day<=today)continue;
+        if(!next||day<next.day)next={day,count:1};
+        else if(day===next.day)next.count++;
+      }
+    }
+    return next;
+  }
   async getPathReviewForecast(): ReturnType<LemmaApi['getPathReviewForecast']> {
     const forecast=pathForecast(this.store.settings,this.now());
     const projects=new Map(this.store.projects.filter(p=>p.status!=='archived'&&!p.system).map(p=>[p.id,p]));

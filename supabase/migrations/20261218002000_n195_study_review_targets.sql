@@ -208,3 +208,22 @@ end
 $target$;
 revoke all on function public.start_study_target(uuid,text,uuid) from public,anon,service_role;
 grant execute on function public.start_study_target(uuid,text,uuid) to authenticated;
+
+-- Return the first future owner study day even when it is beyond the 14-day chart.
+create function public.next_study_due() returns jsonb language sql stable security invoker set search_path='' as $$
+ with prefs as (
+  select user_id,time_zone,rollover_hour,
+   ((current_timestamp at time zone time_zone)-make_interval(hours=>rollover_hour))::date as today
+  from public.settings where user_id=(select auth.uid()) and (select public.lemma_plan_released())
+ ), future as (
+  select ((c.due at time zone s.time_zone)-make_interval(hours=>s.rollover_hour))::date as day
+  from prefs s join public.cards c on c.user_id=s.user_id
+  join public.notes n on n.user_id=c.user_id and n.id=c.note_id
+  join public.projects p on p.user_id=n.user_id and p.id=n.project_id
+  where c.state>0 and n.status='active' and not p.system and p.status<>'archived'
+   and c.due>=((s.today+1+make_interval(hours=>s.rollover_hour)) at time zone s.time_zone)
+ )
+ select pg_catalog.jsonb_build_object('day',day,'count',count(*)) from future group by day order by day limit 1
+$$;
+revoke all on function public.next_study_due() from public,anon,service_role;
+grant execute on function public.next_study_due() to authenticated;
