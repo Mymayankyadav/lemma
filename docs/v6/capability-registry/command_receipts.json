@@ -1,41 +1,48 @@
 {
   "table": "command_receipts",
-  "version": 1,
+  "version": 2,
   "columns": {
     "user_id": {
       "classification": "derived",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "N37 generic MCP command receipts (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+      "mcpPath": "supabase/functions/mcp/tools/study.ts; owner-bound registered command dispatch",
+      "exportPolicy": "Owner-scoped browser, service and stable snapshot export via lemma_export_private.resources; internal result._request and result._request_sha256 are omitted",
+      "deletionPolicy": "Owner account purge; domain undo preserves the immutable acknowledgement for replay"
     },
     "operation_id": {
       "classification": "derived",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "N37 generic MCP command receipts (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+      "mcpPath": "supabase/functions/mcp/tools/study.ts; owner-bound registered command dispatch",
+      "exportPolicy": "Owner-scoped browser, service and stable snapshot export via lemma_export_private.resources; internal result._request and result._request_sha256 are omitted",
+      "deletionPolicy": "Owner account purge; domain undo preserves the immutable acknowledgement for replay"
     },
     "resource": {
-      "classification": "owner-editable",
+      "classification": "derived",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "N37 generic MCP command receipts (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+      "mcpPath": "supabase/functions/mcp/tools/study.ts; owner-bound registered command dispatch",
+      "exportPolicy": "Owner-scoped browser, service and stable snapshot export via lemma_export_private.resources; internal result._request and result._request_sha256 are omitted",
+      "deletionPolicy": "Owner account purge; domain undo preserves the immutable acknowledgement for replay"
     },
     "result": {
       "classification": "derived",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "N37 generic MCP command receipts (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+      "mcpPath": "supabase/functions/mcp/tools/study.ts; owner-bound registered command dispatch",
+      "exportPolicy": "Owner-scoped browser, service and stable snapshot export via lemma_export_private.resources; internal result._request and result._request_sha256 are omitted",
+      "deletionPolicy": "Owner account purge; domain undo preserves the immutable acknowledgement for replay"
     },
     "created_at": {
       "classification": "derived",
       "appPath": "src/data/study/live.ts",
-      "mcpPath": "N37 generic MCP command receipts (planned)",
-      "exportPolicy": "owner-scoped export (N95 planned)",
-      "deletionPolicy": "owner account purge (N103 planned); versioned domain undo (N36.2)"
+      "mcpPath": "supabase/functions/mcp/tools/study.ts; owner-bound registered command dispatch",
+      "exportPolicy": "Owner-scoped browser, service and stable snapshot export via lemma_export_private.resources; internal result._request and result._request_sha256 are omitted",
+      "deletionPolicy": "Owner account purge; domain undo preserves the immutable acknowledgement for replay"
+    },
+    "trusted_writer_version": {
+      "classification": "derived",
+      "appPath": "supabase/migrations/20261218001300_owner_command_receipt_cutover.sql",
+      "mcpPath": "Trusted receipt writers set 1; all historical and legacy-writer receipts remain NULL",
+      "exportPolicy": "Included in owner-scoped receipt history exports; does not expose request data or fingerprint",
+      "deletionPolicy": "Removed with the owner receipt ledger on account purge"
     }
   }
 }

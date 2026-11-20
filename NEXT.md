@@ -6,17 +6,6 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N197 Finish shared receipt privileges and seven legacy-writer cutover
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Harden · Status: open · Needs: N191 · Assigned: —
-Existing PR: —
-Done = Reuse and finish the recovered receipt-permissions cutover. Revoke direct browser write privilege for protected receipts without breaking seven existing legitimate commands; verify app/service callers, replay, account separation, exports and deletion. Route any non-additive privilege changes through an explicit Owner `rules:` PR.
-Tests: `real PostgreSQL role and grant inspection`; `seven-writer compatibility and concurrency fixture`; `existing account-export, deletion and undo suites`; `cross-account and unauthorized direct-write regression`.
-Scope: supabase/migrations/** (new authorized migration only); tests/mcp/sql/**; docs/current/N197.md; docs/v6/capability-registry/**.
-Not: New learning policy or UI; Co-mingling unrelated feature migrations; Changing protected CI permissions to hide failures.
-Agent packet: [N197.md](docs/implementation/2026-11-20/tasks/N197.md). 
-
 ## N198 Qualify and ship New defaults, Settings switches, full Pad page and integrated release
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
