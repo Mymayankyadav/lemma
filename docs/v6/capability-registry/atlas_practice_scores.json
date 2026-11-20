@@ -1,0 +1,62 @@
+{
+  "table": "atlas_practice_scores",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "request_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "operation_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "attempt_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "action_no": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "outcome": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "result": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    },
+    "accepted_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts records the owner-confirmed score for an immutable question delivery.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts accepts only an explicit learner-confirmed outcome through lemma_record_practice; the owner is transport-authenticated.",
+      "exportPolicy": "The owner export includes only this owner’s immutable score receipt and canonical attempt/action identifiers.",
+      "deletionPolicy": "Confirmed owner purge or Auth deletion erases the receipt; undo reverses canonical evidence without accepting a duplicate score."
+    }
+  }
+}

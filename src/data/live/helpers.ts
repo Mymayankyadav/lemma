@@ -52,6 +52,7 @@ export async function rows(db: SupabaseClient, table: string, uid: string, inclu
 }
 export function settingsRow(r: Row): Settings {
   return {
+    schedulingAlgorithm:r.scheduling_algorithm??null,
     flags:r.flags??{},
     notify:r.notify??null,
     desiredRetention:r.desired_retention, newPerDay:r.new_per_day, reviewsPerDay:r.reviews_per_day,

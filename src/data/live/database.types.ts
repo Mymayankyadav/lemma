@@ -1128,6 +1128,7 @@ export type Database = {
           preferred_chat: string
           relearn_steps: string
           reviews_per_day: number
+          scheduling_algorithm: "new" | "legacy" | null
           rollover_hour: number
           time_zone: string
           tutor_rules: string | null
@@ -1154,6 +1155,7 @@ export type Database = {
           preferred_chat?: string
           relearn_steps?: string
           reviews_per_day?: number
+          scheduling_algorithm?: "new" | "legacy" | null
           rollover_hour?: number
           time_zone?: string
           tutor_rules?: string | null
@@ -1180,6 +1182,7 @@ export type Database = {
           preferred_chat?: string
           relearn_steps?: string
           reviews_per_day?: number
+          scheduling_algorithm?: "new" | "legacy" | null
           rollover_hour?: number
           time_zone?: string
           tutor_rules?: string | null

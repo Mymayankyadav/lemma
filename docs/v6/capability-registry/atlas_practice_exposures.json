@@ -1,0 +1,90 @@
+{
+  "table": "atlas_practice_exposures",
+  "version": 1,
+  "columns": {
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "request_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "trial": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "assigned_arm": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "actual_arm": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "item_id": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "item_version": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "question_text": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "served_at": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "scope": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "native_probability": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    },
+    "item_details": {
+      "classification": "command-managed",
+      "appPath": "src/data/adaptive/agenda-api.ts opens an owner-bound question after an explicit request.",
+      "mcpPath": "supabase/functions/mcp/agenda.ts verifies the live selection and persists the delivery receipt.",
+      "exportPolicy": "Export the signed-in owner’s question delivery and assigned and served arms.",
+      "deletionPolicy": "Erase with the confirmed owner purge or Auth account deletion."
+    }
+  }
+}
