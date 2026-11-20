@@ -137,6 +137,25 @@ try {
  const afterUndo=json((await sql('select attention from public.settings where user_id=$1',[owner]))[0].attention);
  assert.equal(Object.hasOwn(afterUndo,'undo_only_marker'),false,'undo restores absent unknown keys');
 
+ // An owner preference survives an old client's planning patch and a fresh read.
+ const otherOwner='77c0bdb2-9710-4bec-88a6-6ce9c89e49d0';
+ await sql('insert into auth.users(id) values($1)',[otherOwner]);
+ await sql("insert into public.settings(user_id,connector_secret) values($1,repeat('7',48))",[otherOwner]);
+ assert.equal(row.scheduling_algorithm,null);
+ await assert.rejects(sql("update public.settings set scheduling_algorithm='unknown' where user_id=$1",[owner]),/check constraint/i);
+ // Model the platform's authenticated table grant, with the real repository RLS policies.
+ await db.exec('grant select,update on public.settings to authenticated; set role authenticated');
+ try {
+  await sql("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:owner})]);
+  assert.equal((await sql("update public.settings set scheduling_algorithm='legacy' where user_id=$1 returning user_id",[owner])).length,1);
+  await update('planning',{gap_minutes:9});
+  assert.equal((await sql('select scheduling_algorithm from public.settings where user_id=$1',[owner]))[0].scheduling_algorithm,'legacy');
+  assert.deepEqual(await sql("update public.settings set scheduling_algorithm='legacy' where user_id=$1 returning user_id",[otherOwner]),[]);
+  await sql("select set_config('request.jwt.claims',$1,false)",[JSON.stringify({sub:otherOwner})]);
+  assert.equal((await sql('select scheduling_algorithm from public.settings where user_id=$1',[otherOwner]))[0].scheduling_algorithm,null);
+  assert.deepEqual(await sql('select scheduling_algorithm from public.settings where user_id=$1',[owner]),[]);
+ } finally {await db.exec('reset role');}
+
 
  const doc=JSON.parse(await readFile(new URL('../../../docs/v6/capability-registry/settings.json',import.meta.url),'utf8'));
  for(const key of ['week_start','clock_24h','focus_defaults','planning','review_budget','attention']){

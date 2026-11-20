@@ -3,6 +3,7 @@ import { project, checkpoints } from './resolve.ts';
 import { cut, capped, date } from './text.ts';
 import { day, display, ui, goalEta } from './derive.ts';
 import { STUDY, PLANNING, MIX, studyRules } from './rules.ts';
+import { readAgenda } from './agenda.ts';
 import { stateOf, flagOn, resumeBlocks, timeLine, flagLines, tokens, briefNodes } from './adaptive.ts';
 import { renderQueue } from '../_shared/adaptive/queue.ts';
 import { sourceLine, visibleProjects, scheduleHint } from './v3.ts';
@@ -112,7 +113,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     const active=ps.filter((x:any)=>x.status==='active');
     const now=[];
     for(const p of active){const cps=await checkpoints(c,p),cp=cps.find((x:any)=>x.status==='in_progress')||cps.find((x:any)=>x.status==='not_started'&&x.plan_state!=='deferred');if(cp)now.push(p.slug+' '+cp.code+' '+cut(cp.title,40)+' step '+(cp.current_step||1)+'/'+cp.steps.length)}
-    const body=resumeBlocks(state,rows,undefined,args.brief?'(rules as in the last resume)':rules+'\n'+MIX,{now:now.length?'NOW '+now.join(' | '):undefined});
+    const body=resumeBlocks(state,rows,undefined,args.brief?'(rules as in the last resume)':rules+'\n'+MIX,{now:now.length?'NOW '+now.join(' | '):undefined},(await readAgenda(c,st.scheduling_algorithm)).agenda);
     return capped(body,RESUME_BUDGET_CHARS);
   }
   const p=await project(c,args.project);
@@ -137,7 +138,7 @@ async function packetV2(c:Context,args:{project?:string;mix?:boolean;brief?:bool
     now:cp?'NOW '+cp.code+' '+cut(cp.title,60)+', step '+(open?.resume_step||cp.current_step||1)+'/'+(cp.steps||[]).length+(step?': '+cut(step,100):'')+'\nCRIT '+cut(cp.criterion,300):'NOW all checkpoints done',
     last:latest?'LAST S'+latest.number+' '+date(latest.last_activity_at)+' '+display(latest)+(latest.goal_met?' goal '+latest.goal_met:'')+(latest.state==='ended'&&latest.summary?': '+cut(latest.summary,140):latest.resume_note?': '+cut(latest.resume_note,140):'')+(latest.state==='open'&&latest.resume_question?' | ask: '+cut(latest.resume_question,250):''):undefined,
     fix:fix.length?'FIX '+cut(fix.map((x:any)=>x.label+' ('+x.times+'x)').join('; '),200):undefined,
-    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)});
+    cards:'CARDS '+n.due+' due; '+n.pending+' proposals waiting; '+n.comments+' card notes',src,adapt,mandatory:mandatory.slice(0,3),nodes:briefNodes(state,rows,cp?.id)},(await readAgenda(c,st.scheduling_algorithm)).agenda);
   return capped(body,RESUME_BUDGET_CHARS);
 }
 export async function packet(c:Context,args:{project?:string;mix?:boolean;brief?:boolean}):Promise<string>{

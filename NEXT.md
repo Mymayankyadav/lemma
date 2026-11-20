@@ -25,6 +25,13 @@ Done = Nov 20 plan P6: saved selected-context snapshots and durable tutor turns,
 Tests: deterministic tutor lifecycle fixtures, transaction/parity/race checks and foreground-recovery journeys.
 Scope: tutor domain/UI and authenticated adapters, the narrow tutor MCP profile, focused tests, and docs/current/N193.md.
 Not: provider inference or OAuth, production data writes, host activation, default-on flags, or changes to the broad MCP connector's established capabilities.
+## N196 Guarded Atlas scheduling, forecasts and practice evidence
+
+Owner task: "Implement the proposed plan."
+Stage: Build · Status: open · Needs: N191 for integrated reads · Assigned: chat-917364#0hiq
+Done = One owner-bound read serves a legal, reproducible next action or explicit hold. New and Legacy use the stored scheduling preference and qualified release state. Calendar and forecast outputs match pinned fixtures, and practice assignments require an independently qualified certificate and monitored trial.
+Scope: Shared Atlas domain logic, owner-scoped read adapters, practice and decision evidence, focused parity/authorization tests and the N196 handoff.
+Not: Changes to historical grades, existing review rounds, release defaults, global privilege changes, automatic enrollment or calendar writes.
 
 ## N190 Settings search destinations and keyboard history (Owner task)
 

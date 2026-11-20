@@ -12,6 +12,7 @@ import {project} from './resolve.ts';
 import {insert,update} from './db.ts';
 import {restore} from '../_shared/adaptive/prune.ts';
 import {DEFAULTS} from '../_shared/adaptive/plan.ts';
+import {readAgenda,agendaQueue,type AgendaRead} from './agenda.ts';
 import {loadAtlasRows,renderAtlasRead,ATLAS_READS} from './atlas.ts';
 import {assembleAtlas,atlasCard} from '../_shared/adaptive/atlas.ts';
 import {predict} from '../_shared/adaptive/measure.ts';
@@ -130,14 +131,14 @@ export function renderAtlasQueue(items:any[],rows:Rows,projectId?:string,limit=8
  return 'QUEUE\n'+ordered.slice(0,limit).map((a,i)=>(i+1)+'. '+a.kind+' '+tag(a)+rows.concepts.find((c:any)=>c.id===a.concept_id)?.name+' '+a.reason).join('\n');
 }
 /** Resume v2 (spec §13.1): OWNER (added by packet), RULES, TIME, QUEUE, BRIEF, FLAGS; the server appends NEXT. */
-export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[];nodes?:string[]}):string{
+export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:string,brief:{now?:string;last?:string;fix?:string;cards?:string;src?:string;adapt?:string;mandatory?:string[];nodes?:string[]},agenda?:AgendaRead|null):string{
   const p=slug?Object.values(s.projects).find(x=>x.slug===slug):undefined;
   if(rows.settings?.atlas_migrated_at){
     const v=assembleAtlas(rows,new Date()),fit=p?v.fits[p.id]:undefined;
     const time='TIME today='+s.today+' tz='+s.zone+(fit?' fit='+fit.pAll.toFixed(2)+' core='+fit.pCore.toFixed(2):'')+' checks_due='+v.queue.items.filter(x=>x.kind==='check').length+' new_cards_quota='+v.budget.available.toFixed(1)+' card_min='+v.queue.cardMinutes.toFixed(1)+'/'+v.queue.cardCapMinutes.toFixed(1);
     // One utility over every project (10 §8), so the queue spans them. A project's own items come first and every other project's are
     // tagged, as the legacy queue named the project in each ref; with a single project nothing is tagged.
-    const queue=renderAtlasQueue(v.queue.items,rows,p?.id);
+    const queue=agenda?agendaQueue(agenda):renderAtlasQueue(v.queue.items,rows,p?.id);
     // BRIEF keeps the resume's context (NOW, LAST, FIX, ADAPT, CARDS, SRC) and swaps the node cards for Atlas cards; RULES keep the
     // tutor's rules and add the Atlas lines (04 §resume: "BRIEF uses card v2", rules "add"). Budgets are unchanged (packet caps the body).
     const cards=brief.nodes?.length?brief.nodes:[...new Set(p?rows.cpConcepts.filter(x=>rows.checkpoints.some(c=>c.id===x.checkpoint_id&&c.project_id===p.id)).map(x=>x.concept_id):[])].slice(0,3).map(id=>atlasCard(v,id));
@@ -147,7 +148,7 @@ export function resumeBlocks(s:State,rows:Rows,slug:string|undefined,rules:strin
     const b=[brief.now,brief.last,brief.fix,brief.adapt,brief.cards,brief.src,...cards.slice(0,3)].filter(Boolean) as string[];
     return ['RULES\n'+rulesText,time,queue,...(b.length?['BRIEF\n'+b.join('\n')]:[]),...(flags.length?['FLAGS\n'+flags.slice(0,6).join('\n')]:[])].join('\n');
   }
-  const q=renderQueue(s.queue,8);
+  const q=agenda?agendaQueue(agenda):renderQueue(s.queue,8);
   const lines=['RULES\n'+rules,p?p.block:timeLine(s),q];
   const b=[brief.now,brief.last,brief.fix,brief.adapt,brief.cards,brief.src,...(brief.mandatory??[]).map(m=>'RECHECK '+m),...(brief.nodes??[]).map(n=>'NODE '+n)].filter(Boolean) as string[];
   if(b.length)lines.push('BRIEF\n'+b.join('\n'));
@@ -180,7 +181,7 @@ export async function readAdaptive(c:Context,a:any):Promise<string>{
   }
   if(a.what==='node')return renderNode(state,rows,{id:a.id,depth:a.depth,trail:a.trail===true,cursor:a.cursor});
   if(a.what==='calibration')return renderCalibration(state);
-  if(a.what==='queue')return renderQueue(state.queue,Math.min(Math.max(a.limit||8,1),50));
+  if(a.what==='queue'){const {agenda}=await readAgenda(c,rows.settings?.scheduling_algorithm);return agenda?agendaQueue(agenda):renderQueue(state.queue,Math.min(Math.max(a.limit||8,1),50));}
   if(a.what==='feasibility')return renderFeasibility(state,slug);
   return renderForecast(state,rows,slug);
 }

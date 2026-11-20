@@ -986,6 +986,7 @@ export class DemoAdapter implements LemmaApi {
   async updateSettings(patch: SettingsPatch) {
     return this.transaction(() => {
       keys(patch, [
+        "schedulingAlgorithm",
         "desiredRetention",
         "newPerDay",
         "reviewsPerDay",
@@ -1008,6 +1009,8 @@ export class DemoAdapter implements LemmaApi {
         "focusDefaults", "planning", "reviewBudget", "attention", "weekStart", "clock24h",
       ]);
       const value = { ...this.store.settings, ...clone(patch) };
+      if (value.schedulingAlgorithm != null && value.schedulingAlgorithm !== 'new' && value.schedulingAlgorithm !== 'legacy')
+        invalid("Choose a supported scheduling algorithm");
       // Emulate the N39 recursive JSON patch trigger without losing unknown keys.
       if(patch.focusDefaults!==undefined)
         value.focusDefaults={...this.store.settings.focusDefaults,...clone(patch.focusDefaults)};
