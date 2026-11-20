@@ -111,10 +111,16 @@ function DemoFirstCardPanel({fallback}:{fallback:ReactNode}){
      </select></label>}
     {!slug&&<label className="v7-field-group">Path name<input className="v7-field" value={title}
      required minLength={2} maxLength={80} onChange={event=>setTitle(event.target.value)}/></label>}
-    <label className="v7-field-group">Front<textarea ref={first} className="v7-field" value={front}
-     required maxLength={1500} onChange={event=>setFront(event.target.value)}/></label>
-    <label className="v7-field-group">Back<textarea className="v7-field" value={back}
-     required maxLength={3000} onChange={event=>setBack(event.target.value)}/></label>
+    <div className="v7-field-group">
+     <label htmlFor={heading+'-front'}>Front</label>
+     <textarea id={heading+'-front'} ref={first} className="v7-field" value={front}
+      required maxLength={1500} onChange={event=>setFront(event.target.value)}/>
+    </div>
+    <div className="v7-field-group">
+     <label htmlFor={heading+'-back'}>Back</label>
+     <textarea id={heading+'-back'} className="v7-field" value={back}
+      required maxLength={3000} onChange={event=>setBack(event.target.value)}/>
+    </div>
    </>}
    {error&&<p role="alert">{error}</p>}
    <div className="v7-cards-choices">
