@@ -125,6 +125,25 @@ export class LiveAdapter implements LemmaApi {
   if(sourceId===targetId)throw new LemmaError('invalid','Choose two different subjects to merge')
   checked(await db.rpc('merge_subjects',{p_source:sourceId,p_target:targetId}))
  }
+ async createFirstCard(input:import('../types').FirstStudyCardInput):Promise<import('../types').FirstStudyCardReceipt>{
+  const db=liveClient(),uid=await owner(db)
+  if(input.expectedOwner!==uid)throw new LemmaError('auth','The signed-in account changed')
+  const result=await db.rpc('create_first_study_card',{p_operation_id:input.operationId,p_expected_owner:uid,
+   p_path:input.path,p_front:input.front,p_back:input.back})
+  if(result.error?.code==='P0002')throw new LemmaError('not_found','Choose an available path')
+  if(result.error?.code==='22023')throw new LemmaError('invalid',result.error.message)
+  const receipt=checked(result)
+  if(receipt.operationId!==input.operationId)throw new LemmaError('server','The first card receipt could not be verified')
+  if(receipt.status==='conflict'){
+   const message=receipt.reason==='library_changed'?'Your card library is no longer empty':
+    receipt.reason==='path_changed'?'The selected path has changed':'This first-card operation already has different values'
+   throw new LemmaError('conflict',message)
+  }
+  if(receipt.status!=='applied'||!Number.isSafeInteger(receipt.noteNo)||receipt.noteNo<1||
+    !uuidCardPageId.test(receipt.noteId)||!uuidCardPageId.test(receipt.cardId)||typeof receipt.projectSlug!=='string')
+   throw new LemmaError('server','The first card receipt could not be verified')
+  return {noteNo:receipt.noteNo,noteId:receipt.noteId,cardId:receipt.cardId,projectSlug:receipt.projectSlug}
+ }
  async createProjectDraft(...args: Parameters<LemmaApi['createProjectDraft']>): ReturnType<LemmaApi['createProjectDraft']> {
   const [input]=args,db=liveClient(),uid=await owner(db)
   const title=input.title.trim(),base=slugify(title)

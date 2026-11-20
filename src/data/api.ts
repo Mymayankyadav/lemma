@@ -40,6 +40,7 @@ export interface AtlasMergePreview {
  sourceVersion:number;keepVersion:number;impact:AtlasMergeImpact
 }
 export interface LemmaApi {
+ createFirstCard?(input:import('./types').FirstStudyCardInput):Promise<import('./types').FirstStudyCardReceipt>
  getAdaptiveData(now?:Date): Promise<import('./adaptive/contract').AdaptiveData>
  readonly mode: 'live' | 'demo'
  /** Read the signed-in owner, or null. */

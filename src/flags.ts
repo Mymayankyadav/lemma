@@ -14,6 +14,8 @@
 export const FLAG_DEFAULTS = {
   /** Placeholder used by tests to prove the mechanism; remove when the first real flag lands. */
   ciSelfTest: false,
+  /** P1/P2 study repairs ship together at the owner-approved release. */
+  uiRepairV1: false,
   /** Android TWA shell remains opt-in until N7 is complete. */
   androidShell: false,
   /** Service-worker notification handling remains opt-in until N5 is complete. */
