@@ -6,17 +6,6 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N191 Complete durable evidence, owner-local calendar and shared receipt foundation
-
-Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
-Stage: Build · Status: open · Needs: — · Assigned: chat-84293#kzbq
-Existing PR: #1533 (https://github.com/Mymayankyadav/lemma/pull/1533)
-Done = Finish PR #1533 without re-implementing its already tested foundations: immutable owner-scoped revision evidence, as-of knowledge/time snapshots, capacity/recurrence/DST calendar commands, atomic operation receipts and legacy session-progress compatibility, owner export/purge, and full registered field+command parity. Make SQL, scope and relevant integration tests pass.
-Tests: `node tests/mcp/sql/parity.mjs`; `node tests/mcp/sql/n191-receipt-compat.mjs`; `tests/mcp/sql/fixtures/n191-{pg-fixture,correction-parity,local-ingress,trusted-core}.mjs`; `tests/unit/calendar/fixed-occurrences.test.ts`; `tests/unit/evidence/{ingress,replay}.test.ts`; `full affected CI and independent review`.
-Scope: supabase/migrations/20261120044716_n191_evidence_receipts.sql; supabase/migrations/20261120045749_n191_plan_release_capability.sql; src/data/usePlanRelease.ts; docs/current/N191.md.
-Not: A new scheduler or learning policy; Turning a feature on by default; Unapproved production data conversion; Replacing history or relaxing test gates.
-Agent packet: [N191.md](docs/implementation/2026-11-20/tasks/N191.md). 
-
 ## N197 Finish shared receipt privileges and seven legacy-writer cutover
 
 Owner task: "Ok add on new schedular and the algorithm is shipped with default on and optional switch and in settings and the lemma pad should be shipped as page with its custom keyboard. Then publish"
