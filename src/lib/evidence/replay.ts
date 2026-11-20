@@ -57,23 +57,23 @@ function isJsonArray(value: EvidenceJson): value is readonly EvidenceJson[] {
 }
 
 // Immutable JSON equality, independent of object key order, but not array order.
-function sameJson(a: EvidenceJson, b: EvidenceJson): boolean {
+export function sameEvidenceJson(a: EvidenceJson, b: EvidenceJson): boolean {
   if (a === b) return true;
   if (a === null || b === null || typeof a !== 'object' || typeof b !== 'object') return false;
   if (isJsonArray(a) || isJsonArray(b)) {
     return isJsonArray(a) && isJsonArray(b) && a.length === b.length &&
-      a.every((value, index) => sameJson(value, b[index]));
+      a.every((value, index) => sameEvidenceJson(value, b[index]));
   }
   const keys = Object.keys(a);
   return keys.length === Object.keys(b).length &&
-    keys.every(key => Object.hasOwn(b, key) && sameJson(a[key], b[key]));
+    keys.every(key => Object.hasOwn(b, key) && sameEvidenceJson(a[key], b[key]));
 }
 
 function sameEvent(a: EvidenceEvent, b: EvidenceEvent): boolean {
   return a.kind === b.kind && a.ownerId === b.ownerId && a.eventId === b.eventId &&
     a.source === b.source && a.lineageId === b.lineageId && a.revision === b.revision &&
     a.occurredAt === b.occurredAt && a.reportedAt === b.reportedAt && a.knownAt === b.knownAt &&
-    (a.kind === 'void' || (b.kind === 'record' && sameJson(a.payload, b.payload)));
+    (a.kind === 'void' || (b.kind === 'record' && sameEvidenceJson(a.payload, b.payload)));
 }
 
 type Timed<T extends EvidenceJson> = {
