@@ -1,0 +1,24 @@
+{
+  "scope": "Production scorer/feature identity smoke checks; not a behavioral accuracy trial.",
+  "surfaces": [
+    "word",
+    "ghost",
+    "correction",
+    "replace"
+  ],
+  "feedbackSignsChecked": [
+    "refresh",
+    "accept",
+    "kept",
+    "undo",
+    "partial-edit",
+    "continued-match",
+    "divergent",
+    "alternate",
+    "dismiss",
+    "personal-use"
+  ],
+  "separateSurfaceIdentity": true,
+  "acceptedCompletionNotVocabulary": true,
+  "generatedContinuationNotAuthoredContext": true
+}

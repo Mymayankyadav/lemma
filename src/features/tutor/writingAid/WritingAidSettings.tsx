@@ -1,7 +1,8 @@
 import {useId} from 'react';
 import {useToast} from '../../../ui/Toast';
-import {Switch} from '../../../ui/v7/components';
+import {Button, Switch} from '../../../ui/v7/components';
 import {setWritingAidMode, setWritingAidSurface, useWritingAidPreferences, WRITING_AID_MODES} from './preferences';
+import {resetWritingAidPersonalization, setWritingAidPersonalization, useWritingAidPersonalization} from './personalization';
 import type {WritingAidMode, WritingAidSurface} from './policy';
 import './writingAidSettings.css';
 
@@ -21,6 +22,7 @@ const SURFACE_LABELS: ReadonlyArray<readonly [WritingAidSurface, string]> = [
 
 export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
   const {scopeKey, available, mode, surfaces} = useWritingAidPreferences();
+  const personalization = useWritingAidPersonalization();
   const group = useId();
   const notify = useToast();
   const failed = () => notify('Could not save writing aid settings.', {tone: 'danger'});
@@ -47,6 +49,16 @@ export function WritingAidSettings({showTitle = true}: {showTitle?: boolean}) {
         return <Switch key={surface} label={label} checked={enabled && surfaces[surface]} disabled={!enabled}
           onChange={next => {if (!setWritingAidSurface(surface, next, scopeKey)) failed();}}/>;
       })}
+    </fieldset>
+    <fieldset disabled={!available}>
+      <legend>Personalization</legend>
+      <p>Learn from your choices and repeated typing on this device.</p>
+      <Switch label="Personalize suggestions" checked={personalization.enabled} disabled={!available}
+        onChange={next => {if (!setWritingAidPersonalization(next, scopeKey)) failed();}}/>
+      <Button small variant="secondary" onClick={() => {
+        if (!resetWritingAidPersonalization(scopeKey)) failed();
+        else notify('Learned writing preferences cleared.');
+      }}>Forget learned writing preferences</Button>
     </fieldset>
   </section>;
 }

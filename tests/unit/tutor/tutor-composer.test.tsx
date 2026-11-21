@@ -13,6 +13,7 @@ const originalMethods = dialogMethods.map(method => Object.getOwnPropertyDescrip
 beforeEach(() => {
   sessionStorage.setItem('lemma.demo', '1');
   localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
+  localStorage.removeItem('lemma.demo-tutor.writing-aid-model.v1:default');
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
   dialogMethods.forEach(method => {
     Object.defineProperty(HTMLDialogElement.prototype, method, {configurable: true,
@@ -32,6 +33,7 @@ afterEach(async () => {
   });
   sessionStorage.removeItem('lemma.demo');
   localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
+  localStorage.removeItem('lemma.demo-tutor.writing-aid-model.v1:default');
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -355,12 +357,16 @@ test('previews a correction with a strike-through and keeps the original without
   await awaitAid('Replace teh with the');
   expect(suggestion().querySelectorAll('button')).toHaveLength(3);
   expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
-  await click('More writing suggestions');
-  await click('Keep what I typed');
+  expect(host.querySelector('[data-writing-aid-source]')?.textContent).toBe('teh');
+  await click('Dismiss suggestion');
   expect(field().value).toBe('teh');
   expect(button('Replace teh with the')).toBeUndefined();
   await click('Space', keyboard());
   expect(field().value).toBe('teh ');
+  expect(button('Replace teh with the')).toBeUndefined();
+  await input('');
+  await input('teh');
+  await awaitAid('Replace teh with the');
 });
 
 test.each(['Teh', 'Cacuhy', 'x=teh', 'f(teh', 'f( teh', 'f.teh', '$teh', 'Let teh', 'for all'])(

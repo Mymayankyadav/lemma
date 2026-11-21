@@ -45,6 +45,13 @@ export interface WritingAidSuggestions {
   readonly edit: WritingAidProposal | null;
 }
 
+export type WritingAidRefreshSurface = 'words' | 'edit' | 'ghost';
+
+/** The identity is scoped to a single request by the caller. */
+export function writingAidProposalKey(proposal: WritingAidProposal): string {
+  return JSON.stringify([proposal.kind, proposal.start, proposal.end, proposal.before, proposal.insert]);
+}
+
 const emptyWords: readonly WritingAidProposal[] = Object.freeze([]);
 export const NO_WRITING_AID: WritingAidSuggestions = Object.freeze({words: emptyWords, ghost: null, edit: null});
 

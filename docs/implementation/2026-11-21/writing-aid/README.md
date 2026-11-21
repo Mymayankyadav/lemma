@@ -1,5 +1,7 @@
 # Writing aid in the checkpoint composer
 
+**Superseded interaction baseline:** the owner rejected this fixed review row and More panel. The current [floating-card, swipe and adaptive-feedback design](../writing-aid-adaptive/DESIGN.md) replaces it. Screenshots and simulation results in this directory describe the earlier implementation, retained for comparison; they are not the current APK.
+
 Owner-requested continuation of PR #1738, November 21. The trial is a separate Android demo installation, with Balanced assistance on by default. Production merge awaits the owner's phone test.
 
 ## Implementation checklist

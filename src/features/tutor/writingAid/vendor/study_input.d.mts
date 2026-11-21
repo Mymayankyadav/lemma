@@ -9,7 +9,7 @@ export function makeStudyInput(assets: {
   wordAssets: JsonObject;
   ranks: JsonObject;
   speedPolicy: JsonObject;
-}, config: {seed: number}): {
+}, config: {seed: number; researchPool?: boolean; maxCandidates?: number}): {
   predict(text: string, options: {
     mode: Mode;
     surface: 'keys' | 'ghost';

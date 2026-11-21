@@ -90,46 +90,66 @@ function chip(editor: HTMLElement, id: string, image: AnswerImage | undefined, d
   return wrapper;
 }
 
-export function renderTutorAnswer(editor: HTMLElement, value: string, images: readonly AnswerImage[], readOnly: boolean) {
+export function renderTutorAnswer(editor: HTMLElement, value: string, images: readonly AnswerImage[], readOnly: boolean,
+  marked?: {start: number; end: number}) {
   const map = new Map(images.map(image => [image.id.toLowerCase(), image]));
-  editor.replaceChildren(...tutorAnswerParts(value).map(part => part.type === 'image'
-    ? chip(editor, part.id, map.get(part.id), readOnly) : editor.ownerDocument.createTextNode(part.text)));
+  let offset = 0;
+  const nodes: Node[] = [];
+  for (const part of tutorAnswerParts(value)) {
+    if (part.type === 'image') {
+      nodes.push(chip(editor, part.id, map.get(part.id), readOnly));
+      offset += imageReference(part.id).length;
+      continue;
+    }
+    const start = marked ? marked.start - offset : -1, end = marked ? marked.end - offset : -1;
+    if (!readOnly && start >= 0 && start < end && end <= part.text.length) {
+      nodes.push(editor.ownerDocument.createTextNode(part.text.slice(0, start)));
+      const source = editor.ownerDocument.createElement('span');
+      source.dataset.writingAidSource = '';
+      source.textContent = part.text.slice(start, end);
+      nodes.push(source, editor.ownerDocument.createTextNode(part.text.slice(end)));
+    } else nodes.push(editor.ownerDocument.createTextNode(part.text));
+    offset += part.text.length;
+  }
+  editor.replaceChildren(...nodes);
   editor.toggleAttribute('data-empty', !value);
 }
 
 type Events = Pick<React.ComponentProps<'div'>,
   'onCopy' | 'onCut' | 'onFocus' | 'onPointerDown' | 'onInput' | 'onKeyDown' | 'onCompositionStart' | 'onCompositionEnd' | 'onPaste' | 'onDrop'>;
 
-export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, onSelection, onChip, ...events}: Events & {
+export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, marked, onSelection, onChip, ...events}: Events & {
   editor: RefObject<HTMLDivElement | null>;
   value: string;
   images: readonly AnswerImage[];
   composing: boolean;
   placeholder: string;
   ghost?: string;
+  marked?: {start: number; end: number};
   readOnly: boolean;
   onSelection: () => void;
   onChip: (id: string, offset: number, action: 'edit' | 'remove') => void;
 }) {
-  const rendered = useRef<{signature: string; readOnly: boolean}>(null);
+  const rendered = useRef<{signature: string; readOnly: boolean; mark: string}>(null);
+  const mark = marked ? marked.start + ':' + marked.end : '';
   useLayoutEffect(() => {
     const root = editor.current;
     if (!root || composing) return;
     const signature = images.map(image => image.id + image.kind).join('|');
     const previous = rendered.current;
-    rendered.current = {signature, readOnly};
+    rendered.current = {signature, readOnly, mark};
     const references = tutorAnswerParts(value).filter(part => part.type === 'image');
     const chips = root.querySelectorAll('[data-image-id]');
     const staleChips = references.length !== chips.length || references.some((part, index) => chips[index]?.getAttribute('data-image-id') !== part.id);
     const nestedText = [...root.childNodes].some(node => node.nodeType !== Node.TEXT_NODE &&
-      !(node instanceof HTMLElement && node.dataset.imageId));
-    if (readTutorAnswer(root).text !== value || staleChips || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly) {
+      !(node instanceof HTMLElement && (node.dataset.imageId || node.hasAttribute('data-writing-aid-source'))));
+    if (readTutorAnswer(root).text !== value || staleChips || nestedText || previous?.signature !== signature || previous?.readOnly !== readOnly || previous?.mark !== mark) {
       const saved = readTutorAnswer(root);
-      renderTutorAnswer(root, value, images, readOnly);
+      renderTutorAnswer(root, value, images, readOnly, marked);
       if (root.ownerDocument.activeElement === root) setTutorAnswerSelection(root, padEdit(value, saved.start, saved.end, saved.direction));
     }
     root.toggleAttribute('data-empty', !value);
-  }, [editor, value, images, readOnly, composing]);
+  }, [editor, value, images, readOnly, composing, mark]);
 
   return <div {...events} ref={editor} className="tutor-answer-editor" role="textbox" aria-label="Your answer"
     data-completion={ghost || undefined} aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}

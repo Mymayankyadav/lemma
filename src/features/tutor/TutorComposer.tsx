@@ -1,5 +1,5 @@
-import {useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal} from 'lucide-react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal, RefreshCw} from 'lucide-react';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
@@ -75,7 +75,10 @@ export function TutorComposer(props: Props) {
   const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
   const authoredAnchor = useRef<WritingAidAnchor | null>(null);
-  const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit} | null>(null);
+  const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
+  const [hideSuggestionUndo, setHideSuggestionUndo] = useState(false);
+  const [swipeProgress, setSwipeProgress] = useState(0);
+  const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
   const [aidSettings, setAidSettings] = useState(false);
   const [dismissedAid, setDismissedAid] = useState<string | null>(null);
   const rejectedEdits = useRef(new Set<string>());
@@ -124,8 +127,26 @@ export function TutorComposer(props: Props) {
   const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
   const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
   const writingGhost = aidVisible ? writing.ghost : null;
-  const ghostSuffix = writingGhost && !writingEdit ? writingGhost.insert : undefined;
-  const suggestionUndoable = Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
+  const ghostSuffix = writingGhost?.insert;
+  const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
+  const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
+
+  useEffect(() => {
+    const reportVisibility = () => {
+      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && document.visibilityState !== 'hidden';
+      writing.shown('words', visible ? writingWords : []);
+      writing.shown('edit', visible && writingEdit && !suggestionUndoable ? [writingEdit] : []);
+      writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
+    };
+    reportVisibility();
+    document.addEventListener('visibilitychange', reportVisibility);
+    return () => document.removeEventListener('visibilitychange', reportVisibility);
+  }, [writing.shown, writingWords, writingEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+
+  useEffect(() => {
+    swipe.current = null;
+    setSwipeProgress(0);
+  }, [shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, scopeKey, writingPrefs.mode]);
 
   useLayoutEffect(() => {
     const hadEvidence = authoredAnchor.current !== null || acceptedSuggestion.current !== null;
@@ -137,23 +158,34 @@ export function TutorComposer(props: Props) {
   }, [scopeKey, writingPrefs.scopeKey, writingPrefs.mode]);
 
   function dismissWriting() {
+    if (suggestionUndoable && acceptedSuggestion.current) {
+      writing.feedback('kept', acceptedSuggestion.current.proposal);
+      setHideSuggestionUndo(true);
+      return;
+    }
+    if (writingEdit) writing.feedback('dismiss', writingEdit);
+    if (writingGhost) writing.feedback('dismiss', writingGhost);
     if (writingEdit) rejectedEdits.current.add(rejectionKey(writingEdit));
     setDismissedAid(aidSignature);
   }
 
   function acceptWriting(proposal: WritingAidProposal) {
     remember();
+    if (!writing.isCurrent(proposal)) return;
     const before = history.current, anchor = authoredAnchor.current;
     const next = applyWritingAidProposal({...writingRequest, cursor: before.present, anchor, target: editTarget(),
       composing: composition.current, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown}, proposal);
     if (!next || !commit(changePadText(before, next), true)) return;
     authoredAnchor.current = continueWritingAidAnchor(anchor, proposal, next);
-    acceptedSuggestion.current = {before, after: next};
+    acceptedSuggestion.current = {before, after: next, proposal};
+    setHideSuggestionUndo(false);
+    writing.feedback('accept', proposal);
     haptic('snap');
   }
   function undoWriting() {
     const saved = acceptedSuggestion.current;
     if (!saved || saved.after.text !== history.current.present.text || editingDisabled) return;
+    writing.feedback('undo', saved.proposal);
     commit(saved.before, true);
     haptic('snap');
   }
@@ -171,6 +203,7 @@ export function TutorComposer(props: Props) {
       assist.stop();
       acceptedSuggestion.current = null;
       authoredAnchor.current = null;
+      rejectedEdits.current.clear();
       history.current = createPadTextHistory(padEdit(props.value));
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
@@ -218,6 +251,7 @@ export function TutorComposer(props: Props) {
     else if (richField.current && document.activeElement === richField.current) setTutorAnswerSelection(richField.current, edit);
   }
   function remember() {
+    if (swipe.current) return;
     const input = fieldElement();
     if (!input || composition.current || (input === richField.current && document.activeElement !== input)) return;
     const edit = fieldSelection(input);
@@ -253,6 +287,10 @@ export function TutorComposer(props: Props) {
     setCursor(edit);
     if (changed) {
       acceptedSuggestion.current = null;
+      for (const key of rejectedEdits.current) {
+        const [start, end, source] = JSON.parse(key) as [number, number, string, string];
+        if (edit.text.slice(start, end) !== source) rejectedEdits.current.delete(key);
+      }
       setAnswerError('');
       if (restore) pendingSelection.current = edit;
       props.onChange(edit.text);
@@ -292,6 +330,7 @@ export function TutorComposer(props: Props) {
     if (slot) change(slot, true);
   }
   function undo(redo = false) {
+    if (!redo && acceptedSuggestion.current?.after.text === history.current.present.text) writing.feedback('undo', acceptedSuggestion.current.proposal);
     commit(redo ? redoPadText(history.current) : undoPadText(history.current), true);
   }
   function changeView(next: string) {
@@ -334,7 +373,7 @@ export function TutorComposer(props: Props) {
     }
     remember();
     const edit = history.current.present;
-    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost && !writingEdit) {
+    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost) {
       event.preventDefault(); acceptWriting(writingGhost); return;
     }
     if (!modified && !event.altKey && event.key === 'Tab' && edit.text.slice(edit.start, edit.end) === '□') {
@@ -499,6 +538,53 @@ export function TutorComposer(props: Props) {
     if (!text) return;
     change(insertNotation(history.current.present, text.replace(/\r\n?/g, '\n')));
   }
+  function refreshWriting() {
+    if (editingDisabled) return;
+    if (writingWords.length) writing.refresh('words', writingWords);
+    if (writingEdit) writing.refresh('edit', [writingEdit]);
+    if (writingGhost) writing.refresh('ghost', [writingGhost]);
+    haptic('snap');
+  }
+  function stopSwipe() {
+    swipe.current = null;
+    setSwipeProgress(0);
+    remember();
+  }
+  function beginSwipe(event: PointerEvent<HTMLDivElement>) {
+    const editor = fieldElement();
+    if (!writingGhost || editingDisabled || event.pointerType !== 'touch' || !event.isPrimary ||
+        !editor || !(event.target instanceof Node) || !editor.contains(event.target) ||
+        event.target instanceof Element && event.target.closest('button') || cursor.start !== cursor.end) return;
+    swipe.current = {pointer: event.pointerId, x: event.clientX, y: event.clientY, time: performance.now(),
+      proposal: writingGhost, cursor: history.current.present};
+  }
+  function moveSwipe(event: PointerEvent<HTMLDivElement>) {
+    const held = swipe.current;
+    if (!held || held.pointer !== event.pointerId) return;
+    const dx = event.clientX - held.x, dy = Math.abs(event.clientY - held.y);
+    if (performance.now() - held.time > 600 || dy > 18 || dx < -12) {stopSwipe(); return;}
+    if (dx > 24 && dx >= 2 * dy) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      setSwipeProgress(Math.min(1, dx / 56));
+    }
+  }
+  function endSwipe(event: PointerEvent<HTMLDivElement>) {
+    const held = swipe.current;
+    if (!held || held.pointer !== event.pointerId) return;
+    const dx = event.clientX - held.x, dy = Math.abs(event.clientY - held.y);
+    const input = fieldElement();
+    const selected = input && fieldSelection(input);
+    const accept = dx >= 56 && dy <= 18 && dx >= 2 * dy && performance.now() - held.time <= 600 &&
+      selected?.start === selected?.end && history.current.present.text === held.cursor.text && !editingDisabled;
+    swipe.current = null;
+    setSwipeProgress(0);
+    if (accept) {
+      event.preventDefault();
+      selectField(held.cursor);
+      acceptWriting(held.proposal);
+    } else remember();
+  }
   function focusAnswer() {
     const pending=pendingSelection.current;
     if(pending && pending.text===props.value) {
@@ -523,7 +609,10 @@ export function TutorComposer(props: Props) {
     {!scratch && uncommitted && <p className="composer-status" role="status">Insert or discard your unfinished drawing before sending.</p>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
-      <div className="writing-composer-card"><div className="field">
+      <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
+        onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
+        onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
+      <div className="field">
         {props.ink&&!scratch
           ? <IconButton label="Scratch" type="button" disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
               onPointerDown={keepSelection} onClick={()=>openDrawing()}><Pencil aria-hidden="true"/></IconButton>
@@ -531,7 +620,7 @@ export function TutorComposer(props: Props) {
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
           placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
-          composing={composing} ghost={ghostSuffix} onSelection={remember} onChip={chipAction} onFocus={event=>{
+          composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
           }} onKeyDown={keyDown}
           onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly) setShown(true);}}
@@ -546,7 +635,9 @@ export function TutorComposer(props: Props) {
           onCut={event=>copyAnswer(event, true)}
           onPaste={pasteAnswer}
           onDrop={event=>event.preventDefault()}
-        /> : <div className="writing-editor-wrap">{ghostSuffix && <div className="writing-editor-mirror" aria-hidden="true"><span>{props.value}</span>{ghostSuffix}</div>}<textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
+        /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
+          <span>{writingEdit ? <>{props.value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{props.value.slice(writingEdit.start, writingEdit.end)}</span>{props.value.slice(writingEdit.end)}</> : props.value}</span>{ghostSuffix}
+        </div>}<textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
@@ -579,10 +670,11 @@ export function TutorComposer(props: Props) {
         <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
           onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
       </div>
-      {shown && !scratch && <WritingAidBar words={writingWords} edit={writingEdit} ghost={writingGhost}
-        signature={aidSignature} mode={writingPrefs.mode} disabled={editingDisabled} undoable={suggestionUndoable}
+      {shown && !scratch && !assist.drawing && <WritingAidBar words={writingWords} edit={writingEdit} ghost={writingGhost}
+        disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress}
+        exhausted={aidVisible && (writing.exhausted.edit || writing.exhausted.ghost)}
         onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
-        onSettings={() => {assist.pause(); setAidSettings(true);}}/>}
+        onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
     </form>
     <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
@@ -615,6 +707,8 @@ export function TutorComposer(props: Props) {
         onAccept={assist.onAccept}/>
       : <><div className="strip">
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
+        <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled || !refreshable}
+          onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>
         <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
           onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>
         <button className="sbtn" type="button" aria-label="Hide keyboard" onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>

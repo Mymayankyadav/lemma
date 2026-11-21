@@ -9,7 +9,7 @@ const DEFAULT_MASK = 15;
 const SURFACE_BITS: Readonly<Record<WritingAidSurface, number>> = {words: 1, replace: 2, correction: 4, ghost: 8};
 export const WRITING_AID_MODES = ['balanced', 'fast', 'strict', 'off'] as const;
 type Stored = Readonly<{mode: WritingAidMode; mask: number}>;
-type Scope = Readonly<{
+export type WritingAidScope = Readonly<{
   id: string;
   key: string | null;
   ownerId: string | null;
@@ -17,7 +17,7 @@ type Scope = Readonly<{
   defaultMode: WritingAidMode;
 }>;
 
-function currentScope(): Scope {
+export function currentWritingAidScope(): WritingAidScope {
   const generation = authGeneration();
   if (getMode() === 'demo') {
     const profile = getDemoProfile();
@@ -31,7 +31,7 @@ function currentScope(): Scope {
     ownerId, generation, defaultMode: 'off'};
 }
 
-function read(scope: Scope): Stored {
+function read(scope: WritingAidScope): Stored {
   try {
     const stored = scope.key && localStorage.getItem(scope.key);
     const match = stored && /^(balanced|fast|strict|off):([0-9]|1[0-5])$/u.exec(stored);
@@ -43,7 +43,7 @@ function read(scope: Scope): Stored {
 }
 
 function snapshot(): string {
-  const scope = currentScope();
+  const scope = currentWritingAidScope();
   const {mode, mask} = read(scope);
   return JSON.stringify([scope.id, Boolean(scope.key), mode, mask]);
 }
@@ -62,7 +62,7 @@ function subscribe(update: () => void): () => void {
 }
 
 function write(change: (current: Stored) => Stored, expectedScopeKey?: string): boolean {
-  const scope = currentScope();
+  const scope = currentWritingAidScope();
   if (!scope.key || (expectedScopeKey !== undefined && scope.id !== expectedScopeKey)) return false;
   const {mode, mask} = change(read(scope));
   const value = mode + ':' + mask;

@@ -25,7 +25,7 @@ export function tutorStorageOwner(key:string):string|null {
    const valid=prefix==='lemma.tutor.confirmed.v1:'?suffix==='':
     (prefix==='lemma.tutor.pending.v1:'||prefix==='lemma.tutor.connector.v1:')?suffix.startsWith(':')&&suffix.length>1:
      [':question',':context',':source',':attached-local',':ink'].includes(suffix)||
-     ([':input-assist',':writing-aid'].includes(suffix)&&scope[1]==='input'&&scope[2]==='preferences')||
+     ([':input-assist',':writing-aid',':writing-aid-model'].includes(suffix)&&scope[1]==='input'&&scope[2]==='preferences')||
      (suffix.startsWith(':reply:')&&suffix.length>7)
    return valid?scope[0]:null
   }catch{return null}

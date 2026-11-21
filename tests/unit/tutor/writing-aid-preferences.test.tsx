@@ -7,6 +7,8 @@ import {
   setWritingAidMode, setWritingAidSurface, useWritingAidPreferences,
 } from '../../../src/features/tutor/writingAid/preferences';
 import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
+import {createWritingAidModel, recordWritingAidVocabulary} from '../../../src/features/tutor/writingAid/learning';
+import {loadWritingAidPersonalization, resetWritingAidPersonalization, saveWritingAidPersonalization} from '../../../src/features/tutor/writingAid/personalization';
 
 const modes = vi.hoisted(() => ({mode: 'live', profile: 'default'}));
 vi.mock('../../../src/data/mode', () => ({getMode: () => modes.mode, getDemoProfile: () => modes.profile}));
@@ -17,6 +19,7 @@ let host: HTMLDivElement;
 let root: Root;
 let prefs: ReturnType<typeof useWritingAidPreferences>;
 const key = (id: string) => 'lemma.tutor.draft:' + JSON.stringify([id, 'input', 'preferences']) + ':writing-aid';
+const modelKey = (id: string) => key(id) + '-model';
 
 function Harness() {
   prefs = useWritingAidPreferences();
@@ -98,4 +101,26 @@ it('falls back on invalid settings and leaves independently stored handwriting p
   await act(async () => {expect(setWritingAidMode('balanced', prefs.scopeKey)).toBe(true);});
   expect(localStorage.getItem(inputKey)).toBe('3');
   expect(localStorage.getItem(key(owner))).toBe('balanced:15');
+});
+
+it('isolates learned vocabulary by owner, resets it, and deletes it with tutor data', async () => {
+  const originalScope = prefs.scopeKey;
+  const model = createWritingAidModel();
+  recordWritingAidVocabulary(model, 'homomorphism', 1000);
+  await act(async () => {expect(saveWritingAidPersonalization(originalScope, {enabled: true, model})).toBe(true);});
+  expect(tutorStorageOwner(modelKey(owner))).toBe(owner);
+  expect(localStorage.getItem(modelKey(owner))).toContain('homomorphism');
+  await act(async () => publishAuth({id: 'different-writing-owner'}));
+  const otherScope = prefs.scopeKey;
+  expect(loadWritingAidPersonalization(otherScope).model.vocabulary.homomorphism).toBeUndefined();
+  expect(saveWritingAidPersonalization(originalScope, {enabled: true, model})).toBe(false);
+  await act(async () => {expect(saveWritingAidPersonalization(otherScope, {enabled: false, model})).toBe(true);});
+  await act(async () => {expect(resetWritingAidPersonalization(otherScope)).toBe(true);});
+  expect(loadWritingAidPersonalization(otherScope).enabled).toBe(false);
+  expect(Object.keys(loadWritingAidPersonalization(otherScope).model.vocabulary)).toEqual([]);
+  await act(async () => publishAuth({id: owner}));
+  await act(async () => {expect(await removeDeletedOwnerTutorData(owner, authGeneration())).toBe(true);});
+  expect(localStorage.getItem(modelKey(owner))).toBeNull();
+  expect(localStorage.getItem(modelKey('different-writing-owner'))).not.toBeNull();
+  expect(saveWritingAidPersonalization(prefs.scopeKey, {enabled: true, model})).toBe(false);
 });

@@ -1,0 +1,870 @@
+{
+  "scope": "Warm production build on the development host, from captured native input to the next animation-frame opportunity after the matching suggestion appears. Chromium CPU throttling is not Android WebView or a phone measurement.",
+  "generatedAt": "2026-11-21T15:12:27.373Z",
+  "browser": "156.0.8078.79",
+  "viewport": {
+    "width": 390,
+    "height": 844
+  },
+  "machine": {
+    "platform": "linux",
+    "architecture": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCpus": 5
+  },
+  "balancedMode": true,
+  "samplesPerSurfacePerRate": 16,
+  "builtAssetsSha256": {
+    "DemoCheckpointTutor-CFOUw-GM.css": "6ae54931077be451b7eb7117f56b905519d1ec7baa1a8c0f9c24c107f407a17a",
+    "DemoCheckpointTutor-DKZEEyfW.js": "0c1436c3c8a7ebabccf1a92d7732385badc01d4f9d42f532e0a598684dbd6d87",
+    "TutorPage-CBc0yOm9.css": "332791db6629e0765d2a766139fb880fb9fcc25391bca12d4a457d83eb739e35",
+    "TutorPage-DRW3FsI4.js": "a0d3bc424912bc146d21167213e20a897939e294af5123531ded3e8049c87d87",
+    "WritingAidSettings-Bi-u4W1O.js": "29aa3752da142d0ad0b11e5009228a7bc2746933000079e4116bc938b0549e95",
+    "WritingAidSettings-oVunMCYu.css": "13a7a8f6c9754878d13b71625586e0f646e3bf60a4c85a6efee5a98e75666844",
+    "engine-CkDlgyJX.js": "5f30c986de9ddafe901463997b3aabf704b9ae62cb30ba9248ba099b218edbdc"
+  },
+  "summary": [
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "samples": 16,
+      "p50Ms": 50.3,
+      "p95Ms": 60.9,
+      "maxMs": 60.9,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "samples": 16,
+      "p50Ms": 47.5,
+      "p95Ms": 48.1,
+      "maxMs": 48.1,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "samples": 16,
+      "p50Ms": 47.5,
+      "p95Ms": 74,
+      "maxMs": 74,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "samples": 16,
+      "p50Ms": 49.5,
+      "p95Ms": 83.6,
+      "maxMs": 83.6,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "samples": 16,
+      "p50Ms": 75.6,
+      "p95Ms": 115.4,
+      "maxMs": 115.4,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "samples": 16,
+      "p50Ms": 84.9,
+      "p95Ms": 305.1,
+      "maxMs": 305.1,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "samples": 16,
+      "p50Ms": 81.4,
+      "p95Ms": 119.7,
+      "maxMs": 119.7,
+      "under400Ms": 16
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "samples": 16,
+      "p50Ms": 108,
+      "p95Ms": 166.4,
+      "maxMs": 166.4,
+      "under400Ms": 16
+    }
+  ],
+  "observations": [
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 1,
+      "ms": 48.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 1,
+      "ms": 47.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 1,
+      "ms": 47.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 1,
+      "ms": 47
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 2,
+      "ms": 47.4
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 2,
+      "ms": 46.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 2,
+      "ms": 83.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 2,
+      "ms": 49.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 3,
+      "ms": 47.3
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 3,
+      "ms": 44.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 3,
+      "ms": 50.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 3,
+      "ms": 47.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 4,
+      "ms": 46.7
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 4,
+      "ms": 50.4
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 4,
+      "ms": 47.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 4,
+      "ms": 47.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 5,
+      "ms": 50.2
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 5,
+      "ms": 47.7
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 5,
+      "ms": 48
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 5,
+      "ms": 49.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 6,
+      "ms": 47.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 6,
+      "ms": 47.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 6,
+      "ms": 51.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 6,
+      "ms": 51.3
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 7,
+      "ms": 74
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 7,
+      "ms": 52.3
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 7,
+      "ms": 51.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 7,
+      "ms": 47.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 8,
+      "ms": 50.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 8,
+      "ms": 50
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 8,
+      "ms": 47.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 8,
+      "ms": 47.7
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 9,
+      "ms": 50.7
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 9,
+      "ms": 47.7
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 9,
+      "ms": 47.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 9,
+      "ms": 50.4
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 10,
+      "ms": 46.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 10,
+      "ms": 48.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 10,
+      "ms": 47.2
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 10,
+      "ms": 50.4
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 11,
+      "ms": 47.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 11,
+      "ms": 50.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 11,
+      "ms": 60.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 11,
+      "ms": 47.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 12,
+      "ms": 46.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 12,
+      "ms": 49.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 12,
+      "ms": 47.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 12,
+      "ms": 46.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 13,
+      "ms": 49.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 13,
+      "ms": 46.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 13,
+      "ms": 47.2
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 13,
+      "ms": 46.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 14,
+      "ms": 46.9
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 14,
+      "ms": 46.6
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 14,
+      "ms": 45.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 14,
+      "ms": 50.3
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 15,
+      "ms": 32.4
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 15,
+      "ms": 49.8
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 15,
+      "ms": 50.3
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 15,
+      "ms": 48.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "continuation",
+      "sample": 16,
+      "ms": 54.5
+    },
+    {
+      "cpuRate": 1,
+      "surface": "word",
+      "sample": 16,
+      "ms": 50.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "spelling",
+      "sample": 16,
+      "ms": 47.1
+    },
+    {
+      "cpuRate": 1,
+      "surface": "notation",
+      "sample": 16,
+      "ms": 50.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 1,
+      "ms": 115.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 1,
+      "ms": 305.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 1,
+      "ms": 119.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 1,
+      "ms": 119.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 2,
+      "ms": 99.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 2,
+      "ms": 94.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 2,
+      "ms": 125.8
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 2,
+      "ms": 75.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 3,
+      "ms": 84.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 3,
+      "ms": 124.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 3,
+      "ms": 87.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 3,
+      "ms": 81.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 4,
+      "ms": 100.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 4,
+      "ms": 77.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 4,
+      "ms": 79.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 4,
+      "ms": 86.9
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 5,
+      "ms": 74.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 5,
+      "ms": 125.8
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 5,
+      "ms": 83.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 5,
+      "ms": 97
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 6,
+      "ms": 98.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 6,
+      "ms": 73.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 6,
+      "ms": 120.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 6,
+      "ms": 77.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 7,
+      "ms": 76.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 7,
+      "ms": 107
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 7,
+      "ms": 80.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 7,
+      "ms": 83.9
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 8,
+      "ms": 76.8
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 8,
+      "ms": 81.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 8,
+      "ms": 99
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 8,
+      "ms": 73.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 9,
+      "ms": 68.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 9,
+      "ms": 83.1
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 9,
+      "ms": 95.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 9,
+      "ms": 166.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 10,
+      "ms": 91.9
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 10,
+      "ms": 76.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 10,
+      "ms": 125.8
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 10,
+      "ms": 76.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 11,
+      "ms": 73.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 11,
+      "ms": 85.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 11,
+      "ms": 64.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 11,
+      "ms": 81
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 12,
+      "ms": 112.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 12,
+      "ms": 76.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 12,
+      "ms": 84.9
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 12,
+      "ms": 85
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 13,
+      "ms": 71.6
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 13,
+      "ms": 86.3
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 13,
+      "ms": 81.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 13,
+      "ms": 98.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 14,
+      "ms": 83
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 14,
+      "ms": 77.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 14,
+      "ms": 101.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 14,
+      "ms": 60.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 15,
+      "ms": 81.2
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 15,
+      "ms": 108
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 15,
+      "ms": 68.9
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 15,
+      "ms": 84.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "continuation",
+      "sample": 16,
+      "ms": 128.5
+    },
+    {
+      "cpuRate": 6,
+      "surface": "word",
+      "sample": 16,
+      "ms": 68.7
+    },
+    {
+      "cpuRate": 6,
+      "surface": "spelling",
+      "sample": 16,
+      "ms": 85.4
+    },
+    {
+      "cpuRate": 6,
+      "surface": "notation",
+      "sample": 16,
+      "ms": 92.3
+    }
+  ]
+}
