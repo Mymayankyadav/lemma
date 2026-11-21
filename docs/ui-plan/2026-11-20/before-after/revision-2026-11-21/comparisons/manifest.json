@@ -53,7 +53,7 @@
     "before": "phone/night/progress-learning.jpg",
     "beforeSha256": "081d2d9a688d0f334d2b579d4576ca4c31a8cf7fa918b9d9f84134d56af49c29",
     "after": "phone/night/progress-learning.jpg",
-    "afterSha256": "eca66853c70efe5f25b0ddc81f1c7be52bb6832c57641d3b092f00f8cab9a734"
+    "afterSha256": "7896ed0443e5c76b83236cf1f7446a832455c2c35a943cec2893370256bb1a48"
   },
   {
     "file": "settings.jpg",
@@ -74,17 +74,17 @@
   {
     "file": "atlas-map-final.jpg",
     "after": "phone/night/atlas.jpg",
-    "afterSha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625"
+    "afterSha256": "357c8db4e2322a3df87f165f98e7f6d750a2c09b65503117dcd411f409905252"
   },
   {
     "file": "atlas-options-collapsed.jpg",
     "after": "phone/night/atlas-options-collapsed.jpg",
-    "afterSha256": "932842fbad83361885b95d222675e313e4ad74fae82c3c897080f772c90f01d9"
+    "afterSha256": "13c23953509647377342478780ba9019ec028143eec53669319b1f8a2752c6ba"
   },
   {
     "file": "atlas-search-final.jpg",
     "after": "phone/night/atlas-search.jpg",
-    "afterSha256": "b82d09bde2dc69e7bcf5e6ba9a69ea5bec091021299d78386cbd885bafdca1ee"
+    "afterSha256": "ab793fd9ec16a1a0e0d9f8b791920cc1d9be1d75cc3f76fe2647ff3f9e29eb1a"
   },
   {
     "file": "inline-drawings.jpg",

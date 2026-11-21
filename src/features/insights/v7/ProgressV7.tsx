@@ -120,7 +120,7 @@ export default function ProgressV7(){
  </section>;
  const nothing=<EmptyMoment art="progress" title="No study time yet" action={{label:'Start focus',to:'/?quick=1'}}/>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
-  <HubHeader title="Progress" titleFollowsTab={false} extraAction={<MoreActions label="Progress actions" title="Progress" items={[
+  <HubHeader title={tab==='learning'&&isFlagOn('v7Room')?tabWords[tab]:'Progress'} titleFollowsTab={false} extraAction={<MoreActions label="Progress actions" title="Progress" items={[
    {label:'Add a goal',icon:<Plus/>,onClick:()=>setEditing(null)},
    {label:'Progress details',icon:<ChartColumn/>,onClick:()=>setDetails(true)},
    ...(isFlagOn('v7Week')?[{label:'Your week',icon:<CalendarDays/>,onClick:()=>{window.location.hash='/week';}}]:[]),
@@ -166,6 +166,7 @@ export default function ProgressV7(){
   {tab==='overview'&&daily.some(day=>day.minutes>0)&&<Heatmap title="Study almanac" format={minutes}
    data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/>}
   <Sheet open={details} onClose={()=>setDetails(false)} title="Progress details">
+   {details&&<>
    <div className="v7-progress-stats">
     <StatTile label="Reviews" value={learn?String(learn.reviews):'—'}/>
     <StatTile label="Recall" value={learn?.recall!=null?percent(learn.recall*100):'—'}/>
@@ -177,6 +178,7 @@ export default function ProgressV7(){
    {summary&&insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')})
     .map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
    {learn?.calibrationMessage&&<Disclosure label="Confidence details"><p>{learn.calibrationMessage}</p></Disclosure>}
+   </>}
   </Sheet>
   {editing!==undefined&&<GoalEditor goal={editing} onClose={()=>setEditing(undefined)} onSaved={()=>setReload(value=>value+1)}/>}
  </main>;

@@ -29,7 +29,7 @@ export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKin
     {value:'themes',label:'Themes',icon:Milestone,enabled:!!model?.themes.length},
     {value:'bridges',label:'Bridges',icon:GitFork,enabled:usedBridges(model).length>0},
   ] as const;
-  return <Sheet open={open} onClose={onClose} title="Layers">
+  return <Sheet open={open} onClose={onClose} title="Layers" containFocus>
     <div className="v7-atlas-layer-options">
       <p className="v7-eyebrow">Map type</p>
       <div className="v7-atlas-layer-tiles">{layers.filter(layer=>layer.enabled).map(({value,label,icon:Icon})=>

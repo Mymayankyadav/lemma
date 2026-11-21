@@ -42,6 +42,20 @@ for(const [width,height,scale] of [[320,640,100],[390,844,160]])test(`Path tabs 
  await page.setViewportSize({width,height});
  await page.addInitScript(value=>document.addEventListener('DOMContentLoaded',()=>document.documentElement.style.fontSize=value+'%'),scale);
  await go(page,'/p/real-analysis');
+ const goal=page.locator('.v7-path-goal');
+ const disclosure=page.locator('.v7-path-head .v7-disclosure').filter({has:goal});
+ const trigger=disclosure.getByRole('button');
+ const goalText=(await goal.textContent())!;
+ const [goalBox,arrowBox,triggerBox]=await Promise.all([
+  goal.boundingBox(),trigger.locator(':scope > svg').boundingBox(),trigger.boundingBox(),
+ ]);
+ expect(goalBox!.x+goalBox!.width).toBeLessThanOrEqual(arrowBox!.x);
+ expect(arrowBox!.x+arrowBox!.width).toBeLessThanOrEqual(triggerBox!.x+triggerBox!.width+.5);
+ await trigger.click();
+ await expect(trigger).toHaveAttribute('aria-expanded','true');
+ await expect(disclosure.locator('p')).toHaveText(goalText);
+ await expect(disclosure.locator('p')).toBeVisible();
+ await trigger.click();
  const tabs=page.getByRole('tablist',{name:'Path sections'});
  await expect(tabs.getByRole('tab')).toHaveCount(4);
  expect(await tabs.evaluate(node=>{

@@ -45,6 +45,38 @@ test("§6.13 every chart has a Show as table switch, the almanac uses one hue an
  await expect(table.first().locator("table")).toBeVisible();
 });
 
+test("Recall chart labels stay readable at 160% text",async({page})=>{
+ await page.addInitScript(()=>document.addEventListener("DOMContentLoaded",()=>{
+  document.documentElement.style.fontSize="160%";
+ }));
+ await open(page,"/insights?tab=learning");
+ const chart=page.getByRole("region",{name:"Recall over time",exact:true});
+ const plot=chart.locator("svg.v7-plot");
+ await expect(plot).toBeVisible();
+ const measured=await plot.evaluate(svg=>{
+  const plotBox=svg.getBoundingClientRect();
+  const labels=[...svg.querySelectorAll("text:not(:has(tspan)), text > tspan")].map(node=>({
+   content:node.textContent,box:node.getBoundingClientRect(),size:parseFloat(getComputedStyle(node).fontSize),
+  }));
+  return {
+   labels:labels.map(({content})=>content),
+   minimumSize:Math.min(...labels.map(({size})=>size)),
+   clipped:labels.filter(({box})=>box.left<plotBox.left-1||box.right>plotBox.right+1||box.top<plotBox.top-1||box.bottom>plotBox.bottom+1).map(({content})=>content),
+   overlaps:labels.flatMap(({content,box},i)=>labels.slice(i+1).filter(other=>
+    Math.min(box.right,other.box.right)-Math.max(box.left,other.box.left)>1&&
+    Math.min(box.bottom,other.box.bottom)-Math.max(box.top,other.box.top)>1,
+   ).map(other=>[content,other.content])),
+  };
+ });
+ expect(measured.labels).toEqual(expect.arrayContaining(["100%","Goal","90%"]));
+ expect(measured.labels.filter(label=>/\b(Oct|Nov)\b/.test(label??"")).length).toBeGreaterThanOrEqual(2);
+ expect(measured.minimumSize).toBeGreaterThan(18);
+ expect(measured.clipped).toEqual([]);
+ expect(measured.overlaps).toEqual([]);
+ await chart.getByRole("button",{name:"Show as table",exact:true}).click();
+ await expect(chart.getByRole("table")).toBeVisible();
+});
+
 test("§6.13 the hero equals the sum of the Focus by day columns",async({page})=>{
  await open(page,"/insights?tab=time&range=7");
  const chart=page.locator("section.v7-chart",{hasText:"Focus by day"}).first();

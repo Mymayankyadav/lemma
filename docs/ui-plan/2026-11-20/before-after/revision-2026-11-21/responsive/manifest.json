@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "label": "Responsive and themes · November 21",
-  "states": 240,
-  "frames": 622,
+  "states": 260,
+  "frames": 680,
   "sources": [
     {
       "id": "1-shipping-responsive",
@@ -110,7 +110,7 @@
         }
       },
       "manifestSha256": "603505b1eb65675789fa854242b90384c4c6252945e3be4ffb492f504cb7b3c7",
-      "selectedRecords": 50
+      "selectedRecords": 10
     },
     {
       "id": "4-atlas-rail-final-responsive",
@@ -183,6 +183,78 @@
       },
       "manifestSha256": "4dc379a6f64afe002894c616cd403993d6aa6d98cef51c8bacd140217b1ffe87",
       "selectedRecords": 4
+    },
+    {
+      "id": "6-ci-final-responsive",
+      "sourceCommit": "5c4cd7b531f4916882904d8b68fda931da8a5687",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T11:50:33.665Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "f945e63964b79ab632a123f23bd901d25792d78adefe60dfadafbda846637824",
+      "selectedRecords": 40
+    },
+    {
+      "id": "7-ci-shipping-responsive",
+      "sourceCommit": "5c4cd7b531f4916882904d8b68fda931da8a5687",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T12:00:40.951Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "fa5617ac5fda69b6f66bb55ee0f17d6dbc4652ef5caa813f48d07ecd00f94150",
+      "selectedRecords": 20
     }
   ],
   "records": [
@@ -196,9 +268,9 @@
         "desktop/day/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -207,7 +279,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -220,9 +292,9 @@
         "desktop/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -231,7 +303,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -244,9 +316,9 @@
         "landscape/day/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -255,7 +327,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -268,9 +340,9 @@
         "landscape/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -279,7 +351,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -292,9 +364,9 @@
         "large/day/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -303,7 +375,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -316,9 +388,9 @@
         "large/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -327,7 +399,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -340,9 +412,9 @@
         "small/day/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -351,7 +423,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -364,9 +436,9 @@
         "small/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -375,7 +447,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -388,9 +460,9 @@
         "tablet/day/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -399,7 +471,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -412,9 +484,9 @@
         "tablet/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -423,7 +495,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1614,9 +1686,9 @@
         "desktop/day/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1625,7 +1697,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1638,9 +1710,9 @@
         "desktop/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1649,7 +1721,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1662,9 +1734,9 @@
         "landscape/day/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1673,7 +1745,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1686,9 +1758,9 @@
         "landscape/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1697,7 +1769,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1710,9 +1782,9 @@
         "large/day/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1721,7 +1793,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1734,9 +1806,9 @@
         "large/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1745,7 +1817,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1758,9 +1830,9 @@
         "small/day/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1769,7 +1841,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1782,9 +1854,9 @@
         "small/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1793,7 +1865,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1806,9 +1878,9 @@
         "tablet/day/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1817,7 +1889,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1830,9 +1902,9 @@
         "tablet/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1841,7 +1913,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1854,9 +1926,9 @@
         "desktop/day/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1865,7 +1937,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1878,9 +1950,9 @@
         "desktop/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1889,7 +1961,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1902,9 +1974,9 @@
         "landscape/day/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1913,7 +1985,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1926,9 +1998,9 @@
         "landscape/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1937,7 +2009,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1950,9 +2022,9 @@
         "large/day/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1961,7 +2033,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1974,9 +2046,9 @@
         "large/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1985,7 +2057,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1998,9 +2070,9 @@
         "small/day/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2009,7 +2081,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2022,9 +2094,9 @@
         "small/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2033,7 +2105,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2046,9 +2118,9 @@
         "tablet/day/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2057,7 +2129,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2070,9 +2142,9 @@
         "tablet/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2081,7 +2153,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2094,9 +2166,9 @@
         "desktop/day/atlas-search.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2105,7 +2177,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2118,9 +2190,9 @@
         "desktop/night/atlas-search.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2129,7 +2201,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2143,9 +2215,9 @@
         "landscape/day/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2154,7 +2226,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2168,9 +2240,9 @@
         "landscape/night/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2179,7 +2251,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2193,9 +2265,9 @@
         "large/day/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2204,7 +2276,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2218,9 +2290,9 @@
         "large/night/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2229,7 +2301,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2243,9 +2315,9 @@
         "small/day/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2254,7 +2326,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2268,9 +2340,9 @@
         "small/night/atlas-search--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2279,7 +2351,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2292,9 +2364,9 @@
         "tablet/day/atlas-search.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2303,7 +2375,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -2316,9 +2388,9 @@
         "tablet/night/atlas-search.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DNK5kJFQ.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2327,7 +2399,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-atlas-eye-rail-responsive",
+      "captureSource": "6-ci-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -3333,6 +3405,268 @@
       "buildEntriesSource": "capture"
     },
     {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/path-map.jpg",
+        "desktop/day/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/path-map.jpg",
+        "desktop/night/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/path-map.jpg",
+        "landscape/day/path-map--scroll-0-1.jpg",
+        "landscape/day/path-map--scroll-0-2.jpg",
+        "landscape/day/path-map--scroll-0-3.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/path-map.jpg",
+        "landscape/night/path-map--scroll-0-1.jpg",
+        "landscape/night/path-map--scroll-0-2.jpg",
+        "landscape/night/path-map--scroll-0-3.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/path-map.jpg",
+        "large/day/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/path-map.jpg",
+        "large/night/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/path-map.jpg",
+        "small/day/path-map--scroll-0-1.jpg",
+        "small/day/path-map--scroll-0-2.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/path-map.jpg",
+        "small/night/path-map--scroll-0-1.jpg",
+        "small/night/path-map--scroll-0-2.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/path-map.jpg",
+        "tablet/day/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "path-map",
+      "route": "/p/real-analysis",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/path-map.jpg",
+        "tablet/night/path-map--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Paths",
+          "Real Analysis"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
       "scene": "path-marked-done",
       "route": "/projects",
       "profile": "desktop",
@@ -3594,6 +3928,268 @@
       },
       "ok": true,
       "captureSource": "1-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/progress-learning.jpg",
+        "desktop/day/progress-learning--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/progress-learning.jpg",
+        "desktop/night/progress-learning--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/progress-learning.jpg",
+        "landscape/day/progress-learning--scroll-0-1.jpg",
+        "landscape/day/progress-learning--scroll-0-2.jpg",
+        "landscape/day/progress-learning--scroll-0-3.jpg",
+        "landscape/day/progress-learning--scroll-0-4.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/progress-learning.jpg",
+        "landscape/night/progress-learning--scroll-0-1.jpg",
+        "landscape/night/progress-learning--scroll-0-2.jpg",
+        "landscape/night/progress-learning--scroll-0-3.jpg",
+        "landscape/night/progress-learning--scroll-0-4.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/progress-learning.jpg",
+        "large/day/progress-learning--scroll-0-1.jpg",
+        "large/day/progress-learning--scroll-0-2.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/progress-learning.jpg",
+        "large/night/progress-learning--scroll-0-1.jpg",
+        "large/night/progress-learning--scroll-0-2.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/progress-learning.jpg",
+        "small/day/progress-learning--scroll-0-1.jpg",
+        "small/day/progress-learning--scroll-0-2.jpg",
+        "small/day/progress-learning--scroll-0-3.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/progress-learning.jpg",
+        "small/night/progress-learning--scroll-0-1.jpg",
+        "small/night/progress-learning--scroll-0-2.jpg",
+        "small/night/progress-learning--scroll-0-3.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/progress-learning.jpg",
+        "tablet/day/progress-learning--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "progress-learning",
+      "route": "/insights?tab=learning",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/progress-learning.jpg",
+        "tablet/night/progress-learning--scroll-0-1.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "buildEntries": [
+        "/lemma/assets/index-BGzNEtBA.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Learning"
+        ]
+      },
+      "ok": true,
+      "captureSource": "7-ci-shipping-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -6317,62 +6913,62 @@
   ],
   "images": {
     "desktop/day/atlas.jpg": {
-      "sha256": "dd656c5233ce61a26e8437e4bf919915a28ca4d3b12310030e708855289360e0",
-      "bytes": 97916,
+      "sha256": "d3d254eee457c6b684cc07bfbb07d04c954c92b138b27fea06a7089229734b24",
+      "bytes": 98120,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas.jpg": {
-      "sha256": "cd3c35e083bd41a31ca8a83a62c80754203d9e26c4b01d7ffa27ef345845e9b4",
-      "bytes": 80441,
+      "sha256": "d8a8f3dc44a263bbc7c7a75b221a90da704f8546b10d22e1b518553fffdf3c21",
+      "bytes": 80535,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas.jpg": {
-      "sha256": "f2b9f656b5524756389d788476a07cc0fe2aa060de36acd3afdd6a7d26cab770",
-      "bytes": 59028,
+      "sha256": "b0086947b4463a5cf6cbb86a099d1407475afaf6ffef346d6557bfa850c6d5fe",
+      "bytes": 58436,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas.jpg": {
-      "sha256": "40ce9e58b69ec5617f2afbc3a071b69505ebae03e4952e4beb967daebfeeb8ad",
-      "bytes": 49098,
+      "sha256": "22c36da5f270449dd7ddb391d4bde0171c8b3a86bfb1219d818d3e707fadd663",
+      "bytes": 48537,
       "width": 844,
       "height": 390
     },
     "large/day/atlas.jpg": {
-      "sha256": "0a71a56ce7a9a53cfb45a5d1263e26b65947785774b3a2f7cd85fb009751ec33",
-      "bytes": 53985,
+      "sha256": "1d258a5e4edd259d5423dc6402773d777387f6c07aaaf9960b9aa87bc9d270cf",
+      "bytes": 66725,
       "width": 390,
       "height": 844
     },
     "large/night/atlas.jpg": {
-      "sha256": "0b16ca90f610486bc95036ea65cea0d080534e508d899edd3096e26906d93c14",
-      "bytes": 52895,
+      "sha256": "2f1d2552f706b68e0dc374615e51ad6d75c35d4e7915f9cf3b566f4f78bd15ec",
+      "bytes": 53135,
       "width": 390,
       "height": 844
     },
     "small/day/atlas.jpg": {
-      "sha256": "6f17cbd0c89c4a97384b41b995698eacbd1ff1080d6cb7b4c17ca5abf9119625",
-      "bytes": 43107,
+      "sha256": "a08abc1fa06fb72bcd86a055d7cb8b0172b09d350be569cd959ea32dfb93a2dc",
+      "bytes": 48344,
       "width": 320,
       "height": 640
     },
     "small/night/atlas.jpg": {
-      "sha256": "15a6ff35c58450bcfeab4df7d29e59a9199cd4bbedb05294a5d53fd21b4cbcb8",
-      "bytes": 42360,
+      "sha256": "53824827d1cd0a4876f80d4bb9fcf719003e7b51f5fc2e8a7caea375679e15b2",
+      "bytes": 47410,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas.jpg": {
-      "sha256": "a9070383dd4d1b34a4475c592e025a26319d12a4143e95011f44031763334a39",
-      "bytes": 81610,
+      "sha256": "011f2fd34328a44bb35f647afd8c1ecac6320f43d5b1e8f169d7e4b1cff9d7cb",
+      "bytes": 79990,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas.jpg": {
-      "sha256": "49323305cb37dbd3c538375b39ae18e5f2e09f7e790fc6a2cd545c6703a6e51c",
-      "bytes": 63585,
+      "sha256": "e60d76dac59438c447824b346d453fb09d2e8e4b076b160085af101d4d394e17",
+      "bytes": 63239,
       "width": 834,
       "height": 1112
     },
@@ -7985,158 +8581,158 @@
       "height": 1112
     },
     "desktop/day/atlas-peek.jpg": {
-      "sha256": "584092d2307b0007a53943e5d00e747e8cf34e92aa5171ff7689add7cf719d9c",
-      "bytes": 89687,
+      "sha256": "5cc39dee9f12b5f7aeb903384290d51d444ceb501e4df54c796159163449249c",
+      "bytes": 90240,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-peek.jpg": {
-      "sha256": "34f6aabef55fba43e4eb9c14dc00cec035bf66a014415b40feb924545f5e30be",
-      "bytes": 70427,
+      "sha256": "c0bb959ffaf518df85ac6776f1d95c87504d2f8d59c03859474054397e8a12e7",
+      "bytes": 70817,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-peek.jpg": {
-      "sha256": "cb6ea1fcd3f34b03f4dbb01df0e2e96ff0f8bdaad93978dfd0c44b9c9e0f413c",
-      "bytes": 48793,
+      "sha256": "3888ea1319b683650ef86ed95abfe013573d700f8c1be2ac051029b03ded7f6e",
+      "bytes": 48412,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-peek.jpg": {
-      "sha256": "7b52e8d793ed8a5f3647c80406e2e9857259b7247ff65bced849d98391e8533a",
-      "bytes": 41689,
+      "sha256": "b4b71377fdfa4bc8545840c911869f94d308e9e890e426b89a7e25852a204f97",
+      "bytes": 41128,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-peek.jpg": {
-      "sha256": "5b66579025c6bdd4dff09ff127f885ad4a751709ec37a40f8fa866eb7c4526db",
-      "bytes": 61423,
+      "sha256": "ad4ff3fc56f7e434e4b66f0e1af6cba5f75dcfdd7dde0bc8dc4c5e8af046874f",
+      "bytes": 60684,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-peek.jpg": {
-      "sha256": "7f5165fb4c8b4c0984e0b0ed8474982451ff8a1fca815298cb720197cf5c9f7f",
-      "bytes": 53803,
+      "sha256": "0773a8beecc26288d53df11db333b86875632d946c65b04d25f19d30e664625b",
+      "bytes": 53086,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-peek.jpg": {
-      "sha256": "5b7f05d1b5f668af64a44c2bf00dcd31e589e0b6db5a6a764a22dc5babac8503",
-      "bytes": 41712,
+      "sha256": "435b692633c05bf81e72fd40d431d322686df8b04c402c2e024dd815fff8f42f",
+      "bytes": 43058,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-peek.jpg": {
-      "sha256": "5fd6acdb87a09c5662f4e1e856d5340afdac5d150de9dc2972d770e2cd5d7555",
-      "bytes": 37099,
+      "sha256": "e556ef207b35dcb3169c28c8ad0d2ae3161c82e1f6c25591d86a4e4d08e69ae6",
+      "bytes": 38660,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-peek.jpg": {
-      "sha256": "dcabc6c21b7db0c7237884a9f40d824d5a8dbe6ca3738f786e3600c89bad68fe",
-      "bytes": 83029,
+      "sha256": "bf0624eaee17df50a224dc7a524537b691d1621fcd92030df4a47a86fc61e0fc",
+      "bytes": 81456,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-peek.jpg": {
-      "sha256": "e7a3adf4ebf282cb8c23fd7ed8fcdbca8aab78c70b7eb1a27a8616fa6359742a",
-      "bytes": 65434,
+      "sha256": "6696816f3e723fbe51a872769abd5152cecb6052dcc8e6acee3ab4d021212c16",
+      "bytes": 65262,
       "width": 834,
       "height": 1112
     },
     "desktop/day/atlas-search.jpg": {
-      "sha256": "44b818e629564e1dc42257249912d6b52e4956b1c46562cb9dd2fc8f6705515d",
-      "bytes": 118064,
+      "sha256": "5e1710a00873926821ad5b000c0ce558ae79b1c275c41efbbf8f6c7996b75453",
+      "bytes": 117282,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-search.jpg": {
-      "sha256": "b0841d3f76337646f61b26bca9431b58ca6520777317d1254d2495ae02295f68",
-      "bytes": 99672,
+      "sha256": "4c915109db76145a187a19aaabe80c3d72e5d45ef77862b36c35a7e0e66bfbdf",
+      "bytes": 98901,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-search.jpg": {
-      "sha256": "f2610787304ba8a10e7dc9cfad53ff9329de5f3a44dccd33195f22cd34c4dfad",
-      "bytes": 48951,
+      "sha256": "d189234b91b9f4bf1465d7ddee3adedc015a98a4852094a0655cacabef6556de",
+      "bytes": 49281,
       "width": 844,
       "height": 390
     },
     "landscape/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "8fa44a64a4e1f7f735fcc7312c193cf4047c84115eea3df02b88dc0af556f070",
-      "bytes": 49243,
+      "sha256": "43ee08e6a72cfd3bd2d36b6b1f4a9bab87e6a90f3b238f6d8aa39f39a00b2e1e",
+      "bytes": 49572,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-search.jpg": {
-      "sha256": "dabf80855195a3e65dff0ec7892b1d6eef59b18cffa2f11aebf5e111c005013f",
-      "bytes": 40875,
+      "sha256": "b21707c93b4d0eaafa5b50e5a84910ec4ffca0cffe2284e73b2344d791b3e331",
+      "bytes": 41489,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "2fff8d2901094de27bef1bd97f7e9dc67c57ad7bbf2f5169e20a574fee76e604",
-      "bytes": 40944,
+      "sha256": "52950608feb3448c9c1b2cdaab4eb0f9dd9268def07a4a7de5748ca22fde1049",
+      "bytes": 41603,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-search.jpg": {
-      "sha256": "196c9da0144c3b4dbb675d32a233452d3991e6f122ed412746d813a0b94d220c",
-      "bytes": 50315,
+      "sha256": "5e5f9d8a6864e065c87ef0b9e8811621a8b1898b6496a2d93c745ec133e314c1",
+      "bytes": 61971,
       "width": 390,
       "height": 844
     },
     "large/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "fae15924b048bacbc6032f08c6882092a1da700089722d34581b6d2383e4c606",
-      "bytes": 47844,
+      "sha256": "c48fb0e5844a00f93294d5e89cec46b44af34938d960417451e8bc8bfb532a77",
+      "bytes": 59389,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-search.jpg": {
-      "sha256": "6faed8252eedd5d798985b34d8dc7dc84d6084dcc22bfd7ad722b45029f93245",
-      "bytes": 46196,
+      "sha256": "5f8edb35f72da0461dddb672c1cf2a684e15a798cfed701c6c28ecc4cdafbc1d",
+      "bytes": 51870,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "5fd6b3c5695017f1bf214a250769f6bb292996962ed838136550cc4b5bba98dc",
-      "bytes": 43934,
+      "sha256": "c996ad817b72b993959d3a94745e3d16cf691d8c5a27598cedb85292ae896069",
+      "bytes": 49639,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-search.jpg": {
-      "sha256": "365392ca33585ee9a0c4e2598f1c2de149785865b368e75fa0472048bb40b44c",
-      "bytes": 37870,
+      "sha256": "89b8948e5819a546c233b72676e793abea95d970c038fea83840a8501cc5264e",
+      "bytes": 41399,
       "width": 320,
       "height": 640
     },
     "small/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "0866f1ba84ce91a0e82a8a9d4633aa5633f5dca9166463ec0c4e17dc08cd5931",
-      "bytes": 37185,
+      "sha256": "2220d05928edc9d1eda9b549a11192d808d07cf748d740efe52f546fb4d7aa54",
+      "bytes": 40689,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-search.jpg": {
-      "sha256": "34b1b83ca477ec5cba5bb6cb52b7049786483c534c4677a4022b79f3fe7c5333",
-      "bytes": 34917,
+      "sha256": "354d750bc04b1f263b8b489a75cd8e049c4ba5bf4cc2a50092867e24d4d422af",
+      "bytes": 38356,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "328646e1b284f4c0f4c205d13600b4ad244f34249bf36feea3bd41b20e14f34e",
-      "bytes": 34169,
+      "sha256": "03b351a7c5962225003d392c89d88d2b18530332f6f6b054677e51364d694029",
+      "bytes": 37630,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-search.jpg": {
-      "sha256": "d363332472a752eed4f2713e315dbf9667f89afc83607942ebb8b2da97a28705",
-      "bytes": 101759,
+      "sha256": "f075533b5cd380cbfe03c5b59a889d885884a321677abbb460c38756a8089caa",
+      "bytes": 99485,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-search.jpg": {
-      "sha256": "ef915689cd6b55e63ad11f2f789a1703570795f8af0cb47f1a3c94d10a6a0b34",
-      "bytes": 84277,
+      "sha256": "64fbf9e8947b4b52107e7d24f5c21fb23bcd505895503e999769c1e42bef9ca2",
+      "bytes": 82981,
       "width": 834,
       "height": 1112
     },
@@ -8632,6 +9228,162 @@
       "width": 834,
       "height": 1112
     },
+    "desktop/day/path-map.jpg": {
+      "sha256": "445adcbf97237a507b58b3e5f1ccdeab1bd9cfceb532a5f7b6dbd6b9a2cb2799",
+      "bytes": 108324,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/path-map--scroll-0-1.jpg": {
+      "sha256": "bc592985b537c3e1f1d6deb69b50496ec79478904c645715ca2829d07b2493fd",
+      "bytes": 101898,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/path-map.jpg": {
+      "sha256": "956b86feadc8f98ef8361420cfd29326ce8766493df5d37562f986004a259e3d",
+      "bytes": 104544,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/path-map--scroll-0-1.jpg": {
+      "sha256": "9ea0f00f9e1456efb8415fd442c99c0ae5436a90bbbacc587f4323f45fd33427",
+      "bytes": 98005,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/path-map.jpg": {
+      "sha256": "d186bf1a6c420c6cb6333d4f056bb37d88251d0f0ab5f05a81e710bb8902744d",
+      "bytes": 38273,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/path-map--scroll-0-1.jpg": {
+      "sha256": "f077763313289bbe15dcf2109a7aebb445d4c7367a25efff27b117d6aa8f7d03",
+      "bytes": 36886,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/path-map--scroll-0-2.jpg": {
+      "sha256": "1cceb6a72582bf6159dd4ac1c803f590074bdcfd945689acbb69f9c526993a17",
+      "bytes": 35705,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/path-map--scroll-0-3.jpg": {
+      "sha256": "8efc02146ce02bc1ff5ab676e6d3c163023bc5375c8c5ceec350c1682d162a9a",
+      "bytes": 31482,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/path-map.jpg": {
+      "sha256": "4871122b7b94f06d4ad37804002a30f5e1796a017d18d104f64bfc976ec5b116",
+      "bytes": 36779,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/path-map--scroll-0-1.jpg": {
+      "sha256": "1bf7794013c428477c40560baa5d45f405aa53e40ebc5f6618baa726f904bc47",
+      "bytes": 35256,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/path-map--scroll-0-2.jpg": {
+      "sha256": "393d74ab1886f8ee7807284767dfaa59520a7467ce178f5d39b7c79af18437be",
+      "bytes": 34322,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/path-map--scroll-0-3.jpg": {
+      "sha256": "127d4f30e06b1c12f516601486c5e2cbc02256d4375750318b6daffdb9a58724",
+      "bytes": 29643,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/path-map.jpg": {
+      "sha256": "bf5da186ab7065bee9124eb7b6beec57cdd3012b9ea15e487653a666a59ae2a4",
+      "bytes": 48003,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/path-map--scroll-0-1.jpg": {
+      "sha256": "fd7abff05287dd20ee1acfc11f122627aab286b5828d7c5260ecfc38cb8c0bd5",
+      "bytes": 44163,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/path-map.jpg": {
+      "sha256": "b590b53e9a2b7b1890b39f93e53880a571402db4dc6ec2f86d0616af8c087ba9",
+      "bytes": 45719,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/path-map--scroll-0-1.jpg": {
+      "sha256": "04c494272ab89b2fdd73637ae6d21b445b7163a1dc22d5da3efa206004798579",
+      "bytes": 41822,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/path-map.jpg": {
+      "sha256": "cebd860ff83992ea6a564796987839f9f3f4faa84040507f0edc02a9bb072edf",
+      "bytes": 29056,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/path-map--scroll-0-1.jpg": {
+      "sha256": "cea046ecae4bea2bfb420976793b2d97d3c9f5458b35e7e26dfb7fa1f1dd2c3f",
+      "bytes": 25909,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/path-map--scroll-0-2.jpg": {
+      "sha256": "e619d721276834e6a21b9de119090b2e95c9caeb4429926ce10ada5b051fe333",
+      "bytes": 25063,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/path-map.jpg": {
+      "sha256": "42cdaeb1073c2ad498969c5574340b29ea7c474a2974437220596c5e571e03d6",
+      "bytes": 28004,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/path-map--scroll-0-1.jpg": {
+      "sha256": "40d4c8e1eb3bef42527d32ac9da8a042108fb1ee9be91e868e2624915fd0a79d",
+      "bytes": 24731,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/path-map--scroll-0-2.jpg": {
+      "sha256": "a1be4257fc89c9bcf48c44d54482ecfa21c2939e5058ab0883f9f6f78509558e",
+      "bytes": 23926,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/path-map.jpg": {
+      "sha256": "956d21c1081009d15e68353bbb2ff2db3842e630a86722f84c6d5fbbf3309137",
+      "bytes": 89081,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/path-map--scroll-0-1.jpg": {
+      "sha256": "b685530299e8f2009b64b1c834e7cd448cccdc128b239a6bfc0fc5302562e142",
+      "bytes": 85490,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/path-map.jpg": {
+      "sha256": "df394608ba608ff9a4c53fceaebfbb4ec005cd6abeb2028bc9fb1bd1427720fb",
+      "bytes": 85306,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/path-map--scroll-0-1.jpg": {
+      "sha256": "8bd8043de82beebc5277eaa6a68ad5f53df5fe7554241ffc721d0c47ae3c1982",
+      "bytes": 81988,
+      "width": 834,
+      "height": 1112
+    },
     "desktop/day/path-marked-done.jpg": {
       "sha256": "8e2a92c2f1ae23e5c5bd3867c55d7d54c09e5d71d5d04b968127c219060f29d6",
       "bytes": 101880,
@@ -8797,6 +9549,198 @@
     "tablet/night/path-marked-done--scroll-0-1.jpg": {
       "sha256": "f0d882131265bcd8929ad9fc43ff06642701e404c63e5361c5bbbabc3bc11174",
       "bytes": 78314,
+      "width": 834,
+      "height": 1112
+    },
+    "desktop/day/progress-learning.jpg": {
+      "sha256": "52d14316af27ab267aac49958756b97c95cb431d96cd282551c47329219cf902",
+      "bytes": 96158,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/progress-learning--scroll-0-1.jpg": {
+      "sha256": "c9969f5d3e7489e508c34348bfcca08d9bcb7ddc25d91bb41294a0a20e3c880c",
+      "bytes": 93210,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/progress-learning.jpg": {
+      "sha256": "43baf1a35b1c12c3a35051036b1905b866b4423c75995e02207e5c42b3caaf7d",
+      "bytes": 90981,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/progress-learning--scroll-0-1.jpg": {
+      "sha256": "04780f57ad28d028e2cb960632c83318302e487e85f821c392fd6a3483ae882a",
+      "bytes": 88550,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/progress-learning.jpg": {
+      "sha256": "931131644f7fd9f578e7f23e861569e993d9d7495c63ef0620d00e0f1a724056",
+      "bytes": 27390,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/progress-learning--scroll-0-1.jpg": {
+      "sha256": "75cdcc6004d3120242f878524bdfe1a56115c76bdcf2fbf8ef25a6e848eaea1e",
+      "bytes": 20658,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/progress-learning--scroll-0-2.jpg": {
+      "sha256": "9f14efcd35ce37de2c031c00ab8f3c44231b6b8b7e029c18683cd2a696ca0178",
+      "bytes": 38422,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/progress-learning--scroll-0-3.jpg": {
+      "sha256": "e253b29d52c269111b26f707823980a887a60c39eeba18d863e3fbbeccc7ff96",
+      "bytes": 27151,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/progress-learning--scroll-0-4.jpg": {
+      "sha256": "b72e81856a3933cb243c6975a9b06c1f047b4e69cab18539519fbc3959addf96",
+      "bytes": 20719,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/progress-learning.jpg": {
+      "sha256": "acf42d3d418b46cb7551f9226c6532161fb23d194b576228d0f8974f62207437",
+      "bytes": 25561,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/progress-learning--scroll-0-1.jpg": {
+      "sha256": "e889826ccd5f1d41d0bf63371b9ae3e836da03f2c401faf828eebac484c58a89",
+      "bytes": 19492,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/progress-learning--scroll-0-2.jpg": {
+      "sha256": "e1390c675e8ba66310eac96a1de752e4259ae9ab6ac19bf6855e7385d75c3043",
+      "bytes": 36489,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/progress-learning--scroll-0-3.jpg": {
+      "sha256": "598c4b46a9c2bc2212e34d06eb108c6bd15017d827f2e97da046154a681e7dee",
+      "bytes": 25718,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/progress-learning--scroll-0-4.jpg": {
+      "sha256": "75e02b2ffb58a3da14a66bc50c783c4559fcbe3745eeedc9ae56712fcccdd3a2",
+      "bytes": 19275,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/progress-learning.jpg": {
+      "sha256": "61e887925c2ad804f55dbe39582a6d2640f2e6ba8c9c54c3cdd12311e47e9a30",
+      "bytes": 45229,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/progress-learning--scroll-0-1.jpg": {
+      "sha256": "158a682116f2a655a4523713b8bd9d0886c0437f9d21b32ba9ce75b3f826038b",
+      "bytes": 53328,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/progress-learning--scroll-0-2.jpg": {
+      "sha256": "197dd2b094d8fb3fcb1a41c4bbfec6287bfffbc9e018de976a714861cb209e48",
+      "bytes": 38653,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/progress-learning.jpg": {
+      "sha256": "302ec02dafe8836e1f5ae59c87ad71e026d59786c8b81e4f36eea0d9b8f90a0c",
+      "bytes": 42842,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/progress-learning--scroll-0-1.jpg": {
+      "sha256": "f0e8ba2790d095794a684d7470a63aade2857da6f3dda67518092181f92b7382",
+      "bytes": 50554,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/progress-learning--scroll-0-2.jpg": {
+      "sha256": "24e2cd7620bae503b09b765182cc1c1f3b05e86c50e6fc01f33e655429c2bd37",
+      "bytes": 36344,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/progress-learning.jpg": {
+      "sha256": "adf157be3f8a7e54d6f010a76d1d8c33ca61da9f734ee0ae92df267a7d231a24",
+      "bytes": 25721,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/progress-learning--scroll-0-1.jpg": {
+      "sha256": "bb1fc1df3cb022cea3e7fd4f85f59816acd0b8d71867952a7f87cb44b8528ce6",
+      "bytes": 32524,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/progress-learning--scroll-0-2.jpg": {
+      "sha256": "4f6141a158e7708f0a4d53ffb8733de1707f6d69e09e95c39413f90288d5d012",
+      "bytes": 21104,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/progress-learning--scroll-0-3.jpg": {
+      "sha256": "ff5f5fe8610e2dc239adee5406f7dd52f343ac5c9fa4ea413661a1e120e06400",
+      "bytes": 19841,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/progress-learning.jpg": {
+      "sha256": "ccf6eac8311501510ef382b064d8d48c6d15bd9ba17c2e05a343a254ba427692",
+      "bytes": 24245,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/progress-learning--scroll-0-1.jpg": {
+      "sha256": "0a4d705619ce7ffec9c9e118bc46a48c3cb407c524e246f5d5bcc6a7e509c865",
+      "bytes": 30952,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/progress-learning--scroll-0-2.jpg": {
+      "sha256": "e089bdaa93947f93ea219776b9a94e38ac660e404d3c079c5b90c042045a6c0e",
+      "bytes": 19744,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/progress-learning--scroll-0-3.jpg": {
+      "sha256": "40e65bdc024df502b96934a7009b26fc12e367369fdc9e03f7bcfb0beb81c5e3",
+      "bytes": 18614,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/progress-learning.jpg": {
+      "sha256": "21b60bdbf92b2a235b5a1fe5dd683300908d96bfa626f2285fd2491fd3211f93",
+      "bytes": 75461,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/progress-learning--scroll-0-1.jpg": {
+      "sha256": "1baba050eb7bf7cd78743a5ed5aa40fc6b0fa9fc602e623759b7e8e8a4dd202a",
+      "bytes": 71805,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/progress-learning.jpg": {
+      "sha256": "cea2a426f37c22f47119bae05c2bf4b2544e5329743b38ac82cf24e69d5eaa93",
+      "bytes": 71401,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/progress-learning--scroll-0-1.jpg": {
+      "sha256": "d06273f95a1dbd9e414e9e5045cbb2e9eee63b75b65d6e7bdecc4438110c47eb",
+      "bytes": 67860,
       "width": 834,
       "height": 1112
     },
@@ -10068,7 +11012,7 @@
         "desktop/day/atlas-list.jpg",
         "desktop/day/atlas-list--scroll-0-1.jpg"
       ],
-      "sha256": "5362900c5945e8bdf0962662f1dec2a10327039e7c65380f8b962e7ee4f4dbb2"
+      "sha256": "62b1f9020c2ad8004a35419f06a491c9834f020ab17ca8e5959ab09b5e1147bc"
     },
     {
       "file": "contacts/sheet-02.webp",
@@ -10088,7 +11032,7 @@
         "desktop/night/atlas-list--scroll-0-4.jpg",
         "desktop/night/atlas-list--scroll-0-5.jpg"
       ],
-      "sha256": "cad33d118a78ec8532867c53337ec06a502f36824f97846b16c1dddb40353c2a"
+      "sha256": "2ace8e7921071d10b503958f50390c6e890fdbd43acc746be160336efea28150"
     },
     {
       "file": "contacts/sheet-03.webp",
@@ -10108,7 +11052,7 @@
         "landscape/day/atlas-list--scroll-0-8.jpg",
         "landscape/day/atlas-list--scroll-0-9.jpg"
       ],
-      "sha256": "7d1e71dd8cdc442ba0ad737c788c325521a09a46f76b3ce6a48c53c1fdfd32b4"
+      "sha256": "7e85bde68d52f44e1c2a6b8223a06babc1528e5e06e3990302b24137f8726441"
     },
     {
       "file": "contacts/sheet-04.webp",
@@ -10128,7 +11072,7 @@
         "landscape/day/atlas-list--scroll-0-20.jpg",
         "landscape/night/atlas-list.jpg"
       ],
-      "sha256": "32430c30acf0f755c53bf381ea4a7353a519e93c18bbbb7d2e08b5c23b3678a7"
+      "sha256": "fdb3bedfae8bccc7b22706dc7e6550c254e6bc1bc4e482d0f6f02c958df660c4"
     },
     {
       "file": "contacts/sheet-05.webp",
@@ -10148,7 +11092,7 @@
         "landscape/night/atlas-list--scroll-0-11.jpg",
         "landscape/night/atlas-list--scroll-0-12.jpg"
       ],
-      "sha256": "56c71ff12119b0b07fd28f8a0e4e6c639a9d1e233ac0ce1178f9268d1bcdd8cf"
+      "sha256": "3b921fc67d7b030b9977fc9e16205e03607b6d4c4492bd97b68163f7f19611c4"
     },
     {
       "file": "contacts/sheet-06.webp",
@@ -10168,7 +11112,7 @@
         "large/day/atlas-list--scroll-0-2.jpg",
         "large/day/atlas-list--scroll-0-3.jpg"
       ],
-      "sha256": "f0bc850f5e20b800090ee75d6341ad48065164e5a27834e1ea565ecb8166eb21"
+      "sha256": "7099174e437e1156f7a0a1bcc4dd982dbfaf7ec0fc5e37db624f69feb4f2e491"
     },
     {
       "file": "contacts/sheet-07.webp",
@@ -10188,7 +11132,7 @@
         "large/night/atlas-list--scroll-0-2.jpg",
         "large/night/atlas-list--scroll-0-3.jpg"
       ],
-      "sha256": "374e8edddd1e8aa35b699de927c9cb490ab45eabcc0f36bb07d42c86a4898520"
+      "sha256": "90a2ae9dd82712b941483e6bf13e0664475a9cfdfeeda52efca83de4ce23594b"
     },
     {
       "file": "contacts/sheet-08.webp",
@@ -10208,7 +11152,7 @@
         "small/day/atlas-list--scroll-0-2.jpg",
         "small/day/atlas-list--scroll-0-3.jpg"
       ],
-      "sha256": "f1f1374f85c43e4a4ca6d0dc3968872737fc388147c42f107b8c17bc254518e5"
+      "sha256": "e3f8a11b617683ca01f26c2d0e2e084b1defe512ae9c2fac2063926be3d9e1a5"
     },
     {
       "file": "contacts/sheet-09.webp",
@@ -10228,7 +11172,7 @@
         "small/night/atlas-list--scroll-0-2.jpg",
         "small/night/atlas-list--scroll-0-3.jpg"
       ],
-      "sha256": "371bdfb76d4e477912fd46c96cec0be41dd1b29451bab525ecf6ce8f3c602890"
+      "sha256": "061fc94405a755ba474c8d5b59e27a6944098bd15cfbb699e6edcebde26345d0"
     },
     {
       "file": "contacts/sheet-10.webp",
@@ -10248,7 +11192,7 @@
         "tablet/day/atlas-list--scroll-0-2.jpg",
         "tablet/day/atlas-list--scroll-0-3.jpg"
       ],
-      "sha256": "e22650971af4515907d71aaf0a8162d07c0f4c6298213b9ecfc6c67f051f22dc"
+      "sha256": "80d643f402b7d3871fa6c8af72b1f5bae879ef3b8bbc9bb19ab7ae65b944e6a9"
     },
     {
       "file": "contacts/sheet-11.webp",
@@ -10268,7 +11212,7 @@
         "desktop/day/atlas-list-options-collapsed.jpg",
         "desktop/day/atlas-list-options-collapsed--scroll-0-1.jpg"
       ],
-      "sha256": "8686c574315686429166a5d44e0b1df1ee740aee8b41d6d0353ef3392430a63c"
+      "sha256": "41205389aa4a27d420aae17ec9da1d53d08391745e7334186ee9ef0224ec855d"
     },
     {
       "file": "contacts/sheet-12.webp",
@@ -10288,7 +11232,7 @@
         "desktop/night/atlas-list-options-collapsed--scroll-0-4.jpg",
         "desktop/night/atlas-list-options-collapsed--scroll-0-5.jpg"
       ],
-      "sha256": "446ec53c5fd52df02c8518323af57d21e8faa4e56d3e5e592c09f457b8c96b1a"
+      "sha256": "11608ea975f90b22eb37678c5aa0210469c22ea7dd9702f9085c6e3dc1d0d754"
     },
     {
       "file": "contacts/sheet-13.webp",
@@ -10308,7 +11252,7 @@
         "landscape/day/atlas-list-options-collapsed--scroll-0-8.jpg",
         "landscape/day/atlas-list-options-collapsed--scroll-0-9.jpg"
       ],
-      "sha256": "fe57d4a5c73d710561e86b1b8b03a398b444022c1a991bcf74a0163aa09238d4"
+      "sha256": "6ab24c5a1eed20108354d959457981365ad208a874f078fc34bd3d91c3a8136e"
     },
     {
       "file": "contacts/sheet-14.webp",
@@ -10328,7 +11272,7 @@
         "landscape/day/atlas-list-options-collapsed--scroll-0-20.jpg",
         "landscape/night/atlas-list-options-collapsed.jpg"
       ],
-      "sha256": "188127c71e96e698ef5108aad25cc8205c26af6d538ba27edd1fd8cc1e4c89c7"
+      "sha256": "13f19f6cff9e4b4a4ce449c465c093b88822d2df4faf4a22ed527be042ecc859"
     },
     {
       "file": "contacts/sheet-15.webp",
@@ -10348,7 +11292,7 @@
         "landscape/night/atlas-list-options-collapsed--scroll-0-11.jpg",
         "landscape/night/atlas-list-options-collapsed--scroll-0-12.jpg"
       ],
-      "sha256": "5c4fcc7179602e9c697762691d04655102d377dec416e5bf63f8af21d5dcf508"
+      "sha256": "f8a8d77abaafa694b22d42e0b3c015bba44231950ef652b64638b78b561f4436"
     },
     {
       "file": "contacts/sheet-16.webp",
@@ -10368,7 +11312,7 @@
         "large/day/atlas-list-options-collapsed--scroll-0-2.jpg",
         "large/day/atlas-list-options-collapsed--scroll-0-3.jpg"
       ],
-      "sha256": "eb46f5b338c30db30b17c8b41f9fe075475fcfec7bae4b8070fd0f19e9fc4479"
+      "sha256": "eeb036d016f9d7f8cdd41dc3a25193373a24c61adb52abe1367793b76b6501ac"
     },
     {
       "file": "contacts/sheet-17.webp",
@@ -10388,7 +11332,7 @@
         "large/night/atlas-list-options-collapsed--scroll-0-4.jpg",
         "large/night/atlas-list-options-collapsed--scroll-0-5.jpg"
       ],
-      "sha256": "d3a3954cf74fcbb0e9baae233c23180ec7a5cbed0c77ff93da34c5f68b2a5e05"
+      "sha256": "2edae30b46862fa45f3dd3ef86535074c75c31e2e99566612eeaf311b234f9e1"
     },
     {
       "file": "contacts/sheet-18.webp",
@@ -10408,7 +11352,7 @@
         "small/day/atlas-list-options-collapsed--scroll-0-6.jpg",
         "small/day/atlas-list-options-collapsed--scroll-0-7.jpg"
       ],
-      "sha256": "3bfee61cd648ee7cc26b914ffbf3a20759cf5d95b44fc202a153e21913ba4111"
+      "sha256": "3305ce470304e1ef0608d062842efb2c4a5da6771ba411c6167aa0b7c9572dbd"
     },
     {
       "file": "contacts/sheet-19.webp",
@@ -10428,7 +11372,7 @@
         "small/night/atlas-list-options-collapsed--scroll-0-6.jpg",
         "small/night/atlas-list-options-collapsed--scroll-0-7.jpg"
       ],
-      "sha256": "0406630f08db726804d534729cd104038345f30c11e8a76aacfde7c03fafd7d4"
+      "sha256": "cd4abfc5933257b63c315bfc9219c975aea9822eaa9248eb75d16cb9fc88aa7d"
     },
     {
       "file": "contacts/sheet-20.webp",
@@ -10448,7 +11392,7 @@
         "tablet/day/atlas-list-options-collapsed--scroll-0-6.jpg",
         "tablet/night/atlas-list-options-collapsed.jpg"
       ],
-      "sha256": "76abe0b284afda6de303792e9321d08eaa606bf90d741085b286e5f54148f2b5"
+      "sha256": "07da452fb805bc2790d4c2ae011be87f068e4eada5c336a940246a39d91ef39f"
     },
     {
       "file": "contacts/sheet-21.webp",
@@ -10468,7 +11412,7 @@
         "landscape/night/atlas-new-concept.jpg",
         "landscape/night/atlas-new-concept--scroll-0-1.jpg"
       ],
-      "sha256": "b89c239aba76cb0212bab5e6b365e882f9f295a998ba061888cf6fbb059d4eaa"
+      "sha256": "753b23bbd77983853a94481614948e5ebf0e62233de9bf75ec8aca11287657f3"
     },
     {
       "file": "contacts/sheet-22.webp",
@@ -10488,7 +11432,7 @@
         "large/day/atlas-operation-reparent.jpg",
         "large/night/atlas-operation-reparent.jpg"
       ],
-      "sha256": "fe002050bf884f8fd43733a9179f518e03e9236af7144fa11d9a26a199260379"
+      "sha256": "d0f50269e35c329869464252e232cb5308a3363656fcaf40827f999b1b395d5a"
     },
     {
       "file": "contacts/sheet-23.webp",
@@ -10508,7 +11452,7 @@
         "small/day/atlas-options-collapsed.jpg",
         "small/night/atlas-options-collapsed.jpg"
       ],
-      "sha256": "d3ba7f9f25c9dd586a10f158b72cc6535df881c830d3b93dd9fa212a78b0cb88"
+      "sha256": "f7f7a123ce3c4d9ab8a3873ff0cddff1febb4ed9544d2c6ed08d13e4e0f15f00"
     },
     {
       "file": "contacts/sheet-24.webp",
@@ -10528,7 +11472,7 @@
         "tablet/day/atlas-peek.jpg",
         "tablet/night/atlas-peek.jpg"
       ],
-      "sha256": "3b8a7fc7979aa4332dedc3c038c723692af15293930d4b1611badb15cbb79fbe"
+      "sha256": "1f44da28e9ce29e74f7d83f6b581808888e32ed8a4566c60c6804bd75a066738"
     },
     {
       "file": "contacts/sheet-25.webp",
@@ -10548,7 +11492,7 @@
         "small/day/atlas-search.jpg",
         "small/day/atlas-search--scroll-0-1.jpg"
       ],
-      "sha256": "77352138c86d058f37e077179f7c162e145bbc5cf32c3841a8d4a00970f59cd9"
+      "sha256": "6aa360c50cccca9112503226c47a91d09d0395954a366a24a68e19f9bca8e969"
     },
     {
       "file": "contacts/sheet-26.webp",
@@ -10568,7 +11512,7 @@
         "large/day/calendar-month.jpg",
         "large/day/calendar-month--scroll-0-1.jpg"
       ],
-      "sha256": "b4a33700cb9ec3b079d440e57a01c3f2b84683baafbdb9912136b296e90dcb35"
+      "sha256": "736bdac5e8879ab11b2f1ccc61e80e55ca5fa864e2d047e928bdab78356b2d5f"
     },
     {
       "file": "contacts/sheet-27.webp",
@@ -10588,7 +11532,7 @@
         "desktop/day/calendar-week--scroll-1-1.jpg",
         "desktop/night/calendar-week.jpg"
       ],
-      "sha256": "4a5288a2e2435de2f0e807ae90c456f9de2fe27b379a7c9111cdcdc995d9e134"
+      "sha256": "00e69cf61bda2b93b9682c58dedd22637f007b14e7c19fd12073aca9f22d4a39"
     },
     {
       "file": "contacts/sheet-28.webp",
@@ -10608,7 +11552,7 @@
         "landscape/night/calendar-week--scroll-1-1.jpg",
         "landscape/night/calendar-week--scroll-1-2.jpg"
       ],
-      "sha256": "6713957e9f6c8960efabd4d5e8e37fbde4face2c1725db6c289f581e6cbc7319"
+      "sha256": "a72319567dd18887eae41611d02fc8dfe4f2462a6d1eb070ae988055f98e636f"
     },
     {
       "file": "contacts/sheet-29.webp",
@@ -10628,7 +11572,7 @@
         "small/day/calendar-week--scroll-1-1.jpg",
         "small/day/calendar-week--scroll-1-2.jpg"
       ],
-      "sha256": "2eee03f4972b00779fc2d32ece760b833138c7983a54e45149b31e285bf91c5f"
+      "sha256": "5d3e2b51df9dbe6cacaa37df1eb40c3963771b05dc367e7d772e57d1ca422740"
     },
     {
       "file": "contacts/sheet-30.webp",
@@ -10648,7 +11592,7 @@
         "landscape/day/capture-type-picker.jpg",
         "landscape/day/capture-type-picker--scroll-0-1.jpg"
       ],
-      "sha256": "b272c37ef617f68f67b50bde1b4da18c1ead2eb56ce5bb27179b263683717569"
+      "sha256": "d9ab72042d713ec05b683db6858b8ad69bae129d4ea0647390bd8c94aa2ef46c"
     },
     {
       "file": "contacts/sheet-31.webp",
@@ -10668,7 +11612,7 @@
         "landscape/day/new-task-filled.jpg",
         "landscape/day/new-task-filled--scroll-0-1.jpg"
       ],
-      "sha256": "472402a2d9a77c4cc664b99109074b696da930152712e865ede0dc7213b70d96"
+      "sha256": "d13dd54b8da031c6e8081aac8f5a34b1f15fbcaf9bc4b8695d2008472d2c5885"
     },
     {
       "file": "contacts/sheet-32.webp",
@@ -10688,7 +11632,7 @@
         "small/night/new-task-filled.jpg",
         "small/night/new-task-filled--scroll-0-1.jpg"
       ],
-      "sha256": "1058340e2c120f7a52a7a68e0157ddc6a7351475b127c762e5ccbd5ec06e77d4"
+      "sha256": "033b77b7cbe63b36549572265825d21fe7cd963ad2adbdc871b2e7c0380f391f"
     },
     {
       "file": "contacts/sheet-33.webp",
@@ -10697,6 +11641,48 @@
       "images": [
         "tablet/day/new-task-filled.jpg",
         "tablet/night/new-task-filled.jpg",
+        "desktop/day/path-map.jpg",
+        "desktop/day/path-map--scroll-0-1.jpg",
+        "desktop/night/path-map.jpg",
+        "desktop/night/path-map--scroll-0-1.jpg",
+        "landscape/day/path-map.jpg",
+        "landscape/day/path-map--scroll-0-1.jpg",
+        "landscape/day/path-map--scroll-0-2.jpg",
+        "landscape/day/path-map--scroll-0-3.jpg",
+        "landscape/night/path-map.jpg",
+        "landscape/night/path-map--scroll-0-1.jpg"
+      ],
+      "sha256": "35c7b65e9f08ef7d06287938b30ac8941c0b7b54f385f1e1161276980660c71c"
+    },
+    {
+      "file": "contacts/sheet-34.webp",
+      "firstFrame": 397,
+      "lastFrame": 408,
+      "images": [
+        "landscape/night/path-map--scroll-0-2.jpg",
+        "landscape/night/path-map--scroll-0-3.jpg",
+        "large/day/path-map.jpg",
+        "large/day/path-map--scroll-0-1.jpg",
+        "large/night/path-map.jpg",
+        "large/night/path-map--scroll-0-1.jpg",
+        "small/day/path-map.jpg",
+        "small/day/path-map--scroll-0-1.jpg",
+        "small/day/path-map--scroll-0-2.jpg",
+        "small/night/path-map.jpg",
+        "small/night/path-map--scroll-0-1.jpg",
+        "small/night/path-map--scroll-0-2.jpg"
+      ],
+      "sha256": "39152f6644f24e1d1a90443fbc287de99f973d9f208788c3a4efca9f9b61b536"
+    },
+    {
+      "file": "contacts/sheet-35.webp",
+      "firstFrame": 409,
+      "lastFrame": 420,
+      "images": [
+        "tablet/day/path-map.jpg",
+        "tablet/day/path-map--scroll-0-1.jpg",
+        "tablet/night/path-map.jpg",
+        "tablet/night/path-map--scroll-0-1.jpg",
         "desktop/day/path-marked-done.jpg",
         "desktop/day/path-marked-done--scroll-0-1.jpg",
         "desktop/night/path-marked-done.jpg",
@@ -10704,17 +11690,17 @@
         "landscape/day/path-marked-done.jpg",
         "landscape/day/path-marked-done--scroll-0-1.jpg",
         "landscape/day/path-marked-done--scroll-0-2.jpg",
-        "landscape/day/path-marked-done--scroll-0-3.jpg",
-        "landscape/night/path-marked-done.jpg",
-        "landscape/night/path-marked-done--scroll-0-1.jpg"
+        "landscape/day/path-marked-done--scroll-0-3.jpg"
       ],
-      "sha256": "404a727aa9a19d74301909083a8b24b0f5419cd8f3f1884e469687a0057874cf"
+      "sha256": "9d1a3190dfec9e8037ac412524aea0430774fc0fa3d4c407499145f056e35326"
     },
     {
-      "file": "contacts/sheet-34.webp",
-      "firstFrame": 397,
-      "lastFrame": 408,
+      "file": "contacts/sheet-36.webp",
+      "firstFrame": 421,
+      "lastFrame": 432,
       "images": [
+        "landscape/night/path-marked-done.jpg",
+        "landscape/night/path-marked-done--scroll-0-1.jpg",
         "landscape/night/path-marked-done--scroll-0-2.jpg",
         "landscape/night/path-marked-done--scroll-0-3.jpg",
         "large/day/path-marked-done.jpg",
@@ -10724,39 +11710,95 @@
         "large/night/path-marked-done--scroll-0-1.jpg",
         "large/night/path-marked-done--scroll-0-2.jpg",
         "small/day/path-marked-done.jpg",
-        "small/day/path-marked-done--scroll-0-1.jpg",
-        "small/day/path-marked-done--scroll-0-2.jpg",
-        "small/night/path-marked-done.jpg"
+        "small/day/path-marked-done--scroll-0-1.jpg"
       ],
-      "sha256": "42bd82dfe6cfd3aad0b40c0bb5f2238f9d43e3117aa7139ba8560e5f91ffaf8c"
+      "sha256": "eb091484f0a830fad712def63bf389683aafd674fb8be9ee193e1014ecbc4c2d"
     },
     {
-      "file": "contacts/sheet-35.webp",
-      "firstFrame": 409,
-      "lastFrame": 420,
+      "file": "contacts/sheet-37.webp",
+      "firstFrame": 433,
+      "lastFrame": 444,
       "images": [
+        "small/day/path-marked-done--scroll-0-2.jpg",
+        "small/night/path-marked-done.jpg",
         "small/night/path-marked-done--scroll-0-1.jpg",
         "small/night/path-marked-done--scroll-0-2.jpg",
         "tablet/day/path-marked-done.jpg",
         "tablet/day/path-marked-done--scroll-0-1.jpg",
         "tablet/night/path-marked-done.jpg",
         "tablet/night/path-marked-done--scroll-0-1.jpg",
+        "desktop/day/progress-learning.jpg",
+        "desktop/day/progress-learning--scroll-0-1.jpg",
+        "desktop/night/progress-learning.jpg",
+        "desktop/night/progress-learning--scroll-0-1.jpg"
+      ],
+      "sha256": "83e254542f5487ff14e92e6ff310183c259570a2417ad6f47ead2439d10dc075"
+    },
+    {
+      "file": "contacts/sheet-38.webp",
+      "firstFrame": 445,
+      "lastFrame": 456,
+      "images": [
+        "landscape/day/progress-learning.jpg",
+        "landscape/day/progress-learning--scroll-0-1.jpg",
+        "landscape/day/progress-learning--scroll-0-2.jpg",
+        "landscape/day/progress-learning--scroll-0-3.jpg",
+        "landscape/day/progress-learning--scroll-0-4.jpg",
+        "landscape/night/progress-learning.jpg",
+        "landscape/night/progress-learning--scroll-0-1.jpg",
+        "landscape/night/progress-learning--scroll-0-2.jpg",
+        "landscape/night/progress-learning--scroll-0-3.jpg",
+        "landscape/night/progress-learning--scroll-0-4.jpg",
+        "large/day/progress-learning.jpg",
+        "large/day/progress-learning--scroll-0-1.jpg"
+      ],
+      "sha256": "4041216ba852e19a567bc493193cbe158b3eb0dc71098ddd48bd025c39fd77aa"
+    },
+    {
+      "file": "contacts/sheet-39.webp",
+      "firstFrame": 457,
+      "lastFrame": 468,
+      "images": [
+        "large/day/progress-learning--scroll-0-2.jpg",
+        "large/night/progress-learning.jpg",
+        "large/night/progress-learning--scroll-0-1.jpg",
+        "large/night/progress-learning--scroll-0-2.jpg",
+        "small/day/progress-learning.jpg",
+        "small/day/progress-learning--scroll-0-1.jpg",
+        "small/day/progress-learning--scroll-0-2.jpg",
+        "small/day/progress-learning--scroll-0-3.jpg",
+        "small/night/progress-learning.jpg",
+        "small/night/progress-learning--scroll-0-1.jpg",
+        "small/night/progress-learning--scroll-0-2.jpg",
+        "small/night/progress-learning--scroll-0-3.jpg"
+      ],
+      "sha256": "958028e51f830d8c8e8dc9abcf74c2b6719018d357bcc7c902e9d6fa5bbac6ed"
+    },
+    {
+      "file": "contacts/sheet-40.webp",
+      "firstFrame": 469,
+      "lastFrame": 480,
+      "images": [
+        "tablet/day/progress-learning.jpg",
+        "tablet/day/progress-learning--scroll-0-1.jpg",
+        "tablet/night/progress-learning.jpg",
+        "tablet/night/progress-learning--scroll-0-1.jpg",
         "desktop/day/review-scratch-revealed.jpg",
         "desktop/night/review-scratch-revealed.jpg",
         "landscape/day/review-scratch-revealed.jpg",
         "landscape/day/review-scratch-revealed--scroll-0-1.jpg",
         "landscape/day/review-scratch-revealed--scroll-0-2.jpg",
-        "landscape/night/review-scratch-revealed.jpg"
+        "landscape/night/review-scratch-revealed.jpg",
+        "landscape/night/review-scratch-revealed--scroll-0-1.jpg",
+        "landscape/night/review-scratch-revealed--scroll-0-2.jpg"
       ],
-      "sha256": "4f657e6961404a080e860fc1f21388f85d7c924d3b7f72272a98e2a3ff194324"
+      "sha256": "8b0f69353961ce9727479f57bca225cbb438b56d3fbc687ad7dad2f62aeda884"
     },
     {
-      "file": "contacts/sheet-36.webp",
-      "firstFrame": 421,
-      "lastFrame": 432,
+      "file": "contacts/sheet-41.webp",
+      "firstFrame": 481,
+      "lastFrame": 492,
       "images": [
-        "landscape/night/review-scratch-revealed--scroll-0-1.jpg",
-        "landscape/night/review-scratch-revealed--scroll-0-2.jpg",
         "large/day/review-scratch-revealed.jpg",
         "large/day/review-scratch-revealed--scroll-0-1.jpg",
         "large/night/review-scratch-revealed.jpg",
@@ -10766,17 +11808,17 @@
         "small/night/review-scratch-revealed.jpg",
         "small/night/review-scratch-revealed--scroll-0-1.jpg",
         "tablet/day/review-scratch-revealed.jpg",
-        "tablet/night/review-scratch-revealed.jpg"
+        "tablet/night/review-scratch-revealed.jpg",
+        "desktop/day/settings-study-cards-a-day.jpg",
+        "desktop/night/settings-study-cards-a-day.jpg"
       ],
-      "sha256": "4418585138bfd845cb41502f6f2c9b0aba2586805791f089df19e27e2a4290ae"
+      "sha256": "890cb6040f9c231a6ce72d2afd914fe8c311e7b9147fe1f7f1be65694734fe2a"
     },
     {
-      "file": "contacts/sheet-37.webp",
-      "firstFrame": 433,
-      "lastFrame": 444,
+      "file": "contacts/sheet-42.webp",
+      "firstFrame": 493,
+      "lastFrame": 504,
       "images": [
-        "desktop/day/settings-study-cards-a-day.jpg",
-        "desktop/night/settings-study-cards-a-day.jpg",
         "landscape/day/settings-study-cards-a-day.jpg",
         "landscape/night/settings-study-cards-a-day.jpg",
         "large/day/settings-study-cards-a-day.jpg",
@@ -10786,17 +11828,17 @@
         "tablet/day/settings-study-cards-a-day.jpg",
         "tablet/night/settings-study-cards-a-day.jpg",
         "desktop/day/tutor-beta-settings.jpg",
-        "desktop/day/tutor-beta-settings--scroll-0-1.jpg"
+        "desktop/day/tutor-beta-settings--scroll-0-1.jpg",
+        "desktop/night/tutor-beta-settings.jpg",
+        "desktop/night/tutor-beta-settings--scroll-0-1.jpg"
       ],
-      "sha256": "eae92467f444521fea68a05a11e770434579dbc00c8f04b13dae7a1d56ac919f"
+      "sha256": "57d0c2ae21fde9c621087c7ae29794471dd4187bdf521b8e80dd89ca0e3e934b"
     },
     {
-      "file": "contacts/sheet-38.webp",
-      "firstFrame": 445,
-      "lastFrame": 456,
+      "file": "contacts/sheet-43.webp",
+      "firstFrame": 505,
+      "lastFrame": 516,
       "images": [
-        "desktop/night/tutor-beta-settings.jpg",
-        "desktop/night/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/day/tutor-beta-settings.jpg",
         "landscape/day/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/day/tutor-beta-settings--scroll-0-2.jpg",
@@ -10806,17 +11848,17 @@
         "landscape/night/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/night/tutor-beta-settings--scroll-0-2.jpg",
         "landscape/night/tutor-beta-settings--scroll-0-3.jpg",
-        "landscape/night/tutor-beta-settings--scroll-0-4.jpg"
+        "landscape/night/tutor-beta-settings--scroll-0-4.jpg",
+        "large/day/tutor-beta-settings.jpg",
+        "large/day/tutor-beta-settings--scroll-0-1.jpg"
       ],
-      "sha256": "7ff2853ad059437c4bf6cff654b51441a6673fa3a4b791057cb5e4511fb9f552"
+      "sha256": "8bb28270bed42ff7b374fa42e450b47e99640302b152a10fdae91c1df67ba02d"
     },
     {
-      "file": "contacts/sheet-39.webp",
-      "firstFrame": 457,
-      "lastFrame": 468,
+      "file": "contacts/sheet-44.webp",
+      "firstFrame": 517,
+      "lastFrame": 528,
       "images": [
-        "large/day/tutor-beta-settings.jpg",
-        "large/day/tutor-beta-settings--scroll-0-1.jpg",
         "large/day/tutor-beta-settings--scroll-0-2.jpg",
         "large/day/tutor-beta-settings--scroll-0-3.jpg",
         "large/night/tutor-beta-settings.jpg",
@@ -10826,17 +11868,17 @@
         "small/day/tutor-beta-settings.jpg",
         "small/day/tutor-beta-settings--scroll-0-1.jpg",
         "small/day/tutor-beta-settings--scroll-0-2.jpg",
-        "small/night/tutor-beta-settings.jpg"
+        "small/night/tutor-beta-settings.jpg",
+        "small/night/tutor-beta-settings--scroll-0-1.jpg",
+        "small/night/tutor-beta-settings--scroll-0-2.jpg"
       ],
-      "sha256": "de0b309c80bb754d8e18c2262eabbd1cd6c7c046e98fd6d09a1d07a40c1f95e4"
+      "sha256": "5c4ce30e904bbca1d8a4532188da25399ea4016b12cfb2bb285daa5fed276393"
     },
     {
-      "file": "contacts/sheet-40.webp",
-      "firstFrame": 469,
-      "lastFrame": 480,
+      "file": "contacts/sheet-45.webp",
+      "firstFrame": 529,
+      "lastFrame": 540,
       "images": [
-        "small/night/tutor-beta-settings--scroll-0-1.jpg",
-        "small/night/tutor-beta-settings--scroll-0-2.jpg",
         "tablet/day/tutor-beta-settings.jpg",
         "tablet/day/tutor-beta-settings--scroll-0-1.jpg",
         "tablet/night/tutor-beta-settings.jpg",
@@ -10846,17 +11888,17 @@
         "desktop/day/tutor-drawing-preview--scroll-0-2.jpg",
         "desktop/day/tutor-drawing-preview--scroll-0-3.jpg",
         "desktop/night/tutor-drawing-preview.jpg",
-        "desktop/night/tutor-drawing-preview--scroll-0-1.jpg"
+        "desktop/night/tutor-drawing-preview--scroll-0-1.jpg",
+        "desktop/night/tutor-drawing-preview--scroll-0-2.jpg",
+        "desktop/night/tutor-drawing-preview--scroll-0-3.jpg"
       ],
-      "sha256": "a16a12a3e3eddcec03a10baa1e92e04181bcd15ac3ba8ae813534a13f4184a80"
+      "sha256": "78a47a538a387a30e4692a8a6d0f89c3ac5a582ee015a4d4eee1bcd4b042ca91"
     },
     {
-      "file": "contacts/sheet-41.webp",
-      "firstFrame": 481,
-      "lastFrame": 492,
+      "file": "contacts/sheet-46.webp",
+      "firstFrame": 541,
+      "lastFrame": 552,
       "images": [
-        "desktop/night/tutor-drawing-preview--scroll-0-2.jpg",
-        "desktop/night/tutor-drawing-preview--scroll-0-3.jpg",
         "landscape/day/tutor-drawing-preview.jpg",
         "landscape/night/tutor-drawing-preview.jpg",
         "large/day/tutor-drawing-preview.jpg",
@@ -10866,17 +11908,17 @@
         "large/day/tutor-drawing-preview--scroll-2-1.jpg",
         "large/day/tutor-drawing-preview--scroll-2-2.jpg",
         "large/night/tutor-drawing-preview.jpg",
-        "large/night/tutor-drawing-preview--scroll-0-1.jpg"
+        "large/night/tutor-drawing-preview--scroll-0-1.jpg",
+        "large/night/tutor-drawing-preview--scroll-0-2.jpg",
+        "large/night/tutor-drawing-preview--scroll-1-1.jpg"
       ],
-      "sha256": "a4d2dc6f46242dffe2c45d30846c8e36827cc8c7f31f13ab4fd236ddc5412cd2"
+      "sha256": "837a9988348d9f537cf9b1d41f0c4be6298f09bcdc9b419bd0279c1106b6ae8d"
     },
     {
-      "file": "contacts/sheet-42.webp",
-      "firstFrame": 493,
-      "lastFrame": 504,
+      "file": "contacts/sheet-47.webp",
+      "firstFrame": 553,
+      "lastFrame": 564,
       "images": [
-        "large/night/tutor-drawing-preview--scroll-0-2.jpg",
-        "large/night/tutor-drawing-preview--scroll-1-1.jpg",
         "large/night/tutor-drawing-preview--scroll-2-1.jpg",
         "large/night/tutor-drawing-preview--scroll-2-2.jpg",
         "small/day/tutor-drawing-preview.jpg",
@@ -10886,17 +11928,17 @@
         "small/day/tutor-drawing-preview--scroll-1-2.jpg",
         "small/night/tutor-drawing-preview.jpg",
         "small/night/tutor-drawing-preview--scroll-0-1.jpg",
-        "small/night/tutor-drawing-preview--scroll-0-2.jpg"
+        "small/night/tutor-drawing-preview--scroll-0-2.jpg",
+        "small/night/tutor-drawing-preview--scroll-1-1.jpg",
+        "small/night/tutor-drawing-preview--scroll-1-2.jpg"
       ],
-      "sha256": "02ef1b16640bae69e5f4335d833838ffe52feddcbe05fdd5be05ba67599b10c4"
+      "sha256": "31e42cd60fd4cd85241a487dfea2554519e7f10270646f8fbe5b3c7f1425e368"
     },
     {
-      "file": "contacts/sheet-43.webp",
-      "firstFrame": 505,
-      "lastFrame": 516,
+      "file": "contacts/sheet-48.webp",
+      "firstFrame": 565,
+      "lastFrame": 576,
       "images": [
-        "small/night/tutor-drawing-preview--scroll-1-1.jpg",
-        "small/night/tutor-drawing-preview--scroll-1-2.jpg",
         "tablet/day/tutor-drawing-preview.jpg",
         "tablet/day/tutor-drawing-preview--scroll-0-1.jpg",
         "tablet/day/tutor-drawing-preview--scroll-0-2.jpg",
@@ -10906,17 +11948,17 @@
         "tablet/night/tutor-drawing-preview--scroll-0-2.jpg",
         "tablet/night/tutor-drawing-preview--scroll-0-3.jpg",
         "desktop/day/tutor-keyboard.jpg",
-        "desktop/night/tutor-keyboard.jpg"
+        "desktop/night/tutor-keyboard.jpg",
+        "landscape/day/tutor-keyboard.jpg",
+        "landscape/night/tutor-keyboard.jpg"
       ],
-      "sha256": "ccb9ea63a35ee1574106ad4dc1d61680042c4b9f540d8da0689eee8ad6bb6173"
+      "sha256": "8b2190323eac315261de96c583de42995d6d3e96ccd659d41a349d2f0ebeba27"
     },
     {
-      "file": "contacts/sheet-44.webp",
-      "firstFrame": 517,
-      "lastFrame": 528,
+      "file": "contacts/sheet-49.webp",
+      "firstFrame": 577,
+      "lastFrame": 588,
       "images": [
-        "landscape/day/tutor-keyboard.jpg",
-        "landscape/night/tutor-keyboard.jpg",
         "large/day/tutor-keyboard.jpg",
         "large/day/tutor-keyboard--scroll-0-1.jpg",
         "large/night/tutor-keyboard.jpg",
@@ -10926,17 +11968,17 @@
         "small/night/tutor-keyboard.jpg",
         "small/night/tutor-keyboard--scroll-0-1.jpg",
         "tablet/day/tutor-keyboard.jpg",
-        "tablet/night/tutor-keyboard.jpg"
+        "tablet/night/tutor-keyboard.jpg",
+        "desktop/day/tutor-multiple-drawings.jpg",
+        "desktop/night/tutor-multiple-drawings.jpg"
       ],
-      "sha256": "887f37bd462c2a0400cdaf74f774462ddfb7b13f1d55c34eefd8f01233e76e68"
+      "sha256": "4620373fde2f7215afb0a2ef97e46857d5a48045b81d3e5f91c55a5f1c1f8e32"
     },
     {
-      "file": "contacts/sheet-45.webp",
-      "firstFrame": 529,
-      "lastFrame": 540,
+      "file": "contacts/sheet-50.webp",
+      "firstFrame": 589,
+      "lastFrame": 600,
       "images": [
-        "desktop/day/tutor-multiple-drawings.jpg",
-        "desktop/night/tutor-multiple-drawings.jpg",
         "landscape/day/tutor-multiple-drawings.jpg",
         "landscape/night/tutor-multiple-drawings.jpg",
         "large/day/tutor-multiple-drawings.jpg",
@@ -10946,17 +11988,17 @@
         "large/night/tutor-multiple-drawings--scroll-0-1.jpg",
         "large/night/tutor-multiple-drawings--scroll-1-1.jpg",
         "small/day/tutor-multiple-drawings.jpg",
-        "small/day/tutor-multiple-drawings--scroll-0-1.jpg"
+        "small/day/tutor-multiple-drawings--scroll-0-1.jpg",
+        "small/night/tutor-multiple-drawings.jpg",
+        "small/night/tutor-multiple-drawings--scroll-0-1.jpg"
       ],
-      "sha256": "3c45f873e44a0043d2b459a5a3cfa42ed7319f93314b4d6251cb6635196c8b4e"
+      "sha256": "6cc90132430bbc1e2a4c3ca48902662012bfb4882f50de19396e75bcc06b72c3"
     },
     {
-      "file": "contacts/sheet-46.webp",
-      "firstFrame": 541,
-      "lastFrame": 552,
+      "file": "contacts/sheet-51.webp",
+      "firstFrame": 601,
+      "lastFrame": 612,
       "images": [
-        "small/night/tutor-multiple-drawings.jpg",
-        "small/night/tutor-multiple-drawings--scroll-0-1.jpg",
         "tablet/day/tutor-multiple-drawings.jpg",
         "tablet/night/tutor-multiple-drawings.jpg",
         "desktop/day/tutor-scratch-drawing.jpg",
@@ -10966,17 +12008,17 @@
         "desktop/night/tutor-scratch-drawing.jpg",
         "desktop/night/tutor-scratch-drawing--scroll-0-1.jpg",
         "desktop/night/tutor-scratch-drawing--scroll-0-2.jpg",
-        "desktop/night/tutor-scratch-drawing--scroll-0-3.jpg"
+        "desktop/night/tutor-scratch-drawing--scroll-0-3.jpg",
+        "landscape/day/tutor-scratch-drawing.jpg",
+        "landscape/night/tutor-scratch-drawing.jpg"
       ],
-      "sha256": "b7618ec368c70cbceebeb956e3d61bcba6d81baefbdde0fddcc37071e2f0e709"
+      "sha256": "7db288dced7f404242eb304aea685954d6b420f846dffc0c2793c56cf9a869af"
     },
     {
-      "file": "contacts/sheet-47.webp",
-      "firstFrame": 553,
-      "lastFrame": 564,
+      "file": "contacts/sheet-52.webp",
+      "firstFrame": 613,
+      "lastFrame": 624,
       "images": [
-        "landscape/day/tutor-scratch-drawing.jpg",
-        "landscape/night/tutor-scratch-drawing.jpg",
         "large/day/tutor-scratch-drawing.jpg",
         "large/day/tutor-scratch-drawing--scroll-0-1.jpg",
         "large/day/tutor-scratch-drawing--scroll-1-1.jpg",
@@ -10986,17 +12028,17 @@
         "large/night/tutor-scratch-drawing--scroll-1-1.jpg",
         "large/night/tutor-scratch-drawing--scroll-1-2.jpg",
         "small/day/tutor-scratch-drawing.jpg",
-        "small/day/tutor-scratch-drawing--scroll-0-1.jpg"
+        "small/day/tutor-scratch-drawing--scroll-0-1.jpg",
+        "small/day/tutor-scratch-drawing--scroll-1-1.jpg",
+        "small/day/tutor-scratch-drawing--scroll-1-2.jpg"
       ],
-      "sha256": "afd46abde4279e651ff9ef4ca6e65be2ddae9c2ec600da2e36ef5a4603cf2359"
+      "sha256": "32e4e92b4dce33e750c1c25916cfe3837f6390e6aec43c8dc074b5ceca8135ce"
     },
     {
-      "file": "contacts/sheet-48.webp",
-      "firstFrame": 565,
-      "lastFrame": 576,
+      "file": "contacts/sheet-53.webp",
+      "firstFrame": 625,
+      "lastFrame": 636,
       "images": [
-        "small/day/tutor-scratch-drawing--scroll-1-1.jpg",
-        "small/day/tutor-scratch-drawing--scroll-1-2.jpg",
         "small/night/tutor-scratch-drawing.jpg",
         "small/night/tutor-scratch-drawing--scroll-0-1.jpg",
         "small/night/tutor-scratch-drawing--scroll-1-1.jpg",
@@ -11006,17 +12048,17 @@
         "tablet/day/tutor-scratch-drawing--scroll-0-2.jpg",
         "tablet/day/tutor-scratch-drawing--scroll-0-3.jpg",
         "tablet/night/tutor-scratch-drawing.jpg",
-        "tablet/night/tutor-scratch-drawing--scroll-0-1.jpg"
+        "tablet/night/tutor-scratch-drawing--scroll-0-1.jpg",
+        "tablet/night/tutor-scratch-drawing--scroll-0-2.jpg",
+        "tablet/night/tutor-scratch-drawing--scroll-0-3.jpg"
       ],
-      "sha256": "297ae8a6583ed8358efdb88fc67caed15ed6cc2a9594fdea6829ccc928a8df3e"
+      "sha256": "de5919c00a7e627298cda3f50cac79dbb1db14544b713a7a0b96b30cd33d6c63"
     },
     {
-      "file": "contacts/sheet-49.webp",
-      "firstFrame": 577,
-      "lastFrame": 588,
+      "file": "contacts/sheet-54.webp",
+      "firstFrame": 637,
+      "lastFrame": 648,
       "images": [
-        "tablet/night/tutor-scratch-drawing--scroll-0-2.jpg",
-        "tablet/night/tutor-scratch-drawing--scroll-0-3.jpg",
         "desktop/day/tutor-symbol-keyboard.jpg",
         "desktop/night/tutor-symbol-keyboard.jpg",
         "landscape/day/tutor-symbol-keyboard.jpg",
@@ -11026,17 +12068,17 @@
         "large/night/tutor-symbol-keyboard.jpg",
         "large/night/tutor-symbol-keyboard--scroll-0-1.jpg",
         "small/day/tutor-symbol-keyboard.jpg",
-        "small/day/tutor-symbol-keyboard--scroll-0-1.jpg"
+        "small/day/tutor-symbol-keyboard--scroll-0-1.jpg",
+        "small/night/tutor-symbol-keyboard.jpg",
+        "small/night/tutor-symbol-keyboard--scroll-0-1.jpg"
       ],
-      "sha256": "a916d110f3b3c882653f9a08d35271de8b0b8f602d978ec091ac2682273d1f13"
+      "sha256": "6cdab876266a0b8fae60db3d8dd8e2f8139c70fc1014ba80f808923d1f372875"
     },
     {
-      "file": "contacts/sheet-50.webp",
-      "firstFrame": 589,
-      "lastFrame": 600,
+      "file": "contacts/sheet-55.webp",
+      "firstFrame": 649,
+      "lastFrame": 660,
       "images": [
-        "small/night/tutor-symbol-keyboard.jpg",
-        "small/night/tutor-symbol-keyboard--scroll-0-1.jpg",
         "tablet/day/tutor-symbol-keyboard.jpg",
         "tablet/night/tutor-symbol-keyboard.jpg",
         "desktop/day/tutor-symbol-recognition-completion.jpg",
@@ -11046,17 +12088,17 @@
         "large/day/tutor-symbol-recognition-completion.jpg",
         "large/night/tutor-symbol-recognition-completion.jpg",
         "small/day/tutor-symbol-recognition-completion.jpg",
-        "small/night/tutor-symbol-recognition-completion.jpg"
+        "small/night/tutor-symbol-recognition-completion.jpg",
+        "tablet/day/tutor-symbol-recognition-completion.jpg",
+        "tablet/night/tutor-symbol-recognition-completion.jpg"
       ],
-      "sha256": "4301cd56d2b01ac9e7517fc7db57904d5acdb8387087952a78a23c3e9e89b20b"
+      "sha256": "1d5804f598b41b445c09e8a602ca762dca1f556257aefb2221c5305efbc53915"
     },
     {
-      "file": "contacts/sheet-51.webp",
-      "firstFrame": 601,
-      "lastFrame": 612,
+      "file": "contacts/sheet-56.webp",
+      "firstFrame": 661,
+      "lastFrame": 672,
       "images": [
-        "tablet/day/tutor-symbol-recognition-completion.jpg",
-        "tablet/night/tutor-symbol-recognition-completion.jpg",
         "desktop/day/tutor-symbol-recognition-match.jpg",
         "desktop/night/tutor-symbol-recognition-match.jpg",
         "landscape/day/tutor-symbol-recognition-match.jpg",
@@ -11066,17 +12108,17 @@
         "small/day/tutor-symbol-recognition-match.jpg",
         "small/night/tutor-symbol-recognition-match.jpg",
         "tablet/day/tutor-symbol-recognition-match.jpg",
-        "tablet/night/tutor-symbol-recognition-match.jpg"
+        "tablet/night/tutor-symbol-recognition-match.jpg",
+        "desktop/day/tutor-symbol-search.jpg",
+        "desktop/night/tutor-symbol-search.jpg"
       ],
-      "sha256": "856c80d6fb031ccd8777a35065f8f8f8d66114283585ddefcd54fbaa396b1bf8"
+      "sha256": "a1988cf800d56db035358178387468496ddb56462a0c424d9595acb89b981586"
     },
     {
-      "file": "contacts/sheet-52.webp",
-      "firstFrame": 613,
-      "lastFrame": 622,
+      "file": "contacts/sheet-57.webp",
+      "firstFrame": 673,
+      "lastFrame": 680,
       "images": [
-        "desktop/day/tutor-symbol-search.jpg",
-        "desktop/night/tutor-symbol-search.jpg",
         "landscape/day/tutor-symbol-search.jpg",
         "landscape/night/tutor-symbol-search.jpg",
         "large/day/tutor-symbol-search.jpg",
@@ -11086,7 +12128,7 @@
         "tablet/day/tutor-symbol-search.jpg",
         "tablet/night/tutor-symbol-search.jpg"
       ],
-      "sha256": "95683ff0d54b5cefc4502647200f202a555459038b5e57c252ff1862b8e329f3"
+      "sha256": "5ee88ecdaa3ea065dbaf72371b2186256bed22d6cfee01fd961cf2188e0d5580"
     }
   ]
 }

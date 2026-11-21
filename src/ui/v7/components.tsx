@@ -265,6 +265,7 @@ export function Sheet({
   full = false,
   hideTitle = false,
   focusTitle = false,
+  containFocus = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -277,6 +278,8 @@ export function Sheet({
   /** The body's first field is the header (SE3); the title stays for assistive technology. */
   hideTitle?: boolean;
   focusTitle?: boolean;
+  /** Wrap Tab at the modal boundaries, including when browser chrome would be next. */
+  containFocus?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     id = useId(),
@@ -301,7 +304,30 @@ export function Sheet({
       ref={ref}
       className={`v7-sheet${full ? " v7-sheet-full" : ""}`}
       aria-labelledby={id}
+      onKeyDown={containFocus ? (event) => {
+        const dialog = event.currentTarget;
+        const active = document.activeElement;
+        if (event.key !== "Tab" || event.defaultPrevented || active?.closest("dialog") !== dialog) return;
+        const controls = [...dialog.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex]")]
+          .filter(control => control.tabIndex >= 0 && !control.matches(":disabled")
+            && control.closest("dialog") === dialog && control.getClientRects().length > 0
+            && getComputedStyle(control).visibility === "visible");
+        const radioName = (control: Element | null) =>
+          control instanceof HTMLInputElement && control.type === "radio" ? control.name : "";
+        const sameStop = (control: Element | null, edge: HTMLElement) =>
+          control === edge || (!!radioName(edge) && radioName(control) === radioName(edge));
+        const first = controls[0], last = controls[controls.length - 1];
+        const edge = event.shiftKey ? first : last;
+        if (edge && !sameStop(active, edge) && !(event.shiftKey && active instanceof HTMLElement && active.tabIndex < 0)) return;
+        event.preventDefault();
+        const opposite = event.shiftKey ? last : first;
+        if (opposite) {
+          const checked = radioName(opposite) && controls.find(control => sameStop(control, opposite) && control.matches(":checked"));
+          (checked || opposite).focus();
+        } else dialog.focus();
+      } : undefined}
       onCancel={(e) => {
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         close.current();
       }}
@@ -344,6 +370,7 @@ export function Picker({
   disabled = false,
   disabledReason,
   optional = false,
+  containFocus = false,
 }: {
   label: string;
   value: string;
@@ -352,6 +379,7 @@ export function Picker({
   disabled?: boolean;
   disabledReason?: string;
   optional?: boolean;
+  containFocus?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(""),
@@ -454,6 +482,7 @@ export function Picker({
           open={open && !desktop}
           onClose={() => setOpen(false)}
           title={label}
+          containFocus={containFocus}
         >
           {search}
           <div role="radiogroup" aria-label={label}>

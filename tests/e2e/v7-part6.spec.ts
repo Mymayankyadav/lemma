@@ -136,12 +136,27 @@ test("Close the day walks three steps: Today, Loose ends, Tomorrow",async({page}
 
 // Part 7c: Calendar Week, Month, Agenda.
 test("Calendar Week shows a seven-day grid with the strip as its header",async({page})=>{
- await page.goto(at("/calendar?view=week"));
+ await page.goto(at("/calendar?view=week&date=2026-11-11"));
  // N161: on a phone the view is the header menu button.
- await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeVisible();
- await expect(page.getByRole("region",{name:"Week time grid"})).toBeVisible();
+ const view=page.getByRole("button",{name:"Calendar view: Week"});
+ const grid=page.getByRole("region",{name:"Week time grid"});
+ await expect(view).toBeVisible();
+ await expect(grid).toBeVisible();
  await expect(page.locator("[data-strip-day]")).toHaveCount(7);
- await expect(page.getByRole("button",{name:/^Calendar date:/})).toBeVisible();
+ await page.getByRole("button",{name:"Calendar actions",exact:true}).click();
+ const menu=page.getByRole("menu",{name:"Calendar actions"});
+ const chooseDate=menu.getByRole("menuitem").nth(3);
+ await expect(chooseDate).toHaveAccessibleName("Choose date");
+ await chooseDate.click();
+ const picker=page.getByRole("dialog",{name:"Choose a date"});
+ await expect(picker).toBeVisible();
+ await picker.getByRole("button",{name:/Wednesday.*(?:November 18|18 November).*2026/}).click();
+ await expect(picker).toHaveCount(0);
+ await expect(page).toHaveURL(/date=2026-11-18/);
+ await expect(view).toBeVisible();
+ await expect(grid).toBeVisible();
+ await expect(page.locator("[data-strip-day]")).toHaveCount(7);
+ await expect(page.locator('[data-strip-day="2026-11-18"]')).toHaveAttribute('data-selected','true');
 });
 test("Calendar Month tints days, offers Open day, and never prints a zero",async({page})=>{
  await page.goto(at("/calendar?view=month"));

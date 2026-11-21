@@ -30,18 +30,24 @@ test("Calendar Day shows the week strip, the grid and opens the block editor fro
  await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
  await expect(page.getByRole("dialog",{name:"New time block"})).toBeVisible();
 });
-test("Calendar's date pill changes the displayed week and returns to today",async({page})=>{
+test("Calendar Choose date changes the displayed week and returns to today",async({page})=>{
  await page.clock.setFixedTime(NOW);
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
- const pill=page.getByRole("button",{name:/^Calendar date:/}),picker=page.getByRole("dialog",{name:"Choose a date"});
- await pill.click();
+ const picker=page.getByRole("dialog",{name:"Choose a date"});
+ async function openPicker(){
+  await page.getByRole("button",{name:"Calendar actions",exact:true}).click();
+  const menu=page.getByRole("menu",{name:"Calendar actions"});
+  await menu.getByRole("menuitem",{name:"Choose date",exact:true}).click();
+  await expect(picker).toBeVisible();
+ }
+ await openPicker();
  await picker.getByRole("button",{name:/Wednesday.*(?:November 18|18 November).*2026/}).click();
  await expect(page).toHaveURL(/date=2026-11-18/);
  await expect(page.locator('[data-strip-day="2026-11-18"]')).toHaveAttribute('aria-pressed','true');
- await pill.click();
+ await openPicker();
  await picker.getByRole("button",{name:/Wednesday.*(?:November 11|11 November).*2026/}).click();
  await expect(page).toHaveURL(/date=2026-11-11/);
- await pill.click();
+ await openPicker();
  await picker.getByRole("button",{name:"Today",exact:true}).click();
  await expect(page).toHaveURL(new RegExp('date='+DATE));
  await expect(page.locator('[data-strip-day="'+DATE+'"]').first()).toHaveAttribute('aria-pressed','true');

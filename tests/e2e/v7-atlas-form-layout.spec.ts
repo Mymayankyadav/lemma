@@ -40,6 +40,17 @@ test('Atlas editor retains every operation and searches targets inside a nested 
  await page.locator('.v7-atlas-subject li button').filter({hasText:'Compactness'}).first().click();
  await page.getByRole('button',{name:'Edit concept',exact:true}).click();
  const editor=page.getByRole('dialog',{name:'Edit idea',exact:true});
+ const actionPicker=editor.getByRole('button',{name:/^Action:/});
+ await actionPicker.click();
+ const actionSheet=page.getByRole('dialog',{name:'Action',exact:true});
+ const close=actionSheet.getByRole('button',{name:'Close',exact:true});
+ await expect(close).toBeFocused();
+ await page.keyboard.press('Shift+Tab');
+ await expect(actionSheet.getByRole('radio',{checked:true})).toBeFocused();
+ await page.keyboard.press('Tab');
+ await expect(close).toBeFocused();
+ await page.keyboard.press('Escape');
+ await expect(actionPicker).toBeFocused();
  for(const action of ['Change parent','Add link','Remove link','Merge into another concept','Edit name or description']){
   await editor.getByRole('button',{name:/^Action:/}).click();
   const choices=page.getByRole('dialog',{name:'Action',exact:true});

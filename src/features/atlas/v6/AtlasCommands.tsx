@@ -78,7 +78,7 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}
  };
  const targetLabel=mode==='reparent'?'New parent concept':
   mode==='merge'?'Keep this concept':'Target concept';
- if(kit)return <Sheet open title={source?'Edit idea':'Create idea'} focusTitle
+ if(kit)return <Sheet open containFocus title={source?'Edit idea':'Create idea'} focusTitle
   onClose={()=>{if(!busy)onClose();}}
   footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
    <Button variant="primary" type="submit" form={formId} loading={busy}

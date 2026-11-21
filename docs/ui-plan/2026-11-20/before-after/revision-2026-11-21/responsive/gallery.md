@@ -1,6 +1,6 @@
 # Responsive and themes · November 21
 
-240 captured states and 622 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
+260 captured states and 680 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
 
 ### Sheet 1 · frames 1–12
 
@@ -206,6 +206,26 @@
 
 ![Contact sheet 51](contacts/sheet-51.webp)
 
-### Sheet 52 · frames 613–622
+### Sheet 52 · frames 613–624
 
 ![Contact sheet 52](contacts/sheet-52.webp)
+
+### Sheet 53 · frames 625–636
+
+![Contact sheet 53](contacts/sheet-53.webp)
+
+### Sheet 54 · frames 637–648
+
+![Contact sheet 54](contacts/sheet-54.webp)
+
+### Sheet 55 · frames 649–660
+
+![Contact sheet 55](contacts/sheet-55.webp)
+
+### Sheet 56 · frames 661–672
+
+![Contact sheet 56](contacts/sheet-56.webp)
+
+### Sheet 57 · frames 673–680
+
+![Contact sheet 57](contacts/sheet-57.webp)

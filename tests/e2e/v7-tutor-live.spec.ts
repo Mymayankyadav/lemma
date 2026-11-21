@@ -37,7 +37,10 @@ for(const entry of ['chat','Pad'] as const){
   const warning=/draft.*may be lost on reload/i
   await expect(tutor.getByRole('alert').filter({hasText:warning})).toHaveCount(0)
 
-  if(chat)await tutor.getByRole('button',{name:'Context',exact:true}).click()
+  if(chat){
+   await tutor.getByRole('button',{name:'Edit answer',exact:true}).click()
+   await tutor.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
+  }
   const context=chat?page.getByRole('dialog',{name:'Context for your tutor'}):tutor
   await context.getByText('Add a page from '+short,{exact:true}).click()
   await context.getByRole('button',{name:'Preview linked source page'}).click()

@@ -9,7 +9,7 @@ export function AtlasChoice({label,value,options,onChange,disabled=false}:{
  const seen=new Map<string,number>();
  const names=options.map(option=>{const ordinal=(seen.get(option.name)??0)+1;seen.set(option.name,ordinal);
   return counts.get(option.name)!>1?option.name+' ('+ordinal+')':option.name;});
- return <Picker label={label} value={names[options.findIndex(option=>option.id===value)]??''}
+ return <Picker containFocus label={label} value={names[options.findIndex(option=>option.id===value)]??''}
   options={names} disabled={disabled} onChange={name=>{
    const option=options[names.indexOf(name)];if(option)onChange(option.id);
   }}/>;

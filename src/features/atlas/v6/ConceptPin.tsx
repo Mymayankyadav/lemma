@@ -36,7 +36,7 @@ export default function ConceptPin({
   try{const {xx,yy}=parse();void save(xx,yy);}
   catch(e){setError(e instanceof Error?e.message:'Invalid map coordinates');}
  }
- if(kit)return <Sheet open title={'Map pin: '+name} focusTitle onClose={()=>{if(!busy)onClose();}}
+ if(kit)return <Sheet open containFocus title={'Map pin: '+name} focusTitle onClose={()=>{if(!busy)onClose();}}
   footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
    <Button variant="primary" type="submit" form={formId} loading={busy}>Save pin</Button></>}>
   <form id={formId} className="v7-form-stack" onSubmit={submit}>

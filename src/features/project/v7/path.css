@@ -86,6 +86,11 @@
 :where(html[data-v7]) .v7-path-head > :is(h1,.v7-path-goal) {max-width:100%;min-width:0;}
 :where(html[data-v7]) .v7-path-goal {display:block;white-space:nowrap;text-overflow:ellipsis;}
 :where(html[data-v7]) .v7-path-head > .v7-disclosure {min-width:0;}
+:where(html[data-v7]) .v7-path-head .v7-disclosure-trigger > span {min-width:0;flex:1;}
+:where(html[data-v7]) .v7-path-head .v7-disclosure-trigger > svg {flex:none;}
 html[data-v7][data-v7-room] .v7-path-head {grid-template-columns:minmax(0,1fr);}
 :where(html[data-v7]) .v7-path-tabs .v7-tabs {display:flex;flex-wrap:wrap;justify-content:space-between;gap:0 var(--v7-space-1);overflow:visible;}
 :where(html[data-v7]) .v7-path-stage > .v7-disclosure {border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);padding-inline:var(--v7-space-2);}
+@media (max-width:360px) {
+ :where(html[data-v7]) .v7-path-bar .v7-button {padding-inline:var(--v7-space-2);}
+}

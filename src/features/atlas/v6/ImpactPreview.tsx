@@ -32,7 +32,7 @@ export default function AtlasImpactPreview({
   .map(link=>({leftId:link.fromId,rightId:link.toId}));
  const impact=choice?describeAtlasMergeImpact(nodes,sourceId,targetId,related):null;
  if(!source)return null;
- if(kit)return <Sheet open title={'Preview changes to '+source.name} onClose={onClose} focusTitle
+ if(kit)return <Sheet open containFocus title={'Preview changes to '+source.name} onClose={onClose} focusTitle
   footer={<Button variant="ghost" onClick={onClose}>Close preview</Button>}>
   <div className="v7-form-stack">
    <p className="v7-supporting">Preview only. To save a change, use Edit concept and review its confirmation.</p>

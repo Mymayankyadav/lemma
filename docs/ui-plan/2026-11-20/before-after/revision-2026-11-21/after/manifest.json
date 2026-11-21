@@ -38,7 +38,7 @@
         }
       },
       "manifestSha256": "d4d91096bc37f880de89286feee566258a9f9599b91927f16018d23d2cc5ee85",
-      "selectedRecords": 216
+      "selectedRecords": 210
     },
     {
       "id": "2-shipping-final-detail",
@@ -182,7 +182,7 @@
         }
       },
       "manifestSha256": "aa3c4ee06ad90f744b2809451fff07aed01a47537853b26c413aa0ff72977961",
-      "selectedRecords": 23
+      "selectedRecords": 0
     },
     {
       "id": "6-atlas-rail-final-retry-phone",
@@ -218,7 +218,79 @@
         }
       },
       "manifestSha256": "b2cb7ba6158051e091acec276b752a783d49996f5e781f15b4a8e0b1443308c5",
-      "selectedRecords": 1
+      "selectedRecords": 0
+    },
+    {
+      "id": "7-ci-final-phone",
+      "sourceCommit": "5c4cd7b531f4916882904d8b68fda931da8a5687",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T11:49:19.980Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "b6b0a52ed81d8cd6da349188050e7cf7d3e62635ef272a443025062ac19cb925",
+      "selectedRecords": 27
+    },
+    {
+      "id": "8-ci-shipping-phone",
+      "sourceCommit": "5c4cd7b531f4916882904d8b68fda931da8a5687",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T11:59:29.757Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "a66fe48162529195110734062b778b4f97d623d7c14264a020a4d1bbcc6fda3a",
+      "selectedRecords": 3
     }
   ],
   "records": [
@@ -256,9 +328,9 @@
         "phone/night/atlas.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -267,7 +339,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -291,9 +363,9 @@
         "phone/night/atlas-concept--scroll-1-2.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -302,7 +374,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -326,9 +398,9 @@
         "phone/night/atlas-concept-expanded--scroll-1-2.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -337,7 +409,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -350,9 +422,9 @@
         "phone/night/atlas-create-filled.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -361,7 +433,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -374,9 +446,9 @@
         "phone/night/atlas-demonstrated.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -385,7 +457,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -398,9 +470,9 @@
         "phone/night/atlas-edit-concept.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -409,7 +481,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -423,9 +495,9 @@
         "phone/night/atlas-legend--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -434,7 +506,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -455,9 +527,9 @@
         "phone/night/atlas-list--scroll-0-8.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -466,7 +538,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -487,9 +559,9 @@
         "phone/night/atlas-list-options-collapsed--scroll-0-8.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -498,7 +570,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -511,9 +583,9 @@
         "phone/night/atlas-map.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -522,7 +594,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -535,9 +607,9 @@
         "phone/night/atlas-new-concept.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -546,7 +618,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -559,9 +631,9 @@
         "phone/night/atlas-operation-link.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -570,7 +642,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -584,9 +656,9 @@
         "phone/night/atlas-operation-merge--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -595,7 +667,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -608,9 +680,9 @@
         "phone/night/atlas-operation-reparent.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -619,7 +691,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -632,9 +704,9 @@
         "phone/night/atlas-operation-unlink.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -643,7 +715,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -656,9 +728,9 @@
         "phone/night/atlas-options-collapsed.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -667,7 +739,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "6-atlas-rail-final-retry-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -680,9 +752,9 @@
         "phone/night/atlas-peek.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -691,7 +763,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -704,9 +776,9 @@
         "phone/night/atlas-pin-concept.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -715,7 +787,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -728,9 +800,9 @@
         "phone/night/atlas-preview-concept.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -739,7 +811,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -752,9 +824,9 @@
         "phone/night/atlas-search.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -763,7 +835,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -776,9 +848,9 @@
         "phone/night/atlas-shaky.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -787,7 +859,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -801,9 +873,9 @@
         "phone/night/atlas-subjects--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -812,7 +884,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -825,9 +897,9 @@
         "phone/night/atlas-tonight.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -836,7 +908,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -1902,9 +1974,9 @@
         "phone/night/empty-atlas-list.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "url": "http://127.0.0.1:4197/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DmZnSAjb.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1913,7 +1985,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "5-atlas-rail-final-phone",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -2147,9 +2219,9 @@
         "phone/night/empty-progress.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights",
+      "url": "http://127.0.0.1:4197/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -2158,7 +2230,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -2171,18 +2243,18 @@
         "phone/night/empty-progress-learning.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "url": "http://127.0.0.1:4197/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
         "headings": [
-          "Progress"
+          "Learning"
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -3093,9 +3165,9 @@
         "phone/night/path--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-BGzNEtBA.js"
       ],
       "layout": {
         "overflow": 0,
@@ -3104,7 +3176,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "8-ci-shipping-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -3242,9 +3314,9 @@
         "phone/night/path-map--scroll-0-1.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/p/real-analysis",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-BGzNEtBA.js"
       ],
       "layout": {
         "overflow": 0,
@@ -3253,7 +3325,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "8-ci-shipping-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -3585,9 +3657,9 @@
         "phone/night/progress-empty.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights",
+      "url": "http://127.0.0.1:4197/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DqxmzzQU.js"
       ],
       "layout": {
         "overflow": 0,
@@ -3596,7 +3668,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "7-ci-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -3660,18 +3732,18 @@
         "phone/night/progress-learning--scroll-0-2.jpg"
       ],
       "errors": [],
-      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
+      "url": "http://127.0.0.1:4198/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/insights?tab=learning",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-BGzNEtBA.js"
       ],
       "layout": {
         "overflow": 0,
         "headings": [
-          "Progress"
+          "Learning"
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "8-ci-shipping-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -6217,8 +6289,8 @@
       "height": 844
     },
     "phone/night/atlas.jpg": {
-      "sha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625",
-      "bytes": 54094,
+      "sha256": "357c8db4e2322a3df87f165f98e7f6d750a2c09b65503117dcd411f409905252",
+      "bytes": 53215,
       "width": 390,
       "height": 844
     },
@@ -6505,8 +6577,8 @@
       "height": 844
     },
     "phone/night/atlas-map.jpg": {
-      "sha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625",
-      "bytes": 54094,
+      "sha256": "357c8db4e2322a3df87f165f98e7f6d750a2c09b65503117dcd411f409905252",
+      "bytes": 53215,
       "width": 390,
       "height": 844
     },
@@ -6547,14 +6619,14 @@
       "height": 844
     },
     "phone/night/atlas-options-collapsed.jpg": {
-      "sha256": "932842fbad83361885b95d222675e313e4ad74fae82c3c897080f772c90f01d9",
-      "bytes": 50154,
+      "sha256": "13c23953509647377342478780ba9019ec028143eec53669319b1f8a2752c6ba",
+      "bytes": 49800,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-peek.jpg": {
-      "sha256": "eb05505e09449b91d7c9c05418de0841db8792e210ea4be057f5f47d132597d2",
-      "bytes": 49559,
+      "sha256": "e1b88e4cfef4d0325ffe3672bf0ace403eb4181d76c2ae9ff8ea1cabc6d9f636",
+      "bytes": 48799,
       "width": 390,
       "height": 844
     },
@@ -6571,8 +6643,8 @@
       "height": 844
     },
     "phone/night/atlas-search.jpg": {
-      "sha256": "b82d09bde2dc69e7bcf5e6ba9a69ea5bec091021299d78386cbd885bafdca1ee",
-      "bytes": 43603,
+      "sha256": "ab793fd9ec16a1a0e0d9f8b791920cc1d9be1d75cc3f76fe2647ff3f9e29eb1a",
+      "bytes": 50699,
       "width": 390,
       "height": 844
     },
@@ -7219,8 +7291,8 @@
       "height": 844
     },
     "phone/night/empty-progress-learning.jpg": {
-      "sha256": "e1cfaf971740a061da3221216068760b881ccba78e59af41a021967c110b75f4",
-      "bytes": 20734,
+      "sha256": "b06e16b6277b562701701c530c1bafc8bb8e6675f034602bcfcedbe924ac714a",
+      "bytes": 20754,
       "width": 390,
       "height": 844
     },
@@ -7723,20 +7795,20 @@
       "height": 844
     },
     "phone/night/progress-learning.jpg": {
-      "sha256": "eca66853c70efe5f25b0ddc81f1c7be52bb6832c57641d3b092f00f8cab9a734",
-      "bytes": 37620,
+      "sha256": "7896ed0443e5c76b83236cf1f7446a832455c2c35a943cec2893370256bb1a48",
+      "bytes": 37651,
       "width": 390,
       "height": 844
     },
     "phone/night/progress-learning--scroll-0-1.jpg": {
-      "sha256": "b0d3cf71a5a7120aba55a934374a3262fa32c6ffa90bb366e252126571413893",
-      "bytes": 41514,
+      "sha256": "412d498cce7898ce1020a53024cdb06b05b2b78743036833faa1fe02a74c9f06",
+      "bytes": 41520,
       "width": 390,
       "height": 844
     },
     "phone/night/progress-learning--scroll-0-2.jpg": {
-      "sha256": "3ce3e6fad3979cab661412a216f2fdaad5a8e58b4ffc6766655bd9f1c5dc108f",
-      "bytes": 33918,
+      "sha256": "75bffd0d1736c5b9c19e03a39ac0ccc8e57fa6e5bba1677280589ac90cb09dc9",
+      "bytes": 33907,
       "width": 390,
       "height": 844
     },
@@ -8660,7 +8732,7 @@
         "phone/night/atlas-concept--scroll-0-8.jpg",
         "phone/night/atlas-concept--scroll-0-9.jpg"
       ],
-      "sha256": "c0e97c86d9e6d1b6d3a9ed74e618e566eb0fe084413be7fbd52f46234888ac9f"
+      "sha256": "b296718352606480e6eaf9ead93c831d4141b5c651a8bfe4828ba543f1cc313c"
     },
     {
       "file": "contacts/sheet-02.webp",
@@ -8740,7 +8812,7 @@
         "phone/night/atlas-pin-concept.jpg",
         "phone/night/atlas-preview-concept.jpg"
       ],
-      "sha256": "728ffacf922e0f5a3b8e9f70b392a16623d1f832ba4d153a04ddaa85bca3b5ae"
+      "sha256": "40fc21b51eea0dda540eb69c0878ccf367176104dcfa978157e83b42aba080a7"
     },
     {
       "file": "contacts/sheet-06.webp",
@@ -8760,7 +8832,7 @@
         "phone/night/calendar-block-sheet--scroll-0-2.jpg",
         "phone/night/calendar-browse-day.jpg"
       ],
-      "sha256": "b9b88e52d1e7a01f9c9ee4f945c88d85bbc610ff0d579539a53b673fa0dd44e9"
+      "sha256": "27e13441f0ced9f8a2c136bc7af77ae5302d3dd68712ae9d9583e1c973938058"
     },
     {
       "file": "contacts/sheet-07.webp",
@@ -8940,7 +9012,7 @@
         "phone/night/focus-log-session.jpg",
         "phone/night/focus-parked-thought.jpg"
       ],
-      "sha256": "133322d852d3502737d2c9ae48fc11ad9c143863139d78e2bba49d50428d31f7"
+      "sha256": "d75c75766b475fc8c0a542bfad05022637837e9d2f053d208b0876c1ac2aabc2"
     },
     {
       "file": "contacts/sheet-16.webp",
@@ -9080,7 +9152,7 @@
         "phone/night/review-empty.jpg",
         "phone/night/review-empty-details.jpg"
       ],
-      "sha256": "388fc522c64ce803955362b5e95c217f43545a89e13b898929a68189bcd8ea36"
+      "sha256": "9c67446fb30c7603877812847f4183d3333c9348b98571bf4337fd4eb2d8b78a"
     },
     {
       "file": "contacts/sheet-23.webp",

@@ -189,7 +189,7 @@ export default function ReviewHubV7(){
     <Link className="v7-rv-limit" to="/settings?section=study"><span>Daily limit</span><span className="v7-meta">{Math.max(0,quota)}</span><ChevronRight aria-hidden="true"/></Link>
    </section>}
   </>}
-  <Sheet open={details} onClose={()=>setDetails(false)} title="Forecast and memory">{reviewDetails}</Sheet>
+  <Sheet open={details} onClose={()=>setDetails(false)} title="Forecast and memory">{details&&reviewDetails}</Sheet>
   <Sheet open={sheet} onClose={()=>setSheet(false)} title="Customise this round" eyebrow={count+' cards · '+note}
    footer={<Button variant="primary" onClick={()=>setSheet(false)}>Done</Button>}>
    <div className="v7-rv-sheet">
