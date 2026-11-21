@@ -3,6 +3,7 @@ import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest'
 import {authGeneration,publishAuth} from '../../../src/data/authBoundary'
 import {openLiveManualTutor} from '../../../src/data/tutor/live-manual'
 import type {TutorThreadView} from '../../../src/data/tutor/manual-api'
+import {imageReference} from '../../../supabase/functions/_shared/tutor-answer'
 
 const rpc=vi.hoisted(()=>vi.fn())
 vi.mock('../../../src/data/live/client',()=>({liveClient:()=>({rpc})}))
@@ -18,6 +19,33 @@ beforeEach(()=>{localStorage.clear();publishAuth(null);publishAuth({id:'owner'})
 afterEach(()=>vi.unstubAllGlobals())
 
 describe('live tutor persistence',()=>{
+ it('rejects every unbound answer reference before either submit API writes an outbox entry or an RPC',async()=>{
+  const first='12345678-0123-4123-8123-123456789abc',second='87654321-0123-4123-8123-123456789abc'
+  const attachment={id:first,kind:'drawing' as const,mimeType:'image/png' as const}
+  const draft={question:'Before '+imageReference(first)+imageReference(second)+' after',selectedContext:[],attachments:[attachment]}
+  const api=open()
+  await expect(api.submit('unbound',draft,0)).rejects.toThrow('image is unavailable')
+  await expect(api.submitToConnector!('connector',draft,0,'https://example.invalid')).rejects.toThrow('image is unavailable')
+  expect(rpc).not.toHaveBeenCalled()
+  expect(localStorage.length).toBe(0)
+  rpc.mockResolvedValue(ok({operationId:'bound',status:'submitted'}))
+  const attachments=[attachment,{...attachment,id:second}]
+  await expect(api.submit('bound',{...draft,attachments},0)).resolves.toEqual({kind:'submitted'})
+  expect(rpc).toHaveBeenCalledWith('tutor_owner_ink_command',expect.objectContaining({p_attachments:attachments}))
+ })
+ it('checks an old unbound outbox entry by receipt without resubmitting it on reconnect or retry',async()=>{
+  const key='lemma.tutor.pending.v1:'+JSON.stringify(['owner','path','cp'])+':unbound'
+  const question='My answer '+imageReference('12345678-0123-4123-8123-123456789abc')
+  const command=JSON.stringify({operation:'start',operationId:'unbound',expectedVersion:1,question})
+  localStorage.setItem(key,command)
+  rpc.mockImplementation(async name=>ok(name==='tutor_thread_state'?thread(1):{operationId:'unbound',status:'unconfirmed'}))
+  const api=open()
+  const recovered=await api.resume(undefined,true)
+  expect(recovered.outbox).toMatchObject([{operationId:'unbound',text:question}])
+  await expect(api.retry!('unbound')).resolves.toBe('unconfirmed')
+  expect(rpc.mock.calls.map(([name])=>name)).toEqual(['tutor_thread_state','tutor_owner_receipt','tutor_owner_receipt'])
+  expect(localStorage.getItem(key)).toBe(command)
+ })
  it('reopens a lost submission, replays its exact operation and keeps additional typing separate',async()=>{
   const draft={question:'One question',selectedContext:[]}
   const api=open()

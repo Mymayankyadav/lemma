@@ -1,7 +1,6 @@
-import {TUTOR_ATTACHMENT_COUNT,tutorImageBlock} from './tutor-images.ts'
+import {downloadTutorImage,tutorImageRows,tutorTurnContent} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
-import {tutorAnswerParts} from '../_shared/tutor-answer.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import type {StudyInput} from './tools/study.ts'
@@ -46,23 +45,6 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     return turn?.status==='pending'?{...turn,instructions:studyInstructions}:turn
   }
 
-  async function attachments(id:unknown,target?:string) {
-    const {turnId}=tutorHandoffIds(id)
-    let query=c.db.from('tutor_turn_attachments').select('id,kind,mime_type,byte_size')
-      .eq('user_id',c.userId).eq('turn_id',turnId).order('position').limit(TUTOR_ATTACHMENT_COUNT)
-    if(target)query=query.eq('id',target)
-    const rows=await query
-    if(rows.error)throw new Error('Tutor images are unavailable.')
-    return rows.data??[]
-  }
-
-  async function download(row:{id:string;mime_type:string;byte_size:number}) {
-    if(!c.db.storage)throw new Error('Tutor storage is unavailable.')
-    const file=await c.db.storage.from('tutor-ink').download(c.userId+'/'+row.id)
-    if(file.error||!file.data||file.data.size!==row.byte_size)throw new Error('Tutor image is unavailable.')
-    return tutorImageBlock(file.data,row.mime_type)
-  }
-
   return {
     async content(id:unknown) {
       if(id===undefined) {
@@ -70,33 +52,9 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
         return [{type:'text' as const,text:JSON.stringify({pending,instructions:'Read the pending handoff with get(what=tutor_turn, id=<returned id>).'})}]
       }
       const turn=await readTurn(id)
-      const rows=turn?.status==='pending'&&turn.hasAttachments===true?await attachments(id):[]
-      const content=rows.length?{...turn,attachments:rows.map(row=>({id:String(id)+'.'+row.id,kind:row.kind,mimeType:row.mime_type}))}:turn
-      const question=typeof turn?.snapshot?.question==='string'?turn.snapshot.question:''
-      const parts=tutorAnswerParts(question,rows.map(row=>row.id))
-      if(parts.some(part=>part.type==='image')) {
-        const labels=new Map<string,string>(),counts={drawing:0,photo:0},seen=new Set<string>()
-        for(const part of parts)if(part.type==='image'&&!labels.has(part.id)) {
-          const row=rows.find(row=>row.id===part.id)!
-          const kind=row.kind==='photo'?'photo':'drawing'
-          labels.set(part.id,(kind==='photo'?'Photo ':'Drawing ')+ ++counts[kind])
-        }
-        const answerParts=parts.map(part=>part.type==='text'?part:{...part,id:String(id)+'.'+part.id,label:labels.get(part.id)})
-        const blocks:Array<{type:'text';text:string}|Awaited<ReturnType<typeof tutorImageBlock>>>=[
-          {type:'text',text:JSON.stringify({...content,answerParts})},
-          {type:'text',text:'Learner answer in composition order:'},
-        ]
-        for(const part of parts) {
-          if(part.type==='text'){blocks.push({type:'text',text:part.text});continue}
-          blocks.push({type:'text',text:'['+labels.get(part.id)+(seen.has(part.id)?', repeated reference':'')+']'})
-          if(!seen.has(part.id)) {
-            blocks.push(await download(rows.find(row=>row.id===part.id)!))
-            seen.add(part.id)
-          }
-        }
-        return blocks
-      }
-      return [{type:'text' as const,text:JSON.stringify(content)},...await Promise.all(rows.map(download))]
+      const rows=turn?.status==='pending'&&turn.hasAttachments===true
+        ?await tutorImageRows(c.db,{turnId:tutorHandoffIds(id).turnId,ownerId:c.userId}):[]
+      return tutorTurnContent(c.db,turn,rows,attachmentId=>String(id)+'.'+attachmentId)
     },
     async attachment(id:unknown) {
       if(typeof id!=='string')throw new Error('Tutor image is unavailable.')
@@ -104,9 +62,10 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       if(!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(attachmentId))throw new Error('Tutor image is unavailable.')
       const turn=await readTurn(handoff)
       if(turn?.status!=='pending'&&turn?.status!=='completed')throw new Error('Tutor image is unavailable.')
-      const row=(await attachments(handoff,attachmentId))[0]
+      const {turnId}=tutorHandoffIds(handoff)
+      const [row]=await tutorImageRows(c.db,{turnId,ownerId:c.userId,attachmentId})
       if(!row)throw new Error('Tutor image is unavailable.')
-      return [{type:'text' as const,text:JSON.stringify({id,kind:row.kind})},await download(row)]
+      return [{type:'text' as const,text:JSON.stringify({id,kind:row.kind})},await downloadTutorImage(c.db,row)]
     },
     async next(id: unknown, toolSignal: AbortSignal) {
       const {turnId, grantOperationId} = tutorHandoffIds(id)

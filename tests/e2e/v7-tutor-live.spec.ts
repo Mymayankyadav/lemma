@@ -1,6 +1,137 @@
-import {expect,test} from '@playwright/test'
+import {expect,test,type Page} from '@playwright/test'
 import type {TutorThreadView} from '../../src/data/tutor/manual-api'
 import {liveTutorFixtureResponse,prepareLiveTutor} from './helpers/live-tutor'
+
+for(const queued of [false,true]){
+ test(queued?'Reconnect keeps a queued answer with missing images editable':'Scratch off still blocks a restored image reference',async({page})=>{
+  const {owner,cpId,payload}=await prepareLiveTutor(page)
+  const thread:TutorThreadView={head:{threadId:null,lastSequence:0,pendingTurnId:null},turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false}
+  const starts:{endpoint:string;question:string}[]=[]
+  await page.route('**/rest/v1/**',route=>{
+   const request=route.request(),endpoint=new URL(request.url()).pathname.split('/rest/v1/')[1]
+   if(endpoint==='rpc/tutor_thread_state')return route.fulfill({json:thread})
+   if(endpoint==='rpc/tutor_owner_command'||endpoint==='rpc/tutor_owner_ink_command'){
+    const {p_command:command}=request.postDataJSON()
+    starts.push({endpoint,question:command.question})
+    return route.fulfill({json:{operationId:command.operationId,status:'submitted'}})
+   }
+   return route.fulfill({json:liveTutorFixtureResponse(payload,endpoint,request.headers().accept)})
+  })
+  const flags='/lemma/?demo=0&flags=v7Shell,tutorThreads,'+(queued?'tutorScratch':'-tutorScratch')+'#'
+  await page.goto(flags+'/settings?section=data')
+  await expect(page.getByRole('heading',{name:'Data and account',exact:true})).toBeVisible()
+  const key='lemma.tutor.draft:'+JSON.stringify([owner,'logic',cpId])
+  const text='Keep this explanation.'
+  await page.evaluate(async ({key,text,queued})=>{
+   const question=text+'[[lemma-image:12345678-0123-4123-8123-123456789abc]]'
+   localStorage.setItem(key+':question',question)
+   if(queued)await new Promise<void>((resolve,reject)=>{
+    const request=indexedDB.open('lemma-tutor-ink',1)
+    request.onupgradeneeded=()=>request.result.createObjectStore('drafts')
+    request.onerror=()=>reject(request.error)
+    request.onsuccess=()=>{
+     const db=request.result,tx=db.transaction('drafts','readwrite')
+     tx.objectStore('drafts').put({strokes:[],photos:[],width:3,accent:false,queuedText:question},key+':ink')
+     tx.oncomplete=()=>{db.close();resolve()}
+     tx.onabort=()=>{db.close();reject(tx.error)}
+    }
+   })
+  },{key,text,queued})
+  await page.evaluate(()=>{location.hash='/p/logic/cp/CP1/tutor'})
+  await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
+  const send=page.getByRole('button',{name:'Send',exact:true}),answer=page.getByRole('textbox',{name:'Your answer',exact:true})
+  if(queued){
+   await expect(page.getByText('Queued answer needs its images.',{exact:false})).toBeVisible()
+   await expect(answer).toHaveAttribute('aria-readonly','true')
+   await page.getByRole('button',{name:'Keep as draft',exact:true}).click()
+  }
+  await expect(send).toBeDisabled()
+  await answer.press('Control+Enter')
+  expect(starts).toEqual([])
+  await page.getByRole('button',{name:queued?'Remove image unavailable':'Remove image references',exact:true}).click()
+  if(queued)await expect(answer).toHaveText(text)
+  else await expect(answer).toHaveValue(text)
+  await send.click()
+  await expect.poll(()=>starts).toEqual([{endpoint:'rpc/tutor_owner_command',question:text}])
+ })
+}
+
+test('Account deletion removes only that owner’s tutor ink and fences a delayed write in another tab',async({page,context})=>{
+ const deletionPage=await context.newPage()
+ const {owner,cpId,payload}=await prepareLiveTutor(page)
+ await prepareLiveTutor(deletionPage)
+ const mockRest=(target:Page)=>target.route('**/rest/v1/**',route=>{
+  const request=route.request(),resource=new URL(request.url()).pathname.split('/rest/v1/')[1]
+  if(resource==='rpc/tutor_thread_state')return route.fulfill({json:{head:{threadId:null,lastSequence:0,pendingTurnId:null},
+   turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false}})
+  return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)})
+ })
+ await mockRest(page);await mockRest(deletionPage)
+ await deletionPage.route('**/functions/v1/account-delete',route=>route.fulfill({json:{deleted:true}}))
+ const flags='/lemma/?demo=0&flags=v7Shell,tutorThreads,tutorScratch#'
+ await page.goto(flags+'/settings?section=data')
+ await expect(page.getByRole('heading',{name:'Data and account',exact:true})).toBeVisible()
+ const liveKey=(id:string,checkpoint:string)=>'lemma.tutor.draft:'+JSON.stringify([id,'logic',checkpoint])+':ink'
+ const currentKey=liveKey(owner,cpId),priorKey=liveKey(owner,'earlier-checkpoint')
+ const preserved=[liveKey(owner+'-other',cpId),'lemma.demo-tutor:'+JSON.stringify(['default','logic',cpId])+':ink'].sort()
+ await page.evaluate(async ({priorKey,preserved})=>{
+  await new Promise<void>((resolve,reject)=>{
+   const request=indexedDB.open('lemma-tutor-ink',1)
+   request.onupgradeneeded=()=>request.result.createObjectStore('drafts')
+   request.onerror=()=>reject(request.error)
+   request.onsuccess=()=>{
+    const db=request.result,tx=db.transaction('drafts','readwrite'),store=tx.objectStore('drafts')
+    const draft={strokes:[[{x:4,y:5}]],width:3,accent:false,inlineImages:true,queuedText:'Queued private answer',
+     photos:[{id:'12345678-0123-4123-8123-123456789abc',kind:'photo',mimeType:'image/jpeg',blob:new Blob(['image'])}]}
+    for(const key of [priorKey,...preserved])store.put(draft,key)
+    tx.oncomplete=()=>{db.close();resolve()}
+    tx.onabort=()=>{db.close();reject(tx.error)}
+   }
+  })
+ },{priorKey,preserved})
+ await page.evaluate(()=>{location.hash='/p/logic/cp/CP1/tutor'})
+ await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
+ await page.getByRole('button',{name:'Write a question',exact:true}).click()
+ await page.getByRole('button',{name:'Scratch',exact:true}).click()
+ await expect(page.getByRole('button',{name:'Pen',exact:true})).toBeEnabled()
+ await page.evaluate(()=>{
+  const open=IDBFactory.prototype.open
+  IDBFactory.prototype.open=function(name,version){
+   const request=open.call(this,name,version)
+   if(name==='lemma-tutor-ink'){
+    IDBFactory.prototype.open=open
+    request.addEventListener('success',event=>{
+     event.stopImmediatePropagation()
+     window.addEventListener('release-delayed-tutor-write',()=>request.onsuccess?.call(request,event),{once:true})
+     document.documentElement.dataset.tutorInkWriteHeld='true'
+    },{once:true})
+   }
+   return request
+  }
+ })
+ const paper=await page.getByRole('region',{name:'Drawing paper'}).boundingBox()
+ await page.mouse.click(paper!.x+25,paper!.y+30)
+ await expect(page.locator('html')).toHaveAttribute('data-tutor-ink-write-held','true')
+ await deletionPage.goto(flags+'/settings?section=data')
+ await deletionPage.getByRole('button',{name:'Delete…',exact:true}).click()
+ const dialog=deletionPage.getByRole('dialog',{name:'Delete your account?',exact:true})
+ await dialog.getByRole('checkbox').check()
+ await dialog.getByRole('textbox').fill('DELETE MY ACCOUNT')
+ await dialog.getByRole('button',{name:'Delete account permanently',exact:true}).click()
+ await expect(deletionPage).toHaveURL(/#\/sign-in/)
+ await page.evaluate(()=>window.dispatchEvent(new Event('release-delayed-tutor-write')))
+ const retained=await page.evaluate(()=>new Promise<IDBValidKey[]>((resolve,reject)=>{
+  const request=indexedDB.open('lemma-tutor-ink')
+  request.onerror=()=>reject(request.error)
+  request.onsuccess=()=>{
+   const db=request.result,tx=db.transaction('drafts'),keys=tx.objectStore('drafts').getAllKeys()
+   tx.oncomplete=()=>{db.close();resolve(keys.result)}
+   tx.onabort=()=>{db.close();reject(tx.error)}
+  }
+ }))
+ expect(retained).toEqual(preserved)
+ expect(retained).not.toContain(currentKey)
+})
 
 for(const entry of ['chat','Pad'] as const){
  test('signed-in '+entry+' warns when attaching a source page to a saved draft exceeds storage quota',async({page})=>{

@@ -24,7 +24,7 @@ export function tutorStorageOwner(key:string):string|null {
    if(!Array.isArray(scope)||scope.length!==3||!scope.every(part=>typeof part==='string')||!scope[0])return null
    const valid=prefix==='lemma.tutor.confirmed.v1:'?suffix==='':
     (prefix==='lemma.tutor.pending.v1:'||prefix==='lemma.tutor.connector.v1:')?suffix.startsWith(':')&&suffix.length>1:
-     [':question',':context',':source',':attached-local'].includes(suffix)||(suffix===':input-assist'&&scope[1]==='input'&&scope[2]==='preferences')||(suffix.startsWith(':reply:')&&suffix.length>7)
+     [':question',':context',':source',':attached-local',':ink'].includes(suffix)||(suffix===':input-assist'&&scope[1]==='input'&&scope[2]==='preferences')||(suffix.startsWith(':reply:')&&suffix.length>7)
    return valid?scope[0]:null
   }catch{return null}
  }
@@ -72,7 +72,7 @@ export function writeTutorLocal(scope:Scope,key:string,value:string):void {
 }
 
 /** Call only after a confirmed deletion receipt for the captured current account. */
-export function removeDeletedOwnerTutorData(ownerId:string,generation:number):boolean {
+export async function removeDeletedOwnerTutorData(ownerId:string,generation:number):Promise<boolean> {
  if(!ownerId||getMode()!=='live'||authOwner()!==ownerId||authGeneration()!==generation)return false
  deletedOwners.add(ownerId)
  const marker=deletedPrefix+JSON.stringify(ownerId)
@@ -88,5 +88,6 @@ export function removeDeletedOwnerTutorData(ownerId:string,generation:number):bo
  for(const key of keys){try {localStorage.removeItem(key)}catch{removed=false}}
  if(!fenced){try {localStorage.setItem(marker,'1');fenced=true}catch{/* The caller reports incomplete local cleanup. */}}
  for(const refresh of listeners)refresh()
+ try {await import('./ink-storage').then(ink=>ink.removeDeletedOwnerInk(ownerId))}catch{removed=false}
  return fenced&&removed
 }

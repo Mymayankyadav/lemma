@@ -11,7 +11,8 @@ import {
   type PadEdit, type PadTextHistory,
 } from '../pad/padEdit';
 import {applyNotationSuggestion, findNotationSlot, insertNotation, notation, notationSuggestions, typedNotation} from './notation';
-import {TUTOR_ATTACHMENT_COUNT} from '../../data/tutor/attachment-types';
+import {removeTutorImageReferences,TUTOR_ATTACHMENT_COUNT} from '../../data/tutor/attachment-types';
+import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
 import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../supabase/functions/_shared/tutor-answer';
 import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
 import {TutorKeyboard} from './TutorKeyboard';
@@ -80,16 +81,19 @@ export function TutorComposer(props: Props) {
   const images = props.ink?.draft.photos;
   const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
   const previousIds = useRef(availableIds);
-  const refs = useMemo(() => referencedImageIds(props.value).filter(id => availableIds.has(id)), [props.value, availableIds]);
+  const imageReferences = useMemo(() => referencedImageIds(props.value), [props.value]);
+  const refs = imageReferences.filter(id => availableIds.has(id));
   const hasImage = refs.length > 0;
   const imageTarget = drawingSelection.current?.text === props.value ? drawingSelection.current : cursor;
   const canInsertImage = props.value.length - (imageTarget.end - imageTarget.start) + IMAGE_REFERENCE_LENGTH <= MAX_ANSWER_LENGTH;
   const inkDraft = props.ink?.draft;
   const readOnly = props.readOnly || inkDraft?.queuedText !== undefined;
-  const uncommitted = inkDraft?.inlineImages && Boolean(inkDraft.strokes.length ||
+  const imageIssue = tutorInkIssue(props.value, props.ink);
+  const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
+  const uncommitted = props.ink?.ready && inkDraft && (inkDraft.inlineImages || hasImage) && Boolean(inkDraft.strokes.length ||
     (inkDraft.editingDrawing && refs.includes(inkDraft.editingDrawing.id)));
   const queue=props.canQueueImage&&hasImage;
-  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted;
+  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
   const editingDisabled = readOnly || composing;
   const inputPrefs = useTutorInputPreferences();
   const scopeKey = props.inputScopeKey ?? 'tutor-preview';
@@ -124,12 +128,17 @@ export function TutorComposer(props: Props) {
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
     }
+    if (pendingSelection.current && input instanceof HTMLTextAreaElement) {
+      // Focusing dispatches remember synchronously. Restore the inserted caret before it can pause Keep drawing.
+      selectField(pendingSelection.current);
+      pendingSelection.current = null;
+    }
     if(focusAfterSymbol.current&&!assist.picker) {
       focusAfterSymbol.current=false;
       input.focus({preventScroll:true});
     }
     const edit = pendingSelection.current;
-    if (edit && (input instanceof HTMLTextAreaElement || document.activeElement === input)) {
+    if (edit && document.activeElement === input) {
       selectField(edit);
       pendingSelection.current = null;
     }
@@ -464,6 +473,15 @@ export function TutorComposer(props: Props) {
   return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
     {props.value.includes('$') && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
+    {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
+      {inkIssueText[recoveryIssue]}
+      {props.ink && (recoveryIssue==='failed'||recoveryIssue==='missing') &&
+        <Button small type="button" onClick={props.ink.retry}>Retry restoring images</Button>}
+      {props.ink && imageIssue==='failed' && !imageReferences.length && !editingDisabled && props.value.trim() &&
+        <Button small type="button" onClick={()=>{props.ink?.continueWithText();setScratch(false);}}>Continue with text</Button>}
+      {!props.ink && imageIssue==='unavailable' && !editingDisabled &&
+        <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(props.value)))}>Remove image references</Button>}
+    </div>}
     {!scratch && uncommitted && <p className="composer-status" role="status">Insert or discard your unfinished drawing before sending.</p>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
@@ -492,10 +510,7 @@ export function TutorComposer(props: Props) {
           onDrop={event=>event.preventDefault()}
         /> : <textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
-          value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={()=>{
-            remember();
-            if(!readOnly){setShown(true);setScratch(false);}
-          }}
+          value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
             if (!shown && !readOnly) {
               setShown(true);

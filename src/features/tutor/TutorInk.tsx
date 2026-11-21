@@ -1,39 +1,63 @@
-import {useEffect,useId,useRef,useState,type CSSProperties} from 'react';
+import {useEffect,useId,useLayoutEffect,useRef,useState,type CSSProperties} from 'react';
 import {Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,Trash2,Undo2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
 import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
 import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
 import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from '../../data/tutor/attachment-types';
-import {editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,type InkDraft} from '../../data/tutor/ink-storage';
+import {assertTutorInkScope,editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,
+  type InkDraft,type InkRecovery,type TutorInkScope} from '../../data/tutor/ink-storage';
 import './scratchpad.css';
 
-export function useTutorInk(key:string,enabled:boolean) {
-  const [draft,setDraft] = useState<InkDraft>(emptyInk);
+const openingInk:InkRecovery={draft:emptyInk,status:'loading'};
+export function useTutorInk(scope:TutorInkScope,enabled:boolean) {
+  const [recovery,setRecovery] = useState(openingInk);
   const [error,setError] = useState('');
-  const [ready,setReady] = useState(false);
-  const latest=useRef(emptyInk), pending=useRef<Promise<unknown>>(Promise.resolve());
-  useEffect(()=>{
-    if (!enabled) return;
-    let active=true;
-    setReady(false);
-    void readInkDraft(key).then(value=>{
-      if(active){latest.current=value;setDraft(value);setReady(true);}
-    }).catch(()=>{if(active){setError('The saved drawing could not be reopened.');setReady(true);}});
-    return ()=>{active=false;};
-  },[key,enabled]);
-  function update(change:InkDraft|((draft:InkDraft)=>InkDraft)) {
-    const next=typeof change==='function'?change(latest.current):change;
-    if(next===latest.current)return pending.current;
-    latest.current=next;
-    setDraft(next);
-    pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(key,next)).then(()=>setError(''));
-    return pending.current.catch(error=>{
-      setError('The drawing is open here. This device could not save it.');
-      throw error;
-    });
+  const latest=useRef(openingInk), pending=useRef<Promise<unknown>>(Promise.resolve());
+  const mounted=useRef<{scope:TutorInkScope}|null>(null),readAttempt=useRef(0);
+  function publish(value:InkRecovery) {
+    latest.current=value;
+    setRecovery(value);
   }
-  return {draft,update,error,ready};
+  function retry() {
+    const binding=mounted.current;
+    if(!enabled||binding?.scope!==scope)return;
+    const attempt=++readAttempt.current;
+    const current=()=>mounted.current===binding&&readAttempt.current===attempt;
+    publish({draft:latest.current.draft,status:'loading'});
+    void pending.current.catch(()=>{}).then(()=>current()?readInkDraft(scope):undefined).then(draft=>{
+      if(current()&&draft)publish({draft,status:'ready'});
+    }).catch(()=>{if(current())publish({...latest.current,status:'failed'});});
+  }
+  useLayoutEffect(()=>{
+    if(!enabled)return;
+    mounted.current={scope};
+    latest.current=openingInk;
+    retry();
+    return ()=>{mounted.current=null;};
+  },[scope,enabled]);
+  async function update(change:InkDraft|((draft:InkDraft)=>InkDraft)) {
+    const binding=mounted.current, current=latest.current;
+    assertTutorInkScope(scope);
+    if(!enabled||binding?.scope!==scope||current.status!=='ready')throw new Error('Reopen the saved images first.');
+    const next=typeof change==='function'?change(current.draft):change;
+    if(next===current.draft)return pending.current;
+    publish({draft:next,status:'ready'});
+    pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(scope,next));
+    try {
+      await pending.current;
+      if(mounted.current===binding)setError('');
+    } catch(error) {
+      if(mounted.current===binding)setError('The drawing is open here. This device could not save it.');
+      throw error;
+    }
+  }
+  const snapshot=()=>enabled&&mounted.current?.scope===scope?latest.current:openingInk;
+  function continueWithText() {
+    const current=snapshot();
+    if(current.status==='failed')publish({...current,textOnly:true});
+  }
+  return {...recovery,snapshot,retry,continueWithText,update,error,ready:recovery.status==='ready'};
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 

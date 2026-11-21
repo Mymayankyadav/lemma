@@ -172,6 +172,7 @@
  :where(html[data-v7]) .v7-ag-body {display:grid;gap:2px;min-width:0;}
  :where(html[data-v7]) .v7-ag-body strong {font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-ag-body small {color:var(--v7-role-text-secondary);font:400 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);}
+ :where(html[data-v7]) .v7-cal-day-dues .v7-ag-row {grid-template-columns:minmax(0,1fr);gap:var(--v7-space-1);overflow-wrap:anywhere;}
  /* Quick-add, overdue sheet and the suggestions banner. */
  :where(html[data-v7]) .v7-qa {display:grid;gap:var(--v7-space-3);}
  :where(html[data-v7]) .v7-qa-row {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}

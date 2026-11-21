@@ -108,6 +108,13 @@ describe('canonical symbol edits', () => {
     expect(applyNotationSuggestion(aliasEdit, alias).text).toBe('$x \\leq $');
   });
 
+  test('terminates the last control word of a compound symbol before a letter', () => {
+    const result = insertTutorSymbol(padEdit('$AB$', 2), 'not-subset')!;
+    const expected = '$A\\not\\subset B$';
+    expect(result).toEqual(padEdit(expected, expected.indexOf('B')));
+    expect(() => katex.renderToString(result.text.slice(1, -1), {throwOnError: true})).not.toThrow();
+  });
+
   test('rejects a mixed prose/math selection or a caret inside a delimiter', () => {
     const text = 'before \\(x\\) suffix';
     expect(insertTutorSymbol(padEdit(text, 4, 10), 'forall')).toBeUndefined();

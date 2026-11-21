@@ -8,9 +8,12 @@ Deno.test('authorized image reads use typed MCP content, and invalid grants do n
   const owner=randomUUID(),turn=randomUUID(),grant=randomUUID(),id=randomUUID(),handoff=turn+'.'+grant;
   const png=new Blob([Uint8Array.of(137,80,78,71,13,10,26,10)],{type:'image/png'});
   let allowed=true,downloads=0;
-  const row={id,kind:'drawing',mime_type:'image/png',byte_size:png.size};
+  const row={id,user_id:owner,kind:'drawing',mime_type:'image/png',byte_size:png.size};
   const list={
-    select:()=>list,eq:()=>list,order:()=>list,limit:()=>list,
+    select:()=>list,eq:(column:string,value:string)=>{
+      assert.equal(value,{user_id:owner,turn_id:turn,id}[column as 'user_id'|'turn_id'|'id']);
+      return list;
+    },order:()=>list,limit:()=>list,
     then:(resolve:(result:{data:typeof row[];error:null})=>unknown)=>Promise.resolve(resolve({data:[row],error:null})),
   };
   const connector=tutorConnector({userId:owner,db:{
@@ -25,6 +28,7 @@ Deno.test('authorized image reads use typed MCP content, and invalid grants do n
   const content=await connector.content(handoff);
   assert.equal(content.length,2);
   assert.deepEqual(content[1],{type:'image',mimeType:'image/png',data:'iVBORw0KGgo='});
+  assert.ok(content[0].type==='text');
   assert.match(content[0].text,new RegExp(id));
   assert.deepEqual((await connector.attachment(handoff+'.'+id))[1],content[1]);
   allowed=false;
@@ -39,8 +43,8 @@ Deno.test('authorized image reads use typed MCP content, and invalid grants do n
 
 Deno.test('inline learner references interleave authorized images and prose in composition order',async()=>{
   const owner=randomUUID(),handoff=randomUUID()+'.'+randomUUID(),first=randomUUID(),second=randomUUID(),foreign=randomUUID();
-  const images=new Map([first,second].map((id,index)=>[id,new Blob([Uint8Array.of(137,80,78,71,13,10,26,10,index)],{type:'image/png'})]));
-  const rows=[first,second].map(id=>({id,kind:'drawing',mime_type:'image/png',byte_size:images.get(id)!.size}));
+  const images=new Map<string,Blob>([first,second].map((id,index)=>[id,new Blob([Uint8Array.of(137,80,78,71,13,10,26,10,index)],{type:'image/png'})]));
+  const rows=[first,second].map(id=>({id,user_id:owner,kind:'drawing',mime_type:'image/png',byte_size:images.get(id)!.size}));
   const question='First text '+imageReference(second)+' middle '+imageReference(first)+' end '+imageReference(second)+' '+imageReference(foreign);
   const downloaded:string[]=[];
   const list={select:()=>list,eq:()=>list,order:()=>list,limit:()=>list,
@@ -56,8 +60,9 @@ Deno.test('inline learner references interleave authorized images and prose in c
   }},'b'.repeat(48));
   const content=await connector.content(handoff);
   assert.deepEqual(downloaded,[second,first]);
+  assert.ok(content[0].type==='text');
   const metadata=JSON.parse(content[0].text);
-  assert.deepEqual(metadata.answerParts.filter(part=>part.type==='image').map(part=>part.id),[handoff+'.'+second,handoff+'.'+first,handoff+'.'+second]);
+  assert.deepEqual(metadata.answerParts.filter((part:{type:string})=>part.type==='image').map((part:{id:string})=>part.id),[handoff+'.'+second,handoff+'.'+first,handoff+'.'+second]);
   assert.deepEqual(content.slice(1).map(block=>block.type==='text'?block.text:block.data),[
     'Learner answer in composition order:','First text ','[Drawing 1]','iVBORw0KGgoB',
     ' middle ','[Drawing 2]','iVBORw0KGgoA',' end ','[Drawing 1, repeated reference]',' '+imageReference(foreign),

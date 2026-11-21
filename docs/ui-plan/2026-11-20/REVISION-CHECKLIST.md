@@ -40,6 +40,19 @@ The owner's latest instructions specify a Settings beta opt-in without a physica
 
 Optional LLM ranking is research only unless a measured benefit justifies it. First release sends no handwriting to inference services and introduces no proof-solving model.
 
+## Implementation review
+
+- [x] Wait for Tutor image recovery, verify every referenced image and keep the answer recoverable after a failed read.
+- [x] Include the Tutor ink database in owner deletion and fence pending reads and writes.
+- [x] Show Calendar Day deadlines and due practice below the desktop breakpoint.
+- [x] Route the scheduled Tutor action and its explanation to the selected project and checkpoint.
+- [x] Terminate compound TeX symbols before letters and keep the insertion caret.
+- [x] Deliver ordered image content through the existing bearer grant as well as the regular connector.
+- [x] Keep the symbol pad active for repeated insertions at a textarea caret.
+- [x] Show plan completion only when all checkpoints are complete.
+
+[Review verification](VALIDATION.md#implementation-review) · [Review screenshots](before-after/revision-2026-11-21/review/README.md)
+
 ## Delivery
 
 - [x] Update current-state notes, feature-retention matrix and validation report.

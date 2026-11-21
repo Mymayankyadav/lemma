@@ -84,7 +84,7 @@ function replace(edit: PadEdit, text: string, selectFrom = text.length, selectTo
 }
 
 export function insertPadSymbol(edit: PadEdit, symbol: PadSymbol): PadEdit {
-  return replace(edit, inMath(edit) ? symbol.tex + (/^\\[a-z]+$/i.test(symbol.tex) ? ' ' : '') : symbol.glyph);
+  return replace(edit, inMath(edit) ? symbol.tex + (/\\[a-z]+$/i.test(symbol.tex) ? ' ' : '') : symbol.glyph);
 }
 
 export function insertPadText(edit: PadEdit, text: string): PadEdit {return replace(edit, text);}

@@ -1,6 +1,8 @@
 import {describe,expect,it} from 'vitest';
-import {nextStep,freeMinutes} from '../../../src/features/home/v7/nextStepModel';
+import {courseAction,fallbackTutor,nextStep,freeMinutes} from '../../../src/features/home/v7/nextStepModel';
+import {scheduledConceptCheckpoint} from '../../../src/features/home/v7/scheduledCheckpoint';
 import type {AgendaRead} from '../../../src/data/adaptive/agenda-api';
+import type {ProjectSummary} from '../../../src/data/types';
 import {tutorPresence} from '../../../src/features/tutor/presence';
 import {finishPadStroke,initializePadInk,undoPadInk} from '../../../src/ui/v7/ink/ink';
 import {fittedImageSize,inkBounds} from '../../../src/ui/v7/ink/images';
@@ -13,8 +15,7 @@ import {usedBridges} from '../../../src/features/adaptive/panels/AtlasLayers';
 import {bridgeStrength,type AtlasLink} from '../../../supabase/functions/_shared/adaptive/links';
 
 const now=Date.parse('2026-11-09T13:43:00Z');
-const facts={due:23,reviewMinutes:10,tutorHref:'/p/analysis/tutor',tutorTitle:'Compactness',active:false,now,
-  localMinute:13*60+43,zone:'UTC',closed:false};
+const facts={due:23,reviewMinutes:10,active:false,now,localMinute:13*60+43,zone:'UTC',closed:false,projects:[],tasks:[],scopedReview:true};
 function agenda(outcome:AgendaRead['decision']['outcome'],label?:string):AgendaRead {
   return {label,decision:{asOf:new Date(now).toISOString(),snapshotVersion:'test',requested:'new',effective:'new',
     policyVersion:'test',reason:'Private scheduler reason',outcome,baseline:outcome}};
@@ -32,13 +33,52 @@ describe('November UI plan',()=>{
   });
 
   it('turns each scheduler outcome into plain actions',()=>{
-    expect(nextStep(agenda({kind:'action',taskId:'p/review',start:now/60000,end:now/60000+10},'Review'),facts))
-      .toMatchObject({action:'Start review',title:'Review 23 cards',minutes:10});
+    expect(nextStep(agenda({kind:'action',taskId:'p/review:card-1',start:now/60000,end:now/60000+10},'Review · Stokes'),facts))
+      .toMatchObject({action:'Start review',title:'Review · Stokes',href:'/review/run?target=card&id=card-1',minutes:10});
     expect(nextStep(agenda({kind:'action',taskId:'task/1',start:0,end:25},'Solve problems'),facts).action).toBe('Start focus');
     expect(nextStep(agenda({kind:'no-capacity',until:null}),facts).title).toBe('How long do you have?');
     expect(nextStep(agenda({kind:'fixed',until:now/60000+60}),facts).title).toBe('Free at 14:43');
     expect(nextStep(agenda({kind:'unavailable',until:null}),facts).action).toBe('Start review');
     expect(nextStep(agenda({kind:'protected',until:null}),{...facts,active:true}).action).toBe('Return to focus');
+  });
+
+  it('uses the selected action target and handles missing targets without picking a different path',()=>{
+    const first:ProjectSummary={id:'project-analysis',slug:'real-analysis',title:'Real Analysis',status:'active',total:4,done:3,
+      subject:{id:'subject-analysis',name:'Analysis',glyph:'∫',hue:'amber',position:0},current:{code:'CP4',title:'Compactness',step:0,stepsTotal:4},
+      lastActivityAt:null,cardsCount:0,sessionsCount:0,sourcesCount:0};
+    const selected:ProjectSummary={...first,id:'project-linear',slug:'linear-algebra',title:'Linear Algebra',current:{code:'CP9',title:'Diagonalization',step:0,stepsTotal:4}};
+    const input={...facts,projects:[first,selected],due:0};
+    const action=(taskId:string,label:string)=>agenda({kind:'action',taskId,start:0,end:20},label);
+    const learn=action('project-linear/teach:linear-10','Learn · Eigenvectors');
+    expect(nextStep(learn,{...input,checkpoint:{code:'CP10',title:'Eigenvectors'}})).toMatchObject({
+      action:'Start with tutor',href:'/p/linear-algebra/cp/CP10/tutor',why:'Eigenvectors is next on Linear Algebra.',
+    });
+    expect(fallbackTutor(learn,input.projects)).toBeUndefined();
+    expect(nextStep(learn,input)).toMatchObject({action:'Open path',href:'/p/linear-algebra',why:'The recommended checkpoint on Linear Algebra is unavailable.'});
+    expect(nextStep(learn,{...input,projects:[first]})).toMatchObject({action:'Quick focus',why:'The recommended step is unavailable.'});
+    expect(nextStep(undefined,input)).toMatchObject({action:'Start with tutor',href:'/p/real-analysis/cp/CP4/tutor'});
+    expect(nextStep(undefined,{...input,waitingForAgenda:true}).href).toBeUndefined();
+    expect(nextStep(action('project-linear/practice:concept-vector','Practice · Vector spaces'),input)).toMatchObject({
+      part:'Practice',action:'Start practice',href:'/practice',why:'The plan has time to practise Vector spaces on Linear Algebra.',
+    });
+    expect(nextStep(action('project-linear/review:card-2','Review · Rank'),{...input,scopedReview:false})).toMatchObject({
+      part:'Checks',action:'Open review',href:'/review?path=linear-algebra',why:'A card from Linear Algebra is ready to review.',
+    });
+  });
+
+  it('matches certification, re-entry and final checks by concept within the scheduled path',()=>{
+    const checkpoint=(id:string,position:number,status='not_started',project_id='linear')=>({id,code:id,title:id,position,status,project_id,tier:'core'});
+    const checkpoints=[checkpoint('other-project',1,'not_started','analysis'),checkpoint('prerequisite',1,'demonstrated'),
+      checkpoint('first',2),checkpoint('final',3)];
+    const rows={checkpoints,cpConcepts:[{concept_id:'revisit',checkpoint_id:'prerequisite'},{concept_id:'check',checkpoint_id:'first'},
+      {concept_id:'final',checkpoint_id:'final'},{concept_id:'check',checkpoint_id:'other-project'}],
+      prereqs:[{checkpoint_id:'first',prereq_id:'prerequisite'}]};
+    for(const [taskId,expected] of [['linear/check:check','first'],['linear/probe:revisit','prerequisite'],['linear/final:final','final']]){
+      const action=courseAction(agenda({kind:'action',taskId,start:0,end:5}))!;
+      expect(scheduledConceptCheckpoint(action,rows)?.id).toBe(expected);
+    }
+    const unrelated=courseAction(agenda({kind:'action',taskId:'linear/check:final',start:0,end:5}))!;
+    expect(scheduledConceptCheckpoint(unrelated,rows)).toBeUndefined();
   });
 
   it('fits free time before a commitment and uses evening and night language',()=>{

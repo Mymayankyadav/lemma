@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {randomUUID} from 'node:crypto';
+import {randomBytes,randomUUID} from 'node:crypto';
 
 export async function checkTutorInk({db,owner,other,slug,objective,as,q,one,ownerCmd,state,denied}) {
   await as();
@@ -36,9 +36,24 @@ export async function checkTutorInk({db,owner,other,slug,objective,as,q,one,owne
   await denied(attach(valid));
   await as('authenticated',owner);
   await denied(one('select public.tutor_ink_cleanup_candidates() result'));
+  const hash=randomBytes(32).toString('hex');
+  const granted=await ownerCmd({operation:'grant',operationId:randomUUID(),turnId:turn.turnId,
+    expectedVersion:turn.version,tokenHash:hash},db,checkpoint);
+  assert.equal(granted.status,'granted');
   await as('service_role');
   assert.deepEqual(await one('select public.tutor_ink_cleanup_candidates() result'),[owner+'/'+expired]);
+  const bearerRead=id=>one('select public.tutor_grant_command($1,$2::jsonb) result',
+    [hash,JSON.stringify({operation:'get',turnId:id})]);
+  const grantedTurn=await bearerRead(turn.turnId);
+  assert.equal(grantedTurn.turnId,turn.turnId);
+  assert.equal(grantedTurn.status,'pending');
+  await denied(bearerRead(randomUUID()));
+  assert.equal(await one("select has_table_privilege('service_role','public.tutor_turn_attachments','SELECT') result"),true);
   await as();
+  assert.deepEqual(await q(`select id,user_id,kind,mime_type,byte_size from public.tutor_turn_attachments
+    where turn_id=$1 order by position limit 3`,[grantedTurn.turnId]),[
+    {id:drawing,user_id:owner,kind:'drawing',mime_type:'image/png',byte_size:123},
+  ]);
   await q('delete from public.tutor_turns where id=$1',[turn.turnId]);
   assert.deepEqual(await q('select id from public.tutor_turn_attachments where id=$1',[drawing]),[]);
   assert.equal(await one(`select count(*)::int result from lemma_export_private.additional_tables where table_name='tutor_turn_attachments'`),1);

@@ -170,7 +170,6 @@ export default function V7Today(){
  const copy=heroCopy[state];
  const weekday=useQuery({queryKey:['study-weekdays',weekdayOwner()],queryFn:readWeekdayMinutes,enabled:nextStepEnabled&&!!weekdayOwner()});
  const firstRun=nextStepEnabled&&state==='first';
- const currentProject=projects.find(project=>project.current)??projects[0];
  const nextCommitment=blocks.find(block=>block.status==='planned'&&Date.parse(block.startsAt)>now);
  const todayLabel=new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'long',day:'numeric',month:'long'}).format(date);
  const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone),windowMinutes).left;
@@ -185,11 +184,11 @@ export default function V7Today(){
    {nextStepEnabled?firstRun?<TodayFirstRun configured={Boolean(typeof weekday.data==='number'?weekday.data:weekday.data?.some(value=>value>0))} tutor={Boolean(settings.data?.connectorLastSeenAt)} onFocus={()=>setQuick(true)}/>
     :<NextStep now={now} day={day} zone={zone} localMinute={localMinute(date,zone)} logged={logged} focusMinutes={settings.data?.focusDefaults?.focus_minutes??25}
       due={due} reviewMinutes={reviewMinutes??10} pending={!!entry} closed={!!data?.closed}
-      project={currentProject} commitment={nextCommitment} onStartReview={()=>navigate('/review?start=1')}
-      onFocus={()=>setQuick(true)} onStartFocus={title=>{void act(async()=>{
+      projects={projects} tasks={data?.tasks??[]} commitment={nextCommitment}
+      onFocus={()=>setQuick(true)} onStartFocus={(title,links)=>{void act(async()=>{
         const study=getStudyApi();
         if(await study.activeStudyEntry())throw Error('A focus session is already running.');
-        await study.startStudyEntry({source:'timer',intent:title});
+        await study.startStudyEntry({source:'timer',intent:title,...links});
       },()=>navigate('/focus'));}}/>
     :<section className={'v7-today-hero v7-starfield '+subjectClass(hero.subject)} aria-label="Your next step" data-state={state}>
     <div className="v7-today-hero-emblem" aria-hidden="true"><Emblem subject={hero.subject} seed={heroLink??'today'} size={164} animate={false}/></div>

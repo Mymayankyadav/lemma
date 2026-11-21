@@ -3,9 +3,9 @@ import {useTutorInk} from './TutorInk';
 import {TutorAnswer,tutorAnswerText} from './TutorAnswer';
 import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
 import {rasterizeInk} from '../../ui/v7/ink/images';
-import {removeSubmittedInk,uploadTutorImage} from '../../data/tutor/ink-storage';
-import {IMAGE_ONLY_ANSWER,type TutorImageDraft} from '../../data/tutor/attachment-types';
-import {useCallback,useEffect,useId,useRef,useState,useSyncExternalStore} from 'react'
+import {assertTutorInkScope,emptyInk,inkIssueText,removeSubmittedInk,tutorInkIssue,uploadTutorImage,type TutorInkScope} from '../../data/tutor/ink-storage';
+import {IMAGE_ONLY_ANSWER,removeTutorImageReferences,type TutorImageDraft} from '../../data/tutor/attachment-types';
+import {useCallback,useEffect,useId,useMemo,useRef,useState,useSyncExternalStore} from 'react'
 import {Link} from 'react-router'
 import {usePlanRelease} from '../../data/usePlanRelease'
 import {authGeneration,authOwner,onAccountChange} from '../../data/authBoundary'
@@ -41,13 +41,14 @@ function useDraft(key:string,live=false) {
     return {text,unsaved:false}
   })
   function change(value: string) {
-    if(!active())return
+    if(!active())return false
     try {
       if (value&&live)writeTutorLocal({ownerId:captured.ownerId!,generation:captured.generation},key,value)
       else if (value) storage().setItem(key,value)
       else storage().removeItem(key)
       setDraft({text:value,unsaved:false})
-    } catch { setDraft({text:value,unsaved:true}) }
+      return true
+    } catch {setDraft({text:value,unsaved:true});return false}
   }
   function clearIfUnchanged(expected: string) {
     if(!active())return
@@ -95,10 +96,15 @@ function TutorEntry(props:EntryProps & {live:boolean;readOnly:boolean}) {
 }
 
 function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,live,readOnly,handoff:padHandoff,onHandoffConsumed}:EntryProps & {live:boolean;readOnly:boolean}) {
+  const {pathId,checkpointId}=scope;
+  const {ownerId,generation}=scope.authScope??{};
+  const profile=live?undefined:getDemoProfile();
   const draftKey=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+
-    JSON.stringify([live?scope.authScope!.ownerId:getDemoProfile(),scope.pathId,scope.checkpointId])
+    JSON.stringify([live?ownerId:profile,pathId,checkpointId])
   const scratchEnabled=Boolean(page&&isFlagOn('tutorScratch'));
-  const ink=useTutorInk(draftKey+':ink',scratchEnabled);
+  const inkScope=useMemo<TutorInkScope>(()=>({pathId,checkpointId,...(live?{ownerId:ownerId!,generation:generation!}:{profile:profile!})}),
+    [live,ownerId,generation,profile,pathId,checkpointId]);
+  const ink=useTutorInk(inkScope,scratchEnabled);
   const question=useDraft(draftKey+':question',live), context=useDraft(draftKey+':context',live)
   const capturedQuestion=useRef(false);
   useEffect(()=>{
@@ -121,7 +127,6 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const [error,setError]=useState('')
   const questionId=useId(),copyId=useId(),selectionId=useId()
   const [copyStatus,setCopyStatus]=useState('')
-  const {pathId,checkpointId}=scope
   const excerpt=scope.objective
   const [history,setHistory]=useState<TutorThreadView['turns']>([])
   const [historyDrafts,setHistoryDrafts]=useState<TutorThreadView['recoveredDrafts']>([])
@@ -144,7 +149,6 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     const thread=await api.resume(undefined,reconcile,connectorUrl)
     if(request===readVersion.current){setSession({api,thread});setError('')}
   },[connectorUrl])
-  const ownerId=scope.authScope?.ownerId,generation=scope.authScope?.generation
   useEffect(()=>{
     let active=true,api:ManualTutor|undefined
     async function connect() {
@@ -182,10 +186,10 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const pendingId=session?.thread.head.pendingTurnId
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{
-    if(!scratchEnabled||!session)return;
+    if(!scratchEnabled||!ink.ready||!session)return;
     const submitted=new Set(session.thread.turns.flatMap(turn=>turn.snapshot.attachments?.map(image=>image.id)??[]));
     if(submitted.size)void ink.update(current=>removeSubmittedInk(current,submitted)).catch(()=>{});
-  },[scratchEnabled,session,ink.draft]);
+  },[scratchEnabled,session,ink.ready,ink.draft]);
   useEffect(()=>{
     if(!live||!activeApi)return
     let active=true,refreshing=false
@@ -198,19 +202,17 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);window.removeEventListener('offline',update);document.removeEventListener('visibilitychange',update)}
   },[live,activeApi,pendingId,refresh])
   async function saveQuestion(text=question.text,options:SendOptions={}) {
-    const inkDraft=ink.draft;
-    const ids=inkDraft.inlineImages?referencedImageIds(text):undefined;
-    if(scratchEnabled&&!options.keepDraft&&inkDraft.inlineImages) {
-      if(inkDraft.strokes.length||inkDraft.editingDrawing&&ids!.includes(inkDraft.editingDrawing.id)) {
-        setError('Insert or cancel the current drawing before sending.');return;
-      }
-      if(ids!.some(id=>!inkDraft.photos.some(image=>image.id===id))) {
-        setError('An inserted image could not be found. Remove its chip or reopen the drawing.');return;
-      }
+    const recovery=scratchEnabled&&!options.keepDraft?ink.snapshot():undefined;
+    const issue=tutorInkIssue(text,recovery);
+    if(issue){setError(inkIssueText[issue]);return;}
+    const inkDraft=recovery?.status==='ready'?recovery.draft:emptyInk;
+    const ids=referencedImageIds(text),inline=inkDraft.inlineImages||ids.length>0;
+    if(inline&&(inkDraft.strokes.length||inkDraft.editingDrawing&&ids.includes(inkDraft.editingDrawing.id))) {
+      setError('Insert or cancel the current drawing before sending.');return;
     }
-    const hasImages=scratchEnabled&&!options.keepDraft&&Boolean(ids?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
+    const hasImages=Boolean(inline?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
     if(session?.thread.offline&&hasImages&&!readOnly) {
-      await ink.update({...inkDraft,queuedText:text}).catch(()=>{});
+      await ink.update(current=>current===inkDraft?{...current,queuedText:text}:current).catch(()=>{});
       return;
     }
     if (!session || busy || readOnly || session.thread.offline || session.thread.canSubmit===false ||
@@ -220,15 +222,14 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     try {
       const local=!options.keepDraft && attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
       const includeObjective=options.includeObjective || (!options.keepDraft && Boolean(context.text))
-      const images:TutorImageDraft[]=ids?ids.map(id=>inkDraft.photos.find(image=>image.id===id)!):[...inkDraft.photos];
-      if(hasImages&&!inkDraft.inlineImages&&inkDraft.strokes.length) {
+      const images:TutorImageDraft[]=inline?ids.map(id=>inkDraft.photos.find(image=>image.id.toLowerCase()===id)!):[...inkDraft.photos];
+      if(hasImages&&!inline&&inkDraft.strokes.length) {
         const drawingId=inkDraft.drawingId??crypto.randomUUID();
         if(!inkDraft.drawingId)await ink.update(current=>current.strokes===inkDraft.strokes?({...current,drawingId}):current);
         images.push({id:drawingId,kind:'drawing',mimeType:'image/png',blob:await rasterizeInk(inkDraft.strokes,inkDraft.width,inkDraft.accent)});
       }
-      const assertCurrent=()=>{
-        if(live&&(authOwner()!==ownerId||authGeneration()!==generation))throw new Error('Your account changed.');
-      };
+      const assertCurrent=()=>assertTutorInkScope(inkScope);
+      assertCurrent();
       const attachments=hasImages?await Promise.all(images.map(file=>uploadTutorImage(ownerId??'',file,assertCurrent))):[];
       assertCurrent();
       const draft:TutorComposerDraft={
@@ -282,11 +283,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const recovered=Array.from(new Map([...historyDrafts,...(thread?.recoveredDrafts??[])].map(d=>[d.draftId??d.messageId,d])).values())
   const pending=last?.status==='awaiting-tutor'?last:null
   useEffect(()=>{
-    if(ink.draft.queuedText===undefined||!session||session.thread.offline||session.thread.head.pendingTurnId||
-      session.thread.outbox?.length||readOnly||busy||connectorLoading)return;
+    const queued=ink.draft.queuedText;
+    if(!scratchEnabled||!ink.ready||queued===undefined||tutorInkIssue(queued,ink)||!session||session.thread.offline||
+      session.thread.head.pendingTurnId||session.thread.outbox?.length||readOnly||busy||connectorLoading)return;
     // Reconnect sends the draft selected for offline delivery.
-    if(!error)void saveQuestion(ink.draft.queuedText);
-  },[ink.draft.queuedText,session?.thread.offline,session?.thread.head.pendingTurnId,busy,readOnly,error,connectorLoading])
+    if(!error)void saveQuestion(queued);
+  },[scratchEnabled,ink.status,ink.draft,session?.thread.offline,session?.thread.head.pendingTurnId,session?.thread.outbox?.length,busy,readOnly,error,connectorLoading])
   const localExcerpt=pending?.snapshot.localExcerpt
   const handoff=pending?[tutorAnswerText(pending.snapshot.question,pending.snapshot.attachments),...pending.snapshot.selectedContext.map(x=>x.excerpt),
     ...(localExcerpt ? ['Local excerpt (learner-provided; not a citation):\n'+localExcerpt.text] : []),
@@ -469,7 +471,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         <textarea className="v7-field" aria-label={'Recoverable reply '+(i+1)} readOnly value={item.body}/>
       </div>)}
     </Disclosure>}  </>
-  if(page)return <TutorChat page={page} turns={allTurns} draft={question.text} onChange={question.change}
+  if(page)return <TutorChat page={page} turns={allTurns} draft={ink.draft.queuedText??question.text} onChange={question.change}
     onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
@@ -477,8 +479,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       ? 'Continue my Lemma tutor session. Use get(what=tutor_turn, id='+delivery.reference+').'
       : 'Continue my Lemma tutor session. Use get(what=tutor_turn) to find my answer.'}
     pendingStatus={recoveryOnly?'Offline · Saved conversation':!live?'Demo: import a reply to continue':claimed?'Replying…':'Waiting for '+clientName}
-    status={<>{ink.draft.queuedText!==undefined&&<p role="status">Answer queued · Sends when connected.
-      <Button small onClick={()=>{void ink.update(current=>({...current,queuedText:undefined})).catch(()=>{});}}>Keep as draft</Button>
+    status={<>{ink.draft.queuedText!==undefined&&<p role="status">{tutorInkIssue(ink.draft.queuedText,ink)?'Queued answer needs its images.':'Answer queued · Sends when connected.'}
+      <Button small disabled={readOnly||busy||!ink.ready} onClick={()=>{
+        const queued=ink.snapshot().draft.queuedText;
+        if(queued===undefined||!question.change(queued))return;
+        void ink.update(current=>({...current,queuedText:undefined})).catch(()=>{});
+      }}>Keep as draft</Button>
     </p>}{statusControls}{thread?.canSubmit===false&&!thread.offline&&!readOnly&&<p role="status">New tutor questions are currently paused.</p>}
       {live&&thread&&!thread.offline&&(readOnly||!thread.canSubmit)&&!pending&&
         <a href={chatLink(page.client,studyPrompt(page.project.project.title,page.detail.view.code,page.detail.view.title))}
@@ -509,8 +515,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       <label htmlFor={questionId}>Question</label>
       <textarea id={questionId} className="v7-field" rows={4} maxLength={2000} value={question.text}
         disabled={busy} onChange={e=>question.change(e.currentTarget.value)}/>
+      {tutorInkIssue(question.text)&&<p role="alert">{inkIssueText.unavailable}
+        <Button small disabled={busy} onClick={()=>question.change(removeTutorImageReferences(question.text))}>Remove image references</Button>
+      </p>}
       {contextControls}
-      <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()} onClick={()=>{void saveQuestion()}}>Save question</Button>
+      <Button disabled={busy||!!pending||!!thread?.outbox?.length||preview?.kind==='preview'||!question.text.trim()||Boolean(tutorInkIssue(question.text))} onClick={()=>{void saveQuestion()}}>Save question</Button>
     </div>}
     {draftWarning&&<p role="alert">{draftWarning}</p>}
     {manualControls}

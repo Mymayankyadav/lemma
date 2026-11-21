@@ -14,11 +14,119 @@ const actions=async(page:Page)=>{
 };
 const scratch=(page:Page)=>page.getByRole('button',{name:'Scratch',exact:true});
 const conversation=(page:Page)=>page.getByRole('log',{name:'Conversation'});
+const answerField=(page:Page)=>page.getByRole('textbox',{name:'Your answer',exact:true});
+const send=(page:Page)=>page.getByRole('button',{name:'Send',exact:true});
 
 async function open(page:Page) {
   await page.goto(url);
   await page.getByRole('button',{name:'Write a question'}).click();
 }
+
+async function holdInkOpen(page:Page) {
+  await page.addInitScript(()=>{
+    const open=IDBFactory.prototype.open;
+    IDBFactory.prototype.open=function(name,version){
+      const request=open.call(this,name,version);
+      if(name==='lemma-tutor-ink'){
+        IDBFactory.prototype.open=open;
+        request.addEventListener('success',event=>{
+          event.stopImmediatePropagation();
+          window.addEventListener('release-tutor-ink',()=>request.onsuccess?.call(request,event),{once:true});
+          document.documentElement.dataset.inkReadHeld='true';
+        },{once:true});
+      }
+      return request;
+    };
+  });
+}
+
+async function insertTestDrawing(page:Page) {
+  await scratch(page).click();
+  const box=(await paper(page).boundingBox())!;
+  await page.mouse.move(box.x+22,box.y+38);
+  await page.mouse.down();
+  await page.mouse.move(box.x+115,box.y+63,{steps:4});
+  await page.mouse.up();
+  await tool(page,'Insert drawing').click();
+  await expect(answerField(page).getByRole('button',{name:'Edit drawing',exact:true})).toBeVisible();
+}
+
+test('Restored references block both send shortcuts until their IndexedDB image is recovered',async({page})=>{
+  await open(page);
+  const answer=answerField(page);
+  await answer.fill('Keep this explanation.');
+  await answer.press('End');
+  await insertTestDrawing(page);
+  await holdInkOpen(page);
+  await page.reload();
+  await expect(page.getByText('Restoring the images in your answer…',{exact:true})).toBeVisible();
+  await expect(send(page)).toBeDisabled();
+  await answer.press('Control+Enter');
+  await send(page).locator('xpath=ancestor::form').dispatchEvent('submit');
+  await expect(conversation(page).getByLabel('Your saved answer')).toHaveCount(0);
+  await expect(answer).toContainText('Keep this explanation.');
+  await expect(page.locator('html')).toHaveAttribute('data-ink-read-held','true');
+  await page.evaluate(()=>window.dispatchEvent(new Event('release-tutor-ink')));
+  await expect(answer.getByRole('button',{name:'Edit drawing',exact:true})).toBeVisible();
+  await send(page).click();
+  const saved=conversation(page).getByLabel('Your saved answer');
+  await expect(saved).toContainText('Keep this explanation.');
+  await expect(saved.getByRole('button',{name:/^View drawing/})).toBeVisible();
+});
+
+test('A failed image read keeps all references until retry or deliberate removal',async({page})=>{
+  await open(page);
+  const answer=answerField(page);
+  await answer.fill('Keep these words.');
+  await answer.press('End');
+  await insertTestDrawing(page);
+  await page.evaluate(()=>{
+    const key=Object.keys(sessionStorage).find(key=>key.startsWith('lemma.demo-tutor:')&&key.endsWith(':question'))!;
+    sessionStorage.setItem(key,sessionStorage.getItem(key)+'[[lemma-image:98765432-0123-4123-8123-123456789abc]]');
+  });
+  await page.addInitScript(()=>{
+    const open=IDBFactory.prototype.open;
+    IDBFactory.prototype.open=function(name,version){
+      if(name==='lemma-tutor-ink'){
+        IDBFactory.prototype.open=open;
+        throw new DOMException('Injected read failure','SecurityError');
+      }
+      return open.call(this,name,version);
+    };
+  });
+  await page.reload();
+  await expect(page.getByRole('alert').filter({hasText:'The saved images could not be opened.'})).toBeVisible();
+  await expect(answer.getByRole('button',{name:'Remove image unavailable',exact:true})).toHaveCount(2);
+  await expect(send(page)).toBeDisabled();
+  await answer.press('Control+Enter');
+  await expect(conversation(page).getByLabel('Your saved answer')).toHaveCount(0);
+  await page.getByRole('button',{name:'Retry restoring images',exact:true}).click();
+  await expect(answer.getByRole('button',{name:'Edit drawing',exact:true})).toBeVisible();
+  await expect(send(page)).toBeDisabled();
+  await answer.getByRole('button',{name:'Remove image unavailable',exact:true}).click();
+  await expect(answer).toContainText('Keep these words.');
+  await expect(answer.getByRole('button',{name:'Edit drawing',exact:true})).toBeVisible();
+  await send(page).click();
+  const saved=conversation(page).getByLabel('Your saved answer');
+  await expect(saved).toContainText('Keep these words.');
+  await expect(saved.getByRole('button',{name:/^View drawing/})).toHaveCount(1);
+});
+
+test('After IndexedDB fails the learner can explicitly continue with text',async({page})=>{
+  await page.addInitScript(()=>{
+    const open=IDBFactory.prototype.open;
+    IDBFactory.prototype.open=function(name,version){
+      if(name==='lemma-tutor-ink')throw new DOMException('Injected read failure','SecurityError');
+      return open.call(this,name,version);
+    };
+  });
+  await open(page);
+  await answerField(page).fill('My text answer.');
+  await expect(send(page)).toBeDisabled();
+  await page.getByRole('button',{name:'Continue with text',exact:true}).click();
+  await send(page).click();
+  await expect(conversation(page).getByLabel('Your saved answer')).toHaveText('My text answer.');
+});
 
 test('One finger draws and a three-finger swipe scrolls without leaving ink',async({page,context})=>{
   await open(page);
@@ -175,6 +283,7 @@ test('Drawings are inserted inline, reopen for editing and send in reference ord
 
 test('Legacy canvas and photo drafts reopen as inline references',async({page})=>{
   await open(page);
+  await answerField(page).fill('My earlier explanation.');
   await scratch(page).click();
   const box=(await paper(page).boundingBox())!;
   await page.mouse.move(box.x+22,box.y+38);
@@ -201,8 +310,15 @@ test('Legacy canvas and photo drafts reopen as inline references',async({page})=
       tx.oncomplete=()=>{db.close();resolve(changed);};
     };
   }))).toBe(true);
+  await holdInkOpen(page);
   await page.reload();
   const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
+  await expect(answer).toHaveText('My earlier explanation.');
+  await expect(send(page)).toBeDisabled();
+  await answer.press('Control+Enter');
+  await expect(conversation(page).getByLabel('Your saved answer')).toHaveCount(0);
+  await expect(page.locator('html')).toHaveAttribute('data-ink-read-held','true');
+  await page.evaluate(()=>window.dispatchEvent(new Event('release-tutor-ink')));
   await expect(answer.locator('[data-image-id]')).toHaveCount(2);
   await expect(answer.getByRole('button',{name:'View photo',exact:true})).toBeVisible();
   await answer.getByRole('button',{name:'Edit drawing',exact:true}).click();

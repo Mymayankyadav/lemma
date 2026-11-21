@@ -1,6 +1,9 @@
 import type {PadStrokes} from '../../ui/v7/ink/ink';
-import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
-import {getMode} from '../mode';
+import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
+import {TUTOR_ATTACHMENT_COUNT,unresolvedTutorImageIds,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
+import {authGeneration,onAccountChange} from '../authBoundary';
+import {getDemoProfile,getMode,type DemoProfile} from '../mode';
+import {subscribeTutorLocalCleanup,tutorLocalScopeActive,tutorOwnerDeleted,tutorStorageOwner} from './local-storage';
 
 export type InkDraft={
   drawingId?:string;strokes:PadStrokes;width:number;accent:boolean;queuedText?:string;
@@ -12,6 +15,25 @@ export type InkDraft={
   photos:TutorImageDraft[];
 };
 export const emptyInk:InkDraft={strokes:[],photos:[],width:3,accent:false};
+export type InkRecovery={draft:InkDraft;status:'loading'|'failed'|'ready';textOnly?:true};
+export type TutorInkScope=({ownerId:string;generation:number}|{profile:DemoProfile})&{pathId:string;checkpointId:string};
+
+export const inkIssueText={
+  loading:'Restoring the images in your answer…',
+  failed:'The saved images could not be opened.',
+  missing:'An inserted image could not be found. Remove the unavailable image or try restoring it again.',
+  unavailable:'Images are unavailable here. Remove the image references to send this answer.',
+  limit:'An answer can have up to three images.',
+};
+
+export function tutorInkIssue(text:string,ink?:InkRecovery):keyof typeof inkIssueText|undefined {
+  const ids=referencedImageIds(text);
+  if(!ink)return ids.length?'unavailable':undefined;
+  if(ink.status!=='ready')return !ink.textOnly||ids.length?ink.status:undefined;
+  if(!ids.length)return;
+  if(ids.length>TUTOR_ATTACHMENT_COUNT)return 'limit';
+  if(unresolvedTutorImageIds(text,ink.draft.photos.filter(image=>image.blob instanceof Blob&&image.blob.size>0)).length)return 'missing';
+}
 
 export function finishStagedDrawing(draft:InkDraft,id:string):InkDraft {
   const staged=draft.stagedDrawing;
@@ -46,28 +68,104 @@ export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>)
   return {...current,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
 }
 
-async function persist<T>(mode:IDBTransactionMode,operation:(store:IDBObjectStore)=>IDBRequest<T>):Promise<T> {
-  const db=await new Promise<IDBDatabase>((resolve,reject)=>{
-    const request=indexedDB.open('lemma-tutor-ink',1);
-    request.onupgradeneeded=()=>{request.result.createObjectStore('drafts');};
-    request.onsuccess=()=>resolve(request.result);
-    request.onerror=()=>reject(request.error);
+const DRAFTS='drafts',DELETED_OWNERS='deleted-owners';
+const accountChanged=()=>new Error('The account changed. Reopen the tutor.');
+const storageUnavailable=()=>new Error('Tutor image storage is unavailable.');
+
+export function assertTutorInkScope(scope:TutorInkScope):void {
+  if('ownerId' in scope ? !tutorLocalScopeActive(scope) : getMode()!=='demo'||getDemoProfile()!==scope.profile)throw accountChanged();
+}
+
+function openInkDb():Promise<IDBDatabase> {
+  return new Promise((resolve,reject)=>{
+    const request=indexedDB.open('lemma-tutor-ink',2);
+    let blocked=false;
+    request.onupgradeneeded=()=>{
+      const db=request.result;
+      if(!db.objectStoreNames.contains(DRAFTS))db.createObjectStore(DRAFTS);
+      if(!db.objectStoreNames.contains(DELETED_OWNERS))db.createObjectStore(DELETED_OWNERS);
+    };
+    request.onblocked=()=>{blocked=true;reject(storageUnavailable());};
+    request.onsuccess=()=>{
+      const db=request.result;
+      db.onversionchange=()=>db.close();
+      if(blocked)db.close();
+      else resolve(db);
+    };
+    request.onerror=()=>reject(request.error??storageUnavailable());
   });
+}
+
+async function persist<T>(scope:TutorInkScope,mode:IDBTransactionMode,operation:(store:IDBObjectStore,key:string)=>IDBRequest<T>):Promise<T> {
+  assertTutorInkScope(scope);
+  const live='ownerId' in scope;
+  const key=(live?'lemma.tutor.draft:':'lemma.demo-tutor:')+JSON.stringify([live?scope.ownerId:scope.profile,scope.pathId,scope.checkpointId])+':ink';
+  const db=await openInkDb();
   try {
+    assertTutorInkScope(scope);
     return await new Promise<T>((resolve,reject)=>{
-      const tx=db.transaction('drafts',mode),request=operation(tx.objectStore('drafts'));
-      tx.oncomplete=()=>resolve(request.result);
-      tx.onabort=()=>reject(tx.error);
+      const tx=db.transaction(live?[DRAFTS,DELETED_OWNERS]:DRAFTS,mode);
+      let result:T,failure:unknown;
+      function guard(step:()=>void) {
+        try {assertTutorInkScope(scope);step();} catch(error) {
+          failure=error;
+          try {tx.abort();} catch {/* Completion still checks the account before returning. */}
+        }
+      }
+      const account=live?onAccountChange(()=>guard(()=>{})):undefined;
+      const cleanup=live?subscribeTutorLocalCleanup(()=>guard(()=>{})):undefined;
+      const unsubscribe=()=>{account?.();cleanup?.();};
+      tx.onabort=()=>{unsubscribe();reject(failure??tx.error??storageUnavailable());};
+      tx.oncomplete=()=>{
+        unsubscribe();
+        try {assertTutorInkScope(scope);if(failure)throw failure;resolve(result);} catch(error) {reject(error);}
+      };
+      function access() {
+        const request=operation(tx.objectStore(DRAFTS),key);
+        request.onsuccess=()=>guard(()=>{result=request.result;});
+      }
+      // The owner marker and draft share one transaction with deletion, including across tabs.
+      guard(()=>{
+        if(!live){access();return;}
+        const marker=tx.objectStore(DELETED_OWNERS).get(scope.ownerId);
+        marker.onsuccess=()=>guard(()=>{if(marker.result)throw accountChanged();access();});
+      });
     });
   } finally {
     db.close();
   }
 }
-export async function readInkDraft(key:string):Promise<InkDraft> {
-  return (await persist('readonly',store=>store.get(key))) ?? emptyInk;
+
+export async function removeDeletedOwnerInk(ownerId:string):Promise<void> {
+  if(!tutorOwnerDeleted(ownerId))throw accountChanged();
+  if(typeof indexedDB==='undefined')return;
+  const db=await openInkDb();
+  try {
+    await new Promise<void>((resolve,reject)=>{
+      const tx=db.transaction([DRAFTS,DELETED_OWNERS],'readwrite'),store=tx.objectStore(DRAFTS);
+      tx.oncomplete=()=>resolve();
+      tx.onabort=()=>reject(tx.error??storageUnavailable());
+      tx.objectStore(DELETED_OWNERS).put(true,ownerId);
+      const keys=store.openKeyCursor();
+      keys.onsuccess=()=>{
+        const cursor=keys.result;
+        if(!cursor)return;
+        const key=cursor.primaryKey;
+        if(typeof key==='string'&&key.endsWith(':ink')&&key.startsWith('lemma.tutor.draft:')&&tutorStorageOwner(key)===ownerId)store.delete(key);
+        cursor.continue();
+      };
+    });
+  } finally {db.close();}
 }
-export function writeInkDraft(key:string,draft:InkDraft) {
-  return persist('readwrite',store=>store.put(draft,key));
+
+export async function readInkDraft(scope:TutorInkScope):Promise<InkDraft> {
+  const draft:InkDraft|undefined=await persist({...scope},'readonly',(store,key)=>store.get(key));
+  if(draft&&(!Array.isArray(draft.strokes)||!Array.isArray(draft.photos)||draft.photos.some(image=>typeof image?.id!=='string')))
+    throw storageUnavailable();
+  return draft??emptyInk;
+}
+export function writeInkDraft(scope:TutorInkScope,draft:InkDraft) {
+  return persist({...scope},'readwrite',(store,key)=>store.put(draft,key));
 }
 export function imageData(blob:Blob) {
   return new Promise<string>((resolve,reject)=>{
@@ -96,9 +194,14 @@ export async function uploadTutorImage(owner:string,file:TutorImageDraft,assertC
 }
 
 export async function readTutorImage(owner:string,attachment:TutorAttachment) {
-  if(attachment.localData) return attachment.localData;
+  if(getMode()==='demo'&&attachment.localData)return attachment.localData;
+  const scope={ownerId:owner,generation:authGeneration()};
+  const assertCurrent=()=>{if(!tutorLocalScopeActive(scope))throw accountChanged();};
+  assertCurrent();
   const {liveClient}=await import('../live/client');
+  assertCurrent();
   const {data,error}=await liveClient().storage.from('tutor-ink').download(owner+'/'+attachment.id);
+  assertCurrent();
   if(error||!data)throw new Error('Could not open the image.');
   return URL.createObjectURL(data);
 }

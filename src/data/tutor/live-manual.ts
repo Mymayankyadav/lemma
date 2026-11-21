@@ -1,18 +1,23 @@
 import {liveClient} from '../live/client'
 import {supabaseUrl} from '../env'
 import {tutorConnectorGrantHash} from '../../../supabase/functions/_shared/tutor-connector'
+import {unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {tutorLocalScopeActive,writeTutorLocal} from './local-storage'
 import type {TutorComposerDraft,TutorContextSelection} from './turn-model'
 import type {ConnectorDelivery,ManualTutor,TutorThreadView} from './manual-api'
 
 type Scope={ownerId:string;generation:number;pathId:string;checkpointId:string;readOnly?:boolean}
-type Command={operation:string;operationId:string;connectorOperationId?:string;[key:string]:unknown}
+type Command={operation:string;operationId:string;connectorOperationId?:string;attachments?:readonly TutorAttachment[];[key:string]:unknown}
 type RpcResult={status:string;operationId:string;grantId?:string;turnId?:string;version?:number;expiresAt?:string}
 type ConnectorReceipt=Pick<ConnectorDelivery,'grantId'|'expiresAt'>
 type ConnectorIntent={operationId:string;version:number;receipt?:ConnectorReceipt}|{stopped:true}
 const connectorLocks=new Map<string,Promise<unknown>>()
 class TutorRpcError extends Error {
  constructor(readonly code:string,message:string){super(message)}
+}
+
+function hasUnresolvedImages(command:Command):boolean {
+ return command.operation==='start'&&typeof command.question==='string'&&unresolvedTutorImageIds(command.question,command.attachments).length>0
 }
 
 export function tutorScopeActive(scope:Pick<Scope,'ownerId'|'generation'>) {
@@ -109,6 +114,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
  }
  async function dispatch(command:Command,persist=false):Promise<RpcResult>{
   writable()
+  if(hasUnresolvedImages(command))throw new Error('An inserted image is unavailable. Your answer was kept.')
   if(persist){
    // One immutable entry per operation. Another tab cannot replace this request.
    const key=prefix+command.operationId, serialized=JSON.stringify(command)
@@ -142,6 +148,10 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   if(!result||result.operationId!==command.operationId||typeof result.status!=='string')throw new Error('Unconfirmed tutor response.')
   if(['submitted','completed','already-completed','proposed','turn-pending'].includes(result.status))finishPending(command,result)
   return result
+ }
+ function resolvePending(command:Command):Promise<RpcResult>{
+  // Older clients could save an unresolved reference. Check its receipt without replaying it.
+  return scope.readOnly||hasUnresolvedImages(command)?recover(command):dispatch(command,true)
  }
  function write(operation:string,turnId:string,version:number,patch:Record<string,unknown>={}):Command {
   return {operation,operationId:crypto.randomUUID(),turnId,expectedVersion:version,...patch}
@@ -221,7 +231,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(reconcile)await withConnectorLock(async()=>{
     for(const operation of pending()){
      try {
-      const {status,turnId}=await (scope.readOnly?recover(operation):dispatch(operation,true))
+      const {status,turnId}=await resolvePending(operation)
       if(status==='unconfirmed')continue
       reconciled.push({operation:operation.operation,status,text:String(operation.question??operation.body??operation.front??''),
        turnId:operation.connectorOperationId?turnId:typeof operation.turnId==='string'?operation.turnId:undefined,
@@ -301,7 +311,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   async retry(operationId){return withConnectorLock(async()=>{
    const command=pending().find(c=>c.operationId===operationId)
    if(!command)return 'resolved'
-   return (await (scope.readOnly?recover(command):dispatch(command,true))).status
+   return (await resolvePending(command)).status
   })},
   async issueGrant(turnId,version){
    writable()

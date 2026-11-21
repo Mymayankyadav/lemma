@@ -352,7 +352,7 @@ test('completes a repeated name using the spelling already in the draft', async 
 const localImageId = '12345678-0123-4123-8123-123456789abc';
 const localImage = {id:localImageId, kind:'drawing' as const, mimeType:'image/png' as const, blob:new Blob(['image'])};
 const inkFixture = (draft: Partial<TutorInkState['draft']> = {}): TutorInkState => ({
-  ready:true,error:'',update:vi.fn(async()=>{}),
+  ready:true,status:'ready',error:'',snapshot:vi.fn(),retry:vi.fn(),continueWithText:vi.fn(),update:vi.fn(async()=>{}),
   draft:{strokes:[],photos:[localImage],width:3,accent:false,inlineImages:true,...draft},
 });
 const richField = () => host.querySelector<HTMLElement>('.tutor-answer-editor')!;

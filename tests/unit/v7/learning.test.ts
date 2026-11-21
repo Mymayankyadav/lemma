@@ -40,6 +40,9 @@ describe('v7 Paths hub (PLAN §6.8)',()=>{
  it('says where the path stands and colours the schedule chip',()=>{
   expect(nowLine(rows[0])).toBe('Compactness · step 3 of 4');
   expect(nowLine(path({total:0}))).toBe('No plan yet');
+  expect(nowLine(path({total:4,done:0,current:null}))).toBe('No current checkpoint');
+  expect(nowLine(path({total:4,done:2,current:null}))).toBe('No current checkpoint');
+  expect(nowLine(path({total:4,done:4,current:null}))).toBe('Plan complete');
   expect(scheduleTone('4 days behind')).toEqual({text:'4 days behind',tone:'warning'});
   expect(scheduleTone('On track')?.tone).toBe('success');
   expect(scheduleTone(null)).toBeNull();

@@ -9,6 +9,7 @@ The complete galleries contain every captured frame, beyond the selected compari
 | [Original application](before/gallery.md) | Reconstructed baseline `24c8a225`, including menus, forms and scroll positions. |
 | [Revised application](after/gallery.md) | Complete final catalogue, including retained features, inline drawings and the opt-in symbol recognition beta. |
 | [Responsive and theme checks](responsive/gallery.md) | Small phone, enlarged text, short landscape, tablet and desktop; Day and Night themes. |
+| [Implementation review corrections](review/README.md) | Calendar Day dues, Tutor draft recovery and the scheduled Tutor explanation. |
 | [Feature retention](../../FEATURE-RETENTION.md) | Previous features, current entry points and regression coverage. |
 | [Validation](../../VALIDATION.md) | Test results, model measurements and qualification limits. |
 | [Revision checklist](../../REVISION-CHECKLIST.md) | Implementation and remaining acceptance items. |

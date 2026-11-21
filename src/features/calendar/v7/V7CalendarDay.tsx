@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {useCallback,useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ViewMenu} from './ViewMenu';
@@ -93,6 +93,7 @@ export default function V7CalendarDay(){
  // B3: one shared overdue count — tasks, deadlines and practice topics together, the same number Today and Tasks show.
  const overdueCount=useOverdueSummary(zone,reload).total;
  const dueToday=dueForDay(date,date,zone,dues);
+ const dueRows=dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>);
  function go(key:'view'|'date',value:string){
   const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set(key,value);setParams(next);
  }
@@ -218,7 +219,7 @@ export default function V7CalendarDay(){
      data-outside={day.slice(0,7)!==date.slice(0,7)||undefined} aria-label={formatShortDate(day,{zone})} onClick={()=>go('date',day)}>{Number(day.slice(8))}</button>)}
    </div>
    <h3 className="v7-subhead">{formatShortDate(date,{zone})}</h3>
-   {phase==='loading'?<p role="status" className="v7-meta">Loading due items…</p>:dueToday.length?<ul className="v7-mini-dues">{dueToday.map(item=><DueRow key={item.key} item={item} zone={zone} projects={projects}/>)}</ul>:<p className="v7-meta">Nothing due on this day.</p>}
+   {phase==='loading'?<p role="status" className="v7-meta">Loading due items…</p>:dueToday.length?<ul className="v7-mini-dues">{dueRows}</ul>:<p className="v7-meta">Nothing due on this day.</p>}
    {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue · Triage</StatusBadge>}
   </aside>}
   {view==='day'&&!collapsed&&<nav className="v7-cal-strip" aria-label="Week">
@@ -231,6 +232,7 @@ export default function V7CalendarDay(){
   </nav>}
   {(view==='day'||view==='week'||view==='agenda'&&!desktop&&overdueCount>0||planOpen)&&<div className="v7-cal-grid-actions" data-view={view}>
    {phase==='ready'&&overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue</StatusBadge>}
+   {phase==='ready'&&view==='day'&&!desktop&&dueToday.length>0&&<DayDueDisclosure key={date} count={dueToday.length}>{dueRows}</DayDueDisclosure>}
    {view==='day'&&<Button small variant="ghost" aria-label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></Button>}
    {((view==='day'||view==='week')&&date>=today||planOpen)&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen}
     suggestedTimes={rankedSlots.length>0&&<Disclosure label="Suggested study times"><ul className="v7-cal-ranked-slots" aria-label="Ranked study times">
@@ -276,6 +278,16 @@ export default function V7CalendarDay(){
    onChange={async()=>{setEditingEntry(null);setReload(value=>value+1);notify('Session updated',{tone:'success'});}}/>}
   <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} startingMinutes={blockMinutes} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
  </main>;
+}
+
+function DayDueDisclosure({count,children}:{count:number;children:ReactNode}){
+ const [open,setOpen]=useState(false);
+ return <>
+  <StatusBadge tone="info" label={'View '+count+' due '+(count===1?'item':'items')} onClick={()=>setOpen(true)}>{count} due</StatusBadge>
+  <Sheet open={open} onClose={()=>setOpen(false)} title="Deadlines and practice">
+   {open&&<ul className="v7-ag-list v7-cal-day-dues">{children}</ul>}
+  </Sheet>
+ </>;
 }
 
 /** Month's day list: the picked day's items as Agenda-style rows with an Open day button. */

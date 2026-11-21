@@ -1,4 +1,4 @@
-import {IMAGE_ONLY_ANSWER,type TutorAttachment} from './attachment-types'
+import {IMAGE_ONLY_ANSWER,unresolvedTutorImageIds,type TutorAttachment} from './attachment-types'
 import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
 
 /**
@@ -81,6 +81,7 @@ type SubmitResult =
   | { kind: 'submitted'; head: TutorThreadHead; turn: TutorPendingTurn }
   | { kind: 'turn-pending'; turnId: string }
   | { kind: 'empty-question' }
+  | { kind: 'missing-images' }
   | { kind: 'invalid-local-excerpt' }
 
 export function submitTutorTurn(
@@ -88,6 +89,7 @@ export function submitTutorTurn(
 ): SubmitResult {
   if (head.pendingTurnId !== null) return { kind: 'turn-pending', turnId: head.pendingTurnId }
   if (!draft.question.trim() && !draft.attachments?.length) return { kind: 'empty-question' }
+  if (unresolvedTutorImageIds(draft.question,draft.attachments).length) return {kind:'missing-images'}
 
   const localExcerpt = draft.localExcerpt && freezeLocalTutorExcerpt(draft.localExcerpt)
   if (draft.localExcerpt && !localExcerpt) return { kind: 'invalid-local-excerpt' }

@@ -1,0 +1,61 @@
+{
+  "capturedAt": "2026-11-21T14:17:35.460Z",
+  "observations": [
+    {
+      "filename": "calendar-phone-deadline-trigger.jpg",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=v7Shell,v6Shell#/calendar?view=day&date=2026-11-23",
+      "sha256": "672152a0bd3d9b982546b987d3f61255b967fda6a4e167850813740ff6de7613"
+    },
+    {
+      "filename": "calendar-phone-deadline.jpg",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=v7Shell,v6Shell#/calendar?view=day&date=2026-11-23",
+      "sha256": "e4dcdc90aef558c8ca913c9c477acdf402644449c43371dac8af75f8a47831c2"
+    },
+    {
+      "filename": "calendar-small-practice.jpg",
+      "width": 320,
+      "height": 640,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=v7Shell,v6Shell#/calendar?view=day&date=2026-11-10",
+      "sha256": "54f3e246d9dba432d9824bd238b7dc966a70c9eb9a84ba76cc1077f0fd5389bb"
+    },
+    {
+      "filename": "calendar-desktop-deadline.jpg",
+      "width": 1280,
+      "height": 844,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=v7Shell,v6Shell#/calendar?view=day&date=2026-11-23",
+      "sha256": "f48b4ff0ffe859f0c86661cf53d1d9b510907c4c48fc520644377bef895fb1fd"
+    },
+    {
+      "filename": "tutor-image-recovery.jpg",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor",
+      "sha256": "0e7a713327d64c1bddcade9c244218fd235c5e376b2c70514c9e9c7b21bc70f6"
+    },
+    {
+      "filename": "today-scheduled-checkpoint.jpg",
+      "width": 390,
+      "height": 844,
+      "overflow": 0,
+      "entry": "/lemma/assets/index-Qg13XvKq.js",
+      "url": "http://127.0.0.1:4201/lemma/?demo=1&flags=-v7Ruler,-v7Qed,-v7Spread,-v7Scratch,-v7Paper,-v7DeskClock,-v7Week,v7Shell,v6Shell,todayNextStep,-atlasV3#/",
+      "sha256": "d3b35bb4f43a34d94d9e9aea1031ba174ab08f28d1b62c8cb997504f604d117f"
+    }
+  ],
+  "sourceBase": "08c050a432b9b1bc167a5ae55a70103aded14227",
+  "sourceChangesSha256": "ec7b3b3ee6874922a745707488a5462702b95ca69cd456f8a3e5b87837109142"
+}

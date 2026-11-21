@@ -50,7 +50,10 @@ export function dueBySlug(nodes:readonly DeckNode[]|undefined):Map<string,number
 }
 /** "Now: Compactness · step 3 of 4", or a plain status line when nothing is current. */
 export function nowLine(project:ProjectSummary):string{
- if(!project.current)return project.total>0?'Plan complete':'No plan yet';
+ if(!project.current){
+  if(project.total<=0)return 'No plan yet';
+  return project.done>=project.total?'Plan complete':'No current checkpoint';
+ }
  const step=currentStudyStep({currentStep:project.current.step,stepsTotal:project.current.stepsTotal});
  return project.current.title+(step.ordinal===null?'':' · step '+step.ordinal+' of '+step.total);
 }

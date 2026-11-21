@@ -60,6 +60,46 @@ test('closing Keys pauses a live symbol stroke when the picture scratchpad is di
   await expect(page.getByRole('button',{name:/^Matches /})).toHaveCount(0);
 });
 
+test('Keep drawing accepts consecutive symbols at a textarea caret mid-answer',async({page})=>{
+  const customOnly='/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch#';
+  await page.addInitScript(()=>Object.defineProperty(window,'Worker',{value:undefined,configurable:true}));
+  await page.goto(customOnly+'/settings?section=tutor');
+  await page.getByRole('switch',{name:'Draw single symbols',exact:true}).click();
+  await page.goto(customOnly+'/p/real-analysis/cp/CP4/tutor');
+  await page.getByRole('button',{name:'Write a question',exact:true}).click();
+  const answer=page.getByRole('textbox',{name:'Your answer',exact:true});
+  await answer.fill('A B');
+  await answer.press('Home');
+  await answer.press('ArrowRight');
+  await answer.press('ArrowRight');
+  await page.getByRole('button',{name:'Draw symbol',exact:true}).click();
+  const keep=page.getByRole('button',{name:'Keep drawing',exact:true});
+  await keep.click();
+  await expect(keep).toBeFocused();
+  const pad=page.getByRole('img',{name:'Draw one symbol',exact:true});
+  const draw=async()=>{
+    const box=(await pad.boundingBox())!;
+    const scale=Math.min(box.width/320,box.height/116);
+    const x=box.x+(box.width-320*scale)/2,y=box.y+(box.height-116*scale)/2;
+    await page.mouse.move(x+180*scale,y+20*scale);
+    await page.mouse.down();
+    await page.mouse.move(x+114*scale,y+50*scale,{steps:3});
+    await page.mouse.move(x+180*scale,y+80*scale,{steps:3});
+    await page.mouse.up();
+    await page.getByRole('button',{name:'Matches Less than',exact:true}).click();
+  };
+  await draw();
+  await expect(answer).toHaveValue('A <B');
+  await expect(answer).toBeFocused();
+  await expect(keep).toHaveAttribute('aria-pressed','true');
+  await expect(pad).toBeVisible();
+  await expect(pad.locator('polyline')).toHaveCount(0);
+  await draw();
+  await expect(answer).toHaveValue('A <<B');
+  await expect(answer).toHaveJSProperty('selectionStart',4);
+  await expect(keep).toHaveAttribute('aria-pressed','true');
+});
+
 test('searchable manual symbols work with the beta off and restore the exact typing caret',async({page})=>{
   const modelRequests:string[]=[];
   page.on('request',request=>{
