@@ -10,13 +10,14 @@ import {getStudyApi} from '../../data/study';
 import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
-import {Button,Sheet} from '../../ui/v7/components';
+import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {Dock} from '../../ui/v7/Dock';
 import OfflineBanner from '../OfflineBanner';
 import {EllMark} from '../../ui/v7/marks';
 import {SyncMark} from '../../ui/v7/SyncMark';
 import {useDevicePrefValue} from '../../platform/useDevicePref';
 import {useMinWidth} from './useMinWidth';
+import {useDetailBack} from './useDetailBack';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
 import {applyReduceEffects} from '../../ui/v7/effects';
@@ -282,7 +283,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
 export function DetailHeader({title,back,action,extraAction,compact}:{title:string;back?:string;action?:ReactNode;extraAction?:ReactNode;
  /** R2 · F11: shown beside the bar title once the page's large title has scrolled away (an emblem thumbnail, a progress ring). */
  compact?:ReactNode}){
- const navigate=useNavigate(),location=useLocation(),ref=useRef<HTMLElement>(null);
+ const goBack=useDetailBack(back),location=useLocation(),ref=useRef<HTMLElement>(null);
  // R1 · F18: the small bar title stays hidden while the page's own large title is on screen, so a title is never shown
  // twice; it appears once the large title scrolls under the bar. Pages without a visible H1 always show it.
  const [pageTitleVisible,setPageTitleVisible]=useState(false);
@@ -294,7 +295,7 @@ export function DetailHeader({title,back,action,extraAction,compact}:{title:stri
   observer.observe(heading);return ()=>observer.disconnect();
  },[title,location.pathname,location.search]);
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
-  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default'&&window.history.state?.idx>0)navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
+  <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
   <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}{extraAction}</nav>
  </header>;

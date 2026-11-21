@@ -18,7 +18,7 @@ export default function OfflineBanner(){
  },[queryClient]);
  if(!offline)return null;
  return <div role="status" aria-live="polite" className="v7-offline-notice mx-auto flex max-w-[656px] items-center justify-center gap-2 px-4 py-2">
-  <CloudOff size={17} aria-hidden="true"/>Offline · Changes sync when connected.
+  <CloudOff size={17} aria-hidden="true"/><span>You're offline. Answers and approvals are not saved until connected.</span>
   {isFlagOn('v7Shell')&&isFlagOn('padLocal')&&getMode()==='live'&&!window.location.hash.startsWith('#/pad')&&
    <OfflinePadLink/>}
  </div>;

@@ -15,7 +15,7 @@ test('each map tool receives its ordinary tap with and without the concept sheet
  for(const width of [320,390]){
   await page.setViewportSize({width,height:width===320?640:844});
   await page.goto(repair('/atlas?view=map'));
-  const legend=page.getByRole('button',{name:'Legend',exact:true}),recentre=page.getByRole('button',{name:'Recentre map'});
+  const layers=page.getByRole('button',{name:'Layers',exact:true}),recentre=page.getByRole('button',{name:'Recentre map'});
   for(const selected of [false,true]){
    if(selected){
     await page.getByRole('button',{name:'Search concepts'}).click();
@@ -23,24 +23,34 @@ test('each map tool receives its ordinary tap with and without the concept sheet
     const match=page.getByRole('list',{name:'Matching concepts'}).getByRole('button').first();
     await match.click();
    }
-   await legend.click();await expect(page.getByRole('list',{name:'Star states'})).toBeVisible();
-   await legend.click();await recentre.click();
-   for(const tool of [legend,recentre]){
+   await layers.click();const sheet=page.getByRole('dialog',{name:'Layers',exact:true});
+   await expect(sheet.getByRole('region',{name:'Key',exact:true})).toBeVisible();
+   await sheet.getByRole('button',{name:'Close',exact:true}).click();await recentre.click();
+   for(const tool of [layers,recentre]){
     expect(await tool.evaluate(el=>{const b=el.getBoundingClientRect();return el.contains(document.elementFromPoint(b.x+b.width/2,b.y+b.height/2));})).toBe(true);
    }
   }
  }
 });
-test('Atlas List replaces Themes and Bridges, survives reload, and Back returns to the previous view',async({page})=>{
+test('Atlas List and populated layers survive reload and Back returns to the previous view',async({page})=>{
+ await page.addInitScript(()=>localStorage.setItem('lemma.demo.atlas-v3',JSON.stringify({
+  atlas:{},kinds:{'concept-compactness':'theme'},links:{},
+ })));
  await page.goto(repair('/atlas?view=list'));
- for(const name of ['Themes','Bridges']){
-  await page.getByRole('button',{name,exact:true}).click();
-  await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
-  await page.getByRole('radio',{name:'List',exact:true}).click();
-  await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
-  await page.reload();await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
-  await page.goBack();await expect(page.getByRole('heading',{name,exact:true})).toBeVisible();
- }
+ const layers=page.getByRole('button',{name:'Layers',exact:true}),sheet=page.getByRole('dialog',{name:'Layers',exact:true});
+ await layers.click();
+ const themes=sheet.getByRole('button',{name:'Themes',exact:true});
+ await expect(themes).toBeVisible();
+ await expect(sheet.getByRole('button',{name:'Bridges',exact:true})).toHaveCount(0);
+ await themes.click();
+ const thematicMap=page.getByRole('region',{name:'Themes',exact:true});
+ await expect(thematicMap.getByRole('button',{name:'Compactness',exact:true})).toBeVisible();
+ await expect(layers).toBeVisible();
+ await page.reload();await expect(thematicMap).toBeVisible();
+ await page.getByRole('radio',{name:'List',exact:true}).click();
+ await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
+ await page.reload();await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
+ await page.goBack();await expect(thematicMap).toBeVisible();
 });
 test('day summary stays while Share has focus, until the learner chooses Done',async({page})=>{
  await page.clock.install({time:NOW});await page.goto(repair('/today/close?date=2026-11-08'));
@@ -87,14 +97,23 @@ for(const [theme,os] of [['graph','dark'],['graph-night','light']] as const) tes
  await info.attach('painted-focus-ratios',{body:JSON.stringify({theme,os,samples}),contentType:'application/json'});
 });
 
-test('Today saves seven weekday capacities in place and reopens them after refresh',async({page})=>{
- await page.goto(repair('/'));
+test('Planning saves seven weekday capacities and copies the previous week in week-start order',async({page})=>{
+ await page.clock.setFixedTime(NOW);
+ await page.addInitScript(()=>sessionStorage.setItem('lemma.demo.capacity-overrides',JSON.stringify({'2026-11-02':95})));
+ await page.goto(repair('/settings?section=planning'));
  await page.getByRole('button',{name:'Set weekday minutes'}).click();
  const sheet=page.getByRole('dialog',{name:'Weekday study minutes'});
- for(const day of ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'])
-  await sheet.getByLabel(day,{exact:true}).fill('45');
+ await expect(sheet.getByRole('slider').first()).toHaveAccessibleName('Monday');
+ await sheet.getByRole('button',{name:'Weekdays 1 h'}).click();
+ await sheet.getByRole('button',{name:'Weekends 2 h'}).click();
+ await sheet.getByRole('slider',{name:'Monday',exact:true}).press('ArrowLeft');
  await sheet.getByRole('button',{name:'Save availability'}).click();
- await expect(sheet).toHaveCount(0);await expect(page.getByText('Available today · 45 min')).toBeVisible();
- await page.reload();await expect(page.getByText('Available today · 45 min')).toBeVisible();
- await page.getByRole('button',{name:'Edit weekday minutes'}).click();await expect(sheet.getByLabel('Wednesday')).toHaveValue('45');
+ await expect(sheet).toHaveCount(0);await expect(page.getByText('Available today · 59 min')).toBeVisible();
+ await page.reload();await expect(page.getByText('Available today · 59 min')).toBeVisible();
+ await page.getByRole('button',{name:'Edit weekday minutes'}).click();
+ for(const [day,value] of [['Sunday','120'],['Monday','59'],['Tuesday','60'],['Wednesday','60'],['Thursday','60'],['Friday','60'],['Saturday','120']])
+  await expect(sheet.getByRole('slider',{name:day,exact:true})).toHaveValue(value);
+ await sheet.getByRole('button',{name:'Copy last week'}).click();
+ await expect(sheet.getByRole('slider',{name:'Monday',exact:true})).toHaveValue('95');
+ await expect(sheet.getByRole('slider',{name:'Tuesday',exact:true})).toHaveValue('60');
 });

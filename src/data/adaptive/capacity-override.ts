@@ -11,6 +11,18 @@ export function demoCapacityOverrides(): Record<string, number> {
   }
 }
 
+export async function readCapacityOverrides(from: string, to: string): Promise<Record<string, number>> {
+  if (getMode() === 'demo') {
+    return Object.fromEntries(Object.entries(demoCapacityOverrides()).filter(([day])=>day>=from&&day<=to));
+  }
+  const generation=authGeneration();
+  const {liveClient}=await import('../live/client');
+  const {data,error}=await liveClient().from('capacity_overrides').select('on_date,minutes').gte('on_date',from).lte('on_date',to);
+  if (generation!==authGeneration()) throw new Error('Your account changed.');
+  if (error) throw error;
+  return Object.fromEntries(data.map(row=>[row.on_date,row.minutes]));
+}
+
 export async function setDayCapacity(day: string, minutes: number) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !Number.isInteger(minutes) || minutes < 0 || minutes > 1440) {
     throw new Error('Choose a valid study duration.');

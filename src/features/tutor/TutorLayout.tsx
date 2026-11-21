@@ -8,6 +8,7 @@ import {useStudyUi} from '../../data/StudyUiRelease';
 import {reviewHref} from '../../data/review-target';
 import {announceFocusChange, focusClock, focusWord, useActiveFocus, useNow} from '../../app/v7/focus';
 import {useSubjectColours} from '../../app/v7/subjectColours';
+import {useDetailBack} from '../../app/v7/useDetailBack';
 import {getStudyApi} from '../../data/study';
 import {MathText} from '../../ui/MathText';
 import {Button, IconButton, Sheet} from '../../ui/v7/components';
@@ -29,6 +30,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
   const notify=useToast();
   const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
+  const goBack=useDetailBack(checkpoint);
   const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
   const timerState = focus.entry ? focusWord(focus.entry) : null;
@@ -57,7 +59,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   };
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
     <header className="tutor-header">
-      <Link to={checkpoint} className="v7-icon-button" aria-label="Back"><ChevronLeft aria-hidden="true"/></Link>
+      <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
       <div className="tutor-header-title"><strong>{detail.view.title}</strong>
         <small>{detail.view.code}{step.ordinal?' · step '+step.ordinal+' of '+step.total:''}</small></div>
       <span className="tutor-presence" role="status" data-presence={presence}>{presence}</span>
@@ -65,7 +67,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
         void navigator.clipboard.writeText(resumePrompt).then(()=>notify('Prompt copied')).catch(()=>notify('Could not copy the prompt.'));
       }}><Copy aria-hidden="true"/></IconButton>}
       {timerState&&<button type="button" className="tutor-header-clock" aria-label="Study timer" onClick={()=>setPanel('timer')}>{clock}</button>}
-      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog"><Ellipsis aria-hidden="true"/></IconButton>
+      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
     {!overview&&<div className="tutor-session-progress" aria-label="Session parts">
       {['Checks','Learn','Practice','Close'].map((part,index)=><span key={part} aria-label={part} data-reached={index<2||undefined}/>)}
@@ -92,6 +94,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
         <Button small onClick={() => setPanel('timer')}>Study timer</Button>
         {onContext && <Button small onClick={() => sessionAction(onContext)}>Context</Button>}
         {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Connection</Button>}
+        <Button small aria-haspopup="dialog" onClick={() => sessionAction(() => window.dispatchEvent(new CustomEvent('v7:search')))}>Search</Button>
         {onCloseSession && <Button small onClick={() => sessionAction(onCloseSession)}>Close session</Button>}
       </div>
     </Sheet>

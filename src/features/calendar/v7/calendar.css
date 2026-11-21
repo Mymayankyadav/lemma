@@ -226,7 +226,7 @@
  /* N161: the view menu in the header on a phone; the segmented control from 700 px. */
  :where(html[data-v7]) .v7-hub-control {margin-inline-start:auto;flex:none;}
  :where(html[data-v7]) .v7-cal-viewmenu {position:relative;}
- :where(html[data-v7]) .v7-cal-viewmenu-button {display:inline-flex;align-items:center;gap:var(--v7-space-1);min-height:var(--v7-touch);padding:0 var(--v7-space-3);
+ :where(html[data-v7]) .v7-cal-viewmenu-button {display:inline-flex;align-items:center;gap:var(--v7-space-1);min-height:var(--v7-touch);padding:0 var(--v7-space-2);
   border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);
   color:var(--v7-role-text-primary);font:600 var(--v7-type-supporting)/1 var(--v7-sans);}
  :where(html[data-v7]) .v7-cal-viewmenu-button svg {width:16px;height:16px;}
@@ -262,11 +262,13 @@
  border-radius:var(--v7-round);min-height:44px;padding-inline:var(--v7-space-2);
  font-size:var(--v7-type-supporting);white-space:nowrap;
 }
+:where(html[data-v7]) .v7-cal .v7-hub-row {flex-wrap:wrap;column-gap:var(--v7-space-1);}
+:where(html[data-v7]) .v7-cal .v7-page-actions {margin-inline-start:auto;}
 :where(html[data-v7]) .v7-cal .v7-hub-extra {padding-block:0;}
 :where(html[data-v7]) .v7-cal :is(.v7-cal-strip,.v7-cal-grid-actions) {margin-block:0;}
 :where(html[data-v7]) .v7-cal-strip {min-height:56px;}
 :where(html[data-v7]) .v7-cal-grid-actions {
- display:flex;align-items:center;gap:var(--v7-space-1);min-height:44px;
+ display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-1);min-height:44px;
 }
 :where(html[data-v7]) .v7-cal-day-stack {display:grid;min-width:0;position:relative;}
 :where(html[data-v7]) .v7-cal-empty-state {pointer-events:none;}
@@ -280,6 +282,7 @@
 :where(html[data-v7]) .v7-cal-block[data-kind="suggested"] button {
  display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);width:100%;
 }
+:where(html[data-v7]) .v7-cal-block[data-kind="suggested"] button small {flex:none;}
 :where(html[data-v7]) .v7-wk-block[data-kind="suggested"] {border:1px dashed var(--v7-role-selection-fg);color:var(--v7-role-selection-fg);}
 
 :where(html[data-v7]) .v7-cal-grid-actions[data-view="week"] {min-height:0;padding-block:0;margin-bottom:0;}

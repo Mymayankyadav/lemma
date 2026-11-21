@@ -92,10 +92,12 @@ export const redesignShots: Shot[] = [
  {name:"atlas-map",hash:"/atlas",prepare:async page=>{await page.locator(".v7-atlas-sky[data-drawn-extent]").waitFor();}},
  {name:"atlas-list",hash:"/atlas?view=list"},
  {name:"atlas-peek",hash:"/atlas",prepare:async page=>{
+  await page.locator(".v7-atlas-sky[data-drawn-extent]").waitFor();
   await page.getByRole("button",{name:"Search concepts"}).click();
   const field=page.getByRole("searchbox",{name:"Find a concept"});
   await field.fill("compact");
-  await page.getByRole("list",{name:"Matching concepts"}).getByRole("button").first().click();
+  await page.getByRole("list",{name:"Matching concepts"}).getByRole("button",{name:/^Compactness\s+Analysis$/}).click();
+  await page.getByRole("region",{name:"Compactness",exact:true}).waitFor();
  }},
  {name:"path",hash:"/p/real-analysis"},
  {name:"path-tutor",hash:"/p/real-analysis/tutor"},

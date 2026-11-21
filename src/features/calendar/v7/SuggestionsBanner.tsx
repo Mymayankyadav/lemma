@@ -61,7 +61,7 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
  }
  return <>
   {/* KC15/CD1: an info-tone banner in one 44 px row — a suggestion is not a success. "Adjust" stays an underlined link. */}
-  {inline?<>{count>0?<Button small variant="secondary" loading={busy} onClick={()=>{void addAll();}}>{count} good times · Add all</Button>
+  {inline?<>{count>0?<Button small variant="secondary" aria-label={'Add all '+count+' suggested blocks'} loading={busy} onClick={()=>{void addAll();}}>Add all</Button>
     :<Button small variant="ghost" onClick={()=>setAdjusting(true)}>Plan day</Button>}</>:count>0&&<div className="v7-cal-suggest v7-tone-info" role="region" aria-label="Suggested blocks">
    <StatusIcon tone="info" size={16}/>
    <p>{suggestionLabel(count)}{date===dayKey(new Date(),zone)?'':' for '+formatShortDate(date,{zone})} · <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></p>

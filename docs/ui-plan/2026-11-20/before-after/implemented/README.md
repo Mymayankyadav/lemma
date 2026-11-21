@@ -19,9 +19,10 @@ The N211 regression captures are grouped under [records](regressions-records.jpg
 
 | Measure | Captured | Plan target |
 |---|---:|---:|
-| Atlas map clear area | 92.6% | ≥ 92% |
+| Atlas map clear area | 92.5% | ≥ 92% |
 | Atlas map drawn extent | 60.4% | ≥ 60% |
 | Atlas list chrome | 122 px | ≤ 132 px |
+| Calendar hub chrome | 118 px | ≤ 132 px |
 | Today words | 47 | ≤ 60 |
 | Checkpoint words | 59 | ≤ 60 |
 | Calendar Month words | 59 | ≤ 60 |

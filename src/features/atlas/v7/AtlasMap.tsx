@@ -7,7 +7,7 @@ import {AtlasScene,MAX_ZOOM,MIN_ZOOM,type Camera,type Insets,type ScenePalette} 
 
 export interface AtlasMapHandle{recentre():void; zoomBy(factor:number):void; flyTo(index:number):void;flyToCluster(cluster:number):void}
 interface Props{
- focusCluster?:number|null;highlighted?:readonly number[]|null;
+ focusCluster?:number|null;focusSelected?:boolean;highlighted?:readonly number[]|null;
  model:AtlasModel; layout:LayoutResult; source:LayoutSource; selected:number|null; reduced:boolean; insets:Insets;
  onSelect:(index:number|null)=>void; onPan?:(panning:boolean)=>void; ref?:Ref<AtlasMapHandle>;
 }
@@ -25,7 +25,7 @@ function readPalette(element:Element,model:AtlasModel):ScenePalette{
 const ease=(t:number)=>1-Math.pow(1-t,3);
 
 /** The Atlas sky: canvas only, hidden from assistive technology (the List view is the accessible path). */
-export default function AtlasMap({model,layout,source,selected,reduced,insets,onSelect,onPan,ref,focusCluster=null,highlighted=null}:Props){
+export default function AtlasMap({model,layout,source,selected,reduced,insets,onSelect,onPan,ref,focusCluster=null,focusSelected=true,highlighted=null}:Props){
  const studyRepair=useStudyUi();
  const wrap=useRef<HTMLDivElement>(null),canvas=useRef<HTMLCanvasElement>(null),scene=useRef<AtlasScene|null>(null);
  const frame=useRef(0),animation=useRef<{from:Camera;to:Camera;start:number;duration:number}|null>(null);
@@ -63,13 +63,15 @@ export default function AtlasMap({model,layout,source,selected,reduced,insets,on
   created.strongEdges=studyRepair;
   scene.current=created;created.setInsets(insets);created.select(selected);created.labelCluster=focusCluster;created.highlighted=highlighted?new Set(highlighted):null;
   const measure=()=>{const rect=box.getBoundingClientRect();created.setSize(rect.width,rect.height,Math.min(2,window.devicePixelRatio||1));};
-  measure();created.camera=selected!==null?created.focusCamera(selected,1.4):focusCluster!==null?created.clusterCamera(focusCluster):created.fitCamera();paint();
+  measure();
+  created.camera=focusSelected&&selected!==null?created.focusCamera(selected,1.4):focusCluster!==null?created.clusterCamera(focusCluster):created.fitCamera();
+  paint();
   const resize=new ResizeObserver(()=>{measure();paint();});resize.observe(box);
   const theme=new MutationObserver(()=>{created.setPalette(readPalette(box,model));paint();});
   theme.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','data-contrast']});
   return ()=>{resize.disconnect();theme.disconnect();cancelAnimationFrame(frame.current);frame.current=0;scene.current=null;};
   // Selection and insets are applied by their own effects below.
- },[model,layout,focusCluster,studyRepair]);
+ },[model,layout,focusCluster,focusSelected,studyRepair]);
  useEffect(()=>{if(scene.current){scene.current.highlighted=highlighted?new Set(highlighted):null;paint();}},[highlighted]);
  useEffect(()=>{scene.current?.setInsets(insets);paint();},[insets.top,insets.right,insets.bottom,insets.left]);
  useEffect(()=>{scene.current?.select(selected);paint();},[selected]);

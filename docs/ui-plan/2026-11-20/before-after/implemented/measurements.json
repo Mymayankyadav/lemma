@@ -258,8 +258,8 @@
             "total": 118
           },
           "words": {
-            "view": 28,
-            "all": 38
+            "view": 25,
+            "all": 35
           },
           "offFonts": [],
           "offSizes": [],
@@ -280,8 +280,8 @@
             "total": 118
           },
           "words": {
-            "view": 18,
-            "all": 19
+            "view": 15,
+            "all": 16
           },
           "offFonts": [],
           "offSizes": [],
@@ -483,7 +483,7 @@
           "overlaps": [],
           "raw": [],
           "picture": {
-            "clear": 0.9262152777777778,
+            "clear": 0.9253472222222222,
             "extent": 0.6035621415901772
           },
           "detail": false
@@ -521,8 +521,8 @@
             "total": 66
           },
           "words": {
-            "view": 8,
-            "all": 8
+            "view": 12,
+            "all": 12
           },
           "offFonts": [],
           "offSizes": [],
@@ -530,8 +530,8 @@
           "overlaps": [],
           "raw": [],
           "picture": {
-            "clear": 0.7986111111111112,
-            "extent": 0.5737220216606498
+            "clear": 0.7560763888888888,
+            "extent": 0.5482238267148014
           },
           "detail": false
         }
@@ -744,8 +744,8 @@
             "total": 66
           },
           "words": {
-            "view": 62,
-            "all": 104
+            "view": 61,
+            "all": 109
           },
           "offFonts": [],
           "offSizes": [],
@@ -764,6 +764,28 @@
           "words": {
             "view": 22,
             "all": 32
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-agenda",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 59,
+            "all": 107
           },
           "offFonts": [],
           "offSizes": [],

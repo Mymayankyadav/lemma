@@ -47,9 +47,9 @@ test("searching comp lists 7 concepts; Compactness opens its sheet and Open chec
  await expect(sky(page)).toHaveAttribute("data-selected","concept-compactness");
  // The camera flies to the chosen star and stays within the zoom range.
  await expect(sky(page)).toHaveAttribute("data-zoom",/^(1\.[4-9]\d|[2-4]\.\d\d)$/);
- // The sheet peeks 180 px, above the floating tab bar.
+ // The peek stays within its phone budget, above the shared dock.
  const box=(await sheet.boundingBox())!,dock=(await page.getByRole("navigation",{name:"Main navigation"}).boundingBox())!;
- expect(box.height).toBeLessThanOrEqual(181);
+ expect(box.height).toBeLessThanOrEqual(150);
  expect(box.y+box.height).toBeLessThanOrEqual(dock.y+1);
  await sheet.getByRole("button",{name:"Show neighbours and actions"}).click();
  await expect(sheet.getByRole("heading",{name:"Needs · 4"})).toBeVisible();
@@ -62,7 +62,7 @@ test("switching between Map and List keeps the selection",async({page})=>{
  await page.goto(atlas("?id=concept-compactness"));
  await expect(page.getByRole("region",{name:"Compactness"})).toBeVisible();
  await page.getByRole("radio",{name:"List",exact:true}).click();
- const row=page.getByRole("region",{name:"Concept list"}).getByRole("button",{name:/^Compactness In progress/});
+ const row=page.getByRole("region",{name:"Concept list"}).getByRole("button",{name:/^In progress.*Compactness/});
  await expect(row).toHaveAttribute("aria-current","true");
  await expect(page.getByRole("region",{name:"Compactness"})).toBeVisible();
  await page.getByRole("radio",{name:"Map",exact:true}).click();
@@ -76,7 +76,12 @@ test("drag pans, the wheel and double tap zoom, Recentre frames the sky, and a t
  const canvas=sky(page).locator("canvas");
  await expect(sky(page)).toHaveAttribute("data-zoom","1.40");
  const box=(await canvas.boundingBox())!;
- await page.mouse.move(box.x+box.width-60,box.y+120);
+ const openSky={x:box.x+box.width*.64,y:box.y+box.height*.27};
+ await page.mouse.move(openSky.x,openSky.y);
+ await page.mouse.down();
+ await page.mouse.move(openSky.x+30,openSky.y+24,{steps:4});
+ await page.mouse.up();
+ await expect(page.getByRole('main',{name:'Atlas',exact:true})).toHaveAttribute('data-panning','true');
  await page.mouse.wheel(0,-400);
  await expect(sky(page)).not.toHaveAttribute("data-zoom","1.40");
  await page.getByRole("button",{name:"Recentre map"}).click();
@@ -100,8 +105,8 @@ test("reduced motion jumps instead of flying, and the legend explains every mark
  await search(page,"Heine");
  await page.getByRole("list",{name:"Matching concepts"}).getByRole("button").first().click();
  await expect(sky(page)).toHaveAttribute("data-zoom","1.40");
- await page.getByRole("button",{name:"Legend"}).click();
- const legend=page.getByRole("list",{name:"Star states"});
+ await page.getByRole("button",{name:"Layers",exact:true}).click();
+ const legend=page.getByRole("dialog",{name:"Layers",exact:true}).getByRole("region",{name:"Key",exact:true});
  for(const label of ["Demonstrated","In progress","Up next","Review due","Conjecture · not started","Needs (prerequisite)","Related"])
   await expect(legend.getByText(label,{exact:true})).toBeVisible();
 });
