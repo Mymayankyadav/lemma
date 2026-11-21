@@ -6,12 +6,12 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N217 Evaluate tutor-informed writing assistance
+## N218 Evaluate tutor-informed writing assistance
 
 Stage: Build · Status: open · Needs: N202 · Assigned: chat-204961#r7m4
 Done = Review and qualify the separate trial of tutor-informed suggestions and personal autocorrection. Keep its research, phone-trial package and review findings with the trial.
 Tests: Writing aid and editor regressions, Tutor MCP reply integration, and the physical Android trial.
-Scope: Tutor writing assistance, its optional reply metadata, tests, research and trial artifacts. See [N217](docs/current/N217.md).
+Scope: Tutor writing assistance, its optional reply metadata, tests, research and trial artifacts. See [N218](docs/current/N218.md).
 
 ## N201 Open the checkpoint tutor chat from the study path
 
