@@ -100,4 +100,5 @@ Checklists are in [10-roadmap.md](10-roadmap.md).
 | [12-scribe-dataset.md](12-scribe-dataset.md) | Scribe's data: math-only sources, selection, LaTeX normalization, tokenizer, task formats, feedback datasets, storage |
 | [13-scribe-rl-and-feedback.md](13-scribe-rl-and-feedback.md) | Reinforcement learning: problem definition, safe exploration, algorithm ladder, safe deployment, the Bayesian ignore update |
 | [14-scribe-free-compute.md](14-scribe-free-compute.md) | Training on free GPUs (Kaggle, Colab): budgets, week-one schedule, hyperparameters, session survival, export |
+| [15-tutor-signals.md](15-tutor-signals.md) | Signals to request from the tutor LLM, channels, safety rules, eleven ways to plug them into the decoder, crude gain estimates |
 | [REFERENCES.md](REFERENCES.md) | Sources |

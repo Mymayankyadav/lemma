@@ -36,5 +36,6 @@ Each row is a suggestion or request traced in the PR's documents and commits at 
 | 30 | Build basic language models in as parts of a larger architecture | This conversation | — | — | An expert mixture with fixed-share gating (11 §11.6) |
 | 31 | Use free compute only (Kaggle and similar) | This conversation | — | — | [14](14-scribe-free-compute.md): about 12–16 GPU-hours for the first Scribe |
 | 32 | Prune a 1.5B model down to a much smaller width | This conversation | — | — | A later comparison (14 §14.7) |
+| 33 | Use signals from the tutor LLM to narrow the search space and raise the probability of the right suggestion, with crude gain estimates | This conversation | — | — | [15](15-tutor-signals.md): checkpoint context pack, integration options I1–I11, crude estimates, replay on your history |
 
 **Not covered here:** the PR's other UI requests, including the Atlas rail, Calendar, Progress, Path, Review, scratchpad and inline drawings, and account-scoped Undo. They don't affect suggestion or recognition quality.

@@ -158,3 +158,11 @@
 - Google Colab FAQ. https://research.google.com/colaboratory/faq.html
 - Amazon SageMaker Studio Lab overview. https://docs.aws.amazon.com/sagemaker/latest/dg/studio-lab-overview.html
 - Free cloud GPUs in 2026 (includes Kaggle's quota). https://gpuperhour.com/blog/free-cloud-gpus-and-credits
+
+## Tutor signals and contextual biasing
+
+- Aleksic et al. (2015). Bringing contextual information to Google speech recognition. Interspeech.
+- Pundak et al. (2018). Deep context: end-to-end contextual speech recognition. https://arxiv.org/abs/1808.02480
+- Iyer & Ostendorf (1999). Modeling long distance dependence in language: topic mixtures versus dynamic cache models. IEEE Transactions on Speech and Audio Processing.
+- Bellegarda (2004). Statistical language model adaptation: review and perspectives. Speech Communication.
+- Campos et al. (2020). YAKE! Keyword extraction from single documents using multiple local features. Information Sciences.
