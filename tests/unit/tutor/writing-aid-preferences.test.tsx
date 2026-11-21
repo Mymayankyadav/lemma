@@ -8,7 +8,9 @@ import {
 } from '../../../src/features/tutor/writingAid/preferences';
 import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
 import {createWritingAidModel, recordWritingAidVocabulary, recordWritingAutoAcceptance} from '../../../src/features/tutor/writingAid/learning';
-import {loadWritingAidPersonalization, resetWritingAidPersonalization, saveWritingAidPersonalization} from '../../../src/features/tutor/writingAid/personalization';
+import {
+  loadWritingAidPersonalization, resetWritingAidPersonalization, saveWritingAidModel, setWritingAidPersonalization,
+} from '../../../src/features/tutor/writingAid/personalization';
 
 const modes = vi.hoisted(() => ({mode: 'live', profile: 'default'}));
 vi.mock('../../../src/data/mode', () => ({getMode: () => modes.mode, getDemoProfile: () => modes.profile}));
@@ -150,22 +152,50 @@ it('isolates learned vocabulary by owner, resets it, and deletes it with tutor d
   recordWritingAidVocabulary(model, 'homomorphism', 1000);
   recordWritingAutoAcceptance(model, 'teh-to-the');
   recordWritingAutoAcceptance(model, 'teh-to-the');
-  await act(async () => {expect(saveWritingAidPersonalization(originalScope, {enabled: true, model})).toBe(true);});
+  const {generation} = loadWritingAidPersonalization(originalScope);
+  await act(async () => {expect(saveWritingAidModel(originalScope, generation, model)).toBe(true);});
   expect(tutorStorageOwner(modelKey(owner))).toBe(owner);
   expect(localStorage.getItem(modelKey(owner))).toContain('homomorphism');
   await act(async () => publishAuth({id: 'different-writing-owner'}));
   const otherScope = prefs.scopeKey;
   expect(loadWritingAidPersonalization(otherScope).model.vocabulary.homomorphism).toBeUndefined();
   expect(loadWritingAidPersonalization(otherScope).model.autoTrust['teh-to-the']).toBeUndefined();
-  expect(saveWritingAidPersonalization(originalScope, {enabled: true, model})).toBe(false);
-  await act(async () => {expect(saveWritingAidPersonalization(otherScope, {enabled: false, model})).toBe(true);});
+  expect(saveWritingAidModel(originalScope, generation, model)).toBe(false);
+  await act(async () => {
+    expect(saveWritingAidModel(otherScope, loadWritingAidPersonalization(otherScope).generation, model)).toBe(true);
+    expect(setWritingAidPersonalization(false, otherScope)).toBe(true);
+  });
   await act(async () => {expect(resetWritingAidPersonalization(otherScope)).toBe(true);});
   expect(loadWritingAidPersonalization(otherScope).enabled).toBe(false);
-  expect(Object.keys(loadWritingAidPersonalization(otherScope).model.vocabulary)).toEqual([]);
+  expect(loadWritingAidPersonalization(otherScope).model).toEqual(createWritingAidModel());
   await act(async () => publishAuth({id: owner}));
   expect(loadWritingAidPersonalization(prefs.scopeKey).model.autoTrust['teh-to-the'].accepts).toBe(2);
   await act(async () => {expect(await removeDeletedOwnerTutorData(owner, authGeneration())).toBe(true);});
   expect(localStorage.getItem(modelKey(owner))).toBeNull();
   expect(localStorage.getItem(modelKey('different-writing-owner'))).not.toBeNull();
-  expect(saveWritingAidPersonalization(prefs.scopeKey, {enabled: true, model})).toBe(false);
+  expect(saveWritingAidModel(prefs.scopeKey, generation, model)).toBe(false);
+});
+
+it('rejects stale model saves across Forget and a batched pause and resume', async () => {
+  const scope = prefs.scopeKey;
+  const legacy = createWritingAidModel();
+  recordWritingAidVocabulary(legacy, 'homomorphism');
+  await act(async () => {
+    localStorage.setItem(modelKey(owner), JSON.stringify({version: 1, enabled: true, model: legacy}));
+    const before = loadWritingAidPersonalization(scope);
+    expect(before.model.vocabulary.homomorphism).toBeDefined();
+    expect(resetWritingAidPersonalization(scope)).toBe(true);
+    expect(saveWritingAidModel(scope, before.generation, before.model)).toBe(false);
+
+    const fresh = loadWritingAidPersonalization(scope);
+    expect(fresh.model.vocabulary).toEqual({});
+    recordWritingAidVocabulary(fresh.model, 'endomorphism');
+    expect(saveWritingAidModel(scope, fresh.generation, fresh.model)).toBe(true);
+    expect(setWritingAidPersonalization(false, scope)).toBe(true);
+    expect(setWritingAidPersonalization(true, scope)).toBe(true);
+    expect(saveWritingAidModel(scope, fresh.generation, legacy)).toBe(false);
+    const resumed = loadWritingAidPersonalization(scope);
+    expect(resumed.enabled).toBe(true);
+    expect(Object.keys(resumed.model.vocabulary)).toEqual(['endomorphism']);
+  });
 });

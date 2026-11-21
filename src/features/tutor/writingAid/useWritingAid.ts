@@ -1,12 +1,11 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {
   ALL_WRITING_AID_SURFACES, NO_WRITING_AID, canSuggestWritingAid, sameWritingAidRequest, writingAidProposalKey,
   type WritingAidProposal, type WritingAidRefreshSurface, type WritingAidRequest, type WritingAidSuggestions,
 } from './policy';
 import {recordWritingAidVocabulary, recordWritingAutoAcceptance, revokeWritingAutoTrust, updateWritingAidModel,
   writingAidFeatures, type WritingAidFeedback, type WritingAutoTrust} from './learning';
-import {loadWritingAidPersonalization, saveWritingAidPersonalization, useWritingAidPersonalization,
-  type WritingAidPersonalization} from './personalization';
+import {revokeStoredWritingAutoTrust, saveWritingAidModel, useWritingAidPersonalization} from './personalization';
 import type {WritingAidPool} from './engine';
 import {normalizeTutorWritingContext, tutorWritingContextFingerprint} from './tutorContext';
 import {writingAutoRuleIdForPair, type WritingAutoCorrection} from './autoCorrect';
@@ -22,16 +21,18 @@ interface Cycle {
   excluded: Exclusions;
   attempted: Record<WritingAidRefreshSurface, boolean>;
 }
+interface LearningScope {scopeKey: string; generation: string; enabled: boolean}
 interface Prediction {
   snapshot: WritingAidRequest;
   sequence: number;
   tutorHints: TutorHintsMode;
+  learningScope: LearningScope;
   suggestions: WritingAidSuggestions;
   pool: WritingAidPool;
 }
 interface Exposure {proposal: WritingAidProposal; key: string; seenAt: number}
-interface PendingAcceptance {proposal: WritingAidProposal; expected: string; scopeKey: string; timer: number; kept: boolean}
-interface PendingAutomatic {result: WritingAutoCorrection; scopeKey: string; timer: number; kept: boolean}
+interface PendingAcceptance {proposal: WritingAidProposal; expected: string; learningScope: LearningScope; timer?: number; kept: boolean}
+interface PendingAutomatic {result: WritingAutoCorrection; learningScope: LearningScope; timer: number; kept: boolean}
 interface TrackedCorrection {ruleId: string; start: number; text: string; expected?: string}
 
 export interface WritingAidView extends WritingAidSuggestions {
@@ -96,19 +97,19 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
   }), [cursor, anchor, mode, composing, readOnly, scopeKey, mountId, editorRevision, selectionRevision, modeRevision,
     words, replace, correction, ghost, normalizedContext]);
   const personalization = useWritingAidPersonalization();
-  const memory = useRef<{scopeKey: string; raw: string; state: WritingAidPersonalization}>(null!);
-  if (!memory.current || memory.current.scopeKey !== personalization.scopeKey || memory.current.raw !== personalization.raw) {
-    memory.current = {scopeKey: personalization.scopeKey, raw: personalization.raw,
-      state: loadWritingAidPersonalization(personalization.scopeKey)};
-  }
+  const {scopeKey: personalizationScope, generation, enabled} = personalization;
+  const learningScope = useMemo<LearningScope>(() => ({scopeKey: personalizationScope, generation, enabled}),
+    [personalizationScope, generation, enabled]);
   const cycle = useRef<Cycle>(freshCycle(snapshot, tutorHints));
   if (!sameWritingAidRequest(cycle.current.snapshot, snapshot) || cycle.current.tutorHints !== tutorHints) {
     cycle.current = advanceCycle(cycle.current, snapshot, tutorHints);
   }
   const [sequence, setSequence] = useState(0);
   const [result, setResult] = useState<Prediction>();
-  const live = useRef({snapshot, sequence, result, scopeKey: personalization.scopeKey, tutorHints});
-  live.current = {snapshot, sequence, result, scopeKey: personalization.scopeKey, tutorHints};
+  const current = result && result.sequence === sequence && result.tutorHints === tutorHints &&
+    result.learningScope === learningScope && sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
+  const live = useRef({snapshot, current, personalization, learningScope});
+  live.current = {snapshot, current, personalization, learningScope};
   const displayed = useRef<Lists>(freshLists());
   const exposures = useRef<Exposure[]>([]);
   const pending = useRef<PendingAcceptance | null>(null);
@@ -128,15 +129,19 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
     displayed.current = freshLists();
   }, []);
 
+  useLayoutEffect(() => {
+    previous.current = null;
+    return discardTrackedCorrections;
+  }, [learningScope, discardTrackedCorrections]);
+
   const save = useCallback(() => {
-    if (memory.current.state.enabled) saveWritingAidPersonalization(memory.current.scopeKey, memory.current.state);
+    const {scopeKey, generation, model} = live.current.personalization;
+    saveWritingAidModel(scopeKey, generation, model);
   }, []);
 
   const eligible = useCallback((proposal: WritingAidProposal): boolean => {
-    const {snapshot: current, result: prediction, sequence: currentSequence} = live.current;
-    if (!prediction || prediction.sequence !== currentSequence || prediction.tutorHints !== live.current.tutorHints ||
-        !sameWritingAidRequest(current, prediction.snapshot) ||
-        !sameWritingAidRequest(current, proposal.snapshot)) return false;
+    const {snapshot, current: prediction} = live.current;
+    if (!prediction || !sameWritingAidRequest(snapshot, proposal.snapshot)) return false;
     const surface = surfaceOf(proposal);
     return !cycle.current.excluded[surface].has(writingAidProposalKey(proposal)) &&
       proposalsFor(prediction.suggestions, surface).some(item => sameProposal(item, proposal));
@@ -152,15 +157,14 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
       return;
     }
     const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && eligible(proposal)).slice(0, surface === 'words' ? 3 : 1);
-    const {snapshot: current, result: prediction, sequence: currentSequence} = live.current;
+    const {current: prediction, personalization} = live.current;
     // Empty while a prediction is pending is not a hide. An empty report for
     // an available current proposal means that surface really is hidden.
-    if (!visible.length && prediction && prediction.sequence === currentSequence && prediction.tutorHints === live.current.tutorHints &&
-        sameWritingAidRequest(current, prediction.snapshot) && proposalsFor(prediction.suggestions, surface).length) {
+    if (!visible.length && prediction && proposalsFor(prediction.suggestions, surface).length) {
       exposures.current = exposures.current.filter(item => surfaceOf(item.proposal) !== surface);
     }
     displayed.current[surface] = visible;
-    if (surface === 'edit') return;
+    if (surface === 'edit' || !personalization.enabled) return;
     for (const proposal of visible) {
       // The same word displayed through successive typed prefixes is one exposure.
       const key = JSON.stringify([proposal.kind, proposal.start, proposal.insert.toLocaleLowerCase()]);
@@ -176,41 +180,39 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
   const refresh = useCallback((surface: WritingAidRefreshSurface, proposals: readonly WritingAidProposal[]) => {
     const visible = proposals.filter(proposal => surfaceOf(proposal) === surface && isCurrent(proposal)).slice(0, surface === 'words' ? 3 : 1);
     if (!visible.length) return;
-    const model = memory.current.state;
-    let revoked = false;
+    const {enabled, model, scopeKey, generation} = live.current.personalization;
     for (const proposal of visible) {
       cycle.current.excluded[surface].add(writingAidProposalKey(proposal));
-      if (model.enabled) {
-        updateWritingAidModel(model.model, 'refresh', writingAidFeatures(proposal));
-      }
+      if (enabled) updateWritingAidModel(model, 'refresh', writingAidFeatures(proposal));
       const rule = proposal.kind === 'correction' && writingAutoRuleIdForPair(proposal.before, proposal.insert);
-      if (rule && model.model.autoTrust[rule]) {revokeWritingAutoTrust(model.model, rule); revoked = true;}
+      if (rule && model.autoTrust[rule]) {
+        if (enabled) revokeWritingAutoTrust(model, rule);
+        else revokeStoredWritingAutoTrust(scopeKey, generation, rule);
+      }
     }
     cycle.current.attempted[surface] = true;
     displayed.current[surface] = [];
     // Explicitly rejected proposals do not get additional passive feedback.
     exposures.current = exposures.current.filter(item => surfaceOf(item.proposal) !== surface);
-    if (model.enabled) save();
-    else if (revoked) saveWritingAidPersonalization(memory.current.scopeKey, model);
+    if (enabled) save();
     setSequence(value => value + 1);
   }, [isCurrent, save]);
 
   const feedback = useCallback((signal: WritingAidFeedback, proposal: WritingAidProposal) => {
-    if (live.current.snapshot.mode === 'off') return;
-    const state = memory.current.state;
-    const current = isCurrent(proposal);
+    const {snapshot, personalization: state, learningScope} = live.current;
+    if (snapshot.mode === 'off') return;
     const accepted = pending.current;
     if (signal === 'undo' || signal === 'kept') {
-      if (!accepted || accepted.scopeKey !== live.current.scopeKey || !sameProposal(accepted.proposal, proposal)) return;
+      if (!accepted || accepted.learningScope !== learningScope || !sameProposal(accepted.proposal, proposal)) return;
       if (signal === 'kept' && accepted.kept) return;
       window.clearTimeout(accepted.timer);
       if (signal === 'undo') pending.current = null;
       else accepted.kept = true;
-    } else if (!current) return;
+    } else if (!isCurrent(proposal)) return;
     const rule = proposal.kind === 'correction' && writingAutoRuleIdForPair(proposal.before, proposal.insert);
-    let revoked = false;
     if (rule && (signal === 'undo' || signal === 'dismiss' || signal === 'partial-edit') && state.model.autoTrust[rule]) {
-      revokeWritingAutoTrust(state.model, rule); revoked = true;
+      if (state.enabled) revokeWritingAutoTrust(state.model, rule);
+      else revokeStoredWritingAutoTrust(state.scopeKey, state.generation, rule);
     }
     if (state.enabled) {
       updateWritingAidModel(state.model, signal, writingAidFeatures(proposal));
@@ -224,30 +226,28 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
         }
       }
       save();
-    } else if (revoked) saveWritingAidPersonalization(memory.current.scopeKey, state);
+    }
     if (signal === 'accept') {
       if (pending.current) window.clearTimeout(pending.current.timer);
       const {start, end, insert} = proposal, text = proposal.snapshot.cursor.text;
       const expected = text.slice(0, start) + insert + text.slice(end);
-      const rule = state.enabled && proposal.kind === 'correction' && writingAutoRuleIdForPair(proposal.before, proposal.insert);
-      if (rule) {
+      if (state.enabled && rule) {
         tracked.current.push({ruleId: rule, start, text: insert, expected});
         if (tracked.current.length > 512) tracked.current.shift();
       }
-      const pendingScope = live.current.scopeKey;
-      const timer = window.setTimeout(() => {
+      const timer = state.enabled ? window.setTimeout(() => {
         const held = pending.current, latest = live.current;
-        if (!held || held.timer !== timer || held.scopeKey !== latest.scopeKey) return;
+        if (!held || held.timer !== timer || held.learningScope !== latest.learningScope) return;
         const inserted = held.proposal.insert.trimEnd();
         if (inserted && latest.snapshot.mode !== 'off' && document.visibilityState !== 'hidden' && !latest.snapshot.readOnly && !latest.snapshot.composing &&
             latest.snapshot.cursor.text.slice(held.proposal.start, held.proposal.start + inserted.length) === inserted &&
-            memory.current.state.enabled) {
-          updateWritingAidModel(memory.current.state.model, 'kept', writingAidFeatures(held.proposal));
+            latest.personalization.enabled) {
+          updateWritingAidModel(latest.personalization.model, 'kept', writingAidFeatures(held.proposal));
           held.kept = true;
           save();
         }
-      }, 3000);
-      pending.current = {proposal, expected, scopeKey: pendingScope, timer, kept: false};
+      }, 3000) : undefined;
+      pending.current = {proposal, expected, learningScope, timer, kept: false};
       exposures.current = [];
       displayed.current = freshLists();
     } else if (signal === 'dismiss') {
@@ -256,49 +256,41 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
   }, [isCurrent, save]);
 
   const autoFeedback = useCallback((signal: 'auto-applied' | 'auto-undo' | 'auto-kept', result: WritingAutoCorrection) => {
-    const latest = live.current, state = memory.current.state;
-    const {snapshot} = latest;
+    const {snapshot, personalization: state, learningScope} = live.current;
+    if (!state.enabled) return;
     if (signal === 'auto-applied') {
       if (snapshot.mode === 'off' || snapshot.mode !== result.mode ||
           snapshot.target.scopeKey !== result.target.scopeKey || snapshot.target.mountId !== result.target.mountId ||
           snapshot.cursor.text !== result.typed.text.slice(0, -1)) return;
       if (automatic.current) window.clearTimeout(automatic.current.timer);
-      const scopeKey = latest.scopeKey;
-      if (state.enabled) {
-        tracked.current.push({ruleId: result.ruleId, start: result.start, text: result.replacement, expected: result.corrected.text});
-        if (tracked.current.length > 512) tracked.current.shift();
-      }
+      tracked.current.push({ruleId: result.ruleId, start: result.start, text: result.replacement, expected: result.corrected.text});
+      if (tracked.current.length > 512) tracked.current.shift();
       const timer = window.setTimeout(() => {
         const held = automatic.current, current = live.current;
-        if (!held || held.timer !== timer || held.scopeKey !== current.scopeKey || held.kept ||
+        if (!held || held.timer !== timer || held.learningScope !== current.learningScope || held.kept ||
             document.visibilityState === 'hidden' || current.snapshot.readOnly || current.snapshot.composing ||
             current.snapshot.mode === 'off' || current.snapshot.target.scopeKey !== held.result.target.scopeKey ||
             current.snapshot.target.mountId !== held.result.target.mountId ||
             current.snapshot.cursor.text.slice(held.result.start, held.result.start + held.result.replacement.length) !== held.result.replacement) return;
         held.kept = true;
-        if (memory.current.state.enabled) {
-          updateWritingAidModel(memory.current.state.model, 'auto-kept', {kind: 'correction', candidate: held.result.replacement,
-            prefix: held.result.source, previous: '', mode: held.result.mode});
-          save();
-        }
+        updateWritingAidModel(current.personalization.model, 'auto-kept', {kind: 'correction', candidate: held.result.replacement,
+          prefix: held.result.source, previous: '', mode: held.result.mode});
+        save();
       }, 3000);
-      automatic.current = {result, scopeKey, timer, kept: false};
+      automatic.current = {result, learningScope, timer, kept: false};
       return;
     }
     const held = automatic.current;
-    if (!held || held.scopeKey !== latest.scopeKey || held.result !== result || snapshot.mode === 'off' ||
+    if (!held || held.learningScope !== learningScope || held.result !== result || snapshot.mode === 'off' ||
         snapshot.target.scopeKey !== result.target.scopeKey || snapshot.target.mountId !== result.target.mountId ||
         signal === 'auto-kept' && held.kept) return;
     window.clearTimeout(held.timer);
     if (signal === 'auto-kept') held.kept = true;
     else automatic.current = null;
-    const revoked = signal === 'auto-undo' && Boolean(state.model.autoTrust[result.ruleId]);
-    if (revoked) revokeWritingAutoTrust(state.model, result.ruleId);
-    if (state.enabled) {
-      updateWritingAidModel(state.model, signal, {kind: 'correction', candidate: result.replacement,
-        prefix: result.source, previous: '', mode: result.mode});
-      save();
-    } else if (revoked) saveWritingAidPersonalization(memory.current.scopeKey, state);
+    if (signal === 'auto-undo') revokeWritingAutoTrust(state.model, result.ruleId);
+    updateWritingAidModel(state.model, signal, {kind: 'correction', candidate: result.replacement,
+      prefix: result.source, previous: '', mode: result.mode});
+    save();
   }, [save]);
 
   useEffect(() => {
@@ -321,6 +313,7 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
       displayed.current = freshLists();
       return;
     }
+    const {enabled, model} = live.current.personalization;
     const currentText = snapshot.cursor.text, previousText = trackedBaseline.current;
     if (!currentText) tracked.current = [];
     else if (tracked.current.length) {
@@ -341,8 +334,8 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
           start > item.start && start < itemEnd || start === item.start && /[\p{L}\p{M}\p{N}_]$/u.test(inserted) ||
           start === itemEnd && /^[\p{L}\p{M}\p{N}_]/u.test(inserted));
         if (overlap) {
-          if (memory.current.state.model.autoTrust[item.ruleId]) {
-            revokeWritingAutoTrust(memory.current.state.model, item.ruleId);
+          if (model.autoTrust[item.ruleId]) {
+            revokeWritingAutoTrust(model, item.ruleId);
             revoked = true;
           }
           continue;
@@ -351,7 +344,7 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
         if (currentText.slice(item.start, item.start + item.text.length) === item.text) remaining.push(item);
       }
       tracked.current = remaining;
-      if (revoked) saveWritingAidPersonalization(memory.current.scopeKey, memory.current.state);
+      if (revoked) save();
     }
     trackedBaseline.current = currentText;
     const held = pending.current;
@@ -361,9 +354,9 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
       window.clearTimeout(auto.timer);
       const editedOccurrence = Boolean(snapshot.cursor.text) &&
         snapshot.cursor.text.startsWith(auto.result.corrected.text.slice(0, auto.result.start));
-      if (editedOccurrence && memory.current.state.enabled) {
-        revokeWritingAutoTrust(memory.current.state.model, auto.result.ruleId);
-        updateWritingAidModel(memory.current.state.model, 'auto-undo', {kind: 'correction', candidate: auto.result.replacement,
+      if (editedOccurrence && enabled) {
+        revokeWritingAutoTrust(model, auto.result.ruleId);
+        updateWritingAidModel(model, 'auto-undo', {kind: 'correction', candidate: auto.result.replacement,
           prefix: auto.result.source, previous: '', mode: auto.result.mode});
         save();
       }
@@ -375,10 +368,10 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
         window.clearTimeout(held.timer);
         const editedOccurrence = Boolean(snapshot.cursor.text) &&
           snapshot.cursor.text.startsWith(held.expected.slice(0, held.proposal.start));
-        if (editedOccurrence && memory.current.state.enabled) {
-          updateWritingAidModel(memory.current.state.model, 'partial-edit', writingAidFeatures(held.proposal));
+        if (editedOccurrence && enabled) {
+          updateWritingAidModel(model, 'partial-edit', writingAidFeatures(held.proposal));
           const rule = held.proposal.kind === 'correction' && writingAutoRuleIdForPair(held.proposal.before, held.proposal.insert);
-          if (rule) revokeWritingAutoTrust(memory.current.state.model, rule);
+          if (rule) revokeWritingAutoTrust(model, rule);
           save();
         }
         pending.current = null;
@@ -388,16 +381,15 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
       if (snapshot.cursor.text !== old.cursor.text) exposures.current = [];
       return;
     }
-    const model = memory.current.state;
-    if (!model.enabled) return;
+    if (!enabled) return;
     let changed = false;
     const authored = snapshot.anchor!;
     const newlyCompleted = authored.text.slice(authored.start);
     for (const match of newlyCompleted.matchAll(/[\p{L}\p{M}]{4,32}(?=[^\p{L}\p{M}])/gu)) {
       const end = authored.start + match.index + match[0].length;
       if (end >= old.cursor.text.length && end < snapshot.cursor.text.length) {
-        recordWritingAidVocabulary(model.model, match[0]);
-        updateWritingAidModel(model.model, 'personal-use', {
+        recordWritingAidVocabulary(model, match[0]);
+        updateWritingAidModel(model, 'personal-use', {
           kind: 'word', candidate: match[0], previous: '', prefix: match[0], mode: snapshot.mode,
         });
         changed = true;
@@ -414,7 +406,7 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
         const diverges = actual.length >= Math.min(5, expected.length) && !expected.startsWith(actual) && !matches;
         if (!matches && !diverges) {remaining.push(item); continue;}
         if (Date.now() - item.seenAt >= 300) {
-          updateWritingAidModel(model.model, matches ? 'continued-match' : 'divergent', writingAidFeatures(proposal));
+          updateWritingAidModel(model, matches ? 'continued-match' : 'divergent', writingAidFeatures(proposal));
           changed = true;
         }
         continue;
@@ -422,7 +414,7 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
       const completed = tail.match(/^([\p{L}\p{M}]+)(?=[^\p{L}\p{M}])/u);
       if (!completed) {remaining.push(item); continue;}
       if (Date.now() - item.seenAt >= 300) {
-        updateWritingAidModel(model.model,
+        updateWritingAidModel(model,
           completed[1].toLocaleLowerCase() === proposal.label.toLocaleLowerCase() ? 'continued-match' : 'divergent',
           writingAidFeatures(proposal));
         changed = true;
@@ -430,12 +422,7 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
     }
     exposures.current = remaining;
     if (changed) save();
-  }, [snapshot, save, discardTrackedCorrections]);
-
-  useEffect(() => () => {
-    if (pending.current) window.clearTimeout(pending.current.timer);
-    if (automatic.current) window.clearTimeout(automatic.current.timer);
-  }, []);
+  }, [snapshot, learningScope, save, discardTrackedCorrections]);
 
   useEffect(() => {
     if (mode === 'off' || !words && !replace && !correction && !ghost) return;
@@ -444,22 +431,21 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
     void import('./engine').then(({predictWritingAidPool, selectWritingAidPool}) => {
       if (cancelled || !canSuggestWritingAid(snapshot)) return;
       frame = window.requestAnimationFrame(() => {
-        if (cancelled) return;
+        if (cancelled || learningScope !== live.current.learningScope) return;
         try {
-          const model = memory.current.state.enabled ? memory.current.state.model : undefined;
+          const state = live.current.personalization;
+          const model = state.enabled ? state.model : undefined;
           const pool = predictWritingAidPool(snapshot, model, options);
           const suggestions = selectWritingAidPool(pool, model, cycle.current.excluded, Date.now(), options);
-          setResult({snapshot, sequence, tutorHints, pool, suggestions});
+          setResult({snapshot, sequence, tutorHints, learningScope, pool, suggestions});
         } catch {
-          setResult({snapshot, sequence, tutorHints, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});
+          setResult({snapshot, sequence, tutorHints, learningScope, suggestions: NO_WRITING_AID, pool: {words: [], edit: [], ghost: []}});
         }
       });
     }).catch(() => {/* A failed asset load leaves ordinary editing and math keys usable. */});
     return () => {cancelled = true; if (frame !== undefined) window.cancelAnimationFrame(frame);};
-  }, [snapshot, sequence, mode, words, replace, correction, ghost, tutorHints, options]);
+  }, [snapshot, sequence, learningScope, mode, words, replace, correction, ghost, tutorHints, options]);
 
-  const current = result && result.sequence === sequence && result.tutorHints === tutorHints &&
-    sameWritingAidRequest(snapshot, result.snapshot) ? result : undefined;
   const suggestions = current?.suggestions ?? NO_WRITING_AID;
   const canRefresh: Flags = current ? Object.fromEntries((['words', 'edit', 'ghost'] as const).map(surface => {
     const alreadyShown = new Set(proposalsFor(suggestions, surface).map(writingAidProposalKey));
@@ -472,6 +458,6 @@ export function useWritingAid(request: WritingAidRequest, tutorHints: TutorHints
     ghost: cycle.current.attempted.ghost && !suggestions.ghost,
   } : noFlags;
   return {...suggestions, shown, refresh, feedback, autoFeedback,
-    autoTrust: memory.current.state.enabled ? {...memory.current.state.model.autoTrust} : {},
+    autoTrust: personalization.enabled ? {...personalization.model.autoTrust} : {},
     discardTrackedCorrections, isCurrent, canRefresh, exhausted};
 }

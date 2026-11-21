@@ -4,17 +4,20 @@ import {afterEach, beforeEach, expect, test, vi} from 'vitest';
 import {TutorComposer} from '../../../src/features/tutor/TutorComposer';
 import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
 import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
+import {clearToasts} from '../../../src/ui/Toast';
 import {setHapticsEnabled} from '../../../src/ui/v7/haptics';
 import * as autoCorrect from '../../../src/features/tutor/writingAid/autoCorrect';
+import {createWritingAidModel, recordWritingAutoAcceptance} from '../../../src/features/tutor/writingAid/learning';
 
 let host: HTMLDivElement;
 let root: Root;
 const dialogMethods = ['showModal', 'close'] as const;
 const originalMethods = dialogMethods.map(method => Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, method));
+const writingModelKey = 'lemma.demo-tutor.writing-aid-model.v1:default';
 beforeEach(() => {
   sessionStorage.setItem('lemma.demo', '1');
   localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
-  localStorage.removeItem('lemma.demo-tutor.writing-aid-model.v1:default');
+  localStorage.removeItem(writingModelKey);
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
   dialogMethods.forEach(method => {
     Object.defineProperty(HTMLDialogElement.prototype, method, {configurable: true,
@@ -34,7 +37,8 @@ afterEach(async () => {
   });
   sessionStorage.removeItem('lemma.demo');
   localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
-  localStorage.removeItem('lemma.demo-tutor.writing-aid-model.v1:default');
+  localStorage.removeItem(writingModelKey);
+  clearToasts();
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -167,6 +171,64 @@ test('completes proof notation and asks for help without consuming a draft', asy
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
   expect(field().value).toBe('Let eps');
+});
+
+test.each(['forget', 'pause and resume'] as const)('does not retain writing feedback after %s in settings', async action => {
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('nota');
+  await awaitAid('Insert notation');
+  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('notation ');
+  expect(localStorage.getItem(writingModelKey)).toContain('item:word:notation');
+
+  await answerAction('Writing assistance');
+  const settings = host.querySelector('dialog[open]')!;
+  if (action === 'forget') {
+    await click('Forget learned writing preferences', settings);
+    expect(JSON.parse(localStorage.getItem(writingModelKey)!).model.weights).toEqual({});
+  } else {
+    const personalize = [...settings.querySelectorAll<HTMLInputElement>('input[role="switch"]')]
+      .find(node => node.labels?.[0].textContent === 'Personalize suggestions')!;
+    await act(async () => personalize.click());
+    expect(personalize.checked).toBe(false);
+    await act(async () => personalize.click());
+    expect(personalize.checked).toBe(true);
+  }
+  const saved = localStorage.getItem(writingModelKey);
+  await click('Close', settings);
+  await act(async () => vi.advanceTimersByTime(3000));
+  expect(localStorage.getItem(writingModelKey)).toBe(saved);
+  expect(field().value).toBe('notation ');
+  await click('Undo suggestion');
+  expect(field().value).toBe('nota');
+  expect(localStorage.getItem(writingModelKey)).toBe(saved);
+});
+
+test('Forget retires automatic correction feedback and keeps draft Undo', async () => {
+  const model = createWritingAidModel();
+  recordWritingAutoAcceptance(model, 'teh-to-the');
+  recordWritingAutoAcceptance(model, 'teh-to-the');
+  localStorage.setItem(writingModelKey, JSON.stringify({version: 1, enabled: true, model}));
+  await act(async () => root.render(<Harness/>));
+  await click('Keys');
+  await input('I read teh');
+  vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+  await click('Space', keyboard());
+  expect(field().value).toBe('I read the ');
+
+  await answerAction('Writing assistance');
+  const settings = host.querySelector('dialog[open]')!;
+  await click('Forget learned writing preferences', settings);
+  const saved = localStorage.getItem(writingModelKey);
+  expect(JSON.parse(saved!).model).toEqual(createWritingAidModel());
+  await click('Close', settings);
+  await act(async () => vi.advanceTimersByTime(3000));
+  expect(localStorage.getItem(writingModelKey)).toBe(saved);
+  await click('Undo suggestion');
+  expect(field().value).toBe('I read teh ');
+  expect(localStorage.getItem(writingModelKey)).toBe(saved);
 });
 
 test('shows both numeric layouts and keeps physical IME composition atomic', async () => {

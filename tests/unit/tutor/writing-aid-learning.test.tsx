@@ -7,6 +7,8 @@ import {
   createWritingAidModel, parseWritingAidModel, recordWritingAidVocabulary, scoreWritingAidFeatures,
   updateWritingAidModel, writingAidFeatures, type WritingAidFeatures,
 } from '../../../src/features/tutor/writingAid/learning';
+import {resetWritingAidPersonalization} from '../../../src/features/tutor/writingAid/personalization';
+import {currentWritingAidScope} from '../../../src/features/tutor/writingAid/preferences';
 import {useWritingAid, type WritingAidView} from '../../../src/features/tutor/writingAid/useWritingAid';
 import type {WritingAidRequest} from '../../../src/features/tutor/writingAid/policy';
 
@@ -31,7 +33,7 @@ beforeEach(() => {
   localStorage.clear();
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
 });
-afterEach(async () => {await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks();});
+afterEach(async () => {await act(async () => root.unmount()); host.remove(); vi.useRealTimers(); vi.restoreAllMocks();});
 
 describe('local writing personalization', () => {
   it('does not collect directly typed vocabulary when suggestion mode is off', async () => {
@@ -109,6 +111,22 @@ describe('local writing personalization', () => {
     expect(scoreWritingAidFeatures(model, writingAidFeatures(chosen))).toBeLessThan(0);
   });
 
+  it('records delayed retention after a normal model save', async () => {
+    const input = request('nota');
+    await render(input);
+    const chosen = view.words.find(proposal => proposal.label === 'notation')!;
+    vi.useFakeTimers({toFake: ['setTimeout', 'clearTimeout']});
+    await act(async () => {view.shown('words', view.words); view.feedback('accept', chosen);});
+    const features = writingAidFeatures(chosen);
+    const accepted = scoreWritingAidFeatures(storedModel(), features);
+    expect(accepted).toBeGreaterThan(0);
+    const next = request(chosen.insert, {anchor: {...input.anchor!, continuation: chosen.insert},
+      target: {...input.target, editorRevision: 2}});
+    await act(async () => root.render(<Harness input={next}/>));
+    await act(async () => vi.advanceTimersByTime(3000));
+    expect(scoreWritingAidFeatures(storedModel(), features)).toBeGreaterThan(accepted);
+  });
+
   it('rejects held or hidden proposals instead of training or applying them', async () => {
     await render(request('I think the re'));
     const held = view.words[0];
@@ -155,6 +173,21 @@ describe('local writing personalization', () => {
     expect(scoreWritingAidFeatures(model, writingAidFeatures(ghost))).toBeLessThan(0);
     expect(model.vocabulary.graph?.uses).toBeGreaterThan(0);
     expect(model.vocabulary.question).toBeUndefined();
+  });
+
+  it('drops exposures seen before Forget and learns from fresh typing', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(10_000);
+    const input = request('could you restate');
+    await render(input);
+    const ghost = view.ghost!;
+    expect(ghost.insert).toBe(' the question');
+    await act(async () => view.shown('ghost', [ghost]));
+    now.mockReturnValue(10_400);
+    await act(async () => {expect(resetWritingAidPersonalization(currentWritingAidScope().id)).toBe(true);});
+    await render(request('could you restate the graph ', {target: {...input.target, editorRevision: 2}}));
+    const model = storedModel();
+    expect(scoreWritingAidFeatures(model, writingAidFeatures(ghost))).toBe(0);
+    expect(model.vocabulary.graph?.uses).toBeGreaterThan(0);
   });
 
   it('learns a typed match and divergence only for visible word choices', async () => {
