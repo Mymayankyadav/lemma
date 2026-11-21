@@ -32,9 +32,11 @@ export function useAccountDeletion(){
     notify('Account deleted. Local Pad and tutor data may remain on this device because the active account changed.');
     return;
    }
-   // Fence tutor callbacks synchronously before the asynchronous Pad cleanup/sign-out.
-   const tutorRemoved=!ownerId||removeDeletedOwnerTutorData(ownerId,generation);
-   const padsRemoved=!ownerId||await import('../../pad/padCheckpoint').then(pad=>pad.removeDeletedOwnerPads(ownerId,generation)).catch(()=>false);
+   // Fence tutor callbacks synchronously, then wait for both stores before signing out.
+   const [tutorRemoved,padsRemoved]=await Promise.all([
+    !ownerId||removeDeletedOwnerTutorData(ownerId,generation),
+    !ownerId||import('../../pad/padCheckpoint').then(pad=>pad.removeDeletedOwnerPads(ownerId,generation)).catch(()=>false),
+   ]);
    const removed=tutorRemoved&&padsRemoved;
    if(authGeneration()!==generation||authOwner()!==ownerId)return;
    await owner.auth.signOut();

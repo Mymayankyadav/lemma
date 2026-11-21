@@ -1,0 +1,114 @@
+[
+  {
+    "file": "today.jpg",
+    "title": "Today",
+    "before": "phone/night/today.jpg",
+    "beforeSha256": "187b97832364308314fe2fe2aa7af8c897bcc6d1f614db63a9fb44a90936fb34",
+    "after": "phone/night/today-next-step.jpg",
+    "afterSha256": "f0059d3f8965b4819cb308eb57cf7c9695b6132967d00063d475bb248309568b"
+  },
+  {
+    "file": "atlas.jpg",
+    "title": "Atlas List",
+    "before": "phone/night/atlas-list.jpg",
+    "beforeSha256": "dee54d560d6d522baa91d499ebace41d17358cc96bbfbbb55b98eef90dcb082b",
+    "after": "phone/night/atlas-list.jpg",
+    "afterSha256": "8e1547bd485fe04642dcb0227f4838ddeb4ce62440d4fa777880207b6892e04b"
+  },
+  {
+    "file": "tutor.jpg",
+    "title": "Tutor with keyboard",
+    "before": "phone/night/tutor-keyboard.jpg",
+    "beforeSha256": "808df1eedd726e40de4b61c4c9e02d018604a6fd443c0650f55c0be9566b0e46",
+    "after": "phone/night/tutor-keyboard.jpg",
+    "afterSha256": "af846865f639896d9994376447893d3c71288eb195a8e8bdc211d1b472e7f177"
+  },
+  {
+    "file": "path.jpg",
+    "title": "Path",
+    "before": "phone/night/path-map.jpg",
+    "beforeSha256": "947786d036377b132938387b66754fbbec166530c0d6541efc6a0c0d43cba2df",
+    "after": "phone/night/path.jpg",
+    "afterSha256": "c48b3904bf69911e590f5a0770168d1b35ab9e799c05f3dc0bd73dce1474d242"
+  },
+  {
+    "file": "calendar.jpg",
+    "title": "Calendar week",
+    "before": "phone/night/calendar-week.jpg",
+    "beforeSha256": "c58309ec1a93a5397e590feb223e024adbf6f4e2c014bfc15344495d044cb05d",
+    "after": "phone/night/calendar-week.jpg",
+    "afterSha256": "b9610355227a68e1ff4cad38fc7584d1a303aa585f582085a99d2f1e22d6059e"
+  },
+  {
+    "file": "review.jpg",
+    "title": "Review answer and scratch",
+    "before": "phone/night/review-scratch-revealed.jpg",
+    "beforeSha256": "afff238ee3035772b5ca78cb24a69ae7f0de14d4fddf060f4cd4f4182e93dd9b",
+    "after": "phone/night/review-scratch-revealed.jpg",
+    "afterSha256": "ef82470206dc1240b491f4ef9d4a96a9f9108a09ebaabbf662e535e6a8f66979"
+  },
+  {
+    "file": "progress.jpg",
+    "title": "Progress learning",
+    "before": "phone/night/progress-learning.jpg",
+    "beforeSha256": "081d2d9a688d0f334d2b579d4576ca4c31a8cf7fa918b9d9f84134d56af49c29",
+    "after": "phone/night/progress-learning.jpg",
+    "afterSha256": "7896ed0443e5c76b83236cf1f7446a832455c2c35a943cec2893370256bb1a48"
+  },
+  {
+    "file": "settings.jpg",
+    "title": "Tutor settings and beta",
+    "before": "phone/night/settings-tutor.jpg",
+    "beforeSha256": "03c1f34b411e0d010f0d77367fba593ac63357f31d63f90724ad4dbc545b41b0",
+    "after": "phone/night/tutor-beta-settings.jpg",
+    "afterSha256": "979bcdf711bfa33bb2af96585d509465bcd972d3420f3ab0f915de4e29f57fcc"
+  },
+  {
+    "file": "create-idea.jpg",
+    "title": "Create idea",
+    "before": "phone/night/atlas-new-concept.jpg",
+    "beforeSha256": "7eeda787fa489dc42e10b8fdb24bbaf21a0d770c72ca1dfe529a670c8f43fe78",
+    "after": "phone/night/atlas-new-concept.jpg",
+    "afterSha256": "d513d2542a14d6997bb5157acefceac176122ad08dabb1429d00cb5f824b90b5"
+  },
+  {
+    "file": "atlas-map-final.jpg",
+    "after": "phone/night/atlas.jpg",
+    "afterSha256": "357c8db4e2322a3df87f165f98e7f6d750a2c09b65503117dcd411f409905252"
+  },
+  {
+    "file": "atlas-options-collapsed.jpg",
+    "after": "phone/night/atlas-options-collapsed.jpg",
+    "afterSha256": "13c23953509647377342478780ba9019ec028143eec53669319b1f8a2752c6ba"
+  },
+  {
+    "file": "atlas-search-final.jpg",
+    "after": "phone/night/atlas-search.jpg",
+    "afterSha256": "ab793fd9ec16a1a0e0d9f8b791920cc1d9be1d75cc3f76fe2647ff3f9e29eb1a"
+  },
+  {
+    "file": "inline-drawings.jpg",
+    "after": "phone/night/tutor-multiple-drawings.jpg",
+    "afterSha256": "a212b9e73ebba187a84cfe1ea90b5d6d19a06ad5ab1b02d166f6683702dd78d6"
+  },
+  {
+    "file": "symbol-match.jpg",
+    "after": "phone/night/tutor-symbol-recognition-match.jpg",
+    "afterSha256": "4bfc04c9c9ed3ce366f61aa7400656a34cb73943b84136c8e74604ca3750be39"
+  },
+  {
+    "file": "symbol-completion.jpg",
+    "after": "phone/night/tutor-symbol-recognition-completion.jpg",
+    "afterSha256": "589ea1232684c650867f0cfd3bc36573a8d14b653793419e0cc5357bd705af42"
+  },
+  {
+    "file": "symbol-loading.jpg",
+    "after": "phone/night/tutor-symbol-recognition-loading.jpg",
+    "afterSha256": "d36f51d7254d3f743d1c809bc408eb11e685b6d44e3879f6f8a99bbbb0691d61"
+  },
+  {
+    "file": "symbol-description-search.jpg",
+    "after": "phone/night/tutor-symbol-search-description.jpg",
+    "afterSha256": "35759967176efddccbee216ff0c7ab5c9efc2a1c9eb66680c6a9e324a193ca16"
+  }
+]

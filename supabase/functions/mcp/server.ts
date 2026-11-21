@@ -35,10 +35,11 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   const register=(n:string,description:string,schema:any,readOnly:boolean,fn:(a:any,ctx:Context)=>Promise<string>)=>{
     m.registerTool(n,{description,inputSchema:lean(schema),annotations:readOnly?noop:write},async(a:any,toolContext)=>{
       try{
-        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next')){
+        if(n==='get'&&(a.what==='tutor_turn'||a.what==='tutor_next'||a.what==='tutor_attachment')){
           if(!tutor)throw Error('Tutor connector unavailable.');
-          const text=a.what==='tutor_next'?await tutor.next(a.id,toolContext.mcpReq.signal):await tutor.read(a.id);
-          return {content:[{type:'text' as const,text}]};
+          if(a.what==='tutor_attachment')return {content:await tutor.attachment(a.id)};
+          if(a.what==='tutor_turn')return {content:await tutor.content(a.id)};
+          return {content:[{type:'text' as const,text:await tutor.next(a.id,toolContext.mcpReq.signal)}]};
         }
         const ctx:Context=readOnly?c:{...c,batch:[]};
         let result=await fn(a,ctx);

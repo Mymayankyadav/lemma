@@ -791,6 +791,36 @@
           "value": "10%"
         },
         {
+          "name": "foundation/z-base",
+          "type": "number",
+          "value": 0
+        },
+        {
+          "name": "foundation/z-sticky",
+          "type": "number",
+          "value": 8
+        },
+        {
+          "name": "foundation/z-dock",
+          "type": "number",
+          "value": 20
+        },
+        {
+          "name": "foundation/z-sheet",
+          "type": "number",
+          "value": 25
+        },
+        {
+          "name": "foundation/z-toast",
+          "type": "number",
+          "value": 30
+        },
+        {
+          "name": "foundation/z-modal",
+          "type": "number",
+          "value": 40
+        },
+        {
           "name": "foundation/menu-layer",
           "type": "number",
           "value": "10"
@@ -1977,6 +2007,42 @@
           "type": "string",
           "alias": "{foundation.raw.hero-alpha}",
           "description": "Shared hero alpha foundation."
+        },
+        {
+          "name": "foundation/z-base",
+          "type": "number",
+          "alias": "{foundation.raw.z-base}",
+          "description": "Page content."
+        },
+        {
+          "name": "foundation/z-sticky",
+          "type": "number",
+          "alias": "{foundation.raw.z-sticky}",
+          "description": "Sticky page controls."
+        },
+        {
+          "name": "foundation/z-dock",
+          "type": "number",
+          "alias": "{foundation.raw.z-dock}",
+          "description": "Pinned action bars."
+        },
+        {
+          "name": "foundation/z-sheet",
+          "type": "number",
+          "alias": "{foundation.raw.z-sheet}",
+          "description": "Sheets and map details."
+        },
+        {
+          "name": "foundation/z-toast",
+          "type": "number",
+          "alias": "{foundation.raw.z-toast}",
+          "description": "Toast messages."
+        },
+        {
+          "name": "foundation/z-modal",
+          "type": "number",
+          "alias": "{foundation.raw.z-modal}",
+          "description": "Modal overlays."
         },
         {
           "name": "foundation/menu-layer",

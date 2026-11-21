@@ -1,3 +1,7 @@
+import {Disclosure} from '../../../ui/v7/Disclosure';
+import {RulerTime} from '../../../ui/v7/RulerTime';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {formatDuration} from '../../../lib/format';
 import {localWallParts} from '../../time-log/local-time';
 import {useEffect,useMemo,useRef,useState} from 'react';
 import {useStudyUi} from '../../../data/StudyUiRelease';
@@ -20,32 +24,12 @@ export function dueTimes(current?:string):string[]{
  return current&&!all.includes(current)?[...all,current].sort():all;
 }
 
-function DirectDueTime({value,onChange}:{value:string;onChange:(value:string)=>void}){
- const [open,setOpen]=useState(false),[text,setText]=useState(value),[error,setError]=useState('');
- function choose(clock:string){onChange(clock);setOpen(false);}
- function apply(){
-  const candidate=text.trim().replace(/^(\d{2})(\d{2})$/,'$1:$2');
-  if(candidate===value||/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(candidate)){choose(candidate);return;}
-  setError('Enter a time from 00:00 to 23:59.');
- }
- return <div className="v7-field-group"><span>Due time</span>
-  <Button aria-label={'Due time, '+value} aria-haspopup="dialog" onClick={()=>{setText(value);setError('');setOpen(true);}}>{value}</Button>
-  <Sheet open={open} title="Due time" onClose={()=>setOpen(false)} footer={<><Button onClick={()=>setOpen(false)}>Cancel</Button><Button variant="primary" onClick={apply}>Use time</Button></>}>
-   <Field label="Time (HH:MM)" autoFocus inputMode="numeric" maxLength={12} value={text} hint="Enter 16:10 or 1610." error={error||undefined}
-    onChange={e=>{setText(e.currentTarget.value);setError('');}} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();apply();}}}/>
-   <details><summary>Quarter-hour presets</summary><div className="v7-choice-list" role="group" aria-label="Time presets">
-    {dueTimes(value).map(clock=><Button key={clock} variant="ghost" onClick={()=>choose(clock)}>{clock}</Button>)}
-   </div></details>
-  </Sheet>
- </div>;
-}
-
 /**
  * Release plan R0 · F02: the task form in the standard Form sheet. Fields stack; the due date opens the app's own date
  * picker and the time its own list (no native select, date or time control); ghost Cancel on the left, indigo Save on
  * the right. Validation and saving reuse the v6 sheet's `taskInput` and API calls unchanged.
  */
-export default function TaskSheetV7({onDismiss,task,initialDraft,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;initialDraft?:CapturedTaskDraft;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
+export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,onSaved,onConflict}:{onDismiss:()=>void;task?:TaskRecord;initialDraft?:CapturedTaskDraft;initialTitle?:string;onSaved?:(record:TaskRecord)=>void;onConflict?:()=>void}){
  const repair=useStudyUi();
  const notify=useToast(),subjects=useSubjects(),projects=useProjects(),settings=useSettings(),busy=useRef(false);
  const draft=task?undefined:initialDraft?.values;
@@ -53,7 +37,7 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,onSaved,onConfl
  const datesReady=!repair||!!initialDraft?.zone||!!settings.data?.timeZone;
  const initialInstant=task?.due.kind==='instant'?localWallParts(task.due.at,zone):null;
  const [saving,setSaving]=useState(false),[error,setError]=useState('');
- const [title,setTitle]=useState(task?.title??draft?.title??'');
+ const [title,setTitle]=useState(task?.title??draft?.title??initialTitle??'');
  const [estimate,setEstimate]=useState(task?.estimateMinutes==null?draft?.estimate??'':String(task.estimateMinutes));
  const [priority,setPriority]=useState<TaskPriority>(task?.priority??draft?.priority??'normal');
  const [dueKind,setDueKind]=useState<TaskDue['kind']>(task?.due.kind??draft?.dueKind??'none');
@@ -97,14 +81,28 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,onSaved,onConfl
   footer={<><Button variant="ghost" disabled={saving} onClick={onDismiss}>Cancel</Button><Button variant="primary" loading={saving} onClick={()=>{void save();}}>{task?'Save changes':'Save task'}</Button></>}>
   <form className="v7-form-stack" noValidate onSubmit={event=>{event.preventDefault();void save();}}>
    <Field label="Title" value={title} autoFocus={!task} maxLength={200} error={titleError} onChange={event=>{setTitle(event.target.value);if(titleError)setError('');}}/>
-   <Field label="Estimate · minutes" optional inputMode="numeric" value={estimate} placeholder="e.g. 25" onChange={event=>setEstimate(event.target.value.replace(/[^\d]/g,''))}/>
-   <div className="v7-field-group"><span>Priority</span><Segmented measureUnwrapped={repair} label="Priority" options={Object.keys(PRIORITY)} value={label(PRIORITY,priority)} onChange={value=>setPriority(PRIORITY[value])}/></div>
-   <div className="v7-field-group"><span>Due</span><Segmented measureUnwrapped={repair} label="Due" options={Object.keys(DUE)} value={label(DUE,dueKind)} onChange={value=>setDueKind(DUE[value])}/></div>
+   <div className="v7-task-sentence" aria-label="Task details">
+    <Picker label="Due" value={label(DUE,dueKind)} options={Object.keys(DUE)} onChange={value=>setDueKind(DUE[value])}/>
+    {dueKind!=='none'&&datesReady&&<DatePicker compact label="Due date" today={localWallParts(new Date().toISOString(),zone).day}
+      value={dueDate} onChange={value=>{dueEdited.current=true;setDueDate(value);}}/>}
+    <Picker label="Path" optional value={projectNames[projectRows.findIndex(p=>p.id===projectId)+1]??'No path'}
+      options={projectNames} onChange={name=>{
+       const path=projectRows[projectNames.indexOf(name)-1];setProjectId(path?.id??'');if(path)setSubjectId(path.subject.id);
+      }}/>
+   </div>
    {dueKind!=='none'&&!datesReady&&<p role="status">Loading your time zone…</p>}
-   {dueKind!=='none'&&datesReady&&<DatePicker label="Due date" today={repair?localWallParts(new Date().toISOString(),zone).day:undefined} value={dueDate} onChange={value=>{dueEdited.current=true;setDueDate(value);}}/>}
-   {dueKind==='instant'&&datesReady&&(repair?<DirectDueTime value={dueTime} onChange={value=>{dueEdited.current=true;setDueTime(value);}}/>:<Picker label="Due time" value={dueTime} options={dueTimes(dueTime)} onChange={setDueTime}/>)}
-   <Picker label="Subject" optional value={subjectRows.find(s=>s.id===subjectId)?.name??'Unassigned'} options={subjectNames} onChange={name=>setSubjectId(subjectRows.find(s=>s.name===name)?.id??'')}/>
-   <Picker label="Path" optional value={projectNames[projectRows.findIndex(p=>p.id===projectId)+1]??'No path'} options={projectNames} onChange={name=>{const index=projectNames.indexOf(name)-1;setProjectId(index>=0?projectRows[index].id:'');}}/>
+   {dueKind==='instant'&&datesReady&&<RulerTime label="Due time" value={dueTime} onChange={value=>{dueEdited.current=true;setDueTime(value);}}/>}
+   <Disclosure label={estimate?'More · '+formatDuration(Number(estimate)):'More options'} defaultOpen={!!task}>
+    {Number(estimate||0)<=180&&<RulerSlider label="Estimate" min={0} max={180} step={5} value={Number(estimate)||0}
+     format={value=>value?formatDuration(value):'No estimate'} tickFormat={String} onChange={value=>setEstimate(value?String(value):'')}/>}
+    <Disclosure label="Exact estimate" defaultOpen={Number(estimate)>180||Number(estimate)%5!==0}>
+     <Field label="Minutes" optional inputMode="numeric" value={estimate} placeholder="e.g. 25"
+      onChange={event=>setEstimate(event.target.value.replace(/[^\d]/g,''))}/>
+    </Disclosure>
+    <Picker label="Priority" value={label(PRIORITY,priority)} options={Object.keys(PRIORITY)} onChange={value=>setPriority(PRIORITY[value])}/>
+    <Picker label="Subject" optional value={subjectRows.find(s=>s.id===subjectId)?.name??'Unassigned'}
+     options={subjectNames} onChange={name=>setSubjectId(subjectRows.find(s=>s.name===name)?.id??'')}/>
+   </Disclosure>
    {error&&!titleError&&<p className="v7-error" role="alert"><CircleX aria-hidden="true"/>{error}</p>}
    <button type="submit" hidden/>
   </form>

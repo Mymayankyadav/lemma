@@ -62,7 +62,7 @@ Deno.serve(async request => {
   try {
     // {"act":{"token"}} is a notification button tap: the signed token is the credential (no shared secret, no JWT).
     // {"tick":true} runs the reminder tick (pg_cron, every five minutes); anything else drains the timer outbox.
-    const body = request.method === 'POST' ? await request.clone().json().catch(() => ({})) as {tick?: unknown; act?: unknown} : {};
+    const body = request.method === 'POST' ? await request.clone().json().catch(() => ({})) as {tick?: unknown; act?: unknown; tutorInkCleanup?: unknown} : {};
     if (body.act !== undefined) {
       const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, {auth: {persistSession: false}});
       const options = noticeOptions();
@@ -82,6 +82,19 @@ Deno.serve(async request => {
         },
       });
       return Response.json(result.body, {status: result.status});
+    }
+    if (body.tutorInkCleanup === true) {
+      const refused = checkCaller({method:request.method,secret:request.headers.get('x-push-secret')},Deno.env.get('PUSH_SHARED_SECRET') ?? '');
+      if (refused) return Response.json(refused.body,{status:refused.status});
+      const admin=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,{auth:{persistSession:false}});
+      const candidates=await admin.rpc('tutor_ink_cleanup_candidates');
+      if(candidates.error)throw candidates.error;
+      const keys=candidates.data as string[];
+      if(keys.length){
+        const removed=await admin.storage.from('tutor-ink').remove(keys);
+        if(removed.error)throw removed.error;
+      }
+      return Response.json({removed:keys.length});
     }
     if (body.tick === true) {
       const secret = Deno.env.get('PUSH_SHARED_SECRET') ?? '';

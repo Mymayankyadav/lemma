@@ -1,36 +1,41 @@
-import {useState, type ReactNode} from 'react';
+import {useId,useState, type ReactNode} from 'react';
 import {Link} from 'react-router';
-import {ArrowRight, Ellipsis} from 'lucide-react';
+import {tutorPresence} from './presence';
+import {useToast} from '../../ui/Toast';
+import {ArrowRight, ChevronLeft, Copy, Ellipsis} from 'lucide-react';
 import type {CheckpointDetail, ProjectDetail} from '../../data/types';
 import {useStudyUi} from '../../data/StudyUiRelease';
 import {reviewHref} from '../../data/review-target';
 import {announceFocusChange, focusClock, focusWord, useActiveFocus, useNow} from '../../app/v7/focus';
 import {useSubjectColours} from '../../app/v7/subjectColours';
-import {DetailHeader} from '../../app/v7/V7Shell';
+import {useDetailBack} from '../../app/v7/useDetailBack';
 import {getStudyApi} from '../../data/study';
 import {MathText} from '../../ui/MathText';
 import {Button, IconButton, Sheet} from '../../ui/v7/components';
 import {kitSubject} from '../atlas/v7/model';
 import {currentStudyStep} from '../project/v7/pathModel';
-import {TutorMark} from './TutorMark';
+
 
 export type TutorPageContext = {project: ProjectDetail; detail: CheckpointDetail; client: 'claude' | 'chatgpt'};
 type Props = {
   page: TutorPageContext; sequence: number; children: ReactNode;
   overview?: boolean; offline?: boolean; onOverview?: () => void; onQuestion?: () => void;
-  onCloseSession?: () => void; onConnection?: () => void;
+  onCloseSession?: () => void; onConnection?: () => void; onContext?: () => void;
+  listenerSeenAt?:string|null; claimExpiresAt?:string; resumePrompt?:string;
 };
 
-export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection}: Props) {
+export function TutorLayout({page, sequence, children, overview, offline, onOverview, onQuestion, onCloseSession, onConnection, onContext, listenerSeenAt, claimExpiresAt, resumePrompt}: Props) {
   const [panel, setPanel] = useState<'session' | 'plan' | 'timer' | 'checks' | 'practice'>();
   const [error, setError] = useState(''), [busy, setBusy] = useState(false);
   const {project, detail} = page, path = '/p/' + encodeURIComponent(project.project.slug);
-  const title = detail.view.code + ' · ' + (offline ? 'Offline' : detail.view.title);
+  const notify=useToast();
   const checkpoint = path + '/cp/' + encodeURIComponent(detail.view.code);
+  const goBack=useDetailBack(checkpoint);
   const studyUi = useStudyUi(), focus = useActiveFocus(), now = useNow();
   const clock = focus.entry ? focusClock(focus.entry, now).label : '0:00';
   const timerState = focus.entry ? focusWord(focus.entry) : null;
   const step = currentStudyStep(detail.view);
+  const presence=tutorPresence(now,listenerSeenAt,claimExpiresAt,offline);
   const checking = detail.view.dueCards > 0 && sequence === 0;
   useSubjectColours();
   const subject = kitSubject(project.subject.name).toLowerCase().replaceAll(' ', '-');
@@ -53,11 +58,14 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     action();
   };
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
-    <DetailHeader title={title} back={checkpoint} extraAction={
-      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog">
-        <Ellipsis aria-hidden="true"/>
-      </IconButton>
-    }/>
+    <header className="tutor-header">
+      <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
+      <div className="tutor-header-title"><strong>{detail.view.title}</strong><TutorPresence presence={presence}/></div>
+      <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
+    </header>
+    {!overview&&<div className="tutor-session-progress" aria-label="Session parts">
+      {['Checks','Learn','Practice','Close'].map((part,index)=><span key={part} aria-label={part} data-reached={index<2||undefined}/>)}
+    </div>}
     <h1 className="v7-sr-only">{project.project.title} · {detail.view.code} · {detail.view.title}{offline && ' · Offline'}</h1>
     {overview && <nav className="rail" aria-label="Session parts">
       <button className={'seg-r' + (checking ? ' cur' : sequence && !detail.view.dueCards ? ' done' : '')}
@@ -70,7 +78,8 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     </nav>}
     {children}
     <Sheet open={panel === 'session'} onClose={() => setPanel(undefined)} title="Study session">
-      <p><strong>{project.project.title}</strong><br/>{detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
+      <p><strong>{project.project.title}</strong><br/>{detail.view.code} · {detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
+      {timerState&&<p>{timerState} · {clock}</p>}
       <div className="tutor-session-actions">
         {onOverview && <Button small onClick={() => sessionAction(onOverview)}>Next up</Button>}
         {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
@@ -78,7 +87,12 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
         <Button small onClick={() => setPanel('checks')}>Checks{detail.view.dueCards > 0 ? ' · ' + detail.view.dueCards + ' due' : ''}</Button>
         <Button small onClick={() => setPanel('practice')}>Practice</Button>
         <Button small onClick={() => setPanel('timer')}>Study timer</Button>
-        {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Tutor connection</Button>}
+        {onContext && <Button small onClick={() => sessionAction(onContext)}>Context</Button>}
+        {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Connection</Button>}
+        {resumePrompt&&<Button small onClick={()=>{
+          void navigator.clipboard.writeText(resumePrompt).then(()=>notify('Prompt copied')).catch(()=>notify('Could not copy the prompt.'));
+        }}><Copy aria-hidden="true"/>Copy prompt</Button>}
+        <Button small aria-haspopup="dialog" onClick={() => sessionAction(() => window.dispatchEvent(new CustomEvent('v7:search')))}>Search</Button>
         {onCloseSession && <Button small onClick={() => sessionAction(onCloseSession)}>Close session</Button>}
       </div>
     </Sheet>
@@ -113,31 +127,32 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   </main>;
 }
 
+function TutorPresence({presence}:{presence:string}) {
+  const [open,setOpen]=useState(false),id=useId();
+  return <span className="tutor-presence-control" onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
+    <button type="button" className="v7-icon-button tutor-presence-light" data-presence={presence}
+      aria-label={'Tutor status: '+presence} aria-describedby={open?id:undefined}
+      onClick={()=>setOpen(true)} onBlur={()=>setOpen(false)}
+      onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();setOpen(false);}}}>
+      <span aria-hidden="true"/>
+    </button>
+    <span className="v7-sr-only" role="status">{presence}</span>
+    {open&&<span className="tutor-presence-tooltip" id={id} role="tooltip">{presence}</span>}
+  </span>;
+}
+
 export function TutorOverview({page, busy, hasTurns, onBegin, onContinue, onWrite}: {
   page: TutorPageContext; busy: boolean; hasTurns: boolean; onBegin: () => void; onContinue: () => void; onWrite?: () => void;
 }) {
-  const {project, detail} = page, step = currentStudyStep(detail.view);
-  const [title, ...subtitle] = detail.view.title.split(/:\s+/);
-  return <div className="nextup"><section className="hero">
-    <TutorMark className="emblem"/>
-    <div className="chips"><span className="chip subjchip"><i className="sd" aria-hidden="true"/>{project.subject.name}</span>
-      <span className="chip mute">{detail.view.code}{step.ordinal ? ' · step ' + step.ordinal + ' of ' + step.total : ''}</span></div>
-    <h2>{title}</h2>
-    {!!subtitle.length && <p className="sub">{subtitle.join(': ')}</p>}
-    {!!detail.steps.length && <><ol className="steps" aria-label="Steps of this checkpoint">{detail.steps.map((_, i) =>
-      <li key={i} className={i < step.index ? 'done' : i === step.index ? 'cur' : ''} aria-current={i === step.index ? 'step' : undefined}>
-        <span className="sr">Step {i + 1}</span></li>)}</ol>
-      <MathText className="now" source={detail.steps[step.index] ? 'Now: ' + detail.steps[step.index] : 'All steps completed'}/></>}
-    <div className="goal"><span className="eyebrow">Your goal</span><MathText source={detail.criterion || detail.objective}/></div>
-    {detail.sourceShort && <div className="facts"><span>Book <b>{detail.sourceShort}</b></span></div>}
-    <div className="actions">
-      <Button className="cta" variant="primary" disabled={busy} onClick={hasTurns ? onContinue : onBegin}>
+  const {detail} = page;
+  return <section className="tutor-start">
+    <div><p className="v7-eyebrow">On the table</p><h2>{detail.view.title}</h2>
+      <div className="tutor-start-goal"><MathText source={detail.criterion || detail.objective}/></div></div>
+    <div className="tutor-start-actions">
+      <Button variant="primary" small disabled={busy} onClick={hasTurns ? onContinue : onBegin}>
         {hasTurns ? 'Continue conversation' : 'Begin session'}<ArrowRight aria-hidden="true"/>
       </Button>
-      <div className="duo">
-        <Link className="v7-button v7-secondary" to={'/p/' + encodeURIComponent(project.project.slug)}>Plan</Link>
-        {onWrite && <Button onClick={onWrite}>Write a question</Button>}
-      </div>
+      {onWrite && <Button variant="ghost" small onClick={onWrite}>Write a question</Button>}
     </div>
-  </section></div>;
+  </section>;
 }

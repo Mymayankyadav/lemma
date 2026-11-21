@@ -1,0 +1,28 @@
+{
+  "scope": "Warm Chromium host: word-only predictWritingAidPool plus selectWritingAidPool, empty contextual model; excludes rendering and device latency.",
+  "warmupPasses": 1,
+  "measuredPasses": 3,
+  "measurements": {
+    "balanced": {
+      "samples": 1566,
+      "medianMs": 0.09999999776482582,
+      "p95Ms": 0.20000000298023224,
+      "p99Ms": 0.4000000022351742,
+      "maxMs": 0.8999999985098839
+    },
+    "fast": {
+      "samples": 1566,
+      "medianMs": 0.09999999776482582,
+      "p95Ms": 0.20000000298023224,
+      "p99Ms": 0.4000000022351742,
+      "maxMs": 2.100000001490116
+    },
+    "strict": {
+      "samples": 201,
+      "medianMs": 0.19999999925494194,
+      "p95Ms": 0.4000000022351742,
+      "p99Ms": 0.5999999977648258,
+      "maxMs": 0.7999999970197678
+    }
+  }
+}

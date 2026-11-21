@@ -150,14 +150,31 @@ describe('confirmed account deletion cleans local tutor data',()=>{
   expect(tutorOwnerDeleted(owner)).toBe(true)
   expect(host.textContent).not.toContain('Open checkpoint tutor')
  })
+ it('waits for tutor image cleanup and reports a database failure before signing out',async()=>{
+  const request:{error:DOMException;onerror?:()=>void}={error:new DOMException('IndexedDB unavailable','SecurityError')}
+  const open=vi.fn(()=>request)
+  vi.stubGlobal('indexedDB',{open})
+  try {
+   mocks.invoke.mockResolvedValue({data:{deleted:true},error:null})
+   await render();await confirm()
+   await act(async()=>button('Delete account permanently').click())
+   await vi.waitFor(()=>expect(open).toHaveBeenCalledWith('lemma-tutor-ink',2))
+   expect(mocks.signOut).not.toHaveBeenCalled()
+   expect(tutorOwnerDeleted(owner)).toBe(true)
+   await act(async()=>request.onerror!())
+   expect(mocks.signOut).toHaveBeenCalledTimes(1)
+   expect(mocks.notify).toHaveBeenCalledWith(expect.stringContaining('remaining local Pad and tutor data'),{tone:'normal'})
+  } finally {vi.unstubAllGlobals()}
+ })
  it('blocks an already queued draft input after the same-tab deletion fence is set',async()=>{
   await render()
   const question=await openTutor(),key='lemma.tutor.draft:'+scopeKey()+':question'
   await act(async()=>setValue(question,'Draft before deletion'))
   expect(localStorage.getItem(key)).toBe('Draft before deletion')
   await act(async()=>{
-   removeDeletedOwnerTutorData(owner,authGeneration())
+   const cleanup=removeDeletedOwnerTutorData(owner,authGeneration())
    setValue(question,'Queued input after deletion')
+   await cleanup
   })
   expect(localStorage.getItem(key)).toBeNull()
   expect(host.textContent).not.toContain('Open checkpoint tutor')

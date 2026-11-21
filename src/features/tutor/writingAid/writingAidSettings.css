@@ -1,0 +1,58 @@
+.writing-aid-settings {
+  display: grid;
+  gap: var(--v7-space-3, .75rem);
+  color: var(--v7-role-text-primary, var(--ink));
+}
+
+.writing-aid-settings h2, .writing-aid-settings p {
+  margin: 0;
+}
+
+.writing-aid-settings p, .writing-aid-settings .writing-aid-mode small {
+  color: var(--v7-role-text-secondary, var(--ink-2));
+  font-size: var(--v7-type-supporting, .875rem);
+}
+
+.writing-aid-settings fieldset {
+  display: grid;
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0 var(--v7-space-3, .75rem) var(--v7-space-1, .25rem);
+  border: 1px solid var(--v7-role-border-subtle, var(--edge));
+  border-radius: var(--v7-radius-3, .75rem);
+  background: var(--v7-role-surface-raised, var(--raised));
+}
+
+.writing-aid-settings legend {
+  padding-inline: var(--v7-space-1, .25rem);
+  font-size: var(--v7-type-supporting, .875rem);
+  font-weight: 600;
+}
+
+.writing-aid-settings .writing-aid-mode {
+  display: flex;
+  align-items: center;
+  gap: var(--v7-space-3, .75rem);
+  min-height: var(--v7-touch, 44px);
+  padding-block: var(--v7-space-2, .5rem);
+  cursor: pointer;
+}
+
+.writing-aid-settings .writing-aid-mode + .writing-aid-mode,
+.writing-aid-settings .v7-switch-choice + .v7-switch-choice {
+  border-top: 1px solid var(--v7-role-border-subtle, var(--edge));
+}
+
+.writing-aid-settings .writing-aid-mode input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex: 0 0 auto;
+  accent-color: var(--v7-role-action-bg, var(--accent));
+}
+
+.writing-aid-settings .writing-aid-mode span {
+  display: grid;
+  min-width: 0;
+  gap: .125rem;
+}

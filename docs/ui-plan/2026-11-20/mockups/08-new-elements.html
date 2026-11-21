@@ -1,0 +1,71 @@
+<!doctype html><html lang="en" data-v7 data-theme="graph-night"><head><meta charset="utf-8"><title>New UI elements</title>
+<link rel="stylesheet" href="/lemma/fonts/v7/fonts.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"><script src="icons.js"></script>
+<style>
+.spec{margin:0 12px 14px;padding:12px 14px 14px;border-radius:var(--v7-radius-4);border:1px dashed var(--v7-role-border-default)}
+.spec>.t-eyebrow{display:block;margin-bottom:10px;color:var(--v7-role-link-fg)}
+.loop{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.loop>div{display:flex;flex-direction:column;gap:6px}.loop .bar{height:4px;border-radius:2px;background:var(--v7-role-surface-muted);overflow:hidden}.loop .bar i{display:block;height:100%;background:var(--v7-role-link-fg)}
+.loop span{font:600 11.5px/1 var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.presence{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;font:600 12px/1 var(--v7-sans)}
+.presence i{width:7px;height:7px;border-radius:50%}
+.cap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;align-items:end;height:92px}
+.cap>div{display:flex;flex-direction:column;align-items:center;gap:4px;font:500 11px/1 var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.cap b{width:100%;border-radius:8px 8px 4px 4px;background:var(--v7-role-selection-subtle);border-top:3px solid var(--v7-role-link-fg)}
+.toast{display:flex;align-items:center;gap:10px;height:48px;padding:0 6px 0 14px;border-radius:16px;background:var(--v7-role-surface-overlay);border:1px solid var(--v7-role-border-subtle);box-shadow:var(--v7-shadow-2)}
+.disc{display:flex;align-items:center;gap:10px;height:52px;padding:0 4px;border-bottom:1px solid var(--v7-role-border-subtle)}
+</style></head><body>
+<div class="phone tall" style="padding-top:14px">
+ <div class="pad" style="margin-bottom:12px"><div class="t-title">New elements</div><div class="t-supp">All built from today's tokens and kit parts</div></div>
+
+ <div class="spec"><span class="t-eyebrow">1 · Loop ribbon</span>
+  <div class="loop"><div><div class="bar"><i style="width:100%"></i></div><span style="color:var(--v7-role-status-success)">✓ Checks</span></div><div><div class="bar"><i style="width:40%"></i></div><span style="color:var(--v7-role-link-fg)">Learn</span></div><div><div class="bar"></div><span>Practice</span></div><div><div class="bar"></div><span>Close</span></div></div>
+  <div class="note" style="margin-top:8px">The day's study loop (the scheduler's Checks → Learn → Practice → Close) as progress, not a heading.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">2 · Ruler, reused as a picker</span>
+  <div class="row between"><span class="t-supp">Time you have now</span><b style="font:600 16px var(--v7-sans)">40 min</b></div>
+  <div class="ruler" style="margin:2px 2px 10px"><div class="ticks"></div><div class="fill" style="width:44%"></div><div class="thumb" style="left:44%"></div></div>
+  <div class="row between"><span class="t-supp">Day starts</span><b style="font:600 16px var(--v7-sans)">08:00</b></div>
+  <div class="ruler" style="margin:2px 2px 6px"><div class="ticks"></div><div class="fill" style="width:33%"></div><div class="thumb" style="left:33%"></div></div>
+  <div class="note">The Calendar's scale replaces typed times and steppers: time budget, block length, day start and end, reminder time, focus length.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">3 · Capacity painter (weekday minutes)</span>
+  <div class="cap"><div><b style="height:54px"></b>Mon</div><div><b style="height:54px"></b>Tue</div><div><b style="height:54px"></b>Wed</div><div><b style="height:54px"></b>Thu</div><div><b style="height:36px"></b>Fri</div><div><b style="height:72px"></b>Sat</div><div><b style="height:18px;border-top-color:var(--v7-role-border-default)"></b>Sun</div></div>
+  <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap"><span class="chip on">Weekdays 1 h</span><span class="chip">Weekends 2 h</span><span class="chip">Copy last week</span></div>
+  <div class="note" style="margin-top:8px">Drag bars instead of typing seven numbers; starts on the week-start day from Settings.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">4 · Tutor presence</span>
+  <div class="row" style="gap:8px;flex-wrap:wrap"><span class="presence" style="background:var(--v7-role-status-success-subtle);color:var(--v7-role-status-success)"><i style="background:var(--v7-role-status-success)"></i>Listening</span>
+   <span class="presence" style="background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary)"><i style="background:var(--v7-role-text-tertiary)"></i>Not listening</span>
+   <span class="presence" style="background:var(--v7-role-selection-subtle);color:var(--v7-role-link-fg)"><span class="i xs" data-i="message-circle"></span>Replying…</span></div>
+  <div class="card row" style="margin-top:10px;padding:10px 12px;border-radius:var(--v7-radius-3)"><div class="grow"><div style="font:600 14px/1.3 var(--v7-sans)">Claude isn't listening</div><div class="t-cap">Paste this in Claude to pick up your answer</div></div><span class="btn tonal small"><span class="i xs" data-i="square-pen"></span>Copy</span></div>
+  <div class="note" style="margin-top:8px">Driven by the last time the connector read a turn or waited with tutor_next.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">5 · Attachment chip + ink tray</span>
+  <div class="row" style="gap:8px"><div class="row card" style="padding:4px 6px 4px 4px;border-radius:12px;gap:8px"><span style="width:56px;height:40px;border-radius:8px;background:#fff;display:block"></span><div><div style="font:600 13px var(--v7-sans)">Drawing</div><div class="t-cap">Sends with your answer</div></div><span class="ib" style="width:30px;height:30px"><span class="i s" data-i="x"></span></span></div>
+   <div class="row card" style="padding:4px 6px 4px 4px;border-radius:12px;gap:8px"><span style="width:40px;height:40px;border-radius:8px;background:var(--v7-role-surface-muted);display:flex;align-items:center;justify-content:center"><span class="i s" data-i="camera"></span></span><div><div style="font:600 13px var(--v7-sans)">Photo</div><div class="t-cap">Page 41</div></div></div></div>
+  <div class="row" style="gap:2px;margin-top:10px;padding:4px;border-radius:14px;background:var(--v7-role-surface-sunken)">
+   <span class="ib" style="background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary)"><span class="i s" data-i="pen-line"></span></span><span class="ib"><span class="i s" data-i="eraser"></span></span><span class="ib"><span class="i s" data-i="hand"></span></span><span class="ib"><span class="i s" data-i="undo-2"></span></span><span class="grow"></span><span class="ib"><span class="i s" data-i="maximize-2"></span></span><span class="ib"><span class="i s" data-i="keyboard"></span></span></div></div>
+
+ <div class="spec"><span class="t-eyebrow">6 · Map controls</span>
+  <div class="row" style="gap:8px"><span class="row card" style="height:48px;border-radius:24px;padding:0 14px;flex:1;gap:8px"><span class="i s ter" data-i="search"></span><span class="t-supp">Search the Atlas</span></span>
+   <span class="ib card" style="border-radius:24px"><span class="i s" data-i="layers"></span></span><span class="ib card" style="border-radius:24px"><span class="i s" data-i="locate-fixed"></span></span></div>
+  <div class="note" style="margin-top:8px">Like a maps app: controls fade while you pan and return when you stop; filters and the key live under Layers.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">7 · Docked action bar</span>
+  <div class="row"><span class="btn primary" style="flex:1.6"><span class="i s" data-i="message-circle"></span>Continue with tutor</span><span class="btn tonal grow">Review 14</span></div>
+  <div class="note" style="margin-top:8px">Replaces the tab bar on detail pages; never stacked on it.</div></div>
+
+ <div class="spec"><span class="t-eyebrow">8 · Toast with Undo (every destructive action)</span>
+  <div class="toast"><span class="i s ok" data-i="circle-check"></span><span class="t-body grow">Task deleted</span><span class="btn ghost small">Undo</span></div></div>
+
+ <div class="spec"><span class="t-eyebrow">9 · Disclosure row (replaces native &lt;details&gt;)</span>
+  <div class="disc"><span class="t-body grow">Cancelled</span><span class="t-cap">1</span><span class="i s ter" data-i="chevron-down"></span></div>
+  <div class="disc" style="border:0"><span class="t-body grow">Why this card?</span><span class="i s ter" data-i="chevron-down"></span></div></div>
+
+ <div class="spec"><span class="t-eyebrow">10 · Search that creates</span>
+  <div class="card" style="border-radius:var(--v7-radius-3);padding:4px 12px">
+   <div class="t-cap" style="padding:8px 0 4px">Nothing matches "lindelöf"</div>
+   <div class="disc"><span class="i s" data-i="plus"></span><span class="t-body grow">Add task "lindelöf"</span></div>
+   <div class="disc" style="border:0"><span class="i s" data-i="message-circle"></span><span class="t-body grow">Ask your tutor about "lindelöf"</span></div></div></div>
+ <div style="height:24px"></div>
+</div></body></html>

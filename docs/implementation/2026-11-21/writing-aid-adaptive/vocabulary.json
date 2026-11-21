@@ -1,0 +1,14 @@
+{
+  "scope": "Actual engine and local vocabulary policy; deterministic synthetic word and virtual clock.",
+  "candidate": "lemmascope",
+  "prefix": "lemmascop",
+  "before": false,
+  "afterAcceptanceOnly": false,
+  "afterOneTypedUse": false,
+  "afterTwoTypedUses": true,
+  "afterOneYear": true,
+  "afterThreeYears": false,
+  "weakProofTerm": false,
+  "observations": 2,
+  "virtualDay": 86400000
+}

@@ -1,0 +1,1078 @@
+{
+  "browser": "156.0.8078.79",
+  "captureBuild": "source server",
+  "assumptions": {
+    "wpm": 30,
+    "charactersPerWord": 5,
+    "msPerCharacter": 400,
+    "fittsInterceptMs": 130,
+    "fittsSlopeMs": 65,
+    "scanMs": 75,
+    "swipeDistancePx": 56,
+    "swipeSpeedPxPerSecond": [
+      150,
+      300,
+      600
+    ],
+    "releaseMs": 80,
+    "mistakePenaltyMs": [
+      1000,
+      2000,
+      4000
+    ]
+  },
+  "profiles": [
+    {
+      "id": "narrow-day",
+      "width": 320,
+      "height": 640,
+      "scale": 160,
+      "scheme": "light",
+      "touch": true,
+      "geometry": {
+        "input": {
+          "x": 69,
+          "y": 281,
+          "width": 132,
+          "height": 120
+        },
+        "floating": {
+          "x": 13,
+          "y": 190.921875,
+          "width": 270.03125,
+          "height": 77.078125
+        },
+        "keyboard": {
+          "x": 0,
+          "y": 414,
+          "width": 320,
+          "height": 226
+        },
+        "slots": [
+          {
+            "x": 4,
+            "y": 414,
+            "width": 58,
+            "height": 44
+          },
+          {
+            "x": 62,
+            "y": 414,
+            "width": 58,
+            "height": 44
+          },
+          {
+            "x": 120,
+            "y": 414,
+            "width": 58,
+            "height": 44
+          }
+        ],
+        "overlapsKeyboard": false,
+        "horizontalOverflow": false,
+        "floatingWithinViewport": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 62,
+              "y": 414,
+              "width": 58,
+              "height": 44
+            }
+          ],
+          "travelPx": 69.18,
+          "modeledMs": 270
+        },
+        "undo": {
+          "taps": 2,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 62,
+              "y": 414,
+              "width": 58,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 284.046875,
+              "width": 229.078125,
+              "height": 45.125
+            }
+          ],
+          "travelPx": 203.91,
+          "modeledMs": 601.84
+        },
+        "spelling": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 175.59375,
+              "y": 502,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 218.265625,
+              "width": 170,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 283.6,
+          "modeledMs": 347.54
+        },
+        "dismiss": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 175.59375,
+              "y": 502,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 228,
+              "y": 218.265625,
+              "width": 44,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 274.57,
+          "modeledMs": 347.54
+        },
+        "refreshWords": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 180,
+              "y": 414,
+              "width": 44,
+              "height": 44
+            }
+          ],
+          "travelPx": 72.5,
+          "modeledMs": 283.49
+        },
+        "refreshReplacement": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 175.59375,
+              "y": 502,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 184,
+              "y": 218.265625,
+              "width": 44,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 268.6,
+          "modeledMs": 347.54
+        },
+        "notation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 50.796875,
+              "y": 502,
+              "width": 31.1875,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 254.09375,
+              "width": 170,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 234.64,
+          "modeledMs": 337.2
+        },
+        "continuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 66.390625,
+              "y": 458,
+              "width": 31.1875,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 191.921875,
+              "width": 180.03125,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 251.51,
+          "modeledMs": 342.59
+        },
+        "refreshContinuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 206.796875,
+              "y": 546,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 192.078125,
+              "y": 191.921875,
+              "width": 44,
+              "height": 75.078125
+            }
+          ],
+          "travelPx": 338.64,
+          "modeledMs": 365.02
+        }
+      },
+      "swipe": [
+        {
+          "speedPxPerSecond": 150,
+          "modeledMs": 730.47
+        },
+        {
+          "speedPxPerSecond": 300,
+          "modeledMs": 543.81
+        },
+        {
+          "speedPxPerSecond": 600,
+          "modeledMs": 450.47
+        }
+      ],
+      "baseline": {
+        "continuationMs": 314.21,
+        "spellingMs": 339.68,
+        "dismissViaMoreMs": 656.57
+      },
+      "correctionBreakEvenMs": [
+        {
+          "penaltyMs": 1000,
+          "maximumErrorFraction": 1
+        },
+        {
+          "penaltyMs": 2000,
+          "maximumErrorFraction": 0.83
+        },
+        {
+          "penaltyMs": 4000,
+          "maximumErrorFraction": 0.41
+        }
+      ]
+    },
+    {
+      "id": "phone-night",
+      "width": 390,
+      "height": 844,
+      "scale": 100,
+      "scheme": "dark",
+      "touch": true,
+      "geometry": {
+        "input": {
+          "x": 69,
+          "y": 538.21875,
+          "width": 202,
+          "height": 66.78125
+        },
+        "floating": {
+          "x": 13,
+          "y": 468.4375,
+          "width": 260,
+          "height": 56.78125
+        },
+        "keyboard": {
+          "x": 0,
+          "y": 618,
+          "width": 390,
+          "height": 226
+        },
+        "slots": [
+          {
+            "x": 4,
+            "y": 618,
+            "width": 81.328125,
+            "height": 44
+          },
+          {
+            "x": 85.328125,
+            "y": 618,
+            "width": 81.328125,
+            "height": 44
+          },
+          {
+            "x": 166.65625,
+            "y": 618,
+            "width": 81.34375,
+            "height": 44
+          }
+        ],
+        "overlapsKeyboard": false,
+        "horizontalOverflow": false,
+        "floatingWithinViewport": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 85.328125,
+              "y": 618,
+              "width": 81.328125,
+              "height": 44
+            }
+          ],
+          "travelPx": 66.52,
+          "modeledMs": 270
+        },
+        "undo": {
+          "taps": 2,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 85.328125,
+              "y": 618,
+              "width": 81.328125,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 499,
+              "width": 214,
+              "height": 44
+            }
+          ],
+          "travelPx": 185.62,
+          "modeledMs": 597.8
+        },
+        "spelling": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 214.09375,
+              "y": 706,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 488.21875,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 251.23,
+          "modeledMs": 353.59
+        },
+        "dismiss": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 214.09375,
+              "y": 706,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 228,
+              "y": 488.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 213.05,
+          "modeledMs": 353.59
+        },
+        "refreshWords": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 250,
+              "y": 618,
+              "width": 44,
+              "height": 44
+            }
+          ],
+          "travelPx": 105.71,
+          "modeledMs": 313.62
+        },
+        "refreshReplacement": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 214.09375,
+              "y": 706,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 184,
+              "y": 488.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 214.12,
+          "modeledMs": 353.59
+        },
+        "notation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 61.296875,
+              "y": 706,
+              "width": 38.1875,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 488.21875,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 213.2,
+          "modeledMs": 353.59
+        },
+        "continuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 80.390625,
+              "y": 662,
+              "width": 38.1875,
+              "height": 44
+            },
+            {
+              "x": 14,
+              "y": 469.4375,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 187.17,
+          "modeledMs": 344.29
+        },
+        "refreshContinuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 252.296875,
+              "y": 750,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 184,
+              "y": 469.4375,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 282.84,
+          "modeledMs": 373.38
+        }
+      },
+      "swipe": [
+        {
+          "speedPxPerSecond": 150,
+          "modeledMs": 753.92
+        },
+        {
+          "speedPxPerSecond": 300,
+          "modeledMs": 567.26
+        },
+        {
+          "speedPxPerSecond": 600,
+          "modeledMs": 473.92
+        }
+      ],
+      "baseline": {
+        "continuationMs": 314.21,
+        "spellingMs": 339.68,
+        "dismissViaMoreMs": 656.51
+      },
+      "correctionBreakEvenMs": [
+        {
+          "penaltyMs": 1000,
+          "maximumErrorFraction": 1
+        },
+        {
+          "penaltyMs": 2000,
+          "maximumErrorFraction": 0.83
+        },
+        {
+          "penaltyMs": 4000,
+          "maximumErrorFraction": 0.41
+        }
+      ]
+    },
+    {
+      "id": "landscape-day",
+      "width": 844,
+      "height": 390,
+      "scale": 100,
+      "scheme": "light",
+      "touch": true,
+      "geometry": {
+        "input": {
+          "x": 419.96875,
+          "y": 124.796875,
+          "width": 255.03125,
+          "height": 44.390625
+        },
+        "floating": {
+          "x": 61.984375,
+          "y": 321.21875,
+          "width": 288.984375,
+          "height": 56.78125
+        },
+        "keyboard": {
+          "x": 362.96875,
+          "y": 184,
+          "width": 419.03125,
+          "height": 206
+        },
+        "slots": [
+          {
+            "x": 366.96875,
+            "y": 184,
+            "width": 91,
+            "height": 44
+          },
+          {
+            "x": 457.96875,
+            "y": 184,
+            "width": 91.015625,
+            "height": 44
+          },
+          {
+            "x": 548.984375,
+            "y": 184,
+            "width": 91,
+            "height": 44
+          }
+        ],
+        "overlapsKeyboard": false,
+        "horizontalOverflow": false,
+        "floatingWithinViewport": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 457.96875,
+              "y": 184,
+              "width": 91.015625,
+              "height": 44
+            }
+          ],
+          "travelPx": 63.79,
+          "modeledMs": 267.3
+        },
+        "undo": {
+          "taps": 2,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 457.96875,
+              "y": 184,
+              "width": 91.015625,
+              "height": 44
+            },
+            {
+              "x": 62.984375,
+              "y": 333,
+              "width": 242.984375,
+              "height": 44
+            }
+          ],
+          "travelPx": 415.87,
+          "modeledMs": 610.95
+        },
+        "spelling": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 593.03125,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 62.984375,
+              "y": 322.21875,
+              "width": 198.984375,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 455.49,
+          "modeledMs": 316.02
+        },
+        "dismiss": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 593.03125,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 305.96875,
+              "y": 322.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 292.5,
+          "modeledMs": 393.84
+        },
+        "refreshWords": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 642,
+              "y": 184,
+              "width": 44,
+              "height": 44
+            }
+          ],
+          "travelPx": 119.51,
+          "modeledMs": 323.74
+        },
+        "refreshReplacement": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 593.03125,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 261.96875,
+              "y": 322.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 335.6,
+          "modeledMs": 405.59
+        },
+        "notation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 428.625,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 62.984375,
+              "y": 322.21875,
+              "width": 198.984375,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 293.56,
+          "modeledMs": 288.68
+        },
+        "continuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 449.171875,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 62.984375,
+              "y": 322.21875,
+              "width": 198.984375,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 323.77,
+          "modeledMs": 303.67
+        },
+        "refreshContinuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 634.125,
+              "y": 306,
+              "width": 41.109375,
+              "height": 39
+            },
+            {
+              "x": 261.96875,
+              "y": 322.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 371.49,
+          "modeledMs": 415.37
+        }
+      },
+      "swipe": [
+        {
+          "speedPxPerSecond": 150,
+          "modeledMs": 769.27
+        },
+        {
+          "speedPxPerSecond": 300,
+          "modeledMs": 582.61
+        },
+        {
+          "speedPxPerSecond": 600,
+          "modeledMs": 489.27
+        }
+      ],
+      "baseline": {
+        "continuationMs": 322.85,
+        "spellingMs": 348.05,
+        "dismissViaMoreMs": 599.23
+      },
+      "correctionBreakEvenMs": [
+        {
+          "penaltyMs": 1000,
+          "maximumErrorFraction": 1
+        },
+        {
+          "penaltyMs": 2000,
+          "maximumErrorFraction": 0.85
+        },
+        {
+          "penaltyMs": 4000,
+          "maximumErrorFraction": 0.42
+        }
+      ]
+    },
+    {
+      "id": "desktop-night",
+      "width": 1280,
+      "height": 800,
+      "scale": 100,
+      "scheme": "dark",
+      "touch": false,
+      "geometry": {
+        "input": {
+          "x": 337,
+          "y": 498.796875,
+          "width": 556,
+          "height": 44.390625
+        },
+        "floating": {
+          "x": 281,
+          "y": 427.21875,
+          "width": 260,
+          "height": 56.78125
+        },
+        "keyboard": {
+          "x": 280,
+          "y": 558,
+          "width": 720,
+          "height": 242
+        },
+        "slots": [
+          {
+            "x": 284,
+            "y": 558,
+            "width": 191.328125,
+            "height": 44
+          },
+          {
+            "x": 475.328125,
+            "y": 558,
+            "width": 191.328125,
+            "height": 44
+          },
+          {
+            "x": 666.65625,
+            "y": 558,
+            "width": 191.328125,
+            "height": 44
+          }
+        ],
+        "overlapsKeyboard": false,
+        "horizontalOverflow": false,
+        "floatingWithinViewport": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 475.328125,
+              "y": 558,
+              "width": 191.328125,
+              "height": 44
+            }
+          ],
+          "travelPx": 56.84,
+          "modeledMs": 272.11
+        },
+        "undo": {
+          "taps": 2,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 475.328125,
+              "y": 558,
+              "width": 191.328125,
+              "height": 44
+            },
+            {
+              "x": 282,
+              "y": 439,
+              "width": 214,
+              "height": 44
+            }
+          ],
+          "travelPx": 274.28,
+          "modeledMs": 599.91
+        },
+        "spelling": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 675.59375,
+              "y": 650,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 282,
+              "y": 428.21875,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 407.63,
+          "modeledMs": 355.67
+        },
+        "dismiss": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 675.59375,
+              "y": 650,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 496,
+              "y": 428.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 291.58,
+          "modeledMs": 362.98
+        },
+        "refreshWords": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 860,
+              "y": 558,
+              "width": 44,
+              "height": 44
+            }
+          ],
+          "travelPx": 281.4,
+          "modeledMs": 391.53
+        },
+        "refreshReplacement": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 675.59375,
+              "y": 650,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 452,
+              "y": 428.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 322.42,
+          "modeledMs": 378.94
+        },
+        "notation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 390.796875,
+              "y": 650,
+              "width": 71.1875,
+              "height": 48
+            },
+            {
+              "x": 282,
+              "y": 428.21875,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 226.32,
+          "modeledMs": 355.67
+        },
+        "continuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 426.390625,
+              "y": 602,
+              "width": 71.1875,
+              "height": 48
+            },
+            {
+              "x": 282,
+              "y": 428.21875,
+              "width": 170,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 195.08,
+          "modeledMs": 337.55
+        },
+        "refreshContinuation": {
+          "taps": 1,
+          "boxes": [
+            {
+              "x": 746.796875,
+              "y": 698,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 452,
+              "y": 428.21875,
+              "width": 44,
+              "height": 54.78125
+            }
+          ],
+          "travelPx": 407.52,
+          "modeledMs": 400.11
+        }
+      },
+      "swipe": [
+        {
+          "speedPxPerSecond": 150,
+          "modeledMs": 829.56
+        },
+        {
+          "speedPxPerSecond": 300,
+          "modeledMs": 642.9
+        },
+        {
+          "speedPxPerSecond": 600,
+          "modeledMs": 549.56
+        }
+      ],
+      "baseline": {
+        "continuationMs": 315.53,
+        "spellingMs": 342.67,
+        "dismissViaMoreMs": 702.4
+      },
+      "correctionBreakEvenMs": [
+        {
+          "penaltyMs": 1000,
+          "maximumErrorFraction": 1
+        },
+        {
+          "penaltyMs": 2000,
+          "maximumErrorFraction": 0.83
+        },
+        {
+          "penaltyMs": 4000,
+          "maximumErrorFraction": 0.42
+        }
+      ]
+    }
+  ]
+}

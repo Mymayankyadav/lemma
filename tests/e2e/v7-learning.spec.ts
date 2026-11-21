@@ -32,10 +32,11 @@ test("§6.8 Paths: search filters as you type and the status chips filter the li
  await expect(page.locator(".v7-paths-card")).toHaveCount(1);
  await page.getByRole("searchbox").fill("");
  await page.getByRole("radio",{name:/^Archived/}).click();
- await expect(page.getByText(/No archived paths|No paths/)).toBeVisible();
+ await expect(page.getByText("Nothing archived.",{exact:true})).toBeVisible();
+ await expect(page.locator(".v7-paths-card")).toHaveCount(0);
 });
 
-test("§6.8 New path: the sheet creates a path that opens with a Tell your tutor card",async({page})=>{
+test("§6.8 New path: the sheet creates a path that opens the tutor planning flow",async({page})=>{
  await open(page,"/projects/new");
  const sheet=page.getByRole("dialog",{name:"New path"});
  await expect(sheet.getByRole("textbox",{name:"Name"})).toBeFocused();
@@ -43,11 +44,13 @@ test("§6.8 New path: the sheet creates a path that opens with a Tell your tutor
  await sheet.getByRole("textbox",{name:"Name"}).fill("Abstract Algebra");
  await sheet.getByRole("button",{name:"Create path"}).click();
  await page.waitForURL(/#\/p\/[^?]+\?new=1/);
- await expect(page.getByRole("region",{name:"Tell your tutor"}).getByRole("button",{name:"Copy prompt"})).toBeVisible();
+ await expect(page.getByText("No plan yet.",{exact:true})).toBeVisible();
+ await page.getByRole("link",{name:"Plan with your tutor",exact:true}).click();
+ await expect(page).toHaveURL(/#\/p\/[^/]+\/tutor$/);
 });
 
 test("§6.9 Checkpoint and Session keep their primary action in a sticky bar at the bottom",async({page})=>{
- for(const [hash,name,label] of [["/p/real-analysis/cp/CP4","Checkpoint actions","Work on this with your tutor"],["/s/real-analysis/7","Session actions",/Start another session|Resume session/]] as const){
+ for(const [hash,name,label] of [["/p/real-analysis/cp/CP4","Checkpoint actions","Continue with tutor"],["/s/real-analysis/7","Session actions",/Continue with tutor|Resume session/]] as const){
   await open(page,hash);
   const bar=page.getByRole("group",{name});
   await expect(bar.getByRole("button",{name:label})).toBeVisible();

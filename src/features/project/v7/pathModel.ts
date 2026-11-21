@@ -28,7 +28,7 @@ export function currentStudyStep(checkpoint:Pick<CheckpointView,'currentStep'|'s
  const total=Math.max(0,checkpoint.stepsTotal),index=Math.min(Math.max(0,checkpoint.currentStep),total);
  return {index,ordinal:index<total?index+1:null,total};
 }
-export function nodeText(checkpoints:readonly CheckpointView[],index:number,step?:string|null,canonical=false):NodeText{
+export function nodeText(checkpoints:readonly CheckpointView[],index:number,step?:string|null):NodeText{
  const cp=checkpoints[index],state=nodeStateOf(cp.ui);
  if(state==='demonstrated'){
   const date=shortDate(cp.demonstratedAt),due=shortDate(cp.recheckDue);
@@ -37,11 +37,11 @@ export function nodeText(checkpoints:readonly CheckpointView[],index:number,step
   return {state,label:'Demonstrated',detail:parts.join(' · ')};
  }
  if(state==='current'){
-  const total=Math.max(0,cp.stepsTotal),at=canonical?currentStudyStep(cp).ordinal:total?Math.min(Math.max(1,cp.currentStep),total):0;
+  const {total,ordinal:at}=currentStudyStep(cp);
   return {state,label:'In progress',detail:total&&at===null?'All steps completed':total?'Step '+at+' of '+total+(step?': '+step:''):'Step details are not written yet'};
  }
  if(state==='proposed')return {state,label:'Proposed',detail:'Proposed by your tutor'};
- if(state==='locked'){const need=waitingFor(checkpoints,index);return {state,label:'Locked',detail:need?'Needs '+need:'Locked'};}
+ if(state==='locked'){const need=waitingFor(checkpoints,index);return {state,label:'Locked',detail:need?'After '+need:'Locked'};}
  return {state,label:'Up next',detail:'Up next'};
 }
 /** Index of the node where the solid line ends: the current checkpoint, else the first not yet demonstrated, else the last. */

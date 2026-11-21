@@ -1,0 +1,55 @@
+<!doctype html><html lang="en" data-v7 data-theme="graph-night"><head><meta charset="utf-8"><title>Tutor · reading mode</title>
+<link rel="stylesheet" href="/lemma/fonts/v7/fonts.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"><script src="icons.js"></script>
+<style>
+.th{height:56px;display:flex;align-items:center;gap:6px;padding:0 6px 0 4px;border-bottom:1px solid var(--v7-role-border-subtle);background:var(--v7-role-surface-page)}
+.presence{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--v7-role-status-success-subtle);color:var(--v7-role-status-success);font:600 12px/1 var(--v7-sans)}
+.presence i{width:7px;height:7px;border-radius:50%;background:var(--v7-role-status-success);box-shadow:0 0 0 3px var(--v7-role-status-success-subtle)}
+.timer{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--v7-role-surface-muted);font:600 13px/1 var(--v7-mono);color:var(--v7-role-text-primary)}
+.hair{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:0 12px}.hair i{height:3px;border-radius:2px;background:var(--v7-role-surface-muted)}.hair i.d{background:var(--v7-role-link-fg)}
+.table{margin:8px 12px 0;padding:8px 12px;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);display:flex;gap:10px;align-items:center}
+.chat{position:absolute;left:0;right:0;top:122px;bottom:132px;overflow:hidden;padding:4px 16px 0}
+.tutor{margin:14px 0}.tutor .t-reading{color:var(--v7-role-text-primary)}
+.me{margin:12px 0 12px auto;max-width:82%;padding:10px 12px;border-radius:18px 18px 6px 18px;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary)}
+.ink{margin-top:8px;border-radius:12px;background:#fff;height:112px;position:relative;overflow:hidden}
+.composer{position:absolute;left:0;right:0;bottom:0;padding:8px 12px 14px;background:var(--v7-role-surface-page);border-top:1px solid var(--v7-role-border-subtle)}
+.field{display:flex;align-items:center;gap:8px;height:52px;border-radius:26px;padding:0 6px 0 16px;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-default)}
+.send{width:40px;height:40px;border-radius:20px;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);display:flex;align-items:center;justify-content:center}
+.tools{display:grid;grid-template-columns:repeat(6,1fr);margin-top:6px}
+.tool{display:flex;flex-direction:column;align-items:center;gap:3px;height:52px;justify-content:center;color:var(--v7-role-text-secondary);font:500 11.5px/1 var(--v7-sans)}
+</style></head><body>
+<div class="phone">
+ <header class="th">
+  <span class="ib"><span class="i" data-i="chevron-left"></span></span>
+  <div class="grow"><div style="font:600 16px/1.2 var(--v7-sans)">Compactness</div><div class="t-cap">CP4 · step 3 of 4</div></div>
+  <span class="presence"><i></i>Listening</span>
+  <span class="timer"><span class="i xs" data-i="pause"></span>12:04</span>
+  <span class="ib" style="width:36px"><span class="i" data-i="ellipsis"></span></span>
+ </header>
+ <div class="hair" style="margin-top:6px"><i class="d"></i><i class="d"></i><i></i><i></i></div>
+ <div class="table"><span class="t-eyebrow" style="color:var(--v7-role-link-fg)">On the table</span><span class="t-supp grow" style="color:var(--v7-role-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">What open set around <span class="m">x</span> misses <span class="m">K</span>?</span><span class="i s ter" data-i="chevron-down"></span></div>
+
+ <div class="chat">
+  <div class="tutor"><div class="t-eyebrow" style="margin-bottom:6px">Tutor</div>
+   <div class="t-reading">Fix <span class="m">x ∉ K</span>. For each <span class="m">y ∈ K</span>, Hausdorff gives disjoint open sets <span class="m">U<sub>y</sub> ∋ x</span> and <span class="m">V<sub>y</sub> ∋ y</span>. Why do the <span class="m">V<sub>y</sub></span> matter for <span class="m">K</span>?</div></div>
+  <div class="me"><div class="t-body">They cover <span class="m">K</span>. Here is my picture.</div>
+   <div class="ink"><svg width="100%" height="112" viewBox="0 0 260 112" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 60 C 40 25, 120 20, 140 45 C 160 70, 120 95, 80 90 C 55 87, 40 78, 40 60z"/>
+    <circle cx="70" cy="55" r="18" stroke-dasharray="4 3"/><circle cx="105" cy="45" r="17" stroke-dasharray="4 3"/><circle cx="118" cy="75" r="16" stroke-dasharray="4 3"/>
+    <circle cx="70" cy="55" r="1.5" fill="#111"/><circle cx="105" cy="45" r="1.5" fill="#111"/><circle cx="118" cy="75" r="1.5" fill="#111"/>
+    <circle cx="215" cy="52" r="2" fill="#111"/><circle cx="215" cy="52" r="22"/>
+    <path d="M206 92 l4 -10 l4 10 M208 88 h5" stroke-width="1.6"/><path d="M60 102 c4 -6 8 -6 10 0" stroke-width="1.6"/>
+   </svg></div>
+   <div class="t-cap" style="margin-top:6px;color:var(--v7-role-text-secondary)">Drawing · sent to Claude</div></div>
+  <div class="tutor"><div class="t-eyebrow" style="margin-bottom:6px">Tutor</div>
+   <div class="t-reading">Your sketch is right: the dashed <span class="m">V<sub>y</sub></span> cover <span class="m">K</span>. Compactness keeps finitely many, <span class="m">V<sub>y<sub>1</sub></sub>, …, V<sub>y<sub>n</sub></sub></span>. <b>What open set around <span class="m">x</span> misses <span class="m">K</span>?</b></div></div>
+ </div>
+
+ <div class="composer">
+  <div class="field"><span class="t-body ter grow">Write your answer…</span><span class="ib" style="width:36px;height:36px"><span class="i s" data-i="mic"></span></span><span class="send"><span class="i s" data-i="arrow-up"></span></span></div>
+  <div class="tools">
+   <span class="tool"><span class="i" data-i="pen-line"></span>Scratch</span><span class="tool"><span class="i" data-i="camera"></span>Photo</span>
+   <span class="tool"><span class="i" data-i="lightbulb"></span>Hint 1/4</span><span class="tool"><span class="i" data-i="life-buoy"></span>Stuck</span>
+   <span class="tool"><span class="i" data-i="sigma"></span>Symbols</span><span class="tool"><span class="i" data-i="keyboard"></span>Keys</span>
+  </div>
+ </div>
+</div></body></html>

@@ -1,3 +1,5 @@
+import {DetailHeader} from '../../app/v7/V7Shell';
+import {Picker} from '../../ui/v7/components';
 import {useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore} from 'react';
 import {useQuery} from '@tanstack/react-query';
 import {Link, useLocation, useNavigate, useParams, useSearchParams} from 'react-router';
@@ -7,6 +9,7 @@ import {authGeneration, authOwner, authSignedOut} from '../../data/authBoundary'
 import {getApi, LemmaError, type CheckpointDetail} from '../../data';
 import {useAuth} from '../../data/hooks';
 import {getDemoProfile, getMode} from '../../data/mode';
+import {isFlagOn} from '../../flags';
 import {currentPadScope, devicePadSnapshot, findEligibleDevicePad, findRememberedPad, listEligibleDevicePads, subscribeDevicePad} from './padCheckpoint';
 import {usePadRelease} from './usePadRelease';
 import CheckpointPad from './CheckpointPad';
@@ -21,7 +24,13 @@ const padAddress = (slug: string, code?: string) => '/pad?' + new URLSearchParam
  * cold-open offline. Online selections always pass the normal owner API first. */
 export default function OfflinePadPage() {
   useSyncExternalStore(subscribeDevicePad, devicePadSnapshot);
-  useLayoutEffect(() => {setShellRoot('v7'); loadShellFonts(true); return () => setShellRoot('legacy');}, []);
+  const v7 = isFlagOn('v7Shell');
+  useLayoutEffect(() => {
+    if (!v7) return;
+    setShellRoot('v7');
+    loadShellFonts(true);
+    return () => setShellRoot('legacy');
+  }, [v7]);
   const location = useLocation(), navigate = useNavigate();
   const online = navigator.onLine, demo = getMode() === 'demo';
   // Do not replace a cold-offline working copy merely because connectivity returns.
@@ -37,10 +46,11 @@ export default function OfflinePadPage() {
     search.set('online', search.get('online') === '1' ? '2' : '1');
     void navigate({pathname: location.pathname, search: '?' + search}, {state: {padLoadOnline: true}});
   }
-  return <main id="main-content" className="local-pad-page" data-offline={!online} aria-label="Device Pad">
+  return <main id="main-content" className={v7 ? 'v7-page local-pad-page' : 'local-pad-page'} data-offline={!online} aria-label="Device Pad">
+    {v7 && <DetailHeader title="Lemma Pad" back="/settings?section=data"/>}
     <header className="local-pad-page-header"><div><p className="local-pad-eyebrow">Your working space</p><h1>Lemma Pad</h1></div>
-      <Link to="/">Return to Lemma</Link></header>
-    <p>Work through a checkpoint with notes, mathematics and ink. Drafts stay on this device until you explicitly export or share a selection.</p>
+      {!v7 && <Link to="/">Return to Lemma</Link>}</header>
+    <p>Notes and ink for a checkpoint. Saved on this device.</p>
     {demo ? <AuthorizedPage key={'demo:' + getDemoProfile()} demo online={online}/> : onlineVisit
       ? <OnlineOwner online={online}/>
       : <><OfflineLibrary/>{online && <div className="local-pad-controls"><p>Save or export your current work before loading online checkpoints.</p>
@@ -109,24 +119,32 @@ function CheckpointPicker({slug, selectedCode, demo, online, owner, generation}:
     queryFn: () => currentRead(() => getApi().getProject(slug), owner, generation, demo)});
   const paths = (projects.data ?? []).filter(path => !path.system && path.status !== 'archived');
   const checkpoints = (project.data?.checkpoints ?? []).filter(checkpoint => checkpoint.ui !== 'proposed' && !checkpoint.id.startsWith('proposed:'));
+  const v7 = isFlagOn('v7Shell');
+  const pathLabel = (path: (typeof paths)[number]) => paths.some(other => other.id !== path.id && other.title === path.title)
+    ? path.title + ' · ' + path.slug : path.title;
+  const checkpointLabel = (checkpoint: (typeof checkpoints)[number]) => checkpoint.code + ' · ' + checkpoint.title;
   return <section className="local-pad-chooser" aria-label="Choose a Pad checkpoint">
     <h2>Your checkpoints</h2>
     {projects.isPending ? <p role="status">Loading your paths…</p> : projects.isError && !projects.data
       ? <><p role="alert">Could not load your paths.</p><button type="button" onClick={() => void projects.refetch()}>Try paths again</button></>
       : paths.length === 0 ? <><p role="status">No checkpoints yet. Create a path and approve its plan to start a Pad.</p><Link to="/projects">Open Paths</Link></>
-        : <><label htmlFor="pad-path">Path</label><select id="pad-path" value={slug}
-          onChange={event => navigate(event.currentTarget.value ? padAddress(event.currentTarget.value) : '/pad')}>
-          <option value="">Choose a path</option>
-          {paths.map(path => <option key={path.id} value={path.slug}>{path.title}</option>)}
-        </select></>}
+        : v7 ? <Picker label="Path" value={paths.map(pathLabel)[paths.findIndex(path=>path.slug===slug)]??'Choose a path'}
+          options={paths.map(pathLabel)} onChange={label=>{const path=paths.find(candidate=>pathLabel(candidate)===label);if(path)navigate(padAddress(path.slug));}}/>
+          : <><label htmlFor="pad-path">Path</label><select id="pad-path" value={slug}
+            onChange={event => navigate(event.currentTarget.value ? padAddress(event.currentTarget.value) : '/pad')}>
+            <option value="">Choose a path</option>
+            {paths.map(path => <option key={path.id} value={path.slug}>{path.title}</option>)}
+          </select></>}
     {slug && <>{project.isPending ? <p role="status">Loading checkpoints…</p> : project.isError && !project.data
       ? <><p role="alert">Could not load this path's checkpoints.</p><button type="button" onClick={() => void project.refetch()}>Try checkpoints again</button></>
       : checkpoints.length === 0 ? <p role="status">This path has no approved checkpoints yet.</p>
-        : <><label htmlFor="pad-checkpoint">Checkpoint</label><select id="pad-checkpoint" value={selectedCode ?? ''}
-          onChange={event => navigate(padAddress(slug, event.currentTarget.value))}>
-          <option value="">Choose a checkpoint</option>
-          {checkpoints.map(checkpoint => <option key={checkpoint.id} value={checkpoint.code}>{checkpoint.code} · {checkpoint.title}</option>)}
-        </select></>}</>}
+        : v7 ? <Picker label="Checkpoint" value={checkpoints.map(checkpointLabel)[checkpoints.findIndex(cp=>cp.code===selectedCode)]??'Choose a checkpoint'}
+          options={checkpoints.map(checkpointLabel)} onChange={label=>{const cp=checkpoints.find(candidate=>checkpointLabel(candidate)===label);if(cp)navigate(padAddress(slug,cp.code));}}/>
+          : <><label htmlFor="pad-checkpoint">Checkpoint</label><select id="pad-checkpoint" value={selectedCode ?? ''}
+            onChange={event => navigate(padAddress(slug, event.currentTarget.value))}>
+            <option value="">Choose a checkpoint</option>
+            {checkpoints.map(checkpoint => <option key={checkpoint.id} value={checkpoint.code}>{checkpointLabel(checkpoint)}</option>)}
+          </select></>}</>}
   </section>;
 }
 

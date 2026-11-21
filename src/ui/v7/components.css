@@ -28,6 +28,7 @@
  :where(html[data-v7]) .v7-icon-button {display:inline-flex;align-items:center;justify-content:center;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-icon-button svg {width:var(--v7-space-5);height:var(--v7-space-5);}
  :where(html[data-v7]) .v7-button-progress {width:var(--v7-space-5);height:var(--v7-space-5);flex:none;}
+ :where(html[data-v7]) .v7-button-progress:empty {display:none;}
  :where(html[data-v7]) .v7-spinner {width:var(--v7-space-5);height:var(--v7-space-5);animation:v7-spin var(--v7-skeleton) linear 3;}
  :where(html[data-v7]) .v7-hidden-label {visibility:hidden;}
  :where(html[data-v7]) .v7-proof {font-family:var(--v7-glyph);}
@@ -142,6 +143,7 @@
 :where(html[data-v7]):has(.v7-learn-bar,.v7-path-bar,.v7-sticky-actions) .v7-toast-host {--v7-toast-dock:calc(64px + 64px + var(--v7-space-5) + env(safe-area-inset-bottom));}
 :where(html[data-v7]):has(dialog[open]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}
 @media(min-width:700px){:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}}
+:where(html[data-v7]) .v7-toast-host {--v7-toast-clearance:0px;bottom:calc(max(var(--v7-toast-dock),var(--v7-toast-clearance)) + var(--v7-space-3));}
 :where(html[data-v7]) .v7-app-toast {position:relative;pointer-events:auto;display:flex;align-items:center;gap:var(--v7-space-2);min-height:48px;padding:var(--v7-space-1) var(--v7-space-1) var(--v7-space-1) var(--v7-space-4);border-radius:var(--v7-round);overflow:hidden;
   background:var(--v7-role-text-primary);color:var(--v7-role-surface-page);box-shadow:var(--v7-shadow-3);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
 :where(html[data-v7][data-theme="graph-night"]) .v7-app-toast {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);border:var(--v7-hairline) solid var(--v7-role-border-subtle);}
@@ -187,5 +189,25 @@
 
 /* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
    website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
-html[data-v7][data-native-app] {--v7-touch:48px;}
 
+
+
+:where(html[data-v7]) .v7-disclosure-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:var(--v7-space-2);
+  width:100%; min-height:var(--v7-touch); padding:var(--v7-space-2) 0;
+  text-align:start; font-size:var(--v7-type-supporting); font-weight:600;
+}
+:where(html[data-v7]) .v7-disclosure-trigger[aria-expanded="true"] > svg { transform:rotate(180deg); }
+
+.v7-fine-pointer-hint {display:none;}
+@media (pointer:fine) {
+  .v7-fine-pointer-hint {display:block;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}
+}
+:where(html[data-v7]) .v7-first-card-form :is(input,textarea) {inline-size:100%;min-inline-size:0;}
+
+
+@layer v7-reset {
+ :where(html[data-v7]) :where(h1, h2, h3, h4) {font-family:var(--v7-serif);}
+}
+
+html[data-v7][data-native-app] {--v7-touch:48px;}

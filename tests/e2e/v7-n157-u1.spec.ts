@@ -28,13 +28,16 @@ test('N157 V05 the rail count sits at the row end and never covers "Review"; V10
   expect(rail.overflow).toBe('auto')
 })
 
-test('N157 V06 a floating bar is centred on the content column, clear of the rail', async ({page}) => {
+test('N157 V06 the Path dock is centred on the detail without a navigation rail', async ({page}) => {
   for (const width of [900, 1280]) {
     await go(page, width, '/p/real-analysis')
-    const bar = (await page.locator('.v7-path-bar').boundingBox())!
-    const rail = await page.evaluate(() => document.querySelector('.v7-dock')!.getBoundingClientRect().right)
-    expect(bar.x, String(width)).toBeGreaterThanOrEqual(rail)
-    const centre = bar.x + bar.width / 2, column = rail + (width - rail) / 2
+    await expect(page.getByRole('navigation',{name:'Main navigation'})).toHaveCount(0)
+    const dock=page.getByRole('group',{name:'Path actions'}),detail=page.getByRole('main',{name:'Path'});
+    await expect(dock.getByRole('button',{name:'Continue with tutor'})).toBeVisible()
+    const bar=(await dock.boundingBox())!,main=(await detail.boundingBox())!
+    expect(bar.x, String(width)).toBeGreaterThanOrEqual(0)
+    expect(bar.x+bar.width, String(width)).toBeLessThanOrEqual(width)
+    const centre = bar.x + bar.width / 2, column = main.x + main.width / 2
     expect(Math.abs(centre - column), String(width)).toBeLessThanOrEqual(2)
   }
 })

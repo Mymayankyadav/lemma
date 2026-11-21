@@ -1,4 +1,5 @@
 import {expect,test} from '@playwright/test'
+import {choosePadCheckpoint} from './helpers/pad-picker'
 
 const route=(cp:string,flag=true)=>'/lemma/?demo=1&flags=v7Shell,padLocal'+(flag?',tutorManualDemo':'')+'#/pad?path=real-analysis&checkpoint='+cp
 
@@ -17,12 +18,12 @@ test('manual tutor keeps drafts across checkpoints and reload without sending an
  await page.keyboard.press('Escape')
  await expect(dialog).toBeHidden()
  await expect(open).toBeFocused()
- await page.getByLabel('Checkpoint',{exact:true}).selectOption('CP3')
+ await choosePadCheckpoint(page,'CP3')
  await expect(page.getByRole('heading',{level:2,name:'CP3 · Sequences'})).toBeVisible()
  await show()
  await expect(dialog.getByLabel('Question',{exact:true})).toHaveValue('')
  await dialog.getByRole('button',{name:'Close',exact:true}).click()
- await page.getByLabel('Checkpoint',{exact:true}).selectOption('CP4')
+ await choosePadCheckpoint(page,'CP4')
  await expect(page.getByRole('heading',{level:2,name:'CP4 · Compactness'})).toBeVisible()
  await show()
  await expect(dialog.getByLabel('Question',{exact:true})).toHaveValue('Why does the subcover suffice?')

@@ -27,8 +27,8 @@ export const labelWidth = (text: string) => text.length * 6.4;
  * R0 · F06: which x tick labels to print. Labels are thinned by the room each one has (at least an 8-unit gap); a data
  * point may mark a preferred tick (a week or month start) by giving `tickLabel`, and those win when thinning.
  */
-export function visibleTicks(labels: string[], group: number, preferred: boolean[] = labels.map(() => true), gap = 8): boolean[] {
-  const widest = Math.max(0, ...labels.map(labelWidth));
+export function visibleTicks(labels: string[], group: number, preferred: boolean[] = labels.map(() => true), gap = 8, measure = labelWidth): boolean[] {
+  const widest = Math.max(0, ...labels.map(measure));
   const every = Math.max(1, Math.ceil((widest + gap) / Math.max(1, group)));
   const anyPreferred = preferred.some(Boolean) && preferred.some(value => !value);
   const out = labels.map(() => false);
@@ -46,48 +46,59 @@ export function visibleTicks(labels: string[], group: number, preferred: boolean
  */
 export const PLOT_MIN = 280, PLOT_MAX = 640;
 export const plotWidth = (measured: number) => measured > 0 ? Math.round(Math.min(PLOT_MAX, Math.max(PLOT_MIN, measured))) : 360;
-function usePlotWidth() {
-  const ref = useRef<HTMLElement>(null), [width, setWidth] = useState(360);
+function usePlotMetrics() {
+  const ref = useRef<HTMLElement>(null), caption = useRef<HTMLSpanElement>(null);
+  const [metrics, setMetrics] = useState({width: 360, captionSize: 12});
   useLayoutEffect(() => {
-    const node = ref.current;
-    if (!node) return;
-    const measure = () => setWidth(plotWidth(node.getBoundingClientRect().width));
+    const node = ref.current, sample = caption.current;
+    if (!node || !sample) return;
+    const measure = () => {
+      const width = plotWidth(node.getBoundingClientRect().width);
+      const captionSize = parseFloat(getComputedStyle(sample).fontSize) || 12;
+      setMetrics(previous => previous.width === width && previous.captionSize === captionSize ? previous : {width, captionSize});
+    };
     measure();
     if (typeof ResizeObserver !== "function") return;
-    const observer = new ResizeObserver(measure); observer.observe(node);
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    observer.observe(sample);
     return () => observer.disconnect();
   }, []);
-  return [ref, width] as const;
+  return {ref, caption, ...metrics};
 }
 export function Chart({ title, data, series, kind = "bars", area = false, target, format = String, summary: suppliedSummary, compact = false, totalFormat = format }: ChartProps) {
  const studyRepair=useStudyUi();
   const [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null), id = useId();
-  const [measureRef, width] = usePlotWidth();
+  const {ref: measureRef, caption, width, captionSize} = usePlotMetrics();
+  const textWidth = (text: string) => labelWidth(text) * captionSize / 12;
   const percentage = /%/.test(format(100));
   const observed = Math.max(1, target ?? 0, ...(kind === "stacked" ? data.map(row => sum(row.values)) : data.flatMap(row => row.values).map(finite)));
   const scale = 10 ** Math.floor(Math.log10(observed));
   // KC5: ticks on round numbers (1, 2, 2.5 or 5 × 10ⁿ), at most four steps, and the top tick is the first round step above the data.
   const step = percentage ? 25 : ([1, 2, 2.5, 5, 10].map(value => value * scale).find(value => observed / value <= 4) ?? 10 * scale);
   const maximum = percentage ? 100 : Math.max(step, Math.ceil(observed / step) * step);
-  const ticks = Array.from({ length: Math.round(maximum / step) + 1 }, (_, index) => index * step);
+  const ticks = compact ? [0, maximum] : Array.from({ length: Math.round(maximum / step) + 1 }, (_, index) => index * step);
   const total = data.reduce((value, row) => value + sum(row.values), 0);
   const peak = data.reduce((best, row, index) => sum(row.values) > sum(data[best].values) ? index : best, 0);
-  const summary = suppliedSummary ?? (!data.length ? "No data in this range yet." : percentage ?
+  const summary = suppliedSummary ?? (!data.length || !percentage && total<=0 ? "None yet." : percentage ?
     `${title} reached ${format(data[data.length - 1].values[0])} on ${data[data.length - 1].label}, from ${format(data[0].values[0])} on ${data[0].label}.` :
     // F43: per-metric wording. Time totals read "You studied 3 h 55 min"; counts read "413 reviews in this range".
     // IL5: no "most on …" when nothing was studied.
     /\b(h|min)\b/.test(format(total)) ? (total <= 0 ? "Nothing studied in this range yet." : `You studied ${totalFormat(total)} in this range, most on ${data[peak].label}.`) :
     `${format(total)} ${title.toLowerCase().replace(/ (by|over|per) .*$/, "")} in this range, most on ${data[peak].label}.`);
   // N125: the axis gutter fits its widest tick label ("40 min" was clipped to "0 min" in a fixed 40-unit gutter).
-  const left = Math.max(40, Math.ceil(Math.max(...ticks.map(tick => labelWidth(format(tick)))) * 1.15) + 12);
+  const left = Math.max(40, Math.ceil(Math.max(...ticks.map(tick => textWidth(format(tick)))) * 1.15) + 12);
   const height = compact ? 150 : 224, bottom = compact ? 116 : 180, top = compact ? 20 : 36, plotHeight = bottom - top;
   const direct=series.length>1&&series.length<=3;
   // F06: a target line is labelled at the right edge, outside the data, so it never overprints a value.
   const targetShown = target !== undefined && target >= 0 && target <= maximum;
-  const plotRight=width-(direct?102:targetShown?52:24);
+  const targetGutter = targetShown
+    ? Math.max(52, Math.ceil(Math.max(textWidth("Goal"), textWidth(format(target!))) * 1.15) + 12)
+    : 24;
+  const plotRight=width-Math.max(direct?102:0,targetGutter);
   const group = (plotRight - left) / Math.max(1, data.length), bar = group * .5;
   const point = (index: number) => left + group * (index + .5);
-  const ticksShown = visibleTicks(data.map(row => row.tickLabel ?? row.label), group, data.some(row => row.tickLabel !== undefined) ? data.map(row => !!row.tickLabel) : undefined);
+  const ticksShown = visibleTicks(data.map(row => row.tickLabel ?? row.label), group, data.some(row => row.tickLabel !== undefined) ? data.map(row => !!row.tickLabel) : undefined, 8, textWidth);
   const y = (value: number) => bottom - Math.min(maximum, finite(value)) / maximum * plotHeight;
   // KC3/KC4: subject colour means a subject. A series that is not a subject takes the neutral data colour, never indigo.
   const color = (index: number) => {
@@ -111,8 +122,9 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     for(let i=labels.length-2;i>=0;i--)labels[i].labelY=Math.min(labels[i].labelY,labels[i+1].labelY-24);
   }
   return <section ref={measureRef} className="v7-chart" data-chart="plot" data-study-ui={studyRepair?'':undefined} aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">{summary}</p>
+    <span ref={caption} className="v7-chart-caption-probe" aria-hidden="true" />
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{summary}</p>
     {!!data.length && series.length > 3 && <ul className="v7-chart-legend" data-mark={kind === "line" ? "line" : "bar"}>{series.map((seriesItem, index) => {
       const subject = seriesItem.subject ?? subjectFor(seriesItem.label);
       return <li key={seriesItem.label}>{subject && <SubjectMark subject={subject} />}<span>{seriesItem.label}</span><i style={{ background: color(index) }} aria-hidden="true" /></li>;
@@ -122,14 +134,16 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
     {table ? <div className="v7-chart-scroll"><table><caption className="v7-sr-only">{title}</caption><thead><tr><th scope="col">Day</th>{series.map(item => <th scope="col" key={item.label}>{item.label}</th>)}</tr></thead><tbody>{data.map((row, index) => <tr key={`${row.label}-${index}`}><th scope="row">{row.label}</th>{series.map((item, seriesIndex) => <td key={item.label}>{Number.isFinite(row.values[seriesIndex]) ? format(row.values[seriesIndex]) : "—"}</td>)}</tr>)}</tbody></table></div> : data.length ?
       <svg className="v7-plot" viewBox={`0 0 ${width} ${height}`} data-plot-width={width} role="group" aria-label={title}>
         {ticks.map(tick => tick / maximum).map(value => <g key={value}><line x1={left} x2={plotRight} y1={y(value * maximum)} y2={y(value * maximum)} className={value === 0 ? "v7-chart-axis" : "v7-chart-grid"} /><text x={left - 8} y={y(value * maximum) + 4} textAnchor="end" className="v7-chart-text">{format(value * maximum)}</text></g>)}
-        {targetShown && <g className="v7-chart-target-group"><line x1={left} x2={plotRight + 4} y1={y(target!)} y2={y(target!)} className="v7-chart-target" /><text x={plotRight + 8} y={y(target!) - 2} textAnchor="start" className="v7-chart-data-label"><tspan x={plotRight + 8}>Goal</tspan><tspan x={plotRight + 8} dy="12">{format(target!)}</tspan></text></g>}
+        {targetShown && <g className="v7-chart-target-group"><line x1={left} x2={plotRight + 4} y1={y(target!)} y2={y(target!)} className="v7-chart-target" /><text x={plotRight + 8} y={y(target!) - 2} textAnchor="start" className="v7-chart-data-label"><tspan x={plotRight + 8}>Goal</tspan><tspan x={plotRight + 8} dy={captionSize * 1.3}>{format(target!)}</tspan></text></g>}
         {kind === "line" && area && !!data.length && series.map((item, index) => <polygon key={item.label} fill={color(index)} opacity=".08" points={`${point(0)},${bottom} ${data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} ${point(data.length - 1)},${bottom}`} />)}
         {kind === "line" && series.map((item, index) => <polyline key={item.label} fill="none" stroke={color(index)} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" points={data.map((row, i) => `${point(i)},${y(row.values[index] ?? 0)}`).join(" ")} />)}
         {data.map((row, index) => {
           let accumulated = 0;
           const peakValue = kind === "stacked" ? sum(row.values) : Math.max(...row.values, 0), valueText = format(peakValue);
           // F06: a value label only when it fits its bar and says something (never "0 min").
-          const valueLabel = peakValue > 0 && (kind === 'line' ? index === data.length - 1 : data.length <= 7 && labelWidth(valueText) <= group - 2);
+          const valueLabel = peakValue > 0 && (kind === 'line' ? index === data.length - 1 : data.length <= 7 && textWidth(valueText) <= group - 2);
+          const labelY = targetShown && Math.abs(y(peakValue) - y(target!)) < captionSize
+            ? Math.min(y(peakValue), y(target!)) : y(peakValue);
           return <g key={`${row.label}-${index}`} role="button" data-chart-point="" tabIndex={selected === index || selected === null && index === 0 ? 0 : -1}
             aria-label={`${row.label}: ${row.values.map((value, j) => `${series[j]?.label ?? ""} ${format(value)}`).join(", ")}`}
             onClick={() => setSelected(index)} onMouseEnter={() => setSelected(index)} onFocus={() => setSelected(index)}
@@ -143,7 +157,7 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
               const radius = kind === "stacked" && j !== row.values.length - 1 ? 0 : Math.min(4, w / 2, heightY / 2);
               return <path key={j} d={`M${x} ${topY + heightY}V${topY + radius}Q${x} ${topY} ${x + radius} ${topY}H${x + w - radius}Q${x + w} ${topY} ${x + w} ${topY + radius}V${topY + heightY}Z`} fill={color(j)} />;
             })}
-            {valueLabel && <text x={point(index)} y={Math.max(16, y(peakValue) - 8)} textAnchor={kind === 'line' && index === data.length - 1 ? "end" : "middle"} className="v7-chart-data-label">{valueText}</text>}
+            {valueLabel && <text x={point(index)} y={Math.max(captionSize + 4, labelY - 8)} textAnchor={kind === 'line' && index === data.length - 1 ? "end" : "middle"} className="v7-chart-data-label">{valueText}</text>}
             <rect x={point(index) - group / 2} y={top} width={group} height={plotHeight} fill="transparent" />
             {ticksShown[index] && <text x={point(index)} y={height - 16} textAnchor="middle" className="v7-chart-text">{row.tickLabel??row.label}</text>}
           </g>;
@@ -155,15 +169,17 @@ export function Chart({ title, data, series, kind = "bars", area = false, target
       </svg> : null}
   </section>;
 }
-export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string }[]; format?: (value: number) => string }) {
+export function HorizontalBars({ title, data, format = String }: { title: string; data: { label: string; value: number; color?: string; subject?: Subject }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
   const max = Math.max(1, ...data.map(item => finite(item.value))), total = data.reduce((value, item) => value + finite(item.value), 0);
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
-    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} {data.length===1?'subject':'subjects'}, most in {data.reduce((best,item)=>item.value>best.value?item:best,data[0]??{label:'',value:0}).label}.</p>
+    <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-label={table ? "Show chart" : "Show as table"} aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Chart" : "Table"}</button></div>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{total>0
+      ? `You studied ${format(total)} across ${data.length} ${data.length===1?'subject':'subjects'}, most in ${data.reduce((best,item)=>item.value>best.value?item:best).label}.`
+      : 'None yet.'}</p>
     {table ? <table><thead><tr><th scope="col">Subject</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.label}><th scope="row">{item.label}</th><td>{format(item.value)}</td></tr>)}</tbody></table> :
       <ul className="v7-horizontal-bars">{data.map((item, index) => <li key={item.label}><button type="button" data-chart-point="" onKeyDown={event => { movePoint(event, index, data.length); }} onClick={() => setSelected(index)} onFocus={() => setSelected(index)} onMouseEnter={() => setSelected(index)}>
-        <span className="v7-subject-label">{subjectFor(item.label) && <SubjectMark subject={subjectFor(item.label)!} />}{item.label}</span><span>{format(item.value)}</span>
+        <span className="v7-subject-label">{(item.subject??subjectFor(item.label)) && <SubjectMark subject={(item.subject??subjectFor(item.label))!} />}{item.label}</span><span>{format(item.value)}</span>
         <span className="v7-horizontal-track"><span style={{ width: `${bounded(item.value / max) * 100}%`, background: item.color ?? "var(--v7-role-subject-analysis)" }} /></span>
       </button></li>)}</ul>}
     {selected !== null && data[selected] && !table && <p role="status" className="v7-chart-tooltip">{format(data[selected].value)} · {data[selected].label}</p>}
@@ -197,7 +213,7 @@ export function heatmapIndexAt({x, y, width, height, gapX = 0, gapY = 0, weeks, 
 export function Heatmap({ title, data: all, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
   const data = heatmapDays(all), scroller = useRef<HTMLDivElement>(null);
-  const total = data.reduce((value, item) => value + finite(item.value), 0), today = new Date().toLocaleDateString("en-CA");
+  const activeDays = data.filter(item => item.value > 0).length, today = new Date().toLocaleDateString("en-CA");
   const first = data[0]?.date, offset = first && /^\d{4}-\d{2}-\d{2}$/.test(first) ? (new Date(`${first}T12:00:00Z`).getUTCDay() + 6) % 7 : 0;
   const weeks = Math.ceil((data.length + offset) / 7), style = { "--v7-heat-weeks": Math.max(1, weeks) } as CSSProperties;
   // V16: the roving focus starts on today (else the newest day), and the almanac opens scrolled so that day is in view.
@@ -218,7 +234,7 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
   };
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{activeDays?`${activeDays} study ${activeDays===1?'day':'days'} in ${data.length}`:'None yet.'}</p>
     {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
       <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>

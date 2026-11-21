@@ -10,11 +10,14 @@ import {getStudyApi} from '../../data/study';
 import {SubjectMark,subjectClass} from '../../ui/v7/Subject';
 import {kitSubject} from '../../features/atlas/v7/model';
 import {announceFocusChange,focusClock,focusWord,useActiveFocus,useNow} from './focus';
-import {Button,Sheet} from '../../ui/v7/components';
+import {Button,IconButton,Sheet} from '../../ui/v7/components';
+import {Dock} from '../../ui/v7/Dock';
+import OfflineBanner from '../OfflineBanner';
 import {EllMark} from '../../ui/v7/marks';
 import {SyncMark} from '../../ui/v7/SyncMark';
 import {useDevicePrefValue} from '../../platform/useDevicePref';
 import {useMinWidth} from './useMinWidth';
+import {useDetailBack} from './useDetailBack';
 import {useSubjectColours} from './subjectColours';
 import {useSettings} from '../../data/hooks';
 import {applyReduceEffects} from '../../ui/v7/effects';
@@ -95,36 +98,50 @@ function Capture(){
  </>;
 }
 
-/**
- * V11 (v7 UX audit r3): whether every tab name fits its slot in the phone dock. With large system text or a narrow phone
- * the names ran together ("ReviewCalendarProgress"); then the dock shows icons and only the selected tab's name (the
- * others stay available to assistive technology). Measured, so it follows the real font size, language and width.
- */
-export function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean):boolean{
+/** Keep the single-row dock when all names and adjacent controls fit. */
+function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled:boolean,hasSession:boolean,capture:boolean):boolean{
  const [fit,setFit]=useState(true);
  useLayoutEffect(()=>{
-  const nav=ref.current;
-  if(!nav||wide){setFit(true);return;}
-  const check=()=>setFit([...nav.querySelectorAll<HTMLElement>('.v7-tab-label')].every(label=>{
-   const tab=label.closest<HTMLElement>('.v7-tab');
-   return !tab||label.scrollWidth<=tab.clientWidth-4;
-  }));
+  const nav=ref.current,row=nav?.parentElement;
+  if(!nav||!row||wide){setFit(true);return;}
+  const labels=[...nav.querySelectorAll<HTMLElement>('.v7-tab-label')];
+  const measure=document.createRange();
+  const check=()=>{
+   // Measure the full-label footprint even in the compact layout.
+   const dock=row.parentElement;
+   if(!dock)return;
+   const dockStyle=getComputedStyle(dock);
+   const space=(token:string)=>parseFloat(dockStyle.getPropertyValue('--v7-space-'+token));
+   const controls=(hasSession?44:0)+(capture?48:0);
+   const width=Math.min(window.innerWidth-2*space('3'),parseFloat(dockStyle.maxWidth));
+   const gutters=parseFloat(dockStyle.borderLeftWidth)+parseFloat(dockStyle.borderRightWidth)
+    +2*space('1')+2*space('2');
+   const slot=(width-controls-gutters)/labels.length;
+   setFit(labels.every(label=>{
+    measure.selectNodeContents(label);
+    return [...measure.getClientRects()].reduce((width,rect)=>width+rect.width,0)<=slot-4;
+   }));
+  };
   check();
   const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(check);
-  observer?.observe(nav);
-  void document.fonts?.ready.then(check).catch(()=>undefined);
-  return()=>observer?.disconnect();
- },[ref,wide]);
+  observer?.observe(row);
+  labels.forEach(label=>observer?.observe(label));
+  window.addEventListener('resize',check);
+  let active=true;
+  void document.fonts?.ready.then(()=>{if(active)check();}).catch(()=>undefined);
+  return()=>{active=false;observer?.disconnect();window.removeEventListener('resize',check);};
+ },[ref,wide,enabled,hasSession,capture]);
  return fit;
 }
 
-/** Wraps every v7 route except the kit. Immersive screens keep the navigation landmark, hidden until focused. */
+/** Wraps every v7 route except the kit. Immersive screens provide their own navigation and actions. */
 export default function V7Shell({children,immersive=false,capture=true}:{children:ReactNode;immersive?:boolean;capture?:boolean}){
  const location=useLocation(),navigate=useNavigate(),navigation=useNavigationType(),home=useHome(),{entry}=useActiveFocus();
  const [searching,setSearching]=useState<SearchVisit|null>(null),[shortcuts,setShortcuts]=useState(false);
- const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(location.key),key=location.key;
+ const key=location.pathname+location.search+'\n'+location.key;
+ const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(key);
  const wide=useMinWidth(700);
- const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide);
+ const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide,!immersive,Boolean(entry),capture);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
@@ -151,7 +168,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  useDeviceCommands();
  useEffect(()=>{if(typeof reduceEffects==='boolean')applyReduceEffects(reduceEffects);},[reduceEffects]);
  useEffect(()=>{
-  if(location.pathname!=='/'||!settings.data||!home.data)return;
+  if(location.pathname!=='/'||!settings.data||!home.data||isFlagOn('todayNextStep'))return;
   if(needsWelcome(settings.data.ui,home.data.projects.filter(project=>!project.system).length))navigate('/welcome',{replace:true});
  },[location.pathname,settings.data,home.data,navigate]);
  // Restore only on return to the source history entry, never on an ordinary link to the same URL.
@@ -204,11 +221,11 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
   window.addEventListener('keydown',keys);return()=>window.removeEventListener('keydown',keys);
  },[wide,immersive,capture,navigate,entry]);
  return <div className="v7-shell" data-immersive={immersive?'true':'false'} data-session={entry?'true':'false'}>
+  <OfflineBanner/>
   <Fragment key={colours}>{children}</Fragment>
   <Suspense fallback={null}>{searching?.key===key&&<SearchSheet key={key} open onClose={dismissSearch} onPick={pickSearchItem} initial={searching.initial}/>}</Suspense>
-  <div className="v7-dock">
+  {!immersive&&<Dock className="v7-dock">
    <div className="v7-rail-head"><Link to="/" className="v7-rail-brand" aria-label="Lemma home"><EllMark size={22}/><span>Lemma</span></Link><button type="button" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/><span>Search</span><kbd>⌘ / Ctrl K</kbd></button></div>
-   {!immersive&&<SessionRow/>}
    <div className="v7-dock-row">
    <nav ref={tabbar} aria-label="Main navigation" className="v7-tabbar" data-labels={labelsFit?'all':'selected'} style={{'--v7-tab-index':Math.max(0,active)} as CSSProperties}>
     {active>=0&&<span className="v7-tab-pill" aria-hidden="true"/>}
@@ -217,13 +234,14 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
      <span className="v7-tab-label">{label}</span>
     </Link>)}
    </nav>
-   {!immersive&&capture&&<Capture/>}
+   <SessionRow/>
+   {capture&&<Capture/>}
    </div>
    <nav className="v7-rail-library" aria-label="Library"><p className="v7-eyebrow">Library</p>
     {[['/proposals','Inbox'+(home.data?.pendingProposals?' · '+home.data.pendingProposals:'')],['/cards','Cards'],['/atlas','Atlas'],['/tasks','Tasks'],['/practice','Practice'],['/log','Time log']].map(([to,label])=><Link key={to} to={to} aria-current={location.pathname===to||location.pathname.startsWith(to+'/')?'page':undefined}>{label}</Link>)}
    </nav>
    <Link className="v7-rail-settings" to="/settings"><Settings aria-hidden="true"/><span>Settings</span></Link>
-  </div>
+  </Dock>}
   <Sheet open={shortcuts} onClose={()=>setShortcuts(false)} title="Keyboard shortcuts" footer={<Button variant="primary" onClick={()=>setShortcuts(false)}>Done</Button>}>
    <dl className="v7-shortcuts">{[['⌘ / Ctrl K','Search'],['N','Capture'],['1–5','Switch destinations'],['F','Start or return to focus'],['Space','Pause focus / reveal answer'],['1–4','Grade an answer'],['U','Undo last answer'],['Esc','Close the top layer'],['?','Show shortcuts']].map(([key,label])=><div key={key}><dt><kbd>{key}</kbd></dt><dd>{label}</dd></div>)}</dl>
   </Sheet>
@@ -233,10 +251,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
 /** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
-export function HubHeader({title,date,settings=false,display=false,control,children,headingRef}:{title:string;date?:string;settings?:boolean;display?:boolean;
+export function HubHeader({title,date,settings=false,display=false,control,titleControl,children,headingRef,titleFollowsTab=true,extraAction}:{title:string;date?:string;settings?:boolean;display?:boolean;
  headingRef?:RefObject<HTMLHeadingElement|null>;
  /** N161: one compact control beside the title (Calendar's view menu on a phone). */
- control?:ReactNode;children?:ReactNode}){
+ control?:ReactNode;titleControl?:ReactNode;children?:ReactNode;titleFollowsTab?:boolean;extraAction?:ReactNode}){
  const findSelected=(nodes:ReactNode):string|undefined=>{
   for(const node of Children.toArray(nodes)){
    if(!isValidElement<{children?:ReactNode;'aria-current'?:string}>(node))continue;
@@ -244,7 +262,7 @@ export function HubHeader({title,date,settings=false,display=false,control,child
    const nested=findSelected(node.props.children);if(nested)return nested;
   }
  };
- if(isFlagOn('v7Room')&&!display)title=findSelected(children)??title;
+ if(isFlagOn('v7Room')&&!display&&titleFollowsTab)title=findSelected(children)??title;
  const pending=useHome().data?.pendingProposals??0;
  // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
  const update=useDevicePrefValue<number|null>('updateAvailable',null);
@@ -260,9 +278,10 @@ export function HubHeader({title,date,settings=false,display=false,control,child
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
     {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
+    {extraAction}
    </nav>;
  if(!display)return <>
-  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className="v7-hub-title">{title}</h1>{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
+  <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className={titleControl?"v7-sr-only":"v7-hub-title"}>{title}</h1>{titleControl}{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>
   {children&&<div className="v7-hub-extra">{children}</div>}
  </>;
  return <header className="v7-hub-header" data-display="true">
@@ -278,7 +297,7 @@ export function HubHeader({title,date,settings=false,display=false,control,child
 export function DetailHeader({title,back,action,extraAction,compact}:{title:string;back?:string;action?:ReactNode;extraAction?:ReactNode;
  /** R2 · F11: shown beside the bar title once the page's large title has scrolled away (an emblem thumbnail, a progress ring). */
  compact?:ReactNode}){
- const navigate=useNavigate(),location=useLocation(),ref=useRef<HTMLElement>(null);
+ const goBack=useDetailBack(back),location=useLocation(),ref=useRef<HTMLElement>(null);
  // R1 · F18: the small bar title stays hidden while the page's own large title is on screen, so a title is never shown
  // twice; it appears once the large title scrolls under the bar. Pages without a visible H1 always show it.
  const [pageTitleVisible,setPageTitleVisible]=useState(false);
@@ -290,7 +309,7 @@ export function DetailHeader({title,back,action,extraAction,compact}:{title:stri
   observer.observe(heading);return ()=>observer.disconnect();
  },[title,location.pathname,location.search]);
  return <header className="v7-detail-header" ref={ref} data-title-hidden={pageTitleVisible?'true':undefined}>
-  <button type="button" className="v7-icon-button" aria-label="Back" onClick={()=>{if(location.key!=='default'&&window.history.state?.idx>0)navigate(-1);else navigate(back??'/');}}><ChevronLeft aria-hidden="true"/></button>
+  <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
   <p className="v7-detail-title" aria-hidden="true">{compact&&<span className="v7-detail-compact">{compact}</span>}<span>{title}</span></p>
   <nav aria-label="Page actions" className="v7-page-actions">{action??<button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>}{extraAction}</nav>
  </header>;

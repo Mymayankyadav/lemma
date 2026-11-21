@@ -1,3 +1,4 @@
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {CheckpointEdit} from './CheckpointEdit';
 import {useMemo,useState} from 'react';
@@ -117,9 +118,9 @@ export default function PlanProposalV7(){
   {draft.editor&&<p className="v7-meta">Save or cancel your edit before deciding on this plan.</p>}
   {problem&&<p role="alert" className="v7-error">{problem}</p>}
   {/* V17: Reject left, Approve right, as in the Inbox and the kit's rule; Approve keeps the wide column. */}
-  <div className="v7-learn-bar v7-learn-bar-decide" role="group" aria-label="Plan decision">
+  <Dock className="v7-learn-bar v7-learn-bar-decide" role="group" aria-label="Plan decision">
    <Button disabled={unavailable} loading={busy&&reject.isPending} onClick={()=>{void decide(false);}}>Reject</Button>
    <Button variant="primary" disabled={unavailable} loading={busy&&approve.isPending} onClick={()=>{void decide(true);}}>Approve</Button>
-  </div>
+  </Dock>
  </main>;
 }

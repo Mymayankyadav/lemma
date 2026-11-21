@@ -16,7 +16,7 @@ test("Focus and the review round render inside the v7 shell without the legacy c
  await page.goto(at("/review/run"));
  await expect(page.locator(".v7-review")).toBeVisible();
 });
-test("Calendar Day shows the week strip, the grid and opens quick-add from a tap on the grid",async({page})=>{
+test("Calendar Day shows the week strip, the grid and opens the block editor from a tap",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
  await expect(page.getByRole("heading",{name:"Calendar",exact:true})).toBeVisible();
  const strip=page.getByRole("navigation",{name:"Week"});
@@ -28,38 +28,46 @@ test("Calendar Day shows the week strip, the grid and opens quick-add from a tap
  // Night critique CD2: there is no "+ New block" in the top third; a tap on empty time (or Capture) makes a block.
  await expect(page.getByRole("button",{name:"New time block"})).toHaveCount(0);
  await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
- await expect(page.getByRole("dialog",{name:"New block"})).toBeVisible();
+ await expect(page.getByRole("dialog",{name:"New time block"})).toBeVisible();
 });
-test("Calendar Day moves by week with the strip chevrons and back to today",async({page})=>{
+test("Calendar Choose date changes the displayed week and returns to today",async({page})=>{
  await page.clock.setFixedTime(NOW);
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
- // The strip's current-day cell also contains "today" in its accessible name.
- const today=page.getByRole("button",{name:"Today",exact:true});
- await expect(today).toBeVisible();
- await page.getByRole("button",{name:"Next week"}).click();
+ const picker=page.getByRole("dialog",{name:"Choose a date"});
+ async function openPicker(){
+  await page.getByRole("button",{name:"Calendar actions",exact:true}).click();
+  const menu=page.getByRole("menu",{name:"Calendar actions"});
+  await menu.getByRole("menuitem",{name:"Choose date",exact:true}).click();
+  await expect(picker).toBeVisible();
+ }
+ await openPicker();
+ await picker.getByRole("button",{name:/Wednesday.*(?:November 18|18 November).*2026/}).click();
  await expect(page).toHaveURL(/date=2026-11-18/);
- await expect(today).toBeVisible();
- await page.getByRole("button",{name:"Previous week"}).click();
+ await expect(page.locator('[data-strip-day="2026-11-18"]')).toHaveAttribute('aria-pressed','true');
+ await openPicker();
+ await picker.getByRole("button",{name:/Wednesday.*(?:November 11|11 November).*2026/}).click();
  await expect(page).toHaveURL(/date=2026-11-11/);
- await today.click();
+ await openPicker();
+ await picker.getByRole("button",{name:"Today",exact:true}).click();
  await expect(page).toHaveURL(new RegExp('date='+DATE));
  await expect(page.locator('[data-strip-day="'+DATE+'"]').first()).toHaveAttribute('aria-pressed','true');
- await expect(today).toHaveCount(0);
+ await expect(picker).toHaveCount(0);
 });
 async function openFirstPath(page:Page){
  await page.goto(at("/"));
  await page.locator(".v7-today-tile").first().click();
  await expect(page.locator(".v7-path")).toBeVisible();
 }
-test("Path draws the constellation map with a text label on every node and the line ending at the current node",async({page})=>{
+test("Path Plan gives each checkpoint a readable label and ends the solid line at the current one",async({page})=>{
  await openFirstPath(page);
  const map=page.getByRole("list",{name:"Checkpoints"});
  await expect(map).toBeVisible();
+ for(const stage of await map.locator(".v7-path-stage .v7-disclosure-trigger").all())await stage.click();
  const rows=map.locator(".v7-path-row");
  expect(await rows.count()).toBeGreaterThan(0);
  for(const row of await rows.all()){
   await expect(row.locator(".v7-sr-only")).not.toBeEmpty();
-  await expect(row.locator("small")).not.toBeEmpty();
+  await expect(row.getByRole("link").first()).toHaveAccessibleName(/\S/);
  }
  // Solid down to the current node, dotted after: reached rows are never preceded by unreached ones.
  const reached=await rows.evaluateAll(list=>list.map(row=>row.getAttribute("data-reached")==="true"));
@@ -78,12 +86,14 @@ test("Path keeps its primary action in a sticky bar and Continue with tutor open
  await expect(tutor.getByRole("button",{name:"Begin session"})).toBeEnabled();
  await expect(tutor.getByRole("navigation",{name:"Session parts"})).toBeVisible();
 });
-test("Path tabs switch between Map, Sessions, Sources and Cards",async({page})=>{
+test("Path tabs switch between Plan, Sessions, Sources and Cards",async({page})=>{
  await openFirstPath(page);
  await page.getByRole("tab",{name:/^Sessions/}).click();
  await expect(page).toHaveURL(/tab=sessions/);
  await page.getByRole("tab",{name:/^Cards/}).click();
  await expect(page.getByRole("list",{name:"Cards by checkpoint"})).toBeVisible();
- await page.getByRole("tab",{name:"Map"}).click();
+ await page.getByRole("tab",{name:"Sources",exact:true}).click();
+ await expect(page.getByRole("region",{name:"Sources",exact:true})).toBeVisible();
+ await page.getByRole("tab",{name:"Plan",exact:true}).click();
  await expect(page.getByRole("list",{name:"Checkpoints"})).toBeVisible();
 });

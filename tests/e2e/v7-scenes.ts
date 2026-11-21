@@ -5,7 +5,7 @@ export const NOW=new Date("2026-11-09T13:43:00+05:30");
 export const DATE="2026-11-09";
 // Keep the audit's original scenarios explicit after N159 releases U4; individual U4 cases opt back in last.
 export const at=(hash:string)=>"/lemma/?demo=1&flags=-v7Ruler,-v7Qed,-v7Spread,-v7Scratch,-v7Paper,-v7DeskClock,-v7Week,v7Shell,v6Shell#"+hash;
-export type Shot={name:string;hash:string;prepare?:(page:Page)=>Promise<void>;frames?:number;wide?:boolean};
+export type Shot={name:string;hash:string;prepare?:(page:Page)=>Promise<void>;frames?:number;wide?:boolean;demo?:"first-use";flags?:string};
 export const open=async(page:Page,name:string)=>{
  await page.getByRole("button",{name,exact:true}).first().click({timeout:5000});
  await page.waitForTimeout(200);
@@ -76,10 +76,68 @@ export async function openScene(page:Page,shot:Shot,scheme:"light"|"dark",size:{
  if(size.text&&size.text!==100)await page.addInitScript(scale=>{document.addEventListener("DOMContentLoaded",()=>{document.documentElement.style.fontSize=scale+"%";});},size.text);
  await page.clock.setFixedTime(NOW);
  await page.emulateMedia({colorScheme:scheme,reducedMotion:"reduce"});
- await page.goto(at(shot.hash));
+ const address=at(shot.hash).replace("demo=1","demo="+(shot.demo??"1"));
+ await page.goto(shot.flags?address.replace(/(?=#)/,','+shot.flags):address);
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
- await page.waitForLoadState("networkidle");
+ await expect(page.locator("#main-content")).toBeVisible({timeout:12000});
+ await expect(page.getByRole("heading",{name:"Loading screen…",exact:true})).toHaveCount(0);
+ // Atlas deliberately cancels covered/replaced layout workers. A canceled
+ // module-worker request can keep Chromium's network-idle bookkeeping pending;
+ // wait for its loaded application surface, then the scene's rendered state.
+ if(shot.hash.startsWith('/atlas'))await page.locator('.v7-atlas').waitFor();
+ else await page.waitForLoadState("networkidle");
  await shot.prepare?.(page);
  await page.waitForTimeout(700);
  await page.evaluate(()=>document.fonts.ready);
 }
+
+export const redesignShots: Shot[] = [
+ {name:"today-next-step",hash:"/",flags:"todayNextStep,v7Ruler"},
+ {name:"atlas-map",hash:"/atlas",prepare:async page=>{await page.locator(".v7-atlas-sky[data-drawn-extent]").waitFor();}},
+ {name:"atlas-list",hash:"/atlas?view=list"},
+ {name:"atlas-peek",hash:"/atlas",prepare:async page=>{
+  await page.locator(".v7-atlas-sky[data-drawn-extent]").waitFor();
+  await page.getByRole("button",{name:"Search concepts"}).click();
+  const field=page.getByRole("searchbox",{name:"Find a concept"});
+  await field.fill("compact");
+  await page.getByRole("list",{name:"Matching concepts"}).getByRole("button",{name:/^Compactness\s+Analysis$/}).click();
+  await page.getByRole("region",{name:"Compactness",exact:true}).waitFor();
+  // Search opens the idea's actions; this scenario deliberately captures its peek.
+  await page.getByRole("button",{name:"Show less",exact:true}).click();
+ }},
+ {name:"path",hash:"/p/real-analysis"},
+ {name:"path-tutor",hash:"/p/real-analysis/tutor"},
+ {name:"tutor-start",hash:"/p/real-analysis/cp/CP4/tutor"},
+ {name:"tutor-reading",hash:"/p/real-analysis/cp/CP4/tutor",prepare:async page=>{
+  await page.getByRole("button",{name:/^Begin/}).click();
+ }},
+ {name:"tutor-scratch",hash:"/p/real-analysis/cp/CP4/tutor",flags:"tutorScratch",prepare:async page=>{
+  await page.getByRole("button",{name:"Write a question"}).click();
+  await page.getByRole("button",{name:"Scratch",exact:true}).click();
+ }},
+ {name:"settings-tutor",hash:"/settings?section=tutor"},
+ {name:"review-done",hash:"/review/done"},
+ {name:"review-empty",hash:"/review",demo:"first-use"},
+ {name:"review-nothing-due",hash:"/review",demo:"first-use",prepare:async page=>{
+  const first=page.getByRole("region",{name:"First card"});
+  await first.getByRole("button",{name:"Create a path and card"}).click();
+  await first.getByLabel("Path name").fill("Topology");
+  await first.getByLabel("Front",{exact:true}).fill("What is a clopen set?");
+  await first.getByLabel("Back",{exact:true}).fill("A set that is both open and closed.");
+  await first.getByRole("button",{name:"Save card"}).click();
+  await page.getByRole("button",{name:"Review now"}).click();
+  await page.getByRole("button",{name:"Show answer"}).click();
+  await page.getByRole("group",{name:"Grade answer"}).getByRole("button",{name:/^Easy\b/}).click();
+  await page.waitForURL(/#\/review\/done/);
+  await page.goto(at("/review").replace("demo=1","demo=first-use"));
+  await expect(page.getByText("Nothing due",{exact:true})).toBeVisible();
+ }},
+ {name:"progress-empty",hash:"/insights",demo:"first-use"},
+ {name:"today-first-run",hash:"/",demo:"first-use",flags:"todayNextStep"},
+ {name:"offline",hash:"/",prepare:async page=>{
+  await page.evaluate(()=>{
+   Object.defineProperty(navigator,"onLine",{configurable:true,value:false});
+   dispatchEvent(new Event("offline"));
+  });
+ }},
+];

@@ -1,3 +1,5 @@
+import {AdaptivePractice} from '../../adaptive/panels/LearningDetails';
+import {Disclosure} from '../../../ui/v7/Disclosure';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useCallback,useEffect,useMemo,useState} from 'react';
 import {Link} from 'react-router';
@@ -51,6 +53,7 @@ export default function PracticeV7(){
   <HubHeader title="Review">
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review">Due</Link><Link to="/practice" aria-current="page">Practice</Link></nav>
   </HubHeader>
+  <AdaptivePractice/>
   {loading&&<p role="status" className="v7-pr-note">Loading practice topics…</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
   {/* PR3: the explanation is a first-run tip, shown only before there is anything to practise. */}
@@ -68,10 +71,10 @@ export default function PracticeV7(){
      <Button variant="ghost" small aria-label={'Manage '+topic.title} onClick={()=>setManaging(topic)}>Manage</Button>
     </div>
    </li>;})}</ul>
-  {archived.length>0&&<details className="v7-pr-archived"><summary><span>Archived topics ({archived.length})</span><ChevronRight aria-hidden="true"/></summary>
+  {archived.length>0&&<Disclosure label={'Archived topics ('+archived.length+')'}>
    <ul aria-label="Archived practice topics">{archived.map(topic=><li key={topic.id}><span>{topic.title}</span>
     <Button variant="ghost" small aria-label={'Restore '+topic.title} disabled={busy}
-     onClick={()=>{void change(()=>getPracticeTopicApi().restoreTopic(topic.id,topic.version),'Topic restored');}}>Restore</Button></li>)}</ul></details>}
+     onClick={()=>{void change(()=>getPracticeTopicApi().restoreTopic(topic.id,topic.version),'Topic restored');}}>Restore</Button></li>)}</ul></Disclosure>}
   {recording&&<RecordSheet key={recording.id} topic={recording} busy={busy} onClose={()=>setRecording(null)}
    onSave={async input=>{const ok=await change(()=>getPracticeTopicApi().recordPractice(recording.id,recording.version,input),'Practice recorded');if(ok)setRecording(null);}}/>}
   {managing&&<ManageSheet key={managing.id} topic={managing} busy={busy} onClose={()=>setManaging(null)}

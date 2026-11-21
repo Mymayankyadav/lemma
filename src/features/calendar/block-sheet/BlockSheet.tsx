@@ -5,7 +5,8 @@ import type {TaskRecord} from '../../../data/tasks/contract';
 import type {ProjectSummary,CheckpointView} from '../../../data/types';
 import Dialog from '../../../ui/v6/Dialog';
 import {Button,DatePicker,Field,Picker,Segmented,Sheet} from '../../../ui/v7/components';
-import {TimeRange} from '../../../ui/v7/KitPrimitives';
+import {RulerTime} from '../../../ui/v7/RulerTime';
+import {Disclosure} from '../../../ui/v7/Disclosure';
 import {isFlagOn} from '../../../flags';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {getStudyApi} from '../../../data/study';
@@ -122,6 +123,7 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const notify=useToast();
  const [current,setCurrent]=useState(block);
  const [title,setTitle]=useState(block?.title??draft?.title??initialTitle??'');
+ const titleEdited=useRef(false);
  const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??draft?.kind??'study');
  const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
  const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):draft?zonedInput(draft.endsAt,zone):endAfter(proposed,zone,initialMinutes));
@@ -133,6 +135,14 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
  const [taskId,setTaskId]=useState(block?.taskId??(draft?draft.taskId:initialTaskId)??'');
  const [linksError,setLinksError]=useState('');
+ useEffect(()=>{
+  if(!v7||block||draft||!initialTaskId||initialTitle)return;
+  let active=true;
+  void getTaskApi().getTask(initialTaskId).then(task=>{
+   if(active&&task&&!titleEdited.current)setTitle(task.title);
+  }).catch(()=>{});
+  return()=>{active=false;};
+ },[v7,block,draft,initialTaskId,initialTitle]);
  useEffect(()=>{
   let active=true;
   void Promise.resolve().then(()=>getApi().listProjects()).then(rows=>{if(active)setProjects(rows.filter(p=>p.status!=='archived'))})
@@ -276,20 +286,21 @@ const day=start.slice(0,10);
    </>}>
    {otherZone&&<p className="v7-meta">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
    <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="v7-bs">
-    <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>setTitle(event.target.value)}/>
+    <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>{titleEdited.current=true;setTitle(event.target.value);}}/>
     <Segmented label="Calendar block type" options={['Study','Busy']} value={kind==='study'?'Study':'Busy'} onChange={value=>setKind(value==='Study'?'study':'busy')}/>
     {/^\d{4}-\d\d-\d\d$/.test(day)&&<DatePicker label="Date" value={day} onChange={value=>setPart('day',value)}/>}
-    <TimeRange durationControls={!isFlagOn('v7Ruler')} legend="Time" start={start.slice(11,16)} end={end.slice(11,16)} disabled={saving} onChange={(from,to)=>{
-     if(from!==start.slice(11,16)){setStart(day+'T'+from);const overnight=to<=from;setEnd((overnight?new Date(Date.parse(day+'T12:00:00Z')+86400000).toISOString().slice(0,10):day)+'T'+to);}
-     else setPart('end',to);setError('');}}/>
-    {isFlagOn('v7Ruler')&&<RulerSlider label="Length" min={5} max={Math.max(600,Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||50)}
+    <RulerTime label="Start" value={start.slice(11,16)} onChange={value=>setPart('start',value)} disabled={saving}/>
+    <RulerTime label="End" value={end.slice(11,16)} onChange={value=>setPart('end',value)} disabled={saving}/>
+    <RulerSlider label="Length" min={5} max={Math.max(600,Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||50)}
      value={Math.max(5,Math.round((Date.parse(instantInZone(end,zone)??'')-Date.parse(instantInZone(start,zone)??''))/60000)||50)} format={value=>value+' min'} tickFormat={value=>value/60+'h'}
-     onChange={minutes=>{const first=instantInZone(start,zone);if(first){setEnd(zonedInput(new Date(Date.parse(first)+minutes*60000).toISOString(),zone));setError('');}}}/>}
+     onChange={minutes=>{const first=instantInZone(start,zone);if(first){setEnd(zonedInput(new Date(Date.parse(first)+minutes*60000).toISOString(),zone));setError('');}}}/>
     <Picker optional label="Path" value={pathLabel(projectId)} options={paths.options} disabled={saving} onChange={text=>{setProjectId(paths.idOf(text));setCheckpointId('');}}/>
+    <Disclosure label="More">
     {projectId&&<Picker optional label="Checkpoint" value={cpLabel(checkpointId)} options={cps.options} disabled={saving} onChange={text=>setCheckpointId(cps.idOf(text))}/>}
     <Picker optional label="Task" value={taskLabel(taskId)} options={tks.options} disabled={saving} onChange={text=>setTaskId(tks.idOf(text))}/>
     {linksError&&<p role="status" className="v7-meta">{linksError}</p>}
     {current&&<Picker label="Status" value={Object.keys(statuses).find(key=>statuses[key]===status)??'Planned'} options={Object.keys(statuses)} onChange={text=>setStatus(statuses[text]??'planned')}/>}
+    </Disclosure>
     {error&&<p role="alert" className="v7-alert">{error}</p>}
     {current&&!confirmDelete&&<div className="v7-sheet-danger-zone"><Button small variant="ghost" destructive disabled={saving} onClick={()=>setConfirmDelete(true)}>Delete</Button></div>}
     {current&&confirmDelete&&<div className="v7-bs-confirm">

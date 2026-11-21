@@ -65,6 +65,7 @@ export interface TaskApi {
  createTask(input: NewTask): Promise<StudyReceipt<TaskRecord>>;
  /** Fails with a conflict when expectedVersion is stale. Setting status completed sets completedAt; leaving it clears completedAt. */
  updateTask(id: string, expectedVersion: number, patch: TaskPatch): Promise<StudyReceipt<TaskRecord>>;
+ restoreDeletedTask?(task:TaskRecord,actionNo:number|null):Promise<TaskRecord>;
  deleteTask(id: string, expectedVersion: number): Promise<StudyReceipt<{ id: string }>>;
 }
 

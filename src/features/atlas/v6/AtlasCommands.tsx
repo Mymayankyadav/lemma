@@ -1,5 +1,7 @@
 import {useAtlasDialog} from './useAtlasDialog';
-import {useState,type FormEvent} from 'react';
+import {useId,useState,type FormEvent} from 'react';
+import {Button,Field,Sheet} from '../../../ui/v7/components';
+import {AtlasChoice} from '../v7/AtlasChoice';
 import {getApi} from '../../../data';
 import type {AtlasGraph} from '../../../data/types';
 import type {AtlasLinkKind,AtlasMergePreview} from '../../../data/api';
@@ -8,10 +10,11 @@ type Mode='create'|'update'|'reparent'|'link'|'unlink'|'merge';
 const control='min-h-11 rounded-ctl border border-edge bg-[var(--paper)] px-3 py-2 text-label text-ink';
 type Concept=AtlasGraph['concepts'][number]&{version?:number};
 /** A saved edit is always an audited N105.1 owner command, never direct DML. */
-export default function AtlasCommands({graph,sourceId,onClose,onSaved}:{
- graph:AtlasGraph;sourceId:string|null;onClose:()=>void;onSaved:()=>Promise<void>|void
+export default function AtlasCommands({graph,sourceId,onClose,onSaved,kit=false}:{
+ graph:AtlasGraph;sourceId:string|null;onClose:()=>void;onSaved:()=>Promise<void>|void;kit?:boolean
 }){
  const dialog=useAtlasDialog();
+ const formId=useId(),descriptionId=useId();
  const source=sourceId?graph.concepts.find(c=>c.id===sourceId) as Concept|undefined:null;
  const choices=graph.concepts.filter(c=>c.id!==sourceId&&
   (!source||c.subjectId===source.subjectId));
@@ -75,6 +78,49 @@ export default function AtlasCommands({graph,sourceId,onClose,onSaved}:{
  };
  const targetLabel=mode==='reparent'?'New parent concept':
   mode==='merge'?'Keep this concept':'Target concept';
+ if(kit)return <Sheet open containFocus title={source?'Edit idea':'Create idea'} focusTitle
+  onClose={()=>{if(!busy)onClose();}}
+  footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
+   <Button variant="primary" type="submit" form={formId} loading={busy}
+    disabled={busy||(mode==='merge'&&(!preview||preview.keepId!==targetId))||(mode==='create'&&!subjectId)}>
+    {mode==='merge'?'Confirm merge':source?'Save changes':'Create idea'}
+   </Button></>}>
+  <form id={formId} className="v7-form-stack v7-atlas-command" onSubmit={event=>void submit(event)}>
+   {source&&<AtlasChoice label="Action" value={mode} disabled={busy} onChange={value=>change(value as Mode)} options={[
+    {id:'update',name:'Edit name or description'},{id:'reparent',name:'Change parent'},
+    {id:'link',name:'Add link'},{id:'unlink',name:'Remove link'},{id:'merge',name:'Merge into another concept'},
+   ]}/>}
+   {mode==='create'&&<AtlasChoice label="Subject" value={subjectId} options={graph.subjects} onChange={setSubjectId} disabled={busy}/>}
+   {(mode==='create'||mode==='update')&&<>
+    <Field label="Idea name" aria-label="Atlas idea name" value={name} onChange={event=>setName(event.target.value)} maxLength={60} required disabled={busy}/>
+    <div className="v7-field-group"><label htmlFor={descriptionId}>Description</label>
+     <textarea id={descriptionId} className="v7-field" aria-label="Atlas idea description" value={blurb}
+      onChange={event=>setBlurb(event.target.value)} maxLength={200} rows={3} disabled={busy}/>
+    </div>
+   </>}
+   {['reparent','link','unlink','merge'].includes(mode)&&<AtlasChoice label={targetLabel} value={targetId}
+    options={mode==='reparent'?[{id:'',name:'No parent (root)'},...choices]:choices} disabled={busy}
+    onChange={id=>{setTargetId(id);setPreview(null);}}/>}
+   {(mode==='link'||mode==='unlink')&&<AtlasChoice label="Link type" value={kind} disabled={busy}
+    options={[{id:'prereq',name:'Prerequisite'},{id:'related',name:'Related'}]} onChange={value=>setKind(value as AtlasLinkKind)}/>}
+   {mode==='merge'&&<>
+    <Button disabled={busy||!targetId} onClick={()=>void inspect()}>Preview merge impact</Button>
+    {preview&&preview.keepId===targetId&&<section aria-label="Server merge impact" className="v7-form-stack">
+     <p className="v7-supporting">Verified preview · source v{preview.sourceVersion}, kept v{preview.keepVersion}</p>
+     <dl className="v7-atlas-impact">
+      <div><dt>Children</dt><dd>{preview.impact.childConcepts}</dd></div>
+      <div><dt>Prerequisites in</dt><dd>{preview.impact.incomingPrerequisites}</dd></div>
+      <div><dt>Prerequisites out</dt><dd>{preview.impact.outgoingPrerequisites}</dd></div>
+      <div><dt>Related links</dt><dd>{preview.impact.relatedConcepts}</dd></div>
+      <div><dt>Notes/cards</dt><dd>{preview.impact.notesAndCards}</dd></div>
+      <div><dt>Checkpoints</dt><dd>{preview.impact.checkpointRefs}</dd></div>
+     </dl>
+     <p className="v7-supporting">Merge moves linked evidence and removes the source idea. You can undo it in History.</p>
+    </section>}
+   </>}
+   {message&&<p role="alert" className="v7-error">{message}</p>}
+  </form>
+ </Sheet>;
  return <dialog {...dialog} aria-label={source?'Edit Atlas idea '+source.name:'Create Atlas idea'}
   onCancel={event=>{event.preventDefault();if(!busy)onClose()}}
   onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();if(!busy)onClose()}}}

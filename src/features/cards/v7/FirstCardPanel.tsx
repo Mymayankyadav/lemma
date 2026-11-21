@@ -1,3 +1,4 @@
+import {Picker} from '../../../ui/v7/components';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useEffect,useId,useRef,useState,useSyncExternalStore,type FormEvent,type ReactNode} from 'react';
 import {useNavigate} from 'react-router';
@@ -8,11 +9,12 @@ import {getDemoProfile,getMode} from '../../../data/mode';
 import {authGeneration,authOwner,onAccountChange} from '../../../data/authBoundary';
 import type {FirstStudyCardInput} from '../../../data/types';
 import {Button} from '../../../ui/v7/components';
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 
 const demoPendingKey='lemma.first-use.first-card.pending.v1';
 type Path=FirstStudyCardInput['path'];
 type Pending=FirstStudyCardInput;
-type PanelProps={fallback?:ReactNode;initial?:{front:string;back:string;slug?:string};onCancel?:()=>void;onSaved?:()=>void};
+type PanelProps={fallback?:ReactNode;initial?:{front:string;back:string;slug?:string};onCancel?:()=>void;onSaved?:()=>void;reviewEmpty?:boolean};
 type StoredDraft=Pending&{rejection?:string};
 const saving=new Set<string>();
 
@@ -36,7 +38,7 @@ export default function FirstCardPanel(props:PanelProps){
  if(!fixture&&(!studyRepair||getMode()!=='live'||!ownerId))return props.fallback??null;
  return <CardPanel key={fixture?'fixture':epoch} {...props} epoch={epoch} ownerId={ownerId}/>;
 }
-function CardPanel({fallback=null,initial,onCancel,onSaved,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){
+function CardPanel({fallback=null,initial,onCancel,onSaved,reviewEmpty=false,ownerId,epoch}:PanelProps&{ownerId:string|null;epoch:number}){
  const navigate=useNavigate(),queryClient=useQueryClient(),heading=useId();
  const api=ownerId?getApi():getFirstCardDemoApi(),projects=useProjects();
  const pendingKey=ownerId?'lemma.study.first-card.v1.'+ownerId:demoPendingKey;
@@ -139,16 +141,18 @@ function CardPanel({fallback=null,initial,onCancel,onSaved,ownerId,epoch}:PanelP
  </section>;
  if(!api||!pending&&!open&&(!empty||!projects.isSuccess))return fallback;
  const callToAction=paths.length?'Create your first card':'Create a path and card';
+ if(reviewEmpty&&!open&&!pending)return <section aria-label="First card">
+  <EmptyMoment art="review" title="No cards yet" action={{label:callToAction,onClick:()=>setOpen(true)}}/>
+ </section>;
  return <section className="v7-cards-empty" aria-labelledby={heading}>
   <h2 id={heading} className="v7-headline">First card</h2>
   {!open&&!pending?<button ref={trigger} type="button" className="v7-button v7-primary" onClick={()=>setOpen(true)}><span>{callToAction}</span></button>
-  :<form onSubmit={save} className="v7-form-stack">
+  :<form onSubmit={save} className="v7-form-stack v7-first-card-form">
    {pending?<p role="status">Your draft is saved in this tab. Retry to open the exact saved card.</p>:<>
-    {paths.length>0&&<label className="v7-field-group">Path
-     <select className="v7-field" value={ownerId?available?.id??'':slug} onChange={event=>setChosenPath(event.target.value)}>
-      {paths.map(row=><option key={row.slug} value={ownerId?row.id:row.slug}>{row.title}</option>)}
-      <option value="">Create a new path</option>
-     </select></label>}
+    {paths.length>0&&<Picker label="Path" value={available?.title??paths.find(row=>row.slug===slug)?.title??'Create a new path'}
+      options={[...paths.map(row=>row.title),'Create a new path']} onChange={title=>{
+       const row=paths.find(path=>path.title===title);setChosenPath((ownerId?row?.id:row?.slug)??'');
+      }}/>}
     {!slug&&<label className="v7-field-group">Path name<input className="v7-field" value={title}
      required minLength={2} maxLength={80} onChange={event=>setTitle(event.target.value)}/></label>}
     <div className="v7-field-group">

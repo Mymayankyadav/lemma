@@ -2,7 +2,9 @@ import {useEffect,useMemo,useRef,useState} from 'react';
 import {getApi} from '../../data';
 import {useAtlas,useHome} from '../../data/hooks';
 import {getTaskApi} from '../../data/tasks';
-import {Sheet} from '../../ui/v7/components';
+import {Button,Sheet} from '../../ui/v7/components';
+import {tutorHref} from '../../features/tutor/tutorHref';
+import {chatLink} from '../../lib/chat';
 import {FastTex} from '../../ui/FastTex';
 import {canonicalSearchItem,search,settingResults,type Matched,type SearchGroupName,type SearchItem,type SearchSnapshot} from './searchModel';
 import {searchActionIcon,searchGroupIcon} from './searchIcons';
@@ -82,7 +84,8 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
     const option=results.querySelector<HTMLElement>('#v7-search-'+active),bounds=option?.getBoundingClientRect();
     if(!bounds)return;
     const viewport=body.getBoundingClientRect();
-    const top=getComputedStyle(field).position==='sticky'?Math.max(viewport.top,field.getBoundingClientRect().bottom):viewport.top;
+    const entry=field.closest('.v7-search-entry')??field;
+    const top=getComputedStyle(entry).position==='sticky'?Math.max(viewport.top,entry.getBoundingClientRect().bottom):viewport.top;
     if(bounds.top<top)body.scrollTop+=bounds.top-top;
     else if(bounds.bottom>viewport.bottom)body.scrollTop+=bounds.bottom-viewport.bottom;
    });
@@ -111,7 +114,7 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
   </button></li>;};
  let cursor=0;
  return <Sheet open={open} onClose={onClose} title="Search" full hideTitle>
-  <input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
+  <div className="v7-search-entry"><input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
    aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>{setQuery(event.target.value);setActiveId(null);setKeepActiveVisible(false);const body=resultsRef.current?.parentElement;if(body)body.scrollTop=0;}}
    onKeyDown={event=>{
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){
@@ -121,7 +124,7 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
      setKeepActiveVisible(true);
     }
     else if(event.key==='Enter'&&activeItem){event.preventDefault();openItem(activeItem);}
-   }}/>
+   }}/></div>
   <div ref={resultsRef} id="v7-search-results" role="listbox" aria-label="Results" className="v7-search-groups">
    {idle?<>
     {recent.length>0&&<section className="v7-search-group" aria-label={room?'Jump back in':'Recent'}><h2 className="v7-eyebrow">{room?'Jump back in':'Recent'}</h2><ul>{recent.map(item=>row(item,cursor++))}</ul></section>}
@@ -129,7 +132,14 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
    </>:results.groups.length?results.groups.map(group=><section key={group.name} className="v7-search-group" aria-label={group.name}>
     <h2 className="v7-eyebrow">{group.name}</h2><ul>{group.items.map(item=>row(item,cursor++,item))}</ul>
     {group.total>group.items.length&&<button type="button" className="v7-button v7-ghost v7-small" onClick={()=>setExpanded(new Set([...expanded,group.name]))}><span>Show all {group.total}</span></button>}
-   </section>):<p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>}
+   </section>):<div className="v7-search-create">
+    <p className="v7-meta" role="status">∅ Nothing matches “{query.trim()}”.</p>
+    <Button small onClick={()=>onPick({id:'add-task-from-search',group:'Actions',title:'Add task',to:'/tasks?new=1&title='+encodeURIComponent(query.trim().slice(0,200))},{query,activeId,expanded:[...expanded]})}>Add task “{query.trim()}”</Button>
+    {projects.find(project=>project.current)?<Button small onClick={()=>{
+     const path=projects.find(project=>project.current)!;
+     onPick({id:'ask-tutor-from-search',group:'Actions',title:'Ask your tutor',to:tutorHref(path.slug,path.current!.code)+'?question='+encodeURIComponent(query.trim())},{query,activeId,expanded:[...expanded]});
+    }}>Ask your tutor</Button>:<a className="v7-button v7-small v7-secondary" target="_blank" rel="noopener noreferrer" href={chatLink('claude','Help me with '+query.trim())}>Ask your tutor</a>}
+   </div>}
   </div>
   <span className="v7-sr-only" role="status">{idle?'':results.flat.length+' results in '+results.groups.length+' groups'}</span>
  </Sheet>;

@@ -25,6 +25,13 @@ function observe(api:TaskApi):TaskApi{
    publish(owner,{kind:'created',record:saved.record});
    return saved;
   },
+  async restoreDeletedTask(task,actionNo){
+   const owner=taskScope();
+   if(!api.restoreDeletedTask)throw new Error('Task restoration unavailable');
+   const record=await api.restoreDeletedTask(task,actionNo);
+   publish(owner,{kind:'created',record});
+   return record;
+  },
   async deleteTask(id,version){
    const owner=taskScope();
    const saved=await api.deleteTask(id,version);

@@ -42,9 +42,9 @@ describe('A2 illustrations',()=>{
   }finally{await act(async()=>root.unmount());host.remove();}
  });
  it('each empty state uses its illustration',()=>{
-  const uses:[string,string][]=[['src/features/projects/v7/PathsV7.tsx','art="paths"'],['src/features/calendar/v7/V7CalendarDay.tsx','name="calendar"'],
-   ['src/features/review/v7/ReviewHubV7.tsx','name="review"'],['src/features/proposals/v7/InboxV7.tsx','name="inbox"'],['src/features/cards/v7/CardsV7.tsx','art="cards"'],
-   ['src/features/atlas/v7/AtlasV7.tsx','name="atlas"'],['src/features/insights/v7/ProgressV7.tsx','name="progress"'],['src/features/tasks/v7/TasksV7.tsx',"'tasks'"]];
+  const uses:[string,string][]=[['src/features/projects/v7/PathsV7.tsx','art="paths"'],['src/features/calendar/v7/V7CalendarDay.tsx','art="calendar"'],
+   ['src/features/review/v7/ReviewHubV7.tsx','art="review"'],['src/features/proposals/v7/InboxV7.tsx','name="inbox"'],['src/features/cards/v7/CardsV7.tsx','art="cards"'],
+   ['src/features/atlas/v7/AtlasV7.tsx','art="atlas"'],['src/features/insights/v7/ProgressV7.tsx','art="progress"'],['src/features/tasks/v7/TasksV7.tsx',"'tasks'"]];
   for(const [file,use] of uses)expect(readFileSync(file,'utf8')).toContain(use);
  });
 });

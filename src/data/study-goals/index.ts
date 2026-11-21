@@ -1,14 +1,17 @@
-import {getMode} from '../mode';
+import {getDemoProfile,getMode} from '../mode';
 import type {GoalApi} from './contract';
 import {createDemoGoalApi} from './demo';
 import {createLiveGoalApi} from './live';
 export type * from './contract';
-let cached:GoalApi|null=null;
+let cached:{api:GoalApi;firstUse:boolean}|null=null;
+let testApi:GoalApi|null=null;
 export function getGoalApi():GoalApi {
  const mode=getMode();
- if(!cached||cached.mode!==mode)
-  cached=mode==='demo'?createDemoGoalApi():createLiveGoalApi();
- return cached;
+ if(testApi?.mode===mode)return testApi;
+ const firstUse=mode==='demo'&&getDemoProfile()==='first-use';
+ if(!cached||cached.api.mode!==mode||cached.firstUse!==firstUse)
+  cached={api:mode==='demo'?createDemoGoalApi(firstUse):createLiveGoalApi(),firstUse};
+ return cached.api;
 }
 /** Tests only: inject an adapter, null clears the cache. */
-export function setGoalApiForTests(api:GoalApi|null):void{cached=api}
+export function setGoalApiForTests(api:GoalApi|null):void{testApi=api;cached=null;}

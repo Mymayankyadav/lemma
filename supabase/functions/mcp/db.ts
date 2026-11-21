@@ -1,7 +1,9 @@
 import { createClient } from './deps.ts';
 // Dynamic table/projection boundary; tool handlers validate fields and the RPC validates ownership.
 type RpcResult = PromiseLike<{data:any;error:{message:string;code?:string}|null}>;
-export type Db = {from(table:string):any;rpc(fn:string,args?:Record<string,unknown>):RpcResult & {abortSignal?(signal:AbortSignal):RpcResult}};
+export type Db = {
+  storage?: {from(bucket:string):{download(path:string):PromiseLike<{data:Blob|null;error:unknown}>}};
+  from(table:string):any;rpc(fn:string,args?:Record<string,unknown>):RpcResult & {abortSignal?(signal:AbortSignal):RpcResult}};
 /** Self-test-only IDs are scoped to the current request; never supplied by clients. */
 export type Context = { db: Db; userId: string; batch?: any[]; selftestProjectIds?: Set<string>;
   /** N169: a tool may set its own NEXT line, and add short notices (e.g. I2 lint) shown after the trimmed result. */

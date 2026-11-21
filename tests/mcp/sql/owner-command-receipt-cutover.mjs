@@ -55,8 +55,11 @@ async function rehearse(db) {
     grant usage on schema auth to authenticated;
     create schema storage;
     create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
-    create table storage.objects(bucket_id text,name text);
-    create function storage.foldername(text) returns text[] language sql as $$select string_to_array($1,'/')$$;`);
+    create table storage.objects(bucket_id text,name text,owner_id text,created_at timestamptz,metadata jsonb);
+    create function storage.foldername(text) returns text[] language sql as
+      $$select (string_to_array($1,'/'))[1:cardinality(string_to_array($1,'/'))-1]$$;
+    create function storage.filename(text) returns text language sql as
+      $$select (string_to_array($1,'/'))[cardinality(string_to_array($1,'/'))]$$;`);
   for (const file of files.slice(0, cutover)) await migrate(file);
   const beforeSignatures = await signatures();
   assert.equal(beforeSignatures.length, writers.length);

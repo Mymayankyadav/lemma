@@ -1,6 +1,7 @@
 import {focusDurationAdjustment} from '../../lib/studyTime';
 // Tab-local v6 demo study data. All elapsed time comes from persisted interval timestamps.
 import { LemmaError } from '../api';
+import { getDemoProfile } from '../mode';
 import type {
   CalendarBlockPatch, CalendarBlockRecord, ClosedStudyIntervalInput, NewCalendarBlock,
   NewManualStudyEntry, NewStudyEntry, StudyApi, StudyCorrectionPatch, StudyEntryRecord,
@@ -80,9 +81,9 @@ export function weekSeed(now: Date): Snapshot {
     blocks: [study, busy],
   };
 }
-function load(): Snapshot {
+function load(key: string): Snapshot | null {
   try {
-    const raw = sessionStorage.getItem(STORAGE_KEY);
+    const raw = sessionStorage.getItem(key);
     if (raw) {
       const value: unknown = JSON.parse(raw);
       if (value && typeof value === 'object' && 'schema' in value && value.schema === 1 &&
@@ -90,11 +91,7 @@ function load(): Snapshot {
           'blocks' in value && Array.isArray(value.blocks)) return value as Snapshot;
     }
   } catch { /* private mode or invalid data: use a fresh in-memory fixture */ }
-  return weekSeed(new Date());
-}
-function persist(snapshot: Snapshot): void {
-  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot)); }
-  catch { /* memory-only fallback when storage is blocked */ }
+  return null;
 }
 function latest(entry: StudyEntryRecord): StudyInterval | undefined { return entry.intervals.at(-1); }
 function checkAt(entry: StudyEntryRecord, at: string): string {
@@ -232,9 +229,14 @@ function freeFocus(entry:StudyEntryRecord,now:number):Array<[number,number]> {
   return available;
 }
 
-export function createDemoStudyApi(): StudyApi {
+export function createDemoStudyApi(firstUse = getDemoProfile() === 'first-use'): StudyApi {
  const deletedBlocks=new Map<string,CalendarBlockRecord>();
-  const snapshot = load();
+  const key = firstUse ? STORAGE_KEY + '.first-use' : STORAGE_KEY;
+  const snapshot: Snapshot = load(key) ?? (firstUse ? { schema: 1, entries: [], blocks: [] } : weekSeed(new Date()));
+  const persist = (state: Snapshot) => {
+    try { sessionStorage.setItem(key, JSON.stringify(state)); }
+    catch { /* memory-only fallback when storage is blocked */ }
+  };
   persist(snapshot);
   const entryById = (key: string): StudyEntryRecord => {
     const found = snapshot.entries.find(e => e.id === key);
