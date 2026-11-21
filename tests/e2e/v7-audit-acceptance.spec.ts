@@ -46,7 +46,7 @@ for(const scheme of ['light','dark'] as const)for(const name of ['today','focus'
   await expect(nav.getByRole('link')).toHaveCount(detail?0:5);
   if(name==='focus')await expect(page.getByTestId('focus-clock')).toBeVisible();
   if(name==='review-round')await expect(page.getByRole('button',{name:'Show answer',exact:true})).toBeVisible();
-  if(name==='path-map')await expect(page.getByRole('link',{name:'Continue with tutor',exact:true})).toBeVisible();
+  if(name==='path-map')await expect(page.getByRole('button',{name:'Continue with tutor',exact:true})).toBeVisible();
   for(const button of await page.getByRole('button').all()){
    if(!await button.isVisible())continue;
    expect(await button.evaluate(node=>node.getAttribute('aria-label')||node.getAttribute('aria-labelledby')||node.textContent?.trim()||node.getAttribute('title'))).toBeTruthy();
