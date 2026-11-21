@@ -4,6 +4,7 @@ import type {AgendaRead} from '../../../src/data/adaptive/agenda-api';
 import {tutorPresence} from '../../../src/features/tutor/presence';
 import {finishPadStroke,initializePadInk,undoPadInk} from '../../../src/ui/v7/ink/ink';
 import {fittedImageSize,inkBounds} from '../../../src/ui/v7/ink/images';
+import {editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,removeSubmittedInk,type InkDraft} from '../../../src/data/tutor/ink-storage';
 import {dayMinute,minuteClock} from '../../../src/ui/v7/RulerTime';
 import {changeChip} from '../../../src/features/insights/v7/progressModel';
 import {goalDates} from '../../../src/features/insights/v7/GoalEditor';
@@ -62,6 +63,60 @@ describe('November UI plan',()=>{
     expect(initializePadInk(JSON.parse(JSON.stringify(ink.strokes)))?.strokes).toEqual(ink.strokes);
     expect(undoPadInk(ink)).toEqual(blank);
     expect(fittedImageSize(4000,2000)).toEqual({width:1024,height:512});
+  });
+
+  it('clears only submitted images when a draft has separate drawings and photos',()=>{
+    const first={id:'drawing-1',kind:'drawing',mimeType:'image/png',blob:new Blob()} as const;
+    const other={id:'photo-1',kind:'photo',mimeType:'image/jpeg',blob:new Blob()} as const;
+    const stored={...emptyInk,photos:[first,other],drawingId:'drawing-2',strokes:[[{x:10,y:20}]],queuedText:''};
+    expect(removeSubmittedInk(stored,new Set(['different-draft']))).toBe(stored);
+    expect(removeSubmittedInk(stored,new Set(['drawing-1']))).toEqual({
+      ...stored,photos:[other],queuedText:undefined,
+    });
+    expect(removeSubmittedInk(stored,new Set(['drawing-1','drawing-2']))).toEqual({
+      ...emptyInk,photos:[other],drawingId:undefined,queuedText:undefined,
+    });
+  });
+
+  it('checks competing photo and ink edits against the latest attachment count',()=>{
+    const image=(id:string)=>({id,kind:'photo',mimeType:'image/jpeg',blob:new Blob()} as const);
+    const initial={...emptyInk,photos:[image('one'),image('two')]};
+    const addPhoto=(draft:InkDraft)=>({...draft,photos:[...draft.photos,image('three')]});
+    const addStroke=(draft:InkDraft)=>({...draft,strokes:[[{x:10,y:20}]]});
+    const photoFirst=editInkDraft(initial,addPhoto),inkFirst=editInkDraft(initial,addStroke);
+    expect(photoFirst.photos).toHaveLength(3);
+    expect(inkFirst.strokes).toHaveLength(1);
+    expect(editInkDraft(photoFirst,addStroke)).toBe(photoFirst);
+    expect(editInkDraft(inkFirst,addPhoto)).toBe(inkFirst);
+    const queued={...inkFirst,queuedText:''};
+    const removePhoto=(draft:InkDraft)=>({...draft,photos:draft.photos.slice(1)});
+    expect(editInkDraft(queued,removePhoto)).toBe(queued);
+    expect(editInkDraft({...queued,queuedText:undefined},removePhoto).photos).toHaveLength(1);
+  });
+
+  it('keeps current references and bounds detached drawing revisions without counting them as attachments',()=>{
+    const image=(id:string)=>({id,kind:'drawing',mimeType:'image/png',blob:new Blob()} as const);
+    const referenced=['keep'];
+    let draft:InkDraft={...emptyInk,inlineImages:true,photos:[image('keep')]};
+    for(let revision=0;revision<20;revision++){
+      draft={...draft,photos:keepDraftImage(draft,image('revision-'+revision),referenced)};
+    }
+    expect(draft.photos.map(item=>item.id)).toEqual([
+      'keep',...Array.from({length:12},(_,index)=>'revision-'+(index+8)),
+    ]);
+    const addStroke=(current:InkDraft)=>({...current,strokes:[[{x:10,y:20}]]});
+    expect(editInkDraft(draft,addStroke,referenced)).not.toBe(draft);
+    expect(editInkDraft(draft,addStroke,['keep','revision-18','revision-19'])).toBe(draft);
+  });
+
+  it('finishes only the stage that was published and preserves unrelated working ink',()=>{
+    const strokes=[[{x:4,y:8}]];
+    const drawn={...emptyInk,strokes,width:3,accent:false,stagedDrawing:{id:'first'}};
+    expect(finishStagedDrawing(drawn,'different')).toBe(drawn);
+    expect(finishStagedDrawing(drawn,'first')).toMatchObject({strokes:[],stagedDrawing:undefined});
+    const editing={...drawn,editingDrawing:{id:'old',strokes,width:2,accent:true},
+      stagedDrawing:{id:'replacement',replacesId:'old'}};
+    expect(finishStagedDrawing(editing,'replacement')).toMatchObject({strokes,editingDrawing:undefined,stagedDrawing:undefined});
   });
 
   it('preserves exact minute values and skips a comparison without prior data',()=>{

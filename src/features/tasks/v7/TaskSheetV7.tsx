@@ -93,11 +93,15 @@ export default function TaskSheetV7({onDismiss,task,initialDraft,initialTitle,on
    {dueKind!=='none'&&!datesReady&&<p role="status">Loading your time zone…</p>}
    {dueKind==='instant'&&datesReady&&<RulerTime label="Due time" value={dueTime} onChange={value=>{dueEdited.current=true;setDueTime(value);}}/>}
    <Disclosure label={estimate?'More · '+formatDuration(Number(estimate)):'More options'} defaultOpen={!!task}>
-    <RulerSlider label="Estimate" min={0} max={Math.max(180,Number(estimate)||0)} step={5} value={Number(estimate)||0}
-     format={value=>value?formatDuration(value):'No estimate'} tickFormat={String} onChange={value=>setEstimate(value?String(value):'')}/>
+    {Number(estimate||0)<=180&&<RulerSlider label="Estimate" min={0} max={180} step={5} value={Number(estimate)||0}
+     format={value=>value?formatDuration(value):'No estimate'} tickFormat={String} onChange={value=>setEstimate(value?String(value):'')}/>}
+    <Disclosure label="Exact estimate" defaultOpen={Number(estimate)>180||Number(estimate)%5!==0}>
+     <Field label="Minutes" optional inputMode="numeric" value={estimate} placeholder="e.g. 25"
+      onChange={event=>setEstimate(event.target.value.replace(/[^\d]/g,''))}/>
+    </Disclosure>
     <Picker label="Priority" value={label(PRIORITY,priority)} options={Object.keys(PRIORITY)} onChange={value=>setPriority(PRIORITY[value])}/>
-    {!projectId&&<Picker label="Subject" optional value={subjectRows.find(s=>s.id===subjectId)?.name??'Unassigned'}
-     options={subjectNames} onChange={name=>setSubjectId(subjectRows.find(s=>s.name===name)?.id??'')}/>}
+    <Picker label="Subject" optional value={subjectRows.find(s=>s.id===subjectId)?.name??'Unassigned'}
+     options={subjectNames} onChange={name=>setSubjectId(subjectRows.find(s=>s.name===name)?.id??'')}/>
    </Disclosure>
    {error&&!titleError&&<p className="v7-error" role="alert"><CircleX aria-hidden="true"/>{error}</p>}
    <button type="submit" hidden/>

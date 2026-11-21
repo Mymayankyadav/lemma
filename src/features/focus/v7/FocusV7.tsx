@@ -12,7 +12,7 @@ import {getStudyApi} from '../../../data/study';
 import {getThoughtApi} from '../../../data/parked-thoughts';
 import {getStudyEventApi} from '../../../data/study-events';
 import type {StudyEntryRecord} from '../../../data/study/contract';
-import {Button,Sheet} from '../../../ui/v7/components';
+import {Button,Sheet,Stepper} from '../../../ui/v7/components';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {formatDuration} from '../../../lib/format';
 import {Emblem} from '../../../ui/v7/Emblem';
@@ -216,6 +216,7 @@ export default function FocusV7(){
    footer={<Button variant="primary" disabled={busy} onClick={()=>{void save();}}>Save</Button>}>
    <div className="v7-focus-finish-form">
     <RulerSlider label="Focused time" value={minutes} min={1} max={1440} step={1} onChange={setMinutes} format={formatDuration}/>
+    <Stepper label="Adjust focused time" unit="min" value={minutes} min={1} max={1440} onChange={setMinutes}/>
     <fieldset className="v7-focus-rating"><legend>How did it go?</legend>
      <div role="radiogroup" aria-label="How did it go?">{ratings.map((label,index)=><button key={label} type="button" role="radio" aria-checked={rating===index+1} aria-label={label} onClick={()=>setRating(index+1)}>
       <span aria-hidden="true"/></button>)}</div>

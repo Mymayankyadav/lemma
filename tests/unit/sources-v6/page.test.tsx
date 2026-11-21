@@ -5,11 +5,13 @@ import type {Source,SourceTranscriptionStat} from '../../../src/data/types';
 import V6Sources,{orderedSources,coverageOf} from '../../../src/features/project/sources-v6/V6Sources';
 
 const mocks=vi.hoisted(()=>({stats:{data:[] as SourceTranscriptionStat[],isPending:false,isError:false}}));
-vi.mock('../../../src/data/hooks',()=>({useSourceTranscriptionStats:()=>mocks.stats}));
-vi.mock('../../../src/ui/FastTex',()=>({FastTex:({source}:{source:string})=><span>{source}</span>}));
-vi.mock('../../../src/features/project/SourceTranscriptionView',()=>({
- SourceTranscriptionView:({source}:{source:Source})=><button type="button">View pages and export {source.title}</button>
+vi.mock('../../../src/data/hooks',()=>({
+ useSourceTranscriptionStats:()=>mocks.stats,
+ useSourcePage:()=>({}),
+ useSourcePdfUrl:()=>({}),
+ useUpdateSourcePage:()=>({}),
 }));
+vi.mock('../../../src/ui/FastTex',()=>({FastTex:({source}:{source:string})=><span>{source}</span>}));
 function source(id:string,position:number|null=1):Source{
  return {id,projectId:'path',title:'Source '+id,short:id,filename:id+'.pdf',
   position:position??undefined,kind:'book',status:'ready',hasText:false,pageCount:5,
@@ -35,12 +37,17 @@ describe('v6 source panel',()=>{
  });
  it('shows kind, plan order, coverage and the page/export controls',()=>{
   mocks.stats.data=[{sourceId:'a',transcribed:5,needsCheck:1}];
-  const node=render([source('b',2),source('a',1)]);
+  const node=render([source('b',2),{...source('a',1),origin:'claude'}]);
   const text=node.textContent??'';
   expect(text.indexOf('Source a')).toBeLessThan(text.indexOf('Source b'));
-  expect(text).toContain('5 of 5 pages transcribed');
-  expect(text).toContain('1 page needs checking');
-  expect(text).toContain('View pages and export Source a');
+  const card=node.querySelector('ol > li')!;
+  expect(card.textContent?.match(/5 of 5 pages transcribed/g)).toHaveLength(1);
+  expect(card.textContent).toContain('1 page needs checking');
+  expect(card.textContent).not.toContain('1 to check');
+  expect(card.textContent).toContain('Transcribed by Claude');
+  expect(card.querySelector('[data-source-view-pages]')?.textContent).toBe('View pages');
+  expect(card.textContent).toContain('Download as .md');
+  expect(card.textContent).toContain('Download as .tex');
   expect(text).toContain('Not yet checked against plan');
  });
  it('preserves existing upload and edit controls without duplicated mutation paths',()=>{

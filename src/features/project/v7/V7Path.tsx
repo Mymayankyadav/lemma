@@ -1,3 +1,4 @@
+import {PathEstimateDetails} from '../../adaptive/panels/LearningDetails';
 import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {reviewHref} from '../../../data/review-target';
@@ -171,7 +172,7 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={40} tier="tile" animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
-   {project.goal?.trim()&&<p className="v7-path-goal">{project.goal.trim()}</p>}
+   {project.goal?.trim()&&<Disclosure label={<span className="v7-path-goal">{project.goal.trim()}</span>}><p>{project.goal.trim()}</p></Disclosure>}
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong aria-hidden="true">{data.done}/{data.total}</strong></div>
    <div className="v7-path-chips">{target&&<span title="Target date"><MEANING_ICON.targetDate size={14} aria-label="Target date"/> {target}</span>}
@@ -198,7 +199,8 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
      </li>;
     })}
    </ol>:<EmptyMoment title="No plan yet." action={{label:'Plan with your tutor',to:tutorHref(slug)}}/>)}
-   {tab==='Plan'&&settings.data?.flags?.recheck_v2&&<Disclosure label="Rechecks"><ProjectScheduler projectId={project.id}/></Disclosure>}
+   {tab==='Plan'&&<PathEstimateDetails projectId={project.id}/>}
+   {tab==='Plan'&&(settings.data?.flags?.recheck_v2||settings.data?.flags?.time_block)&&<Disclosure label={settings.data?.flags?.recheck_v2?'Rechecks':'Study schedule'}><ProjectScheduler projectId={project.id}/></Disclosure>}
    {tab==='Sessions'&&<SessionRows slug={slug} sessions={data.sessions}/>}
    {tab==='Sources'&&<Suspense fallback={<Skeleton/>}><SourcesPanel sources={data.sources} projectId={project.id} focusSourceId={studyRepair?params.get('source'):null}/></Suspense>}
    {tab==='Cards'&&<ul className="v7-path-cards" aria-label="Cards by checkpoint">

@@ -1,22 +1,25 @@
-import {useEffect,useRef,useState} from 'react';
-import {Camera,Expand,Hand,ImagePlus,Minus,Pencil,Plus,Undo2,Eraser,X} from 'lucide-react';
+import {useEffect,useId,useRef,useState,type CSSProperties} from 'react';
+import {Camera,ChevronDown,ChevronUp,Ellipsis,Eraser,Hand,ImagePlus,Minus,Pencil,Plus,Redo2,Trash2,Undo2} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
-import {initializePadInk,undoPadInk,type PadInkHistory} from '../../ui/v7/ink/ink';
-import {reencodePhoto} from '../../ui/v7/ink/images';
-import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment} from '../../data/tutor/attachment-types';
-import {emptyInk,readInkDraft,readTutorImage,writeInkDraft,type InkDraft} from '../../data/tutor/ink-storage';
+import {clearPadInk,initializePadInk,replacePadStrokes,undoPadInk,type PadInkHistory,type PadStrokes} from '../../ui/v7/ink/ink';
+import {rasterizeInk,reencodePhoto} from '../../ui/v7/ink/images';
+import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from '../../data/tutor/attachment-types';
+import {editInkDraft,emptyInk,finishStagedDrawing,keepDraftImage,readInkDraft,readTutorImage,writeInkDraft,type InkDraft} from '../../data/tutor/ink-storage';
+import './scratchpad.css';
 
 export function useTutorInk(key:string,enabled:boolean) {
   const [draft,setDraft] = useState<InkDraft>(emptyInk);
   const [error,setError] = useState('');
+  const [ready,setReady] = useState(false);
   const latest=useRef(emptyInk), pending=useRef<Promise<unknown>>(Promise.resolve());
   useEffect(()=>{
     if (!enabled) return;
     let active=true;
+    setReady(false);
     void readInkDraft(key).then(value=>{
-      if(active){latest.current=value;setDraft(value);}
-    }).catch(()=>{if(active)setError('The saved drawing could not be reopened.');});
+      if(active){latest.current=value;setDraft(value);setReady(true);}
+    }).catch(()=>{if(active){setError('The saved drawing could not be reopened.');setReady(true);}});
     return ()=>{active=false;};
   },[key,enabled]);
   function update(change:InkDraft|((draft:InkDraft)=>InkDraft)) {
@@ -24,84 +27,287 @@ export function useTutorInk(key:string,enabled:boolean) {
     if(next===latest.current)return pending.current;
     latest.current=next;
     setDraft(next);
-    pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(key,next));
+    pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(key,next)).then(()=>setError(''));
     return pending.current.catch(error=>{
       setError('The drawing is open here. This device could not save it.');
       throw error;
     });
   }
-  return {draft,update,error};
+  return {draft,update,error,ready};
 }
 export type TutorInkState=ReturnType<typeof useTutorInk>;
 
-export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onKeys}: {
-  ink:TutorInkState;shown:boolean;photoOpen:boolean;onClosePhoto:()=>void;onKeys:()=>void;
+export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onInsertImage,onCloseDrawing,
+  onMigrateImages,editingImageId,referencedImageIds,canInsertImage,canMigrate,answerLength}: {
+  ink:TutorInkState;shown:boolean;photoOpen:boolean;onClosePhoto:()=>void;
+  onInsertImage:(id:string,replacesId?:string)=>boolean;onCloseDrawing:()=>void;
+  onMigrateImages:(ids:string[])=>boolean;editingImageId:string|null;referencedImageIds:readonly string[];
+  canInsertImage:boolean;canMigrate:boolean;answerLength:number;
 }) {
-  const [history,setHistory]=useState<PadInkHistory>(()=>initializePadInk(ink.draft.strokes)??initializePadInk()!);
-  const [mode,setMode]=useState<'pen'|'eraser'|'hand'>('pen'),[expanded,setExpanded]=useState(false);
-  const [started,setStarted]=useState(false),[error,setError]=useState(''),[preparing,setPreparing]=useState(false);
-  const picker=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null);
   const {draft}=ink;
+  const editingAsset=draft.photos.find(image=>image.id===editingImageId);
+  const working=editingImageId&&draft.editingDrawing?.id===editingImageId
+    ? draft.editingDrawing : editingAsset?.ink??draft;
+  const [history,setHistory]=useState<PadInkHistory>(()=>initializePadInk(working.strokes)??initializePadInk()!);
+  const [redo,setRedo]=useState<readonly PadStrokes[]>([]);
+  const [mode,setMode]=useState<'pen'|'eraser'|'hand'>('pen');
+  const [toolsOpen,setToolsOpen]=useState(false);
+  const [preview,setPreview]=useState('');
+  const [height,setHeight]=useState<number>();
+  const paper=useRef<HTMLDivElement>(null);
+  const resize=useRef<{pointer:number;y:number;height:number}|null>(null);
+  const paperId=useId(), hintId=useId();
+  const paperOffset=useRef(0);
+  const [paperHeight,setPaperHeight]=useState(0);
+  const [started,setStarted]=useState(false),[error,setError]=useState(''),[preparing,setPreparing]=useState(false);
+  const pending=useRef(false),migration=useRef(false);
+  const lastMigration=useRef<{draft:InkDraft;answerLength:number}|undefined>(undefined);
+  const picker=useRef<HTMLInputElement>(null),camera=useRef<HTMLInputElement>(null);
+  const strokes=useRef(working.strokes);
+  const refs=useRef(referencedImageIds);
+  refs.current=referencedImageIds;
+  const editingId=useRef(editingImageId);
+  editingId.current=editingImageId;
+  const insertable=useRef(canInsertImage);
+  insertable.current=canInsertImage;
+  const migrateImages=useRef(onMigrateImages);
+  migrateImages.current=onMigrateImages;
+  const legacy=!draft.inlineImages&&Boolean(draft.photos.length||draft.strokes.length);
+
   useEffect(()=>{
-    if (history.strokes!==draft.strokes) setHistory(initializePadInk(draft.strokes)??initializePadInk()!);
-  },[draft.strokes]);
-  const drawing=Boolean(draft.strokes.length||started);
-  const count=draft.photos.length+Number(drawing);
-  function update(change:Partial<InkDraft>) {
-    void ink.update(current=>({...current,...change})).catch(()=>{});
-  }
-  function saveInk(next:PadInkHistory) {
-    if (!draft.strokes.length&&draft.photos.length>=TUTOR_ATTACHMENT_COUNT) {
-      setError('Remove an image before adding a drawing.');
+    if (strokes.current===working.strokes) return;
+    strokes.current=working.strokes;
+    setHistory(initializePadInk(working.strokes)??initializePadInk()!);
+    setRedo([]);
+  },[working.strokes]);
+  useEffect(()=>{
+    if (!shown||!editingAsset||editingAsset.ink) return;
+    const url=URL.createObjectURL(editingAsset.blob);
+    setPreview(url);
+    return ()=>{URL.revokeObjectURL(url);setPreview('');};
+  },[shown,editingAsset]);
+  useEffect(()=>{
+    const viewport=paper.current;
+    if (!shown || !viewport) {
       setStarted(false);
       return;
     }
-    setHistory(next);
-    setStarted(false);
-    update({strokes:next.strokes,drawingId:undefined});
+    viewport.scrollTop=paperOffset.current;
+    const measure=()=>setPaperHeight(Math.round(viewport.getBoundingClientRect().height));
+    measure();
+    if (typeof ResizeObserver==='undefined') return;
+    const observer=new ResizeObserver(measure);
+    observer.observe(viewport);
+    return ()=>observer.disconnect();
+  },[shown,editingImageId]);
+
+  useEffect(()=>{
+    if(!ink.ready||!legacy||!canMigrate||draft.queuedText!==undefined||migration.current)return;
+    if(lastMigration.current?.draft===draft&&lastMigration.current.answerLength===answerLength)return;
+    lastMigration.current={draft,answerLength};
+    migration.current=true;
+    const migrate=async()=>{
+      const drawingId=draft.drawingId??crypto.randomUUID();
+      const savedDrawing=draft.photos.find(image=>image.id===drawingId);
+      const legacyDrawing=draft.strokes.length&&!savedDrawing
+        ? {id:drawingId,kind:'drawing' as const,mimeType:'image/png' as const,
+            blob:await rasterizeInk(draft.strokes,draft.width,draft.accent),
+            ink:{strokes:draft.strokes,width:draft.width,accent:draft.accent}}
+        : undefined;
+      const staged=legacyDrawing?{...draft,drawingId,photos:[...draft.photos,legacyDrawing]}:draft;
+      let accepted=false;
+      try{
+        await ink.update(current=>{
+          accepted=current===draft;
+          return accepted?staged:current;
+        });
+      }catch(error){
+        if(staged!==draft){
+          lastMigration.current={draft,answerLength};
+          void ink.update(current=>current===staged?draft:current).catch(()=>{});
+        }
+        throw error;
+      }
+      if(!accepted)return;
+      lastMigration.current={draft:staged,answerLength};
+      if(!migrateImages.current(staged.photos.map(image=>image.id))){
+        setError('Shorten the answer to restore your images.');
+        return;
+      }
+      setError('');
+      await ink.update(current=>current===staged
+        ? {...current,inlineImages:true,strokes:[],drawingId:undefined}
+        : current).catch(()=>{});
+    };
+    void migrate().catch(()=>setError('Your drawings are still saved. Reopen this conversation to try restoring their references.'))
+      .finally(()=>{migration.current=false;});
+  },[draft,ink.ready,legacy,canMigrate,answerLength]);
+
+  useEffect(()=>{
+    const staged=draft.stagedDrawing;
+    if(!ink.ready||pending.current||!staged||!referencedImageIds.includes(staged.id))return;
+    void ink.update(current=>finishStagedDrawing(current,staged.id)).catch(()=>{});
+  },[draft.stagedDrawing,ink.ready,referencedImageIds]);
+
+  const queued=draft.queuedText!==undefined;
+  const count=new Set(referencedImageIds).size;
+  const canDraw=ink.ready&&!queued&&!legacy&&(editingImageId!==null?Boolean(editingAsset?.ink):count<TUTOR_ATTACHMENT_COUNT);
+  function edit(change:(draft:InkDraft)=>InkDraft) {
+    return ink.update(current=>editInkDraft(current,change,refs.current));
   }
-  async function photo(file:File) {
-    if (preparing || count >= TUTOR_ATTACHMENT_COUNT) return;
+  function editWorking(change:Partial<TutorDrawingInk>) {
+    void edit(current=>editingImageId
+      ? {...current,editingDrawing:{id:editingImageId,strokes:working.strokes,width:working.width,accent:working.accent,...change}}
+      : {...current,...change,inlineImages:true,drawingId:undefined}).catch(()=>{});
+  }
+  function saveInk(next:PadInkHistory,forward:readonly PadStrokes[]=[]) {
+    setStarted(false);
+    if(next===history||!canDraw||pending.current)return;
+    strokes.current=next.strokes;
+    setHistory(next);
+    setRedo(forward);
+    editWorking({strokes:next.strokes});
+  }
+
+  async function prepare(action:()=>Promise<void>,failure:string) {
+    if(pending.current)return;
+    pending.current=true;
     setPreparing(true);
     setError('');
-    try {
-      const blob=await reencodePhoto(file);
-      await ink.update(current=>current.photos.length+Number(current.strokes.length>0)>=TUTOR_ATTACHMENT_COUNT
-        ? current
-        : {...current,photos:[...current.photos,{id:crypto.randomUUID(),kind:'photo',mimeType:'image/jpeg',blob}]});
-      onClosePhoto();
-    } catch {
-      setError('Could not add that photo.');
-    } finally {
-      setPreparing(false);
-    }
+    try{await action();}catch{setError(failure);}finally{pending.current=false;setPreparing(false);}
   }
-  const pad=<>
+  function rollbackImage(id:string) {
+    void ink.update(current=>({...current,photos:current.photos.filter(image=>image.id!==id),
+      ...(current.stagedDrawing?.id===id?{stagedDrawing:undefined}:{})})).catch(()=>{});
+  }
+  async function photo(file:File) {
+    if(!ink.ready||legacy||queued||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT)return;
+    await prepare(async()=>{
+      const blob=await reencodePhoto(file);
+      const image:TutorImageDraft={id:crypto.randomUUID(),kind:'photo',mimeType:'image/jpeg',blob};
+      let inserted=false;
+      try{
+        await edit(current=>{
+          if(!insertable.current||new Set(refs.current).size+Number(current.strokes.length>0)>=TUTOR_ATTACHMENT_COUNT)return current;
+          inserted=true;
+          return {...current,inlineImages:true,photos:keepDraftImage(current,image,refs.current)};
+        });
+      }catch(error){if(inserted)rollbackImage(image.id);throw error;}
+      if(!inserted){setError('This answer could not accept another image.');return;}
+      if(onInsertImage(image.id))onClosePhoto();
+      else rollbackImage(image.id);
+    },'Could not add that photo.');
+  }
+  async function insertDrawing() {
+    if(!canDraw||!working.strokes.length||started||(!editingImageId&&!canInsertImage))return;
+    await prepare(async()=>{
+      const vector={strokes:working.strokes,width:working.width,accent:working.accent};
+      const blob=await rasterizeInk(vector.strokes,vector.width,vector.accent);
+      const image:TutorImageDraft={id:crypto.randomUUID(),kind:'drawing',mimeType:'image/png',blob,ink:vector};
+      let inserted=false;
+      try{
+        await edit(current=>{
+          if(editingId.current!==editingImageId)return current;
+          if(editingImageId?!refs.current.includes(editingImageId):!insertable.current||new Set(refs.current).size>=TUTOR_ATTACHMENT_COUNT)return current;
+          inserted=true;
+          return {...current,inlineImages:true,stagedDrawing:{id:image.id,replacesId:editingImageId??undefined},
+            photos:keepDraftImage(current,image,refs.current)};
+        });
+      }catch(error){if(inserted)rollbackImage(image.id);throw error;}
+      if(!inserted)return;
+      if(!onInsertImage(image.id,editingImageId??undefined)){rollbackImage(image.id);return;}
+      paperOffset.current=0;
+      setMode('pen');
+      await ink.update(current=>finishStagedDrawing(current,image.id)).catch(()=>{});
+    },'Could not save the image on this device. Your drawing is still here. Try Insert drawing again.');
+  }
+  function size(next:number) {
+    const viewport=window.visualViewport?.height??window.innerHeight;
+    setHeight(Math.max(96,Math.min(next,viewport*.48,512)));
+  }
+  function nudge(delta:number) {
+    if (paper.current) size(paper.current.getBoundingClientRect().height+delta);
+  }
+  function redoStroke() {
+    const next=redo.at(-1);
+    if (next) saveInk(replacePadStrokes(history,next),redo.slice(0,-1));
+  }
+  function discardDrawing() {
+    void edit(current=>editingImageId
+      ? {...current,editingDrawing:undefined}
+      : {...current,strokes:[],drawingId:undefined}).catch(()=>{});
+    paperOffset.current=0;
+    setToolsOpen(false);
+    onCloseDrawing();
+  }
+  const pad=<section className="tutor-scratchpad" aria-label="Scratch pad"
+    style={{'--scratch-height':height===undefined?undefined:height+'px'} as CSSProperties}>
     <div className="tutor-ink-tools" role="group" aria-label="Drawing tools">
-      <IconButton label="Pen" aria-pressed={mode==='pen'} onClick={()=>setMode('pen')}><Pencil aria-hidden="true"/></IconButton>
-      {[2,4,7].map(width=><button className="v7-filter-chip" key={width} type="button" aria-label={'Pen width '+width}
-        aria-pressed={draft.width===width} onClick={()=>update({width,drawingId:undefined})}><span style={{inlineSize:width+3,blockSize:width+3}}/></button>)}
-      <button className="v7-filter-chip" type="button" aria-pressed={draft.accent} onClick={()=>update({accent:!draft.accent,drawingId:undefined})}>Accent</button>
-      <IconButton label="Eraser" aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
+      <div className="tutor-scratch-resize" role="separator" tabIndex={0} aria-label="Resize scratch pad"
+        aria-orientation="horizontal" aria-controls={paperId} aria-valuenow={Math.round(paperHeight/window.innerHeight*100)}
+        aria-valuetext={paperHeight+' pixels'}
+        onPointerDown={event=>{
+          if (event.button!==0 || !paper.current) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          resize.current={pointer:event.pointerId,y:event.clientY,height:paper.current.getBoundingClientRect().height};
+        }}
+        onPointerMove={event=>{
+          const drag=resize.current;
+          if (drag?.pointer===event.pointerId) size(drag.height+drag.y-event.clientY);
+        }}
+        onLostPointerCapture={()=>{resize.current=null;}}
+        onKeyDown={event=>{
+          switch (event.key) {
+            case 'ArrowUp': nudge(32); break;
+            case 'ArrowDown': nudge(-32); break;
+            case 'Home': size(0); break;
+            case 'End': size(Number.POSITIVE_INFINITY); break;
+            default:return;
+          }
+          event.preventDefault();
+        }}><span aria-hidden="true"/></div>
+      <IconButton label="Pen" disabled={!canDraw||preparing} aria-pressed={mode==='pen'} onClick={()=>setMode('pen')}><Pencil aria-hidden="true"/></IconButton>
+      <IconButton label="Eraser" disabled={!canDraw||preparing} aria-pressed={mode==='eraser'} onClick={()=>setMode('eraser')}><Eraser aria-hidden="true"/></IconButton>
       <IconButton label="Hand" aria-pressed={mode==='hand'} onClick={()=>setMode('hand')}><Hand aria-hidden="true"/></IconButton>
-      <IconButton label="Undo stroke" disabled={!history.undo.length} onClick={()=>saveInk(undoPadInk(history))}><Undo2 aria-hidden="true"/></IconButton>
-      {expanded?<Button small onClick={()=>setExpanded(false)}>Done</Button>
-        :<><IconButton label="Expand scratch pad" onClick={()=>setExpanded(true)}><Expand aria-hidden="true"/></IconButton><Button small onClick={onKeys}>Keys</Button></>}
+      <IconButton label="Undo stroke" disabled={!canDraw||preparing||!history.undo.length} onClick={()=>saveInk(undoPadInk(history),[...redo,history.strokes])}><Undo2 aria-hidden="true"/></IconButton>
+      <IconButton label="Scratch pad actions" aria-haspopup="dialog" onClick={()=>setToolsOpen(true)}><Ellipsis aria-hidden="true"/></IconButton>
+      <Button small variant="primary" className="tutor-insert-drawing" disabled={!canDraw||preparing||started||!working.strokes.length||(!editingImageId&&!canInsertImage)}
+        onClick={()=>{void insertDrawing();}}>{editingImageId?'Update drawing':'Insert drawing'}</Button>
     </div>
-    <InkCanvas history={history} onChange={saveInk} onStroke={()=>setStarted(true)} mode={mode} width={draft.width}
-      accent={draft.accent} label="Draw your answer"/>
-  </>;
+    <div ref={paper} id={paperId} className="tutor-scratch-paper" role="region" aria-label="Drawing paper" aria-describedby={hintId}
+      tabIndex={0} onScroll={event=>{paperOffset.current=event.currentTarget.scrollTop;}}>
+      <InkCanvas history={history} onChange={saveInk} onStroke={()=>setStarted(true)} onStrokeEnd={()=>setStarted(false)}
+        onPan={(_dx,dy,gesture)=>{
+          const viewport=paper.current;
+          const target=gesture==='hand'?viewport:viewport?.closest('.lemma-tutor')?.querySelector<HTMLElement>('[role="log"]');
+          if (target) target.scrollTop-=dy;
+        }} mode={canDraw&&!preparing?mode:'hand'} width={working.width} accent={working.accent} label="Draw your answer"/>
+    </div>
+    <p id={hintId} className="tutor-scratch-hint">Three fingers to scroll chat</p>
+    {!editingImageId&&!canInsertImage&&<p role="status" className="composer-status">Shorten the answer to insert another image.</p>}
+  </section>;
   return <>
-    {count>0&&<div className="tutor-attachment-chips" aria-label="Images for your answer">
-      {drawing&&<span className="v7-meta-chip">Drawing <IconButton label="Remove drawing" onClick={()=>{
-        const blank=initializePadInk()!;setHistory(blank);setStarted(false);update({strokes:[],drawingId:undefined});
-      }}><X aria-hidden="true"/></IconButton></span>}
-      {draft.photos.map((item,index)=><span key={item.id} className="v7-meta-chip">Photo {index+1}
-        <IconButton label={'Remove photo '+(index+1)} onClick={()=>update({photos:draft.photos.filter(photo=>photo.id!==item.id)})}><X aria-hidden="true"/></IconButton>
-      </span>)}
-    </div>}
-    {shown&&!expanded&&<div className="tutor-ink-pad">{pad}</div>}
-    <Sheet open={shown&&expanded} title="Scratch pad" onClose={()=>setExpanded(false)}>{shown&&expanded&&pad}</Sheet>
+    {shown&&(!editingAsset||editingAsset.ink)&&pad}
+    <Sheet open={toolsOpen&&shown} onClose={()=>setToolsOpen(false)} title="Scratch pad actions">
+      <div className="tutor-session-actions">
+        <Button small disabled={!canDraw||preparing||!redo.length} onClick={()=>{redoStroke();setToolsOpen(false);}}><Redo2 aria-hidden="true"/>Redo stroke</Button>
+        <Button small disabled={!canDraw||preparing||!history.strokes.length} onClick={()=>{saveInk(clearPadInk(history));setToolsOpen(false);}}><Trash2 aria-hidden="true"/>Clear scratch pad</Button>
+        {editingImageId?draft.editingDrawing?.id===editingImageId&&
+          <Button small disabled={queued||preparing} onClick={discardDrawing}>Discard drawing edits</Button>
+          :draft.strokes.length>0&&<Button small disabled={queued||preparing} onClick={discardDrawing}>Discard uninserted drawing</Button>}
+        <Button small onClick={()=>{nudge(-64);setToolsOpen(false);}}><ChevronDown aria-hidden="true"/>Make scratch pad smaller</Button>
+        <Button small onClick={()=>{nudge(64);setToolsOpen(false);}}><ChevronUp aria-hidden="true"/>Expand scratch pad</Button>
+      </div>
+      <div className="tutor-ink-settings" role="group" aria-label="Pen settings">
+        {[2,3,4,7].map(width=><button className="v7-filter-chip" key={width} type="button" aria-label={'Pen width '+width}
+          aria-pressed={working.width===width} disabled={!canDraw||preparing} onClick={()=>editWorking({width})}><span style={{inlineSize:width+3,blockSize:width+3}}/></button>)}
+        <button className="v7-filter-chip" type="button" aria-pressed={working.accent} disabled={!canDraw||preparing} onClick={()=>editWorking({accent:!working.accent})}>Accent</button>
+      </div>
+      {count>=TUTOR_ATTACHMENT_COUNT&&<p>Up to three images per answer.</p>}
+    </Sheet>
+    {shown&&preview&&editingAsset&&!editingAsset.ink&&<Sheet open title={editingAsset.kind==='photo'?'Photo':'Drawing'} onClose={onCloseDrawing}>
+      <div className="tutor-image-view"><img src={preview} alt={editingAsset.kind==='photo'?'Photo':'Drawing'}/></div>
+    </Sheet>}
     <input ref={picker} type="file" accept="image/*" hidden aria-label="Choose photo file" onChange={event=>{
       const file=event.currentTarget.files?.[0];event.currentTarget.value='';if(file)void photo(file);
     }}/>
@@ -109,16 +315,17 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onKeys}: {
       const file=event.currentTarget.files?.[0];event.currentTarget.value='';if(file)void photo(file);
     }}/>
     <Sheet open={photoOpen} onClose={onClosePhoto} title="Add a photo">
-      <Button onClick={()=>camera.current?.click()} disabled={preparing||count>=TUTOR_ATTACHMENT_COUNT}><Camera aria-hidden="true"/>Take photo</Button>
-      <Button onClick={()=>picker.current?.click()} disabled={preparing||count>=TUTOR_ATTACHMENT_COUNT}><ImagePlus aria-hidden="true"/>Choose photo</Button>
+      <Button onClick={()=>camera.current?.click()} disabled={queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}><Camera aria-hidden="true"/>Take photo</Button>
+      <Button onClick={()=>picker.current?.click()} disabled={queued||preparing||!canInsertImage||count>=TUTOR_ATTACHMENT_COUNT}><ImagePlus aria-hidden="true"/>Choose photo</Button>
+      {!canInsertImage&&<p>Shorten the answer to insert another image.</p>}
       {count>=TUTOR_ATTACHMENT_COUNT&&<p>Up to three images per answer.</p>}
       {error&&<p role="alert">{error}</p>}
     </Sheet>
-    {(error||ink.error)&&!photoOpen&&<p role="alert" className="composer-status">{ink.error||error}</p>}
+    {(error||ink.error)&&!photoOpen&&<p role="alert" className="composer-status">{error||ink.error}</p>}
   </>;
 }
 
-export function TutorImage({owner,attachment}: {owner:string;attachment:TutorAttachment}) {
+export function TutorImage({owner,attachment,label:customLabel}: {owner:string;attachment:TutorAttachment;label?:string}) {
   const [src,setSrc]=useState(''),[open,setOpen]=useState(false),[error,setError]=useState(false);
   const [zoom,setZoom]=useState(1);
   useEffect(()=>{
@@ -130,7 +337,7 @@ export function TutorImage({owner,attachment}: {owner:string;attachment:TutorAtt
     }).catch(()=>{if(active)setError(true);});
     return ()=>{active=false;if(url.startsWith('blob:'))URL.revokeObjectURL(url);};
   },[owner,attachment.id,attachment.localData]);
-  const label=attachment.kind==='drawing'?'Drawing':'Photo';
+  const label=customLabel??(attachment.kind==='drawing'?'Drawing':'Photo');
   return <>
     <button className="tutor-image-thumb" type="button" aria-label={'View '+label.toLowerCase()} disabled={!src} onClick={()=>setOpen(true)}>
       {src&&<img src={src} alt={label}/>}<span>{error?label+' unavailable':label}</span>

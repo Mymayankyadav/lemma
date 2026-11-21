@@ -97,11 +97,14 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  }
  const pathTitle=slug?bySlug.get(slug)?.title??slug:'';
  const active=!!(slug||checkpoint||state!=='all'||comments||search);
+ const filterCount=[slug,checkpoint,state!=='all',comments].filter(Boolean).length;
  const due=home.data?.due??0;
  const Tag=embedded?'section':'main';
  return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-cards" aria-label="Cards">
-  <HubHeader title="Cards" control={<input type="search" className="v7-search-field v7-library-search" aria-label="Search cards"
-   placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/>}><PathsTabs current="cards"/></HubHeader>
+  <HubHeader title="Cards"><PathsTabs current="cards"/>
+   <input type="search" className="v7-field v7-cards-search" aria-label="Search cards"
+    placeholder="Search cards" value={search} onChange={event=>setSearch(event.target.value)}/>
+  </HubHeader>
   <Sheet open={filtersOpen} title="Card filters" onClose={()=>setFiltersOpen(false)}>
   <div className="v7-cards-filters" role="group" aria-label="Card filters">
    <button type="button" className="v7-filter-chip" aria-pressed={!!slug} aria-haspopup="dialog" onClick={()=>setSheet('path')}>{pathTitle||'Path'}</button>
@@ -113,7 +116,7 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
   </Sheet>
   {(rows.length>0||active)&&<div className="v7-cards-count">
    <span aria-live="polite">{cardCountLabel({shown:rows.length,more:!!cards.hasNextPage,exact:slug&&!checkpoint&&state==='all'&&!comments&&!search?bySlug.get(slug)?.cardsCount??null:!active?(projects.data??[]).reduce((sum,row)=>sum+row.cardsCount,0):null})}{due>0&&!active?' · '+due.toLocaleString('en-GB')+' due':''}</span>
-   <Button small aria-haspopup="dialog" onClick={()=>setFiltersOpen(true)}>Filter{active?' · '+[slug,checkpoint,state!=='all',comments].filter(Boolean).length:''}</Button>
+   <Button small aria-haspopup="dialog" onClick={()=>setFiltersOpen(true)}>Filter{filterCount?' · '+filterCount:''}</Button>
   </div>}
   {cards.isPending&&<><Skeleton/><Skeleton/></>}
   {cards.isError&&<div role="alert" className="v7-cards-empty"><p>Erratum: cards didn’t load. Try again.</p><Button onClick={()=>{void cards.refetch();}}>Try again</Button></div>}

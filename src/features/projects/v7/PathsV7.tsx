@@ -85,9 +85,10 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
  const creating=location.pathname==='/projects/new';
  const Tag=embedded?'section':'main';
  return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-paths" aria-label="Paths">
-  <HubHeader title="Paths" control={<input type="search" className="v7-search-field v7-library-search" aria-label="Search paths and checkpoints"
-      placeholder="Search paths" value={query} onChange={event=>{setQuery(event.target.value);setLimit(PAGE);}}/>}>
+  <HubHeader title="Paths">
    <PathsTabs current="paths"/>
+   <input type="search" className="v7-field" aria-label="Search paths and checkpoints"
+    placeholder="Search paths" value={query} onChange={event=>{setQuery(event.target.value);setLimit(PAGE);}}/>
   </HubHeader>
   {(all.length>0||projects.isPending)&&<div className="v7-paths-filters" role="radiogroup" aria-label="Path status">
    {pathFilters.map(item=><button key={item} type="button" role="radio" aria-checked={filter===item} className="v7-filter-chip"

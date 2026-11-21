@@ -1,5 +1,7 @@
 # November v2 UI implementation
 
+**Historical evidence: rejected by the owner.** The original comparison set below is retained as a record. Use the [November 21 revision audit](../revision-2026-11-21/README.md) for the current implementation, complete feature inventory, full scroll captures and responsive layouts. These images are not evidence of owner approval.
+
 The comparisons use a 390 × 844 phone viewport in the Night theme and an account clock fixed at Mon 9 Nov 2026, 13:43 IST. The left side uses the plan’s source commit, `24c8a225`. The right side uses the implementation branch with the rollout features enabled for their scenes.
 
 | Screen | Comparison |

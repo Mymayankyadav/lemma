@@ -81,7 +81,11 @@ export async function openScene(page:Page,shot:Shot,scheme:"light"|"dark",size:{
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
  await expect(page.locator("#main-content")).toBeVisible({timeout:12000});
  await expect(page.getByRole("heading",{name:"Loading screen…",exact:true})).toHaveCount(0);
- await page.waitForLoadState("networkidle");
+ // Atlas deliberately cancels covered/replaced layout workers. A canceled
+ // module-worker request can keep Chromium's network-idle bookkeeping pending;
+ // wait for its loaded application surface, then the scene's rendered state.
+ if(shot.hash.startsWith('/atlas'))await page.locator('.v7-atlas').waitFor();
+ else await page.waitForLoadState("networkidle");
  await shot.prepare?.(page);
  await page.waitForTimeout(700);
  await page.evaluate(()=>document.fonts.ready);
@@ -98,6 +102,8 @@ export const redesignShots: Shot[] = [
   await field.fill("compact");
   await page.getByRole("list",{name:"Matching concepts"}).getByRole("button",{name:/^Compactness\s+Analysis$/}).click();
   await page.getByRole("region",{name:"Compactness",exact:true}).waitFor();
+  // Search opens the idea's actions; this scenario deliberately captures its peek.
+  await page.getByRole("button",{name:"Show less",exact:true}).click();
  }},
  {name:"path",hash:"/p/real-analysis"},
  {name:"path-tutor",hash:"/p/real-analysis/tutor"},

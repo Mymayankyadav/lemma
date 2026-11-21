@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type ReactNode} from 'react';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {getDayPlanApi} from '../../../data/day-plans';
 import {getStudyApi} from '../../../data/study';
@@ -17,11 +17,11 @@ import type {SuggestedBlock} from './DayGrid';
 import {acceptSuggestion} from './acceptSuggestion';
 
 /** PLAN §6.6: the planner's one-day preview as a banner. Add all commits it atomically; Adjust opens the planner. */
-export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPlannerClosed,onSuggest,inline=false}:{
+export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPlannerClosed,onSuggest,inline=false,suggestedTimes}:{
  date:string;zone:string;openPlanner:boolean;onChanged:()=>void;onPlannerClosed:()=>void;
  /** Where the suggestions would land, so the grid can draw them. */
  onSuggest?:(items:SuggestedBlock[])=>void;
- inline?:boolean;
+ inline?:boolean;suggestedTimes?:ReactNode;
 }){
  const repair=useStudyUi(),notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(false),[busy,setBusy]=useState(false);
  const operation=useRef<{key:string;id:string}|null>(null),locked=useRef(false);
@@ -66,6 +66,6 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
    <p>{suggestionLabel(count)}{date===dayKey(new Date(),zone)?'':' for '+formatShortDate(date,{zone})} · <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></p>
    <Button small variant="secondary" disabled={busy} onClick={()=>{void addAll();}}>{busy?'Adding…':'Add all'}</Button>
   </div>}
-  {(openPlanner||adjusting)&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onChanged={repair?onChanged:undefined} onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
+  {(openPlanner||adjusting)&&<PlannerLaunch v7 suggestedTimes={suggestedTimes} date={date} zone={zone} autoOpen hideTrigger onChanged={repair?onChanged:undefined} onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
  </>;
 }

@@ -1,3 +1,5 @@
+import {Disclosure} from '../../../ui/v7/Disclosure';
+import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {GoalEditor} from './GoalEditor';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useStudyUi} from '../../../data/StudyUiRelease';
@@ -19,8 +21,8 @@ import {StatusBadge} from '../../../ui/v7/Status';
 import {kitSubject,subjectToken} from '../../atlas/v7/model';
 import {civilDay,effortSummary} from '../../progress-v6/model';
 import {goalSavedMinutes} from '../../progress-v6/goal-model';
-import {almanacPeriod,asRange,changeChip,coveringSpan,currentPeriod,goalView,groupDays,insightDays,previousPeriod,ranges,stackColumns,type ProgressRange} from './progressModel';
-import {Share2} from 'lucide-react';
+import {almanacPeriod,asRange,changeChip,coveringSpan,currentPeriod,goalView,groupDays,insightDays,insightSentences,previousPeriod,ranges,stackColumns,type ProgressRange} from './progressModel';
+import {CalendarDays,ChartColumn,Plus,Share2} from 'lucide-react';
 import {useToast} from '../../../ui/Toast';
 import './progress.css';
 import {isFlagOn} from '../../../flags';
@@ -65,6 +67,7 @@ export default function ProgressV7(){
  const almanac=useMemo(()=>almanacPeriod(now,zone),[now,zone]);
  const [entries,setEntries]=useState<StudyEntryRecord[]>([]),[status,setStatus]=useState<'loading'|'ready'|'error'>('loading'),[reload,setReload]=useState(0);
  const [goals,setGoals]=useState<GoalRecord[]>([]),[editing,setEditing]=useState<GoalRecord|null|undefined>(undefined);
+ const [details,setDetails]=useState(false);
  const insight=useInsightData(insightDays(range));
  useEffect(()=>{
   let alive=true;setStatus('loading');
@@ -82,6 +85,7 @@ export default function ProgressV7(){
  const color=(id:string)=>'var('+subjectToken(kitSubject(name(id)))+')';
  const groups=useMemo(()=>groupDays(period.days,range==='90'||range==='30'?7:1),[period,range]);
  const stacks=useMemo(()=>status==='ready'?stackColumns(entries,groups,zone,stamp):[],[status,entries,groups,zone,stamp]);
+ const subjectIds=useMemo(()=>[...new Set(stacks.flatMap(column=>Object.keys(column.bySubject)))],[stacks]);
  const learn=useMemo(()=>{
   if(!insight.data)return null;
   const days=range==='day'?1:insightDays(range);
@@ -116,9 +120,14 @@ export default function ProgressV7(){
  </section>;
  const nothing=<EmptyMoment art="progress" title="No study time yet" action={{label:'Start focus',to:'/?quick=1'}}/>;
  return <main id="main-content" className="v7-page v7-progress" aria-label="Progress">
-  <HubHeader title={isFlagOn('v7Room')?tabWords[tab]:'Progress'}><ProgressTabs current={tab}/></HubHeader>
+  <HubHeader title="Progress" titleFollowsTab={false} extraAction={<MoreActions label="Progress actions" title="Progress" items={[
+   {label:'Add a goal',icon:<Plus/>,onClick:()=>setEditing(null)},
+   {label:'Progress details',icon:<ChartColumn/>,onClick:()=>setDetails(true)},
+   ...(isFlagOn('v7Week')?[{label:'Your week',icon:<CalendarDays/>,onClick:()=>{window.location.hash='/week';}}]:[]),
+   ...(range==='7'?[{label:'Share this week',icon:<Share2/>,onClick:()=>{void shareWeek();}}]:[]),
+  ]}/>}><ProgressTabs current={tab}/></HubHeader>
   {status==='ready'&&total>0&&isFlagOn('v7Week')&&<Link className="v7-button v7-ghost v7-small" to="/week">Your week</Link>}
-  {(status!=='ready'||tab==='overview'&&total>0||tab==='learning'&&!!learn?.reviews)&&<Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>}
+  {<Segmented label="Range" options={ranges.map(item=>item.label)} value={ranges.find(item=>item.value===range)!.label} onChange={label=>set('range',ranges.find(item=>item.label===label)!.value)}/>}
   {status==='loading'&&<Skeleton/>}
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: your saved study time didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
   {status==='ready'&&summary&&tab==='overview'&&total<=0&&nothing}
@@ -134,7 +143,7 @@ export default function ProgressV7(){
    {learn.reviews===0?<EmptyMoment title="No reviews yet" action={{label:'Open review',to:'/review'}}/>:<>
    <Chart title="Recall over time" kind="line" target={target} format={percent} data={learn.recallBuckets.filter(bucket=>!studyRepair||bucket.recall!==null).map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.recall==null?0:bucket.recall*100]}))} series={[{label:'Recall'}]}/>
    <Chart title="Reviews by day" kind="stacked" data={learn.reviewBuckets.map(bucket=>({label:columnLabel({from:bucket.date,to:bucket.endDate}),tickLabel:tick(bucket.date),values:[bucket.again,bucket.hard,bucket.good,bucket.easy]}))}
-    series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:isFlagOn('v7Room')&&index>0?'color-mix(in srgb, var(--v7-role-text-primary) '+[0,35,60,85][index]+'%, var(--v7-role-surface-page))':gradeColors[index]}))}/>
+    series={['Again','Hard','Good','Easy'].map((label,index)=>({label,color:isFlagOn('v7Room')&&index>0?'color-mix(in srgb, var(--v7-role-text-primary) '+[0,30,65,100][index]+'%, var(--v7-role-surface-page))':gradeColors[index]}))}/>
    <section className="v7-chart" aria-label="When you said"><h3 className="v7-headline">When you said</h3>
     {studyRepair&&!learn.calibration.some(row=>row.total>0)&&<p className="v7-meta">Choose a confidence before revealing an answer to see this summary.</p>}
     {learn.calibration.filter(row=>!studyRepair||row.total>0).map(row=><Meter key={row.confidence} label={confidenceWord[row.confidence]+(row.total?' · '+row.total+' answers':' · no answers')} value={row.rate==null?0:Math.round(row.rate*100)} max={100}/>)}
@@ -154,8 +163,21 @@ export default function ProgressV7(){
      return <li key={goal.id}><span>{view.title}</span>{view.reached?<StatusBadge tone="success">Reached</StatusBadge>:<span className="v7-meta">{view.rest}</span>}</li>;})}</ul></>}
    </section>
   </>}
-  {tab==='overview'&&total>0&&daily.some(day=>day.minutes>0)&&<Heatmap title="Study almanac" format={minutes}
+  {tab==='overview'&&daily.some(day=>day.minutes>0)&&<Heatmap title="Study almanac" format={minutes}
    data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/>}
+  <Sheet open={details} onClose={()=>setDetails(false)} title="Progress details">
+   <div className="v7-progress-stats">
+    <StatTile label="Reviews" value={learn?String(learn.reviews):'—'}/>
+    <StatTile label="Recall" value={learn?.recall!=null?percent(learn.recall*100):'—'}/>
+    <StatTile label="Checkpoints" value={String(checkpoints.length)}/>
+   </div>
+   {subjectIds.length>0?<Chart title="Time by subject" kind="stacked" format={axis} totalFormat={minutes}
+    data={stacks.map(column=>({label:columnLabel(column),tickLabel:tick(column.from),values:subjectIds.map(id=>column.bySubject[id]??0)}))}
+    series={subjectIds.map(id=>({label:name(id),color:color(id)}))}/>:<p>No subject time in this range.</p>}
+   {summary&&insightSentences({parts:summary.exactParts,total,name,unsure:learn?.calibration.find(row=>row.confidence==='unsure')})
+    .map(text=><p key={text} className="v7-progress-insight">{text}</p>)}
+   {learn?.calibrationMessage&&<Disclosure label="Confidence details"><p>{learn.calibrationMessage}</p></Disclosure>}
+  </Sheet>
   {editing!==undefined&&<GoalEditor goal={editing} onClose={()=>setEditing(undefined)} onSaved={()=>setReload(value=>value+1)}/>}
  </main>;
 }

@@ -485,15 +485,24 @@ export function DatePicker({
   label = "Date",
   today,
   compact = false,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   value: string;
   today?: string;
   compact?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
   onChange: (v: string) => void;
   label?: string;
 }) {
-  const [open, setOpen] = useState(false),
+  const [localOpen, setLocalOpen] = useState(false),
     [month, setMonth] = useState(() => new Date(value + "T12:00:00"));
+  const open = controlledOpen ?? localOpen;
+  const setOpen = (value: boolean) => {setLocalOpen(value);onOpenChange?.(value);};
+  useEffect(() => {if (open) setMonth(new Date(value + "T12:00:00"));}, [open, value]);
   const selected = new Date(value + "T12:00:00");
   const first = new Date(month.getFullYear(), month.getMonth(), 1),
     count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -509,8 +518,8 @@ export function DatePicker({
   }
   return (
     <div className={compact?"v7-date-pill":"v7-field-group"}>
-      {!compact&&<span>{label}</span>}
-      <button
+      {!hideTrigger&&!compact&&<span>{label}</span>}
+      {!hideTrigger&&<button
         type="button"
         className="v7-field v7-picker"
         aria-label={`${label}: ${value}`}
@@ -520,7 +529,7 @@ export function DatePicker({
         {/* F51: one date format ("Sat 7 Nov"), with Today/Tomorrow/Yesterday in front when it applies. */}
         {pickerDate(value)}
         <ChevronDown />
-      </button>
+      </button>}
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose a date">
         <div className="v7-wrap">
           <Button small onClick={() => shortcut(0)}>

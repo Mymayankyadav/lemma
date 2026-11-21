@@ -1,15 +1,49 @@
 import type {PadStrokes} from '../../ui/v7/ink/ink';
-import type {TutorAttachment,TutorImageDraft} from './attachment-types';
+import {TUTOR_ATTACHMENT_COUNT,type TutorAttachment,type TutorDrawingInk,type TutorImageDraft} from './attachment-types';
 import {getMode} from '../mode';
 
-export type InkDraft={drawingId?:string;strokes:PadStrokes;photos:TutorImageDraft[];width:number;accent:boolean;queuedText?:string};
+export type InkDraft={
+  drawingId?:string;strokes:PadStrokes;width:number;accent:boolean;queuedText?:string;
+  inlineImages?:true;
+  editingDrawing?:TutorDrawingInk&{id:string};
+  /** A durable image whose answer reference is being inserted. The working vectors survive until publication. */
+  stagedDrawing?:{id:string;replacesId?:string};
+  /** Encoded attachments, including finished drawings. Keep the key used by older device drafts. */
+  photos:TutorImageDraft[];
+};
 export const emptyInk:InkDraft={strokes:[],photos:[],width:3,accent:false};
 
+export function finishStagedDrawing(draft:InkDraft,id:string):InkDraft {
+  const staged=draft.stagedDrawing;
+  if(staged?.id!==id)return draft;
+  if(!staged.replacesId)return {...draft,stagedDrawing:undefined,strokes:[],drawingId:undefined};
+  const editingDrawing=draft.editingDrawing?.id===staged.replacesId?undefined:draft.editingDrawing;
+  return {...draft,stagedDrawing:undefined,editingDrawing};
+}
+
+const UNREFERENCED_IMAGE_LIMIT=12;
+export function keepDraftImage(draft:InkDraft,image:TutorImageDraft,referenced:readonly string[]):TutorImageDraft[] {
+  const keep=new Set(referenced);
+  const images=[...draft.photos.filter(item=>item.id!==image.id),image];
+  const recent=new Set(images.filter(item=>!keep.has(item.id)).slice(-UNREFERENCED_IMAGE_LIMIT).map(item=>item.id));
+  return images.filter(item=>keep.has(item.id)||recent.has(item.id));
+}
+
+/** Validate a learner edit against the latest draft, after asynchronous image preparation. */
+export function editInkDraft(draft:InkDraft,edit:(draft:InkDraft)=>InkDraft,referenced?:readonly string[]):InkDraft {
+  if(draft.queuedText!==undefined)return draft;
+  const next=edit(draft);
+  const count=(referenced===undefined?next.photos.length:new Set(referenced).size)+Number(next.strokes.length>0);
+  return count<=TUTOR_ATTACHMENT_COUNT?next:draft;
+}
+
 export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>):InkDraft {
-  const drawing=!!draft.drawingId&&submitted.has(draft.drawingId);
-  const photos=draft.photos.filter(photo=>!submitted.has(photo.id));
-  if(!drawing&&photos.length===draft.photos.length)return draft;
-  return {...draft,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
+  const staged=draft.stagedDrawing;
+  const current=staged&&submitted.has(staged.id)?finishStagedDrawing(draft,staged.id):draft;
+  const drawing=!!current.drawingId&&submitted.has(current.drawingId);
+  const photos=current.photos.filter(photo=>!submitted.has(photo.id));
+  if(current===draft&&!drawing&&photos.length===draft.photos.length)return draft;
+  return {...current,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
 }
 
 async function persist<T>(mode:IDBTransactionMode,operation:(store:IDBObjectStore)=>IDBRequest<T>):Promise<T> {
@@ -45,7 +79,8 @@ export function imageData(blob:Blob) {
 }
 
 export async function uploadTutorImage(owner:string,file:TutorImageDraft,assertCurrent:()=>void):Promise<TutorAttachment> {
-  const {blob,...attachment}=file;
+  const {blob,id,kind,mimeType}=file;
+  const attachment={id,kind,mimeType};
   if(getMode()==='demo') return {...attachment,localData:await imageData(blob)};
   const {liveClient}=await import('../live/client');
   assertCurrent();

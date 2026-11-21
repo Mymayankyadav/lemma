@@ -1,4 +1,6 @@
 import {LemmaError} from '../../../data/api';
+import {authGeneration,authOwner} from '../../../data/authBoundary';
+import {getApi} from '../../../data';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
@@ -66,12 +68,31 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  const intervals=new Map(series?.dots.map(dot=>[dot.at,dot.intervalDays])??[]);
  async function setNoteStatus(next:'active'|'suspended'|'deleted'){
   if(!note)return;
+  const adapter=getApi(),ownerId=authOwner(),generation=authGeneration();
+  const current=()=>adapter===getApi()&&ownerId===authOwner()&&generation===authGeneration();
+  const {noteNo,noteId,status:previous}=note;
+  const scope={adapter,guard:{ownerId,generation,noteId,expectedStatus:previous}};
   try{
-   await status.mutateAsync({noteNo:note.noteNo,status:next});
+   await status.mutateAsync({noteNo,status:next,scope});
+   if(!current())return;
    setDeleting(false);
-   notify(next==='deleted'?'Card deleted':next==='suspended'?'Card paused':'Card resumed',{tone:'success'});
-   if(next==='deleted')navigate('/cards');
-  }catch{notify('Could not update the card.',{tone:'danger'});}
+   if(next!=='deleted'){
+    notify(next==='suspended'?'Card paused':'Card resumed',{tone:'success'});
+    return;
+   }
+   navigate('/cards');
+   const action=previous==='deleted'?undefined:{
+    label:'Undo',
+    onClick:()=>{
+     if(!current())return;
+     const restore={adapter,guard:{...scope.guard,expectedStatus:'deleted' as const}};
+     void status.mutateAsync({noteNo,status:previous,scope:restore})
+      .then(()=>{if(current())notify('Card restored',{tone:'success'});})
+      .catch(()=>{if(current())notify('Could not restore the card.',{tone:'danger'});});
+    },
+   };
+   notify('Card deleted',{tone:'success',action});
+  }catch{if(current())notify('Could not update the card.',{tone:'danger'});}
  }
  async function save(value:EditorValue){
   if(!note)return;

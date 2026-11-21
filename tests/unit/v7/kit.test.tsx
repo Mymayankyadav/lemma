@@ -2,6 +2,7 @@ import React,{act} from "react";
 import {createRoot} from "react-dom/client";
 import {describe,expect,it} from "vitest";
 import {Tag,Badge,FilterChip,ToggleButton,TimeRangeField,MasteryBar,ConstellationProgress,StatementCard,SubjectMark,RangeSlider} from "../../../src/ui/v7/KitPrimitives";
+import {rulerLabelValues} from "../../../src/ui/v7/RulerSlider";
 function host(){const mount=document.createElement("div");document.body.append(mount);const root=createRoot(mount);return {mount,root,dispose:async()=>{await act(async()=>root.unmount());mount.remove();}};}
 describe("Constellation UI kit",()=>{
  it("keeps status, subject and filter semantics independent",async()=>{
@@ -18,6 +19,7 @@ describe("Constellation UI kit",()=>{
    expect(h.mount.querySelectorAll('.v7-time-input input')).toHaveLength(2);
    const chips=h.mount.querySelectorAll('.v7-preset-wrap button');
    expect(chips[1].getAttribute("aria-pressed")).toBe("true");
+   expect(chips[1].querySelector("svg")).toBeNull();
    await act(async()=>chips[0].click());
    expect(chips[0].getAttribute("aria-pressed")).toBe("true");
    expect(h.mount.textContent).toContain("25");
@@ -40,6 +42,12 @@ describe("Constellation UI kit",()=>{
    await act(async()=>range.dispatchEvent(new KeyboardEvent("keydown",{bubbles:true,key:"PageUp"})));
    expect(change).toBe(60);
   }finally{await h.dispose();}
+ });
+ it("leaves the last ruler mark room without removing value ticks",()=>{
+  const ticks=Array.from({length:67},(_,index)=>index*30);
+  expect([...rulerLabelValues(ticks,2000,324,32)]).toEqual([0,360,720,1080,1440,1980]);
+  expect(ticks).toContain(1800);
+  expect(rulerLabelValues(ticks,2000,800,32).has(1800)).toBe(true);
  });
 });
 

@@ -2,12 +2,20 @@ import {act, useState} from 'react';
 import {createRoot, type Root} from 'react-dom/client';
 import {afterEach, beforeEach, expect, test, vi} from 'vitest';
 import {TutorComposer} from '../../../src/features/tutor/TutorComposer';
+import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
+import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
 import {setHapticsEnabled} from '../../../src/ui/v7/haptics';
 
 let host: HTMLDivElement;
 let root: Root;
+const dialogMethods = ['showModal', 'close'] as const;
+const originalMethods = dialogMethods.map(method => Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, method));
 beforeEach(() => {
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
+  dialogMethods.forEach(method => {
+    Object.defineProperty(HTMLDialogElement.prototype, method, {configurable: true,
+      value(this: HTMLDialogElement) {this.open = method === 'showModal';}});
+  });
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
@@ -15,19 +23,24 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  dialogMethods.forEach((method, index) => {
+    const original = originalMethods[index];
+    if (original) Object.defineProperty(HTMLDialogElement.prototype, method, original);
+    else Reflect.deleteProperty(HTMLDialogElement.prototype, method);
+  });
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
   setHapticsEnabled(true);
 });
 function Harness({initial = '', onSend = () => {}, onAsk = () => {}, onChange = () => {},
-  hintLevel, pending = false}: {
+  hintLevel, pending = false, ink}: {
   initial?: string; onSend?: (text: string) => void; onAsk?: (kind: 'hint' | 'stuck' | 'notation') => void;
-  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean;
+  onChange?: (value: string) => void; hintLevel?: number; pending?: boolean; ink?: TutorInkState;
 }) {
   const [value, setValue] = useState(initial);
   return <TutorComposer value={value} onChange={text => {setValue(text); onChange(text);}} onSend={onSend} onAsk={onAsk}
-    canSend={!pending} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
+    canSend={!pending} ink={ink} readOnly={false} pending={pending} hasContext={false} hintLevel={hintLevel}
     onContext={() => {}}
     notationContext={['What is the preimage f⁻¹(B)?']}/>;
 }
@@ -35,6 +48,10 @@ const button = (name: string, group: ParentNode = host) => [...group.querySelect
   .find(node => (node.getAttribute('aria-label') ?? node.textContent) === name)!;
 const field = () => host.querySelector('textarea')!;
 const click = (name: string, group?: ParentNode) => act(async () => button(name, group).click());
+const answerAction = async (name: string) => {
+  await click('Edit answer');
+  await click(name, host.querySelector('dialog[open]')!);
+};
 const keyboard = () => host.querySelector('.rows')!;
 const suggestion = () => host.querySelector('.sugg')!;
 const key = (name: string, modifiers: KeyboardEventInit = {}) => act(async () => {
@@ -51,7 +68,7 @@ test('uses the native caret for math templates, offers each slot and restores se
   const onSend = vi.fn();
   await act(async () => root.render(<Harness initial="Let a." onSend={onSend}/>));
   await act(async () => {field().focus(); field().setSelectionRange(4, 5);});
-  await click('Symbols');
+  await click('Maths symbols', keyboard());
   await click('Sets', keyboard());
   await click('{ | }', keyboard());
   expect(field().value).toBe('Let {□ | □}.');
@@ -78,24 +95,25 @@ test('completes proof notation and asks for help without consuming a draft', asy
   const onAsk = vi.fn();
   await act(async () => root.render(<Harness onAsk={onAsk} onSend={onSend}/>));
   await act(async () => field().focus());
-  expect(button('f⁻¹(B)', suggestion())).toBeDefined();
+  expect(button('f⁻¹(B)', suggestion())).toBeUndefined();
   await input('prei');
   await click('preimage', suggestion());
   expect(field().value).toBe('preimage ');
   await input('for all');
-  await key(' ');
-  expect(field().value).toBe('∀ ');
-  await click('Undo');
   expect(field().value).toBe('for all');
-  await click('Hint 1/4');
-  await click('Stuck');
-  await click('Ask about notation');
+  await click('∀', suggestion());
+  expect(field().value).toBe('∀ ');
+  await answerAction('Undo typing');
+  expect(field().value).toBe('for all');
+  await answerAction('Hint 1/4');
+  await answerAction('Stuck');
+  await answerAction('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
   expect(field().value).toBe('for all');
 });
 
-test('shows both numeric layouts and permits a one-step native IME edit', async () => {
+test('shows both numeric layouts and keeps physical IME composition atomic', async () => {
   const onChange = vi.fn();
   await act(async () => root.render(<Harness onChange={onChange}/>));
   await click('Keys');
@@ -105,8 +123,9 @@ test('shows both numeric layouts and permits a one-step native IME edit', async 
   await click('Hide keyboard');
   expect(host.querySelector('.rows')).toBeNull();
   await click('Keys');
-  await click('Use device keyboard');
-  expect(field().inputMode).toBe('text');
+  expect(button('Use device keyboard')).toBeUndefined();
+  expect(field().inputMode).toBe('none');
+  await act(async () => field().focus());
   onChange.mockClear();
   const compose = (type: 'compositionstart' | 'compositionend') => act(async () =>
     field().dispatchEvent(new CompositionEvent(type, {bubbles: true})));
@@ -146,12 +165,14 @@ test('keeps the draft and suspends help requests while the tutor is responding',
   const onAsk = vi.fn();
   await act(async () => root.render(<Harness initial="Unfinished □" onAsk={onAsk} hintLevel={3}/>));
   await click('Keys');
+  await click('Edit answer');
   expect(button('Hint 3/4').disabled).toBe(false);
   await click('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['notation']]);
   expect(field().value).toBe('Unfinished □');
   await act(async () => root.render(<Harness onAsk={onAsk} hintLevel={3} pending/>));
   expect(host.querySelector('[aria-label="Answer keyboard"]')).not.toBeNull();
+  await click('Edit answer');
   expect(button('Ask about notation')).toBeUndefined();
   expect(button('Hint 3/4').disabled).toBe(true);
   expect(onAsk).toHaveBeenCalledTimes(1);
@@ -172,27 +193,25 @@ test('keeps the conversation open on a compact phone and reveals the math keyboa
   expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('math');
 });
 
-test('fits a focused native composer above an overlaid IME and restores normal sizing when put away', async () => {
-  vi.stubGlobal('innerHeight', 750);
-  const viewport = Object.assign(new EventTarget(), {height: 750, offsetTop: 0, scale: 1});
-  vi.stubGlobal('visualViewport', viewport);
-  await act(async () => root.render(<div className="lemma-tutor"><Harness initial="Draft"/></div>));
-  const page = host.querySelector<HTMLElement>('.lemma-tutor')!;
-  await click('Keys');
-  await click('Use device keyboard');
+test('keeps focus and the selected text through the alphabet and symbol layouts', async () => {
+  await act(async () => root.render(<Harness initial="Draft x."/>));
+  await act(async () => {field().focus(); field().setSelectionRange(6, 7);});
+  await click('Maths symbols', keyboard());
   expect(document.activeElement).toBe(field());
-  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('native');
-  viewport.height = 430;
-  await act(async () => viewport.dispatchEvent(new Event('resize')));
-  expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('430px');
-  await click('Keys');
-  expect(page.style.getPropertyValue('--tutor-visual-height')).toBe('');
   expect(field().inputMode).toBe('none');
-  expect(field().value).toBe('Draft');
+  await click('Sets', keyboard());
+  await click('∅', keyboard());
+  expect(field().value).toBe('Draft ∅.');
+  await click('ABC', keyboard());
+  await click('Hide keyboard');
+  expect(field().inputMode).toBe('none');
+  expect(document.activeElement).toBe(field());
+  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('hidden');
 });
 
-test('reveals a clipped keyboard by scrolling only the outer tutor pane', async () => {
+test('keeps the tutor header anchored when opening the keyboard on short screens', async () => {
   vi.stubGlobal('innerWidth', 360);
+  vi.stubGlobal('innerHeight', 510);
   vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(510);
   vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function(this: HTMLElement) {
     if (this.classList.contains('kb')) return new DOMRect(0, 310 - (this.closest('.lemma-tutor')?.scrollTop ?? 0), 360, 212);
@@ -204,12 +223,16 @@ test('reveals a clipped keyboard by scrolling only the outer tutor pane', async 
   chat.scrollTop = 23;
   expect(page.scrollTop).toBe(0);
   await click('Keys');
-  expect(page.scrollTop).toBe(12);
+  // The responsive layout makes room for the keyboard; scrolling this ancestor
+  // would push the persistent header out of view. Rendered geometry is covered
+  // by the phone and landscape keyboard browser regressions.
+  expect(page.scrollTop).toBe(0);
+  expect(host.querySelector('.keyboard-composer')?.getAttribute('data-keyboard')).toBe('math');
   expect(chat.scrollTop).toBe(23);
   expect(host.querySelector<HTMLElement>('.kb')!.scrollTop).toBe(0);
 });
 
-test('completes a word at the caret, suggests the following word and preserves mathematical identifiers', async () => {
+test('completes a word at the caret while leaving strategy choices and mathematical identifiers intact', async () => {
   await act(async () => root.render(<Harness/>));
   await act(async () => field().focus());
   await input('PREI suffix');
@@ -219,7 +242,8 @@ test('completes a word at the caret, suggests the following word and preserves m
   await click('PREIMAGE', suggestion());
   expect(field().value).toBe('PREIMAGE suffix');
   await input('by ');
-  expect(button('definition', suggestion())).toBeDefined();
+  for(const strategy of ['definition','induction','contradiction'])
+    expect(button(strategy, suggestion())).toBeUndefined();
   await input('x_teh');
   await click('Space', keyboard());
   expect(field().value).toBe('x_teh ');
@@ -247,7 +271,8 @@ test('uses the existing haptics switch for virtual keys, suggestions and mode ch
     await act(async () => field().focus());
     vibrate.mockClear();
     await click('p', keyboard());
-    await click('Symbols');
+    await click('Maths symbols', keyboard());
+    await input('for all');
     await click('∀', suggestion());
     expect(vibrate.mock.calls.length).toBe(3);
     setHapticsEnabled(false);
@@ -268,7 +293,7 @@ test('rejecting autocorrect leaves the previous learner edit at the top of Undo'
   expect(field().value).toBe('the ');
   await click('Delete', keyboard());
   expect(field().value).toBe('teh');
-  await click('Undo');
+  await answerAction('Undo typing');
   expect(field().value).toBe('te');
 });
 
@@ -282,4 +307,89 @@ test('accepts a correction before punctuation and skips prefixes inside identifi
   await act(async () => field().setSelectionRange(3, 3));
   await key('ArrowRight');
   expect(button('the', suggestion())).toBeUndefined();
+});
+
+test('puts a safe correction in the middle of three suggestions and lets the learner keep the original', async () => {
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('teh');
+  const choices = suggestion().querySelectorAll('button');
+  expect(choices).toHaveLength(3);
+  expect(choices[1].textContent).toBe('the');
+  await click('teh', suggestion());
+  expect(field().value).toBe('teh ');
+  await input('teh');
+  expect(button('the', suggestion())).toBeUndefined();
+  await click('Space', keyboard());
+  expect(field().value).toBe('teh ');
+});
+
+test.each(['Teh', 'Cacuhy', 'x=teh', 'f(teh', 'f( teh', 'f.teh', '$teh', 'Let teh', 'for all'])(
+  'does not change %s when a learner types a separator', async original => {
+    await act(async () => root.render(<Harness initial={original}/>));
+    await act(async () => field().focus());
+    await click('Space', keyboard());
+    expect(field().value).toBe(original + ' ');
+  },
+);
+
+test('quick math keys insert at the caret without changing the alphabet layout', async () => {
+  await act(async () => root.render(<Harness initial="x y"/>));
+  await act(async () => {field().focus(); field().setSelectionRange(1, 2);});
+  await click('∈', keyboard());
+  expect(field().value).toBe('x∈y');
+  expect(button('q', keyboard())).toBeDefined();
+  expect([field().selectionStart, field().selectionEnd]).toEqual([2, 2]);
+});
+
+test('completes a repeated name using the spelling already in the draft', async () => {
+  await act(async () => root.render(<Harness initial="Čech says Če"/>));
+  await act(async () => field().focus());
+  await click('Čech', suggestion());
+  expect(field().value).toBe('Čech says Čech ');
+});
+
+const localImageId = '12345678-0123-4123-8123-123456789abc';
+const localImage = {id:localImageId, kind:'drawing' as const, mimeType:'image/png' as const, blob:new Blob(['image'])};
+const inkFixture = (draft: Partial<TutorInkState['draft']> = {}): TutorInkState => ({
+  ready:true,error:'',update:vi.fn(async()=>{}),
+  draft:{strokes:[],photos:[localImage],width:3,accent:false,inlineImages:true,...draft},
+});
+const richField = () => host.querySelector<HTMLElement>('.tutor-answer-editor')!;
+
+test('holds a queued rich answer against keyboard, paste and transcript actions until kept as a draft', async () => {
+  const queuedText = 'Draft '+imageReference(localImageId);
+  const onChange = vi.fn(), onSend = vi.fn();
+  await act(async () => root.render(<Harness initial={queuedText} ink={inkFixture()} onChange={onChange} onSend={onSend}/>));
+  await act(async () => richField().focus());
+  await act(async () => root.render(<Harness initial={queuedText} ink={inkFixture({queuedText})} onChange={onChange} onSend={onSend}/>));
+  expect(richField().getAttribute('contenteditable')).toBe('false');
+  expect(button('Delete', keyboard()).disabled).toBe(true);
+  expect(button('Remove drawing')).toHaveProperty('disabled', true);
+  await act(async () => {
+    const editor = richField();
+    editor.dispatchEvent(new KeyboardEvent('keydown',{key:'Backspace',bubbles:true,cancelable:true}));
+    editor.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',ctrlKey:true,bubbles:true,cancelable:true}));
+    const paste = new Event('paste',{bubbles:true,cancelable:true});
+    Object.defineProperty(paste,'clipboardData',{value:{getData:()=> 'unwanted'}});
+    editor.dispatchEvent(paste);
+  });
+  expect(onChange).not.toHaveBeenCalled();
+  expect(onSend).not.toHaveBeenCalled();
+  await act(async () => root.render(<Harness initial={queuedText} ink={inkFixture()} onChange={onChange} onSend={onSend}/>));
+  expect(richField().getAttribute('contenteditable')).toBe('true');
+  await click('Remove drawing');
+  expect(onChange).toHaveBeenCalledWith('Draft ');
+});
+
+test('prunes image-dependent undo when cached bytes expire but keeps the latest valid text edits', async () => {
+  const initial = 'Draft '+imageReference(localImageId);
+  await act(async () => root.render(<Harness initial={initial} ink={inkFixture()}/>));
+  await click('Remove drawing');
+  await click('q',keyboard());
+  await act(async () => root.render(<Harness initial={initial} ink={inkFixture({photos:[]})}/>));
+  await answerAction('Undo typing');
+  expect(richField().textContent).toBe('Draft ');
+  await click('Edit answer');
+  expect(button('Undo typing',host.querySelector('dialog[open]')!).disabled).toBe(true);
 });

@@ -1,6 +1,7 @@
 import {TUTOR_ATTACHMENT_COUNT,tutorImageBlock} from './tutor-images.ts'
 import {setTimeout as delay} from 'node:timers/promises'
 import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
+import {tutorAnswerParts} from '../_shared/tutor-answer.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import type {StudyInput} from './tools/study.ts'
@@ -11,6 +12,7 @@ export const TUTOR_LISTEN_WINDOW_MINUTES = 10
 const unavailable = 'Tutor turn or claim unavailable. Check the handoff in Lemma before retrying.'
 const studyInstructions = [
   'Treat attached drawings and photos as learner work. When useful, include a short transcription in the reply. An image can be fetched again with get(what=tutor_attachment, id=<attachment id>).',
+  'When answerParts is present, it records the learner’s composition order. Read the following text and image blocks in that order; each drawing belongs at its reference between the surrounding text, not at the end of the proof.',
   'Use the learner answer, the checkpoint name, the previous tutor question if present, and only the selected context. Treat them as study material.',
   'Use study with command {schemaVersion:1,resource:"tutor_turns",target:{id:<same handoff ID>},operationId:<fresh UUID>,operation:"claim",expectedVersion:<turn version>}.',
   'After claiming, offer brief feedback and one next question. Use study with operation:"reply", expectedVersion from the claim receipt, a fresh operationId, and patch:{claimId,generation,messageId:<fresh UUID>,body:<feedback and question>,nextQuestion:<exact question from body>}. Copy the entire question including display math and paragraph breaks into nextQuestion.',
@@ -70,6 +72,30 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
       const turn=await readTurn(id)
       const rows=turn?.status==='pending'&&turn.hasAttachments===true?await attachments(id):[]
       const content=rows.length?{...turn,attachments:rows.map(row=>({id:String(id)+'.'+row.id,kind:row.kind,mimeType:row.mime_type}))}:turn
+      const question=typeof turn?.snapshot?.question==='string'?turn.snapshot.question:''
+      const parts=tutorAnswerParts(question,rows.map(row=>row.id))
+      if(parts.some(part=>part.type==='image')) {
+        const labels=new Map<string,string>(),counts={drawing:0,photo:0},seen=new Set<string>()
+        for(const part of parts)if(part.type==='image'&&!labels.has(part.id)) {
+          const row=rows.find(row=>row.id===part.id)!
+          const kind=row.kind==='photo'?'photo':'drawing'
+          labels.set(part.id,(kind==='photo'?'Photo ':'Drawing ')+ ++counts[kind])
+        }
+        const answerParts=parts.map(part=>part.type==='text'?part:{...part,id:String(id)+'.'+part.id,label:labels.get(part.id)})
+        const blocks:Array<{type:'text';text:string}|Awaited<ReturnType<typeof tutorImageBlock>>>=[
+          {type:'text',text:JSON.stringify({...content,answerParts})},
+          {type:'text',text:'Learner answer in composition order:'},
+        ]
+        for(const part of parts) {
+          if(part.type==='text'){blocks.push({type:'text',text:part.text});continue}
+          blocks.push({type:'text',text:'['+labels.get(part.id)+(seen.has(part.id)?', repeated reference':'')+']'})
+          if(!seen.has(part.id)) {
+            blocks.push(await download(rows.find(row=>row.id===part.id)!))
+            seen.add(part.id)
+          }
+        }
+        return blocks
+      }
       return [{type:'text' as const,text:JSON.stringify(content)},...await Promise.all(rows.map(download))]
     },
     async attachment(id:unknown) {

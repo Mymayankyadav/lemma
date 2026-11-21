@@ -1,3 +1,4 @@
+import {CheckpointReadiness} from '../../adaptive/panels/LearningDetails';
 import {LemmaError} from '../../../data/api';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {Dock} from '../../../ui/v7/Dock';
@@ -100,13 +101,14 @@ export default function CheckpointV7(){
     {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
    </div></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
-  {view.ui!=='locked'&&atlas.data&&<p className="v7-learn-empty">Recheck: {atlas.data.checkpointConcepts.some(item=>item.checkpoint_id===view.id&&atlas.data?.facets[item.concept_id]?.some(facet=>facet.state!=='none'))?'ready':'not ready yet'}</p>}
+  {view.ui!=='locked'&&atlas.data&&<p className="v7-learn-empty">Recheck: {view.ui==='revisit'?'due':view.ui==='done'?'not due yet':'not ready yet'}</p>}
+  <CheckpointReadiness checkpointId={view.id}/>
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
    {evidence.length?<ol className="v7-evidence">{evidence.map(group=><li key={group.key} className="v7-evidence-group">
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
    :<p className="v7-learn-empty">No evidence yet.</p>}
   </section>
-  {view.ui!=='locked'&&(due.data??view.dueCards)>0&&<Link className="v7-learn-row" to={studyRepair?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{studyRepair?(due.isSuccess?due.data+' due · Review '+view.title:'Review '+view.title):detail.cardsCount+' '+(detail.cardsCount===1?'card':'cards')+' · Review'}</span><ChevronRight aria-hidden="true"/></Link>}
+  <Link className="v7-learn-row" to={studyRepair?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{studyRepair?(due.isSuccess?due.data+' due · Review '+view.title:'Review '+view.title):detail.cardsCount+' '+(detail.cardsCount===1?'card':'cards')+' · Review'}</span><ChevronRight aria-hidden="true"/></Link>
   <Dock className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
     :view.ui==='locked'?<p>{lockedAfter?'Unlocks after '+lockedAfter.title:'Complete the preceding checkpoint'}</p>

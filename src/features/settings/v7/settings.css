@@ -38,6 +38,7 @@
  :where(html[data-v7]) .v7-settings-legacy {padding:var(--v7-space-4);--ink:var(--v7-role-text-primary);--ink-soft:var(--v7-role-text-primary);--ink-2:var(--v7-role-text-secondary);--ink-3:var(--v7-role-text-tertiary);
   --edge:var(--v7-role-border-subtle);--edge-2:var(--v7-role-border-default);--edge-3:var(--v7-role-border-strong);--raised:var(--v7-role-surface-raised);--well:var(--v7-role-surface-sunken);--fill-1:var(--v7-role-surface-muted);--fill-2:var(--v7-role-surface-muted-hover);
   --paper:var(--v7-role-surface-raised);--paper-2:var(--v7-role-surface-muted);--hair:var(--v7-role-border-subtle);--control-edge:var(--v7-role-border-default);--card:var(--v7-role-surface-raised);--slab:var(--v7-role-surface-raised);--link:var(--v7-role-link-fg);--accent:var(--v7-role-action-bg);}
+ :where(html[data-v7]) .v7-settings-legacy [data-teaching-styles] [aria-checked="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  /* R1 · F03 grouped lists: an overline per group, rows of 56 px with the label, the current value and a chevron, or a switch. */
  :where(html[data-v7]) .v7-set-group {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-set-group > h2 {margin:0 0 0 var(--v7-space-1);}

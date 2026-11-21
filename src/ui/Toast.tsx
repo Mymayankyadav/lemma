@@ -112,9 +112,37 @@ function ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
 }
 export function ToastHost(){
  const items=useSyncExternalStore(subscribe,current,current);
+ const host=useRef<HTMLDivElement>(null);
+ useLayoutEffect(()=>{
+  const node=host.current;
+  if(!node||!items.length)return;
+  let frame=0;
+  const resize=typeof ResizeObserver==='undefined'?null:new ResizeObserver(()=>schedule());
+  const observed=new Set<Element>();
+  const measure=()=>{
+   frame=0;
+   let clearance=0;
+   if(!document.querySelector('dialog[open]'))for(const dock of document.querySelectorAll('.v7-pinned-dock,.v7-dock,.v7-sticky-actions')){
+    if(!observed.has(dock)){observed.add(dock);resize?.observe(dock);}
+    const box=dock.getBoundingClientRect(),style=getComputedStyle(dock);
+    const bottomActions=['fixed','sticky'].includes(style.position)||dock.classList.contains('v7-path-bar');
+    if(bottomActions&&box.width&&box.height&&box.top>innerHeight/2&&box.top<innerHeight&&style.visibility!=='hidden')
+     clearance=Math.max(clearance,innerHeight-box.top);
+   }
+   const value=Math.ceil(clearance)+'px';
+   if(node.style.getPropertyValue('--v7-toast-clearance')!==value)node.style.setProperty('--v7-toast-clearance',value);
+  };
+  function schedule(){if(!frame)frame=requestAnimationFrame(measure);}
+  const mutations=new MutationObserver(schedule);
+  mutations.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['open','class','data-immersive']});
+  window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);
+  window.addEventListener('scroll',schedule,{capture:true,passive:true});
+  measure();
+  return()=>{cancelAnimationFrame(frame);resize?.disconnect();mutations.disconnect();window.removeEventListener('resize',schedule);window.visualViewport?.removeEventListener('resize',schedule);window.removeEventListener('scroll',schedule,true);};
+ },[items]);
  const reduce=!!useReducedMotion(),effectsReduced=useMotionReduced();
  // A1: the v7 toast also honours Settings › Reduce effects.
- if(v7Root())return <div aria-live="polite" aria-atomic="false" className="v7-toast-host">
+ if(v7Root())return <div ref={host} aria-live="polite" aria-atomic="false" className="v7-toast-host">
   <AnimatePresence>{items.slice(-1).map(item=><V7ToastItem key={item.id} item={item} reduce={reduce||effectsReduced}/>)}</AnimatePresence></div>;
  return <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed inset-x-4 bottom-[calc(108px+env(safe-area-inset-bottom))] z-50 mx-auto flex max-w-[480px] flex-col gap-2">
  <AnimatePresence>{items.map(item=><ToastItem key={item.id} item={item} reduce={reduce}/>)}</AnimatePresence></div>;

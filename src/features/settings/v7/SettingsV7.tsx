@@ -1,3 +1,4 @@
+import {setTutorAutomatic,setTutorRecognition,useTutorInputPreferences} from '../../tutor/input/inputPreferences';
 import {PlanningGoals} from '../../insights/v7/GoalEditor';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {Diagnostics} from '../../adaptive/panels/Diagnostics';
@@ -155,6 +156,7 @@ function Subjects({settings}:{settings:Settings}){
 }
 function Tutor({settings,released}:{settings:Settings;released:boolean}){
  const rotate=useRotateConnectorSecret(),notify=useToast(),[revealed,setRevealed]=useState(false);
+ const input=useTutorInputPreferences();
  const lastUsed=settings.connectorLastSeenAt?new Date(settings.connectorLastSeenAt):null;
  return <div className="v7-settings-body">
   {released&&<Group title="Checkpoint tutor">
@@ -163,6 +165,13 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
    <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Lemma needs provider approval for direct access to a ChatGPT plan."/>
    <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
   </Group>}
+  <Group title="Math input beta">
+   <li className="v7-set-switch"><Switch label="Draw single symbols" checked={input.recognition}
+    onChange={enabled=>{if(!setTutorRecognition(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
+   <li className="v7-set-switch"><Switch label="Automatic insertion when qualified" checked={input.automatic} disabled={!input.recognition}
+    onChange={enabled=>{if(!setTutorAutomatic(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
+   <InfoRow label="Choose a match" hint="Draw one symbol at a time on this device. The beta requires a tap to insert a match."/>
+  </Group>
   <div className="v7-settings-card">
    <p className="v7-eyebrow">Connector address</p>
    <ConnectorAddress value={revealed?settings.connectorUrl:settings.connectorUrl.replace(/\/[^/]+$/,'/••••••')}/>

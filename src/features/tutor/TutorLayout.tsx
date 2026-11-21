@@ -1,4 +1,4 @@
-import {useState, type ReactNode} from 'react';
+import {useId,useState, type ReactNode} from 'react';
 import {Link} from 'react-router';
 import {tutorPresence} from './presence';
 import {useToast} from '../../ui/Toast';
@@ -60,13 +60,7 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
   return <main id="main-content" className="v7-page lemma-tutor w-full" aria-label="Checkpoint tutor" data-subject={subject}>
     <header className="tutor-header">
       <IconButton label="Back" onClick={goBack}><ChevronLeft aria-hidden="true"/></IconButton>
-      <div className="tutor-header-title"><strong>{detail.view.title}</strong>
-        <small>{detail.view.code}{step.ordinal?' · step '+step.ordinal+' of '+step.total:''}</small></div>
-      <span className="tutor-presence" role="status" data-presence={presence}>{presence}</span>
-      {presence==='Not listening'&&resumePrompt&&<IconButton label="Copy prompt" title="Copy prompt" onClick={()=>{
-        void navigator.clipboard.writeText(resumePrompt).then(()=>notify('Prompt copied')).catch(()=>notify('Could not copy the prompt.'));
-      }}><Copy aria-hidden="true"/></IconButton>}
-      {timerState&&<button type="button" className="tutor-header-clock" aria-label="Study timer" onClick={()=>setPanel('timer')}>{clock}</button>}
+      <div className="tutor-header-title"><strong>{detail.view.title}</strong><TutorPresence presence={presence}/></div>
       <IconButton label="Session actions" onClick={() => setPanel('session')} aria-haspopup="dialog" data-v7-search-opener=""><Ellipsis aria-hidden="true"/></IconButton>
     </header>
     {!overview&&<div className="tutor-session-progress" aria-label="Session parts">
@@ -84,7 +78,8 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
     </nav>}
     {children}
     <Sheet open={panel === 'session'} onClose={() => setPanel(undefined)} title="Study session">
-      <p><strong>{project.project.title}</strong><br/>{detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
+      <p><strong>{project.project.title}</strong><br/>{detail.view.code} · {detail.view.title}{step.ordinal ? ' · Step ' + step.ordinal + ' of ' + step.total : ''}</p>
+      {timerState&&<p>{timerState} · {clock}</p>}
       <div className="tutor-session-actions">
         {onOverview && <Button small onClick={() => sessionAction(onOverview)}>Next up</Button>}
         {onQuestion && <Button small onClick={() => sessionAction(onQuestion)}>Latest question</Button>}
@@ -94,6 +89,9 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
         <Button small onClick={() => setPanel('timer')}>Study timer</Button>
         {onContext && <Button small onClick={() => sessionAction(onContext)}>Context</Button>}
         {onConnection && <Button small onClick={() => sessionAction(onConnection)}>Connection</Button>}
+        {resumePrompt&&<Button small onClick={()=>{
+          void navigator.clipboard.writeText(resumePrompt).then(()=>notify('Prompt copied')).catch(()=>notify('Could not copy the prompt.'));
+        }}><Copy aria-hidden="true"/>Copy prompt</Button>}
         <Button small aria-haspopup="dialog" onClick={() => sessionAction(() => window.dispatchEvent(new CustomEvent('v7:search')))}>Search</Button>
         {onCloseSession && <Button small onClick={() => sessionAction(onCloseSession)}>Close session</Button>}
       </div>
@@ -127,6 +125,20 @@ export function TutorLayout({page, sequence, children, overview, offline, onOver
       {focus.entry && <Link className="v7-button v7-secondary" to="/focus">Open timer and finish session</Link>}
     </Sheet>
   </main>;
+}
+
+function TutorPresence({presence}:{presence:string}) {
+  const [open,setOpen]=useState(false),id=useId();
+  return <span className="tutor-presence-control" onMouseEnter={()=>setOpen(true)} onMouseLeave={()=>setOpen(false)}>
+    <button type="button" className="v7-icon-button tutor-presence-light" data-presence={presence}
+      aria-label={'Tutor status: '+presence} aria-describedby={open?id:undefined}
+      onClick={()=>setOpen(true)} onBlur={()=>setOpen(false)}
+      onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();setOpen(false);}}}>
+      <span aria-hidden="true"/>
+    </button>
+    <span className="v7-sr-only" role="status">{presence}</span>
+    {open&&<span className="tutor-presence-tooltip" id={id} role="tooltip">{presence}</span>}
+  </span>;
 }
 
 export function TutorOverview({page, busy, hasTurns, onBegin, onContinue, onWrite}: {

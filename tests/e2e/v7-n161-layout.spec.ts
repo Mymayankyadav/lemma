@@ -36,6 +36,7 @@ for(const [width,scale] of sizes){
   await page.getByRole("list",{name:"Matching concepts"}).getByRole("listitem").filter({hasText:/^Compactness\s*Analysis$/}).getByRole("button").click();
   const sheet=page.getByRole("region",{name:"Compactness"});
   await expect(sheet).toBeVisible();
+  await sheet.getByRole("button",{name:"Show less"}).click();
   // The peek offers the two main actions and keeps the extra checkpoint link for the expanded sheet.
   const checkpoint=sheet.getByRole("link",{name:"Open Checkpoint 4",exact:true});
   const review=sheet.getByRole("link",{name:"Review 9",exact:true});
@@ -43,28 +44,28 @@ for(const [width,scale] of sizes){
   await expect(checkpoint).toHaveCount(0);
   const clipped=await sheet.evaluate(node=>node.scrollHeight>node.clientHeight+1);
   expect(clipped,"the peek cuts off its own content").toBe(false);
-  let dock=await dockBox(page);
+  await expect(page.getByRole("navigation",{name:"Main navigation"})).toBeHidden();
   const box=(await sheet.boundingBox())!;
   expect(box.height).toBeLessThanOrEqual(150);
-  // The sheet tucks under the dock's rounded top edge by its border (2 px), as before N161.
-  expect(box.y+box.height).toBeLessThanOrEqual(dock.y+2);
+  expect(box.y+box.height).toBeLessThanOrEqual(845);
   const controls=(await page.locator(".v7-atlas-controls").boundingBox())!;
   expect(controls.y+controls.height,"the map controls sit above the sheet").toBeLessThanOrEqual(box.y+1);
   const reachable=async(button:typeof review)=>{
    await expect(button).toBeVisible();
    const b=(await button.boundingBox())!;
-   expect(b.y+b.height).toBeLessThanOrEqual(dock.y+1);
+   expect(b.y+b.height).toBeLessThanOrEqual(845);
    const hit=await page.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest("a.v7-button"),{x:b.x+b.width/2,y:b.y+b.height/2});
    expect(hit,(await button.textContent())+" is covered").toBe(true);
   };
   for(const button of [tutor,review])await reachable(button);
   await sheet.getByRole("button",{name:"Show neighbours and actions"}).click();
-  dock=await dockBox(page);
   await expect(review).toHaveAttribute("href","#/review/run?target=concept&id=concept-compactness");
   for(const button of [checkpoint,review]){
    await button.scrollIntoViewIfNeeded();
    await reachable(button);
   }
+  await sheet.getByRole("button",{name:"Close details"}).click();
+  await expect(page.getByRole("navigation",{name:"Main navigation"})).toBeVisible();
  });
 
  test("the Calendar ruler opens on demand and leaves the day's last hour clear at "+width+" px, text x"+scale,async({page})=>{
@@ -116,10 +117,13 @@ for(const [width,scale] of sizes){
   await open(page,"#/calendar?view=day&date=2026-11-09",width,scale);
   const button=page.getByRole("button",{name:"Calendar view: Day"});
   await expect(button).toBeVisible();
-  // The date and view share the header at regular text size. Larger labels can wrap within it.
-  const date=page.getByRole("button",{name:/^Calendar date:/});
-  const dateBox=(await date.boundingBox())!,b=(await button.boundingBox())!;
-  if(scale===1)expect(Math.abs((b.y+b.height/2)-(dateBox.y+dateBox.height/2))).toBeLessThanOrEqual(12);
+  // The shared title and view share the header. The week strip carries the dates;
+  // date picking is available as the fourth action rather than a duplicate pill.
+  const title=page.getByRole("heading",{name:"Calendar",exact:true});
+  await expect(title).toBeVisible();
+  await expect(page.getByRole("button",{name:/^Calendar date:/})).toHaveCount(0);
+  const titleBox=(await title.boundingBox())!,b=(await button.boundingBox())!;
+  if(scale===1)expect(Math.abs((b.y+b.height/2)-(titleBox.y+titleBox.height/2))).toBeLessThanOrEqual(12);
   await expect(page.locator(".v7-hub-bar").getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
   expect(b.height).toBeGreaterThanOrEqual(44);
   await expect(page.getByRole("radiogroup",{name:"Calendar view"})).toHaveCount(0);

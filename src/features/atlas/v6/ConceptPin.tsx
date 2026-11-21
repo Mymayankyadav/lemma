@@ -1,16 +1,18 @@
 import {useAtlasDialog} from './useAtlasDialog';
-import {useState,type FormEvent} from 'react';
+import {useId,useState,type FormEvent} from 'react';
+import {Button,Field,Sheet} from '../../../ui/v7/components';
 
 /** Pins are the only Atlas mutations exposed by LemmaApi today.
  * Never write concept hierarchy/links directly from the browser. */
 export default function ConceptPin({
- id,name,x,y,onSave,onClose,
+ id,name,x,y,onSave,onClose,kit=false,
 }:{
  id:string;name:string;x:number|null;y:number|null;
  onSave:(id:string,x:number|null,y:number|null)=>Promise<void>;
- onClose:()=>void;
+ onClose:()=>void;kit?:boolean;
 }){
  const dialog=useAtlasDialog();
+ const formId=useId();
  const [coordinateX,setCoordinateX]=useState(String(x??0));
  const [coordinateY,setCoordinateY]=useState(String(y??0));
  const [busy,setBusy]=useState(false);
@@ -34,6 +36,17 @@ export default function ConceptPin({
   try{const {xx,yy}=parse();void save(xx,yy);}
   catch(e){setError(e instanceof Error?e.message:'Invalid map coordinates');}
  }
+ if(kit)return <Sheet open title={'Map pin: '+name} focusTitle onClose={()=>{if(!busy)onClose();}}
+  footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>Cancel</Button>
+   <Button variant="primary" type="submit" form={formId} loading={busy}>Save pin</Button></>}>
+  <form id={formId} className="v7-form-stack" onSubmit={submit}>
+   <p className="v7-supporting">{pinned?'Pinned at ('+x+', '+y+').':'Not pinned.'} Choose a position for this idea on the map.</p>
+   <Field label="X coordinate" aria-label="Map X coordinate" type="number" step="any" required value={coordinateX} disabled={busy} onChange={event=>setCoordinateX(event.target.value)}/>
+   <Field label="Y coordinate" aria-label="Map Y coordinate" type="number" step="any" required value={coordinateY} disabled={busy} onChange={event=>setCoordinateY(event.target.value)}/>
+   {pinned&&<Button disabled={busy} onClick={()=>void save(null,null)}>Unpin</Button>}
+   {error&&<p role="alert" className="v7-error">{error}</p>}
+  </form>
+ </Sheet>;
  return <dialog {...dialog} aria-label={'Edit map pin for '+name}
   onCancel={e=>{e.preventDefault();if(!busy)onClose()}}
   className="fixed inset-0 z-50 m-auto w-[min(92vw,430px)] rounded-ctl border border-edge bg-[var(--paper)] p-4 text-ink shadow-lg">

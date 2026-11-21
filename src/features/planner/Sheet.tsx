@@ -1,6 +1,6 @@
 // N68 v6 owner planner: read-only preview first, no unattended block writes.
 // A day-plan commit always rechecks task/block versions in one server command.
-import {useEffect,useMemo,useRef,useState} from 'react';
+import {useEffect,useMemo,useRef,useState,type ReactNode} from 'react';
 import {useStudyUi} from '../../data/StudyUiRelease';
 import {getDayPlanApi} from '../../data/day-plans';
 import {getTaskApi,type TaskRecord} from '../../data/tasks';
@@ -31,10 +31,10 @@ function ownerDay(zone:string):string{
 }
 export {readTasks} from './readTasks';
 import {plannerCandidates,readTasks} from './readTasks';
-export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed,onChanged,v7=false}:{
+export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=false,onClosed,onChanged,v7=false,suggestedTimes}:{
  date?:string;zone?:string;
  /** v7 (Night critique B1): the same planner drawn as the kit's bottom sheet with kit controls only. */
- v7?:boolean;
+ v7?:boolean;suggestedTimes?:ReactNode;
  /** v7: open the planner as soon as it mounts (Adjust on the suggestions banner, `?plan=1`). */
  autoOpen?:boolean;hideTrigger?:boolean;onClosed?:()=>void;onChanged?:()=>void;
 }){
@@ -180,7 +180,7 @@ export default function PlannerLaunch({date,zone,autoOpen=false,hideTrigger=fals
   }finally{if(commitEpoch.current===ownCommit)setBusy(false);}
  }
  const count=selection.items?.selected.length??0;
- if(v7)return opened?<V7PlannerSheet anchor={anchor} zone={ownerZone} busy={busy} loading={loading} error={error} selectionError={selection.error}
+ if(v7)return opened?<V7PlannerSheet suggestedTimes={suggestedTimes} anchor={anchor} zone={ownerZone} busy={busy} loading={loading} error={error} selectionError={selection.error}
   preview={preview} tasks={tasks} selected={selected} overrides={overrides} unplaced={selection.items?.unplaced??[]} count={count} rangeDays={rangeDays}
   onClose={close} onCommit={()=>void commit()} onToggle={(key,on)=>setSelected(old=>{const next=new Set(old);if(on)next.add(key);else next.delete(key);return next;})}
   onMove={changeMove} onRange={days=>{++loadEpoch.current;setRangeDays(days);setPreview(null);setLoading(false);void load(days);}}/>:null;

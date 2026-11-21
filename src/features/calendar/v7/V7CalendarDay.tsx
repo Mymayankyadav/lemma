@@ -1,19 +1,21 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
+import {Disclosure} from '../../../ui/v7/Disclosure';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {ViewMenu} from './ViewMenu';
 import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 import {Link,useNavigate,useSearchParams} from 'react-router';
-import {Clock} from 'lucide-react';
+import {CalendarDays,ChevronLeft,ChevronRight,Clock,ListTodo,RotateCcw} from 'lucide-react';
+import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
-import {Button,DatePicker,Segmented,Sheet} from '../../../ui/v7/components';
+import {Button,DatePicker,IconButton,Segmented,Sheet} from '../../../ui/v7/components';
 import {SubjectGlyph,subjectClass} from '../../../ui/v7/Subject';
 import {StatusBadge} from '../../../ui/v7/Status';
-import {formatShortDate} from '../../../lib/format';
+import {formatDuration,formatShortDate} from '../../../lib/format';
 import {useOverdueSummary} from './overdue';
 import {useToast} from '../../../ui/Toast';
 import {kitSubject} from '../../atlas/v7/model';
@@ -55,8 +57,9 @@ export default function V7CalendarDay(){
  const [now,setNow]=useState(()=>Date.now());
  const [suggested,setSuggested]=useState<SuggestedBlock[]>([]);
  const [scrub,setScrub]=useState<{date:string;minute:number}|null>(null);
+ const [pickingDate,setPickingDate]=useState(false);
  const [browse,setBrowse]=useState(false),[collapsed,setCollapsed]=useState(false);
- const [addedSlots,setAddedSlots]=useState<Set<string>>(new Set());
+ const [addedSlots,setAddedSlots]=useState<ReadonlyMap<string,CalendarBlockRecord>>(new Map()),changingSlot=useRef(false);
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const planOpen=params.get('plan')==='1';
  const blockMinutes=lengthFromParam(params.get('len'))??DEFAULT_LENGTH;
@@ -148,27 +151,41 @@ export default function V7CalendarDay(){
   void adjust(block,patch).then(()=>go('date',day));
  };
  const monthWord=monthLabel(date);
+ function movePeriod(direction:number){
+  if(view!=='month'){go('date',shiftDay(date,direction*7));return;}
+  const [year,month,day]=date.split('-').map(Number);
+  const target=new Date(Date.UTC(year,month-1+direction,1));
+  const last=new Date(Date.UTC(target.getUTCFullYear(),target.getUTCMonth()+1,0)).getUTCDate();
+  target.setUTCDate(Math.min(day,last));go('date',target.toISOString().slice(0,10));
+ }
  useEffect(()=>setCollapsed(false),[date,view]);
- const visibleSlots=(atlas.data?.slots??[]).flatMap(({slot}):SuggestedBlock[]=>{
-  const range=view==='week'?loadRange(view,date,zone,firstDay):dayRange;
-  if(addedSlots.has(slot.id)||Date.parse(slot.starts_at)<Date.parse(range.start)||Date.parse(slot.ends_at)>Date.parse(range.end)
-   ||blocks.some(block=>block.status!=='cancelled'&&Date.parse(block.startsAt)<Date.parse(slot.ends_at)&&Date.parse(block.endsAt)>Date.parse(slot.starts_at))
+ const rankedSlots=(atlas.data?.slots??[]).filter(({slot})=>addedSlots.has(slot.id)
+  ||!blocks.some(block=>block.status!=='cancelled'&&Date.parse(block.startsAt)<Date.parse(slot.ends_at)&&Date.parse(block.endsAt)>Date.parse(slot.starts_at)));
+ const slotRange=view==='week'?loadRange(view,date,zone,firstDay):dayRange;
+ const visibleSlots=rankedSlots.flatMap(({slot}):SuggestedBlock[]=>{
+  if(addedSlots.has(slot.id)||Date.parse(slot.starts_at)<Date.parse(slotRange.start)||Date.parse(slot.ends_at)>Date.parse(slotRange.end)
    ||suggested.some(item=>Date.parse(item.start)<Date.parse(slot.ends_at)&&Date.parse(item.end)>Date.parse(slot.starts_at)))return [];
   return [{id:slot.id,start:slot.starts_at,end:slot.ends_at,title:'Study time',busy:saving,onAccept:()=>{void acceptSlot(slot);}}];
  });
  async function acceptSlot(slot:{id:string;starts_at:string;ends_at:string}) {
-  if(saving)return;
-  setSaving(true);
+  if(saving||changingSlot.current||addedSlots.has(slot.id))return;
+  changingSlot.current=true;setSaving(true);
   try{
-   const api=getStudyApi(),receipt=await api.createCalendarBlock({kind:'study',title:'Study block',startsAt:slot.starts_at,endsAt:slot.ends_at,timeZone:zone});
-   setAddedSlots(values=>new Set(values).add(slot.id));setReload(value=>value+1);
-   notify('Study block added',{tone:'success',action:{label:'Undo',onClick:()=>{
-    void api.deleteCalendarBlock(receipt.record.id,receipt.record.version).then(()=>{
-     setAddedSlots(values=>new Set([...values].filter(id=>id!==slot.id)));setReload(value=>value+1);
-    }).catch(()=>notify('Could not undo the block.',{tone:'danger'}));
-   }}});
+   const receipt=await getStudyApi().createCalendarBlock({kind:'study',title:'Study block',startsAt:slot.starts_at,endsAt:slot.ends_at,timeZone:zone});
+   setAddedSlots(values=>new Map(values).set(slot.id,receipt.record));setReload(value=>value+1);
+   notify('Study block added',{tone:'success',action:{label:'Undo',onClick:()=>{void undoSlot(slot.id,receipt.record);}}});
   }catch{notify('Could not add the study block.',{tone:'danger'});}
-  finally{setSaving(false);}
+  finally{changingSlot.current=false;setSaving(false);}
+ }
+ async function undoSlot(id:string,block:CalendarBlockRecord) {
+  if(changingSlot.current)return;
+  changingSlot.current=true;setSaving(true);
+  try{
+   await getStudyApi().deleteCalendarBlock(block.id,block.version);
+   setAddedSlots(values=>{const next=new Map(values);next.delete(id);return next;});
+   setBlocks(values=>values.filter(item=>item.id!==block.id));setReload(value=>value+1);
+  }catch{notify('Could not undo the block.',{tone:'danger'});}
+  finally{changingSlot.current=false;setSaving(false);}
  }
  const stripDots=(day:string)=>{
   const range=calendarRange(day,zone);
@@ -176,11 +193,24 @@ export default function V7CalendarDay(){
  };
 
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
-  <HubHeader title="Calendar" titleControl={<DatePicker compact label="Calendar date" value={date} today={today} onChange={day=>go('date',day)}/>}
+  <HubHeader title="Calendar" titleFollowsTab={false}
    control={wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
     :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}>
-   <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
+   <div className="v7-cal-navigation">
+    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
+    <div className="v7-cal-period-actions" role="group" aria-label="Calendar navigation">
+     <IconButton label={view==='month'?'Previous month':'Previous week'} onClick={()=>movePeriod(-1)}><ChevronLeft aria-hidden="true"/></IconButton>
+     <IconButton label={view==='month'?'Next month':'Next week'} onClick={()=>movePeriod(1)}><ChevronRight aria-hidden="true"/></IconButton>
+     <MoreActions label="Calendar actions" title="Calendar" items={[
+      {label:'Go to today',icon:<RotateCcw/>,onClick:()=>go('date',today)},
+      {label:'Browse day',icon:<Clock/>,onClick:()=>{if(view!=='day')openDay(date);setBrowse(true);}},
+      {label:'Plan study tasks',icon:<ListTodo/>,onClick:()=>{const next=new URLSearchParams(params);next.set('plan','1');setParams(next);}},
+      {label:'Choose date',icon:<CalendarDays/>,onClick:()=>setPickingDate(true)},
+     ]}/>
+    </div>
+   </div>
   </HubHeader>
+  <DatePicker hideTrigger compact open={pickingDate} onOpenChange={setPickingDate} label="Calendar date" value={date} today={today} onChange={day=>go('date',day)}/>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
    <div className="v7-mini-month" role="group" aria-label="Choose a date">
@@ -199,10 +229,21 @@ export default function V7CalendarDay(){
      <i aria-hidden="true">{dots.map(klass=><SubjectGlyph key={klass} klass={klass}/>)}</i>
     </button>;})}
   </nav>}
-  {(view==='day'||view==='week'||planOpen)&&phase==='ready'&&<div className="v7-cal-grid-actions" data-view={view}>
-   {overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue</StatusBadge>}
+  {(view==='day'||view==='week'||view==='agenda'&&!desktop&&overdueCount>0||planOpen)&&<div className="v7-cal-grid-actions" data-view={view}>
+   {phase==='ready'&&overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue</StatusBadge>}
    {view==='day'&&<Button small variant="ghost" aria-label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></Button>}
-   {(date>=today||planOpen)&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen}
+   {((view==='day'||view==='week')&&date>=today||planOpen)&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen}
+    suggestedTimes={rankedSlots.length>0&&<Disclosure label="Suggested study times"><ul className="v7-cal-ranked-slots" aria-label="Ranked study times">
+     {rankedSlots.map(({slot,evidence})=>{
+      const added=addedSlots.get(slot.id);
+      return <li key={slot.id}>
+       <p><strong>{formatShortDate(dayKey(new Date(slot.starts_at),zone),{zone})} · {clock(slot.starts_at)}–{clock(slot.ends_at)}</strong>
+        <small>{formatDuration(slot.minutes)} · {evidence}</small></p>
+       {added?<span><span role="status">Added</span> <Button small disabled={saving} onClick={()=>{void undoSlot(slot.id,added);}}>Undo</Button></span>
+        :<Button small disabled={saving} onClick={()=>{void acceptSlot(slot);}}>Add study block</Button>}
+      </li>;
+     })}
+    </ul></Disclosure>}
     onSuggest={setSuggested} onChanged={()=>setReload(value=>value+1)}
     onPlannerClosed={()=>{if(!planOpen)return;const next=new URLSearchParams(params);next.delete('plan');setParams(next,{replace:true});}}/>}
   </div>}

@@ -1,3 +1,4 @@
+import {AdaptivePractice} from '../../adaptive/panels/LearningDetails';
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useCallback,useEffect,useMemo,useState} from 'react';
@@ -52,6 +53,7 @@ export default function PracticeV7(){
   <HubHeader title="Review">
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review">Due</Link><Link to="/practice" aria-current="page">Practice</Link></nav>
   </HubHeader>
+  <AdaptivePractice/>
   {loading&&<p role="status" className="v7-pr-note">Loading practice topics…</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
   {/* PR3: the explanation is a first-run tip, shown only before there is anything to practise. */}

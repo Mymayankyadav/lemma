@@ -25,6 +25,11 @@ async function openComposer(page:Page) {
  await expect(answer(page)).toBeEditable()
 }
 
+async function undoTyping(page:Page) {
+ await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
+ await tutor(page).getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Undo typing',exact:true}).click()
+}
+
 async function sessionActions(page:Page) {
  await tutor(page).getByRole('button',{name:'Session actions',exact:true}).click()
  const actions=page.getByRole('dialog',{name:'Study session',exact:true})
@@ -148,7 +153,8 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  },[draftKey+':context',draftKey+':attached-local'])
  const warning=/draft.*may be lost on reload/i
  await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
- await tutor(page).getByRole('button',{name:'Context',exact:true}).click()
+ await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
+ await page.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
  const context=page.getByRole('dialog',{name:'Context for your tutor'})
  const alert=context.getByRole('alert').filter({hasText:warning})
  const objective=context.getByRole('checkbox',{name:'Include this checkpoint’s objective'})
@@ -217,14 +223,14 @@ for(const {width,height,minTranscriptHeight} of [
    await expect(timer.getByRole('button',{name:'Resume timer',exact:true})).toBeVisible()
    await timer.getByRole('button',{name:'Close',exact:true}).click()
   }
-  const symbols=tutor(page).getByRole('button',{name:'Symbols',exact:true})
-  await symbols.click()
+  await answer(page).click()
+  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
+  await keyboard.getByRole('button',{name:'Maths symbols',exact:true}).click()
   await expect(tutor(page).getByRole('group',{name:'Math categories'})).toBeInViewport()
   await tutor(page).getByRole('group',{name:'∀∃ keys'}).getByRole('button',{name:'∀',exact:true}).click()
   await expect(answer(page)).toHaveValue('∀')
-  await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
+  await undoTyping(page)
   await expect(answer(page)).toHaveValue('')
-  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
   await keyboard.getByRole('button',{name:'ABC',exact:true}).click()
   for(const key of ['q','a','z','Space']){
    await keyboard.getByRole('button',{name:key,exact:true}).click({trial:true})
@@ -274,7 +280,7 @@ test('Keyboard autocomplete completes only the text before the caret',async({pag
  const suggestions=tutor(page).getByRole('group',{name:'Suggestions',exact:true})
  await suggestions.getByRole('button',{name:'preimage',exact:true}).click()
  await expect(editor).toHaveValue('preimage suffix')
- await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
+ await undoTyping(page)
  await expect(editor).toHaveValue('prei suffix')
 })
 

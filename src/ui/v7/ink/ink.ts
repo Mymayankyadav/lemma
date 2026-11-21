@@ -59,6 +59,10 @@ export function clearPadInk(history: PadInkHistory): PadInkHistory {
   return history.strokes.length ? changeInk(history, []) : history;
 }
 
+export function replacePadStrokes(history: PadInkHistory, strokes: PadStrokes): PadInkHistory {
+  return strokes === history.strokes ? history : changeInk(history, strokes);
+}
+
 export function undoPadInk(history: PadInkHistory): PadInkHistory {
   const previous = history.undo.at(-1);
   return previous ? {strokes: previous, undo: history.undo.slice(0, -1)} : history;
@@ -72,7 +76,14 @@ export function padStrokePath(stroke: PadStroke): string {
 }
 
 export function erasePadStroke(history: PadInkHistory, point: PadPoint, margin = 16): PadInkHistory {
-  const fromEnd = [...history.strokes].reverse().findIndex(stroke => stroke.some(at => Math.hypot(at.x-point.x,at.y-point.y) <= margin));
+  const fromEnd = [...history.strokes].reverse().findIndex(stroke => stroke.some((at, index) => {
+    const previous = stroke[index - 1] ?? at;
+    const dx = at.x - previous.x, dy = at.y - previous.y;
+    const length = dx * dx + dy * dy;
+    const position = length ? ((point.x - previous.x) * dx + (point.y - previous.y) * dy) / length : 0;
+    const fraction = Math.max(0, Math.min(1, position));
+    return Math.hypot(previous.x + fraction * dx - point.x, previous.y + fraction * dy - point.y) <= margin;
+  }));
   const index = fromEnd < 0 ? -1 : history.strokes.length - 1 - fromEnd;
   return index < 0 ? history : changeInk(history,history.strokes.filter((_,i)=>i!==index));
 }

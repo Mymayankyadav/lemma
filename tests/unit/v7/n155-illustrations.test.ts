@@ -77,6 +77,6 @@ describe('IL5 · empty states in the first viewport', () => {
   });
   it('Calendar Day lays its empty state over the grid, and taps pass through to the grid', () => {
     expect(readFileSync('src/features/calendar/v7/V7CalendarDay.tsx', 'utf8')).toContain('<div className="v7-cal-day-stack"');
-    expect(readFileSync('src/features/calendar/v7/calendar.css', 'utf8')).toContain('.v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);padding:0;pointer-events:none;}');
+    expect(readFileSync('src/features/calendar/v7/calendar.css', 'utf8')).toContain('.v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;z-index:4;transform:translateY(-50%);padding:0;pointer-events:none;}');
   });
 });

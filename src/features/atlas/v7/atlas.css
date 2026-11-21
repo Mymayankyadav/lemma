@@ -1,15 +1,40 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* v7 Atlas (PLAN §6.12). Role tokens only: Day and Night differ in token values, never in structure. */
 @layer v7-components {
- :where(html[data-v7]) .v7-atlas {position:relative;min-height:100dvh;color:var(--v7-role-text-primary);background:var(--v7-role-surface-page);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
- :where(html[data-v7]) .v7-atlas[data-view="map"] {height:100dvh;overflow:hidden;background:var(--v7-role-surface-sunken);}
- :where(html[data-v7]) .v7-atlas-bar {position:absolute;inset:0 0 auto;z-index:3;display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:var(--v7-space-2);
-  padding:max(env(safe-area-inset-top),var(--v7-space-2)) var(--v7-space-2) var(--v7-space-2);
-  background:var(--v7-role-surface-overlay);
-  border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
- :where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-bar {position:sticky;top:0;}
- :where(html[data-v7]) .v7-atlas-title {font:500 var(--v7-type-subhead)/1.3 var(--v7-serif);min-width:0;}
- :where(html[data-v7]) .v7-atlas-bar .v7-segmented {min-width:calc(var(--v7-space-16) * 2);}
+ :where(html[data-v7]) .v7-atlas {
+  --atlas-bar-top-padding:max(env(safe-area-inset-top),var(--v7-space-2));
+  --atlas-bar-height:calc(var(--atlas-bar-top-padding) + var(--v7-touch) + var(--v7-space-2));
+  --atlas-control-surface:var(--v7-role-surface-overlay);
+  position:relative;min-height:100dvh;color:var(--v7-role-text-primary);background:var(--v7-role-surface-sunken);
+  font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);
+ }
+ :where(html[data-v7]) .v7-atlas[data-view] {height:100dvh;overflow:hidden;}
+ :where(html[data-v7]) .v7-atlas[data-view="list"] {display:flex;flex-direction:column;}
+ :where(html[data-v7]) .v7-atlas-bar {
+  position:absolute;inset:0 0 auto;z-index:var(--v7-z-sticky);display:flex;align-items:center;gap:var(--v7-space-2);
+  padding:var(--atlas-bar-top-padding) var(--v7-page-margin) var(--v7-space-2);
+  pointer-events:none;
+ }
+ :where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-bar {position:relative;flex:none;}
+ :where(html[data-v7]) .v7-atlas-bar > :not(.v7-sr-only) {pointer-events:auto;}
+ :where(html[data-v7]) .v7-atlas-bar-actions {margin-inline-start:auto;display:flex;gap:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas :is(.v7-atlas-bar,.v7-atlas-controls,.v7-atlas-compass) .v7-icon-button,
+ :where(html[data-v7]) .v7-atlas-search-field {
+  background:var(--atlas-control-surface);border:var(--v7-hairline) solid var(--v7-role-border-default);
+  border-radius:var(--v7-round);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1);
+ }
+ :where(html[data-v7]) .v7-atlas :is(.v7-atlas-bar,.v7-atlas-controls,.v7-atlas-compass) .v7-icon-button {
+  width:var(--v7-touch);height:var(--v7-touch);flex:none;
+ }
+ @media (prefers-reduced-motion:no-preference) and (prefers-reduced-transparency:no-preference) {
+  @supports (backdrop-filter:blur(10px)) {
+   :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-atlas {
+    --atlas-control-surface:color-mix(in srgb,var(--v7-role-surface-overlay) 88%,transparent);
+   }
+   :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-atlas :is(.v7-atlas-bar,.v7-atlas-controls,.v7-atlas-compass) .v7-icon-button,
+   :where(html[data-v7]:not([data-v7-reduce-effects])) .v7-atlas-search-field {backdrop-filter:blur(10px);}
+  }
+ }
  :where(html[data-v7]) .v7-atlas-state {display:grid;justify-items:center;align-content:center;gap:var(--v7-space-4);min-height:100dvh;padding:var(--v7-space-16) var(--v7-page-margin);text-align:center;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-atlas-meta {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-atlas-eyebrow {margin:0 0 var(--v7-space-1);color:var(--v7-role-text-secondary);font:600 var(--v7-type-caption)/var(--v7-leading-caption) var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;}
@@ -29,10 +54,6 @@
   border-radius:var(--v7-radius-3);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-atlas-legend li {display:flex;align-items:center;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-atlas-controls {position:absolute;right:var(--v7-space-4);bottom:calc(var(--v7-dock-height,env(safe-area-inset-bottom)) + var(--v7-space-4));z-index:2;display:grid;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-atlas-controls .v7-icon-button {background:var(--v7-role-surface-overlay);border-color:var(--v7-role-border-default);border-radius:var(--v7-round);color:var(--v7-role-text-primary);box-shadow:var(--v7-shadow-1);}
- /* Phones recentre only; desktops also get zoom buttons. */
- @media (max-width:1023px) {:where(html[data-v7]) .v7-atlas-controls .v7-icon-button:not(:last-child) {display:none;}}
-
  /* Star marks (SVG twins of the canvas marks). */
  :where(html[data-v7]) .v7-atlas-mark {width:var(--v7-space-5);height:var(--v7-space-5);flex:none;overflow:visible;}
  :where(html[data-v7]) .v7-atlas-mark-fill {fill:var(--v7-subject,var(--v7-role-text-secondary));}
@@ -46,17 +67,21 @@
  :where(html[data-v7]) .v7-atlas-mark-dotted {stroke-dasharray:2 3;}
 
  /* Search */
- :where(html[data-v7]) .v7-atlas-search {position:absolute;inset:calc(max(env(safe-area-inset-top),var(--v7-space-2)) + var(--v7-touch) + var(--v7-space-3)) var(--v7-space-2) auto;z-index:4;
-  max-height:min(60dvh,calc(100dvh - var(--v7-space-16) * 2));overflow:auto;padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);
-  background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
- :where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-search {position:sticky;top:calc(var(--v7-touch) + var(--v7-space-4));margin:var(--v7-space-2);}
- :where(html[data-v7]) .v7-atlas-search-field {display:flex;align-items:center;gap:var(--v7-space-2);min-height:var(--v7-field);padding-inline:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-default);
-  border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);color:var(--v7-role-text-secondary);}
- :where(html[data-v7]) .v7-atlas-search-field input {flex:1;min-width:0;min-height:var(--v7-touch);border:0;background:transparent;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas-search {position:relative;min-width:0;flex:1;max-width:42rem;}
+ :where(html[data-v7]) .v7-atlas-search-field {display:flex;align-items:center;gap:var(--v7-space-2);height:var(--v7-touch);padding-inline-start:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-atlas-search-field > svg {width:var(--v7-space-4);flex:none;}
+ :where(html[data-v7]) .v7-atlas-search-field input {flex:1;min-width:0;height:100%;padding:0;border:0;background:transparent;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+ :where(html[data-v7]) .v7-atlas-search-field input::-webkit-search-cancel-button {display:none;}
  :where(html[data-v7]) .v7-atlas-search-field input::placeholder {color:var(--v7-role-text-tertiary);}
- :where(html[data-v7]) .v7-atlas-search-field input:focus {outline:none;}
  :where(html[data-v7]) .v7-atlas-search-field:focus-within {outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);outline-offset:var(--v7-focus-gap);}
- :where(html[data-v7]) .v7-atlas-search > .v7-atlas-meta {margin-top:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-atlas .v7-atlas-search-field .v7-icon-button {border:0;background:transparent;box-shadow:none;backdrop-filter:none;}
+ :where(html[data-v7]) .v7-atlas-suggestions {
+  position:absolute;inset:calc(100% + var(--v7-space-2)) 0 auto;min-width:min(65vw,18rem);
+  max-height:min(60dvh,calc(100dvh - var(--atlas-bar-height) - var(--v7-space-4)));overflow:auto;
+  padding:var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);
+  background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);
+ }
+ :where(html[data-v7]) .v7-atlas-suggestions:not(:has(li,.v7-atlas-meta)) {display:none;}
  :where(html[data-v7]) :is(.v7-atlas-search,.v7-atlas-list,.v7-atlas-neighbours) ul {list-style:none;margin:0;padding:0;}
  :where(html[data-v7]) :is(.v7-atlas-search,.v7-atlas-list,.v7-atlas-neighbours) li > button {width:100%;min-height:var(--v7-touch);display:flex;align-items:center;gap:var(--v7-space-3);
   padding:var(--v7-space-2);border:0;border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);background:transparent;color:var(--v7-role-text-primary);text-align:left;}
@@ -65,7 +90,14 @@
  :where(html[data-v7]) .v7-atlas-row-text {flex:1;min-width:0;display:grid;gap:var(--v7-space-1);}
 
  /* List view: the accessible way through the Atlas. */
- :where(html[data-v7]) .v7-atlas-list {display:grid;gap:var(--v7-space-4);max-width:calc(var(--v7-space-20) * 9);margin-inline:auto;padding:var(--v7-space-4) var(--v7-page-margin) calc(var(--v7-dock-height,0px) + var(--v7-space-20) * 3);}
+ :where(html[data-v7]) .v7-atlas-list {
+  position:relative;z-index:1;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:grid;align-content:start;gap:var(--v7-space-4);
+  width:100%;max-width:calc(var(--v7-space-20) * 9);margin-inline:auto;padding:0 var(--v7-page-margin) var(--v7-space-4);
+  scroll-padding-block-start:32px;border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4) var(--v7-radius-4) 0 0;
+  background:color-mix(in srgb,var(--v7-role-surface-page) 94%,var(--v7-role-surface-sunken));
+ }
+ :where(html[data-v7]) .v7-atlas[data-sheet="expanded"] .v7-atlas-list {padding-block-end:var(--v7-sheet-max);}
+ :where(html[data-v7]) .v7-atlas[data-sheet="peek"] .v7-atlas-list {padding-block-end:var(--v7-atlas-sheet-h);}
  :where(html[data-v7]) .v7-atlas-list li > button {min-height:var(--v7-row);}
  :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-atlas-list li > button[aria-current="true"] .v7-atlas-meta {color:var(--v7-role-selection-fg);}
@@ -87,25 +119,16 @@
  @media (prefers-reduced-motion:reduce) {:where(html[data-v7]) .v7-atlas-sheet {transition:none;}}
 }
 
-:where(html[data-v7]) .v7-atlas-bar {
- inset:var(--v7-space-2) var(--v7-page-margin) auto;
- grid-template-columns:auto minmax(0,1fr) auto auto; gap:var(--v7-space-1);
- padding:0 var(--v7-space-1); border-radius:var(--v7-round); border:var(--v7-hairline) solid var(--v7-role-border-subtle);
- z-index:var(--v7-z-sticky);
+@layer v7-states {
+ /* The enclosing field supplies the token-based focus ring for the search input. */
+ :where(html[data-v7]) .v7-atlas-search-field input:focus-visible {outline:none;box-shadow:none;}
 }
-:where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-bar {margin-inline:var(--v7-page-margin);}
-:where(html[data-v7]) .v7-atlas[data-view="map"] .v7-atlas-bar {width:max-content;max-width:calc(100% - 2 * var(--v7-page-margin));right:auto;}
-:where(html[data-v7]) .v7-atlas-bar .v7-segmented {min-width:0;}
-:where(html[data-v7]) .v7-atlas-search-pill {
- min-width:0;min-height:44px;display:flex;align-items:center;gap:var(--v7-space-1);
- text-align:start;font-size:var(--v7-type-supporting);color:var(--v7-role-text-secondary);
-}
-:where(html[data-v7]) .v7-atlas-controls {top:calc(62px + env(safe-area-inset-top));bottom:auto;}
+
+:where(html[data-v7]) .v7-atlas-controls {top:var(--atlas-bar-height);bottom:auto;}
 :where(html[data-v7]) .v7-atlas :is(.v7-atlas-controls,.v7-atlas-bar,.v7-atlas-compass) {transition:opacity var(--v7-fast) var(--v7-ease-out);}
-:where(html[data-v7]) .v7-atlas[data-panning] :is(.v7-atlas-controls,.v7-atlas-bar,.v7-atlas-compass) {opacity:.2;pointer-events:none;}
+:where(html[data-v7]) .v7-atlas[data-panning] :is(.v7-atlas-controls,.v7-atlas-bar:not(:focus-within),.v7-atlas-compass) {opacity:.2;}
 @media (max-width:1023px) {
- :where(html[data-v7]) .v7-atlas-controls .v7-icon-button:nth-child(-n+2) {display:grid;}
- :where(html[data-v7]) .v7-atlas-controls .v7-icon-button:nth-child(n+3) {display:none;}
+ :where(html[data-v7]) .v7-atlas-controls .v7-icon-button:nth-child(n+2) {display:none;}
 }
 :where(html[data-v7]) .v7-atlas-compass {
  position:absolute;right:var(--v7-space-2);bottom:var(--v7-space-3);display:flex;gap:var(--v7-space-1);z-index:var(--v7-z-sticky);
@@ -120,9 +143,13 @@
 @media (max-width:360px) {
  :where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {padding-inline:var(--v7-space-2);}
 }
-:where(html[data-v7]) .v7-atlas[data-view="list"] .v7-atlas-sheet {position:sticky;bottom:var(--v7-dock-height);}
+:where(html[data-v7]) .v7-atlas-detail-dock[data-inset="edge"] {
+ inset-inline:var(--v7-space-2);bottom:env(safe-area-inset-bottom);
+ z-index:var(--v7-z-sheet);max-width:calc(var(--v7-space-20) * 8);pointer-events:none;
+}
+:where(html[data-v7]) .v7-atlas-detail-dock > .v7-atlas-sheet {position:relative;inset:auto;pointer-events:auto;}
 :where(html[data-v7]) .v7-atlas-subject h2 {
- position:sticky;top:56px;display:flex;align-items:center;gap:var(--v7-space-2);min-height:32px;
+ position:sticky;top:0;display:flex;align-items:center;gap:var(--v7-space-2);min-height:32px;
  background:var(--v7-role-surface-page);font:600 var(--v7-type-supporting)/1.2 var(--v7-sans);
 }
 :where(html[data-v7]) .v7-atlas-layer-options {display:grid;gap:var(--v7-space-3);}
@@ -138,4 +165,23 @@
 :where(html[data-v7]) .v7-atlas-key li {display:flex;align-items:center;gap:var(--v7-space-1);font-size:var(--v7-type-caption);}
 
 :where(html[data-v7]) .v7-atlas-map {bottom:var(--v7-dock-height,0px);}
+:where(html[data-v7]) .v7-atlas-map[data-covered] {opacity:.28;pointer-events:none;}
+:where(html[data-v7]) .v7-atlas-map[data-covered] :is(.v7-atlas-controls,.v7-atlas-compass) {visibility:hidden;}
+:where(html[data-v7]) .v7-atlas-filter-summary {position:relative;z-index:1;margin:0 var(--v7-page-margin) var(--v7-space-2);}
+:where(html[data-v7]) .v7-atlas[data-view="map"] .v7-atlas-filter-summary {position:absolute;top:var(--atlas-bar-height);left:0;right:calc(var(--v7-touch) + var(--v7-space-3));}
+:where(html[data-v7]) .v7-atlas[data-view="list"] > .v7-atlas-panel {overflow:auto;}
 :where(html[data-v7]) .v7-atlas-controls .v7-icon-button {width:44px;min-height:44px;}
+
+:where(html[data-v7]) .v7-atlas-impact {display:grid;gap:var(--v7-space-2);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+:where(html[data-v7]) .v7-atlas-impact > div {display:flex;justify-content:space-between;gap:var(--v7-space-3);padding-block:var(--v7-space-2);border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+:where(html[data-v7]) .v7-atlas-impact dd {flex:none;font-weight:600;}
+
+@media (max-width:520px) {
+ :where(html[data-v7]) .v7-atlas-bar:has(.v7-atlas-search) .v7-atlas-bar-actions {display:none;}
+ :where(html[data-v7]) .v7-atlas-suggestions {min-width:0;}
+ :where(html[data-v7]) .v7-atlas-search li > button {
+  display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 var(--v7-space-2);
+ }
+ :where(html[data-v7]) .v7-atlas-search li > button > .v7-atlas-mark {grid-row:span 2;align-self:start;}
+ :where(html[data-v7]) .v7-atlas-search li > button > .v7-atlas-meta {grid-column:2;}
+}

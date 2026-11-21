@@ -1,11 +1,15 @@
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {createRequire} from 'node:module';
 import {defineConfig,loadEnv} from 'vite';
+import type {Plugin} from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import {VitePWA} from 'vite-plugin-pwa';
 import {FLAG_DEFAULTS,resolveFlags} from './src/flags';
 import {prePaintPaper} from './src/app/paper';
 import {shouldBundlePushWorker, shouldStartPushWorker} from './src/lib/push-build-flag';
+import inkModel from './public/models/tutor-symbols/detypify-0.3.0-lemma-v1/manifest.json' with {type:'json'};
 
 const allowOverrides = process.env.VITE_ALLOW_FLAG_OVERRIDES === '1';
 const pushEnabled = shouldBundlePushWorker(FLAG_DEFAULTS.notificationsPush, allowOverrides);
@@ -16,17 +20,57 @@ const pushAutoStart = shouldStartPushWorker(FLAG_DEFAULTS.notificationsPush, all
 const installColour = resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell ? '#F8F5F0' : '#13171D';
 // G0 (v7 UX audit r3): the papers index.html paints before the app loads follow the build's v7 flag.
 const paper = prePaintPaper(resolveFlags({allowOverrides, envFlags: process.env.VITE_FLAGS ?? ''}).v7Shell);
+const tutorModelDir = `models/tutor-symbols/${inkModel.assetSetVersion}`;
+const tutorWasmPath = `${tutorModelDir}/${inkModel.files.wasm.path}`;
+
+function tutorSymbolAssets(): Plugin {
+ const wasm=inkModel.files.wasm;
+ const require=createRequire(import.meta.url);
+ const wasmPath=require.resolve(`${inkModel.runtime.package}/${wasm.path}`);
+ function verified(file:{path:string;bytes:number;sha256:string},bytes:Uint8Array) {
+  if(bytes.byteLength!==file.bytes||createHash('sha256').update(bytes).digest('hex')!==file.sha256) {
+   throw new Error(`Tutor symbol asset differs from its manifest: ${file.path}`);
+  }
+  return bytes;
+ }
+ return {
+  name:'lemma-tutor-symbol-assets',
+  configureServer(server) {
+   const path=`${server.config.base}${tutorWasmPath}`;
+   server.middlewares.use((request,response,next)=>{
+    if(request.url?.split('?')[0]!==path)return next();
+    response.setHeader('Content-Type','application/wasm');
+    response.end(verified(wasm,readFileSync(wasmPath)));
+   });
+  },
+  generateBundle:{
+   order:'post',
+   handler(_options,bundle) {
+    for(const file of [inkModel.files.model,inkModel.files.classes,...inkModel.notices]) {
+     verified(file,readFileSync(new URL(`./public/${tutorModelDir}/${file.path}`,import.meta.url)));
+    }
+    const runtime=bundle[tutorWasmPath];
+    if(runtime?.type!=='asset'||typeof runtime.source==='string')throw new Error('Tutor symbol WASM was not bundled');
+    verified(wasm,runtime.source);
+   },
+  },
+ };
+}
 
 // `vite build --mode android` bundles the same app for the Capacitor shell (N123): Capacitor serves the files from
 // the APK, so there is no service worker, no web push worker and no PWA manifest (android/ supplies all three natively).
 // It is a production build: it reads the same public Supabase settings as the website (.env.production).
 export default defineConfig(({mode})=>{const android=mode==='android';return {
  base:'/lemma/',
+ // Use the runtime asset Vite sees in the worker's ORT bundle as the versioned
+ // file verified by the asset loader. This packages exactly one copy of WASM.
+ worker:{rolldownOptions:{output:{assetFileNames:asset=>asset.names.includes(inkModel.files.wasm.path)
+  ?tutorWasmPath:'assets/[name]-[hash].[ext]'}}},
  ...(android?{define:Object.fromEntries(Object.entries(loadEnv('production',process.cwd(),'VITE_'))
   .filter(([key])=>!(key in process.env)).map(([key,value])=>['import.meta.env.'+key,JSON.stringify(value)]))}:{}),
  plugins:[
   {name:'lemma-pre-paint-paper',transformIndexHtml:(html:string)=>html.replaceAll('__PAPER_DAY__',paper.day).replaceAll('__PAPER_NIGHT__',paper.night)},
-  react(),tailwindcss(),
+  react(),tailwindcss(),tutorSymbolAssets(),
   // URL-only overrides require a distinct SW script URL: query params on the page
   // are not available to the service worker when it first evaluates.
   ...(allowOverrides&&!android ? [{
@@ -88,7 +132,8 @@ export default defineConfig(({mode})=>{const android=mode==='android';return {
     globPatterns:['**/*.{js,css,html,png,svg,woff2}'],
     // Store-listing screenshots are published for Play/PWA installability,
     // not app runtime. Keep them out of first-install Workbox downloads.
-    globIgnores:['**/screenshots/**','**/fonts/v7/**'],
+    // Model bytes are verified and cached lazily after Draw opens. The worker entry is part of the app shell.
+    globIgnores:['**/screenshots/**','**/fonts/v7/**','**/models/tutor-symbols/**'],
     cleanupOutdatedCaches:true,
     maximumFileSizeToCacheInBytes:4*1024*1024,
     navigateFallback:'/lemma/index.html',

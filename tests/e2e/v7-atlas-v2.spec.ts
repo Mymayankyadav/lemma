@@ -13,9 +13,9 @@ for(const width of [360,390])test('Atlas v3 facets, views and settings at '+widt
  await layers.click();await expect(sheet.getByRole('button',{name:'Bridges',exact:true})).toHaveCount(0);
  await sheet.getByRole('button',{name:'Themes',exact:true}).click();
  await expect(page.getByRole('region',{name:'Themes',exact:true}).getByRole('button',{name:'Compactness',exact:true})).toBeVisible();
- await page.getByRole('radio',{name:'Map',exact:true}).click();
+ await page.getByRole('button',{name:'Back to map',exact:true}).click();
  await expect(page.getByRole('region',{name:'Atlas map',exact:true})).toBeVisible();
- await page.getByRole('radio',{name:'List',exact:true}).click();
+ await page.getByRole('button',{name:'List',exact:true}).click();
  await page.locator('.v7-atlas-list ul button').first().click();
  await expect(page.getByRole('button',{name:'Show less',exact:true})).toBeVisible();
  await expect(page.getByRole('heading',{name:'Facets',exact:true})).toBeVisible();
@@ -82,6 +82,6 @@ test('an approved link stays out of the Bridges layer until it has been used',as
  await expect(page.locator('.v7-atlas-bridge')).toHaveCount(0);
  await page.goto(url('atlas?view=bridges').replace('atlasV3#','atlasV3,uiRepairV1#'));
  await expect(page.getByRole('region',{name:'Atlas map',exact:true})).toBeVisible();
- await expect(page.getByRole('radio',{name:'Map',exact:true})).toBeChecked();
+ await expect(page.getByRole('button',{name:'List',exact:true})).toBeVisible();
  await expect(page.getByRole('region',{name:'Bridges',exact:true})).toHaveCount(0);
 });

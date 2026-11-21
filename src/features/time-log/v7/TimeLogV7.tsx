@@ -1,4 +1,3 @@
-import {RulerTime} from '../../../ui/v7/RulerTime';
 import {focusedMilliseconds} from '../../../lib/studyTime';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useSearchParams} from 'react-router';
@@ -114,8 +113,7 @@ export default function TimeLogV7(){
    <div className="v7-log-add">
     <Field label="What you studied" value={intent} onChange={event=>setIntent(event.target.value)} placeholder="e.g. Read Rudin ch. 2"/>
     <DatePicker label="Day" value={day} onChange={setDay}/>
-    <RulerTime label="Start" value={start} onChange={setStart}/>
-    <RulerTime label="End" value={end} onChange={setEnd}/>
+    <TimeRange ruler start={start} end={end} onChange={(from,to)=>{setStart(from);setEnd(to);}}/>
     {problem&&<p role="alert" className="v7-error">{problem}</p>}
    </div>
   </Sheet>

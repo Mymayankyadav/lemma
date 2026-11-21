@@ -820,9 +820,19 @@ export class LiveAdapter implements LemmaApi {
 
  }
  async setNoteStatus(...args: Parameters<LemmaApi['setNoteStatus']>): ReturnType<LemmaApi['setNoteStatus']> {
-  const [no,status]=args,db=liveClient(),uid=await owner(db)
-  const {data,error}=await db.from('notes').update({status}).eq('no',no).eq('user_id',uid).select('id').single()
-  checked({data,error})
+  const [no,status,guard]=args,db=liveClient()
+  const checkAccount=(uid=authOwner())=>{
+   if(guard&&(uid!==guard.ownerId||authOwner()!==guard.ownerId||authGeneration()!==guard.generation))
+    throw new LemmaError('auth','The card account changed.')
+  }
+  checkAccount()
+  const uid=await owner(db)
+  checkAccount(uid)
+  let write=db.from('notes').update({status}).eq('no',no).eq('user_id',uid)
+  if(guard)write=write.eq('id',guard.noteId).eq('status',guard.expectedStatus)
+  const result=await write.select('id').single()
+  checkAccount(uid)
+  checked(result)
  }
  async addComment(...args: Parameters<LemmaApi['addComment']>): ReturnType<LemmaApi['addComment']> {
   const [no,body]=args,db=liveClient(),uid=await owner(db)

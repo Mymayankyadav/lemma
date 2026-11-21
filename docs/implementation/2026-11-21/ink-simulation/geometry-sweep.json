@@ -1,0 +1,391 @@
+{
+  "corpus": "980 seeded traces, 490 per split with 10 simulated styles each. Same stroke fixtures and model scores for both variants.",
+  "selection": "Compared the requested explicit-only floors 0.94, 0.90 and 0.86 on tuning. Of those floors, 0.86 recovered the most correct complete shapes at zero wrong or unannotated manual suggestions. Retained the existing 0.07 runner-up gap because lowering it gave no gain. Exploratory lower floors were recorded without choosing them.",
+  "before": {
+    "minimumSimilarity": 0.94,
+    "minimumSeparation": 0.07
+  },
+  "after": {
+    "minimumSimilarity": 0.86,
+    "minimumSeparation": 0.07
+  },
+  "policy": "The geometry shapes, independent extension thresholds, finished check, model scores and calibrated automatic policy were held fixed. A geometry suggestion still requires explicit acceptance.",
+  "visibleStrip": "Reserve up to three distinct completion choices, then take up to three matches from the first five ranked recognized choices, excluding reserved glyphs. Both before and after use that rule unless the field explicitly names Matches-first.",
+  "countsByManualThreshold": {
+    "tuning": [
+      {
+        "score": 0.94,
+        "gap": 0.07,
+        "completeCorrect": 2,
+        "completeWrong": 0,
+        "partialShorter": 1,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "equal": 1,
+          "not-equal": 1
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.92,
+        "gap": 0.07,
+        "completeCorrect": 3,
+        "completeWrong": 0,
+        "partialShorter": 4,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "less-than": 1,
+          "equal": 1,
+          "not-equal": 1
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.9,
+        "gap": 0.07,
+        "completeCorrect": 6,
+        "completeWrong": 0,
+        "partialShorter": 4,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "less-than": 1,
+          "greater-than": 1,
+          "equal": 1,
+          "not-equal": 3
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.88,
+        "gap": 0.07,
+        "completeCorrect": 10,
+        "completeWrong": 0,
+        "partialShorter": 7,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 5,
+          "less-than": 1,
+          "greater-than": 1,
+          "equal": 3
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.86,
+        "gap": 0.07,
+        "completeCorrect": 14,
+        "completeWrong": 0,
+        "partialShorter": 10,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 7,
+          "less-than": 2,
+          "greater-than": 1,
+          "equal": 4
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.84,
+        "gap": 0.07,
+        "completeCorrect": 18,
+        "completeWrong": 0,
+        "partialShorter": 11,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 7,
+          "less-than": 3,
+          "greater-than": 3,
+          "equal": 5
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.82,
+        "gap": 0.07,
+        "completeCorrect": 21,
+        "completeWrong": 0,
+        "partialShorter": 13,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 7,
+          "less-than": 4,
+          "greater-than": 5,
+          "equal": 5
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.8,
+        "gap": 0.07,
+        "completeCorrect": 22,
+        "completeWrong": 0,
+        "partialShorter": 15,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 7,
+          "less-than": 5,
+          "greater-than": 5,
+          "equal": 5
+        },
+        "extras": {}
+      }
+    ],
+    "test": [
+      {
+        "score": 0.94,
+        "gap": 0.07,
+        "completeCorrect": 4,
+        "completeWrong": 0,
+        "partialShorter": 1,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "greater-than": 1,
+          "equal": 1,
+          "not-equal": 1,
+          "less-than": 1
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.92,
+        "gap": 0.07,
+        "completeCorrect": 8,
+        "completeWrong": 0,
+        "partialShorter": 6,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "less-than": 2,
+          "greater-than": 2,
+          "equal": 2,
+          "not-equal": 2
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.9,
+        "gap": 0.07,
+        "completeCorrect": 9,
+        "completeWrong": 0,
+        "partialShorter": 7,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "less-than": 2,
+          "greater-than": 2,
+          "equal": 2,
+          "not-equal": 3
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.88,
+        "gap": 0.07,
+        "completeCorrect": 12,
+        "completeWrong": 0,
+        "partialShorter": 7,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "less-than": 2,
+          "greater-than": 2,
+          "equal": 2,
+          "not-equal": 6
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.86,
+        "gap": 0.07,
+        "completeCorrect": 16,
+        "completeWrong": 0,
+        "partialShorter": 10,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "not-equal": 9,
+          "less-than": 3,
+          "greater-than": 2,
+          "equal": 2
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.84,
+        "gap": 0.07,
+        "completeCorrect": 22,
+        "completeWrong": 0,
+        "partialShorter": 12,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "equal": 5,
+          "not-equal": 9,
+          "less-than": 4,
+          "greater-than": 4
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.82,
+        "gap": 0.07,
+        "completeCorrect": 24,
+        "completeWrong": 0,
+        "partialShorter": 14,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "equal": 7,
+          "not-equal": 9,
+          "less-than": 4,
+          "greater-than": 4
+        },
+        "extras": {}
+      },
+      {
+        "score": 0.8,
+        "gap": 0.07,
+        "completeCorrect": 28,
+        "completeWrong": 0,
+        "partialShorter": 18,
+        "partialOther": 0,
+        "ambiguous": 0,
+        "unsupported": 0,
+        "wrongIntent": 0,
+        "invalid": 0,
+        "symbols": {
+          "equal": 8,
+          "not-equal": 10,
+          "less-than": 5,
+          "greater-than": 5
+        },
+        "extras": {}
+      }
+    ]
+  },
+  "policyVerification": {
+    "tuning": {
+      "complete": 240,
+      "geometryOnlyCompleted": 40,
+      "partial": 100,
+      "partialValidShorter": 80,
+      "independentCompletionChanged": 0,
+      "derivedCompletionChanged": 6,
+      "finishedModelGateGained": 0,
+      "finishedModelGateLost": 0,
+      "before": {
+        "unfilteredCompletedMatchAt3": 202,
+        "geometryOnlyMatchAt3": 2,
+        "unfilteredPartialShorterMatchAt3": 41,
+        "matcherExtensionAt3": 41,
+        "visibleCompletedMatches": 202,
+        "visibleCompletedAnyGroup": 202,
+        "visibleGeometryOnlyMatches": 2,
+        "visiblePartialShorter": 41,
+        "visiblePartialExtension": 41,
+        "priorMatchesFirstPartialExtension": 18
+      },
+      "after": {
+        "unfilteredCompletedMatchAt3": 214,
+        "geometryOnlyMatchAt3": 14,
+        "unfilteredPartialShorterMatchAt3": 50,
+        "matcherExtensionAt3": 41,
+        "visibleCompletedMatches": 214,
+        "visibleCompletedAnyGroup": 214,
+        "visibleGeometryOnlyMatches": 14,
+        "visiblePartialShorter": 50,
+        "visiblePartialExtension": 41,
+        "priorMatchesFirstPartialExtension": 20
+      }
+    },
+    "test": {
+      "complete": 240,
+      "geometryOnlyCompleted": 40,
+      "partial": 100,
+      "partialValidShorter": 80,
+      "independentCompletionChanged": 0,
+      "derivedCompletionChanged": 7,
+      "finishedModelGateGained": 0,
+      "finishedModelGateLost": 0,
+      "before": {
+        "unfilteredCompletedMatchAt3": 204,
+        "geometryOnlyMatchAt3": 4,
+        "unfilteredPartialShorterMatchAt3": 41,
+        "matcherExtensionAt3": 53,
+        "visibleCompletedMatches": 204,
+        "visibleCompletedAnyGroup": 204,
+        "visibleGeometryOnlyMatches": 4,
+        "visiblePartialShorter": 41,
+        "visiblePartialExtension": 53,
+        "priorMatchesFirstPartialExtension": 29
+      },
+      "after": {
+        "unfilteredCompletedMatchAt3": 216,
+        "geometryOnlyMatchAt3": 16,
+        "unfilteredPartialShorterMatchAt3": 50,
+        "matcherExtensionAt3": 53,
+        "visibleCompletedMatches": 216,
+        "visibleCompletedAnyGroup": 216,
+        "visibleGeometryOnlyMatches": 16,
+        "visiblePartialShorter": 50,
+        "visiblePartialExtension": 53,
+        "priorMatchesFirstPartialExtension": 29
+      }
+    }
+  }
+}

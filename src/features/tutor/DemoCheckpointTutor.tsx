@@ -1,5 +1,7 @@
 import {Disclosure} from '../../ui/v7/Disclosure';
-import {TutorImage,useTutorInk} from './TutorInk';
+import {useTutorInk} from './TutorInk';
+import {TutorAnswer,tutorAnswerText} from './TutorAnswer';
+import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
 import {rasterizeInk} from '../../ui/v7/ink/images';
 import {removeSubmittedInk,uploadTutorImage} from '../../data/tutor/ink-storage';
 import {IMAGE_ONLY_ANSWER,type TutorImageDraft} from '../../data/tutor/attachment-types';
@@ -197,7 +199,16 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   },[live,activeApi,pendingId,refresh])
   async function saveQuestion(text=question.text,options:SendOptions={}) {
     const inkDraft=ink.draft;
-    const hasImages=scratchEnabled&&!options.keepDraft&&Boolean(inkDraft.strokes.length||inkDraft.photos.length);
+    const ids=inkDraft.inlineImages?referencedImageIds(text):undefined;
+    if(scratchEnabled&&!options.keepDraft&&inkDraft.inlineImages) {
+      if(inkDraft.strokes.length||inkDraft.editingDrawing&&ids!.includes(inkDraft.editingDrawing.id)) {
+        setError('Insert or cancel the current drawing before sending.');return;
+      }
+      if(ids!.some(id=>!inkDraft.photos.some(image=>image.id===id))) {
+        setError('An inserted image could not be found. Remove its chip or reopen the drawing.');return;
+      }
+    }
+    const hasImages=scratchEnabled&&!options.keepDraft&&Boolean(ids?ids.length:inkDraft.strokes.length||inkDraft.photos.length);
     if(session?.thread.offline&&hasImages&&!readOnly) {
       await ink.update({...inkDraft,queuedText:text}).catch(()=>{});
       return;
@@ -209,11 +220,11 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     try {
       const local=!options.keepDraft && attachedLocal.text ? previewLocalTutorExcerpt(attachedLocal.text) : undefined
       const includeObjective=options.includeObjective || (!options.keepDraft && Boolean(context.text))
-      const images:TutorImageDraft[]=[...inkDraft.photos];
-      if(hasImages&&inkDraft.strokes.length) {
+      const images:TutorImageDraft[]=ids?ids.map(id=>inkDraft.photos.find(image=>image.id===id)!):[...inkDraft.photos];
+      if(hasImages&&!inkDraft.inlineImages&&inkDraft.strokes.length) {
         const drawingId=inkDraft.drawingId??crypto.randomUUID();
-        if(!inkDraft.drawingId)await ink.update(current=>({...current,drawingId}));
-        images.unshift({id:drawingId,kind:'drawing',mimeType:'image/png',blob:await rasterizeInk(inkDraft.strokes,inkDraft.width,inkDraft.accent)});
+        if(!inkDraft.drawingId)await ink.update(current=>current.strokes===inkDraft.strokes?({...current,drawingId}):current);
+        images.push({id:drawingId,kind:'drawing',mimeType:'image/png',blob:await rasterizeInk(inkDraft.strokes,inkDraft.width,inkDraft.accent)});
       }
       const assertCurrent=()=>{
         if(live&&(authOwner()!==ownerId||authGeneration()!==generation))throw new Error('Your account changed.');
@@ -277,7 +288,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
     if(!error)void saveQuestion(ink.draft.queuedText);
   },[ink.draft.queuedText,session?.thread.offline,session?.thread.head.pendingTurnId,busy,readOnly,error,connectorLoading])
   const localExcerpt=pending?.snapshot.localExcerpt
-  const handoff=pending?[pending.snapshot.question,...pending.snapshot.selectedContext.map(x=>x.excerpt),
+  const handoff=pending?[tutorAnswerText(pending.snapshot.question,pending.snapshot.attachments),...pending.snapshot.selectedContext.map(x=>x.excerpt),
     ...(localExcerpt ? ['Local excerpt (learner-provided; not a citation):\n'+localExcerpt.text] : []),
   ].join('\n\n'):''
   async function action(run:()=>Promise<unknown>) {
@@ -417,12 +428,12 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const transcript=<>
     {page&&loadEarlier}
     {allTurns.map(turn=>turn.status==='completed'?<article key={turn.id} className={page?"turn":undefined} aria-label={turn.finalReply.provenance.kind==='manual-import'?'Imported reply':'Tutor reply'}>
-      {page&&<div className="ans"><div className="msg u"><div className="bd">{turn.snapshot.question!==IMAGE_ONLY_ANSWER&&<MathText source={turn.snapshot.question}/>}
-        {turn.snapshot.attachments?.map(attachment=><TutorImage key={attachment.id} owner={ownerId??''} attachment={attachment}/>)}</div></div></div>}
+      {page&&<div className="ans"><div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
+        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div></div>}
       <div className={page?"msg a":undefined} data-latest-reply={page&&turn.id===lastReplyId?true:undefined}>
       <h3 className={page?"who":undefined}>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':page?'Tutor · Q'+turn.sequence:'Tutor reply'}</h3>
       {!page&&turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
-      {!page&&<p className="v7-field-hint">{turn.snapshot.question}</p>}
+      {!page&&<TutorAnswer question={turn.snapshot.question} attachments={turn.snapshot.attachments} owner={ownerId??''}/>}
       <div className="bd"><MathText source={turn.finalReply.body}/></div>
       </div>
       <div className={page?"tutor-details":undefined}>
@@ -447,8 +458,8 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       <ReplyEditor live={live} draftKey={draftKey+':reply:'+turn.id} busy={busy} completed onConfirm={async()=>false}/>
       </div>
     </article>:page?<div key={turn.id} className="ans">
-      <div className="msg u"><div className="bd">{turn.snapshot.question!==IMAGE_ONLY_ANSWER&&<MathText source={turn.snapshot.question}/>}
-        {turn.snapshot.attachments?.map(attachment=><TutorImage key={attachment.id} owner={ownerId??''} attachment={attachment}/>)}</div></div>
+      <div className="msg u"><div className="bd"><TutorAnswer question={turn.snapshot.question}
+        attachments={turn.snapshot.attachments} owner={ownerId??''}/></div></div>
       <span className="ctag">{turn.status==='cancelled'?'Cancelled':'Saved'}</span>
     </div>:null)}
     {!page&&allTurns.filter(t=>t.status==='cancelled').map(t=><p key={t.id}>Cancelled question · {t.snapshot.question}</p>)}
@@ -459,7 +470,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       </div>)}
     </Disclosure>}  </>
   if(page)return <TutorChat page={page} turns={allTurns} draft={question.text} onChange={question.change}
-    onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={recoveryOnly} pending={!!pending} offline={!!thread?.offline}
+    onSend={saveQuestion} ink={scratchEnabled?ink:undefined} canQueueImage={Boolean(thread?.offline&&!readOnly&&!pending&&!thread.outbox?.length)} readOnly={readOnly||busy} pending={!!pending} offline={!!thread?.offline}
     draftWarning={draftWarning} hasContext={!!(context.text||attachedLocal.text||attachedSource)}
     canSend={!!session&&!recoveryOnly&&!busy&&!connectorLoading&&!pending&&!thread?.outbox?.length&&thread?.canSubmit!==false&&preview?.kind!=='preview'}
     listenerSeenAt={thread?.listenerSeenAt} resumePrompt={delivery

@@ -127,7 +127,7 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
  return <div className="v7-settings-body">
   <Group title="Memory">
    <ValueRow label="Target recall" value={retention+'%'} hint="Higher recall means more reviews each day" onOpen={()=>{setRecall(retention);editor.setOpen({kind:'recall'});}}/>
-   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n===1?'card':'cards',onSave:value=>{void save({newPerDay:value},{newPerDay:settings.newPerDay});}})}/>
+   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n+(n===1?' card':' cards'),onSave:value=>{void save({newPerDay:value},{newPerDay:settings.newPerDay});}})}/>
   </Group>
   <Group title="Focus">
    <ValueRow label="Default mode" value={modeWord[focus.mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Default mode',value:focus.mode,options:[
@@ -140,7 +140,7 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
    <SwitchRow label="Ask about urges to switch" checked={attention.urge_prompt} disabled={busy} onChange={value=>{void save({attention:{...attention,urge_prompt:value}},{attention});}}/>
   </Group>
   <Group title="Review time">
-   <ValueRow label="Cards a day" value={String(budget.cards)} onOpen={()=>editor.setOpen({kind:'number',title:'Review cards a day',value:budget.cards,min:0,max:2000,unit:n=>n===1?'card':'cards',onSave:value=>budgetWith({cards:value})})}/>
+   <ValueRow label="Cards a day" value={String(budget.cards)} onOpen={()=>editor.setOpen({kind:'number',title:'Review cards a day',value:budget.cards,min:0,max:2000,unit:n=>n+(n===1?' card':' cards'),onSave:value=>budgetWith({cards:value})})}/>
    <ValueRow label="Minutes a day" value={formatDuration(budget.minutes)} onOpen={()=>editor.setOpen({kind:'number',title:'Review minutes a day',value:budget.minutes,min:0,max:720,unit:'min',onSave:value=>budgetWith({minutes:value})})}/>
    <SwitchRow label="Keep review time in day plans" checked={budget.reserve_in_plans} disabled={busy} onChange={value=>budgetWith({reserve_in_plans:value})}/>
   </Group>
@@ -219,7 +219,7 @@ export function ReminderLists({settings}:{settings:Settings}){
    <SwitchRow label="Reminders" checked={value.enabled===true} disabled={busy} onChange={enabled=>{put({enabled});if(enabled)void requestNotificationPermission();}}/>
    <ValueRow label="Schedule" value={scheduleWord[mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Schedule',value:mode,options:(Object.keys(scheduleWord) as (keyof typeof scheduleWord)[]).map(key=>({value:key,label:scheduleWord[key]})),onPick:((next:NotifyPrefs['mode'])=>put({mode:next})) as (value:never)=>void})}/>
    <ValueRow label="Preferred study time" value={value.studyTime??'09:00'} onOpen={()=>editor.setOpen({kind:'time',title:'Preferred study time',value:value.studyTime??'09:00',onSave:studyTime=>put({studyTime})})}/>
-   <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n===1?'reminder':'reminders',onSave:maxPerDay=>put({maxPerDay})})}/>
+   <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n+(n===1?' reminder':' reminders'),onSave:maxPerDay=>put({maxPerDay})})}/>
   </Group>
   <Group title="Remind me about">
    {rows.switches.map(({key,label})=><SwitchRow key={key} label={label} checked={value.kinds?.[key]??false} disabled={busy} onChange={on=>put({kinds:{[key]:on}})}/>)}

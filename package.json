@@ -42,6 +42,7 @@
     "lucide-react": "1.64.0",
     "marked": "18.1.2",
     "motion": "12.43.0",
+    "onnxruntime-web": "1.27.0",
     "pdfjs-dist": "6.4.299",
     "react": "19.3.1",
     "react-dom": "19.3.1",

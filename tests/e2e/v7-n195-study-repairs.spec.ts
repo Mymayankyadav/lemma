@@ -47,7 +47,7 @@ test('Atlas List and populated layers survive reload and Back returns to the pre
  await expect(thematicMap.getByRole('button',{name:'Compactness',exact:true})).toBeVisible();
  await expect(layers).toBeVisible();
  await page.reload();await expect(thematicMap).toBeVisible();
- await page.getByRole('radio',{name:'List',exact:true}).click();
+ await page.getByRole('button',{name:'List',exact:true}).click();
  await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
  await page.reload();await expect(page.getByRole('region',{name:'Concept list'})).toBeVisible();
  await page.goBack();await expect(thematicMap).toBeVisible();

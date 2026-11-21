@@ -1,0 +1,50 @@
+.lemma-tutor .tutor-answer-editor {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: max(44px, calc(1.4em + 22px));
+  max-height: 120px;
+  overflow-y: auto;
+  padding: 11px 0;
+  outline: none;
+  color: var(--v7-role-text-primary);
+  caret-color: var(--v7-role-action-bg);
+  font: 400 var(--v7-type-body)/1.4 var(--v7-sans);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.lemma-tutor .tutor-answer-editor[data-empty]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  inset-inline: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--v7-role-text-disabled);
+  pointer-events: none;
+}
+.lemma-tutor .tutor-answer-editor:focus-visible {outline:none;box-shadow:none;}
+.lemma-tutor .field:has(:is(textarea,.tutor-answer-editor):focus-visible) {
+  outline:var(--v7-focus-width) solid var(--v7-role-focus-ring);
+  outline-offset:var(--v7-focus-gap);
+}
+.lemma-tutor .tutor-answer-chip {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: baseline;
+  margin-inline: 2px;
+  border-radius: var(--v7-round);
+  background: var(--v7-role-selection-subtle);
+  color: var(--v7-role-selection-fg);
+  white-space: nowrap;
+}
+.lemma-tutor .tutor-answer-chip button {
+  min-height: 32px;
+  border: 0;
+  padding: 0 6px;
+  color: inherit;
+  background: transparent;
+  font: 600 var(--v7-type-caption)/1 var(--v7-sans);
+}
+.lemma-tutor .tutor-answer-chip button + button {min-width: 32px;}
+.lemma-tutor .keyboard-composer[data-symbols] .tutor-answer-editor {max-height: 76px;}

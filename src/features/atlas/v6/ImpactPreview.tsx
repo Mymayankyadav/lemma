@@ -2,12 +2,14 @@ import {useAtlasDialog} from './useAtlasDialog';
 import {useMemo,useState} from 'react';
 import type {AtlasGraph} from '../../../data/types';
 import {checkAtlasLink,describeAtlasMergeImpact,type AtlasEditNode} from './impact';
+import {Button,Sheet} from '../../../ui/v7/components';
+import {AtlasChoice} from '../v7/AtlasChoice';
 
 /** Read-only plan for an Atlas edit. The currently available LemmaApi cannot
  * create/edit/reparent/link/merge concepts, so never pretend to save changes. */
 export default function AtlasImpactPreview({
- graph,sourceId,onClose,
-}:{graph:AtlasGraph;sourceId:string;onClose:()=>void}){
+ graph,sourceId,onClose,kit=false,
+}:{graph:AtlasGraph;sourceId:string;onClose:()=>void;kit?:boolean}){
  const dialog=useAtlasDialog();
  const source=graph.concepts.find(c=>c.id===sourceId);
  const [targetId,setTargetId]=useState(
@@ -30,6 +32,25 @@ export default function AtlasImpactPreview({
   .map(link=>({leftId:link.fromId,rightId:link.toId}));
  const impact=choice?describeAtlasMergeImpact(nodes,sourceId,targetId,related):null;
  if(!source)return null;
+ if(kit)return <Sheet open title={'Preview changes to '+source.name} onClose={onClose} focusTitle
+  footer={<Button variant="ghost" onClick={onClose}>Close preview</Button>}>
+  <div className="v7-form-stack">
+   <p className="v7-supporting">Preview only. To save a change, use Edit concept and review its confirmation.</p>
+   <AtlasChoice label="Target concept" value={targetId} options={graph.concepts.filter(concept=>concept.id!==sourceId)} onChange={setTargetId}/>
+   <AtlasChoice label="Preview link type" value={kind} options={[{id:'parent',name:'Parent'},{id:'prerequisite',name:'Prerequisite'}]}
+    onChange={value=>setKind(value as 'parent'|'prerequisite')}/>
+   {cycle&&<p role="status" className="v7-supporting">{cycle.ok?'No cycle detected in current data.':cycle.reason}</p>}
+   {impact&&<section aria-label="Merge impact preview" className="v7-form-stack">
+    <h3 className="v7-subhead">If this idea were merged into {choice?.name}</h3>
+    <dl className="v7-atlas-impact">
+     <div><dt>Child concepts</dt><dd>{impact.childConcepts}</dd></div>
+     <div><dt>Incoming prerequisites</dt><dd>{impact.incomingPrerequisites}</dd></div>
+     <div><dt>Outgoing prerequisites</dt><dd>{impact.outgoingPrerequisites}</dd></div>
+     <div><dt>Related links</dt><dd>{impact.relatedConcepts}</dd></div>
+    </dl>
+   </section>}
+  </div>
+ </Sheet>;
  return <dialog {...dialog} aria-label={'Preview Atlas edits for '+source.name}
   onCancel={e=>{e.preventDefault();onClose()}}
   onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();onClose()}}}

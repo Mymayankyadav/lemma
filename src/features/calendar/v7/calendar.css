@@ -2,6 +2,10 @@
 /* PLAN §6.5 Calendar Day. Role tokens only; subject colour arrives through .v7-subject-N. */
 @layer v7-components {
 :where(html[data-v7]) .v7-cal {--v7-gap:6px;display:grid;gap:var(--v7-gap);align-content:start;}
+:where(html[data-v7]) .v7-cal-navigation {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-cal-navigation .v7-hub-tabs {flex:1;min-width:0;}
+:where(html[data-v7]) .v7-cal-period-actions {display:flex;flex:none;}
+:where(html[data-v7]) .v7-cal > .v7-date-pill:empty {display:none;}
 :where(html[data-v7]) .v7-cal-dateRow {display:flex;align-items:center;gap:var(--v7-space-1);min-width:0;}
 :where(html[data-v7]) .v7-cal-today {margin-left:auto;flex:none;}
  :where(html[data-v7]) .v7-cal-dateActions svg {width:16px;height:16px;}
@@ -23,8 +27,8 @@
  :where(html[data-v7]) .v7-cal-empty-state {display:grid;justify-items:center;gap:var(--v7-space-2);padding:var(--v7-space-4) 0;text-align:center;}
  /* IL5 (P3): over the middle of the grid's visible hours; the grid stays tappable through it. */
  :where(html[data-v7]) .v7-cal-day-stack {position:relative;display:grid;gap:inherit;}
- :where(html[data-v7]) .v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);padding:0;pointer-events:none;}
- :where(html[data-v7]) .v7-cal-day-stack > .v7-cal-empty-state .v7-cal-empty {padding:var(--v7-space-1) var(--v7-space-3);border-radius:var(--v7-round);background:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;z-index:4;transform:translateY(-50%);padding:0;pointer-events:none;}
+ :where(html[data-v7]) .v7-cal-day-stack > .v7-cal-empty-state .v7-empty-moment {padding:var(--v7-space-3);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-page);}
  :where(html[data-v7]) .v7-cal-empty {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
  :where(html[data-v7]) .v7-cal-skeleton {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-cal-skeleton > span {display:block;height:64px;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);}
@@ -34,7 +38,7 @@
  /* V11 (v7 UX audit r3): the gutters grow with the text (they were fixed, so "12:00" lost a digit at 130%); 44 and 36 px at 100%. */
  :where(html[data-v7]) .v7-cal-plane {position:relative;display:grid;grid-template-columns:max(44px,calc(2.2rem + var(--v7-space-2))) minmax(0,1fr);}
  :where(html[data-v7]) .v7-cal-gutter {position:relative;}
- :where(html[data-v7]) .v7-cal-gutter time {position:absolute;right:var(--v7-space-2);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-cal-gutter time {position:absolute;inset-inline:0 var(--v7-space-2);text-align:end;color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
 :where(html[data-v7]) .v7-cal-gutter .v7-cal-now-pill {position:absolute;right:2px;padding:3px var(--v7-space-2);border-radius:var(--v7-round);background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);font:600 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;z-index:3;}
  :where(html[data-v7]) .v7-cal-slots {position:relative;min-width:0;cursor:crosshair;}
  :where(html[data-v7]) .v7-cal-slots > i {position:absolute;inset-inline:0;border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);pointer-events:none;}
@@ -81,18 +85,23 @@
  :where(html[data-v7]) .v7-cal-link {position:absolute;right:var(--v7-space-1);bottom:var(--v7-space-1);width:12px;height:12px;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-cal-block [data-grid-resize] {position:absolute;inset-inline:0;bottom:0;height:10px;cursor:ns-resize;touch-action:none;}
  /* Week: the strip is the column header; 36 px gutter, 48 px hours; bars on a phone, titles from 600 px. */
- :where(html[data-v7]) .v7-wk {min-width:0;display:grid;gap:var(--v7-space-1);}
- :where(html[data-v7]) .v7-wk-head {display:grid;grid-template-columns:max(36px,calc(1.9rem + var(--v7-space-1))) repeat(7,minmax(0,1fr));align-items:end;gap:2px;}
- :where(html[data-v7]) .v7-wk-day {min-height:var(--v7-touch);display:grid;justify-items:center;align-content:center;gap:2px;border:0;background:transparent;color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-wk {
+  --v7-wk-hour-gutter:max(36px,calc(2.2rem + var(--v7-space-1)));
+  --v7-wk-day-min:max(36px,1.25rem);
+  min-width:0;display:grid;gap:var(--v7-space-1);overflow-x:auto;
+  grid-template-columns:minmax(calc(var(--v7-wk-hour-gutter) + 7 * var(--v7-wk-day-min) + 12px),1fr);
+ }
+ :where(html[data-v7]) .v7-wk-head {display:grid;grid-template-columns:calc(var(--v7-wk-hour-gutter) - 2px) repeat(7,minmax(0,1fr));align-items:end;gap:2px;}
+ :where(html[data-v7]) .v7-wk-day {min-height:var(--v7-touch);padding-inline:0;display:grid;justify-items:center;align-content:center;gap:2px;border:0;background:transparent;color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-wk-day small {color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);}
- :where(html[data-v7]) .v7-wk-day > span {width:32px;height:32px;display:grid;place-items:center;border-radius:var(--v7-round);font:600 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-wk-day > span {width:max(32px,1.25rem);height:max(32px,1.25rem);display:grid;place-items:center;border-radius:var(--v7-round);font:600 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
 :where(html[data-v7]) .v7-wk-day[data-today="true"] > span {box-shadow:inset 0 0 0 1.5px var(--v7-role-text-primary);}
 :where(html[data-v7]) .v7-wk-day[data-selected="true"] > span {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
 :where(html[data-v7]) .v7-wk-day em {min-height:12px;color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-style:normal;white-space:nowrap;}
- :where(html[data-v7]) .v7-wk-scroll {max-height:62dvh;overflow-y:auto;overscroll-behavior:contain;border-radius:var(--v7-radius-3);}
- :where(html[data-v7]) .v7-wk-plane {position:relative;display:grid;grid-template-columns:max(36px,calc(1.9rem + var(--v7-space-1))) minmax(0,1fr);}
+ :where(html[data-v7]) .v7-wk-scroll {max-height:62dvh;overflow-y:auto;overscroll-behavior-y:contain;border-radius:var(--v7-radius-3);}
+ :where(html[data-v7]) .v7-wk-plane {position:relative;display:grid;grid-template-columns:var(--v7-wk-hour-gutter) minmax(0,1fr);}
  :where(html[data-v7]) .v7-wk-gutter {position:relative;}
-:where(html[data-v7]) .v7-wk-gutter time {position:absolute;right:var(--v7-space-1);color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+:where(html[data-v7]) .v7-wk-gutter time {position:absolute;inset-inline:0 var(--v7-space-1);text-align:end;color:var(--v7-role-text-secondary);font:500 var(--v7-type-caption)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-wk-cols {position:relative;display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;}
  :where(html[data-v7]) .v7-wk-cols > i {position:absolute;inset-inline:0;border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);pointer-events:none;}
  :where(html[data-v7]) .v7-wk-col {position:relative;min-width:0;}
@@ -283,10 +292,18 @@
  display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);width:100%;
 }
 :where(html[data-v7]) .v7-cal-block[data-kind="suggested"] button small {flex:none;}
-:where(html[data-v7]) .v7-wk-block[data-kind="suggested"] {border:1px dashed var(--v7-role-selection-fg);color:var(--v7-role-selection-fg);}
+:where(html[data-v7]) .v7-wk-block[data-kind="suggested"] {
+ place-items:center;align-content:center;padding:0;border:1px dashed var(--v7-role-selection-fg);color:var(--v7-role-selection-fg);
+}
+:where(html[data-v7]) .v7-wk-block[data-kind="suggested"]::before {content:none;}
+:where(html[data-v7]) .v7-wk-block[data-kind="suggested"] > svg {width:var(--v7-space-4);height:var(--v7-space-4);}
 :where(html[data-v7]) .v7-wk-block[data-kind="suggested"][data-accept] {pointer-events:auto;z-index:1;}
 
 :where(html[data-v7]) .v7-cal-grid-actions[data-view="week"] {min-height:0;padding-block:0;margin-bottom:0;}
 :where(html[data-v7]) .v7-cal[data-calendar-view="week"] .v7-wk-head {min-height:40px;}
 :where(html[data-v7]) .v7-cal[data-calendar-view="week"] {--v7-gap:0px;}
 :where(html[data-v7]) .v7-mo-key {display:flex;justify-content:flex-end;}
+:where(html[data-v7]) .v7-cal-ranked-slots {display:grid;gap:var(--v7-space-3);list-style:none;margin:0;padding:0;}
+:where(html[data-v7]) .v7-cal-ranked-slots li {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-cal-ranked-slots p {display:grid;gap:var(--v7-space-1);margin:0;}
+:where(html[data-v7]) .v7-cal-ranked-slots small {color:var(--v7-role-text-secondary);}

@@ -6,15 +6,6 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N202 Implement the November 20 v2 UI plan
-
-Owner task: "Complete all the tasks in the plan in one pr. Create a checklist in the main commit of pr.Make sure you precisely follow it."
-Stage: Harden · Status: open · Needs: — · Assigned: chat-204961#r7m4
-Done = Deliver the fifteen work items N202–N216 in one PR, with each item and its acceptance checks recorded in the main implementation commit. The attached plan, findings, copy deck and visual references are the acceptance baseline.
-Tests: the per-item unit, browser, SQL and MCP checks and the before/after UI audit in the plan.
-Scope: the union of the per-item scopes in [NEXT-ITEMS.md](docs/ui-plan/2026-11-20/NEXT-ITEMS.md), plus the UI audit runner and visual evidence required by PLAN §8.
-Not: Scheduling policy changes, enabling the scratch flag, or production deployment from this branch.
-
 ## N201 Open the checkpoint tutor chat from the study path
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"

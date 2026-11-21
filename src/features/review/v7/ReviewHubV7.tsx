@@ -1,3 +1,4 @@
+import {MoreActions} from '../../../ui/v7/ActionSheet';
 import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {formatShortDate} from '../../../lib/format';
 import {useStudyUi} from '../../../data/StudyUiRelease';
@@ -16,7 +17,7 @@ import {StatMeasure} from '../../../ui/v7/KitPrimitives';
 import {AsOf} from '../../../ui/v7/AsOf';
 import {useSavedCopyAt} from '../../../ui/v7/savedCopy';
 import {useAnimatedNumber} from '../../../ui/v7/useAnimatedNumber';
-import {ChevronRight} from 'lucide-react';
+import {ChartColumn,ChevronRight,Library} from 'lucide-react';
 import {kitSubject} from '../../atlas/v7/model';
 import {resumeRun,type DurableRun} from '../../review-run/v6/adapter';
 import {useReviewEstimate} from '../v6/estimate';
@@ -43,6 +44,7 @@ export default function ReviewHubV7(){
   // A new deck/settings fetch time is a new key: keep the last chart up while it refetches, never blank it to "Loading".
   placeholderData:previous=>previous,enabled:decks.isSuccess&&settings.isSuccess});
  const [restored,setRestored]=useState(false),[autoStarted,setAutoStarted]=useState(false);
+ const [details,setDetails]=useState(false);
  const [active,setActive]=useState<DurableRun|null>(null),[selected,setSelected]=useState<Set<string>|null>(null),[sheet,setSheet]=useState(false);
  const {start,busy,issue}=useStartRound();
  useEffect(()=>{
@@ -101,9 +103,29 @@ export default function ReviewHubV7(){
   if(active)navigate('/review/run?run='+encodeURIComponent(active.id),{replace:true});
   else if(result.batch.length)void start(result.batch,[...enabled]);
  },[params,autoStarted,restored,loading,failed,active,result.batch,enabled,navigate,start]);
+ const reviewDetails=<>   <div className="v7-rv-section">
+    {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Erratum: the forecast didn’t load. Try again.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
+     :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
+      series={outlook.series} format={value=>String(Math.round(value))}
+      summary={(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' due in 14 days'}/>
+     :<p role="status" className="v7-rv-note">Loading the forecast…</p>}
+   </div>
+   <section className="v7-rv-section" aria-label="Memory, last 30 days">
+    <h2 className="v7-headline">Memory · 30 days</h2>
+    <div className="v7-rv-tiles">
+     {/* KC9: the kit's Stat tile — Numeric lg values, units at 60% in text.secondary after a no-break space, a reserved change row. */}
+     <StatMeasure label="Recall" value={memory.recallPct===null?'–':String(memory.recallPct)} unit={memory.recallPct===null?'':'%'} change="Last 30 days"/>
+     <StatMeasure label="Reviews" value={memory.reviews.toLocaleString()} unit="" change="Last 30 days"/>
+     <StatMeasure label="Typical answer" value={memory.typicalSeconds===null?'–':String(memory.typicalSeconds)} unit={memory.typicalSeconds===null?'':'s'} change="Median"/>
+    </div>
+   </section>
+</>;
  const note=count?(minutes===null?'Estimating time…':'About '+minutes+' min at your pace'):totalDue>0?'Choose decks to review in Customise this round':'Nothing is due right now';
  return <main id="main-content" className="v7-page v7-rv" aria-label="Review">
-  <HubHeader title="Review">
+  <HubHeader title="Review" extraAction={<MoreActions label="Review actions" title="Review" items={[
+    {label:'Forecast and memory',icon:<ChartColumn/>,onClick:()=>setDetails(true)},
+    {label:'Browse cards',icon:<Library/>,onClick:()=>navigate('/cards')},
+   ]}/>}>
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
@@ -148,22 +170,7 @@ export default function ReviewHubV7(){
    </section>
    {pathSlug&&scoped&&selected===null&&<p className="v7-rv-note">Showing this path only. <button type="button" className="v7-rv-link" onClick={()=>{setSelected(null);navigate('/review',{replace:true});}}>Show all decks</button></p>}
    {nodes.length===0&&<p role="status" className="v7-rv-note">No cards due. Your review queue is clear.</p>}
-   <div className="v7-rv-section">
-    {forecast.isError&&forecast.data===undefined?<div role="alert"><p className="v7-rv-note">Erratum: the forecast didn’t load. Try again.</p><Button small onClick={()=>{void forecast.refetch();}}>Retry forecast</Button></div>
-     :outlook.data.length>0?<Chart compact title="Due each day" kind="stacked" data={outlook.data}
-      series={outlook.series} format={value=>String(Math.round(value))}
-      summary={(forecast.data??[]).reduce((sum,day)=>sum+day.due,0).toLocaleString()+' due in 14 days'}/>
-     :<p role="status" className="v7-rv-note">Loading the forecast…</p>}
-   </div>
-   <section className="v7-rv-section" aria-label="Memory, last 30 days">
-    <h2 className="v7-headline">Memory · 30 days</h2>
-    <div className="v7-rv-tiles">
-     {/* KC9: the kit's Stat tile — Numeric lg values, units at 60% in text.secondary after a no-break space, a reserved change row. */}
-     <StatMeasure label="Recall" value={memory.recallPct===null?'–':String(memory.recallPct)} unit={memory.recallPct===null?'':'%'} change="Last 30 days"/>
-     <StatMeasure label="Reviews" value={memory.reviews.toLocaleString()} unit="" change="Last 30 days"/>
-     <StatMeasure label="Typical answer" value={memory.typicalSeconds===null?'–':String(memory.typicalSeconds)} unit={memory.typicalSeconds===null?'':'s'} change="Median"/>
-    </div>
-   </section>
+   {reviewDetails}
    {nodes.length>0&&<section className="v7-rv-section" aria-label="Review deck selection">
     <h2 className="v7-headline">Decks</h2>
     <ul className="v7-rv-decks">
@@ -182,6 +189,7 @@ export default function ReviewHubV7(){
     <Link className="v7-rv-limit" to="/settings?section=study"><span>Daily limit</span><span className="v7-meta">{Math.max(0,quota)}</span><ChevronRight aria-hidden="true"/></Link>
    </section>}
   </>}
+  <Sheet open={details} onClose={()=>setDetails(false)} title="Forecast and memory">{reviewDetails}</Sheet>
   <Sheet open={sheet} onClose={()=>setSheet(false)} title="Customise this round" eyebrow={count+' cards · '+note}
    footer={<Button variant="primary" onClick={()=>setSheet(false)}>Done</Button>}>
    <div className="v7-rv-sheet">

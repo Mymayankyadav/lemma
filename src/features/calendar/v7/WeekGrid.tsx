@@ -1,5 +1,6 @@
 import {useEffect,useMemo,useRef} from 'react';
 import type {CSSProperties} from 'react';
+import {Plus} from 'lucide-react';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {calendarRange,shiftDay} from '../model';
 import {dayMinutes,layoutDayIntervals} from '../grid/layout';
@@ -83,7 +84,7 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
        <button key={item.id} type="button" className="v7-wk-block v7-cal-suggested" data-kind="suggested" data-accept={item.onAccept?'':undefined}
         style={{top:(Date.parse(item.start)-Date.parse(range.start))/MINUTE*WEEK_HOUR_PX/60-first*WEEK_HOUR_PX/60,
          height:Math.max(22,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*WEEK_HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}
-        disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title}>Add</button>)}
+        disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title}><Plus aria-hidden="true"/></button>)}
      </div>)}
     </div>
    </div>

@@ -84,7 +84,8 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
     const option=results.querySelector<HTMLElement>('#v7-search-'+active),bounds=option?.getBoundingClientRect();
     if(!bounds)return;
     const viewport=body.getBoundingClientRect();
-    const top=getComputedStyle(field).position==='sticky'?Math.max(viewport.top,field.getBoundingClientRect().bottom):viewport.top;
+    const entry=field.closest('.v7-search-entry')??field;
+    const top=getComputedStyle(entry).position==='sticky'?Math.max(viewport.top,entry.getBoundingClientRect().bottom):viewport.top;
     if(bounds.top<top)body.scrollTop+=bounds.top-top;
     else if(bounds.bottom>viewport.bottom)body.scrollTop+=bounds.bottom-viewport.bottom;
    });
@@ -113,7 +114,7 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
   </button></li>;};
  let cursor=0;
  return <Sheet open={open} onClose={onClose} title="Search" full hideTitle>
-  <input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
+  <div className="v7-search-entry"><input ref={fieldRef} data-v7-autofocus="true" className="v7-search-field" type="search" role="combobox" aria-expanded="true" aria-controls="v7-search-results" aria-activedescendant={list.length?'v7-search-'+active:undefined}
    aria-label="Search" placeholder="Search or jump to…" value={query} onChange={event=>{setQuery(event.target.value);setActiveId(null);setKeepActiveVisible(false);const body=resultsRef.current?.parentElement;if(body)body.scrollTop=0;}}
    onKeyDown={event=>{
     if(event.key==='ArrowDown'||event.key==='ArrowUp'){
@@ -123,7 +124,7 @@ export default function SearchSheet({open,onClose,onPick,initial}:{open:boolean;
      setKeepActiveVisible(true);
     }
     else if(event.key==='Enter'&&activeItem){event.preventDefault();openItem(activeItem);}
-   }}/>
+   }}/></div>
   <div ref={resultsRef} id="v7-search-results" role="listbox" aria-label="Results" className="v7-search-groups">
    {idle?<>
     {recent.length>0&&<section className="v7-search-group" aria-label={room?'Jump back in':'Recent'}><h2 className="v7-eyebrow">{room?'Jump back in':'Recent'}</h2><ul>{recent.map(item=>row(item,cursor++))}</ul></section>}

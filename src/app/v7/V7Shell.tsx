@@ -98,26 +98,39 @@ function Capture(){
  </>;
 }
 
-/**
- * V11 (v7 UX audit r3): whether every tab name fits its slot in the phone dock. With large system text or a narrow phone
- * the names ran together ("ReviewCalendarProgress"); then the dock shows icons and only the selected tab's name (the
- * others stay available to assistive technology). Measured, so it follows the real font size, language and width.
- */
-export function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled=true):boolean{
+/** Keep the single-row dock when all names and adjacent controls fit. */
+function useTabLabelsFit(ref:RefObject<HTMLElement|null>,wide:boolean,enabled:boolean,hasSession:boolean,capture:boolean):boolean{
  const [fit,setFit]=useState(true);
  useLayoutEffect(()=>{
-  const nav=ref.current;
-  if(!nav||wide){setFit(true);return;}
-  const check=()=>setFit([...nav.querySelectorAll<HTMLElement>('.v7-tab-label')].every(label=>{
-   const tab=label.closest<HTMLElement>('.v7-tab');
-   return !tab||label.scrollWidth<=tab.clientWidth-4;
-  }));
+  const nav=ref.current,row=nav?.parentElement;
+  if(!nav||!row||wide){setFit(true);return;}
+  const labels=[...nav.querySelectorAll<HTMLElement>('.v7-tab-label')];
+  const measure=document.createRange();
+  const check=()=>{
+   // Measure the full-label footprint even in the compact layout.
+   const dock=row.parentElement;
+   if(!dock)return;
+   const dockStyle=getComputedStyle(dock);
+   const space=(token:string)=>parseFloat(dockStyle.getPropertyValue('--v7-space-'+token));
+   const controls=(hasSession?44:0)+(capture?48:0);
+   const width=Math.min(window.innerWidth-2*space('3'),parseFloat(dockStyle.maxWidth));
+   const gutters=parseFloat(dockStyle.borderLeftWidth)+parseFloat(dockStyle.borderRightWidth)
+    +2*space('1')+2*space('2');
+   const slot=(width-controls-gutters)/labels.length;
+   setFit(labels.every(label=>{
+    measure.selectNodeContents(label);
+    return [...measure.getClientRects()].reduce((width,rect)=>width+rect.width,0)<=slot-4;
+   }));
+  };
   check();
   const observer=typeof ResizeObserver==='undefined'?null:new ResizeObserver(check);
-  observer?.observe(nav);
-  void document.fonts?.ready.then(check).catch(()=>undefined);
-  return()=>observer?.disconnect();
- },[ref,wide,enabled]);
+  observer?.observe(row);
+  labels.forEach(label=>observer?.observe(label));
+  window.addEventListener('resize',check);
+  let active=true;
+  void document.fonts?.ready.then(()=>{if(active)check();}).catch(()=>undefined);
+  return()=>{active=false;observer?.disconnect();window.removeEventListener('resize',check);};
+ },[ref,wide,enabled,hasSession,capture]);
  return fit;
 }
 
@@ -128,7 +141,7 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
  const key=location.pathname+location.search+'\n'+location.key;
  const searchBack=useRef(new Map<string,SearchVisit>()),previousKey=useRef(key);
  const wide=useMinWidth(700);
- const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide,!immersive);
+ const tabbar=useRef<HTMLElement>(null),labelsFit=useTabLabelsFit(tabbar,wide,!immersive,Boolean(entry),capture);
  // A subject colour chosen in Settings redraws every screen in that colour (PLAN §6.14).
  const colours=useSubjectColours();
  // PLAN §6.15: a new owner (no paths, first run neither finished nor skipped) starts on the first-run steps, once.
@@ -238,10 +251,10 @@ export default function V7Shell({children,immersive=false,capture=true}:{childre
 /** A. Hub header. Today: the date and page actions, then the greeting in Display 44 (the one Display per page). Other hubs: the
  *  title in Title 32 shares the row with the actions, so content starts higher (CD1). The Inbox count shows on every hub;
  *  Settings only on Today (SH4). */
-export function HubHeader({title,date,settings=false,display=false,control,titleControl,children,headingRef}:{title:string;date?:string;settings?:boolean;display?:boolean;
+export function HubHeader({title,date,settings=false,display=false,control,titleControl,children,headingRef,titleFollowsTab=true,extraAction}:{title:string;date?:string;settings?:boolean;display?:boolean;
  headingRef?:RefObject<HTMLHeadingElement|null>;
  /** N161: one compact control beside the title (Calendar's view menu on a phone). */
- control?:ReactNode;titleControl?:ReactNode;children?:ReactNode}){
+ control?:ReactNode;titleControl?:ReactNode;children?:ReactNode;titleFollowsTab?:boolean;extraAction?:ReactNode}){
  const findSelected=(nodes:ReactNode):string|undefined=>{
   for(const node of Children.toArray(nodes)){
    if(!isValidElement<{children?:ReactNode;'aria-current'?:string}>(node))continue;
@@ -249,7 +262,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
    const nested=findSelected(node.props.children);if(nested)return nested;
   }
  };
- if(isFlagOn('v7Room')&&!display)title=findSelected(children)??title;
+ if(isFlagOn('v7Room')&&!display&&titleFollowsTab)title=findSelected(children)??title;
  const pending=useHome().data?.pendingProposals??0;
  // N157 · AW3: the app's daily check found a newer APK (only the Android app writes this).
  const update=useDevicePrefValue<number|null>('updateAvailable',null);
@@ -265,6 +278,7 @@ export function HubHeader({title,date,settings=false,display=false,control,title
     <button type="button" aria-label="Search" title="Search" aria-haspopup="dialog" data-v7-search-opener="" onClick={openSearch}><Search aria-hidden="true"/></button>
     <Link to="/proposals" aria-label={'Inbox'+(pending?', '+pending+' pending':'')} title="Inbox"><Inbox aria-hidden="true"/>{pending>0&&<span className="v7-count-badge" aria-hidden="true">{pending>99?'99+':pending}</span>}</Link>
     {settings&&<Link to="/settings" aria-label={update!==null?'Settings, a newer version is available':'Settings'} title="Settings"><Settings aria-hidden="true"/>{update!==null&&<span className="v7-update-dot" aria-hidden="true"/>}</Link>}
+    {extraAction}
    </nav>;
  if(!display)return <>
   <header className="v7-hub-bar" data-collapsed={collapsed?'true':'false'}><div className="v7-hub-row"><h1 ref={headingRef} tabIndex={headingRef?-1:undefined} className={titleControl?"v7-sr-only":"v7-hub-title"}>{title}</h1>{titleControl}{control&&<div className="v7-hub-control">{control}</div>}{actions}</div></header>

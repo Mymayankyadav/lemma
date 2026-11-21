@@ -44,3 +44,9 @@
   border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);
 }
 :where(html[data-v7]) .v7-suggested-link small {display:block;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}
+
+.v7-learning-details {display:grid;gap:var(--v7-space-4);font-size:var(--v7-type-supporting);}
+.v7-learning-details ul,.v7-learning-details ol {display:grid;gap:var(--v7-space-3);}
+.v7-learning-details li {min-width:0;overflow-wrap:anywhere;}
+.v7-learning-details a {color:var(--v7-role-link-fg);text-decoration:underline;}
+.v7-stage-strip {flex-wrap:wrap;}

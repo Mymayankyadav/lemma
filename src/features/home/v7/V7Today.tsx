@@ -1,3 +1,5 @@
+import {Disclosure} from '../../../ui/v7/Disclosure';
+import {StudyModelDetails} from '../../adaptive/panels/LearningDetails';
 import {formatShortDate} from '../../../lib/format';
 import {NextStep,TodayFirstRun} from './NextStep';
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
@@ -234,16 +236,18 @@ export default function V7Today(){
    </Link>}
    {nextStepEnabled&&<nav className="v7-today-glance" aria-label="Needs you">
     {(data?.overdue??0)>0&&<Link className="v7-meta-chip" to="/calendar?view=day&overdue=1">{data?.overdue} overdue</Link>}
+    {needTasks.length>0&&<Link className="v7-meta-chip" to="/tasks">Tasks due</Link>}
+    {practice.due.length>0&&<Link className="v7-meta-chip" to="/practice">Practice due</Link>}
     {due>0&&<Link className="v7-meta-chip" to="/review">{due} due</Link>}
     {pending>0&&<Link className="v7-meta-chip" to="/proposals">{pending} to approve</Link>}
    </nav>}
-   {!nextStepEnabled&&targets.length>0&&<section className="v7-card" aria-label="Targets">
+   {targets.length>0&&<Disclosure label="Daily targets" defaultOpen={!nextStepEnabled}><section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
      {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}{row.key==='reviews'&&row.max>row.value?' · '+(row.max-row.value)+' left':''}</span>}
      <span className="v7-today-target-track" data-complete={targetDone(row)?'true':undefined} role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
       <span style={{width:Math.min(100,row.value/row.max*100)+'%'}}/></span>
     </div>)}
-   </section>}
+   </section></Disclosure>}
    {!nextStepEnabled&&(needs.total>0||pending>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
     <h2>Needs you</h2>
     {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><StatusBadge tone="warning">{row.count} overdue</StatusBadge><span/>
@@ -267,6 +271,7 @@ export default function V7Today(){
        <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>
      </Link>;})}</div>
    </section>}
+   <StudyModelDetails/>
    {!nextStepEnabled&&offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
     <span><strong>{minutesLabel(logged)} studied today</strong><small>Look back and set up tomorrow.</small></span>
     <Link className="v7-button v7-secondary" to="/today/close"><span>Close the day</span></Link></section>}
