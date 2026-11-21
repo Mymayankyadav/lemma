@@ -72,7 +72,7 @@ test("Path More pauses a path, its Cards tab lists cards, and Review opens a rou
  await expect(page.locator(".v7-path-chips")).toContainText("Paused");
  await page.getByRole("tab",{name:/^Cards/}).click();
  await expect(page.getByRole("list",{name:"Cards on this path"})).toBeVisible();
- const review=page.getByRole("navigation",{name:"Page actions"}).getByRole("link",{name:/^Review/});
+ const review=page.getByRole("group",{name:"Path actions"}).getByRole("link",{name:/^Review/});
  await expect(review).toHaveAttribute("href","#/review/run?target=path&id=project-analysis");
  await review.click();
  await expect(page).toHaveURL(/#\/review\/run\?run=/);
@@ -100,7 +100,9 @@ test("Tasks groups To do into cards and completing a task offers Undo",async({pa
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
  await expect(page.getByRole("navigation",{name:"Calendar sections"}).getByRole("link",{name:"Tasks"})).toHaveAttribute("aria-current","page");
  await expect(page.getByRole("radiogroup",{name:"Task status"})).toBeVisible();
- await expect(page.getByRole("group",{name:"Filters"})).toBeVisible();
+ await page.getByRole("button",{name:"Filter",exact:true}).click();
+ await expect(page.getByRole("dialog",{name:"Task filters",exact:true}).getByRole("group",{name:"Filters"})).toBeVisible();
+ await page.keyboard.press("Escape");
  const box=page.locator(".v7-tk-card").first();
  if(await box.count()===0)return;
  await expect(box.locator(".v7-tk-card")).toHaveCount(0);
@@ -139,7 +141,7 @@ test("Calendar Week shows a seven-day grid with the strip as its header",async({
  await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeVisible();
  await expect(page.getByRole("region",{name:"Week time grid"})).toBeVisible();
  await expect(page.locator("[data-strip-day]")).toHaveCount(7);
- await expect(page.getByRole("button",{name:"Next week"})).toBeVisible();
+ await expect(page.getByRole("button",{name:/^Calendar date:/})).toBeVisible();
 });
 test("Calendar Month tints days, offers Open day, and never prints a zero",async({page})=>{
  await page.goto(at("/calendar?view=month"));

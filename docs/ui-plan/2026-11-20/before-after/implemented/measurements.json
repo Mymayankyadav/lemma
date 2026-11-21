@@ -409,7 +409,7 @@
           },
           "words": {
             "view": 50,
-            "all": 117
+            "all": 133
           },
           "offFonts": [],
           "offSizes": [],
@@ -418,7 +418,9 @@
           "raw": [],
           "picture": null,
           "detail": false
-        }
+        },
+        "sourceCommit": "b8216a5eb2d301392adaf556b1429f1447b47df6",
+        "dirty": true
       },
       {
         "scene": "settings",
@@ -712,7 +714,9 @@
           "raw": [],
           "picture": null,
           "detail": false
-        }
+        },
+        "sourceCommit": "b8216a5eb2d301392adaf556b1429f1447b47df6",
+        "dirty": true
       },
       {
         "scene": "today-first-run",

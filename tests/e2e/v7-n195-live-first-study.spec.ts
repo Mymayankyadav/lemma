@@ -275,11 +275,13 @@ for(const [kind,label,count] of [['checkpoint','Compactness checkpoint',4],['con
 
 test('90 signed-in future cards show their next date without offering an empty first-card flow',async({page})=>{
  const fixture=await reviewFixture(page,{count:90,future:true});await page.clock.setFixedTime(NOW);await page.goto(live('/review'));
- await expect(page.getByLabel('Cards in this round')).toHaveText('0');
+ await expect(page.getByText('Nothing due',{exact:true})).toBeVisible();
  await expect(page.locator('time[datetime="'+fixture.records[0].card.due.slice(0,10)+'"]')).toBeVisible();
  await expect(page.getByText(/Next review ·.*90 cards/)).toBeVisible();
- await expect(page.getByRole('button',{name:'Start review, 0 cards',exact:true})).toBeDisabled();
+ await expect(page.getByRole('link',{name:'Practice instead',exact:true})).toBeVisible();
+ await expect(page.getByRole('button',{name:/Start review/})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/Create (your first card|a path and card)/})).toHaveCount(0);
+ await expect(page.getByRole('link',{name:/Create (your first card|a path and card)/})).toHaveCount(0);
  await page.reload();await expect(page.getByText(/Next review ·.*90 cards/)).toBeVisible();
  expect(fixture.startRequests).toHaveLength(0);expect(fixture.gradeRequests).toHaveLength(0);
 });

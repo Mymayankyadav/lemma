@@ -23,14 +23,13 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
  onSuggest?:(items:SuggestedBlock[])=>void;
  inline?:boolean;
 }){
- const repair=useStudyUi(),notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(openPlanner),[busy,setBusy]=useState(false);
+ const repair=useStudyUi(),notify=useToast(),[data,setData]=useState<Suggestions|null>(null),[adjusting,setAdjusting]=useState(false),[busy,setBusy]=useState(false);
  const operation=useRef<{key:string;id:string}|null>(null),locked=useRef(false);
  useEffect(()=>{
   let live=true;setData(null);
   void loadSuggestions(date,zone,repair).then(next=>{if(live)setData(next);}).catch(()=>{if(live)setData(null);});
   return()=>{live=false;};
  },[date,zone,repair]);
- useEffect(()=>{if(openPlanner)setAdjusting(true);},[openPlanner]);
  const count=data?.result.placements.length??0;
  useEffect(()=>{
   onSuggest?.((data?.result.placements??[]).map(place=>({id:place.taskId+':'+place.part,start:place.start,end:place.end,title:data!.tasks.find(task=>task.id===place.taskId)?.title??'Study task',...(inline?{busy,onAccept:()=>{void addAll(place.taskId+':'+place.part);}}:{})})));
@@ -67,6 +66,6 @@ export default function SuggestionsBanner({date,zone,openPlanner,onChanged,onPla
    <p>{suggestionLabel(count)}{date===dayKey(new Date(),zone)?'':' for '+formatShortDate(date,{zone})} · <button type="button" className="v7-link-button" onClick={()=>setAdjusting(true)}>Adjust</button></p>
    <Button small variant="secondary" disabled={busy} onClick={()=>{void addAll();}}>{busy?'Adding…':'Add all'}</Button>
   </div>}
-  {adjusting&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onChanged={repair?onChanged:undefined} onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
+  {(openPlanner||adjusting)&&<PlannerLaunch v7 date={date} zone={zone} autoOpen hideTrigger onChanged={repair?onChanged:undefined} onClosed={()=>{setAdjusting(false);onPlannerClosed();onChanged();}}/>}
  </>;
 }

@@ -93,6 +93,8 @@ export default function ReviewHubV7(){
  const shownCount=useAnimatedNumber(count,!loading&&!failed);
  const libraryCount=(home.data?.projects??[]).reduce((sum,project)=>sum+project.cardsCount,0);
  const empty=!loading&&!failed&&restored&&!active&&count===0&&totalDue===0;
+ const hasCards=libraryCount>0||!!nextDue.data;
+ const checkingLibrary=empty&&!hasCards&&(home.isPending||nextDue.isFetching);
  useEffect(()=>{
   if(params.get('start')!=='1'||autoStarted||!restored||loading||failed)return;
   setAutoStarted(true);
@@ -105,12 +107,13 @@ export default function ReviewHubV7(){
    {/* PA1/RV6: "Cards" means only the library under Paths, so the hub's tabs are Due and Practice. */}
    <nav className="v7-hub-tabs" aria-label="Review sections"><Link to="/review" aria-current="page">Due</Link><Link to="/practice">Practice</Link></nav>
   </HubHeader>
-  {empty&&(libraryCount===0?<FirstCardPanel reviewEmpty fallback={<EmptyMoment art="review" title="No cards yet"
+  {empty&&!checkingLibrary&&(!hasCards?<FirstCardPanel reviewEmpty fallback={<EmptyMoment art="review" title="No cards yet"
    action={{label:'Create your first card',to:'/cards?new=1'}}/>}/>
    :<EmptyMoment art="review" title="Nothing due" action={{label:'Practice instead',to:'/practice'}}>
-    {nextDue.data?'Next: '+nextDue.data.count+' '+(nextDue.data.count===1?'card':'cards')+' · '+formatShortDate(nextDue.data.day,{zone:settings.data?.timeZone}):null}
+    {nextDue.data&&<>Next review · <time dateTime={nextDue.data.day}>{formatShortDate(nextDue.data.day,{zone:settings.data?.timeZone})}</time>
+     {' · '+nextDue.data.count+(nextDue.data.count===1?' card':' cards')}</>}
    </EmptyMoment>)}
-  {loading&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
+  {(loading||checkingLibrary)&&<p role="status" className="v7-rv-note">Loading review decks…</p>}
   {!loading&&failed&&<div role="alert" className="v7-rv-error"><p>Erratum: your review decks didn’t load. Try again.</p>
    <Button onClick={()=>{void decks.refetch();void cards.refetch();void settings.refetch();}}>Retry</Button></div>}
   {!loading&&!failed&&!empty&&<>

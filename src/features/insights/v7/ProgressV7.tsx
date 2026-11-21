@@ -35,7 +35,7 @@ const tabWords:Record<Tab,string>={overview:'Overview',learning:'Learning'};
 const confidenceWord={sure:'Sure',unsure:'Unsure',guess:'Guess'} as const;
 const gradeColors=GRADE_KEYS.map(key=>GRADES[key].colour);
 
-/** Progress hub tabs: Overview · Learning · Time · Log (the time log is its own route). */
+/** Overview and Learning share the hub, with the time log on its own route. */
 export function ProgressTabs({current}:{current:Tab|'log'}){
  return <nav className="v7-hub-tabs" aria-label="Progress sections">
   {(['overview','learning'] as const).map(tab=><Link key={tab} to={'/insights'+(tab==='overview'?'':'?tab='+tab)} aria-current={current===tab?'page':undefined}>{tabWords[tab]}</Link>)}
@@ -53,7 +53,7 @@ function GoalCard({goal,entries,scope,onEdit}:{goal:GoalRecord;entries:StudyEntr
   <p className="v7-meta">{view.rest}</p>
  </li>;
 }
-/** PLAN §6.13 Progress: one range control above everything it affects; Overview, Learning and Time. */
+/** One range control for the figures and charts on Overview and Learning. */
 export default function ProgressV7(){
  const studyRepair=useStudyUi();
  const [params,setParams]=useSearchParams(),settings=useSettings(),subjects=useSubjects(),notify=useToast();
@@ -77,6 +77,7 @@ export default function ProgressV7(){
  const stamp=now.toISOString();
  const summary=useMemo(()=>status==='ready'?effortSummary(entries,period,zone,stamp):null,[status,entries,period,zone,stamp]);
  const before=useMemo(()=>status==='ready'?effortSummary(entries,previous,zone,stamp):null,[status,entries,previous,zone,stamp]);
+ const daily=useMemo(()=>status==='ready'&&tab==='overview'?effortSummary(entries,almanac,zone,stamp).daily:[],[status,tab,entries,almanac,zone,stamp]);
  const name=(id:string)=>id==='unassigned'?'No subject':subjects.data?.find(item=>item.id===id)?.name??'Other subject';
  const color=(id:string)=>'var('+subjectToken(kitSubject(name(id)))+')';
  const groups=useMemo(()=>groupDays(period.days,range==='90'||range==='30'?7:1),[period,range]);
@@ -153,6 +154,8 @@ export default function ProgressV7(){
      return <li key={goal.id}><span>{view.title}</span>{view.reached?<StatusBadge tone="success">Reached</StatusBadge>:<span className="v7-meta">{view.rest}</span>}</li>;})}</ul></>}
    </section>
   </>}
+  {tab==='overview'&&total>0&&daily.some(day=>day.minutes>0)&&<Heatmap title="Study almanac" format={minutes}
+   data={daily.map(day=>({date:day.day,value:Math.round(day.minutes)}))}/>}
   {editing!==undefined&&<GoalEditor goal={editing} onClose={()=>setEditing(undefined)} onSaved={()=>setReload(value=>value+1)}/>}
  </main>;
 }

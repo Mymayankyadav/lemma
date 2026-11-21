@@ -199,7 +199,7 @@ export function heatmapIndexAt({x, y, width, height, gapX = 0, gapY = 0, weeks, 
 export function Heatmap({ title, data: all, format = String }: { title: string; data: { date: string; value: number }[]; format?: (value: number) => string }) {
   const id = useId(), [table, setTable] = useState(false), [selected, setSelected] = useState<number | null>(null);
   const data = heatmapDays(all), scroller = useRef<HTMLDivElement>(null);
-  const total = data.reduce((value, item) => value + finite(item.value), 0), today = new Date().toLocaleDateString("en-CA");
+  const activeDays = data.filter(item => item.value > 0).length, today = new Date().toLocaleDateString("en-CA");
   const first = data[0]?.date, offset = first && /^\d{4}-\d{2}-\d{2}$/.test(first) ? (new Date(`${first}T12:00:00Z`).getUTCDay() + 6) % 7 : 0;
   const weeks = Math.ceil((data.length + offset) / 7), style = { "--v7-heat-weeks": Math.max(1, weeks) } as CSSProperties;
   // V16: the roving focus starts on today (else the newest day), and the almanac opens scrolled so that day is in view.
@@ -220,7 +220,7 @@ export function Heatmap({ title, data: all, format = String }: { title: string; 
   };
   return <section className="v7-chart" aria-labelledby={id} aria-describedby={`${id}-summary`}>
     <div className="v7-chart-heading"><h3 id={id} className="v7-headline">{title}</h3><button type="button" className="v7-chart-toggle" aria-pressed={table} onClick={() => setTable(!table)}>{table ? "Show chart" : "Show as table"}</button></div>
-    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">You studied {format(total)} across {data.length} days; {data.filter(item => item.value > 0).length} days had study activity.</p>
+    <p id={`${id}-summary`} className="v7-chart-summary v7-sr-only">{activeDays?`${activeDays} study ${activeDays===1?'day':'days'} in ${data.length}`:'None yet.'}</p>
     {table ? <div className="v7-chart-scroll"><table><thead><tr><th scope="col">Date</th><th scope="col">Time</th></tr></thead><tbody>{data.map(item => <tr key={item.date}><th scope="row">{displayHeatmapDate(item.date)}</th><td>{format(item.value)}</td></tr>)}</tbody></table></div> : <>
       <div ref={scroller} className="v7-heatmap-scroll" tabIndex={0} aria-label="Activity calendar; scroll to see all weeks"><div className="v7-heatmap-frame" style={style}>
         <div className="v7-heatmap-weeks" aria-hidden="true">{Array.from({length:weeks},(_,week)=>{const date=new Date(`${first}T12:00:00Z`);date.setUTCDate(date.getUTCDate()-offset+week*7);return <span key={week}>{week%2===0?new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'}).format(date):""}</span>;})}</div>

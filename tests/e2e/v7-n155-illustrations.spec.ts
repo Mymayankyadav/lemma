@@ -92,7 +92,7 @@ for (const [width, height] of [[360, 740], [390, 844]] as const) {
   test(`N155 IL5 empty states sit in the first viewport (${width} px)`, async ({page}) => {
     await page.setViewportSize({width, height})
     await page.clock.setFixedTime(NOW)
-    await page.goto(at('/calendar?view=day&date=2026-11-30'))
+    await page.goto(at('/calendar?view=day&date=2026-11-07').replace('demo=1','demo=first-use'))
     const calendar = page.locator('.v7-cal-empty-state')
     await expect(calendar).toBeVisible()
     const box = (await calendar.boundingBox())!
@@ -104,12 +104,13 @@ for (const [width, height] of [[360, 740], [390, 844]] as const) {
     })
     expect(through).toBe(true)
 
-    await page.goto(at('/insights?range=day'))
-    const progress = page.locator('.v7-progress-nothing')
+    await page.goto(at('/insights?range=day').replace('demo=1','demo=first-use'))
+    const progress = page.getByRole('status').filter({hasText:'No study time yet'})
     await expect(progress).toBeVisible()
     await expect(progress.locator('[data-illustration="progress"]')).toHaveAttribute('width', '160')
     expect(((await progress.boundingBox())!).y + 120).toBeLessThanOrEqual(height)
     await expect(page.locator('.v7-progress-hero')).toHaveCount(0)
+    await expect(page.getByRole('region',{name:'Study almanac',exact:true})).toHaveCount(0)
     await expect(page.getByText(/most on/)).toHaveCount(0)
   })
 }

@@ -17,8 +17,10 @@ async function expectCardsReviewed(page:Page){
  await expect(page.getByRole("heading",{name:"Inbox zero"})).toHaveCount(0);
 }
 async function swipe(page:Page,dx:number,dy=0){
- const box=(await card(page).boundingBox())!;
- const x=box.x+box.width/2,y=box.y+box.height*.75;
+ const face=card(page).locator(".v7-inbox-front");
+ await face.scrollIntoViewIfNeeded();
+ const box=(await face.boundingBox())!;
+ const x=box.x+box.width/2,y=box.y+box.height/2;
  await page.mouse.move(x,y);await page.mouse.down();
  for(let step=1;step<=8;step++)await page.mouse.move(x+dx*step/8,y+dy*step/8);
  await page.mouse.up();

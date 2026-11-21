@@ -64,10 +64,11 @@
 @layer v7-components {
  @media (horizontal-viewport-segments:2) {
   :where(html[data-v7]) {--v7-hinge-start:env(viewport-segment-right 0 0,50vw);--v7-hinge-end:env(viewport-segment-left 1 0,50vw);}
-  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page:not(:has(.v7-inbox-desk,.v7-settings-split)) {max-width:none;margin-inline:calc(var(--v7-hinge-end) - var(--v7-rail-width,0px)) 0;width:auto;}
+  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page:not(:has(.v7-inbox-desk,.v7-settings-split)),
+  :where(html[data-v7]) .v7-shell[data-immersive="true"] > .v7-page:is(.v7-path,.v7-learn) {max-width:none;margin-inline:calc(var(--v7-hinge-end) - var(--v7-rail-width,0px)) 0;width:auto;}
   :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) > .v7-page:has(.v7-inbox-desk,.v7-settings-split) {max-width:none;margin-inline:0;}
   :where(html[data-v7]) .v7-page :is(.v7-inbox-desk,.v7-settings-split) {grid-template-columns:calc(var(--v7-hinge-start) - var(--v7-rail-width,0px) - var(--v7-page-margin) * 2) minmax(0,1fr);column-gap:calc(var(--v7-hinge-end) - var(--v7-hinge-start) + var(--v7-page-margin) * 2);}
-  :where(html[data-v7]) .v7-shell:not([data-immersive="true"]) :is(.v7-learn-bar,.v7-path-bar) {left:calc(var(--v7-hinge-end) + var(--v7-page-margin));right:var(--v7-page-margin);max-width:none;transform:none;margin-inline:0;width:auto;}
+  :where(html[data-v7]) .v7-shell > .v7-page :is(.v7-learn-bar,.v7-path-bar) {left:calc(var(--v7-hinge-end) + var(--v7-page-margin));right:var(--v7-page-margin);max-width:none;transform:none;margin-inline:0;width:auto;}
   :where(html[data-v7]) main.v7-review[data-spread] {padding-inline:0;}
   :where(html[data-v7]) main.v7-review[data-spread] .v7-review-stage {width:100%;}
   /* The grades split at the hinge: Again and Hard on the left screen, Good and Easy on the right; Show answer on the right. */

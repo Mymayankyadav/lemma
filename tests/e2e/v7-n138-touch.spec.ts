@@ -1,6 +1,6 @@
 import {test,expect,type Locator,type Page} from "@playwright/test";
 import {NOW,DATE,at} from "./v7-scenes";
-// N138 · v7 UX audit r3, V36: the six kinds of control whose true hit area was under 44 px (almanac cells, "Adjust",
+// N138 · v7 UX audit r3, V36: the kinds of control whose true hit area was under 44 px (almanac cells, Calendar actions,
 // "1 overdue · Triage", "14 due" on path cards, the narrow hub tabs, the time-log days) and Agenda's "Add". A control
 // passes when a tap 21 px from its centre, in each of the four directions, still lands on it.
 test.use({locale:"en-IN",timezoneId:"Asia/Kolkata",colorScheme:"dark"});
@@ -25,13 +25,13 @@ async function reach(control:Locator){
 }
 
 for(const width of [360,390]){
- test(`V36 · at ${width} px the narrow tabs, the log's days, path cards' due chips, Triage, Adjust and Add take a 44 px tap`,async({page})=>{
+ test(`V36 · at ${width} px tabs, log days, due chips and Calendar actions take a 44 px tap`,async({page})=>{
   await open(page,"/review",width);
   expect(await reach(page.getByRole("link",{name:"Due",exact:true}))).toBe(21);
   await open(page,"/cards",width);
   expect(await reach(page.getByRole("link",{name:"Atlas",exact:true}))).toBe(21);
   await open(page,"/log",width);
-  for(const name of ["Time","Log"])expect(await reach(page.getByRole("link",{name,exact:true}))).toBe(21);
+  for(const name of ["Overview","Learning","Log"])expect(await reach(page.getByRole("link",{name,exact:true}))).toBe(21);
   const days=page.locator(".v7-log-day");
   await expect(days).toHaveCount(7);
   for(let day=0;day<7;day++)expect(await reach(days.nth(day))).toBe(21);
@@ -39,8 +39,9 @@ for(const width of [360,390]){
   await open(page,"/projects",width);
   expect(await reach(page.getByRole("link",{name:"Review 14 due on Real Analysis"}))).toBe(21);
   await open(page,`/calendar?view=day&date=${DATE}`,width);
-  expect(await reach(page.getByRole("button",{name:"1 overdue. Triage"}))).toBe(21);
-  expect(await reach(page.getByRole("button",{name:"Adjust",exact:true}))).toBe(21);
+  expect(await reach(page.getByRole("button",{name:/^\d+ overdue\. Triage$/}))).toBe(21);
+  expect(await reach(page.getByRole("button",{name:"Browse day",exact:true}))).toBe(21);
+  expect(await reach(page.getByRole("button",{name:/^(Plan day|Add all \d+ suggested blocks)$/}))).toBe(21);
   await open(page,`/calendar?view=agenda&date=${DATE}`,width);
   expect(await reach(page.getByRole("button",{name:"Add",exact:true}).first())).toBe(21);
  });

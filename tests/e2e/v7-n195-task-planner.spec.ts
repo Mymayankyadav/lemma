@@ -1,5 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
+import {setTimeRuler} from './helpers/time-ruler';
 
 const route=(path:string)=>at(path).replace('flags=','flags=uiRepairV1,');
 const calendar='/calendar?view=day&date=2026-11-10';
@@ -45,7 +46,7 @@ for(const expanded of [false,true]){
    await more.click();
    dialog=page.getByRole('dialog',{name:'New task'});
    await expect(dialog.getByLabel(/Estimate/)).toHaveValue('25');
-   await expect(dialog.getByRole('button',{name:'Due time, 16:10'})).toBeVisible();
+   await expect(dialog.getByRole('slider',{name:'Due time',exact:true})).toHaveAttribute('aria-valuetext','16:10');
    await dialog.getByRole('button',{name:'Save task'}).click();
   }else await field.press('Enter');
   await expect(group.getByText('Review lemma',{exact:true})).toBeVisible();
@@ -72,7 +73,7 @@ for(const [width,scale] of [[360,130],[390,130],[390,100]]){
   }));
   await seed(page);
   await page.goto(route('/tasks?new=1'));
-  const editor=page.getByRole('dialog',{name:'New task'}),due=editor.getByRole('radio',{name:'Date & time'});
+  const editor=page.getByRole('dialog',{name:'New task'}),due=editor.getByRole('button',{name:'Due: None',exact:true});
   await editor.getByLabel('Title',{exact:true}).fill('Exact due');
   await due.scrollIntoViewIfNeeded();
   await page.evaluate(()=>document.fonts.ready);
@@ -88,21 +89,21 @@ for(const [width,scale] of [[360,130],[390,130],[390,100]]){
   expect(Math.max(...bounds.heights)-Math.min(...bounds.heights)).toBeLessThanOrEqual(1);
   expect(bounds.center).toBe(true);
   await due.click();
+  await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).check();
   await editor.getByRole('button',{name:/^Due date:/}).click();
   const calendar=page.getByRole('dialog',{name:'Choose a date'});
   await expect(calendar.getByRole('button',{name:'Today',exact:true})).toBeVisible();
   await calendar.getByRole('button',{name:'Today',exact:true}).click();
-  await editor.getByRole('button',{name:/^Due time,/}).click();
-  const picker=page.getByRole('dialog',{name:'Due time'}),input=picker.getByLabel('Time (HH:MM)');
-  const entry=await input.boundingBox();
+  const ruler=editor.getByRole('slider',{name:'Due time',exact:true});
+  await ruler.scrollIntoViewIfNeeded();
+  const entry=await ruler.boundingBox();
   expect(entry!.y).toBeGreaterThanOrEqual(0);
   expect(entry!.y+entry!.height).toBeLessThan(width===360?800:844);
-  await input.fill('25:61');await picker.getByRole('button',{name:'Use time'}).click();
-  await expect(picker.getByText('Enter a time from 00:00 to 23:59.')).toBeVisible();
-  await expect(input).toHaveValue('25:61');
+  await ruler.press('Home');await expect(ruler).toHaveAttribute('aria-valuetext','00:00');
+  await ruler.press('End');await expect(ruler).toHaveAttribute('aria-valuetext','23:59');
   const clock=width===360?'16:10':'16:00';
-  await input.fill(width===360?'1610':clock);await input.press('Enter');
-  await expect(editor.getByRole('button',{name:'Due time, '+clock})).toBeVisible();
+  await setTimeRuler(ruler,width===360?970:960);
+  await expect(ruler).toHaveAttribute('aria-valuetext',clock);
   await editor.getByRole('button',{name:'Save task'}).click();
   await expect(page.getByRole('checkbox',{name:'Complete Exact due'})).toBeVisible();
   const [created]=await taskRows(page);
@@ -110,7 +111,7 @@ for(const [width,scale] of [[360,130],[390,130],[390,100]]){
   await page.reload();await page.getByRole('button',{name:'More actions for Exact due'}).click();
   await page.getByRole('menuitem',{name:'Edit',exact:true}).click();
   const edit=page.getByRole('dialog',{name:'Edit task'});
-  await expect(edit.getByRole('button',{name:'Due time, '+clock})).toBeVisible();
+  await expect(edit.getByRole('slider',{name:'Due time',exact:true})).toHaveAttribute('aria-valuetext',clock);
   await edit.getByLabel('Title',{exact:true}).fill('Exact due edited');
   await edit.getByRole('button',{name:'Save changes'}).click();
   await expect(page.getByRole('checkbox',{name:'Complete Exact due edited'})).toBeVisible();
@@ -177,10 +178,7 @@ test('Editing an older off-grid instant keeps its precision and a date-only Capt
  await page.getByRole('button',{name:'More actions for '+task.title}).click();
  await page.getByRole('menuitem',{name:'Edit',exact:true}).click();
  const editor=page.getByRole('dialog',{name:'Edit task'});
- await editor.getByRole('button',{name:'Due time, 16:17:13.250'}).click();
- const clock=page.getByRole('dialog',{name:'Due time'});
- await expect(clock.getByLabel('Time (HH:MM)')).toHaveValue('16:17:13.250');
- await clock.getByRole('button',{name:'Use time'}).click();
+ await expect(editor.getByRole('slider',{name:'Due time',exact:true})).toHaveAttribute('aria-valuetext','16:17');
  await editor.getByLabel('Title',{exact:true}).fill('Previously saved proof');
  await editor.getByRole('button',{name:'Save changes'}).click();
  await page.getByRole('button',{name:'Capture',exact:true}).click();

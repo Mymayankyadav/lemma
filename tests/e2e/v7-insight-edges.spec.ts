@@ -12,18 +12,20 @@ async function open(page:Page,hash:string){
 
 test("§6.13 one range control changes every figure on the tab",async({page})=>{
  await open(page,"/insights");
- const hero=page.locator(".v7-progress-figure"),reviews=page.locator(".v7-stat").filter({hasText:"Reviews"});
- const before=[await hero.textContent(),await reviews.textContent(),await page.locator(".v7-chart-summary").first().textContent()];
+ const hero=page.getByRole("region",{name:"Focused time"}),chart=page.getByRole("region",{name:"Focus by day"});
+ const points=chart.locator("[data-chart-point]");
+ await expect(points.first()).toBeVisible();
+ const before=await points.count();
  await page.getByRole("radio",{name:"7 days"}).click();
  await expect(page).toHaveURL(/range=7/);
- await expect(page.locator(".v7-progress-hero .v7-meta")).toHaveText("focused in the last 7 days");
- const after=[await hero.textContent(),await reviews.textContent(),await page.locator(".v7-chart-summary").first().textContent()];
- expect(after).not.toEqual(before);
- expect(await page.getByRole("radiogroup",{name:"Range"}).count()).toBe(1);
+ await expect(hero.getByText("Focused · 7 days",{exact:true})).toBeVisible();
+ await expect(points).toHaveCount(7);
+ expect(before).not.toBe(7);
+ await expect(page.getByRole("radiogroup",{name:"Range"})).toHaveCount(1);
 });
 
 test("§6.13 every chart has a Show as table switch, the almanac uses one hue and subject charts have a legend",async({page})=>{
- for(const tab of ["","?tab=learning","?tab=time"]){
+ for(const tab of ["","?tab=learning"]){
   await open(page,"/insights"+tab);
   const charts=page.locator("section.v7-chart:not(.v7-chart-empty)");
   await expect(charts.first()).toBeVisible();
@@ -58,7 +60,8 @@ test("§6.13 the hero equals the sum of the Focus by day columns",async({page})=
 test("§6.14 each Settings row shows its current value, and a theme change updates at once",async({page})=>{
  await open(page,"/settings");
  const rows=page.locator("a.v7-settings-row");
- await expect(rows).toHaveCount(7);
+ await expect(rows).toHaveCount(8);
+ await expect(rows.filter({hasText:"Advanced"})).toContainText("Diagnostics");
  for(const row of await rows.all())expect(((await row.locator("small").textContent())??"").trim().length).toBeGreaterThan(0);
  await rows.filter({hasText:"Appearance"}).click();
  await page.getByRole("radio",{name:/^Day/}).click();

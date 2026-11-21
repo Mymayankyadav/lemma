@@ -17,7 +17,7 @@ test('released ruler controls appear on Today and Calendar without U4 overrides'
 });
 test('released completion treatment shows the whole close-day page',async({page})=>{
  await release(page,'/today/close');await expect(page.locator('html')).toHaveAttribute('data-v7-qed','');
- for(const name of ['Given and shown','Left open','Tomorrow opens with'])await expect(page.getByRole('region',{name,exact:true})).toBeVisible();
+ for(const name of ['Today','Left open','Tomorrow opens with'])await expect(page.getByRole('region',{name,exact:true})).toBeVisible();
  await expect(page.getByRole('button',{name:'Next',exact:true})).toHaveCount(0);
  await expect(page.getByRole('button',{name:/^Close the day/})).toBeVisible();
 });

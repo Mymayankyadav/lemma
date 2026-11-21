@@ -225,7 +225,7 @@ export default function V7CalendarDay(){
     onCreate={startsAt=>sheetParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}
-   {dayBlocks.length===0&&entries.length===0&&dueToday.length===0&&!suggested.length&&!visibleSlots.length&&
+   {dayBlocks.length===0&&savedSlices(entries,dayRange).length===0&&dueToday.length===0&&!suggested.length&&!visibleSlots.length&&
     <div className="v7-cal-empty-state"><EmptyMoment art="calendar" title="Nothing planned" action={{label:'Add a block',onClick:()=>sheetParams()}}/></div>}
   </div>}
   <OverdueSheetV7 open={overdueOpen} dues={dues} zone={zone} onClose={()=>setOverdueOpen(false)} onRefresh={()=>setReload(value=>value+1)}/>

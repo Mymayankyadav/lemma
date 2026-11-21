@@ -1,7 +1,7 @@
 import {RulerSlider} from './RulerSlider';
 
 export function dayMinute(value: string, fallback = 0) {
-  const match = /^(\d{2}):(\d{2})$/.exec(value);
+  const match = /^(\d{2}):(\d{2})(?::\d{2}(?:\.\d{1,9})?)?$/.exec(value);
   return match ? Math.min(1439,Number(match[1]) * 60 + Number(match[2])) : fallback;
 }
 

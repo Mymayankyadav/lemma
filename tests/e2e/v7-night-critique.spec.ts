@@ -22,7 +22,9 @@ test("B3 · Today, Calendar and Tasks show the same overdue count",async({page})
  await page.goto(at("/tasks"));
  await page.waitForLoadState("networkidle");
  await expect(page.getByRole("link",{name:today+" overdue. Triage"})).toBeVisible();
+ await page.getByRole("button",{name:"Filter",exact:true}).click();
  const tasks=Number((await page.getByRole("button",{name:/^Overdue \d+$/}).textContent())!.match(/\d+/)![0]);
+ await page.keyboard.press("Escape");
  const group=page.getByRole("region",{name:"Overdue"});
  await expect(group.getByRole("heading")).toHaveText("Overdue · "+tasks);
  // The global triage number is identical on all three screens. The task-only
@@ -51,10 +53,12 @@ test("CD1/PA5 · the Day grid starts above 45% of the viewport and shows at leas
 test("B4 · the Calendar date row is one line at 320 px in Day, Week and Month",async({page})=>{
  for(const view of ["day","week","month"]){
   await open(page,"/calendar?view="+view+"&date=2026-11-11",320);
-  const row=page.locator(".v7-cal-dateRow");
-  const box=await row.boundingBox(),month=await page.locator(".v7-cal-month").boundingBox();
-  expect(box!.height).toBeLessThanOrEqual(48);
-  expect(month!.height).toBeLessThanOrEqual(30);
+  const pill=page.getByRole("button",{name:/^Calendar date:/}),menu=page.getByRole("button",{name:/^Calendar view:/});
+  await expect(pill).toBeVisible();await expect(menu).toBeVisible();
+  const box=(await pill.boundingBox())!,viewBox=(await menu.boundingBox())!;
+  expect(box.height).toBeLessThanOrEqual(48);
+  expect(Math.abs(box.y-viewBox.y)).toBeLessThanOrEqual(4);
+  expect(viewBox.x+viewBox.width).toBeLessThanOrEqual(320);
  }
 });
 
@@ -77,7 +81,7 @@ test("B6 · the capture sheet opens with the focus ring, never a danger colour",
  const ring=await page.evaluate(()=>getComputedStyle(document.documentElement).getPropertyValue("--v7-role-focus-ring").trim());
  const probe=await page.evaluate(colour=>{const el=document.createElement("i");el.style.color=colour;document.body.append(el);const value=getComputedStyle(el).color;el.remove();return value;},ring);
  expect(rgb(outline)).toEqual(rgb(probe));
- await expect(page.getByText("Unavailable · Type something to add.")).toBeVisible();
+ await expect(page.getByRole("button",{name:"Add task",exact:true})).toBeDisabled();
 });
 
 test("B7/PA11 · no visible native select, date or time control on the v7 sheets and Close the day",async({page})=>{
