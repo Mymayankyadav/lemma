@@ -101,4 +101,5 @@ Checklists are in [10-roadmap.md](10-roadmap.md).
 | [13-scribe-rl-and-feedback.md](13-scribe-rl-and-feedback.md) | Reinforcement learning: problem definition, safe exploration, algorithm ladder, safe deployment, the Bayesian ignore update |
 | [14-scribe-free-compute.md](14-scribe-free-compute.md) | Training on free GPUs (Kaggle, Colab): budgets, week-one schedule, hyperparameters, session survival, export |
 | [15-tutor-signals.md](15-tutor-signals.md) | Signals to request from the tutor LLM, channels, safety rules, eleven ways to plug them into the decoder, crude gain estimates |
+| [16-ngram-spatial-decoder.md](16-ngram-spatial-decoder.md) | CPU-only n-gram and spatial decoder: architecture, datasets, English options including Gboard, training, fuzzy matching, three-slot suggestions, tutor hooks, tuning, rollout |
 | [REFERENCES.md](REFERENCES.md) | Sources |

@@ -166,3 +166,17 @@
 - Iyer & Ostendorf (1999). Modeling long distance dependence in language: topic mixtures versus dynamic cache models. IEEE Transactions on Speech and Audio Processing.
 - Bellegarda (2004). Statistical language model adaptation: review and perspectives. Speech Communication.
 - Campos et al. (2020). YAKE! Keyword extraction from single documents using multiple local features. Information Sciences.
+
+## n-gram and spatial decoder
+
+- Henze, Rukzio & Boll (2012). Observational and experimental investigation of typing behaviour using virtual keyboards on mobile devices. CHI.
+- Azenkot & Zhai (2012). Touch behavior with different postures on soft smartphone keyboards. MobileHCI.
+- Bi, Li & Zhai (2013). FFitts law: modeling finger touch with Fitts' law. CHI.
+- Hsu & Ottaviano (2013). Space-efficient data structures for top-k completion. WWW.
+- Bergstra & Bengio (2012). Random search for hyper-parameter optimization. JMLR 13.
+- Bergstra, Bardenet, Bengio & Kégl (2011). Algorithms for hyper-parameter optimization (TPE). NeurIPS.
+- Akiba et al. (2019). Optuna: a next-generation hyperparameter optimization framework. https://arxiv.org/abs/1907.10902
+- AOSP LatinIME English wordlist. https://android.googlesource.com/platform/packages/inputmethods/LatinIME/+/master/dictionaries/en_US_wordlist.combined.gz
+- Android SpellCheckerSession. https://developer.android.com/reference/android/view/textservice/SpellCheckerSession
+- wordfreq. https://github.com/rspeer/wordfreq
+- FineWeb-Edu dataset. https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu
