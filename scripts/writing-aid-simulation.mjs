@@ -1,6 +1,5 @@
 import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
-import {pathToFileURL} from 'node:url';
 import {chromium} from 'playwright';
 
 const evidence = 'docs/implementation/2026-11-21/writing-aid';
@@ -65,11 +64,11 @@ function activeKey(character) {
   return {' ': 'Space', '\n': 'New line'}[character] ?? character?.toLowerCase();
 }
 
-export async function collectReplay(browser, source = base, pageUrl = route.href) {
+async function collectReplay(browser) {
   const context = await browser.newContext({serviceWorkers: 'block'});
   const page = await context.newPage();
   try {
-    await page.goto(pageUrl);
+    await page.goto(route.href);
     return await page.evaluate(async ({drafts, base, uptake}) => {
       // Vite loads the exact app modules and resolves the engine's bundled dictionary imports.
       const {predictWritingAid} = await import(new URL('src/features/tutor/writingAid/engine.ts', base).href);
@@ -128,7 +127,7 @@ export async function collectReplay(browser, source = base, pageUrl = route.href
         return {id, truth, eligible, ignoredLists, events, transitions};
       }
       return Object.fromEntries(['balanced', 'fast', 'strict'].map(mode => [mode, drafts.map(row => replayDraft(row, mode))]));
-    }, {drafts, base: source, uptake: assumptions.uptake});
+    }, {drafts, base, uptake: assumptions.uptake});
   } finally {
     await context.close();
   }
@@ -149,7 +148,7 @@ function destinations(name, slot, last, geometry) {
   return slots[slot];
 }
 
-export function score(geometry, episodes, paths) {
+function score(geometry, episodes, paths) {
   const {keys, slots} = geometry;
   const baselineMs = drafts.reduce((total, draft) => total + draft.target.length * assumptions.manualMsPerCharacter, 0);
   const ignoredLists = episodes.reduce((total, episode) => total + episode.ignoredLists, 0);
@@ -416,26 +415,24 @@ async function capture(browser, profile) {
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
-  await mkdir(output, {recursive: true});
-  const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH});
-  const report = {browser: browser.version(), captureBuild: process.env.WRITING_AID_CAPTURE_URL ? 'separate preview' : 'vite source server',
-    assumptions, drafts: drafts.length, deliberatelyIncorrect: drafts.filter(draft => !draft.truth).length,
-    typedCharacters: drafts.reduce((total, draft) => total + draft.target.length, 0), profiles: []};
-  try {
-    const replay = await collectReplay(browser);
-    report.replay = Object.fromEntries(Object.entries(replay).map(([mode, episodes]) => [mode, episodes.map(({events, transitions, ...summary}) =>
-      ({...summary, accepts: events.filter(event => event.kind === 'accept'), sameWordSuccessiveKeystrokes: transitions.length}))]));
-    for (const profile of profiles) {
-      const {measured, paths} = await capture(browser, profile);
-      const modes = Object.fromEntries(Object.entries(replay).map(([mode, episodes]) => [mode, score(measured, episodes, paths)]));
-      report.profiles.push({...profile, geometry: measured, paths, modes});
-      console.log(profile.id, Object.fromEntries(Object.entries(modes.balanced.placement).map(([name, result]) => [name, result.averageMotorMs])));
-    }
-    report.inputToNextFrame = await measureReadyTime(browser);
-    console.log('Input to next frame opportunity', report.inputToNextFrame.summary);
-  } finally {
-    await browser.close();
+await mkdir(output, {recursive: true});
+const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH});
+const report = {browser: browser.version(), captureBuild: process.env.WRITING_AID_CAPTURE_URL ? 'separate preview' : 'vite source server',
+  assumptions, drafts: drafts.length, deliberatelyIncorrect: drafts.filter(draft => !draft.truth).length,
+  typedCharacters: drafts.reduce((total, draft) => total + draft.target.length, 0), profiles: []};
+try {
+  const replay = await collectReplay(browser);
+  report.replay = Object.fromEntries(Object.entries(replay).map(([mode, episodes]) => [mode, episodes.map(({events, transitions, ...summary}) =>
+    ({...summary, accepts: events.filter(event => event.kind === 'accept'), sameWordSuccessiveKeystrokes: transitions.length}))]));
+  for (const profile of profiles) {
+    const {measured, paths} = await capture(browser, profile);
+    const modes = Object.fromEntries(Object.entries(replay).map(([mode, episodes]) => [mode, score(measured, episodes, paths)]));
+    report.profiles.push({...profile, geometry: measured, paths, modes});
+    console.log(profile.id, Object.fromEntries(Object.entries(modes.balanced.placement).map(([name, result]) => [name, result.averageMotorMs])));
   }
-  await writeFile(resolve(output, 'simulation.json'), JSON.stringify(report, null, 2) + '\n');
+  report.inputToNextFrame = await measureReadyTime(browser);
+  console.log('Input to next frame opportunity', report.inputToNextFrame.summary);
+} finally {
+  await browser.close();
 }
+await writeFile(resolve(output, 'simulation.json'), JSON.stringify(report, null, 2) + '\n');

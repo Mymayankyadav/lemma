@@ -1,7 +1,6 @@
 import {padEdit, type PadEdit} from '../../pad/padEdit';
 import {sameEditTarget} from '../input/recognitionPolicy';
 import type {EditTarget} from '../input/types';
-import {tutorWritingContextFingerprint, type TutorWritingContext, type TutorWritingEvidence} from './tutorContext';
 
 export type WritingAidMode = 'balanced' | 'fast' | 'strict' | 'off';
 export type WritingAidSurface = 'words' | 'replace' | 'correction' | 'ghost';
@@ -28,8 +27,6 @@ export interface WritingAidRequest {
   readonly surfaces?: WritingAidSurfaces;
   readonly composing: boolean;
   readonly readOnly: boolean;
-  /** Optional bounded, app-bound context from the currently visible tutor reply. */
-  readonly tutorContext?: TutorWritingContext | null;
 }
 
 export interface WritingAidProposal {
@@ -40,9 +37,6 @@ export interface WritingAidProposal {
   readonly insert: string;
   readonly label: string;
   readonly snapshot: WritingAidRequest;
-  readonly tutorEvidence?: TutorWritingEvidence;
-  /** Binds even non-tutor offers to the exact currently visible context. */
-  readonly contextFingerprint?: string;
 }
 
 export interface WritingAidSuggestions {
@@ -91,16 +85,14 @@ export function sameWritingAidRequest(left: WritingAidRequest, right: WritingAid
     x?.text === y?.text && x?.start === y?.start && x?.continuation === y?.continuation &&
     left.mode === right.mode && left.readOnly === right.readOnly && left.composing === right.composing &&
     l.words === r.words && l.replace === r.replace && l.correction === r.correction && l.ghost === r.ghost &&
-    sameEditTarget(left.target, right.target) &&
-    tutorWritingContextFingerprint(left.tutorContext) === tutorWritingContextFingerprint(right.tutorContext);
+    sameEditTarget(left.target, right.target);
 }
 
 export function writingAidProposal(
   snapshot: WritingAidRequest, kind: WritingAidProposal['kind'],
-  start: number, end: number, insert: string, label = insert, tutorEvidence?: TutorWritingEvidence,
+  start: number, end: number, insert: string, label = insert,
 ): WritingAidProposal {
-  return {kind, start, end, before: snapshot.cursor.text.slice(start, end), insert, label, snapshot,
-    contextFingerprint: tutorWritingContextFingerprint(snapshot.tutorContext), ...(tutorEvidence ? {tutorEvidence} : {})};
+  return {kind, start, end, before: snapshot.cursor.text.slice(start, end), insert, label, snapshot};
 }
 
 /** Only the displayed revision can be committed. The trailing caret follows the changed draft. */
@@ -109,7 +101,6 @@ export function applyWritingAidProposal(request: WritingAidRequest, proposal: Wr
   const {kind, start, end, before, insert} = proposal;
   if (!canSuggestWritingAid(request) || !anchor || !surfaces[kind === 'word' ? 'words' : kind] ||
       !sameWritingAidRequest(request, proposal.snapshot) ||
-      (proposal.contextFingerprint ?? '') !== tutorWritingContextFingerprint(request.tutorContext) ||
       !Number.isInteger(start) || !Number.isInteger(end) ||
       start < anchor.start || start > end || end > cursor.end ||
       cursor.text.slice(start, end) !== before || !insert || insert === before ||

@@ -2,7 +2,6 @@ import {McpServer,createMcpHandler,z} from './deps.ts'
 import type {Db} from './db.ts'
 import {tutorGrantHash} from '../_shared/tutor-connector.ts'
 import {tutorImageRows,tutorTurnContent} from './tutor-images.ts'
-import {packTutorWritingReply,TUTOR_WRITING_INSTRUCTIONS} from '../_shared/tutor-writing.ts'
 
 const uuid=z.string().uuid()
 const base={turnId:uuid,operationId:uuid}
@@ -19,7 +18,6 @@ export const tutorInputSchemas={
  renew:z.object(leased).strict(),
  reply:z.object({...leased,expectedVersion:z.number().int().positive(),messageId:uuid,
   body:replyText,
-  writingAid:z.unknown().optional().describe('Optional structured writing hints. '+TUTOR_WRITING_INSTRUCTIONS),
   nextQuestion:replyText.describe('Full next question copied verbatim from body, including display math and paragraph breaks.').optional(),
   reportedHost:z.string().min(1).max(100).optional(),
   citations:z.array(z.union([z.object({kind:z.literal('checkpoint'),refId:uuid,version:z.string().max(20)}).strict(),
@@ -43,13 +41,12 @@ export async function serveTutor(req:Request,db:Db):Promise<Response>{
  if(active.data!==true)return new Response(null,{status:401})
  const handler=createMcpHandler(()=>{
   const server=new McpServer({name:'lemma-checkpoint-tutor',version:'1.0'},
-   {instructions:'Answer the specified pending question with its selected context. A claim lasts five minutes. Suggestions wait for the learner to review. '+TUTOR_WRITING_INSTRUCTIONS})
+   {instructions:'Answer the specified pending question with its selected context. A claim lasts five minutes. Suggestions wait for the learner to review.'})
   for(const [name,operation] of tools){
    server.registerTool(name,{description:operation==='get'
     ?'Read the granted turn with any drawings and photos in composition order.'
     :name.replaceAll('_',' '),inputSchema:tutorInputSchemas[operation],annotations:{readOnlyHint:operation==='get'}},async(args:Record<string,unknown>)=>{
-    const command=operation==='reply'?packTutorWritingReply({...args,operation}):{...args,operation}
-    const {data,error}=await db.rpc('tutor_grant_command',{p_token_hash:digest,p_command:command})
+    const {data,error}=await db.rpc('tutor_grant_command',{p_token_hash:digest,p_command:{...args,operation}})
     const pending=operation==='get'&&data?.status==='pending'
     if(error||pending&&(typeof args.turnId!=='string'||data.turnId!==args.turnId.toLowerCase())) {
      return {isError:true,content:[{type:'text' as const,text:'Turn, grant or claim unavailable, changed, or invalid. Read the turn before retrying.'}]}

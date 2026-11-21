@@ -10,16 +10,14 @@ export interface WritingAidFeatures {
 }
 
 export type WritingAidFeedback = 'refresh' | 'accept' | 'kept' | 'undo' | 'partial-edit' |
-  'continued-match' | 'divergent' | 'alternate' | 'dismiss' | 'personal-use' | 'auto-undo' | 'auto-kept';
+  'continued-match' | 'divergent' | 'alternate' | 'dismiss' | 'personal-use';
 
 type Weight = {value: number; at: number};
 type Vocabulary = {uses: number; at: number; observations: number};
-export type WritingAutoTrust = Readonly<Record<string, Readonly<{accepts: number; at: number}>>>;
 export interface WritingAidModel {
   version: 1;
   weights: Record<string, Weight>;
   vocabulary: Record<string, Vocabulary>;
-  autoTrust: Record<string, {accepts: number; at: number}>;
 }
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -28,12 +26,9 @@ const VOCABULARY_HALF_LIFE = 180 * DAY;
 const MAX_WEIGHTS = 512;
 const MAX_VOCABULARY = 128;
 const MAX_VALUE = 3;
-const AUTO_TRUST_TTL = 30 * DAY;
-const AUTO_RULE_IDS = new Set(['teh-to-the', 'recieve-to-receive', 'recieved-to-received', 'seperate-to-separate']);
 const REWARD: Readonly<Record<WritingAidFeedback, number>> = {
   refresh: -.7, accept: 1, kept: .35, undo: -1.5, 'partial-edit': -.6,
   'continued-match': .16, divergent: -.08, alternate: -.2, dismiss: -.45, 'personal-use': .14,
-  'auto-undo': -1.5, 'auto-kept': .12,
 };
 
 const lexical = (value: string) => (value.toLocaleLowerCase().match(/[\p{L}\p{M}]+/u)?.[0] ?? '').slice(0, 32);
@@ -56,25 +51,7 @@ const clamp = (value: number, max: number) => Math.max(-max, Math.min(max, value
 
 export function createWritingAidModel(): WritingAidModel {
   return {version: 1, weights: Object.create(null) as Record<string, Weight>,
-    vocabulary: Object.create(null) as Record<string, Vocabulary>, autoTrust: Object.create(null) as WritingAidModel['autoTrust']};
-}
-
-/** Only explicit manual acceptance of this exact pair builds expiring trust. */
-export function recordWritingAutoAcceptance(model: WritingAidModel, ruleId: string, now = Date.now()): void {
-  if (!AUTO_RULE_IDS.has(ruleId) || !Number.isFinite(now)) return;
-  const prior = model.autoTrust[ruleId];
-  const consecutive = prior && now >= prior.at && now - prior.at <= AUTO_TRUST_TTL ? prior.accepts : 0;
-  model.autoTrust[ruleId] = {accepts: Math.min(2, consecutive + 1), at: now};
-}
-
-export function revokeWritingAutoTrust(model: WritingAidModel, ruleId: string): void {
-  if (AUTO_RULE_IDS.has(ruleId)) delete model.autoTrust[ruleId];
-}
-
-export function writingAutoTrustQualified(trust: WritingAutoTrust | undefined, ruleId: string, now = Date.now()): boolean {
-  const entry = trust?.[ruleId];
-  return Boolean(entry && Number.isInteger(entry.accepts) && entry.accepts >= 2 && Number.isFinite(entry.at) &&
-    now >= entry.at && now - entry.at <= AUTO_TRUST_TTL);
+    vocabulary: Object.create(null) as Record<string, Vocabulary>};
 }
 
 /** Features derive only from the learner-authored portion of the current draft. */
@@ -174,14 +151,6 @@ export function parseWritingAidModel(value: unknown): WritingAidModel {
     if (typeof uses === 'number' && Number.isFinite(uses) && uses > 0 && typeof at === 'number' && Number.isFinite(at)) {
       const count = typeof observations === 'number' && Number.isFinite(observations) ? observations : Math.ceil(uses);
       model.vocabulary[key] = {uses: Math.min(30, uses), at: Math.min(at, Date.now()), observations: Math.min(30, Math.max(0, count))};
-    }
-  }
-  if (stored.autoTrust && typeof stored.autoTrust === 'object' && !Array.isArray(stored.autoTrust)) {
-    for (const [key, raw] of Object.entries(stored.autoTrust).slice(0, AUTO_RULE_IDS.size)) {
-      if (!AUTO_RULE_IDS.has(key) || !raw || typeof raw !== 'object') continue;
-      const {accepts, at} = raw as Record<string, unknown>;
-      if (typeof accepts === 'number' && Number.isInteger(accepts) && accepts >= 1 && accepts <= 2 &&
-          typeof at === 'number' && Number.isFinite(at) && at <= Date.now()) model.autoTrust[key] = {accepts, at};
     }
   }
   return model;

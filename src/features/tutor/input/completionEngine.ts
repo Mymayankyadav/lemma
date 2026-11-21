@@ -2,7 +2,6 @@ import {insertPadText, padEdit, type PadEdit} from '../../pad/padEdit';
 import {aliasCompletions, plainProse, suppliedShorthand, trailingSpace, wordAtCaret,
   type ApprovedCompletion} from './completionPolicy';
 import {symbolById} from './symbolCatalog';
-import {proofWritingWords} from './proofVocabulary';
 import {encodeTutorSymbol} from './symbolEdit';
 
 export interface CompletionRevisions {
@@ -16,6 +15,32 @@ export interface CompletionProposal extends ApprovedCompletion, CompletionRevisi
 
 const INITIAL_REVISIONS: CompletionRevisions = {editorRevision: 0, selectionRevision: 0};
 const QUICK_SYMBOLS = ['forall', 'exists', 'element-of'] as const;
+const WORD_BANK = new Set((
+  'the a an is are be by of to in on at for from with that this then thus hence so since because if iff and or not '
+  + 'let suppose assume take consider fix choose given define defined denote write we have get show prove proof claim '
+  + 'it its there exists exist every each all any some no none only unique uniquely both either neither other another '
+  + 'such where which when while whenever therefore conversely similarly likewise moreover furthermore however indeed '
+  + 'follows following implies implying means meaning gives giving yields yielding shows showing proves proving '
+  + 'contradiction contradicts absurd case cases otherwise first second finally next now note recall observe '
+  + 'definition lemma theorem corollary proposition hypothesis assumption induction base step inductive '
+  + 'function map maps mapping image images preimage preimages inverse injective surjective bijective injection surjection bijection '
+  + 'identity composition composite restriction extension domain codomain range kernel fibre fibres fiber fibers '
+  + 'set sets subset subsets superset element elements member members union intersection complement difference empty '
+  + 'finite infinite countable uncountable family indexed collection partition partitions class classes representative '
+  + 'relation relations equivalence reflexive symmetric transitive antisymmetric order ordering partial total chain chains '
+  + 'generated generates smallest largest least greatest minimal maximal upper lower bound bounds supremum infimum '
+  + 'quotient quotients projection canonical natural well-defined independent choice axiom zorn '
+  + 'topology topological space spaces open closed closure interior boundary dense neighbourhood neighborhood basis base '
+  + 'subspace product continuous continuity homeomorphism homeomorphic compact compactness connected connectedness '
+  + 'path hausdorff metric distance ball limit limits converges convergent convergence sequence sequences subsequence '
+  + 'cauchy bounded unbounded increasing decreasing monotone positive negative zero nonzero integer integers real reals '
+  + 'number numbers rational irrational even odd prime divides divisible multiple greater less equal equals than at most least '
+  + 'group groups subgroup normal homomorphism isomorphism isomorphic ring field vector linear module '
+  + 'true false holds hold satisfies satisfy satisfying contains contain containing belongs belong lies lie '
+  + 'arbitrary fixed given same different distinct disjoint nonempty pairwise mutually exactly unique '
+  + 'need want check verify suffices enough remains left right side direction inclusion inclusions both '
+  + 'hint stuck think sure why how what yes ok okay'
+).split(' '));
 const COMMON_TYPOS: ReadonlyMap<string, string> = new Map(Object.entries({
   teh: 'the', thier: 'their', becuase: 'because', shwo: 'show',
   asusme: 'assume', therfore: 'therefore',
@@ -61,7 +86,7 @@ function offeredCorrection(lower: string): string | undefined {
   if (common) return common;
   let best: string | undefined;
   let bestCost = Infinity;
-  for (const word of proofWritingWords) {
+  for (const word of WORD_BANK) {
     if (word[0] !== lower[0] && word[1] !== lower[1]) continue;
     const cost = typoCost(lower, word);
     if (cost < bestCost) {
@@ -78,17 +103,17 @@ function lexicalCompletions(edit: PadEdit, context: readonly string[], keptWords
   const lower = prefix.toLowerCase();
   // Completed words carry their own meaning. For example, "if" is a complete
   // connective even when "iff" appears in the checkpoint vocabulary.
-  if (proofWritingWords.has(lower)) return [];
+  if (WORD_BANK.has(lower)) return [];
   const spellings = lexicalSources(edit, prefix, context);
   const range = {start: edit.start - prefix.length, end: edit.end};
   const trail = trailingSpace(edit.text.slice(edit.end));
   const make = (text: string, kind: ApprovedCompletion['kind'], policyRuleId: ApprovedCompletion['policyRuleId']): ApprovedCompletion =>
     ({text, kind, policyRuleId, replace: range, replacement: text + trail, sourceRanges: [range]});
-  const prefixMatches = [...new Set([...proofWritingWords, ...spellings.keys()])].filter(word => word.startsWith(lower));
+  const prefixMatches = [...new Set([...WORD_BANK, ...spellings.keys()])].filter(word => word.startsWith(lower));
   const fix = !keptWords.includes(lower) && !prefixMatches.length ? offeredCorrection(lower) : undefined;
   if (fix) return [make(prefix, 'keep', 'keep-original'), make(caseLike(prefix, fix), 'fix', 'spelling-correction')];
   return prefixMatches.filter(word => word.length > lower.length).slice(0, 2)
-    .map(word => make(caseLike(prefix, proofWritingWords.has(word) ? word : spellings.get(word)!), 'word', 'word-prefix'));
+    .map(word => make(caseLike(prefix, WORD_BANK.has(word) ? word : spellings.get(word)!), 'word', 'word-prefix'));
 }
 
 function quickSymbols(edit: PadEdit): ApprovedCompletion[] {

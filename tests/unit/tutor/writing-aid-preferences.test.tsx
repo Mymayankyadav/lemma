@@ -4,10 +4,10 @@ import {afterEach, beforeEach, expect, it, vi} from 'vitest';
 import {authGeneration, publishAuth} from '../../../src/data/authBoundary';
 import {removeDeletedOwnerTutorData, tutorStorageOwner} from '../../../src/data/tutor/local-storage';
 import {
-  setTutorHints, setWritingAidAutoCorrection, setWritingAidMode, setWritingAidSurface, useWritingAidPreferences,
+  setWritingAidMode, setWritingAidSurface, useWritingAidPreferences,
 } from '../../../src/features/tutor/writingAid/preferences';
 import {WritingAidSettings} from '../../../src/features/tutor/writingAid/WritingAidSettings';
-import {createWritingAidModel, recordWritingAidVocabulary, recordWritingAutoAcceptance} from '../../../src/features/tutor/writingAid/learning';
+import {createWritingAidModel, recordWritingAidVocabulary} from '../../../src/features/tutor/writingAid/learning';
 import {
   loadWritingAidPersonalization, resetWritingAidPersonalization, saveWritingAidModel, setWritingAidPersonalization,
 } from '../../../src/features/tutor/writingAid/personalization';
@@ -105,53 +105,10 @@ it('falls back on invalid settings and leaves independently stored handwriting p
   expect(localStorage.getItem(key(owner))).toBe('balanced:15');
 });
 
-it('keeps automatic correction independently switchable and scoped to the current owner', async () => {
-  expect(prefs.mode).toBe('off');
-  expect(prefs.autoCorrection).toBe(true);
-  await act(async () => {expect(setWritingAidMode('balanced', prefs.scopeKey)).toBe(true);});
-  const initialScope = prefs.scopeKey;
-  await act(async () => {expect(setWritingAidAutoCorrection(false, initialScope)).toBe(true);});
-  expect(prefs.autoCorrection).toBe(false);
-  expect(localStorage.getItem(key(owner))).toBe('balanced:15:0');
-  await act(async () => publishAuth({id: 'auto-settings-other'}));
-  expect(prefs.autoCorrection).toBe(true);
-  expect(setWritingAidAutoCorrection(false, initialScope)).toBe(false);
-  await act(async () => publishAuth({id: owner}));
-  expect(prefs.autoCorrection).toBe(false);
-});
-
-it('migrates old preferences to wording-only tutor hints and keeps the choice owner-scoped', async () => {
-  localStorage.setItem(key(owner), 'balanced:7:0');
-  await act(async () => window.dispatchEvent(new StorageEvent('storage', {key: key(owner)})));
-  expect(prefs).toMatchObject({mode: 'balanced', autoCorrection: false, tutorHints: 'wording'});
-  expect(prefs.surfaces.ghost).toBe(false);
-  const group = [...host.querySelectorAll('fieldset')].find(item => item.querySelector('legend')?.textContent === 'Tutor hints')!;
-  expect(group.querySelector<HTMLInputElement>('input[aria-label="Wording"]')?.checked).toBe(true);
-  expect(group.querySelector('input[aria-label="Wording and notation"]')).not.toBeNull();
-  expect(group.querySelector('input[aria-label="Off"]')).not.toBeNull();
-  expect(group.textContent).toContain('Experimental');
-
-  const original = prefs.scopeKey;
-  await act(async () => {expect(setTutorHints('all', original)).toBe(true);});
-  expect(prefs.tutorHints).toBe('all');
-  expect(localStorage.getItem(key(owner))).toBe('balanced:7:0:a');
-  await act(async () => publishAuth({id: 'tutor-hints-other'}));
-  expect(prefs.tutorHints).toBe('wording');
-  expect(setTutorHints('off', original)).toBe(false);
-  await act(async () => {expect(setTutorHints('off', prefs.scopeKey)).toBe(true);});
-  expect(localStorage.getItem(key('tutor-hints-other'))).toBe('off:15:1:n');
-  await act(async () => publishAuth({id: owner}));
-  expect(prefs.tutorHints).toBe('all');
-  await act(async () => {expect(setTutorHints('wording', prefs.scopeKey)).toBe(true);});
-  expect(localStorage.getItem(key(owner))).toBe('balanced:7:0');
-});
-
 it('isolates learned vocabulary by owner, resets it, and deletes it with tutor data', async () => {
   const originalScope = prefs.scopeKey;
   const model = createWritingAidModel();
   recordWritingAidVocabulary(model, 'homomorphism', 1000);
-  recordWritingAutoAcceptance(model, 'teh-to-the');
-  recordWritingAutoAcceptance(model, 'teh-to-the');
   const {generation} = loadWritingAidPersonalization(originalScope);
   await act(async () => {expect(saveWritingAidModel(originalScope, generation, model)).toBe(true);});
   expect(tutorStorageOwner(modelKey(owner))).toBe(owner);
@@ -159,7 +116,6 @@ it('isolates learned vocabulary by owner, resets it, and deletes it with tutor d
   await act(async () => publishAuth({id: 'different-writing-owner'}));
   const otherScope = prefs.scopeKey;
   expect(loadWritingAidPersonalization(otherScope).model.vocabulary.homomorphism).toBeUndefined();
-  expect(loadWritingAidPersonalization(otherScope).model.autoTrust['teh-to-the']).toBeUndefined();
   expect(saveWritingAidModel(originalScope, generation, model)).toBe(false);
   await act(async () => {
     expect(saveWritingAidModel(otherScope, loadWritingAidPersonalization(otherScope).generation, model)).toBe(true);
@@ -167,9 +123,8 @@ it('isolates learned vocabulary by owner, resets it, and deletes it with tutor d
   });
   await act(async () => {expect(resetWritingAidPersonalization(otherScope)).toBe(true);});
   expect(loadWritingAidPersonalization(otherScope).enabled).toBe(false);
-  expect(loadWritingAidPersonalization(otherScope).model).toEqual(createWritingAidModel());
+  expect(Object.keys(loadWritingAidPersonalization(otherScope).model.vocabulary)).toEqual([]);
   await act(async () => publishAuth({id: owner}));
-  expect(loadWritingAidPersonalization(prefs.scopeKey).model.autoTrust['teh-to-the'].accepts).toBe(2);
   await act(async () => {expect(await removeDeletedOwnerTutorData(owner, authGeneration())).toBe(true);});
   expect(localStorage.getItem(modelKey(owner))).toBeNull();
   expect(localStorage.getItem(modelKey('different-writing-owner'))).not.toBeNull();

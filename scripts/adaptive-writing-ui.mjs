@@ -1,22 +1,20 @@
-import {mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
-import {createHash} from 'node:crypto';
-import {execFileSync} from 'node:child_process';
+import {mkdir, readFile, writeFile} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {chromium} from 'playwright';
 
-const output = resolve(process.env.WRITING_AID_OUTPUT ?? 'docs/implementation/2026-11-21/writing-aid-tutor');
+const output = resolve(process.env.WRITING_AID_OUTPUT ?? 'docs/implementation/2026-11-21/writing-aid-adaptive');
 const base = process.env.WRITING_AID_URL ?? 'http://127.0.0.1:4190/lemma/';
-const route = new URL('?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor', base);
+const route = new URL('?demo=1&flags=v7Shell,v6Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor', base);
 const baseline = JSON.parse(await readFile('docs/implementation/2026-11-21/writing-aid/simulation.json', 'utf8'));
 const profiles = [
   {id: 'narrow-day', width: 320, height: 640, scale: 160, scheme: 'light', touch: true},
   {id: 'phone-night', width: 390, height: 844, scale: 100, scheme: 'dark', touch: true},
   {id: 'landscape-day', width: 844, height: 390, scale: 100, scheme: 'light', touch: true},
-  {id: 'desktop-day', width: 1280, height: 800, scale: 100, scheme: 'light', touch: false},
   {id: 'desktop-night', width: 1280, height: 800, scale: 100, scheme: 'dark', touch: false},
 ];
 const assumptions = {wpm: 30, charactersPerWord: 5, msPerCharacter: 400,
-  fittsInterceptMs: 130, fittsSlopeMs: 65, scanMs: 75, mistakePenaltyMs: [1000, 2000, 4000]};
+  fittsInterceptMs: 130, fittsSlopeMs: 65, scanMs: 75, swipeDistancePx: 56,
+  swipeSpeedPxPerSecond: [150, 300, 600], releaseMs: 80, mistakePenaltyMs: [1000, 2000, 4000]};
 const rounded = number => Math.round(number * 100) / 100;
 const box = async locator => {
   await locator.waitFor();
@@ -49,11 +47,6 @@ async function measure(browser, profile) {
     const errors = [];
     page.on('pageerror', error => errors.push(String(error)));
     await page.addInitScript(scale => {
-      // The Android bundle does not register a service worker. Match that
-      // behavior in production preview without showing its blocked-SW toast.
-      for (let proto = navigator; proto; proto = Object.getPrototypeOf(proto)) {
-        if (Object.prototype.hasOwnProperty.call(proto, 'serviceWorker')) Reflect.deleteProperty(proto, 'serviceWorker');
-      }
       document.addEventListener('DOMContentLoaded', () => {document.documentElement.style.fontSize = `${scale}%`;});
       localStorage.setItem('lemma.demo-tutor.writing-aid-model.v1:default', JSON.stringify({version: 1, enabled: false,
         model: {version: 1, weights: {}, vocabulary: {}}}));
@@ -71,7 +64,7 @@ async function measure(browser, profile) {
         boxes.push(await box(locator));
         if (profile.touch) await locator.tap(); else await locator.click();
       }
-      if (await editor(page).inputValue() !== expected) throw new Error(`${profile.id}/${name}: unexpected draft`);
+      if (await editor(page).textContent() !== expected) throw new Error(`${profile.id}/${name}: unexpected draft`);
       const moves = boxes.slice(1).map((to, i) => motion(boxes[i], to));
       paths[name] = {taps: moves.length, boxes, travelPx: rounded(moves.reduce((sum, m) => sum + m.distancePx, 0)),
         modeledMs: rounded(moves.reduce((sum, m) => sum + m.ms + assumptions.scanMs, 0))};
@@ -94,6 +87,11 @@ async function measure(browser, profile) {
     const slots = await page.locator('[data-writing-aid-word]').evaluateAll(nodes => nodes.map(node => {
       const b = node.getBoundingClientRect(); return {x: b.x, y: b.y, width: b.width, height: b.height};
     }));
+    const key = await box(keys().and(button(page, 'e')));
+    const start = {x: input.x + Math.max(2, (input.width - 56) / 2) - 12, y: input.y, width: 24, height: input.height};
+    const reach = motion(key, start);
+    const swipe = assumptions.swipeSpeedPxPerSecond.map(speed => ({speedPxPerSecond: speed,
+      modeledMs: rounded(reach.ms + assumptions.scanMs + 1000 * 56 / speed + assumptions.releaseMs)}));
     const geometry = {input, floating, keyboard, slots, overlapsKeyboard: overlaps(floating, keyboard),
       horizontalOverflow: await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
       floatingWithinViewport: floating.x >= 0 && floating.y >= 0 && floating.x + floating.width <= profile.width && floating.y + floating.height <= profile.height};
@@ -102,40 +100,9 @@ async function measure(browser, profile) {
     await enter(page, 'We wrote teh');
     await page.locator('[data-writing-aid-source]').waitFor();
     await page.screenshot({path: resolve(output, `${profile.id}-replacement.png`), animations: 'disabled'});
-    await enter(page, 'Let eps');
-    await button(page, 'Replace eps with ε').waitFor();
-    await page.screenshot({path: resolve(output, `${profile.id}-notation.png`), animations: 'disabled'});
-    await enter(page, 'nota');
-    await button(page, 'Insert notation').waitFor();
-    await page.screenshot({path: resolve(output, `${profile.id}-words.png`), animations: 'disabled'});
-
-    // Qualify one exact pair with two explicit accepts, then capture the
-    // automatic correction and its immediate undo on the actual textarea.
-    await page.evaluate(() => {
-      localStorage.removeItem('lemma.demo-tutor.writing-aid-model.v1:default');
-      window.dispatchEvent(new Event('storage'));
-    });
-    await enter(page, 'I read teh');
-    for (let count = 0; count < 2; count++) {
-      const correction = button(page, 'Replace teh with the');
-      await correction.waitFor();
-      if (profile.touch) await correction.tap(); else await correction.click();
-      if (count === 0) await page.keyboard.type(' I read teh');
-    }
-    await page.keyboard.type(' I read teh ');
-    const autoNotice = page.locator('.writing-aid-auto-correction');
-    await autoNotice.waitFor();
-    if (await editor(page).inputValue() !== 'I read the I read the I read the ') throw new Error(`${profile.id}: automatic correction missing`);
-    const autoCard = await box(page.locator('[data-writing-aid-review]'));
-    const autoUndo = await box(button(page, 'Undo suggestion'));
-    if (overlaps(autoCard, keyboard) || autoCard.x < 0 || autoCard.y < 0 || autoCard.x + autoCard.width > profile.width ||
-        autoCard.y + autoCard.height > profile.height || autoUndo.width < 44 || autoUndo.height < 44) throw new Error(`Invalid auto correction geometry: ${profile.id}`);
-    await page.screenshot({path: resolve(output, `${profile.id}-auto.png`), animations: 'disabled'});
-    if (profile.touch) await button(page, 'Undo suggestion').tap(); else await button(page, 'Undo suggestion').click();
-    if (await editor(page).inputValue() !== 'I read the I read the I read teh ') throw new Error(`${profile.id}: automatic undo failed`);
     if (errors.length) throw new Error(errors.join('\n'));
     const old = baseline.profiles.find(item => item.id === profile.id)?.paths;
-    return {...profile, geometry, autoCorrection: {card: autoCard, undo: autoUndo}, paths, baseline: old && {continuationMs: old.continuation.modeledMs,
+    return {...profile, geometry, paths, swipe, baseline: old && {continuationMs: old.continuation.modeledMs,
       spellingMs: old.spelling.modeledMs, dismissViaMoreMs: old.keepTyped.modeledMs},
       correctionBreakEvenMs: assumptions.mistakePenaltyMs.map(penalty => ({penaltyMs: penalty,
         // Compare saving five characters with acceptance/scan plus a wrong-choice penalty.
@@ -145,27 +112,12 @@ async function measure(browser, profile) {
 
 await mkdir(output, {recursive: true});
 const browser = await chromium.launch({executablePath: process.env.CHROMIUM_PATH ?? '/usr/bin/chromium'});
-const sourcePaths = ['src/features/tutor/TutorComposer.tsx', 'src/features/tutor/TutorAnswerEditor.tsx',
-  'src/features/tutor/WritingAidBar.tsx', 'src/features/tutor/writing-aid.css', 'src/features/tutor/writingAid/engine.ts',
-  'src/features/tutor/writingAid/useWritingAid.ts', 'src/features/tutor/writingAid/policy.ts',
-  'src/features/tutor/writingAid/learning.ts', 'src/features/tutor/writingAid/autoCorrect.ts',
-  'src/features/tutor/writingAid/tutorContext.ts', 'scripts/adaptive-writing-ui.mjs'];
-const sourceSha256 = Object.fromEntries(await Promise.all(sourcePaths.map(async path => [path,
-  createHash('sha256').update(await readFile(path)).digest('hex')])));
-const captureBuild = process.env.WRITING_AID_CAPTURE_BUILD ?? 'source server';
-const builtAssetsSha256 = {};
-if (captureBuild === 'production preview') {
-  for (const name of (await readdir('dist/assets')).filter(name => /^(?:DemoCheckpointTutor|TutorPage|WritingAidSettings|engine)-.*\.(?:js|css)$/.test(name)).sort()) {
-    builtAssetsSha256[name] = createHash('sha256').update(await readFile('dist/assets/' + name)).digest('hex');
-  }
-}
-const report = {browser: browser.version(), captureBuild, baseCommit: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(),
-  sourceSha256, ...(captureBuild === 'production preview' ? {builtAssetsSha256} : {}), assumptions, profiles: []};
+const report = {browser: browser.version(), captureBuild: 'source server', assumptions, profiles: []};
 try {
   for (const profile of profiles) {
     const result = await measure(browser, profile);
     report.profiles.push(result);
-    console.log(profile.id, JSON.stringify({tapMs: result.paths.continuation.modeledMs,
+    console.log(profile.id, JSON.stringify({tapMs: result.paths.continuation.modeledMs, swipeMs: result.swipe,
       dismissMs: result.paths.dismiss.modeledMs, baseline: result.baseline}));
   }
 } finally {await browser.close();}
