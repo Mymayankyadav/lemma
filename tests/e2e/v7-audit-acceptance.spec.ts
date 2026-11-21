@@ -9,7 +9,7 @@ for(const scheme of ['light','dark'] as const){
   await openScene(page,shot('review-hub'),scheme,{width:390,height:844});
   const chart=page.locator('.v7-chart').filter({has:page.getByRole('heading',{name:'Due each day'})});
   await expect(chart.locator('[data-chart-point]')).toHaveCount(14);
-  await expect(chart).toContainText('next 14 days');
+  await expect(chart.getByText(/^[1-9][\d,]* due in 14 days$/)).toBeAttached();
   const series=await chart.locator('.v7-chart-direct-label').count();
   expect(series).toBeGreaterThan(1);expect(series).toBeLessThanOrEqual(3);
   await expect(chart.locator('.v7-chart-legend')).toHaveCount(0);
@@ -42,7 +42,11 @@ for(const scheme of ['light','dark'] as const)for(const name of ['today','focus'
   await expect(page.locator('html')).toHaveAttribute('data-contrast','high');
   await expect(page.getByRole('main')).toHaveCount(1);
   const nav=page.getByRole('navigation',{name:'Main navigation'});
-  await expect(nav.getByRole('link')).toHaveCount(5);
+  const detail=['focus','review-round','path-map'].includes(name);
+  await expect(nav.getByRole('link')).toHaveCount(detail?0:5);
+  if(name==='focus')await expect(page.getByTestId('focus-clock')).toBeVisible();
+  if(name==='review-round')await expect(page.getByRole('button',{name:'Show answer',exact:true})).toBeVisible();
+  if(name==='path-map')await expect(page.getByRole('link',{name:'Continue with tutor',exact:true})).toBeVisible();
   for(const button of await page.getByRole('button').all()){
    if(!await button.isVisible())continue;
    expect(await button.evaluate(node=>node.getAttribute('aria-label')||node.getAttribute('aria-labelledby')||node.textContent?.trim()||node.getAttribute('title'))).toBeTruthy();
