@@ -2,6 +2,7 @@ import {useState} from 'react';
 import {useAgenda} from '../../../data/adaptive/agenda-api';
 import {useAtlasModel,useRefreshAtlas,updateAtlasSettings} from '../../../data/adaptive/atlas-api';
 import {ATLAS_DEFAULTS} from '../../../../supabase/functions/_shared/adaptive/policy';
+import {reliabilityBins} from '../../../../supabase/functions/_shared/adaptive/diagnostics';
 import {Button,Switch} from '../../../ui/v7/components';
 import {Disclosure} from '../../../ui/v7/Disclosure';
 import {formatDateTime} from '../../../lib/format';
@@ -22,6 +23,7 @@ export function Diagnostics() {
   const [error, setError] = useState(''), [saving, setSaving] = useState(false);
   const decision = agenda.query.data?.decision;
   const settings = atlas.data?.settings ?? ATLAS_DEFAULTS;
+  const trackRecord = reliabilityBins((atlas.data?.model.trace ?? []).filter(row => row.stream === 'attempt'));
   async function save() {
     setSaving(true);
     setError('');
@@ -52,6 +54,10 @@ export function Diagnostics() {
             .map(([key,value]) => key + ' ' + (value ? 'pass' : 'fail')).join(' · ')}</p>}
           {item.actions.map(action => <p key={action}>{action}</p>)}
         </li>)}</ul> : <p>No observations yet.</p>}
+        <h3 className="v7-eyebrow">Track record</h3>
+        {trackRecord.length ? <ul aria-label="Predicted and observed success rates">
+          {trackRecord.map(row => <li key={row.lo}>{Math.round(row.predicted*100)}% predicted · {Math.round(row.observed*100)}% observed · {row.n} attempts</li>)}
+        </ul> : <p>Insufficient data to compare predictions with outcomes.</p>}
       </Disclosure>
       <Disclosure label="Atlas tuning">
         <form className="v7-atlas-panel" onSubmit={event => {event.preventDefault();void save();}}>

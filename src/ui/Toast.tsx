@@ -1,6 +1,6 @@
 import {lazy,Suspense,useLayoutEffect,useRef,useState,useSyncExternalStore} from 'react';
 import {useMotionReduced} from './v7/effects';
-import {AnimatePresence,motion,useReducedMotion} from 'motion/react';
+import {AnimatePresence,motion,useIsPresent,useReducedMotion} from 'motion/react';
 import {CircleAlert,CircleCheck,Info,X} from 'lucide-react';
 
 const RichTex=lazy(()=>import('./Tex').then(module=>({default:module.Tex})));
@@ -68,7 +68,9 @@ export function useToast(){return toast}
  * a countdown hairline for the undo window. */
 function V7ToastItem({item,reduce}:{item:ToastProps;reduce:boolean}){
  const Icon=item.tone==='danger'?CircleAlert:item.tone==='success'?CircleCheck:Info;
+ const present=useIsPresent();
  return <motion.div role={item.tone==='danger'?'alert':'status'} className="v7-app-toast" data-tone={item.tone??'normal'}
+  inert={!present} aria-hidden={present?undefined:true}
   initial={{opacity:0,y:reduce?0:12}} animate={{opacity:1,y:0}} exit={{opacity:0}} transition={{duration:reduce?0.15:0.2}}
   onPointerEnter={()=>pauseToast(item.id)} onPointerLeave={()=>resumeToast(item.id)} onFocus={()=>pauseToast(item.id)}>
   <Icon className="v7-app-toast-icon" aria-hidden="true"/>

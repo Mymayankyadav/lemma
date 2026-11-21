@@ -264,6 +264,7 @@ export function Sheet({
   footer,
   full = false,
   hideTitle = false,
+  focusTitle = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -275,6 +276,7 @@ export function Sheet({
   full?: boolean;
   /** The body's first field is the header (SE3); the title stays for assistive technology. */
   hideTitle?: boolean;
+  focusTitle?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     id = useId(),
@@ -320,7 +322,8 @@ export function Sheet({
       <header className="v7-sheet-header">
         <div>
           {eyebrow && <p className="v7-eyebrow">{eyebrow}</p>}
-          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-headline"}>
+          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-headline"} tabIndex={focusTitle ? -1 : undefined}
+            data-v7-autofocus={focusTitle ? "true" : undefined}>
             {title}
           </h2>
         </div>

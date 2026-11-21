@@ -284,6 +284,7 @@
 }
 :where(html[data-v7]) .v7-cal-block[data-kind="suggested"] button small {flex:none;}
 :where(html[data-v7]) .v7-wk-block[data-kind="suggested"] {border:1px dashed var(--v7-role-selection-fg);color:var(--v7-role-selection-fg);}
+:where(html[data-v7]) .v7-wk-block[data-kind="suggested"][data-accept] {pointer-events:auto;z-index:1;}
 
 :where(html[data-v7]) .v7-cal-grid-actions[data-view="week"] {min-height:0;padding-block:0;margin-bottom:0;}
 :where(html[data-v7]) .v7-cal[data-calendar-view="week"] .v7-wk-head {min-height:40px;}

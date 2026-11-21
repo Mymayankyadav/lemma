@@ -116,7 +116,7 @@ function AtlasCardEnd(){
  const atlas=useAtlasModel(),pending=atlas.data?.links.filter(row=>row.status==='proposed').length;
  if(atlas.isSuccess&&pending===0)return <InboxZero/>;
  return <><h2>All card proposals reviewed</h2>
-  {pending?<button type="button" className="v7-button v7-secondary" onClick={()=>{const el=document.querySelector<HTMLElement>('[aria-label="Link proposals"]');if(el){el.tabIndex=-1;el.focus();}}}>Review {pending} Atlas {pending===1?'link':'links'}</button>:
+  {pending?<button type="button" className="v7-button v7-secondary" onClick={()=>document.getElementById('atlas-link-proposals')?.focus()}>Review {pending} Atlas {pending===1?'link':'links'}</button>:
    <><p role="status">{atlas.isError?'Atlas proposals could not be checked.':'Checking Atlas proposals…'}</p>
     {atlas.isError&&<Button onClick={()=>{void atlas.refetch();}}>Retry Atlas proposals</Button>}</>}
  </>;

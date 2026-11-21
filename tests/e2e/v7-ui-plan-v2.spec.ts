@@ -23,9 +23,31 @@ test('Today exposes the plan, time ruler and the first-run steps',async({page})=
   await ruler.focus();
   await ruler.press('ArrowRight');
   await expect(hero.getByText('Plan updated for', {exact:false})).toBeVisible();
+  expect(await page.evaluate(()=>JSON.parse(sessionStorage.getItem('lemma.demo.capacity-overrides')??'{}')['2026-11-09'])).toBeGreaterThan(0);
   await page.goto(pageAt('/','todayNextStep,v7Ruler').replace('demo=1','demo=first-use'));
   await expect(page.getByRole('heading',{name:'Welcome to Lemma'})).toBeVisible();
   await expect(page.getByRole('region',{name:'Get started'}).getByRole('link')).toHaveCount(3);
+});
+
+test('Today offers evening, late-night and running-session actions',async({page})=>{
+  const today=pageAt('/','todayNextStep');
+  const hero=page.getByRole('region',{name:'Your next step'});
+  await page.clock.setFixedTime(new Date('2026-11-09T21:15:00+05:30'));
+  await page.goto(today);
+  await expect(hero.getByRole('link',{name:'Close the day',exact:true})).toHaveAttribute('href','#/today/close');
+
+  await page.clock.setFixedTime(new Date('2026-11-10T00:40:00+05:30'));
+  await page.reload();
+  await expect(page.getByRole('heading',{name:'Still up?',exact:true})).toBeVisible();
+  await expect(hero.getByRole('link',{name:'Plan tomorrow',exact:true})).toBeVisible();
+
+  await page.clock.setFixedTime(NOW);
+  await page.reload();
+  await hero.getByRole('button',{name:'Quick focus',exact:true}).click();
+  await page.getByRole('dialog',{name:'Start a focus session',exact:true}).getByRole('button',{name:'Start focus',exact:true}).click();
+  await expect(page).toHaveURL(/#\/focus$/);
+  await page.goto(today);
+  await expect(hero.getByRole('link',{name:'Return to focus',exact:true})).toBeVisible();
 });
 
 test('the Atlas keeps filters in Layers and opens list concepts',async({page})=>{

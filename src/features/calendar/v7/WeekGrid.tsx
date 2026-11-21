@@ -80,7 +80,7 @@ export default function WeekGrid({weekStart,date,today,zone,clock,entries,blocks
        :<div key={item.id} role="img" aria-label={spoken} data-kind={kind} className={'v7-wk-block '+look.subjectClass} style={style}>{inner}</div>;
       })}
       {suggested.filter(item=>Date.parse(item.start)>=Date.parse(range.start)&&Date.parse(item.end)<=Date.parse(range.end)).map(item=>
-       <button key={item.id} type="button" className="v7-wk-block v7-cal-suggested" data-kind="suggested"
+       <button key={item.id} type="button" className="v7-wk-block v7-cal-suggested" data-kind="suggested" data-accept={item.onAccept?'':undefined}
         style={{top:(Date.parse(item.start)-Date.parse(range.start))/MINUTE*WEEK_HOUR_PX/60-first*WEEK_HOUR_PX/60,
          height:Math.max(22,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*WEEK_HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}
         disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title}>Add</button>)}
