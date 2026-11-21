@@ -194,8 +194,21 @@ export function TutorComposer(props: Props) {
     const input = fieldElement();
     if (!input) return;
     if (input instanceof HTMLTextAreaElement) {
+      input.style.paddingBottom = '';
       input.style.height = '44px';
+      const mirror = input.previousElementSibling instanceof HTMLElement ? input.previousElementSibling : null;
+      if (ghostSuffix && mirror) {
+        // The mirror includes faded text, while the native value does not.
+        // Reserve its wrapped lines as padding so both short and capped inputs
+        // can display the continuation without changing the learner's text.
+        const extra = Math.max(0, mirror.scrollHeight - input.scrollHeight);
+        if (extra) input.style.paddingBottom = (parseFloat(getComputedStyle(input).paddingBottom) + extra) + 'px';
+      }
       input.style.height = Math.min(120, Math.max(44, input.scrollHeight)) + 'px';
+      if (ghostSuffix && mirror) {
+        input.scrollTop = Math.max(0, input.scrollHeight - input.clientHeight);
+        mirror.scrollTop = input.scrollTop;
+      }
     }
     if (history.current.present.text !== props.value) {
       revision.current.editorRevision++;
@@ -222,7 +235,7 @@ export function TutorComposer(props: Props) {
       selectField(edit);
       pendingSelection.current = null;
     }
-  }, [props.value, compositionText, assist.picker, assist.drawing]);
+  }, [props.value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
 
   useLayoutEffect(() => {
     const previous = previousIds.current;

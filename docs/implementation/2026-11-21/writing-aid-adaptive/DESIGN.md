@@ -12,6 +12,8 @@ The three word slots remain above the keyboard, with the preferred choice in the
 
 Portrait cards sit beside the input without moving the keyboard. Short landscape screens use the transcript-side column, leaving a gap before the keyboard. Controls have at least 44 px touch height; enlarged text wraps. Theme, contrast, focus, reduced motion, image chips, drawing and the existing math keyboard are preserved. The visible source decoration is excluded from the draft's meaning and clipboard text.
 
+The native textarea reserves the measured height of a wrapped faded continuation without adding it to the text value. At the 120 px height cap, matching textarea/mirror scroll offsets keep the ending visible and preserve ordinary vertical scrolling. Packaged mobile smoke uses intermediate touch points for a natural swipe and checks that the first following tap can Undo or type. A one-frame CDP jump suppresses the next click even on a plain Chromium page; that harness behavior is not represented as an app fix or as a phone result.
+
 ## Grammarly inspiration
 
 The official [Grammarly Android guide](https://support.grammarly.com/hc/en-us/articles/15606282682637-Grammarly-for-Android-user-guide) and its [suggestion screenshot](https://support.grammarly.com/hc/article_attachments/34666296759949) informed the compact floating candidate, direct accept and nearby dismiss. The [iPhone editor guide](https://support.grammarly.com/hc/en-us/articles/4412638077709-How-to-create-or-edit-documents-on-iPhones) informed suggestions close to the keyboard. Grammarly documents swipe-to-ignore there; Lemma's swipe-to-accept is the owner's requested choice. This implementation uses Lemma's own components, colors and assets.

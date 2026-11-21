@@ -5,13 +5,13 @@ import {dirname, resolve} from 'node:path';
 import {chromium} from 'playwright';
 
 const base = process.env.WRITING_AID_CAPTURE_URL ?? 'http://127.0.0.1:4191/lemma/';
-const route = new URL('?demo=1&flags=v7Shell,v6Shell,tutorScratch#/p/real-analysis/cp/CP4/tutor', base);
+const route = new URL('?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor', base);
 const output = resolve(process.env.WRITING_AID_LATENCY_OUTPUT ?? 'docs/implementation/2026-11-21/writing-aid-adaptive/ui-latency.json');
 const cases = [
   {surface: 'word', prefix: 'not', key: 'a', selector: '[data-writing-aid-word][title="notation"]'},
   {surface: 'spelling', prefix: 'We wrote te', key: 'h', selector: '[data-writing-aid-edit][aria-label="Replace teh with the"]'},
   {surface: 'notation', prefix: 'Let ep', key: 's', selector: '[data-writing-aid-edit][aria-label="Replace eps with ε"]'},
-  {surface: 'continuation', prefix: 'could you restat', key: 'e', selector: '.tutor-answer-editor[data-completion=" the question"]'},
+  {surface: 'continuation', prefix: 'could you restat', key: 'e', selector: '.writing-editor-mirror'},
 ];
 const rounds = 16;
 const round = n => Math.round(n * 100) / 100;
@@ -34,6 +34,7 @@ try {
       await page.goto(route.href);
       await page.getByRole('button', {name: 'Write a question', exact: true}).click();
       const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+      if (await answer.evaluate(node => node.tagName) !== 'TEXTAREA') throw new Error('Expected the Android-default textarea');
       // Warm the lazy engine and rendering path before the measured observations.
       await answer.focus();
       await page.keyboard.type('nota');
@@ -46,12 +47,17 @@ try {
           await page.keyboard.insertText(prefix);
           // The timed character starts from a settled prefix, not from a cold app.
           await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-          await page.evaluate(selector => {
-            if (document.querySelector(selector)) throw new Error(`Already displayed ${selector}`);
+          await page.evaluate(({selector, surface}) => {
+            const matched = () => {
+              const node = document.querySelector(selector);
+              return Boolean(node && (surface !== 'continuation' || node.firstElementChild?.textContent === 'could you restate' &&
+                node.lastChild?.textContent === ' the question'));
+            };
+            if (matched()) throw new Error(`Already displayed ${selector}`);
             window.writingAidReadyTime = new Promise((resolve, reject) => {
               let inputAt;
               const observer = new MutationObserver(() => {
-                if (inputAt === undefined || !document.querySelector(selector)) return;
+                if (inputAt === undefined || !matched()) return;
                 observer.disconnect();
                 clearTimeout(timer);
                 requestAnimationFrame(() => resolve(performance.now() - inputAt));
@@ -67,7 +73,7 @@ try {
               }, 10_000);
               document.addEventListener('input', timedInput, {capture: true, once: true});
             });
-          }, selector);
+          }, {selector, surface});
           await page.keyboard.press(key);
           const elapsed = await page.evaluate(() => window.writingAidReadyTime);
           observations.push({cpuRate, surface, sample: iteration + 1, ms: round(elapsed)});
@@ -84,7 +90,7 @@ try {
       maxMs: Math.max(...times), under400Ms: times.filter(ms => ms < 400).length};
   }));
   const report = {
-    scope: 'Warm production build on the development host, from captured native input to the next animation-frame opportunity after the matching suggestion appears. Chromium CPU throttling is not Android WebView or a phone measurement.',
+    scope: 'Warm production build on the development host with the Android-default textarea, from captured native input to the next animation-frame opportunity after the matching suggestion appears. Chromium CPU throttling is not Android WebView or a phone measurement.',
     generatedAt: new Date().toISOString(), browser: browser.version(), viewport: {width: 390, height: 844},
     machine: {platform: process.platform, architecture: process.arch, cpu: os.cpus()[0]?.model, logicalCpus: os.cpus().length},
     balancedMode: true, samplesPerSurfacePerRate: rounds, builtAssetsSha256: assets, summary, observations,

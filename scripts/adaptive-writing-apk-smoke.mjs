@@ -87,25 +87,46 @@ try {
   await expect(answer).toHaveValue('nota');
 
   const cdp = await context.newCDPSession(page);
-  for (const distance of [56, 90]) {
-    await type('could you restate');
-    await expect(page.getByRole('button', {name: 'Accept continuation the question', exact: true})).toBeVisible();
-    await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
-    if (distance === 56) await page.screenshot({path: join(unpacked, 'ghost.png'), animations: 'disabled'});
+  async function swipe(distance) {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
     const box = await answer.boundingBox();
     const x = Math.round(box.x + box.width / 2 - distance / 2), y = Math.round(box.y + box.height / 2);
     await cdp.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1}]});
-    await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + distance, y, id: 1}]});
+    // A real finger moves through intermediate points. A single instant jump
+    // also makes a plain Chromium page suppress its next tap as a fling stop.
+    for (let step = 1; step <= 4; step++) {
+      await cdp.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + Math.round(distance * step / 4), y, id: 1}]});
+      await new Promise(resolve => setTimeout(resolve, 45));
+    }
     await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
+  }
+  for (const distance of [56, 90]) {
+    await type('could you restate');
+    await expect(page.getByRole('button', {name: 'Accept continuation the question', exact: true})).toBeVisible();
+    await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
+    await expect.poll(() => page.locator('.writing-editor-mirror').evaluate(node => {
+      const range = document.createRange();
+      range.selectNodeContents(node.lastChild);
+      const bounds = node.getBoundingClientRect();
+      const rects = Array.from(range.getClientRects()).filter(rect => rect.height > 0);
+      return rects.length ? Math.max(0, ...rects.map(rect => Math.max(bounds.top - rect.top, rect.bottom - bounds.bottom))) : Infinity;
+    })).toBeLessThanOrEqual(1);
+    if (distance === 56) await page.screenshot({path: join(unpacked, 'ghost.png'), animations: 'disabled'});
+    await swipe(distance);
     await expect(answer).toHaveValue('could you restate the question');
     await page.getByRole('button', {name: 'Undo suggestion', exact: true}).tap();
     await expect(answer).toHaveValue('could you restate');
   }
+  await type('could you restate');
+  await expect(page.getByRole('button', {name: 'Accept continuation the question', exact: true})).toBeVisible();
+  await swipe(90);
+  await expect(answer).toHaveValue('could you restate the question');
+  await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'q', exact: true}).tap();
+  await expect(answer).toHaveValue('could you restate the questionq');
   if (pageErrors.length) throw new Error('App errors: ' + pageErrors.join('; '));
   await copyFile(join(unpacked, 'preview.png'), preview);
   await copyFile(join(unpacked, 'ghost.png'), ghostPreview);
-  console.log('Packaged default demo passed with external requests blocked: Balanced and personalization defaults, textarea strike-through, correction/undo, keyboard refresh, 56px and 90px ghost swipes/undo.');
+  console.log('Packaged default demo passed with external requests blocked: Balanced and personalization defaults, textarea strike-through, correction/undo, keyboard refresh, 56px and 90px ghost swipes, first-tap Undo and first-tap typing.');
 } finally {
   await browser?.close();
   if (server) await new Promise(resolve => server.close(resolve));

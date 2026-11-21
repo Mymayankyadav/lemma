@@ -51,6 +51,13 @@ const ghostPreview = (page: Page) => page.locator('[data-writing-aid-ghost]');
 const undoButton = (page: Page) => page.getByRole('button', {name: 'Undo suggestion', exact: true});
 const floating = (page: Page) => page.locator('.writing-aid-floating');
 const dismissButton = (page: Page) => page.getByRole('button', {name: 'Dismiss suggestion', exact: true});
+const ghostClipping = (page: Page) => page.locator('.writing-editor-mirror').evaluate(node => {
+  const range = document.createRange();
+  range.selectNodeContents(node.lastChild!);
+  const bounds = node.getBoundingClientRect();
+  const rects = Array.from(range.getClientRects()).filter(rect => rect.height > 0);
+  return rects.length ? Math.max(0, ...rects.map(rect => Math.max(bounds.top - rect.top, rect.bottom - bounds.bottom))) : Infinity;
+});
 
 async function storedModel(page: Page) {
   return page.evaluate(() => {
@@ -587,6 +594,7 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
   await type('could you restate');
   await expect(ghostPreview(page)).toHaveAccessibleName('Accept continuation the question');
   await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
+  await expect.poll(() => ghostClipping(page)).toBeLessThanOrEqual(1);
   await touchDrag(await context.newCDPSession(page), answer, 90, 0);
   await expect(answer).toHaveValue('could you restate the question');
   await undoButton(page).click();
@@ -599,6 +607,52 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
   await expect(settings.getByRole('radio', {name: /^Balanced\b/})).toBeChecked();
   await expect(settings.getByRole('switch', {name: 'Personalize suggestions', exact: true})).toBeChecked();
 });
+
+test('a capped textarea shows the continuation at its end and still scrolls normally', async ({page, context}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  const draft = 'Explanation '.repeat(18) + '. could you restate';
+  await answer.focus();
+  await page.keyboard.type(draft);
+  await expect(answer).toHaveValue(draft);
+  await expect(ghostPreview(page)).toBeVisible();
+  await expect.poll(() => ghostClipping(page)).toBeLessThanOrEqual(1);
+  await expect.poll(() => answer.evaluate(node => node.scrollTop)).toBeGreaterThan(20);
+  const before = await answer.evaluate(node => node.scrollTop);
+  await touchDrag(await context.newCDPSession(page), answer, 0, 70);
+  await expect.poll(() => answer.evaluate(node => node.scrollTop)).toBeLessThan(before);
+  await expect(answer).toHaveValue(draft);
+  await expect(undoButton(page)).toHaveCount(0);
+});
+
+for (const {width, height, textSize} of [{width: 320, height: 640, textSize: 160}, {width: 844, height: 390, textSize: 100}]) {
+  test(`the default textarea shows its full short continuation at ${width}×${height}, ${textSize}% text`, async ({page}) => {
+    await page.setViewportSize({width, height});
+    await page.addInitScript(size => {
+      document.addEventListener('DOMContentLoaded', () => {document.documentElement.style.fontSize = `${size}%`;});
+    }, textSize);
+    await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+    await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+    const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+    await answer.focus();
+    await page.keyboard.type('could you restate');
+    await expect(answer).toHaveValue('could you restate');
+    await expect(ghostPreview(page)).toBeVisible();
+    const mirror = page.locator('.writing-editor-mirror');
+    await expect(mirror).toHaveText('could you restate the question');
+    await expect.poll(() => ghostClipping(page)).toBeLessThanOrEqual(1);
+    await expect(answer).toBeInViewport({ratio: 1});
+    const board = page.getByRole('group', {name: 'Answer keyboard', exact: true});
+    await expect(board).toBeInViewport({ratio: 1});
+    await expect(floating(page)).toBeInViewport({ratio: 1});
+    const [suggestionBox, inputBox, keyboardBox] = await Promise.all([floating(page).boundingBox(), answer.boundingBox(), board.boundingBox()]);
+    const overlaps = (a: NonNullable<typeof suggestionBox>, b: NonNullable<typeof inputBox>) =>
+      a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    expect(overlaps(suggestionBox!, inputBox!)).toBe(false);
+    expect(overlaps(suggestionBox!, keyboardBox!)).toBe(false);
+  });
+}
 
 const layouts = [
   {width: 320, height: 640, textSize: 160, colorScheme: 'light'},

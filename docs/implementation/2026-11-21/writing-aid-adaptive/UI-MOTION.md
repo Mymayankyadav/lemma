@@ -19,13 +19,13 @@ The JSON includes the exact control rectangles, complete paths, swipe sensitivit
 
 ## Warm input-to-render timing
 
-`scripts/adaptive-writing-latency.mjs` measured the final production browser bundle at 390×844. It times the native input event to the next animation-frame opportunity after the matching suggestion appears. Each surface has 16 observations at each CPU rate (128 total); the nearest-rank p95 is therefore the largest observation. The lazy engine is warmed first. [Raw observations and built-asset hashes](ui-latency.json)
+`scripts/adaptive-writing-latency.mjs` measured the final production browser bundle with the Android-default textarea at 390×844. It times the native input event to the next animation-frame opportunity after the matching suggestion appears. Each surface has 16 observations at each CPU rate (128 total); the nearest-rank p95 is therefore the largest observation. The lazy engine is warmed first. [Raw observations and built-asset hashes](ui-latency.json)
 
 | Surface | 1× median / p95 | 6× CPU throttle median / p95 |
 | --- | ---: | ---: |
-| Word slots | 50.3 / 60.9 ms | 75.6 / 115.4 ms |
-| Spelling card | 47.5 / 48.1 ms | 84.9 / 305.1 ms |
-| Notation card | 47.5 / 74.0 ms | 81.4 / 119.7 ms |
-| Faded continuation | 49.5 / 83.6 ms | 108.0 / 166.4 ms |
+| Word slots | 50.2 / 63.0 ms | 92.6 / 352.7 ms |
+| Spelling card | 50.7 / 52.0 ms | 101.5 / 389.2 ms |
+| Notation card | 50.9 / 93.9 ms | 108.1 / 224.7 ms |
+| Faded continuation | 46.0 / 47.6 ms | 130.6 / 370.0 ms |
 
 All observations were below the modeled 400 ms character interval. CPU throttling is a sensitivity check on this host, not an emulation of the owner's Android hardware; cold startup, thermal behavior, actual paint presentation and physical typing speed are not measured here.
