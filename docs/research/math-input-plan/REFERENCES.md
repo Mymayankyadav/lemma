@@ -104,3 +104,57 @@
 - Fixed-row simulation: https://github.com/Mymayankyadav/lemma/blob/05f297d32d62ab78ffad2869eaaf4a2af24b99ea/docs/implementation/2026-11-21/writing-aid/SIMULATION.md
 - Mobile math input specification: https://github.com/Mymayankyadav/lemma/blob/05f297d32d62ab78ffad2869eaaf4a2af24b99ea/docs/implementation/2026-11-21/mobile-math-input.md
 - Ink simulations: https://github.com/Mymayankyadav/lemma/blob/05f297d32d62ab78ffad2869eaaf4a2af24b99ea/docs/implementation/2026-11-21/ink-simulation/README.md
+
+## Scribe: architecture and training
+
+- Bojanowski et al. (2017). Enriching word vectors with subword information (fastText). https://arxiv.org/abs/1607.04606
+- Merity, Xiong, Bradbury & Socher (2017). Pointer sentinel mixture models. https://arxiv.org/abs/1609.07843
+- Neubig & Dyer (2016). Generalizing and hybridizing count-based and neural language models. https://arxiv.org/abs/1606.00499
+- Herbster & Warmuth (1998). Tracking the best expert. Machine Learning 32.
+- Liu et al. (2024). Infini-gram: scaling unbounded n-gram language models to a trillion tokens. https://arxiv.org/abs/2401.17377
+- Kulesza & Taskar (2012). Determinantal point processes for machine learning. https://arxiv.org/abs/1207.6083
+- Pereyra et al. (2017). Regularizing neural networks by penalizing confident output distributions. https://arxiv.org/abs/1701.06548
+- Dehghani et al. (2023). Scaling vision transformers to 22 billion parameters (QK-norm). https://arxiv.org/abs/2302.05442
+- Chowdhery et al. (2022). PaLM: scaling language modeling with pathways (z-loss). https://arxiv.org/abs/2204.02311
+- Hu et al. (2024). MiniCPM (warmup–stable–decay schedule). https://arxiv.org/abs/2404.06395
+- Yang et al. (2022). Tensor Programs V: tuning large neural networks via zero-shot hyperparameter transfer (μP). https://arxiv.org/abs/2203.03466
+- Kendall, Gal & Cipolla (2018). Multi-task learning using uncertainty to weigh losses. https://arxiv.org/abs/1705.07115
+- Muralidharan et al. (2024). Compact language models via pruning and knowledge distillation (Minitron). https://arxiv.org/abs/2407.14679
+
+## Scribe: data
+
+- Eldan & Li (2023). TinyStories: how small can language models be and still speak coherent English? https://arxiv.org/abs/2305.07759
+- Gunasekar et al. (2023). Textbooks are all you need. https://arxiv.org/abs/2306.11644
+- Muennighoff et al. (2023). Scaling data-constrained language models. https://arxiv.org/abs/2305.16264
+- Moore & Lewis (2010). Intelligent selection of language model training data. ACL.
+- Xie et al. (2023). Data selection for language models via importance resampling (DSIR). https://arxiv.org/abs/2302.03169
+- Azerbayev et al. (2023). ProofNet (introduces Proof-Pile). https://arxiv.org/abs/2302.12433
+
+## Scribe: reinforcement learning and feedback
+
+- Chapelle & Li (2011). An empirical evaluation of Thompson sampling. NeurIPS.
+- Riquelme, Tucker & Snoek (2018). Deep Bayesian bandits showdown. https://arxiv.org/abs/1802.09127
+- Kveton et al. (2015). Cascading bandits: learning to rank in the cascade model. https://arxiv.org/abs/1502.02763
+- Russo & Van Roy (2014). Learning to optimize via information-directed sampling. https://arxiv.org/abs/1403.5556
+- Swaminathan & Joachims (2015). Batch learning from logged bandit feedback through counterfactual risk minimization. https://arxiv.org/abs/1502.02362
+- Swaminathan et al. (2017). Off-policy evaluation for slate recommendation. https://arxiv.org/abs/1605.04812
+- Oosterhuis (2021). Computationally efficient optimization of Plackett–Luce ranking models for relevance and fairness. https://arxiv.org/abs/2105.00855
+- Dudík, Langford & Li (2011). Doubly robust policy evaluation and learning. https://arxiv.org/abs/1103.4601
+- Ernst, Geurts & Wehenkel (2005). Tree-based batch mode reinforcement learning. JMLR 6.
+- Kostrikov, Nair & Levine (2021). Offline reinforcement learning with implicit Q-learning. https://arxiv.org/abs/2110.06169
+- Thomas, Theocharous & Ghavamzadeh (2015). High-confidence off-policy evaluation. AAAI.
+- Thomas et al. (2019). Preventing undesirable behavior of intelligent machines. Science 366.
+- Laroche, Trichelair & Tachet des Combes (2019). Safe policy improvement with baseline bootstrapping. https://arxiv.org/abs/1712.06924
+- Haarnoja et al. (2018). Soft actor-critic algorithms and applications. https://arxiv.org/abs/1812.05905
+- Schulman et al. (2017). Proximal policy optimization algorithms. https://arxiv.org/abs/1707.06347
+- Welleck et al. (2019). Neural text generation with unlikelihood training. https://arxiv.org/abs/1908.04319
+- Ethayarajh et al. (2024). KTO: model alignment as prospect theoretic optimization. https://arxiv.org/abs/2402.01306
+- Rafailov et al. (2023). Direct preference optimization. https://arxiv.org/abs/2305.18290
+- Shao et al. (2024). DeepSeekMath (introduces GRPO). https://arxiv.org/abs/2402.03300
+- Ahmadian et al. (2024). Back to basics: revisiting REINFORCE-style optimization for learning from human feedback (RLOO). https://arxiv.org/abs/2402.14740
+
+## Free compute
+
+- Google Colab FAQ. https://research.google.com/colaboratory/faq.html
+- Amazon SageMaker Studio Lab overview. https://docs.aws.amazon.com/sagemaker/latest/dg/studio-lab-overview.html
+- Free cloud GPUs in 2026 (includes Kaggle's quota). https://gpuperhour.com/blog/free-cloud-gpus-and-credits

@@ -2,6 +2,8 @@
 
 Prepared 21 November 2026 from [PR #1738](https://github.com/Mymayankyadav/lemma/pull/1738) at head `05f297d3`. This is a plan with instructions. It changes no code, flag or data, and it claims no NEXT.md item.
 
+**Update, 21 November (later):** you chose a custom model trained from scratch on math-only data. It uses reinforcement learning and every feedback signal, and trains only on free compute such as Kaggle. Files 11–14 specify it as **Scribe**. Scribe replaces L3; the pretrained models (L4) and pruning become later comparisons.
+
 ## Short answer
 
 Better math autocorrect and completion can be built with established, published methods. PR #1738 couldn't show an improvement, and the reasons are measurable. None of them is a lack of capable models.
@@ -61,8 +63,8 @@ They don't come from writing the proof for the learner.
 | 0 | Fix measurement: real-text replay harness, frozen protocol, impression logging, shadow autocorrect | The harness ranks random below the current engine below a perfect ranker on your text |
 | 1 | Data: your export and trial logs, public math corpora, typo and notation data, learner-choice test set, ink capture | Data cards, licence register, frozen test splits with hashes |
 | 2 | Classical stack: math lexicon, noisy-channel corrector, n-gram model, learning-to-rank | Beats the current engine offline, with no learner-choice regression |
-| 3 | Neural stack: LSTM and small transformer trained from scratch; adapted sub-billion models; phone benchmarks | Beats Phase 2 offline within the phone's latency and memory budget |
-| 4 | Autocorrect: calibrated decision model, thresholds certified from shadow logs, personal permission | Statistical certificate on real logs |
+| 3 | Scribe, the custom LaTeX-native model: trained from scratch on free Kaggle GPU time, then benchmarked on the phone (11–14) | Beats Phase 2 offline within the phone's latency and memory budget |
+| 4 | Autocorrect and policy learning: certified autocorrect; RL from bandits up to off-policy learning (13) | Statistical certificate on real logs; every new policy passes high-confidence off-policy checks |
 | 5 | Human trial on the phone: blinded, randomized sessions | Speed no worse, fewer errors, preferred by you |
 | 6 | Ink, in parallel: capture, missing classes, stroke model, completion head | Writer-disjoint gains; automatic insertion only after the specification's 0.1% gate |
 | 7 | Personalization loop, monitoring, Harden | Stable metrics for 4 weeks before any flag defaults on |
@@ -94,4 +96,8 @@ Checklists are in [10-roadmap.md](10-roadmap.md).
 | [08-handwriting.md](08-handwriting.md) | Symbol recognition: data capture, models, partial-symbol completion, gates |
 | [09-owner-suggestions.md](09-owner-suggestions.md) | Each of your suggestions traced in the PR, and what this plan does with it |
 | [10-roadmap.md](10-roadmap.md) | Phases, checklists, suggested NEXT.md items, risks |
+| [11-scribe-architecture.md](11-scribe-architecture.md) | Scribe: front end, inputs, hybrid backbone, expert mixture, heads, language statistics, feedback, entropy, keystroke pipeline |
+| [12-scribe-dataset.md](12-scribe-dataset.md) | Scribe's data: math-only sources, selection, LaTeX normalization, tokenizer, task formats, feedback datasets, storage |
+| [13-scribe-rl-and-feedback.md](13-scribe-rl-and-feedback.md) | Reinforcement learning: problem definition, safe exploration, algorithm ladder, safe deployment, the Bayesian ignore update |
+| [14-scribe-free-compute.md](14-scribe-free-compute.md) | Training on free GPUs (Kaggle, Colab): budgets, week-one schedule, hyperparameters, session survival, export |
 | [REFERENCES.md](REFERENCES.md) | Sources |

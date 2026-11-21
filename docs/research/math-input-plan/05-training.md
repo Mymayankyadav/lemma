@@ -186,3 +186,5 @@ At runtime the app should:
 | R1, A1, S1 | CPU | Minutes | Weekly |
 
 The whole plan needs roughly 50–150 GPU-hours.
+
+> For the custom Scribe path, [14](14-scribe-free-compute.md) replaces this estimate. The first full model takes about 12–16 GPU-hours of free Kaggle time, then 1–3 GPU-hours a week.

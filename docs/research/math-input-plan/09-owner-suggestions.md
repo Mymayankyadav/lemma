@@ -29,5 +29,12 @@ Each row is a suggestion or request traced in the PR's documents and commits at 
 | 23 | Stop the fresh 144-task cohort | Tutor report | Stopped | — | No more synthetic cohorts for model selection; keep it as a smoke test |
 | 24 | "Complete all the tasks in the plan in one PR. Create a checklist in the main commit of the PR. Make sure you precisely follow it." | PR body (owner task) | Followed commit by commit | — | `10-roadmap.md` gives a checklist and exit criteria for every phase |
 | 25 | Full-equation recognition (N200) | Spec §1, scope | Kept separate and blocked | — | Out of scope here; MathWriting is the dataset to start from when it's picked up |
+| 26 | Train our own small model from scratch on math-only data, not a pretrained one ("we need not use the useless data") | This conversation, 21 Nov | — | — | Scribe ([11](11-scribe-architecture.md)); data selected by similarity to your writing ([12 §12.3](12-scribe-dataset.md#123-selection-keeping-only-useful-data)) |
+| 27 | Make it good at LaTeX-based math prediction | This conversation | — | — | A LaTeX-native tokenizer, a KaTeX-dialect parser, structure and template heads, and conversion and correction tasks (11, 12) |
+| 28 | Use RL | This conversation | — | — | An RL ladder from bandits through offline RL to generator fine-tuning, with safe deployment ([13](13-scribe-rl-and-feedback.md)) |
+| 29 | Use all the app's feedback, including untapped suggestions, plus entropy and other language statistics | This conversation | — | — | The feedback table (11 §11.9), the Bayesian ignore update (13 §13.6), seven uses of entropy (11 §11.10), and the statistics table (11 §11.8) |
+| 30 | Build basic language models in as parts of a larger architecture | This conversation | — | — | An expert mixture with fixed-share gating (11 §11.6) |
+| 31 | Use free compute only (Kaggle and similar) | This conversation | — | — | [14](14-scribe-free-compute.md): about 12–16 GPU-hours for the first Scribe |
+| 32 | Prune a 1.5B model down to a much smaller width | This conversation | — | — | A later comparison (14 §14.7) |
 
 **Not covered here:** the PR's other UI requests, including the Atlas rail, Calendar, Progress, Path, Review, scratchpad and inline drawings, and account-scoped Undo. They don't affect suggestion or recognition quality.

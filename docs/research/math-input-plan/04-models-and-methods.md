@@ -88,6 +88,8 @@ Every comparison includes these three:
 
 ### L3. Small transformer trained from scratch (about 27M parameters)
 
+> **Superseded, 21 November.** You chose a custom model trained from scratch, so L3 has become Scribe, specified in [11](11-scribe-architecture.md).
+
 - **What it is:** a decoder-only transformer with 6 layers, width 512, 8 heads and a 256-token context. Its 16,000-piece vocabulary makes frequent words single pieces, and also every catalogue symbol, Greek letter and common TeX command. Embeddings are tied. Total: about 27M parameters ([05 §5.6](05-training.md#56-small-transformer-l3)).
 - **Precedent:** Apple's iOS 17 predictive text is a GPT-2-style model that runs as the user types. Reverse engineering estimates about 34M parameters, a 15,000-token vocabulary and 6 decoder blocks (Cook 2023, as reported by Willison 2024).
 - **Why:**
@@ -101,6 +103,8 @@ Every comparison includes these three:
 - **Runtime:** `onnxruntime-web` (existing dependency), with single-thread WASM as the baseline and WebGPU optional.
 
 ### L4. Pretrained sub-billion models adapted to math prose
+
+> **Deferred, 21 November.** You chose not to start from pretrained models. L4 and pruning stay as later comparisons ([14 §14.7](14-scribe-free-compute.md#147-pruning-a-pretrained-model-later-comparison)).
 
 **Role:**
 

@@ -38,23 +38,25 @@ This roadmap assumes one implementer, plus some of your time for consent, trial 
 
 **Exit:** G1–G3 pass offline.
 
-## Phase 3: Neural stack (weeks 5–9)
+## Phase 3: Scribe, the custom model (weeks 3–7)
 
-- [ ] Train, quantize and export L2 and L3, with parity tests.
-- [ ] Adapt the L4 models: SmolLM2-135M, SmolLM2-360M, Gemma 3 270M, LFM2-350M and Qwen3-0.6B. Use MobileLLM-R1 only as a research comparison.
-- [ ] Optionally, distill from L5.
-- [ ] Benchmark on the phone every candidate that wins offline.
-- [ ] Run experiments E5, E6 and E8.
+- [ ] Build the Scribe data pipeline on CPU ([12](12-scribe-dataset.md)): selection, LaTeX normalization, tokenizer, shards and quality checks.
+- [ ] Run the week-one Kaggle schedule ([14 §14.3](14-scribe-free-compute.md#143-week-one-schedule-about-1216-gpu-hours)): pilot, learning-rate sweep, the Scribe-M main run, the Scribe-S fallback, the tasks stage, heads and ablations.
+- [ ] Build the experts and the gate ([11 §11.6](11-scribe-architecture.md#116-expert-mixture-basic-language-models-inside-the-architecture)).
+- [ ] Export, quantize and parity-test the model, then benchmark it on the phone.
+- [ ] Run E3–E6 and E8, with Scribe in place of L3 and L4.
+- [ ] Deferred: the pretrained models (L4) and pruning ([14 §14.7](14-scribe-free-compute.md#147-pruning-a-pretrained-model-later-comparison)), as later comparisons.
 
-**Exit:** a neural stack beats Phase 2 offline and passes G4 on the phone. If none does, Phase 2 ships alone.
+**Exit:** Scribe beats Phase 2 offline and passes G4 on the phone. If it doesn't, Phase 2 ships alone.
 
-## Phase 4: Autocorrect (weeks 4–10; needs shadow logs)
+## Phase 4: Autocorrect and policy learning (weeks 4–10; needs logs)
 
 - [ ] Build the A1 classifier, calibrate it, and produce a Learn-then-Test certificate for each mode.
 - [ ] Combine it with personal permission and the **Always** / **Don't** controls.
 - [ ] Run experiment E7.
+- [ ] Policy learning: run RL levels 1–2 ([13 §13.4](13-scribe-rl-and-feedback.md#134-algorithms-in-the-order-to-try-them)) on the logged impressions, and deploy only through [13 §13.5](13-scribe-rl-and-feedback.md#135-deploying-a-new-policy-safely).
 
-**Exit:** G5 passes offline. Then run a supervised live period with monitoring.
+**Exit:** G5 passes offline, and every new policy passes 13 §13.5. Then run a supervised live period with monitoring.
 
 ## Phase 5: Human trial (weeks 9–13)
 
@@ -75,6 +77,7 @@ This roadmap assumes one implementer, plus some of your time for consent, trial 
 ## Phase 7: Personalization loop and Harden
 
 - [ ] Set up the weekly retrain-and-certify routine, drift monitoring and automatic fallback.
+- [ ] Add RL levels 3–5 as the data allows ([13 §13.4](13-scribe-rl-and-feedback.md#134-algorithms-in-the-order-to-try-them)).
 - [ ] Complete the Harden review required by the repository rules before any flag defaults on.
 
 ## Turning phases into NEXT.md items
@@ -93,8 +96,8 @@ Suggested items, with IDs to be assigned:
 | Writing-aid logging and shadow autocorrect | Events, export and deletion tests exist; flag off | None |
 | Math lexicon and noisy-channel corrector | E1/E2 report written; G1 passes | None (TypeScript) |
 | n-gram scorer and ranker assets | E3/E4 report written; G2–G3 pass | None at runtime; KenLM and LightGBM at build time |
-| Small neural scorer (L2/L3) | E3 report written; G4 passes | None (`onnxruntime-web` is already a dependency) |
-| Pause-time pretrained reranker | E5 report written; G4 passes | A native runtime, if chosen (llama.cpp or LiteRT-LM) |
+| Scribe model, experts and heads (11–14) | E3–E6 reports written with Scribe; G4 passes | None at runtime (`onnxruntime-web` is already a dependency); PyTorch, SentencePiece and KenLM at build time |
+| Suggestion policy: bandit, then off-policy RL (13) | Levels 1–2 deployed through 13 §13.5 | None |
 | Certified autocorrect | E7 report written; G5 passes | None |
 | Ink capture and model v2 | 08 report written; G7 passes | None (`onnxruntime-web`) |
 | Human trial and decision | E9 report written; G6 passes | None |
@@ -105,7 +108,8 @@ Suggested items, with IDs to be assigned:
 | --- | --- | --- |
 | Too little of your text | Underpowered tests | Use your history plus 2–4 weeks of logs; paired offline tests need only about 2,000–4,000 opportunities |
 | Licences: MathWriting (NC-SA), MobileLLM-R1 (NC), Gemma terms, LFM's revenue cap | Some weights can't ship | Keep the licence register; ship only weights trained on permissively licensed data; use NC models for research comparison only |
-| Phone memory and WebView speed | L4 is unusable | Word-start caching; L3 as the main neural model; a native runtime only if needed |
+| Phone memory and WebView speed | Scribe-M is too slow | Word-start caching; fall back to Scribe-S; a native runtime only if needed |
+| Free GPU quota shrinks or sessions get shorter | Training stalls | Checkpoint every 15–20 minutes; the Scribe-S path needs only about 2 GPU-hours; free Colab as a backup |
 | Label noise from typos the learner didn't notice | Precision estimates come out pessimistic | Conservative by design; the weekly review sample |
 | Learner-choice leaks from new models | Pedagogical harm | Generation constraints, S1, the D13 gate and the stopping rule |
 | Too much asked of you | Data collection stalls | Short sessions; passive logging; labelling capped at about 2 hours |
