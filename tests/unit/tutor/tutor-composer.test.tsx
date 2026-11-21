@@ -5,6 +5,7 @@ import {TutorComposer} from '../../../src/features/tutor/TutorComposer';
 import type {TutorInkState} from '../../../src/features/tutor/TutorInk';
 import {imageReference} from '../../../supabase/functions/_shared/tutor-answer';
 import {setHapticsEnabled} from '../../../src/ui/v7/haptics';
+import * as autoCorrect from '../../../src/features/tutor/writingAid/autoCorrect';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -72,6 +73,43 @@ const input = async (value: string) => {
   });
   await act(async () => {await new Promise(resolve => setTimeout(resolve, 35));});
 };
+
+// Exercise the UI's qualified-decision boundary independently of whether the
+// current empirical certificate authorizes a rule for a particular population.
+function qualifiedAutoFixture() {
+  vi.spyOn(autoCorrect,'detectWritingAutoCorrection').mockImplementation(request=>
+    autoCorrect.evaluateWritingAutoCorrection(request,[{ruleId:'teh-to-the',sampleSize:1000,correct:1000,
+      artifact:'unit-fixture',population:'synthetic'}]));
+}
+
+test('a qualified automatic correction needs no accept tap and Undo restores the exact typed token',async()=>{
+  qualifiedAutoFixture();
+  await act(async()=>root.render(<Harness/>));
+  await click('Keys');
+  await input('I read teh');
+  await input('I read teh ');
+  expect(field().value).toBe('I read the ');
+  expect(host.querySelector('.writing-aid-auto-summary')?.textContent).toContain('Corrected teh');
+  await click('Undo suggestion');
+  expect(field().value).toBe('I read teh ');
+  await key('Backspace');
+  // Native deletion is delivered by input, then retyping the separator must
+  // respect this occurrence's rejection rather than correcting it again.
+  await input('I read teh');
+  await input('I read teh ');
+  expect(field().value).toBe('I read teh ');
+});
+
+test('Backspace reverses a qualified automatic correction before deleting learner text',async()=>{
+  qualifiedAutoFixture();
+  await act(async()=>root.render(<Harness/>));
+  await click('Keys');
+  await input('I read teh');
+  await click('Space',keyboard());
+  expect(field().value).toBe('I read the ');
+  await key('Backspace');
+  expect(field().value).toBe('I read teh ');
+});
 const awaitAid = async (name: string) => {
   await vi.waitFor(async () => {
     await act(async () => {await new Promise(resolve => setTimeout(resolve, 20));});

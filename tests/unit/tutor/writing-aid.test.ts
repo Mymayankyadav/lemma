@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {padEdit} from '../../../src/features/pad/padEdit';
-import {predictWritingAid} from '../../../src/features/tutor/writingAid/engine';
+import {predictWritingAid, predictWritingAidPool} from '../../../src/features/tutor/writingAid/engine';
+import {createWritingAidModel, recordWritingAidVocabulary, updateWritingAidModel} from '../../../src/features/tutor/writingAid/learning';
 import {
   ALL_WRITING_AID_SURFACES, NO_WRITING_AID, advanceWritingAidAnchor, applyWritingAidProposal,
   continueWritingAidAnchor, type WritingAidRequest,
@@ -71,6 +72,38 @@ describe('local writing aid', () => {
       }
     }
     expect(predictWritingAid(request('Let x')).ghost?.insert).toBe(' be ');
+  });
+
+  it('does not offer causal or logical connectors from a weakly typed prefix', () => {
+    const connectors = ['because', 'since', 'hence', 'thus', 'therefore', 'consequently', 'accordingly',
+      'conversely', 'otherwise', 'nevertheless', 'nonetheless', 'whereas', 'provided', 'assuming', 'then', 'unless', 'nor'];
+    const model = createWritingAidModel();
+    for (const word of connectors) {
+      for (let n = 0; n < 5; n++) updateWritingAidModel(model, 'accept', {
+        kind: 'word', candidate: word, prefix: word[0], previous: 'i', mode: 'fast',
+      });
+      for (const prefix of [word[0], word.slice(0, Math.min(4, word.length - 1))]) {
+        for (const mode of ['balanced', 'fast', 'strict', 'off'] as const) {
+          for (const options of [{terms: false, wording: true, symbols: false}, {terms: true, wording: true, symbols: true},
+            {terms: false, wording: false, symbols: false}]) {
+            const text = 'I ' + prefix;
+            const pool = predictWritingAidPool(request(text, {mode}), model, options);
+            expect(pool.words.map(item => item.label.toLowerCase()), `${mode}: ${word} from ${prefix}`).not.toContain(word);
+          }
+        }
+      }
+    }
+    for (const mode of ['balanced', 'fast', 'strict', 'off'] as const) {
+      const input = request('I believe because', {mode});
+      expect(predictWritingAid(input).edit).toBeNull();
+      expect(input.cursor.text).toBe('I believe because');
+    }
+    // A repeated personal term is not evidence for choosing a connector at a
+    // weak mathematical boundary either (9/12 is below the 80% threshold).
+    recordWritingAidVocabulary(model, 'consequently');
+    recordWritingAidVocabulary(model, 'consequently');
+    expect(predictWritingAidPool(request('I consequen', {mode: 'fast'}), model).words.map(item => item.label))
+      .not.toContain('consequently');
   });
 
   it('keeps the original typed anchor through one neutral next-word tap', () => {

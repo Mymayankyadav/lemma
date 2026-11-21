@@ -1,6 +1,7 @@
 import {expect, test, type CDPSession, type Locator, type Page} from '@playwright/test';
 import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 import {createWritingAidModel, updateWritingAidModel} from '../../src/features/tutor/writingAid/learning';
+import {packTutorWritingReply} from '../../supabase/functions/_shared/tutor-writing';
 
 const routes = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#';
 const tutor = routes + '/p/real-analysis/cp/CP4/tutor';
@@ -64,7 +65,8 @@ async function storedModel(page: Page) {
     const key = Object.keys(localStorage).find(item => item.includes('writing-aid-model'));
     return key ? JSON.parse(localStorage.getItem(key)!) as {
       enabled: boolean;
-      model: {weights: Record<string, {value: number}>; vocabulary: Record<string, {uses: number}>};
+      model: {weights: Record<string, {value: number}>; vocabulary: Record<string, {uses: number}>;
+        autoTrust?: Record<string, {accepts: number}>};
     } : null;
   });
 }
@@ -83,6 +85,15 @@ const offeredWords = async (page: Page) => wordStrip(page).locator('button:enabl
 const surfaceItemWeight = (model: Awaited<ReturnType<typeof storedModel>>, surface: string) =>
   Object.entries(model?.model.weights ?? {}).filter(([key]) => key.startsWith('item:' + surface + ':'))
     .reduce((sum, [, weight]) => sum + weight.value, 0);
+function contrastRatio(foreground: string, background: string) {
+  const luminance = (color: string) => {
+    const rgb = color.match(/[\d.]+/g)!.slice(0, 3).map(value => Number(value) / 255)
+      .map(value => value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4);
+    return rgb[0] * 0.2126 + rgb[1] * 0.7152 + rgb[2] * 0.0722;
+  };
+  const [high, low] = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+  return (high + 0.05) / (low + 0.05);
+}
 
 test('a word slot accepts one explicit edit and keeps its position during a stale pointer press', async ({page}) => {
   const answer = await openAnswer(page);
@@ -271,6 +282,101 @@ test('spelling stays literal as the learner types and offers visible replace, ke
   await expect(replacement).toHaveCount(0);
 });
 
+for (const editorKind of ['rich', 'textarea'] as const) {
+  test(`personally trusted corrections can be undone by button or Backspace in the ${editorKind} editor`, async ({page}) => {
+    let answer: Locator;
+    if (editorKind === 'rich') answer = await openAnswer(page);
+    else {
+      await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+      await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+      answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+      await expect(answer).toHaveJSProperty('tagName', 'TEXTAREA');
+    }
+    const value = async () => editorKind === 'rich' ? answer.textContent() : answer.inputValue();
+    const type = async (text: string) => {
+      await answer.fill('');
+      await answer.focus();
+      await page.keyboard.type(text);
+    };
+    // Cold rules preserve literal text until this learner has explicitly chosen the pair twice.
+    await type('I read teh ');
+    expect(await value()).toBe('I read teh ');
+    await type('');
+    for (const method of ['button', 'Backspace'] as const) {
+      for (let count = 1; count <= 2; count++) {
+        const previous = (await value()) ?? '';
+        const separator = previous && !previous.endsWith(' ') ? ' ' : '';
+        await page.keyboard.type(separator + 'I read teh');
+        await expect(editPreview(page)).toHaveAccessibleName('Replace teh with the');
+        await editPreview(page).click();
+        expect(await value()).toBe(previous + separator + 'I read the');
+        await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(count);
+      }
+      const previous = (await value()) ?? '';
+      const separator = previous && !previous.endsWith(' ') ? ' ' : '';
+      await page.keyboard.type(separator + 'I read teh');
+      await page.keyboard.type(' ');
+      await expect.poll(value).toBe(previous + separator + 'I read the ');
+      const notice = page.locator('.writing-aid-auto-correction');
+      await expect(notice).toBeVisible();
+      await expect(notice.getByRole('status')).toContainText('Corrected');
+      await expect(notice.locator('del')).toHaveText('teh');
+      await expect(notice.locator('strong')).toHaveText('the');
+      if (method === 'button') await undoButton(page).click(); else await answer.press('Backspace');
+      await expect.poll(value).toBe(previous + separator + 'I read teh ');
+      await expect(notice).toHaveCount(0);
+      await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(0);
+      await type('I read teh ');
+      expect(await value()).toBe('I read teh ');
+      await type('');
+    }
+  });
+}
+
+test('clearing a completed draft preserves explicit correction trust', async ({page}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  for (let count = 1; count <= 2; count++) {
+    await answer.fill('');
+    await answer.focus();
+    await page.keyboard.type('I read teh');
+    await editPreview(page).click();
+    await expect(answer).toHaveValue('I read the');
+    await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(count);
+  }
+  await answer.fill('');
+  await answer.focus();
+  await page.keyboard.type('I read teh ');
+  await expect(answer).toHaveValue('I read the ');
+  await expect(page.locator('.writing-aid-auto-correction')).toBeVisible();
+});
+
+test('editing an earlier accepted correction revokes trust after text shifts', async ({page}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  await answer.focus();
+  for (let count = 1; count <= 2; count++) {
+    await page.keyboard.type((count === 1 ? '' : ' ') + 'I read teh');
+    await editPreview(page).click();
+    await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(count);
+  }
+  await expect(answer).toHaveValue('I read the I read the');
+  await answer.evaluate((node: HTMLTextAreaElement) => node.setSelectionRange(0, 0));
+  await page.keyboard.type('Well, ');
+  await expect(answer).toHaveValue('Well, I read the I read the');
+  await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(2);
+  await answer.evaluate((node: HTMLTextAreaElement) => node.setSelectionRange(15, 16));
+  await page.keyboard.type('u');
+  await expect(answer).toHaveValue('Well, I read thu I read the');
+  await expect.poll(async () => (await storedModel(page))?.model.autoTrust?.['teh-to-the']?.accepts ?? 0).toBe(0);
+  await answer.press('End');
+  await page.keyboard.type(' I read teh ');
+  await expect(answer).toHaveValue('Well, I read thu I read the I read teh ');
+  await expect(page.locator('.writing-aid-auto-correction')).toHaveCount(0);
+});
+
 test('notation and faded continuation are explicit and undo restores the authored text', async ({page}) => {
   const answer = await openAnswer(page);
   await typeDraft(page, answer, 'Let eps');
@@ -291,68 +397,88 @@ test('notation and faded continuation are explicit and undo restores the authore
   await expect(answer).toHaveJSProperty('textContent', 'could you restate');
 });
 
-test('a deliberate right swipe in the answer accepts the faded continuation and is undoable', async ({page, context}) => {
+for (const colorScheme of ['light', 'dark'] as const) {
+  test(`suggestion categories use distinct, labelled theme colors in ${colorScheme}`, async ({page}) => {
+    await page.emulateMedia({colorScheme, reducedMotion: 'reduce'});
+    const answer = await openAnswer(page);
+    const colors: string[] = [];
+    for (const [draft, kind, label] of [
+      ['We wrote teh', 'correction', 'Spelling'], ['Let eps', 'notation', 'Notation'],
+      ['could you restate', 'continuation', 'Continuation'],
+    ] as const) {
+      await typeDraft(page, answer, draft);
+      const choice = page.locator(`.writing-aid-floating-choice[data-kind="${kind}"]`);
+      const preview = choice.locator('.writing-aid-preview');
+      await expect(preview).toBeVisible();
+      await expect(preview.locator('small')).toContainText(label);
+      await expect(preview.locator('small svg')).toHaveCount(1);
+      const style = await preview.evaluate(node => ({background: getComputedStyle(node).backgroundColor,
+        foreground: getComputedStyle(node.querySelector('small')!).color}));
+      colors.push(style.foreground);
+      expect(contrastRatio(style.foreground, style.background)).toBeGreaterThanOrEqual(4.5);
+      await preview.hover();
+      const hoverStyle = await preview.evaluate(node => ({background: getComputedStyle(node).backgroundColor,
+        foreground: getComputedStyle(node.querySelector('small')!).color}));
+      expect(contrastRatio(hoverStyle.foreground, hoverStyle.background)).toBeGreaterThanOrEqual(4.5);
+      for (const target of [preview, choice.locator('.writing-aid-refresh'), dismissButton(page)]) {
+        const box = (await target.boundingBox())!;
+        expect(box.width).toBeGreaterThanOrEqual(44);
+        expect(box.height).toBeGreaterThanOrEqual(44);
+      }
+    }
+    await typeDraft(page, answer, 'nota');
+    const preferred = wordStrip(page).locator('button.preferred');
+    await expect(preferred).toBeEnabled();
+    const wordStyle = await preferred.evaluate(node => ({foreground: getComputedStyle(node).color,
+      background: getComputedStyle(node).backgroundColor}));
+    colors.push(wordStyle.foreground);
+    expect(contrastRatio(wordStyle.foreground, wordStyle.background), JSON.stringify(wordStyle)).toBeGreaterThanOrEqual(4.5);
+    await preferred.hover();
+    const hoverWordStyle = await preferred.evaluate(node => ({foreground: getComputedStyle(node).color,
+      background: getComputedStyle(node).backgroundColor}));
+    expect(contrastRatio(hoverWordStyle.foreground, hoverWordStyle.background)).toBeGreaterThanOrEqual(4.5);
+    expect(new Set(colors).size).toBe(4);
+  });
+}
+
+test('a horizontal touch drag never accepts a continuation; tapping it still works', async ({page, context}) => {
   const answer = await openAnswer(page);
   const client = await context.newCDPSession(page);
-  await page.evaluate(() => {
-    type Sample = {type: string; x: number; y: number; at: number; selection: string; anchor: number | null; focus: number | null; target: string; progress: string | null};
-    const win = window as Window & {gestureSamples: Sample[]};
-    win.gestureSamples = [];
-    for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']) {
-      document.addEventListener(type, event => {
-        const pointer = event as PointerEvent;
-        const selection = window.getSelection();
-        if (pointer.pointerType === 'touch') win.gestureSamples.push({type, x: pointer.clientX, y: pointer.clientY, at: performance.now(),
-          selection: selection?.toString() ?? '', anchor: selection?.anchorOffset ?? null, focus: selection?.focusOffset ?? null,
-          target: (pointer.target as Element)?.className?.toString() ?? '',
-          progress: document.querySelector('.writing-aid-floating')?.getAttribute('data-swiping') ?? null});
-      }, true);
-    }
-  });
   for (const distance of [56, 90]) {
     await typeDraft(page, answer, 'could you restate');
     await expect(answer).toHaveAttribute('data-completion', ' the question');
-    await page.evaluate(() => { (window as Window & {gestureSamples: unknown[]}).gestureSamples = []; });
+    // Native Chromium may treat an unhandled horizontal touch as Back. Keep
+    // that navigation on the same route while checking that no text is applied.
+    await page.evaluate(() => history.pushState({}, '', location.href));
     await touchDrag(client, answer, distance, 0);
-    const trace = await page.evaluate(() => (window as Window & {gestureSamples: {type: string; x: number; y: number; at: number}[]}).gestureSamples);
-    const down = trace.find(event => event.type === 'pointerdown');
-    const up = trace.find(event => event.type === 'pointerup');
-    expect({down, up, trace}).toMatchObject({down: expect.anything(), up: expect.anything()});
-    expect(up!.x - down!.x).toBe(distance);
-    expect(up!.at - down!.at).toBeLessThan(600);
-    await expect(answer, `swipe ${distance}px: ${JSON.stringify(trace)}`).toHaveJSProperty('textContent', 'could you restate the question');
-    await expect(answer).toBeFocused();
-    await undoButton(page).click();
     await expect(answer).toHaveJSProperty('textContent', 'could you restate');
+    await expect(undoButton(page)).toHaveCount(0);
   }
+  await typeDraft(page, answer, 'could you restate');
+  await ghostPreview(page).click();
+  await expect(answer).toHaveJSProperty('textContent', 'could you restate the question');
+  await undoButton(page).click();
+  await expect(answer).toHaveJSProperty('textContent', 'could you restate');
 });
 
-test('losing the composer’s pointer capture cancels a swipe', async ({page, context}) => {
+test('touching and dragging the answer does not capture the composer or accept a continuation', async ({page, context}) => {
   const answer = await openAnswer(page);
   await typeDraft(page, answer, 'could you restate');
   await expect(answer).toHaveAttribute('data-completion', ' the question');
   await page.evaluate(() => {
+    history.pushState({}, '', location.href);
     document.addEventListener('pointerdown', event => {
       (window as Window & {testPointerId: number}).testPointerId = event.pointerId;
     }, {once: true, capture: true});
   });
   const client = await context.newCDPSession(page);
   await client.send('Emulation.setTouchEmulationEnabled', {enabled: true, maxTouchPoints: 1});
-  await answer.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
   const box = (await answer.boundingBox())!;
   const x = Math.round(box.x + 20), y = Math.round(box.y + box.height / 2);
   await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1}]});
   await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + 90, y, id: 1}]});
-  await expect(floating(page)).toHaveAttribute('data-swiping', 'true');
-  // Allow the browser to transfer implicit editor capture to the composer.
-  await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + 100, y, id: 1}]});
   const pointerId = await page.evaluate(() => (window as Window & {testPointerId: number}).testPointerId);
-  const card = page.locator('.writing-composer-card');
-  expect(await card.evaluate((node, id) => node.hasPointerCapture(id), pointerId)).toBe(true);
-  await card.evaluate((node, id) => node.releasePointerCapture(id), pointerId);
-  // Chromium dispatches lostpointercapture on the next pointer event.
-  await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + 110, y, id: 1}]});
-  await expect(floating(page)).not.toHaveAttribute('data-swiping', 'true');
+  expect(await page.locator('.writing-composer-card').evaluate((node, id) => node.hasPointerCapture(id), pointerId)).toBe(false);
   await client.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
   await expect(answer).toHaveJSProperty('textContent', 'could you restate');
   await expect(undoButton(page)).toHaveCount(0);
@@ -369,6 +495,7 @@ test('short, leftward, vertical, cancelled and stale gestures do not accept a co
   for (const [dx, dy, cancel] of [[55, 0, false], [-90, 0, false], [0, 70, false], [56, 19, false], [90, 0, true]] as const) {
     await typeDraft(page, answer, 'could you restate');
     await expect(answer).toHaveAttribute('data-completion', ' the question');
+    await page.evaluate(() => history.pushState({}, '', location.href));
     await touchDrag(client, answer, dx, dy, cancel);
     await expect(answer).toHaveJSProperty('textContent', 'could you restate');
     await expect(undoButton(page)).toHaveCount(0);
@@ -376,17 +503,21 @@ test('short, leftward, vertical, cancelled and stale gestures do not accept a co
 
   await typeDraft(page, answer, 'could you restate');
   await expect(answer).toHaveAttribute('data-completion', ' the question');
+  await page.evaluate(() => history.pushState({}, '', location.href));
   const box = (await answer.boundingBox())!;
   const x = Math.round(box.x + 15), y = Math.round(box.y + box.height / 2);
   await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1}]});
   await page.keyboard.type('x');
   await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + 90, y, id: 1}]});
   await client.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
-  await expect(answer).toHaveJSProperty('textContent', 'could you restatex');
+  const edited = await answer.textContent();
+  expect(edited).toContain('x');
+  expect(edited!.replace('x', '')).toBe('could you restate');
   await expect(undoButton(page)).toHaveCount(0);
 
   await typeDraft(page, answer, 'could you restate');
   await expect(answer).toHaveAttribute('data-completion', ' the question');
+  await page.evaluate(() => history.pushState({}, '', location.href));
   await client.send('Input.dispatchTouchEvent', {type: 'touchStart', touchPoints: [{x, y, id: 1}]});
   await page.waitForTimeout(700);
   await client.send('Input.dispatchTouchEvent', {type: 'touchMove', touchPoints: [{x: x + 90, y, id: 1}]});
@@ -476,6 +607,29 @@ test('proof choices and non-typing input preserve authored text and IME composit
   await expect(answer).toHaveJSProperty('textContent', 'We wrote teh');
 });
 
+test('Faster typing does not offer an unchosen logical connector', async ({page}) => {
+  const answer = await openAnswer(page);
+  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+    .getByRole('button', {name: 'Writing assistance', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Writing assistance', exact: true})
+    .getByRole('group', {name: 'Suggestion mode'}).getByRole('radio', {name: /^Faster typing\b/}).check();
+  await page.keyboard.press('Escape');
+  const connector = wordStrip(page).getByRole('button', {name: 'Insert because', exact: true});
+  for (const prefix of ['I b', 'I becau']) {
+    await typeDraft(page, answer, prefix);
+    await expect(answer).toHaveJSProperty('textContent', prefix);
+    if (prefix === 'I b') await expect(wordStrip(page).locator('button:enabled').first()).toBeVisible();
+    // Allow the cached engine import and the scheduled render to settle before
+    // making an absence assertion for the longer, possibly empty word pool.
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(connector).toHaveCount(0);
+  }
+  await typeDraft(page, answer, 'I believe because');
+  await expect(answer).toHaveJSProperty('textContent', 'I believe because');
+  await expect(connector).toHaveCount(0);
+});
+
 test('the writing switches and full Off setting persist while manual typing and math stay usable', async ({page}) => {
   const answer = await openAnswer(page);
   await typeDraft(page, answer, 'We wrote teh');
@@ -497,7 +651,7 @@ test('the writing switches and full Off setting persist while manual typing and 
   await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
   await page.getByRole('dialog', {name: 'Answer actions', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
-  await settings.getByRole('radio', {name: /^Off\b/}).check();
+  await settings.getByRole('group', {name: 'Suggestion mode'}).getByRole('radio', {name: /^Off\b/}).check();
   await expect(spelling).toBeDisabled();
   await page.keyboard.press('Escape');
   await answer.fill('');
@@ -514,7 +668,7 @@ test('the writing switches and full Off setting persist while manual typing and 
   await expect(answer).toHaveJSProperty('textContent', 'Let eps ∈');
 
   await page.goto(routes + '/settings?section=tutor');
-  await expect(page.getByRole('radio', {name: /^Off\b/})).toBeChecked();
+  await expect(page.getByRole('group', {name: 'Suggestion mode'}).getByRole('radio', {name: /^Off\b/})).toBeChecked();
 });
 
 test('Off stops recording typing and retires an unfinished acceptance timer', async ({page}) => {
@@ -526,7 +680,7 @@ test('Off stops recording typing and retires an unfinished acceptance timer', as
   await page.getByRole('dialog', {name: 'Answer actions', exact: true})
     .getByRole('button', {name: 'Writing assistance', exact: true}).click();
   await page.getByRole('dialog', {name: 'Writing assistance', exact: true})
-    .getByRole('radio', {name: /^Off\b/}).check();
+    .getByRole('group', {name: 'Suggestion mode'}).getByRole('radio', {name: /^Off\b/}).check();
   const before = await storedModel(page);
   await page.keyboard.press('Escape');
   await page.waitForTimeout(3200);
@@ -562,7 +716,153 @@ test('a read-only tutor draft remains intact with a saved Balanced preference', 
   await expect(answer).toHaveValue(draft);
 });
 
-test('the default demo textarea supports visible edits, refresh, swipe and Balanced personalization', async ({page, context}) => {
+test('only the current connector reply can ground a labelled continuation', async ({page}) => {
+  const {owner, cpId, threadId, payload} = await prepareLiveTutor(page);
+  const phrase = 'The question asks about the original wording of the previous sentence';
+  const prefix = 'The question asks about the';
+  const messageId = 'fixture-connector-message';
+  const packet = packTutorWritingReply({body: phrase, writingAid: {version: 1, revision: 'fixture-revision', signals: [
+    {id: 'private-signal-id', sourceId: messageId, role: 'suggested-wording', text: phrase},
+  ]}}).body as string;
+  await page.addInitScript(owner => {
+    localStorage.setItem('lemma.tutor.draft:' + JSON.stringify([owner, 'input', 'preferences']) + ':writing-aid', 'balanced:15');
+  }, owner);
+  const turn = (body: string, provenance: object, replyId: string, version: number) => ({
+    id: 'fixture-turn', threadId, sequence: 1, version, status: 'completed',
+    snapshot: {question: 'Explain the current question.', selectedContext: []},
+    finalReply: {turnId: 'fixture-turn', messageId: replyId, body, provenance, citations: [], suggestions: []},
+  });
+  const connector = {kind: 'connector', reportedHost: null, hostVerified: false};
+  let currentTurn = turn(packet, connector, messageId, 2);
+  await page.route('**/rest/v1/**', route => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname.split('/rest/v1/')[1];
+    if (path === 'rpc/tutor_thread_state') return route.fulfill({json: {head: {threadId, pendingTurnId: null, lastSequence: 1},
+      canSubmit: true, canConnect: false, recoveredDrafts: [], turns: [currentTurn]}});
+    return route.fulfill({json: liveTutorFixtureResponse(payload, path, request.headers().accept)});
+  });
+  await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1/tutor');
+  const log = page.getByRole('log', {name: 'Conversation', exact: true});
+  await expect(log).toContainText(phrase);
+  await expect(log).not.toContainText('lemma-writing-v1');
+  await expect(log).not.toContainText('private-signal-id');
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  await answer.focus();
+  await page.keyboard.type(prefix);
+  await expect(answer).toHaveValue(prefix);
+  const proposal = page.getByRole('button', {name: 'Accept continuation original wording of the previous sentence, from tutor', exact: true});
+  await expect(proposal).toBeVisible();
+  await expect(proposal).toContainText('From tutor');
+  await expect(page.locator('.writing-editor-mirror')).toHaveText(phrase);
+  await expect.poll(() => ghostClipping(page)).toBeLessThanOrEqual(1);
+
+  // Changing tutor-hint scope invalidates an offer even while it is held.
+  const settingsButton = page.getByRole('button', {name: 'Edit answer', exact: true});
+  const openSettings = async () => {
+    await settingsButton.dispatchEvent('click');
+    await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+      .getByRole('button', {name: 'Writing assistance', exact: true}).dispatchEvent('click');
+    return page.getByRole('dialog', {name: 'Writing assistance', exact: true})
+      .getByRole('group', {name: 'Tutor hints', exact: true});
+  };
+  const original = (await proposal.boundingBox())!;
+  await page.mouse.move(original.x + original.width / 2, original.y + original.height / 2);
+  await page.mouse.down();
+  const hints = await openSettings();
+  await expect(hints.getByRole('radio', {name: 'Wording', exact: true})).toBeChecked();
+  await hints.getByRole('radio', {name: 'Off', exact: true}).dispatchEvent('click');
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(answer).toHaveValue(prefix);
+  await expect(proposal).toHaveCount(0);
+  const restored = await openSettings();
+  await restored.getByRole('radio', {name: 'Wording', exact: true}).dispatchEvent('click');
+  await expect(restored.getByRole('radio', {name: 'Wording', exact: true})).toBeChecked();
+  await page.keyboard.press('Escape');
+  await answer.fill('');
+  await answer.focus();
+  await page.keyboard.type(prefix);
+  await expect(proposal).toBeVisible();
+
+  // Hold the offered text while a newer reply arrives; release must not apply it.
+  const box = (await proposal.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  currentTurn = turn('A newer reply has no suggested wording.', connector, 'newer-message', 3);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(log).toContainText('A newer reply has no suggested wording.');
+  await page.mouse.up();
+  await expect(answer).toHaveValue(prefix);
+  await expect(proposal).toHaveCount(0);
+
+  // Imported text cannot claim connector provenance, even if it carries a valid suffix.
+  currentTurn = turn(packet, {kind: 'manual-import', label: 'Imported by you'}, messageId, 4);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(log).toContainText(phrase);
+  await expect(proposal).toHaveCount(0);
+  await expect(answer).toHaveValue(prefix);
+
+  for (const [index, role] of ['hint', 'proof', 'solution'].entries()) {
+    const replyId = `unsafe-${role}-reply`, visible = `${role.toUpperCase()}: ${phrase}`;
+    const unsafePacket = packTutorWritingReply({body: visible, writingAid: {version: 1, revision: `unsafe-${role}`, signals: [
+      {id: `unsafe-${role}-signal`, sourceId: replyId, role, text: phrase},
+    ]}}).body as string;
+    currentTurn = turn(unsafePacket, connector, replyId, 5 + index);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await expect(log).toContainText(visible);
+    await expect(page.getByRole('button', {name: /from tutor$/})).toHaveCount(0);
+    await expect(answer).toHaveValue(prefix);
+  }
+});
+
+test('a tutor-grounded word identifies its source on a narrow enlarged layout', async ({page}) => {
+  await page.setViewportSize({width: 320, height: 640});
+  const {owner, threadId, payload} = await prepareLiveTutor(page);
+  const messageId = 'fixture-word-reply';
+  const phrase = 'Please explain the metaphrasingzz';
+  const packet = packTutorWritingReply({body: phrase, writingAid: {version: 1, revision: 'word-revision', signals: [
+    {id: 'word-signal', sourceId: messageId, role: 'given', text: phrase},
+  ]}}).body as string;
+  await page.addInitScript(owner => {
+    document.addEventListener('DOMContentLoaded', () => {document.documentElement.style.fontSize = '160%';});
+    localStorage.setItem('lemma.tutor.draft:' + JSON.stringify([owner, 'input', 'preferences']) + ':writing-aid', 'balanced:15');
+  }, owner);
+  await page.route('**/rest/v1/**', route => {
+    const request = route.request(), path = new URL(request.url()).pathname.split('/rest/v1/')[1];
+    if (path === 'rpc/tutor_thread_state') return route.fulfill({json: {head: {threadId, pendingTurnId: null, lastSequence: 1},
+      canSubmit: true, canConnect: false, recoveredDrafts: [], turns: [{id: 'word-turn', threadId, sequence: 1, version: 2,
+        status: 'completed', snapshot: {question: 'Explain the notation.', selectedContext: []}, finalReply: {
+          turnId: 'word-turn', messageId, body: packet, provenance: {kind: 'connector', reportedHost: null, hostVerified: false},
+          citations: [], suggestions: [],
+        }}]}});
+    return route.fulfill({json: liveTutorFixtureResponse(payload, path, request.headers().accept)});
+  });
+  await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1/tutor');
+  await page.getByRole('button', {name: 'Edit answer', exact: true}).click();
+  await page.getByRole('dialog', {name: 'Answer actions', exact: true})
+    .getByRole('button', {name: 'Writing assistance', exact: true}).click();
+  const hints = page.getByRole('dialog', {name: 'Writing assistance', exact: true})
+    .getByRole('group', {name: 'Tutor hints', exact: true});
+  await expect(hints.getByRole('radio', {name: 'Wording', exact: true})).toBeChecked();
+  await hints.getByRole('radio', {name: 'Wording and notation', exact: true}).check();
+  await page.keyboard.press('Escape');
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  await answer.focus();
+  await page.keyboard.type('metaphrasingz');
+  const word = wordStrip(page).getByRole('button', {name: 'Insert metaphrasingzz, from tutor', exact: true});
+  await expect(word).toBeInViewport({ratio: 1});
+  await expect(word.locator('.writing-aid-word-origin')).toHaveText('Tutor');
+  const [target, source] = await Promise.all([word.boundingBox(), word.locator('.writing-aid-word-origin').boundingBox()]);
+  expect(target!.width).toBeGreaterThanOrEqual(44);
+  expect(target!.height).toBeGreaterThanOrEqual(44);
+  expect(source!.y + source!.height).toBeLessThanOrEqual(target!.y + target!.height);
+  await word.click();
+  await expect(answer).toHaveValue('metaphrasingzz ');
+  await undoButton(page).click();
+  await expect(answer).toHaveValue('metaphrasingz');
+});
+
+test('the default demo textarea supports visible edits, refresh, tap and Balanced personalization', async ({page, context}) => {
   await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
   await page.getByRole('button', {name: 'Write a question', exact: true}).click();
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
@@ -595,7 +895,11 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
   await expect(ghostPreview(page)).toHaveAccessibleName('Accept continuation the question');
   await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
   await expect.poll(() => ghostClipping(page)).toBeLessThanOrEqual(1);
+  await page.evaluate(() => history.pushState({}, '', location.href));
   await touchDrag(await context.newCDPSession(page), answer, 90, 0);
+  await expect(answer).toHaveValue('could you restate');
+  await type('could you restate');
+  await ghostPreview(page).click();
   await expect(answer).toHaveValue('could you restate the question');
   await undoButton(page).click();
   await expect(answer).toHaveValue('could you restate');

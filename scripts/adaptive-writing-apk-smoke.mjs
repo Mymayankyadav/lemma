@@ -4,18 +4,20 @@ import {copyFile, mkdtemp, readFile, rm, stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {dirname, extname, join, resolve} from 'node:path';
 import {chromium, expect} from '@playwright/test';
+import {demoStartPath} from './android-writing-aid-fixture.mjs';
 
 const apk = process.argv[2] && resolve(process.argv[2]);
 if (!apk?.endsWith('.apk')) throw new Error('Pass the writing-aid test APK path');
-const preview = join(dirname(apk), 'lemma-adaptive-writing-aid-preview.png');
-const ghostPreview = join(dirname(apk), 'lemma-adaptive-writing-aid-ghost.png');
+const preview = apk.replace(/\.apk$/, '-preview.png');
+const ghostPreview = apk.replace(/\.apk$/, '-ghost.png');
+const tutorPreview = apk.replace(/\.apk$/, '-tutor.png');
 const unpacked = await mkdtemp(join(tmpdir(), 'lemma-adaptive-apk-smoke-'));
 let browser, server;
 try {
   execFileSync('unzip', ['-q', apk, 'assets/*', '-d', unpacked]);
   const root = join(unpacked, 'assets/public');
   const bootstrap = JSON.parse(await readFile(join(unpacked, 'assets/capacitor.config.json'), 'utf8'));
-  if (bootstrap.appId !== 'io.github.mymayankyadav.lemma.writingaidtest' || bootstrap.server.appStartPath !== '/lemma/?demo=1') {
+  if (bootstrap.appId !== 'io.github.mymayankyadav.lemma.writingaidtest' || bootstrap.server.appStartPath !== demoStartPath) {
     throw new Error('Unexpected package identity or default launch path');
   }
   const mime = new Map([
@@ -46,25 +48,69 @@ try {
   // The local server represents packaged assets. All external requests are unavailable.
   await page.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
   await page.goto(origin + bootstrap.server.appStartPath);
-  await page.getByRole('link', {name: 'Settings', exact: true}).tap();
-  await page.getByRole('link', {name: /^Tutor\b/}).tap();
-  const settings = page.getByRole('region', {name: 'Writing aid settings'});
-  await expect(settings.getByRole('radio', {name: /^Balanced\b/})).toBeChecked();
-  await expect(settings.getByRole('switch', {name: 'Personalize suggestions', exact: true})).toBeChecked();
-  for (const name of ['Keyboard word suggestions', 'Notation replacements', 'Spelling corrections', 'Faded continuations']) {
-    await expect(settings.getByRole('switch', {name, exact: true})).toBeChecked();
-  }
-
-  await page.goto(origin + bootstrap.server.appStartPath + '#/p/real-analysis/cp/CP4/tutor');
-  await page.getByRole('button', {name: 'Write a question', exact: true}).tap();
+  const log = page.getByRole('log', {name: 'Conversation', exact: true});
+  const sample = 'The question asks about the original wording of the previous sentence';
+  await expect(log).toContainText('Demo tutor sample for testing writing assistance.');
+  await expect(log).toContainText(sample);
+  await expect(log).not.toContainText('lemma-writing-v1');
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   await expect(answer).toHaveJSProperty('tagName', 'TEXTAREA');
+  expect(await page.evaluate(() => {
+    const data = localStorage.getItem('lemma.demo-tutor.writing-aid-model.v1:default');
+    return data ? JSON.parse(data).model.autoTrust?.['teh-to-the']?.accepts ?? 0 : 0;
+  })).toBe(0);
   const type = async text => {
     await answer.fill('');
     await answer.focus();
     await page.keyboard.type(text);
     await expect(answer).toHaveValue(text);
   };
+  await type('The question asks about the');
+  const fromTutor = page.getByRole('button', {name: 'Accept continuation original wording of the previous sentence, from tutor', exact: true});
+  await expect(fromTutor).toBeVisible();
+  await expect(fromTutor).toContainText('From tutor');
+  await page.screenshot({path: join(unpacked, 'tutor.png'), animations: 'disabled'});
+  await fromTutor.tap();
+  await expect(answer).toHaveValue(sample);
+  await page.getByRole('button', {name: 'Undo suggestion', exact: true}).tap();
+  await expect(answer).toHaveValue('The question asks about the');
+
+  // The bootstrap is one-shot with respect to an existing checkpoint thread.
+  await page.evaluate(async () => {
+    const db = await new Promise((resolve, reject) => {
+      const request = indexedDB.open('lemma-demo-tutor', 1);
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+    try {
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction('checkpoint-threads', 'readwrite'), store = tx.objectStore('checkpoint-threads');
+        const key = ['default', 'real-analysis', 'project-analysis-cp-4'], request = store.get(key);
+        request.onsuccess = () => {
+          const thread = request.result;
+          thread.turns[0].snapshot.question = 'Show me a sample writing suggestion. (preserved)';
+          store.put(thread, key);
+        };
+        tx.oncomplete = resolve;
+        tx.onabort = tx.onerror = () => reject(tx.error);
+      });
+    } finally { db.close(); }
+  });
+  await page.reload();
+  await expect(log).toContainText('Show me a sample writing suggestion. (preserved)');
+
+  await page.goto(origin + '/lemma/?demo=1#/settings?section=tutor');
+  const settings = page.getByRole('region', {name: 'Writing aid settings'});
+  await expect(settings.getByRole('radio', {name: /^Balanced\b/})).toBeChecked();
+  await expect(settings.getByRole('group', {name: 'Tutor hints'}).getByRole('radio', {name: 'Wording', exact: true})).toBeChecked();
+  await expect(settings.getByRole('switch', {name: 'Personalize suggestions', exact: true})).toBeChecked();
+  await expect(settings.getByRole('switch', {name: 'Correct common typos automatically', exact: true})).toBeChecked();
+  for (const name of ['Keyboard word suggestions', 'Notation replacements', 'Spelling corrections', 'Faded continuations']) {
+    await expect(settings.getByRole('switch', {name, exact: true})).toBeChecked();
+  }
+
+  await page.goto(origin + bootstrap.server.appStartPath);
+  await expect(answer).toHaveJSProperty('tagName', 'TEXTAREA');
   await type('We wrote teh');
   const correction = page.getByRole('button', {name: 'Replace teh with the', exact: true});
   await expect(correction).toBeVisible();
@@ -86,8 +132,25 @@ try {
   await expect.poll(async () => (await labels()).join('|')).not.toBe(before.join('|'));
   await expect(answer).toHaveValue('nota');
 
+  // Cold typos remain manual. Two explicitly accepted corrections qualify the
+  // exact personal pair for the third occurrence, which stays undoable.
+  await type('I read teh');
+  for (let accepted = 0; accepted < 2; accepted++) {
+    await correction.tap();
+    if (accepted === 0) await page.keyboard.type(' I read teh');
+  }
+  await expect(answer).toHaveValue('I read the I read the');
+  await page.keyboard.type(' I read teh ');
+  await expect(answer).toHaveValue('I read the I read the I read the ');
+  const automatic = page.locator('.writing-aid-auto-correction');
+  await expect(automatic).toContainText('Corrected');
+  await expect(automatic.locator('del')).toHaveText('teh');
+  await expect(automatic.locator('strong')).toHaveText('the');
+  await page.getByRole('button', {name: 'Undo suggestion', exact: true}).tap();
+  await expect(answer).toHaveValue('I read the I read the I read teh ');
+
   const cdp = await context.newCDPSession(page);
-  async function swipe(distance) {
+  async function drag(distance) {
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
     const box = await answer.boundingBox();
     const x = Math.round(box.x + box.width / 2 - distance / 2), y = Math.round(box.y + box.height / 2);
@@ -100,33 +163,35 @@ try {
     }
     await cdp.send('Input.dispatchTouchEvent', {type: 'touchEnd', touchPoints: []});
   }
-  for (const distance of [56, 90]) {
-    await type('could you restate');
-    await expect(page.getByRole('button', {name: 'Accept continuation the question', exact: true})).toBeVisible();
-    await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
-    await expect.poll(() => page.locator('.writing-editor-mirror').evaluate(node => {
-      const range = document.createRange();
-      range.selectNodeContents(node.lastChild);
-      const bounds = node.getBoundingClientRect();
-      const rects = Array.from(range.getClientRects()).filter(rect => rect.height > 0);
-      return rects.length ? Math.max(0, ...rects.map(rect => Math.max(bounds.top - rect.top, rect.bottom - bounds.bottom))) : Infinity;
-    })).toBeLessThanOrEqual(1);
-    if (distance === 56) await page.screenshot({path: join(unpacked, 'ghost.png'), animations: 'disabled'});
-    await swipe(distance);
-    await expect(answer).toHaveValue('could you restate the question');
-    await page.getByRole('button', {name: 'Undo suggestion', exact: true}).tap();
-    await expect(answer).toHaveValue('could you restate');
-  }
   await type('could you restate');
-  await expect(page.getByRole('button', {name: 'Accept continuation the question', exact: true})).toBeVisible();
-  await swipe(90);
+  const continuation = page.getByRole('button', {name: 'Accept continuation the question', exact: true});
+  await expect(continuation).toBeVisible();
+  await expect(page.locator('.writing-editor-mirror')).toHaveText('could you restate the question');
+  await expect.poll(() => page.locator('.writing-editor-mirror').evaluate(node => {
+    const range = document.createRange();
+    range.selectNodeContents(node.lastChild);
+    const bounds = node.getBoundingClientRect();
+    const rects = Array.from(range.getClientRects()).filter(rect => rect.height > 0);
+    return rects.length ? Math.max(0, ...rects.map(rect => Math.max(bounds.top - rect.top, rect.bottom - bounds.bottom))) : Infinity;
+  })).toBeLessThanOrEqual(1);
+  await page.screenshot({path: join(unpacked, 'ghost.png'), animations: 'disabled'});
+  await page.evaluate(() => history.pushState({}, '', location.href));
+  await drag(90);
+  await expect(answer).toHaveValue('could you restate');
+  await type('could you restate');
+  await continuation.tap();
   await expect(answer).toHaveValue('could you restate the question');
+  await page.getByRole('button', {name: 'Undo suggestion', exact: true}).tap();
+  await expect(answer).toHaveValue('could you restate');
+  await type('could you restate');
+  await continuation.tap();
   await page.getByRole('group', {name: 'Answer keyboard', exact: true}).getByRole('button', {name: 'q', exact: true}).tap();
   await expect(answer).toHaveValue('could you restate the questionq');
   if (pageErrors.length) throw new Error('App errors: ' + pageErrors.join('; '));
   await copyFile(join(unpacked, 'preview.png'), preview);
   await copyFile(join(unpacked, 'ghost.png'), ghostPreview);
-  console.log('Packaged default demo passed with external requests blocked: Balanced and personalization defaults, textarea strike-through, correction/undo, keyboard refresh, 56px and 90px ghost swipes, first-tap Undo and first-tap typing.');
+  await copyFile(join(unpacked, 'tutor.png'), tutorPreview);
+  console.log('Packaged default demo passed with external requests blocked: first-run sample and preserved existing thread, tutor-backed continuation/tap/Undo, Balanced and personalization defaults, textarea strike-through, correction/undo, keyboard refresh, qualified personal autocorrection/undo, no drag acceptance, and explicit continuation tap/Undo.');
 } finally {
   await browser?.close();
   if (server) await new Promise(resolve => server.close(resolve));
