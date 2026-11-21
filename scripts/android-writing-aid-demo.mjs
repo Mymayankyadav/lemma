@@ -4,13 +4,14 @@ import {copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync,
 import {tmpdir} from 'node:os';
 import {basename, dirname, join, resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {demoStartPath, installDemoWritingAidFixture} from './android-writing-aid-fixture.mjs';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const productionId = 'io.github.mymayankyadav.lemma';
 const suffix = '.writingaidtest';
 const packageId = productionId + suffix;
 const label = 'Lemma Writing Aid Test';
-const startPath = '/lemma/?demo=1';
+const startPath = demoStartPath;
 const inputs = [
   'android', 'public', 'scripts', 'src', 'supabase/functions/_shared', '.env.production', 'assets.manifest.json',
   'capacitor.config.json', 'index.html', 'package-lock.json', 'package.json', 'tsconfig.json', 'vite.config.ts',
@@ -50,6 +51,7 @@ function edit(path, transform) {
 function configureDemo(stage, sourceSha256) {
   const app = join(stage, 'android/app');
   const main = join(app, 'src/main');
+  installDemoWritingAidFixture(join(main, 'assets/public'));
   edit(join(app, 'build.gradle'), text => text.replace('    buildTypes {\n', `    buildTypes {
         debug {
             applicationIdSuffix '${suffix}'
@@ -100,6 +102,9 @@ function verifyApk(apk, stage, sdk) {
   const webRoot = join(contents, 'assets/public');
   if (!readFileSync(join(webRoot, 'index.html')).equals(readFileSync(join(webRoot, 'lemma/index.html')))) {
     throw new Error('The APK launch page is missing the Lemma bundle');
+  }
+  if (!readFileSync(join(webRoot, 'lemma/writing-aid-test-bootstrap.js'), 'utf8').includes('Demo tutor sample for testing writing assistance.')) {
+    throw new Error('The APK is missing its local writing-aid test sample');
   }
 }
 

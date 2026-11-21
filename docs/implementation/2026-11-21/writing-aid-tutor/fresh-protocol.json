@@ -1,0 +1,43 @@
+{
+  "scope": "Fresh synthetic post-fix follow-up drafted after earlier outcomes; not independent preregistration.",
+  "winnerFrozenFromPriorValidation": "tutor-wording",
+  "modelSelection": "No retraining or reselection; report all 24 configurations.",
+  "split": "12 new users, eight new family IDs, new templates, days 100–111 after the earlier days 0–41.",
+  "candidates": [
+    "off",
+    "random",
+    "static",
+    "frequency",
+    "contextual",
+    "online-rank4",
+    "tutor-none",
+    "tutor-terms",
+    "tutor-wording",
+    "tutor-symbols",
+    "tutor-terms-wording",
+    "tutor-terms-symbols",
+    "tutor-wording-symbols",
+    "tutor-all",
+    "tutor-prompt-first",
+    "tutor-given-first",
+    "tutor-repeat",
+    "tutor-learner",
+    "linear",
+    "pairwise-linear",
+    "mlp16",
+    "mlp64",
+    "factor4",
+    "factor8"
+  ],
+  "hashes": {
+    "scripts/tutor-writing-fresh-dataset.py": "5e17bc5c6f5b68dfde5d69321f5ce750fa0bee68f033b93c29d6ca70f6b33e6c",
+    "docs/implementation/2026-11-21/writing-aid-tutor/fresh-dataset.json": "702dd2e1405e09fae9974aafd9334a46fb4b515859f42a7ea5104fb43231916b",
+    "docs/implementation/2026-11-21/writing-aid-tutor/validation-pre-fix.json": "9abb874abb5beac076f19a6819e02392e36c687bf318657c6ed0c98b4eabd38d",
+    "docs/implementation/2026-11-21/writing-aid-tutor/models-pre-fix.json": "6c256d04fd4c436ffa140f30d055ebbf58583d7bb9ec83828543dd87903d6064",
+    "docs/implementation/2026-11-21/writing-aid-tutor/manifest.json": "83323b8f87407c435613faf8255bbc5c55cba94a31e702f6eee7845d63b238dc",
+    "src/features/tutor/writingAid/engine.ts": "51bb024b61184c8d7914a3c436a83d3d12655240896d6ddf9ffc75665e530cf6",
+    "src/features/tutor/writingAid/learning.ts": "ff6fcb40833ad1426be6daaa051a86dad6cab20dd83ddab3612e3b75a5f99be2",
+    "src/features/tutor/writingAid/policy.ts": "2b5876f0b8c6f57b2fedaffde86111a52cab80f3a73be1376c89c898e7bfee26",
+    "src/features/tutor/writingAid/tutorContext.ts": "54067aabd7af86e0d2c7e1022d1b4c8b06a9ccfce104a78ea3f15fa58dffc079"
+  }
+}

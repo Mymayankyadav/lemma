@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "seed": 736021,
+  "candidates": [
+    {
+      "id": "off",
+      "family": "control",
+      "contextFlags": "none"
+    },
+    {
+      "id": "random",
+      "family": "control",
+      "contextFlags": "all"
+    },
+    {
+      "id": "static",
+      "family": "control",
+      "contextFlags": "none"
+    },
+    {
+      "id": "frequency",
+      "family": "online reward",
+      "contextFlags": "none"
+    },
+    {
+      "id": "contextual",
+      "family": "production online reward",
+      "contextFlags": "none"
+    },
+    {
+      "id": "online-rank4",
+      "family": "online low-rank",
+      "contextFlags": "none"
+    },
+    {
+      "id": "tutor-none",
+      "family": "source ablation",
+      "contextFlags": "none"
+    },
+    {
+      "id": "tutor-terms",
+      "family": "source ablation",
+      "contextFlags": "terms"
+    },
+    {
+      "id": "tutor-wording",
+      "family": "source ablation",
+      "contextFlags": "wording"
+    },
+    {
+      "id": "tutor-symbols",
+      "family": "source ablation",
+      "contextFlags": "symbols"
+    },
+    {
+      "id": "tutor-terms-wording",
+      "family": "source ablation",
+      "contextFlags": "terms-wording"
+    },
+    {
+      "id": "tutor-terms-symbols",
+      "family": "source ablation",
+      "contextFlags": "terms-symbols"
+    },
+    {
+      "id": "tutor-wording-symbols",
+      "family": "source ablation",
+      "contextFlags": "wording-symbols"
+    },
+    {
+      "id": "tutor-all",
+      "family": "source ablation",
+      "contextFlags": "all"
+    },
+    {
+      "id": "tutor-prompt-first",
+      "family": "source-weight variant",
+      "contextFlags": "all"
+    },
+    {
+      "id": "tutor-given-first",
+      "family": "source-weight variant",
+      "contextFlags": "all"
+    },
+    {
+      "id": "tutor-repeat",
+      "family": "source-count variant",
+      "contextFlags": "all"
+    },
+    {
+      "id": "tutor-learner",
+      "family": "learner/source-weight variant",
+      "contextFlags": "all"
+    },
+    {
+      "id": "linear",
+      "family": "trained CPU model",
+      "contextFlags": "all"
+    },
+    {
+      "id": "pairwise-linear",
+      "family": "trained CPU model",
+      "contextFlags": "all"
+    },
+    {
+      "id": "mlp16",
+      "family": "trained CPU model",
+      "contextFlags": "all"
+    },
+    {
+      "id": "mlp64",
+      "family": "trained CPU model",
+      "contextFlags": "all"
+    },
+    {
+      "id": "factor4",
+      "family": "trained CPU low-rank model",
+      "contextFlags": "all"
+    },
+    {
+      "id": "factor8",
+      "family": "trained CPU low-rank model",
+      "contextFlags": "all"
+    }
+  ],
+  "selectionRule": {
+    "stage": "Validation families and users only, after independent training and calibration.",
+    "priority": [
+      "Exclude any candidate with a tutor proof/solution leak or uncommitted logic/operand exposure in validation.",
+      "Exclude any automatic correction class lacking >=200 calibration examples and Wilson 95% lower precision >=0.98.",
+      "Among remaining candidates, maximize modeled WPM at 40ms per observed list.",
+      "Within 0.10 WPM prefer lower stored bytes, then manifest order."
+    ],
+    "test": "Run the frozen selected candidate once on held-out test users, tasks and proof families; report all candidates for comparison but do not reselect on test.",
+    "note": "Manual control has the same spelling-error/recovery trajectory; notation uses a best-case direct-symbol route and one switch tap. Zero observed validation failures is not proof of logical safety; random coin is a control, not a safety strategy."
+  }
+}

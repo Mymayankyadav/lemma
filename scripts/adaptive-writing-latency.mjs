@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto';
+import {execFileSync} from 'node:child_process';
 import {mkdir, readFile, readdir, writeFile} from 'node:fs/promises';
 import os from 'node:os';
 import {dirname, resolve} from 'node:path';
@@ -6,7 +7,7 @@ import {chromium} from 'playwright';
 
 const base = process.env.WRITING_AID_CAPTURE_URL ?? 'http://127.0.0.1:4191/lemma/';
 const route = new URL('?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor', base);
-const output = resolve(process.env.WRITING_AID_LATENCY_OUTPUT ?? 'docs/implementation/2026-11-21/writing-aid-adaptive/ui-latency.json');
+const output = resolve(process.env.WRITING_AID_LATENCY_OUTPUT ?? 'docs/implementation/2026-11-21/writing-aid-tutor/ui-latency.json');
 const cases = [
   {surface: 'word', prefix: 'not', key: 'a', selector: '[data-writing-aid-word][title="notation"]'},
   {surface: 'spelling', prefix: 'We wrote te', key: 'h', selector: '[data-writing-aid-edit][aria-label="Replace teh with the"]'},
@@ -18,6 +19,13 @@ const round = n => Math.round(n * 100) / 100;
 const percentile = (values, p) => values.toSorted((a, b) => a - b)[Math.ceil(values.length * p) - 1];
 const observations = [];
 const assets = {};
+const sourcePaths = ['src/features/tutor/TutorComposer.tsx', 'src/features/tutor/TutorAnswerEditor.tsx',
+  'src/features/tutor/WritingAidBar.tsx', 'src/features/tutor/writing-aid.css', 'src/features/tutor/writingAid/engine.ts',
+  'src/features/tutor/writingAid/useWritingAid.ts', 'src/features/tutor/writingAid/policy.ts',
+  'src/features/tutor/writingAid/learning.ts', 'src/features/tutor/writingAid/autoCorrect.ts',
+  'src/features/tutor/writingAid/tutorContext.ts', 'scripts/adaptive-writing-latency.mjs'];
+const sourceSha256 = Object.fromEntries(await Promise.all(sourcePaths.map(async path => [path,
+  createHash('sha256').update(await readFile(path)).digest('hex')])));
 for (const name of (await readdir('dist/assets')).filter(name => /^(?:DemoCheckpointTutor|TutorPage|WritingAidSettings|engine)-.*\.(?:js|css)$/.test(name)).sort()) {
   assets[name] = createHash('sha256').update(await readFile('dist/assets/' + name)).digest('hex');
 }
@@ -29,6 +37,12 @@ try {
     try {
       const page = await context.newPage();
       page.setDefaultTimeout(15_000);
+      await page.addInitScript(() => {
+        // The Android bundle has no service worker registration.
+        for (let proto = navigator; proto; proto = Object.getPrototypeOf(proto)) {
+          if (Object.prototype.hasOwnProperty.call(proto, 'serviceWorker')) Reflect.deleteProperty(proto, 'serviceWorker');
+        }
+      });
       const cdp = await context.newCDPSession(page);
       await cdp.send('Emulation.setCPUThrottlingRate', {rate: cpuRate});
       await page.goto(route.href);
@@ -93,7 +107,9 @@ try {
     scope: 'Warm production build on the development host with the Android-default textarea, from captured native input to the next animation-frame opportunity after the matching suggestion appears. Chromium CPU throttling is not Android WebView or a phone measurement.',
     generatedAt: new Date().toISOString(), browser: browser.version(), viewport: {width: 390, height: 844},
     machine: {platform: process.platform, architecture: process.arch, cpu: os.cpus()[0]?.model, logicalCpus: os.cpus().length},
-    balancedMode: true, samplesPerSurfacePerRate: rounds, builtAssetsSha256: assets, summary, observations,
+    balancedMode: true, samplesPerSurfacePerRate: rounds,
+    baseCommit: execFileSync('git', ['rev-parse', 'HEAD'], {encoding: 'utf8'}).trim(), sourceSha256,
+    builtAssetsSha256: assets, summary, observations,
   };
   await mkdir(dirname(output), {recursive: true});
   await writeFile(output, JSON.stringify(report, null, 2) + '\n');

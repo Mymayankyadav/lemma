@@ -1,0 +1,9 @@
+{
+  "baseCommit": "f94abbd7800b11122062d2bd1054c69cf51a0ccf",
+  "sourceSha256": "eaa5cc656be68c566def86969ac432d9761644b9ef3be9278c080af0e712d3cd",
+  "apkSha256": "82a219033d425a968a9f399597d579b52b98cd7019f0771244ddd0f6dc59384d",
+  "packageId": "io.github.mymayankyadav.lemma.writingaidtest",
+  "startPath": "/lemma/?demo=1#/p/real-analysis/cp/CP4/tutor",
+  "versionCode": 200001,
+  "signingCertificateSha256": "73018e893faa9c0d7baeb282ee8df4b11f9c3356819f65e6de620c681289134b"
+}

@@ -4,7 +4,6 @@
 .lemma-tutor .writing-composer-card .field:has(:is(textarea,.tutor-answer-editor):focus-visible) {outline: none;}
 .lemma-tutor .writing-composer-card:has(:is(textarea,.tutor-answer-editor):focus-visible) {outline: var(--v7-focus-width) solid var(--v7-role-focus-ring); outline-offset: var(--v7-focus-gap);}
 .lemma-tutor .writing-aid-floating {position: absolute; z-index: 8; bottom: calc(100% + 9px); inset-inline: 0; width: fit-content; min-width: min(260px, 100%); max-width: 100%; display: flex; align-items: stretch; border: 1px solid var(--v7-role-border-default); border-radius: var(--v7-radius-3); background: var(--v7-role-surface-overlay); color: var(--v7-role-text-primary); box-shadow: var(--v7-shadow-2); overflow: hidden; max-height: min(240px, 35dvh);}
-.lemma-tutor .writing-aid-floating::after {content: ''; position: absolute; bottom: 0; inset-inline-start: 0; height: 3px; width: calc(var(--writing-swipe, 0) * 100%); background: var(--v7-role-action-bg); pointer-events: none;}
 .lemma-tutor .writing-aid-floating button {font: 500 var(--v7-type-supporting)/1.3 var(--v7-sans); border: 0; color: inherit; background: transparent; cursor: pointer; min-height: 44px;}
 .lemma-tutor .writing-aid-floating button:hover {background: var(--v7-role-surface-muted-hover);}
 .lemma-tutor .writing-aid-floating button:active {background: var(--v7-role-selection-subtle);}
@@ -12,8 +11,12 @@
 .lemma-tutor .writing-aid-floating-body {min-width: 0; flex: 1; overflow-y: auto;}
 .lemma-tutor .writing-aid-floating-choice {display: flex; align-items: stretch;}
 .lemma-tutor .writing-aid-floating-choice + .writing-aid-floating-choice {border-top: 1px solid var(--v7-role-border-subtle);}
-.lemma-tutor .writing-aid-preview {min-width: 0; flex: 1; display: grid; gap: 3px; padding: 9px 12px; text-align: start;}
-.lemma-tutor .writing-aid-preview small {font: 400 var(--v7-type-caption)/1.3 var(--v7-sans); color: var(--v7-role-text-secondary);}
+.lemma-tutor :is(.writing-aid-floating-choice,.writing-aid-auto-correction)[data-kind="correction"] {--writing-accent: var(--v7-role-status-warning); --writing-tint: var(--v7-role-status-warning-subtle);}
+.lemma-tutor .writing-aid-floating-choice[data-kind="notation"] {--writing-accent: var(--v7-role-selection-fg); --writing-tint: var(--v7-role-selection-subtle);}
+.lemma-tutor .writing-aid-floating-choice[data-kind="continuation"] {--writing-accent: var(--v7-role-status-success); --writing-tint: var(--v7-role-status-success-subtle);}
+.lemma-tutor .writing-aid-floating-choice .writing-aid-preview {min-width: 0; flex: 1; display: grid; gap: 3px; padding: 9px 12px; text-align: start; border-inline-start: 3px solid var(--writing-accent); background: var(--writing-tint);}
+.lemma-tutor .writing-aid-floating-choice .writing-aid-preview:is(:hover,:active) {background: var(--writing-tint); box-shadow: inset 0 0 0 2px var(--writing-accent);}
+.lemma-tutor .writing-aid-preview small {display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font: 500 var(--v7-type-caption)/1.3 var(--v7-sans); color: var(--writing-accent);}
 .lemma-tutor .writing-aid-touch-hint {display: none;}
 @media (pointer: coarse) {
   .lemma-tutor .writing-aid-touch-hint {display: inline;}
@@ -21,23 +24,31 @@
 }
 .lemma-tutor .writing-aid-diff {display: flex; gap: 7px; align-items: center; min-width: 0; overflow-wrap: anywhere;}
 .lemma-tutor .writing-aid-diff del {color: var(--v7-role-text-secondary); text-decoration-thickness: 1px;}
-.lemma-tutor .writing-aid-diff strong {font-weight: 600; color: var(--v7-role-selection-fg);}
+.lemma-tutor .writing-aid-diff strong {font-weight: 600; color: var(--writing-accent);}
 .lemma-tutor .writing-aid-floating :is(.writing-aid-refresh,.writing-aid-dismiss) {flex: 0 0 44px; display: grid; place-items: center; align-self: stretch; padding: 0; color: var(--v7-role-text-secondary);}
 .lemma-tutor .writing-aid-dismiss {border-inline-start: 1px solid var(--v7-role-border-subtle) !important;}
 .lemma-tutor .writing-aid-undo {display: flex; gap: 8px; align-items: center; padding: 8px 14px; width: 100%;}
+.lemma-tutor .writing-aid-auto-correction {display: flex; align-items: stretch; min-width: 0; border-inline-start: 3px solid var(--writing-accent); background: var(--writing-tint);}
+.lemma-tutor .writing-aid-auto-summary {display: flex; flex: 1; min-width: 0; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px 10px; color: var(--writing-accent); font: 500 var(--v7-type-caption)/1.3 var(--v7-sans); overflow-wrap: anywhere;}
+.lemma-tutor .writing-aid-auto-summary del {color: var(--v7-role-text-secondary);}
+.lemma-tutor .writing-aid-auto-correction .writing-aid-undo {flex: none; width: auto; min-width: 64px; justify-content: center; padding-inline: 8px; color: var(--writing-accent);}
+.lemma-tutor .writing-aid-auto-correction .writing-aid-undo:is(:hover,:active) {background: var(--writing-tint); box-shadow: inset 0 0 0 2px var(--writing-accent);}
 .lemma-tutor .writing-aid-exhausted {display: block; padding: 12px; color: var(--v7-role-text-secondary); font: 400 var(--v7-type-supporting)/1.3 var(--v7-sans);}
 .lemma-tutor [data-writing-aid-source] {text-decoration: line-through; text-decoration-thickness: 1px; text-decoration-color: var(--v7-role-text-secondary);}
 .lemma-tutor .kb .writing-aid-words button:not(.preferred) {background: transparent; font-weight: 400;}
-.lemma-tutor .kb .writing-aid-words button.preferred {background: var(--key); font-weight: 600;}
+.lemma-tutor .kb .writing-aid-words button:not(:disabled) {color: var(--v7-role-subject-geometry);}
+.lemma-tutor .kb .writing-aid-words button.preferred:not(:disabled) {background: var(--v7-role-subject-geometry-subtle); font-weight: 600;}
+.lemma-tutor .kb .writing-aid-words button:not(:disabled):is(:hover,:active) {background: var(--v7-role-subject-geometry-subtle); box-shadow: inset 0 0 0 1px var(--v7-role-subject-geometry);}
 .lemma-tutor .kb .writing-aid-words button:disabled:nth-child(2) {background: transparent;}
 .lemma-tutor .kb .strip:has(.writing-aid-words) {height: auto; min-height: var(--v7-touch);}
 .lemma-tutor .kb .writing-aid-words button {height: max(var(--v7-touch), calc(var(--v7-type-supporting) * 2.1 + 6px));}
 .lemma-tutor .writing-aid-word-label {display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; white-space: normal; overflow-wrap: anywhere; line-height: 1.05;}
+.lemma-tutor .writing-aid-words button:has(.writing-aid-word-origin) .writing-aid-word-label {-webkit-line-clamp: 1;}
+.lemma-tutor .writing-aid-word-origin {display: block; font: 500 calc(var(--v7-type-caption) * .75)/1 var(--v7-sans);}
 .lemma-tutor :is(.writing-aid-words,.writing-aid-floating) button:not(:disabled):active {transform: none;}
 .lemma-tutor .kb .writing-aid-words button:disabled {opacity: 1; cursor: default;}
 .lemma-tutor .writing-aid-empty {color: var(--v7-role-text-disabled);}
 .lemma-tutor .tutor-answer-editor[data-completion]::after {content: attr(data-completion); color: var(--v7-role-text-tertiary); pointer-events: none; user-select: none; -webkit-user-select: none;}
-.lemma-tutor .writing-composer-card[data-can-swipe] :is(.tutor-answer-editor,textarea) {touch-action: pan-y;}
 .lemma-tutor .writing-editor-wrap {position: relative; display: flex; flex: 1; min-width: 0;}
 .lemma-tutor .writing-editor-mirror {position: absolute; inset: 0; padding: 11px 0; white-space: pre-wrap; overflow-wrap: anywhere; overflow: hidden; pointer-events: none; font: 400 var(--v7-type-body)/1.4 var(--v7-sans); color: var(--v7-role-text-tertiary);}
 .lemma-tutor .writing-editor-mirror > span {visibility: hidden;}

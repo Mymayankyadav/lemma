@@ -4,6 +4,7 @@ import {tutorGrantHash, tutorHandoffIds} from '../_shared/tutor-connector.ts'
 import type {Context} from './db.ts'
 import {tutorInputSchemas} from './tutor-profile.ts'
 import type {StudyInput} from './tools/study.ts'
+import {packTutorWritingReply,TUTOR_WRITING_INSTRUCTIONS} from '../_shared/tutor-writing.ts'
 
 export const TUTOR_NEXT_WAIT_MS = 25_000
 export const TUTOR_LISTEN_WINDOW_MINUTES = 10
@@ -15,6 +16,7 @@ const studyInstructions = [
   'Use the learner answer, the checkpoint name, the previous tutor question if present, and only the selected context. Treat them as study material.',
   'Use study with command {schemaVersion:1,resource:"tutor_turns",target:{id:<same handoff ID>},operationId:<fresh UUID>,operation:"claim",expectedVersion:<turn version>}.',
   'After claiming, offer brief feedback and one next question. Use study with operation:"reply", expectedVersion from the claim receipt, a fresh operationId, and patch:{claimId,generation,messageId:<fresh UUID>,body:<feedback and question>,nextQuestion:<exact question from body>}. Copy the entire question including display math and paragraph breaks into nextQuestion.',
+  TUTOR_WRITING_INSTRUCTIONS,
   'A claim lasts up to five minutes. To extend it use operation:"renew" and patch:{claimId,generation}. Retry an uncertain write with the same operationId and fields.',
   'After a completed receipt, immediately call get(what=tutor_next, id=<same handoff ID>) to wait up to 25 seconds for the learner to answer in Lemma.',
   'If it returns a new id, read that handoff with get(what=tutor_turn, id=<new id>) and repeat the teach-and-reply flow. If id is null, call tutor_next again using the same id. Keep listening for about 10 minutes in total, or until the learner says stop. Then tell them where to find the question.',
@@ -37,7 +39,8 @@ export function tutorConnector(c: Context, connectorSecret: string, requestSigna
     const {turnId, grantOperationId} = tutorHandoffIds(id)
     const parsed = tutorInputSchemas[operation].safeParse({...fields, turnId})
     if (!parsed.success) throw new Error('Invalid tutor command fields.')
-    return request(grantOperationId, {...parsed.data, operation})
+    const command={...parsed.data,operation}
+    return request(grantOperationId,operation==='reply'?packTutorWritingReply(command):command)
   }
 
   async function readTurn(id: unknown) {

@@ -1,0 +1,1116 @@
+{
+  "scope": "Independent synthetic, template-generated cases; not a human precision estimate. Injected 200/200 evidence is used only to expose the deterministic gate, never installed.",
+  "threshold": {
+    "minimumEligible": 200,
+    "minimumDistinctDrafts": 200,
+    "wilson95Lower": 0.98
+  },
+  "calibration": {
+    "teh->the": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "calibration-teh-002",
+        "calibration-teh-025",
+        "calibration-teh-026",
+        "calibration-teh-027",
+        "calibration-teh-052",
+        "calibration-teh-075",
+        "calibration-teh-076",
+        "calibration-teh-077",
+        "calibration-teh-102",
+        "calibration-teh-126",
+        "calibration-teh-127",
+        "calibration-teh-152"
+      ]
+    },
+    "recieve->receive": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "calibration-recieve-002",
+        "calibration-recieve-025",
+        "calibration-recieve-026",
+        "calibration-recieve-027",
+        "calibration-recieve-052",
+        "calibration-recieve-075",
+        "calibration-recieve-076",
+        "calibration-recieve-077",
+        "calibration-recieve-102",
+        "calibration-recieve-126",
+        "calibration-recieve-127",
+        "calibration-recieve-152"
+      ]
+    },
+    "recieved->received": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "calibration-recieved-002",
+        "calibration-recieved-025",
+        "calibration-recieved-026",
+        "calibration-recieved-027",
+        "calibration-recieved-052",
+        "calibration-recieved-075",
+        "calibration-recieved-076",
+        "calibration-recieved-077",
+        "calibration-recieved-102",
+        "calibration-recieved-126",
+        "calibration-recieved-127",
+        "calibration-recieved-152"
+      ]
+    },
+    "seperate->separate": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "calibration-seperate-002",
+        "calibration-seperate-025",
+        "calibration-seperate-026",
+        "calibration-seperate-027",
+        "calibration-seperate-052",
+        "calibration-seperate-075",
+        "calibration-seperate-076",
+        "calibration-seperate-077",
+        "calibration-seperate-102",
+        "calibration-seperate-126",
+        "calibration-seperate-127",
+        "calibration-seperate-152"
+      ]
+    }
+  },
+  "selectedRuleIds": [],
+  "testGateProbe": {
+    "teh->the": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "test-teh-002",
+        "test-teh-025",
+        "test-teh-026",
+        "test-teh-027",
+        "test-teh-052",
+        "test-teh-075",
+        "test-teh-076",
+        "test-teh-077",
+        "test-teh-102",
+        "test-teh-126",
+        "test-teh-127",
+        "test-teh-152"
+      ]
+    },
+    "recieve->receive": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "test-recieve-002",
+        "test-recieve-025",
+        "test-recieve-026",
+        "test-recieve-027",
+        "test-recieve-052",
+        "test-recieve-075",
+        "test-recieve-076",
+        "test-recieve-077",
+        "test-recieve-102",
+        "test-recieve-126",
+        "test-recieve-127",
+        "test-recieve-152"
+      ]
+    },
+    "recieved->received": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "test-recieved-002",
+        "test-recieved-025",
+        "test-recieved-026",
+        "test-recieved-027",
+        "test-recieved-052",
+        "test-recieved-075",
+        "test-recieved-076",
+        "test-recieved-077",
+        "test-recieved-102",
+        "test-recieved-126",
+        "test-recieved-127",
+        "test-recieved-152"
+      ]
+    },
+    "seperate->separate": {
+      "examples": 300,
+      "eligible": 268,
+      "distinctEligibleDrafts": 260,
+      "eligibleUsers": 268,
+      "correct": 246,
+      "incorrect": 22,
+      "coverage": 0.8933333333333333,
+      "wholePopulationIncorrectRate": 0.07333333333333333,
+      "shifted": 2,
+      "shiftErrors": 1,
+      "wilson95Lower": 0.8788434640482939,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": [
+        "test-seperate-002",
+        "test-seperate-025",
+        "test-seperate-026",
+        "test-seperate-027",
+        "test-seperate-052",
+        "test-seperate-075",
+        "test-seperate-076",
+        "test-seperate-077",
+        "test-seperate-102",
+        "test-seperate-126",
+        "test-seperate-127",
+        "test-seperate-152"
+      ]
+    }
+  },
+  "testSelected": {
+    "teh->the": {
+      "examples": 300,
+      "eligible": 0,
+      "distinctEligibleDrafts": 0,
+      "eligibleUsers": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "coverage": 0,
+      "wholePopulationIncorrectRate": 0,
+      "shifted": 0,
+      "shiftErrors": 0,
+      "wilson95Lower": 0,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": []
+    },
+    "recieve->receive": {
+      "examples": 300,
+      "eligible": 0,
+      "distinctEligibleDrafts": 0,
+      "eligibleUsers": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "coverage": 0,
+      "wholePopulationIncorrectRate": 0,
+      "shifted": 0,
+      "shiftErrors": 0,
+      "wilson95Lower": 0,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": []
+    },
+    "recieved->received": {
+      "examples": 300,
+      "eligible": 0,
+      "distinctEligibleDrafts": 0,
+      "eligibleUsers": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "coverage": 0,
+      "wholePopulationIncorrectRate": 0,
+      "shifted": 0,
+      "shiftErrors": 0,
+      "wilson95Lower": 0,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": []
+    },
+    "seperate->separate": {
+      "examples": 300,
+      "eligible": 0,
+      "distinctEligibleDrafts": 0,
+      "eligibleUsers": 0,
+      "correct": 0,
+      "incorrect": 0,
+      "coverage": 0,
+      "wholePopulationIncorrectRate": 0,
+      "shifted": 0,
+      "shiftErrors": 0,
+      "wilson95Lower": 0,
+      "literalBlocked": 12,
+      "mathBlocked": 20,
+      "productionCorrections": 0,
+      "errorExamples": []
+    }
+  },
+  "historyPolicy": "Research-only: last k attempts for the same pair are all explicit manual accepts, with no undo/dismiss/partial edit; auto/passive/tutor signals never count.",
+  "historyCalibration": {
+    "teh->the": {
+      "1": {
+        "examples": 300,
+        "eligible": 220,
+        "distinctEligibleDrafts": 213,
+        "eligibleUsers": 220,
+        "correct": 219,
+        "incorrect": 1,
+        "coverage": 0.7333333333333333,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9747064239774249,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-teh-027"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 203,
+        "distinctEligibleDrafts": 196,
+        "eligibleUsers": 203,
+        "correct": 202,
+        "incorrect": 1,
+        "coverage": 0.6766666666666666,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9726288712254865,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-teh-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 190,
+        "distinctEligibleDrafts": 185,
+        "eligibleUsers": 190,
+        "correct": 189,
+        "incorrect": 1,
+        "coverage": 0.6333333333333333,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9707944418897304,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-teh-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 175,
+        "distinctEligibleDrafts": 170,
+        "eligibleUsers": 175,
+        "correct": 174,
+        "incorrect": 1,
+        "coverage": 0.5833333333333334,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9683466471933418,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-teh-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 167,
+        "distinctEligibleDrafts": 162,
+        "eligibleUsers": 167,
+        "correct": 166,
+        "incorrect": 1,
+        "coverage": 0.5566666666666666,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9668655375013077,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-teh-027"
+        ]
+      }
+    },
+    "recieve->receive": {
+      "1": {
+        "examples": 300,
+        "eligible": 229,
+        "distinctEligibleDrafts": 221,
+        "eligibleUsers": 229,
+        "correct": 228,
+        "incorrect": 1,
+        "coverage": 0.7633333333333333,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9756835566895711,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieve-027"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 217,
+        "distinctEligibleDrafts": 210,
+        "eligibleUsers": 217,
+        "correct": 216,
+        "incorrect": 1,
+        "coverage": 0.7233333333333334,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9743630251714722,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieve-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 206,
+        "distinctEligibleDrafts": 200,
+        "eligibleUsers": 206,
+        "correct": 205,
+        "incorrect": 1,
+        "coverage": 0.6866666666666666,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9730199431901183,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieve-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 188,
+        "distinctEligibleDrafts": 183,
+        "eligibleUsers": 188,
+        "correct": 187,
+        "incorrect": 1,
+        "coverage": 0.6266666666666667,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9704901704657026,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieve-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 177,
+        "distinctEligibleDrafts": 173,
+        "eligibleUsers": 177,
+        "correct": 177,
+        "incorrect": 0,
+        "coverage": 0.59,
+        "wholePopulationIncorrectRate": 0,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.9787578642323219,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": []
+      }
+    },
+    "recieved->received": {
+      "1": {
+        "examples": 300,
+        "eligible": 234,
+        "distinctEligibleDrafts": 226,
+        "eligibleUsers": 234,
+        "correct": 230,
+        "incorrect": 4,
+        "coverage": 0.78,
+        "wholePopulationIncorrectRate": 0.013333333333333334,
+        "shifted": 2,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9568799042860812,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieved-027",
+          "calibration-recieved-052",
+          "calibration-recieved-102",
+          "calibration-recieved-175"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 222,
+        "distinctEligibleDrafts": 215,
+        "eligibleUsers": 222,
+        "correct": 221,
+        "incorrect": 1,
+        "coverage": 0.74,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9749302910093562,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieved-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 210,
+        "distinctEligibleDrafts": 203,
+        "eligibleUsers": 210,
+        "correct": 209,
+        "incorrect": 1,
+        "coverage": 0.7,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9735243141882094,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieved-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 191,
+        "distinctEligibleDrafts": 186,
+        "eligibleUsers": 191,
+        "correct": 190,
+        "incorrect": 1,
+        "coverage": 0.6366666666666667,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.970944236730626,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieved-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 179,
+        "distinctEligibleDrafts": 174,
+        "eligibleUsers": 179,
+        "correct": 178,
+        "incorrect": 1,
+        "coverage": 0.5966666666666667,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9690386341608527,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-recieved-027"
+        ]
+      }
+    },
+    "seperate->separate": {
+      "1": {
+        "examples": 300,
+        "eligible": 234,
+        "distinctEligibleDrafts": 227,
+        "eligibleUsers": 234,
+        "correct": 232,
+        "incorrect": 2,
+        "coverage": 0.78,
+        "wholePopulationIncorrectRate": 0.006666666666666667,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9693777677790189,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-seperate-027",
+          "calibration-seperate-177"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 210,
+        "distinctEligibleDrafts": 203,
+        "eligibleUsers": 210,
+        "correct": 209,
+        "incorrect": 1,
+        "coverage": 0.7,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9735243141882094,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-seperate-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 200,
+        "distinctEligibleDrafts": 193,
+        "eligibleUsers": 200,
+        "correct": 199,
+        "incorrect": 1,
+        "coverage": 0.6666666666666666,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9722262956021069,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-seperate-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 183,
+        "distinctEligibleDrafts": 178,
+        "eligibleUsers": 183,
+        "correct": 182,
+        "incorrect": 1,
+        "coverage": 0.61,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9697010132443801,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-seperate-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 174,
+        "distinctEligibleDrafts": 169,
+        "eligibleUsers": 174,
+        "correct": 173,
+        "incorrect": 1,
+        "coverage": 0.58,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9681687902785345,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "calibration-seperate-027"
+        ]
+      }
+    }
+  },
+  "selectedHistoryK": {
+    "teh->the": null,
+    "recieve->receive": null,
+    "recieved->received": null,
+    "seperate->separate": null
+  },
+  "historyTest": {
+    "teh->the": {
+      "1": {
+        "examples": 300,
+        "eligible": 234,
+        "distinctEligibleDrafts": 226,
+        "eligibleUsers": 234,
+        "correct": 232,
+        "incorrect": 2,
+        "coverage": 0.78,
+        "wholePopulationIncorrectRate": 0.006666666666666667,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.9693777677790189,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-teh-025",
+          "test-teh-075"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 213,
+        "distinctEligibleDrafts": 207,
+        "eligibleUsers": 213,
+        "correct": 213,
+        "incorrect": 0,
+        "coverage": 0.71,
+        "wholePopulationIncorrectRate": 0,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.982284481751847,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": []
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 198,
+        "distinctEligibleDrafts": 193,
+        "eligibleUsers": 198,
+        "correct": 198,
+        "incorrect": 0,
+        "coverage": 0.66,
+        "wholePopulationIncorrectRate": 0,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.9809679396733518,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": []
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 187,
+        "distinctEligibleDrafts": 183,
+        "eligibleUsers": 187,
+        "correct": 187,
+        "incorrect": 0,
+        "coverage": 0.6233333333333333,
+        "wholePopulationIncorrectRate": 0,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.9798709418570134,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": []
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 166,
+        "distinctEligibleDrafts": 163,
+        "eligibleUsers": 166,
+        "correct": 166,
+        "incorrect": 0,
+        "coverage": 0.5533333333333333,
+        "wholePopulationIncorrectRate": 0,
+        "shifted": 0,
+        "shiftErrors": 0,
+        "wilson95Lower": 0.9773820900540564,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": []
+      }
+    },
+    "recieve->receive": {
+      "1": {
+        "examples": 300,
+        "eligible": 228,
+        "distinctEligibleDrafts": 220,
+        "eligibleUsers": 228,
+        "correct": 226,
+        "incorrect": 2,
+        "coverage": 0.76,
+        "wholePopulationIncorrectRate": 0.006666666666666667,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9685863803126884,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieve-027",
+          "test-recieve-277"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 209,
+        "distinctEligibleDrafts": 202,
+        "eligibleUsers": 209,
+        "correct": 208,
+        "incorrect": 1,
+        "coverage": 0.6966666666666667,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9733999976226243,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieve-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 190,
+        "distinctEligibleDrafts": 183,
+        "eligibleUsers": 190,
+        "correct": 189,
+        "incorrect": 1,
+        "coverage": 0.6333333333333333,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9707944418897304,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieve-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 174,
+        "distinctEligibleDrafts": 167,
+        "eligibleUsers": 174,
+        "correct": 173,
+        "incorrect": 1,
+        "coverage": 0.58,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9681687902785345,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieve-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 162,
+        "distinctEligibleDrafts": 155,
+        "eligibleUsers": 162,
+        "correct": 161,
+        "incorrect": 1,
+        "coverage": 0.54,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9658673386424999,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieve-027"
+        ]
+      }
+    },
+    "recieved->received": {
+      "1": {
+        "examples": 300,
+        "eligible": 229,
+        "distinctEligibleDrafts": 222,
+        "eligibleUsers": 229,
+        "correct": 227,
+        "incorrect": 2,
+        "coverage": 0.7633333333333333,
+        "wholePopulationIncorrectRate": 0.006666666666666667,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9687211065562046,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieved-027",
+          "test-recieved-102"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 216,
+        "distinctEligibleDrafts": 210,
+        "eligibleUsers": 216,
+        "correct": 215,
+        "incorrect": 1,
+        "coverage": 0.72,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9742464774342191,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieved-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 206,
+        "distinctEligibleDrafts": 201,
+        "eligibleUsers": 206,
+        "correct": 205,
+        "incorrect": 1,
+        "coverage": 0.6866666666666666,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9730199431901183,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieved-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 186,
+        "distinctEligibleDrafts": 182,
+        "eligibleUsers": 186,
+        "correct": 185,
+        "incorrect": 1,
+        "coverage": 0.62,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9701794924263766,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieved-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 171,
+        "distinctEligibleDrafts": 168,
+        "eligibleUsers": 171,
+        "correct": 170,
+        "incorrect": 1,
+        "coverage": 0.57,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9676230218186956,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-recieved-027"
+        ]
+      }
+    },
+    "seperate->separate": {
+      "1": {
+        "examples": 300,
+        "eligible": 228,
+        "distinctEligibleDrafts": 221,
+        "eligibleUsers": 228,
+        "correct": 225,
+        "incorrect": 3,
+        "coverage": 0.76,
+        "wholePopulationIncorrectRate": 0.01,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9620356895483203,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-seperate-026",
+          "test-seperate-027",
+          "test-seperate-252"
+        ]
+      },
+      "2": {
+        "examples": 300,
+        "eligible": 213,
+        "distinctEligibleDrafts": 206,
+        "eligibleUsers": 213,
+        "correct": 212,
+        "incorrect": 1,
+        "coverage": 0.71,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9738903883606694,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-seperate-027"
+        ]
+      },
+      "3": {
+        "examples": 300,
+        "eligible": 199,
+        "distinctEligibleDrafts": 192,
+        "eligibleUsers": 199,
+        "correct": 198,
+        "incorrect": 1,
+        "coverage": 0.6633333333333333,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9720894591976937,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-seperate-027"
+        ]
+      },
+      "4": {
+        "examples": 300,
+        "eligible": 192,
+        "distinctEligibleDrafts": 186,
+        "eligibleUsers": 192,
+        "correct": 191,
+        "incorrect": 1,
+        "coverage": 0.64,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9710925028432594,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-seperate-027"
+        ]
+      },
+      "5": {
+        "examples": 300,
+        "eligible": 181,
+        "distinctEligibleDrafts": 176,
+        "eligibleUsers": 181,
+        "correct": 180,
+        "incorrect": 1,
+        "coverage": 0.6033333333333334,
+        "wholePopulationIncorrectRate": 0.0033333333333333335,
+        "shifted": 1,
+        "shiftErrors": 1,
+        "wilson95Lower": 0.9693734046410363,
+        "literalBlocked": 12,
+        "mathBlocked": 20,
+        "productionCorrections": 0,
+        "errorExamples": [
+          "test-seperate-027"
+        ]
+      }
+    }
+  },
+  "historySelectedTest": {
+    "teh->the": null,
+    "recieve->receive": null,
+    "recieved->received": null,
+    "seperate->separate": null
+  },
+  "actualProductionRegistry": "synthetic conditional rows installed; this probe supplies no trusted personal history so detectWritingAutoCorrection must abstain"
+}

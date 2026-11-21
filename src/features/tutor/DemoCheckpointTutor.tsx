@@ -20,6 +20,7 @@ import {Button,Sheet} from '../../ui/v7/components'
 import {MathText} from '../../ui/MathText'
 import {chatLink,studyPrompt} from '../../lib/chat'
 import {TutorChat,type SendOptions} from './TutorChat'
+import {unpackTutorWritingReply} from '../../../supabase/functions/_shared/tutor-writing'
 import type {TutorPageContext} from './TutorLayout'
 
 type Scope = {pathId:string;checkpointId:string;title:string;objective:string;sourceShort?:string|null;linkedSessions?:readonly {number:number;goal:string}[];authScope?:{ownerId:string;generation:number;checkpointId:string}}
@@ -436,7 +437,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
       <h3 className={page?"who":undefined}>{turn.finalReply.provenance.kind==='manual-import'?'Imported by you':page?'Tutor · Q'+turn.sequence:'Tutor reply'}</h3>
       {!page&&turn.finalReply.provenance.kind==='connector'&&turn.finalReply.provenance.reportedHost&&<p>The connector reports {turn.finalReply.provenance.reportedHost} as its host (unverified).</p>}
       {!page&&<TutorAnswer question={turn.snapshot.question} attachments={turn.snapshot.attachments} owner={ownerId??''}/>}
-      <div className="bd"><MathText source={turn.finalReply.body}/></div>
+      <div className="bd"><MathText source={unpackTutorWritingReply(turn.finalReply.body).body}/></div>
       </div>
       <div className={page?"tutor-details":undefined}>
       {!!turn.finalReply.citations.length&&<Disclosure label="Selected citations">

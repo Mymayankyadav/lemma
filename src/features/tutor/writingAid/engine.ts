@@ -1,11 +1,13 @@
 import {padEdit} from '../../pad/padEdit';
 import {plainProse, wordAtCaret} from '../input/completionPolicy';
+import {proofWritingWords} from '../input/proofVocabulary';
 import {tutorMathContext} from '../input/symbolEdit';
 import {
   ALL_WRITING_AID_SURFACES, NO_WRITING_AID, WRITING_AID_LIMIT, canSuggestWritingAid, writingAidProposal, writingAidProposalKey,
   type WritingAidProposal, type WritingAidRequest, type WritingAidSuggestions,
 } from './policy';
-import {scoreWritingAidProposal, writingAidVocabularyStrength, type WritingAidModel} from './learning';
+import {scoreWritingAidFeatures, writingAidFeatures, writingAidVocabularyStrength, type WritingAidModel} from './learning';
+import {eligibleTutorSignals, normalizeTutorWritingContext, type TutorWritingOptions, type TutorWritingSignal} from './tutorContext';
 import {makeStudyInput} from './vendor/study_input.mjs';
 import {makeRevision} from './vendor/legacy/revision.mjs';
 import phraseData from './vendor/legacy/runtime-phrases.json';
@@ -33,9 +35,14 @@ const MAX_GHOST = 32;
 const LETTERS = /^[\p{L}\p{M}]+$/u;
 const OUTPUT_TOKEN = /[\p{L}\p{M}\p{N}]+|[^\s\p{L}\p{M}\p{N}]/gu;
 const FILLERS = new Set(['a', 'an', 'the', 'i', 'we', 'of', 'to', 'in', 'for', 'with', 'at', 'as', 'on', 'from']);
+// These words can select a causal, conditional or inferential relationship.
+// A weak stem is not enough to choose one on the learner's behalf.
+const LOGICAL_CONNECTORS = new Set(['because', 'since', 'hence', 'thus', 'therefore', 'consequently',
+  'accordingly', 'conversely', 'otherwise', 'nevertheless', 'nonetheless', 'whereas', 'provided', 'assuming',
+  'then', 'unless', 'nor']);
 // Keep complete proof words such as "if" and "not" intact. The spelling
 // dictionary includes short abbreviations that also serve as typed stems.
-const COMPLETE_PROOF_WORDS = new Set([...wordAssets.common, ...FILLERS, 'never', 'none', 'unless', 'nor',
+const COMPLETE_PROOF_WORDS = new Set([...wordAssets.common, ...FILLERS, ...LOGICAL_CONNECTORS, 'never', 'none', 'unless', 'nor',
   'implied', 'imply', 'then', 'there', 'therefore', 'conversely', 'greater', 'less',
   'zero', 'even', 'odd', 'nonzero', 'rational', 'integer', 'real', 'preimage', 'preimages']);
 const LOGIC_GAP = /(?:\b(?:by|because|since|if|then|not|or|and|only|all|for every|witness|choose|let|take|assume|suppose|given|denote|define|equals?|implies|therefore|hence|thus|consequently|belongs to|is a subset of)|[=<>≤≥∈∉⊆⊂≠∀∃⇒⇔¬])\s*$/iu;
@@ -43,17 +50,34 @@ const SOURCED_LINE = /(?:^|\s)(?:tutor|teacher|instructor|assistant|solution|sys
 const LITERAL_LINE = /(?:search|identifier|code|literal|verbatim|product|brand|named|called)\b[^.!?\n]*$/iu;
 const TOKEN = /\\[A-Za-z]+|[<=>!\-]+|_[0-9]|\bthe the\b|[\p{L}\p{M}]+/gu;
 const RISKY_PERSONAL_WORD = /^(?:not|no|or|if|only|all|some|any|neither|never|contradiction|contrapositive|induction|injective|surjective|bijective|infinite|finite|nonempty|empty|zero|nonzero|positive|negative|unique|uniqueness|compact|compactness|continuous|discontinuous|unbounded|bounded|converges?|convergent|convergence|diverges?|divergent|divergence|contradicts|witness|true|false|greater|less|every|exists|inverse|proof|prove|proves|proved|proving|prime|composite|property|properties|counterexample|theorem|lemma|sufficient|necessary|equivalent|implies|integer|rational|irrational|even|odd|commutative|associative|distributive|invertible|singular|nonsingular|symmetric|antisymmetric|reflexive|transitive|irreflexive|countable|uncountable|measurable|monotone|increasing|decreasing|differentiable|integrable|closed|open|dense|separable|complete|completeness|connected|disconnected|distinct|equal|unequal|idempotent|coprime|independent|dependent|linear|nonlinear|convex|concave)$/iu;
+const TUTOR_LOGIC = /^(?:not|no|nor|never|unless|if|then|otherwise|either|neither|both|all|every|each|some|any|exists?|unique|only|true|false|by|because|since|therefore|hence|thus|consequently|suppose|assume|choose|take|let|prove|proof|show|implies?|equals?|satisf(?:y|ies)|contradiction|contrapositive|induction|witness|is|are|was|were|be|being|has|have|contains?|maps?|means?|represents?)$/iu;
+const TUTOR_ASSERTION_GAP = /\b(?:is|are|was|were|be|has|have|contains?|maps?|means?|represents?|satisf(?:y|ies)|implies?|equals?)(?:\s+(?:a|an|the))?\s*$/iu;
+// Copy whole phrases only in a narrow language about communication. A model's
+// role label cannot turn an unseen mathematical step into learner intent.
+const TUTOR_COMMUNICATION = /^(?:(?:could|can|would|may) you (?:please )?(?:explain|clarify|restate|repeat|read|show|say|write|describe)\b|please (?:explain|clarify|restate|repeat|read|show|say|write|describe)\b|(?:the|this|that|my) (?:question|prompt|wording|notation|diagram|sentence|passage|phrase|symbol|answer) (?:asks?|mentions?|refers? to|is about|concerns?|describes?)\b|(?:i|we) (?:need|want|would like) (?:help|time|a moment|a little more time|a clearer explanation)\b)/iu;
+const TUTOR_METHOD_SIGNAL = /\b(?:proof|prove|proved|proves|theorem|lemma|method|principle|inequality|argument|strategy|apply|applies|use|uses|using|used|step|derive|deduce|conclude|because|hence|therefore|implies?|contradiction|induction)\b|[=<>≤≥≠∈∉⊆⊂∀∃⇒⇔¬]/iu;
+const TUTOR_NEUTRAL_WORDS = new Set(('a an the this that these those my your our me you we i it its to of in on at for with about from as ' +
+  'again more less slowly clearly clear simpler simple shorter short original earlier previous last next first second ' +
+  'question questions prompt prompts wording notation symbol symbols sentence sentences paragraph paragraphs phrase phrases ' +
+  'word words meaning language explanation explanations description descriptions diagram diagrams answer answers text ' +
+  'read reading write writing explain explaining clarify clarifying repeat repeating restate restating show showing ' +
+  'look listen pause wait moment time way please together aloud exactly here there one two').split(' '));
+const TUTOR_MAX_OUTPUT = 64;
+const TUTOR_MAX_WORDS = 6;
 const phraseEngines = new Map<string, ReturnType<typeof makeRevision>>();
 
-function writtenWord(word: string): boolean {
-  if (wordAssets.common.includes(word)) return true;
+function dictionaryIndex(word: string): number {
   let low = 0, high = words.length;
   while (low < high) {
     const middle = Math.floor((low + high) / 2);
     if (words[middle] < word) low = middle + 1;
     else high = middle;
   }
-  return words[low] === word;
+  return low;
+}
+
+function writtenWord(word: string): boolean {
+  return wordAssets.common.includes(word) || words[dictionaryIndex(word)] === word;
 }
 
 function startOfWindow(request: WritingAidRequest, authored: string, start: number): number {
@@ -73,8 +97,159 @@ function hasOpenLiteral(text: string): boolean {
     /(?:^|\s)'[^']*$/u.test(line) || SOURCED_LINE.test(line) || LITERAL_LINE.test(line);
 }
 
+function declaredTutorVariables(request: WritingAidRequest): Set<string> {
+  const variables = new Set<string>();
+  for (const signal of normalizeTutorWritingContext(request.tutorContext)?.signals ?? []) {
+    for (const variable of signal.variables ?? []) variables.add(variable.toLocaleLowerCase());
+  }
+  return variables;
+}
+
+function tutorTermSignals(request: WritingAidRequest): readonly TutorWritingSignal[] {
+  return eligibleTutorSignals(request.tutorContext).filter(signal => !TUTOR_METHOD_SIGNAL.test(signal.text));
+}
+
+function authoredEarlier(request: WritingAidRequest, start: number, word: string): boolean {
+  const anchor = request.anchor;
+  if (!anchor) return false;
+  const before = anchor.text.slice(anchor.start, Math.min(start, anchor.text.length));
+  return (before.match(/[\p{L}\p{M}\p{N}_]+/gu) ?? []).some(value => value.toLocaleLowerCase() === word.toLocaleLowerCase());
+}
+
+function neutralTutorWord(word: string, variables: ReadonlySet<string>, request: WritingAidRequest, start: number): boolean {
+  const lower = word.toLowerCase();
+  return TUTOR_NEUTRAL_WORDS.has(lower) && !TUTOR_LOGIC.test(word) && !RISKY_PERSONAL_WORD.test(word) &&
+    (word.length > 1 || /^[ai]$/iu.test(word)) && (!variables.has(lower) || authoredEarlier(request, start, word));
+}
+
+function tutorEvidence(signal: TutorWritingSignal, start: number, end: number, maxOutputCharacters: number, maxOutputWords: number) {
+  return {kind: 'tutor-context' as const, sourceId: signal.sourceId, signalId: signal.id, role: signal.role,
+    learnerStart: start, learnerEnd: end, matchedCharacters: end - start, maxOutputCharacters, maxOutputWords};
+}
+
+// A grammar suggestion needs an observed pair. The research keyboard's
+// unconditional article list is useful as an eligibility signal only.
+const grammarAfter = new Map<string, string[]>();
+for (const [pair] of Object.entries(compactRanks.bigram).sort((a, b) => b[1] - a[1])) {
+  const [previous, next] = pair.split(' ');
+  if (!FILLERS.has(next)) continue;
+  const followers = grammarAfter.get(previous) ?? [];
+  followers.push(next);
+  grammarAfter.set(previous, followers);
+}
+
+const requestFollowers = new Map<string, Set<string>>();
+for (const phrase of phraseData.phrases) {
+  const tokens = phrase.match(/[\p{L}\p{M}]+/gu) ?? [];
+  for (let i = 1; i < tokens.length; i++) {
+    const word = tokens[i], prefix = tokens.slice(0, i).join(' ');
+    if ((i < 2 && prefix !== 'please') || !TUTOR_NEUTRAL_WORDS.has(word) || TUTOR_LOGIC.test(word)) continue;
+    const followers = requestFollowers.get(prefix) ?? new Set<string>();
+    followers.add(word);
+    requestFollowers.set(prefix, followers);
+  }
+}
+
+const WRITING_REFERENTS = new Set(('word words wording writing draft drafts question questions prompt prompts ' +
+  'notation symbol symbols sentence sentences paragraph paragraphs passage passages explanation explanations ' +
+  'diagram diagrams spelling example examples').split(' '));
+const OPEN_CHOICE = /\b(?:by (?:the )?(?:definition|choice) of|(?:conclud(?:e|es)|implies?|follows) that|for (?:every|each|all)|(?:hence|therefore|thus)(?: the| a| an)?)\s*$/iu;
+const EXPECTS_NOUN = /^(?:the|a|an|this|these|those|my|your|its|our|each|every)$/iu;
+
+function nextWordProposals(request: WritingAidRequest, text: string, authoredText: string, start: number,
+  options: TutorWritingOptions, variables: ReadonlySet<string>): WritingAidProposal[] {
+  if (OPEN_CHOICE.test(text)) return [];
+  const end = request.cursor.end;
+  const fragment = (authoredText.match(/[^.!?\n]*$/u)?.[0] ?? '').trimStart();
+  const fragmentStart = start + authoredText.length - fragment.length;
+  const candidates = new Map<string, TutorWritingSignal | undefined>();
+  // A supplied space after an accepted word may spend the second word tap.
+  // Only direct typing can authorize matching a learner's sentence to a source.
+  if (!request.anchor?.continuation) {
+    if (options.wording !== false && fragment.length >= 12 && (fragment.match(/[\p{L}\p{M}]+/gu)?.length ?? 0) >= 3 &&
+        !TUTOR_ASSERTION_GAP.test(fragment)) {
+      for (const signal of tutorTermSignals(request)) {
+        if (!TUTOR_COMMUNICATION.test(signal.text) || !signal.text.startsWith(fragment)) continue;
+        const rest = signal.text.slice(fragment.length);
+        if (!/^[\p{L}\p{M}][\p{L}\p{M}\s,.!?]*$/u.test(rest)) continue;
+        const words = rest.match(/[\p{L}\p{M}]+/gu) ?? [];
+        const next = words[0];
+        if (!next || /^(?:one|two|first|second|more|less)$/iu.test(next) ||
+            !words.every(word => neutralTutorWord(word, variables, request, fragmentStart))) continue;
+        candidates.set(next, signal);
+      }
+    }
+    const repeated = fragment.match(/(?:^|\s)([\p{L}\p{M}]+)[ \t]+([\p{L}\p{M}]+)[ \t]+$/u);
+    if (repeated) {
+      const earlier = authoredText.slice(0, -repeated[0].length);
+      if (!SOURCED_LINE.test(earlier) && !/[`"'“”‘’$\\]/u.test(earlier)) {
+        // Both interpolated strings consist entirely of letters and marks.
+        const phrase = new RegExp(`(?<![\\p{L}\\p{M}\\p{N}_])${repeated[1]}[ \\t]+${repeated[2]}[ \\t]+([\\p{L}\\p{M}]+)`, 'giu');
+        for (const match of earlier.matchAll(phrase)) {
+          const word = match[1].toLowerCase();
+          if (WRITING_REFERENTS.has(word) && !candidates.has(word)) candidates.set(word, undefined);
+        }
+      }
+    }
+    for (const word of requestFollowers.get(fragment.trimEnd().toLowerCase()) ?? []) {
+      if (!candidates.has(word)) candidates.set(word, undefined);
+    }
+  }
+  const previous = text.trimEnd().match(/[\p{L}\p{M}]+$/u)?.[0].toLowerCase();
+  if (!candidates.size && previous && !EXPECTS_NOUN.test(previous)) {
+    for (const word of grammarAfter.get(previous) ?? []) {
+      if ((word === 'an' && candidates.has('a')) || (word === 'a' && candidates.has('an'))) continue;
+      candidates.set(word, undefined);
+    }
+  }
+  const proposals: WritingAidProposal[] = [];
+  for (const [word, signal] of candidates) {
+    if (word.length + 1 > MAX_WORD || end + word.length + 1 > WRITING_AID_LIMIT ||
+        (variables.has(word.toLowerCase()) && !authoredEarlier(request, end, word))) continue;
+    proposals.push(writingAidProposal(request, 'word', end, end, word + ' ', word,
+      signal ? tutorEvidence(signal, fragmentStart, end, MAX_WORD, 1) : undefined));
+  }
+  return proposals;
+}
+
+function spellingEndings(prefix: string, before: string, authoredText: string): string[] {
+  const lower = prefix.toLowerCase();
+  if (prefix.length < 3 || writtenWord(lower) || proofWritingWords.has(lower)) return [];
+  const endings = new Set<string>();
+  if (prefix.length === 3 && !TUTOR_ASSERTION_GAP.test(before) && !LOGIC_GAP.test(before)) {
+    // Only the final letter of an ordinary word can be supplied from three
+    // letters. The sorted dictionary bounds the scan to this spelling.
+    for (let i = dictionaryIndex(lower); i < words.length && words[i].startsWith(lower); i++) {
+      const word = words[i];
+      if (word.length === 4 && !proofWritingWords.has(word) && !RISKY_PERSONAL_WORD.test(word) &&
+          !TUTOR_LOGIC.test(word) && !LOGICAL_CONNECTORS.has(word)) endings.add(word);
+    }
+  }
+  // The math keyboard already knows these spellings. Use the strong visible
+  // prefix threshold for every addition, including terms absent from SCOWL.
+  if (prefix.length >= 5) {
+    for (const word of proofWritingWords) {
+      if (word.length > prefix.length && prefix.length / word.length >= .8 && word.startsWith(lower) && LETTERS.test(word)) endings.add(word);
+    }
+  }
+  // An explicitly typed math name can be reused earlier on its next mention.
+  // The caller still checks protected words and declared variables on every path.
+  const earlier = authoredText.slice(0, -prefix.length);
+  if (prefix.length >= 4 && !LOGIC_GAP.test(before) && !TUTOR_ASSERTION_GAP.test(before) &&
+      !SOURCED_LINE.test(earlier) && !/[`"'“”‘’$\\]/u.test(earlier)) {
+    for (const token of earlier.match(/[\p{L}\p{M}\p{N}_]+/gu) ?? []) {
+      const word = token.toLowerCase();
+      if (word.length > prefix.length && word.startsWith(lower) && proofWritingWords.has(word) &&
+          prefix.length / word.length >= .5) endings.add(word);
+    }
+  }
+  return [...endings].map(word => prefix === prefix.toUpperCase() ? word.toUpperCase() :
+    prefix + word.slice(prefix.length));
+}
+
 function keyProposals(
   request: WritingAidRequest, text: string, authoredText: string, start: number, model?: WritingAidModel,
+  options: TutorWritingOptions = {},
 ): WritingAidProposal[] {
   const {cursor, mode, anchor} = request;
   if (mode === 'off') return [];
@@ -90,18 +265,24 @@ function keyProposals(
     return [];
   }
   const result = aid.predict(text, {mode, surface: 'keys', origin: 'learner', authoredText});
+  const variables = declaredTutorVariables(request);
+  if (!prefix) return result.keys.length ? nextWordProposals(request, text, authoredText, start, options, variables) : [];
   const proposals: WritingAidProposal[] = [];
-  for (const {word, kind, risk} of result.keys) {
+  const endings = mode === 'strict' ? [] : spellingEndings(prefix, before, authoredText);
+  const spelled = endings.map(word => ({word, kind: 'spelling', risk: undefined}));
+  const candidates = prefix.length >= 4 ? [...spelled, ...result.keys] : [...result.keys, ...spelled];
+  for (const {word, kind, risk} of candidates) {
     if (word.length > MAX_WORD || !LETTERS.test(word) || kind === 'transcription' || proposals.some(item => item.label === word)) continue;
-    if (prefix ? !word.startsWith(prefix) || word === prefix : !FILLERS.has(word.toLowerCase())) continue;
+    if (!word.startsWith(prefix) || word === prefix) continue;
     // A wider pool must not promote a proof method, property, quantifier, or
     // polarity from a weak stem merely to fill an alternative slot.
-    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word)) &&
-        (!prefix || prefix.length < 5 || prefix.length / word.length < .8)) continue;
-    if (protectedGap && prefix && prefix.length / word.length < .6) continue;
-    if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
+    if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word) || LOGICAL_CONNECTORS.has(word.toLocaleLowerCase())) &&
+        (prefix.length < 5 || prefix.length / word.length < .8)) continue;
+    if (protectedGap && prefix.length / word.length < .6) continue;
+    if (mode === 'strict' && prefix.length < 4) continue;
+    if (variables.has(word.toLocaleLowerCase()) && !authoredEarlier(request, rangeStart, word)) continue;
     const insert = word + ' ';
-    if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
+    if (cursor.text.length - prefix.length + insert.length > WRITING_AID_LIMIT) continue;
     proposals.push(writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word));
   }
   // Long-term vocabulary only supplies strongly typed word endings. It never
@@ -113,7 +294,8 @@ function keyProposals(
       writingAidVocabularyStrength(b[1], now) - writingAidVocabularyStrength(a[1], now))) {
       if (entry.observations < 2 || writingAidVocabularyStrength(entry, now) < .15 ||
           !saved.startsWith(lower) || saved === lower || saved.length > MAX_WORD ||
-          prefix.length / saved.length < .75 || RISKY_PERSONAL_WORD.test(saved)) continue;
+          prefix.length / saved.length < .75 || RISKY_PERSONAL_WORD.test(saved) || LOGICAL_CONNECTORS.has(saved) ||
+          variables.has(saved) && !authoredEarlier(request, rangeStart, saved)) continue;
       const word: string = prefix === prefix.toLocaleUpperCase() ? saved.toLocaleUpperCase() :
         /^\p{Lu}/u.test(prefix) ? saved[0].toLocaleUpperCase() + saved.slice(1) : saved;
       if (!word.startsWith(prefix) || proposals.some(item => item.label === word) ||
@@ -122,11 +304,28 @@ function keyProposals(
       if (proposals.length >= 18) break;
     }
   }
+  if (options.terms !== false && prefix && mode !== 'strict' && prefix.length >= 5 && !writtenWord(prefix.toLowerCase())) {
+    for (const signal of tutorTermSignals(request)) {
+      for (const original of signal.text.match(/[\p{L}\p{M}]{4,32}/gu) ?? []) {
+        const saved = original.toLocaleLowerCase(), lower = prefix.toLocaleLowerCase();
+        if (!saved.startsWith(lower) || saved === lower || prefix.length / saved.length < .8 ||
+            RISKY_PERSONAL_WORD.test(saved) || LOGICAL_CONNECTORS.has(saved) || TUTOR_LOGIC.test(saved) ||
+            variables.has(saved) && !authoredEarlier(request, rangeStart, saved)) continue;
+        const word: string = prefix === prefix.toLocaleUpperCase() ? saved.toLocaleUpperCase() :
+          /^\p{Lu}/u.test(prefix) ? saved[0].toLocaleUpperCase() + saved.slice(1) : saved;
+        if (!word.startsWith(prefix) || proposals.some(item => item.label === word) ||
+            cursor.text.length - prefix.length + word.length + 1 > WRITING_AID_LIMIT) continue;
+        proposals.push(writingAidProposal(request, 'word', rangeStart, cursor.end, word + ' ', word,
+          tutorEvidence(signal, rangeStart, cursor.end, MAX_WORD, 1)));
+        if (proposals.length >= 24) return proposals;
+      }
+    }
+  }
   return proposals;
 }
 
 function ghostProposals(
-  request: WritingAidRequest, text: string, authoredText: string,
+  request: WritingAidRequest, text: string, authoredText: string, startOfAuthored: number, options: TutorWritingOptions,
 ): WritingAidProposal[] {
   const {mode, cursor, anchor} = request;
   if (mode === 'strict' || mode === 'off' || anchor?.continuation || LOGIC_GAP.test(cursor.text) ||
@@ -142,6 +341,36 @@ function ghostProposals(
   }
   const {ghost} = aid.predict(text, {mode, surface: 'ghost', origin: 'learner', authoredText});
   if (ghost && ['vetted-phrase', 'literal-scaffold', 'typed-spelling'].includes(ghost.kind ?? '')) add(ghost.suffix);
+  if (options.wording !== false) {
+    const sentence = Math.max(authoredText.lastIndexOf('\n') + 1,
+      authoredText.lastIndexOf('. ') < 0 ? 0 : authoredText.lastIndexOf('. ') + 2);
+    const fragment = authoredText.slice(sentence), words = fragment.match(/[\p{L}\p{M}]+/gu) ?? [];
+    const variableNames = declaredTutorVariables(request);
+    if (fragment.length >= 12 && words.length >= 3 && !TUTOR_ASSERTION_GAP.test(fragment) &&
+        !/[`"“”‘’]/u.test(fragment)) {
+      for (const signal of eligibleTutorSignals(request.tutorContext)) {
+        if (!TUTOR_COMMUNICATION.test(signal.text) || !signal.text.startsWith(fragment) || signal.text.length === fragment.length) continue;
+        const remaining = signal.text.slice(fragment.length);
+        if (/[\d=<>≤≥≠∈∉⊆⊂∀∃⇒⇔¬_\\$`"“”‘’{}\[\]()/*+^|~-]/u.test(remaining)) continue;
+        const tokens = [...remaining.matchAll(/[\p{L}\p{M}]+/gu)];
+        if (tokens.length < 2) continue;
+        const last = tokens[Math.min(tokens.length, TUTOR_MAX_WORDS) - 1];
+        let end = last.index + last[0].length;
+        while (end > 0 && end > TUTOR_MAX_OUTPUT) {
+          const previous = tokens.filter(token => token.index + token[0].length < end).at(-1);
+          end = previous ? previous.index + previous[0].length : 0;
+        }
+        const suffix = remaining.slice(0, end);
+        const partial = fragment.match(/[\p{L}\p{M}]+$/u)?.[0] ?? '';
+        const check = (partial + suffix).match(/[\p{L}\p{M}]+/gu) ?? [];
+        if (!suffix.trim() || check.length < 2 || !check.every(word => neutralTutorWord(word, variableNames, request, startOfAuthored + sentence)) ||
+            cursor.text.length + suffix.length > WRITING_AID_LIMIT || proposals.some(item => item.insert === suffix)) continue;
+        proposals.push(writingAidProposal(request, 'ghost', cursor.end, cursor.end, suffix, suffix,
+          tutorEvidence(signal, startOfAuthored + sentence, cursor.end, TUTOR_MAX_OUTPUT, TUTOR_MAX_WORDS)));
+        if (proposals.length >= 12) break;
+      }
+    }
+  }
   // Only vetted requests about wording/reading get alternative continuations.
   // Each candidate must independently pass the existing certificate and guard;
   // the literal/scaffold and spelling lanes never manufacture alternatives.
@@ -201,7 +430,7 @@ export interface WritingAidPool {
 const EMPTY_POOL: WritingAidPool = Object.freeze({words: [], ghost: [], edit: []});
 
 /** Deterministic eligibility runs before ranking; only learner input reaches this engine. */
-export function predictWritingAidPool(request: WritingAidRequest, model?: WritingAidModel): WritingAidPool {
+export function predictWritingAidPool(request: WritingAidRequest, model?: WritingAidModel, options: TutorWritingOptions = {}): WritingAidPool {
   const {anchor, cursor, surfaces = ALL_WRITING_AID_SURFACES} = request;
   if (!anchor || !canSuggestWritingAid(request) || hasOpenLiteral(cursor.text) || tutorMathContext(cursor) !== 'prose') {
     return EMPTY_POOL;
@@ -211,8 +440,8 @@ export function predictWritingAidPool(request: WritingAidRequest, model?: Writin
   if (!authoredText.trim()) return EMPTY_POOL;
   const text = cursor.text.slice(start);
   return {
-    words: surfaces.words ? keyProposals(request, text, authoredText, start, model) : [],
-    ghost: surfaces.ghost ? ghostProposals(request, text, authoredText) : [],
+    words: surfaces.words ? keyProposals(request, text, authoredText, start, model, options) : [],
+    ghost: surfaces.ghost ? ghostProposals(request, text, authoredText, start, options) : [],
     edit: surfaces.replace || surfaces.correction ? editProposals(request, authoredText, start) : [],
   };
 }
@@ -226,11 +455,25 @@ export function selectWritingAidPool(
   pool: WritingAidPool, model?: WritingAidModel,
   excluded: Readonly<Record<'words' | 'ghost' | 'edit', ReadonlySet<string>>> = {
     words: new Set(), ghost: new Set(), edit: new Set(),
-  }, now = Date.now(),
+  }, now = Date.now(), options: TutorWritingOptions = {},
 ): WritingAidSuggestions {
+  function contextBoost(proposal: WritingAidProposal): number {
+    const signals = eligibleTutorSignals(proposal.snapshot.tutorContext);
+    if (proposal.kind === 'word' && options.terms !== false) {
+      const value = proposal.label.toLocaleLowerCase();
+      return tutorTermSignals(proposal.snapshot).some(signal => {
+        const words: readonly string[] = signal.text.toLocaleLowerCase().match(/[\p{L}\p{M}]+/gu) ?? [];
+        return words.includes(value);
+      }) ? .35 : 0;
+    }
+    if (proposal.kind === 'replace' && options.symbols !== false) {
+      return signals.some(signal => signal.symbols?.includes(proposal.insert)) ? .35 : 0;
+    }
+    return proposal.kind === 'ghost' && options.wording !== false && proposal.tutorEvidence ? .2 : 0;
+  }
   function ranked(items: readonly WritingAidProposal[], omit: ReadonlySet<string>): WritingAidProposal[] {
     return items.map((proposal, index) => ({proposal, index,
-      score: model ? scoreWritingAidProposal(model, proposal, now) : 0}))
+      score: (model ? scoreWritingAidFeatures(model, writingAidFeatures(proposal), now, options.strategy) : 0) + contextBoost(proposal)}))
       .filter(({proposal}) => !omit.has(writingAidProposalKey(proposal)))
       .sort((a, b) => b.score - a.score || a.index - b.index).map(row => row.proposal);
   }

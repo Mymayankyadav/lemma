@@ -1,6 +1,6 @@
 import {authGeneration,authOwner} from '../../data/authBoundary';
 import {getDemoProfile,getMode} from '../../data/mode';
-import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
+import {useLayoutEffect, useMemo, useRef, useState, type ReactNode} from 'react';
 import type {SavedTutorTurn} from '../../data/tutor/manual-api';
 import {MathText} from '../../ui/MathText';
 import {Button, Sheet} from '../../ui/v7/components';
@@ -8,6 +8,8 @@ import type {TutorInkState} from './TutorInk';
 import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
 import {TutorComposer} from './TutorComposer';
 import {TutorLayout, TutorOverview, type TutorPageContext} from './TutorLayout';
+import {unpackTutorWritingReply} from '../../../supabase/functions/_shared/tutor-writing';
+import {normalizeTutorWritingContext} from './writingAid/tutorContext';
 
 export type SendOptions = {includeObjective?: boolean; keepDraft?: boolean};
 const hints = [
@@ -63,7 +65,11 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
       :inkDraft?.photos.length));
   const overview = (view ?? (last || draft || hasInk ? 'chat' : 'overview')) === 'overview';
   const latestReply = turns.filter(turn => turn.status === 'completed').at(-1);
-  const question = latestReply?.status === 'completed' ? latestReply.finalReply.nextQuestion || questionPreview(latestReply.finalReply.body) : '';
+  const finalReply=latestReply?.status==='completed'?latestReply.finalReply:undefined;
+  const decodedReply=useMemo(()=>unpackTutorWritingReply(finalReply?.body??''),[finalReply?.body]);
+  const tutorWritingContext=useMemo(()=>finalReply?.provenance.kind==='connector'
+    ?normalizeTutorWritingContext(decodedReply.context,finalReply.messageId):null,[decodedReply.context,finalReply]);
+  const question = finalReply ? finalReply.nextQuestion || questionPreview(decodedReply.body) : '';
   const step = page.detail.steps[page.detail.view.currentStep] || page.detail.objective;
   useLayoutEffect(() => {
     const element = chat.current;
@@ -139,7 +145,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
             'Which symbols or proof phrases would help me write my answer to the current question?';
           send(request, {keepDraft:true});
         }}
-        notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
+        notationContext={[page.detail.view.title, step, question]} tutorWritingContext={tutorWritingContext??undefined} readOnly={readOnly} pending={pending} hasContext={hasContext}
         onContext={() => setPanel('context')}/>
     }
     <Sheet open={panel === 'question'} title="On the table" onClose={() => setPanel(undefined)}>
