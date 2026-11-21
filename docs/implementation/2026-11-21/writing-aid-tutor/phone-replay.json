@@ -1,0 +1,594 @@
+{
+  "baseline": "232a29fd07b4588a09a706f63e220147fdcc9128",
+  "datasetSha256": "a6d1f1822ab5ba0c1760890bc03a6f7f732d19425251f5e5a126d4793dfe3693",
+  "probes": [
+    {
+      "id": "phone-prefix",
+      "text": "In the sample for testing jok",
+      "desired": "joke",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "phone-boundary",
+      "text": "In the sample for testing ",
+      "desired": "joke",
+      "category": "boundary-observation"
+    },
+    {
+      "id": "generic-boundary",
+      "text": "This is ",
+      "desired": "a",
+      "category": "boundary-observation"
+    },
+    {
+      "id": "everyday-document",
+      "text": "Please send the docum",
+      "desired": "document",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "everyday-tomorrow",
+      "text": "I will meet you tomor",
+      "desired": "tomorrow",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "study-converges",
+      "text": "The sequence conver",
+      "desired": "converges",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "study-function",
+      "text": "Suppose the funct",
+      "desired": "function",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "study-arbitrary",
+      "text": "Let epsilon be arbit",
+      "desired": "arbitrary",
+      "category": "authored-prefix"
+    },
+    {
+      "id": "proof-sequence",
+      "text": "We conclude that ",
+      "desired": "sequence",
+      "category": "open-proof-choice"
+    },
+    {
+      "id": "proof-convergence",
+      "text": "By the definition of ",
+      "desired": "convergence",
+      "category": "open-proof-choice"
+    },
+    {
+      "id": "proof-epsilon",
+      "text": "For every ",
+      "desired": "epsilon",
+      "category": "open-proof-choice"
+    },
+    {
+      "id": "proof-limit",
+      "text": "Therefore the ",
+      "desired": "limit",
+      "category": "open-proof-choice"
+    },
+    {
+      "id": "neutral-yesterday",
+      "text": "I saw it yesterday ",
+      "desired": null,
+      "category": "boundary-observation"
+    },
+    {
+      "id": "neutral-notebook",
+      "text": "I opened my notebook ",
+      "desired": null,
+      "category": "boundary-observation"
+    },
+    {
+      "id": "neutral-constructor",
+      "text": "Call the constructor ",
+      "desired": null,
+      "category": "boundary-observation"
+    },
+    {
+      "id": "neutral-banana",
+      "text": "I ate a banana ",
+      "desired": null,
+      "category": "boundary-observation"
+    }
+  ],
+  "versions": {
+    "baseline": {
+      "raw": [
+        {
+          "id": "phone-prefix",
+          "words": [],
+          "desiredCovered": false
+        },
+        {
+          "id": "phone-boundary",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ]
+        },
+        {
+          "id": "generic-boundary",
+          "words": []
+        },
+        {
+          "id": "everyday-document",
+          "words": [
+            "document"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "everyday-tomorrow",
+          "words": [
+            "tomorrow"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "study-converges",
+          "words": [
+            "convert",
+            "converse",
+            "converted"
+          ],
+          "desiredCovered": false
+        },
+        {
+          "id": "study-function",
+          "words": [
+            "function",
+            "functor"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "study-arbitrary",
+          "words": [
+            "arbiter",
+            "arbitral"
+          ],
+          "desiredCovered": false
+        },
+        {
+          "id": "proof-sequence",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ],
+          "prohibitedTargetExposed": false,
+          "abstained": false
+        },
+        {
+          "id": "proof-convergence",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ],
+          "prohibitedTargetExposed": false,
+          "abstained": false
+        },
+        {
+          "id": "proof-epsilon",
+          "words": [],
+          "prohibitedTargetExposed": false,
+          "abstained": true
+        },
+        {
+          "id": "proof-limit",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ],
+          "prohibitedTargetExposed": false,
+          "abstained": false
+        },
+        {
+          "id": "neutral-yesterday",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ]
+        },
+        {
+          "id": "neutral-notebook",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ]
+        },
+        {
+          "id": "neutral-constructor",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ]
+        },
+        {
+          "id": "neutral-banana",
+          "words": [
+            "the",
+            "a",
+            "an"
+          ]
+        }
+      ],
+      "desiredCoverage": {
+        "covered": 3,
+        "total": 6
+      },
+      "geometry": {
+        "balanced": {
+          "wpm": 33.19,
+          "wpmAt40msIgnored": 32.25,
+          "accepts": 60,
+          "ignoredLists": 343
+        },
+        "fast": {
+          "wpm": 36.8,
+          "wpmAt40msIgnored": 35.09,
+          "accepts": 87,
+          "ignoredLists": 520
+        },
+        "strict": {
+          "wpm": 30.24,
+          "wpmAt40msIgnored": 30.22,
+          "accepts": 5,
+          "ignoredLists": 6
+        }
+      },
+      "tutor": {
+        "balanced": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 4037,
+          "manualWordlikeUnits": 938,
+          "backspaces": 36,
+          "taps": 357,
+          "refreshes": 141,
+          "shownLists": 1686,
+          "ignoredLists": 1356,
+          "correctDrafts": 144,
+          "badAccepts": 2,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 485,
+          "oraclePoolMatchingEvents": 485,
+          "recoverySeconds": 28.799999999999997,
+          "wpm0": 31.634919721470908,
+          "wpm40": 30.45303965343408,
+          "wpm100": 28.837014111105283,
+          "bySurface": {
+            "word": 192,
+            "ghost": 6,
+            "correction": 4,
+            "replace": 8
+          }
+        },
+        "fast": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 3683,
+          "manualWordlikeUnits": 946,
+          "backspaces": 36,
+          "taps": 485,
+          "refreshes": 182,
+          "shownLists": 2275,
+          "ignoredLists": 1870,
+          "correctDrafts": 144,
+          "badAccepts": 4,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 637,
+          "oraclePoolMatchingEvents": 712,
+          "recoverySeconds": 30.799999999999997,
+          "wpm0": 33.603520997615995,
+          "wpm40": 31.832763912212634,
+          "wpm100": 29.500912310829666,
+          "bySurface": {
+            "word": 283,
+            "ghost": 0,
+            "correction": 4,
+            "replace": 8
+          }
+        },
+        "strict": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 4557,
+          "manualWordlikeUnits": 929,
+          "backspaces": 36,
+          "taps": 54,
+          "refreshes": 12,
+          "shownLists": 87,
+          "ignoredLists": 45,
+          "correctDrafts": 144,
+          "badAccepts": 0,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 80,
+          "oraclePoolMatchingEvents": 80,
+          "recoverySeconds": 26.799999999999997,
+          "wpm0": 29.66008416963418,
+          "wpm40": 29.60449786739046,
+          "wpm100": 29.52150797486708,
+          "bySurface": {
+            "word": 26,
+            "ghost": 0,
+            "correction": 4,
+            "replace": 8
+          }
+        }
+      }
+    },
+    "working": {
+      "raw": [
+        {
+          "id": "phone-prefix",
+          "words": [
+            "joke"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "phone-boundary",
+          "words": []
+        },
+        {
+          "id": "generic-boundary",
+          "words": []
+        },
+        {
+          "id": "everyday-document",
+          "words": [
+            "document"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "everyday-tomorrow",
+          "words": [
+            "tomorrow"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "study-converges",
+          "words": [
+            "convert",
+            "converse",
+            "converted"
+          ],
+          "desiredCovered": false
+        },
+        {
+          "id": "study-function",
+          "words": [
+            "function",
+            "functor"
+          ],
+          "desiredCovered": true
+        },
+        {
+          "id": "study-arbitrary",
+          "words": [
+            "arbiter",
+            "arbitral"
+          ],
+          "desiredCovered": false
+        },
+        {
+          "id": "proof-sequence",
+          "words": [],
+          "prohibitedTargetExposed": false,
+          "abstained": true
+        },
+        {
+          "id": "proof-convergence",
+          "words": [],
+          "prohibitedTargetExposed": false,
+          "abstained": true
+        },
+        {
+          "id": "proof-epsilon",
+          "words": [],
+          "prohibitedTargetExposed": false,
+          "abstained": true
+        },
+        {
+          "id": "proof-limit",
+          "words": [],
+          "prohibitedTargetExposed": false,
+          "abstained": true
+        },
+        {
+          "id": "neutral-yesterday",
+          "words": []
+        },
+        {
+          "id": "neutral-notebook",
+          "words": []
+        },
+        {
+          "id": "neutral-constructor",
+          "words": []
+        },
+        {
+          "id": "neutral-banana",
+          "words": []
+        }
+      ],
+      "desiredCoverage": {
+        "covered": 4,
+        "total": 6
+      },
+      "geometry": {
+        "balanced": {
+          "wpm": 33.04,
+          "wpmAt40msIgnored": 32.31,
+          "accepts": 58,
+          "ignoredLists": 267
+        },
+        "fast": {
+          "wpm": 36.56,
+          "wpmAt40msIgnored": 35.18,
+          "accepts": 83,
+          "ignoredLists": 422
+        },
+        "strict": {
+          "wpm": 30.24,
+          "wpmAt40msIgnored": 30.22,
+          "accepts": 5,
+          "ignoredLists": 6
+        }
+      },
+      "tutor": {
+        "balanced": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 4075,
+          "manualWordlikeUnits": 958,
+          "backspaces": 36,
+          "taps": 316,
+          "refreshes": 108,
+          "shownLists": 1381,
+          "ignoredLists": 1092,
+          "correctDrafts": 144,
+          "badAccepts": 1,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 477,
+          "oraclePoolMatchingEvents": 483,
+          "recoverySeconds": 27.799999999999997,
+          "wpm0": 31.594919248232657,
+          "wpm40": 30.622681239346235,
+          "wpm100": 29.271565495207668,
+          "bySurface": {
+            "word": 185,
+            "ghost": 6,
+            "correction": 4,
+            "replace": 8
+          }
+        },
+        "fast": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 3737,
+          "manualWordlikeUnits": 972,
+          "backspaces": 36,
+          "taps": 428,
+          "refreshes": 137,
+          "shownLists": 1847,
+          "ignoredLists": 1500,
+          "correctDrafts": 144,
+          "badAccepts": 3,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 622,
+          "oraclePoolMatchingEvents": 699,
+          "recoverySeconds": 29.799999999999997,
+          "wpm0": 33.525644935049094,
+          "wpm40": 32.08020635161474,
+          "wpm100": 30.13155009866257,
+          "bySurface": {
+            "word": 272,
+            "ghost": 0,
+            "correction": 4,
+            "replace": 8
+          }
+        },
+        "strict": {
+          "tasks": 144,
+          "targetChars": 4581,
+          "manualChars": 4557,
+          "manualWordlikeUnits": 929,
+          "backspaces": 36,
+          "taps": 54,
+          "refreshes": 12,
+          "shownLists": 87,
+          "ignoredLists": 45,
+          "correctDrafts": 144,
+          "badAccepts": 0,
+          "retained": 0,
+          "unsafeExposed": 0,
+          "logicAccepted": 0,
+          "literalCorrections": 0,
+          "manualRepair": 12,
+          "visibleMatchingEvents": 80,
+          "oraclePoolMatchingEvents": 80,
+          "recoverySeconds": 26.799999999999997,
+          "wpm0": 29.66008416963418,
+          "wpm40": 29.60449786739046,
+          "wpm100": 29.52150797486708,
+          "bySurface": {
+            "word": 26,
+            "ghost": 0,
+            "correction": 4,
+            "replace": 8
+          }
+        }
+      }
+    }
+  },
+  "pairedTutor": {
+    "balanced": {
+      "faster": 105,
+      "tied": 13,
+      "slower": 26,
+      "totalDeltaSeconds": -10
+    },
+    "fast": {
+      "faster": 108,
+      "tied": 12,
+      "slower": 24,
+      "totalDeltaSeconds": -13.32
+    },
+    "strict": {
+      "faster": 0,
+      "tied": 144,
+      "slower": 0,
+      "totalDeltaSeconds": 0
+    }
+  },
+  "workingSourceSha256": {
+    "src/features/tutor/writingAid/engine.ts": "061385c76adffe8604ecdb23732b3c4bbdf34c1238117b48d20d07efbb81af00",
+    "src/features/tutor/input/proofVocabulary.ts": "e303492aed2907c8f4456d40f9e6401dd8a8a237a98e8b209c8e0258c2d37044"
+  },
+  "protocol": {
+    "tutorTasks": 144,
+    "composerActions": true,
+    "candidate": "tutor-wording",
+    "passages": 16,
+    "phoneProfile": "phone-night",
+    "probes": "authored prefixes use exact-label desired coverage; open proof choices report named prohibited targets and abstention; boundaries are observational; no tutor context or learned model"
+  }
+}

@@ -37,6 +37,24 @@ describe('bounded tutor writing context', () => {
     expect(sourced(request('The question asks about THE', source))).toEqual([]);
   });
 
+  it('makes a neutral next word from matching tutor wording available on the keyboard', () => {
+    const text = 'Another sentence. The question asks about the original ';
+    const source = 'The question asks about the original wording';
+    const input = request(text, context(source));
+    const word = predictWritingAidPool(input, undefined, {terms: false, wording: true}).words[0];
+    expect(word).toMatchObject({label: 'wording', before: '', tutorEvidence: {
+      sourceId: 'reply-1', learnerStart: text.indexOf('The question'), learnerEnd: text.length, maxOutputWords: 1,
+    }});
+    expect(applyWritingAidProposal(input, word)?.text).toBe(text + 'wording ');
+    expect(predictWritingAidPool(input, undefined, {wording: false}).words.some(p => p.tutorEvidence)).toBe(false);
+    for (const ctx of [context(source, 'solution'), context(source, 'hint'),
+      context(source, 'given', {variables: ['wording']}), context(source.replace('wording', 'induction')),
+      context(source.replace('wording', 'two disjoint components')), context(source.replace('wording', 'first')),
+      context(source.replace('wording', 'wording x = y')), context(source.replace('wording', 'wording about eigenvalues'))]) {
+      expect(predictWritingAidPool(request(text, ctx)).words.some(p => p.tutorEvidence)).toBe(false);
+    }
+  });
+
   it('rejects proof steps, mislabeled branches and previously unseen mathematical methods', () => {
     const examples = [
       ['We can apply', 'We can apply the triangle inequality'],

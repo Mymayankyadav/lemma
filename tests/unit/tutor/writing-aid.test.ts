@@ -58,7 +58,7 @@ describe('local writing aid', () => {
     expect(predictWritingAid(request('I think the re', {mode: 'fast'})).words.map(item => item.label)).toEqual([
       'result', 'relation', 'respectively',
     ]);
-    expect(predictWritingAid(request('constructor ')).words.map(item => item.label)).toEqual(['the', 'a', 'an']);
+    expect(predictWritingAid(request('constructor ')).words).toEqual([]);
   });
 
   it('leaves proof choices and mistakes alone in both predictive modes', () => {
@@ -72,6 +72,44 @@ describe('local writing aid', () => {
       }
     }
     expect(predictWritingAid(request('Let x')).ghost?.insert).toBe(' be ');
+  });
+
+  it('finishes directly typed short spellings and math terms without changing their case', () => {
+    for (const [text, desired] of [
+      ['assistance. The question asks about the original wording of the previous sentence. In the sample for testing jok', 'joke'],
+      ['A private Jok', 'Joke'], ['A private JOK', 'JOKE'],
+      ['The spelling homeomorphis', 'homeomorphism'], ['The Hausdorf', 'Hausdorff'],
+    ]) {
+      const input = request(text), word = predictWritingAid(input).words.find(p => p.label === desired);
+      expect(word, text).toBeDefined();
+      expect(applyWritingAidProposal(input, word!)?.text).toBe(text.slice(0, text.lastIndexOf(' ') + 1) + desired + ' ');
+    }
+    for (const [text, prohibited] of [['a zer', 'zero'], ['choose a rin', 'ring'], ['The map is nul', 'null']]) {
+      expect(predictWritingAid(request(text)).words.map(p => p.label), text).not.toContain(prohibited);
+    }
+    const reused = 'I wrote homeomorphism earlier. I am writing homeomo';
+    expect(predictWritingAid(request(reused)).words[0]?.label).toBe('homeomorphism');
+    expect(predictWritingAid(request(reused, {anchor: {text: reused, start: reused.indexOf('I am')}})).words
+      .some(word => word.label === 'homeomorphism')).toBe(false);
+    expect(predictWritingAid(request('I wrote contradiction earlier. I will use contra')).words
+      .some(word => word.label === 'contradiction')).toBe(false);
+    expect(predictWritingAid(request('I type jok', {mode: 'strict'})).words).toEqual([]);
+    expect(predictWritingAid(request('We named jok')).words).toEqual([]);
+  });
+
+  it('uses a matching phrase or observed grammar at a boundary and skips unrelated articles', () => {
+    const labels = (text: string) => predictWritingAid(request(text)).words.map(p => p.label);
+    expect(labels('Could you repeat the ')).toContain('question');
+    expect(labels('Could you repeat the ')).not.toContain('of');
+    expect(labels('I wrote the sequence ')).toContain('of');
+    for (const text of ['An ordinary notebook ', 'In the sample for testing ', 'It happened yesterday ',
+      'Therefore the ', 'By the definition of ', 'For every ']) expect(labels(text), text).toEqual([]);
+
+    const draft = 'A sample for testing writing assistance. In the sample for testing ';
+    expect(labels(draft)).toEqual(['writing']);
+    expect(predictWritingAid(request(draft, {anchor: {text: draft, start: draft.indexOf('In the sample')}})).words).toEqual([]);
+    expect(labels('A sample for testing induction. In the sample for testing ')).toEqual([]);
+    expect(labels('I copied "for testing writing". In the sample for testing ')).toEqual([]);
   });
 
   it('does not offer causal or logical connectors from a weakly typed prefix', () => {
@@ -118,7 +156,7 @@ describe('local writing aid', () => {
     const next = request(applied.text, {anchor: nextAnchor});
     const {words, ghost, edit} = predictWritingAid(next);
     expect(words.length).toBeGreaterThan(0);
-    expect(words.every(item => item.start === applied.end && item.end === applied.end && /^(the|a|an)$/u.test(item.label))).toBe(true);
+    expect(words.every(item => item.start === applied.end && item.end === applied.end && item.label === 'for')).toBe(true);
     expect(ghost).toBeNull();
     expect(edit).toBeNull();
     expect(continueWritingAidAnchor(nextAnchor, words[0], applyWritingAidProposal(next, words[0])!)).toBeNull();

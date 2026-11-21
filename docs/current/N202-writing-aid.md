@@ -1,5 +1,7 @@
 ## N202 local writing aid and physical-device preview
 
+The phone-trial update finishes a short spelling such as `jok` with `joke`. It uses prior learner wording, matching neutral tutor phrasing and observed word pairs for the keyboard row. It also reuses the math keyboard's vocabulary for typed terms such as `homeomorphis`. The physical report and its comparison with the previous APK are in the [phone trial results](../implementation/2026-11-21/writing-aid-tutor/PHONE-TRIAL.md).
+
 The owner continues the existing writing-aid work in PR #1738. This revision replaces swipe acceptance with tap acceptance, adds theme-coded suggestion categories, and evaluates structured tutor signals and personal automatic corrections. It does not authorize production merge.
 
 The composer strikes through a proposed source and floats a compact tap-to-accept card above the input. Refresh and X remain next to the suggestion; the keyboard refreshes three stationary word targets. Desktop Tab accepts a faded continuation. Swipes retain native selection and scrolling. Amber spelling, blue notation, green continuation and purple word tokens have labels/icons, with Day/Night contrast and touch-target checks. Accepted changes have nearby Undo.

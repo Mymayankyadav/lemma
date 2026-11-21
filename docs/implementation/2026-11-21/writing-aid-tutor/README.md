@@ -1,5 +1,7 @@
 # Tutor-context writing-aid experiment
 
+The owner's Android trial exposed a missing `jok` completion and repetitive article suggestions. The updated trial fixes these cases and includes matched comparisons with the first APK. [Phone trial results](PHONE-TRIAL.md)
+
 The validation-selected configuration is **tutor-wording**: the existing contextual reward ranker with tutor wording enabled and tutor term/symbol options disabled. The selection was frozen before the main held-out trajectory replay. In validation it scored 30.139 modeled WPM at 40 ms attention per new list; all-on scored 30.133, inside the preregistered 0.10-WPM tie band. The selector chose the smaller observed state. The difference is tiny and does not establish that disabling term or symbol support helps people.
 
 The 24-candidate table ran every ranker on the same engine revision. Enabling tutor wording produced the same recorded test trajectories as disabling it in that engine. A separate replay of the actual previous app revision found a Balanced tie on these tasks and a drop on the longer proof passages. [Frozen-version comparison](VERSION-COMPARISON.md)

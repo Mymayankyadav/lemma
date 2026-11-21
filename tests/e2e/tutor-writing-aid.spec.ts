@@ -862,6 +862,25 @@ test('a tutor-grounded word identifies its source on a narrow enlarged layout', 
   await expect(answer).toHaveValue('metaphrasingz');
 });
 
+test('the phone keyboard completes a manually typed jok in the reported draft', async ({page}) => {
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.getByRole('button', {name: 'Write a question', exact: true}).click();
+  const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
+  const keyboard = page.getByRole('group', {name: 'Answer keyboard', exact: true});
+  const passage = 'Demo tutor sample for testing writing assistance. The question asks about the original wording of the previous sentence. In the sample for testing ';
+  await answer.focus();
+  await page.keyboard.type(passage);
+  await expect(wordStrip(page).getByRole('button', {name: 'Insert writing', exact: true})).toBeEnabled();
+  for (const letter of 'jok') await keyboard.getByRole('button', {name: letter, exact: true}).click();
+  const offer = wordStrip(page).getByRole('button', {name: 'Insert joke', exact: true});
+  await expect(offer).toBeEnabled();
+  await expect(answer).toHaveValue(passage + 'jok');
+  await offer.click();
+  await expect(answer).toHaveValue(passage + 'joke ');
+  await undoButton(page).click();
+  await expect(answer).toHaveValue(passage + 'jok');
+});
+
 test('the default demo textarea supports visible edits, refresh, tap and Balanced personalization', async ({page, context}) => {
   await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
   await page.getByRole('button', {name: 'Write a question', exact: true}).click();
