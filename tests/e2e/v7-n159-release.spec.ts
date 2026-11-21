@@ -10,7 +10,7 @@ async function release(page:Page,route:string,width=390,height=844){
 test('released ruler controls appear on Today and Calendar without U4 overrides',async({page})=>{
  await release(page,'/');await expect(page.getByRole('slider',{name:'Time',exact:true})).toBeVisible();
  await release(page,'/calendar?view=day&date='+DATE+'&quick=1');
- const sheet=page.getByRole('dialog',{name:'New block',exact:true});
+ const sheet=page.getByRole('dialog',{name:'New time block',exact:true});
  await expect(sheet.getByRole('slider',{name:'Length'})).toHaveValue('50');
  await sheet.getByRole('slider',{name:'Length'}).focus();await page.keyboard.press('ArrowRight');
  await expect(sheet.getByRole('slider',{name:'Length'})).toHaveValue('55');
@@ -30,7 +30,8 @@ test('released paper and sky choices persist on the device',async({page})=>{
 test('released week page is reachable from Progress',async({page})=>{
  await release(page,'/insights');await page.getByRole('link',{name:'Your week',exact:true}).click();
  await expect(page).toHaveURL(/#\/week$/);await expect(page.getByRole('heading',{name:'Your week',exact:true})).toBeVisible();
- await expect(page.getByRole('img',{name:/The week as a constellation/})).toBeVisible();
+ const chart=page.getByRole('region',{name:'Focus by day',exact:true});
+ await expect(chart.getByRole('group',{name:'Focus by day',exact:true}).locator('[data-chart-point]')).toHaveCount(7);
 });
 test('released scratch paper survives reveal and review uses the desktop spread',async({page})=>{
  await release(page,'/review',1280);await page.getByRole('button',{name:/^Start review, \d+ cards?$/}).click();

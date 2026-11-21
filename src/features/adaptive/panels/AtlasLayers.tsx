@@ -9,11 +9,11 @@ import type {ReactNode} from 'react';
 
 export type AtlasLayer = 'map' | 'themes' | 'bridges';
 
-function approvedBridges(model?: AtlasReadModel) {
+export function usedBridges(model?: Pick<AtlasReadModel,'links'|'bridges'>) {
   if (!model) return [];
   const pairs = new Set(model.links.filter(link => link.status === 'approved' &&
     (link.kind === 'analogous' || link.kind === 'instance_of')).map(link => link.from_id + '/' + link.to_id));
-  return model.bridges.filter(bridge => pairs.delete(bridge.from + '/' + bridge.to));
+  return model.bridges.filter(bridge => bridge.strength.u>0 && pairs.delete(bridge.from + '/' + bridge.to));
 }
 
 export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKind,stale,onStale,model,legend}: {
@@ -24,7 +24,7 @@ export function AtlasLayers({open,onClose,view,onView,filter,onFilter,kind,onKin
   const layers = [
     {value:'map',label:'Constellations',icon:Network,enabled:true},
     {value:'themes',label:'Themes',icon:Milestone,enabled:!!model?.themes.length},
-    {value:'bridges',label:'Bridges',icon:GitFork,enabled:approvedBridges(model).length>0},
+    {value:'bridges',label:'Bridges',icon:GitFork,enabled:usedBridges(model).length>0},
   ] as const;
   return <Sheet open={open} onClose={onClose} title="Layers">
     <div className="v7-atlas-layer-options">
@@ -50,11 +50,10 @@ export function AtlasLayerContent({view,model}: {view:Exclude<AtlasLayer,'map'>;
       ? model?.themes.map(theme=><Disclosure key={theme.id} label={theme.name}>
           <ul>{theme.instances.map(id=><li key={id}><Link to={'/atlas?id='+encodeURIComponent(id)}>{label(id)}</Link></li>)}</ul>
         </Disclosure>)
-      : approvedBridges(model).map(bridge=>
-          <div key={bridge.from+'/'+bridge.to} className="v7-atlas-bridge" data-dashed={bridge.strength.dashed} data-thick={bridge.strength.thick}>
+      : usedBridges(model).map(bridge=>
+          <div key={bridge.from+'/'+bridge.to} className="v7-atlas-bridge" data-thick={bridge.strength.thick}>
             <Disclosure label={<>{label(bridge.from)} ↔ {label(bridge.to)} <small>{bridge.strength.u} uses · {bridge.strength.o} opportunities</small></>}>
-              <p>{bridge.strength.dashed ? 'No opportunities yet.'
-                : `${label(bridge.from)} was used successfully without a prompt in ${bridge.strength.u} of ${bridge.strength.o} opportunities.`}</p>
+              <p>{label(bridge.from)} was used successfully without a prompt in {bridge.strength.u} of {bridge.strength.o} opportunities.</p>
             </Disclosure>
           </div>)}
   </section>;

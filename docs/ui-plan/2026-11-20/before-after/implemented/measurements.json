@@ -530,11 +530,13 @@
           "overlaps": [],
           "raw": [],
           "picture": {
-            "clear": 0.7560763888888888,
+            "clear": 0.7769097222222222,
             "extent": 0.5482238267148014
           },
           "detail": false
-        }
+        },
+        "sourceCommit": "65c0fcc963d2a44db92f57e11842abed86d343c3",
+        "dirty": true
       },
       {
         "scene": "path",

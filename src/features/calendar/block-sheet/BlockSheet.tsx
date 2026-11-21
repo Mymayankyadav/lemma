@@ -123,6 +123,7 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const notify=useToast();
  const [current,setCurrent]=useState(block);
  const [title,setTitle]=useState(block?.title??draft?.title??initialTitle??'');
+ const titleEdited=useRef(false);
  const [kind,setKind]=useState<CalendarBlockKind>(block?.kind??draft?.kind??'study');
  const [start,setStart]=useState(block?zonedInput(block.startsAt,zone):proposed);
  const [end,setEnd]=useState(block?zonedInput(block.endsAt,zone):draft?zonedInput(draft.endsAt,zone):endAfter(proposed,zone,initialMinutes));
@@ -134,6 +135,14 @@ export default function BlockSheet({block,date,zone:pageZone,initialStart,onClos
  const [checkpointId,setCheckpointId]=useState(block?.checkpointId??'');
  const [taskId,setTaskId]=useState(block?.taskId??(draft?draft.taskId:initialTaskId)??'');
  const [linksError,setLinksError]=useState('');
+ useEffect(()=>{
+  if(!v7||block||draft||!initialTaskId||initialTitle)return;
+  let active=true;
+  void getTaskApi().getTask(initialTaskId).then(task=>{
+   if(active&&task&&!titleEdited.current)setTitle(task.title);
+  }).catch(()=>{});
+  return()=>{active=false;};
+ },[v7,block,draft,initialTaskId,initialTitle]);
  useEffect(()=>{
   let active=true;
   void Promise.resolve().then(()=>getApi().listProjects()).then(rows=>{if(active)setProjects(rows.filter(p=>p.status!=='archived'))})
@@ -277,7 +286,7 @@ const day=start.slice(0,10);
    </>}>
    {otherZone&&<p className="v7-meta">Planned in {current!.timeZone.split('/').pop()?.replace(/_/g,' ')} time.</p>}
    <form id="n121-block-form" noValidate onSubmit={event=>{void save(event);}} className="v7-bs">
-    <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>setTitle(event.target.value)}/>
+    <Field label="Title" aria-label="Calendar block title" placeholder="e.g. Compactness problems" autoFocus maxLength={200} value={title} onChange={event=>{titleEdited.current=true;setTitle(event.target.value);}}/>
     <Segmented label="Calendar block type" options={['Study','Busy']} value={kind==='study'?'Study':'Busy'} onChange={value=>setKind(value==='Study'?'study':'busy')}/>
     {/^\d{4}-\d\d-\d\d$/.test(day)&&<DatePicker label="Date" value={day} onChange={value=>setPart('day',value)}/>}
     <RulerTime label="Start" value={start.slice(11,16)} onChange={value=>setPart('start',value)} disabled={saving}/>

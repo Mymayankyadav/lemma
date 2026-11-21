@@ -8,6 +8,8 @@ import {dayMinute,minuteClock} from '../../../src/ui/v7/RulerTime';
 import {changeChip} from '../../../src/features/insights/v7/progressModel';
 import {goalDates} from '../../../src/features/insights/v7/GoalEditor';
 import {v7ScreenFor,V7_DETAIL_SCREENS} from '../../../src/app/v7Kit';
+import {usedBridges} from '../../../src/features/adaptive/panels/AtlasLayers';
+import {bridgeStrength,type AtlasLink} from '../../../supabase/functions/_shared/adaptive/links';
 
 const now=Date.parse('2026-11-09T13:43:00Z');
 const facts={due:23,reviewMinutes:10,tutorHref:'/p/analysis/tutor',tutorTitle:'Compactness',active:false,now,
@@ -18,6 +20,16 @@ function agenda(outcome:AgendaRead['decision']['outcome'],label?:string):AgendaR
 }
 
 describe('November UI plan',()=>{
+  it('lists only approved bridges with a recorded use',()=>{
+    const link:AtlasLink={id:'bridge',from_id:'metric',to_id:'open',kind:'analogous',status:'approved'};
+    const empty={from:link.from_id,to:link.to_id,strength:bridgeStrength(0,0)};
+    const observed={...empty,strength:bridgeStrength(2,1)};
+    expect(usedBridges({links:[link],bridges:[empty]})).toEqual([]);
+    expect(usedBridges({links:[link],bridges:[{...empty,strength:bridgeStrength(1,0)}]})).toEqual([]);
+    expect(usedBridges({links:[{...link,status:'proposed'}],bridges:[observed]})).toEqual([]);
+    expect(usedBridges({links:[link],bridges:[observed]})).toEqual([observed]);
+  });
+
   it('turns each scheduler outcome into plain actions',()=>{
     expect(nextStep(agenda({kind:'action',taskId:'p/review',start:now/60000,end:now/60000+10},'Review'),facts))
       .toMatchObject({action:'Start review',title:'Review 23 cards',minutes:10});

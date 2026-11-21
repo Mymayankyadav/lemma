@@ -16,7 +16,7 @@ test("Focus and the review round render inside the v7 shell without the legacy c
  await page.goto(at("/review/run"));
  await expect(page.locator(".v7-review")).toBeVisible();
 });
-test("Calendar Day shows the week strip, the grid and opens quick-add from a tap on the grid",async({page})=>{
+test("Calendar Day shows the week strip, the grid and opens the block editor from a tap",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
  await expect(page.getByRole("heading",{name:"Calendar",exact:true})).toBeVisible();
  const strip=page.getByRole("navigation",{name:"Week"});
@@ -28,7 +28,7 @@ test("Calendar Day shows the week strip, the grid and opens quick-add from a tap
  // Night critique CD2: there is no "+ New block" in the top third; a tap on empty time (or Capture) makes a block.
  await expect(page.getByRole("button",{name:"New time block"})).toHaveCount(0);
  await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
- await expect(page.getByRole("dialog",{name:"New block"})).toBeVisible();
+ await expect(page.getByRole("dialog",{name:"New time block"})).toBeVisible();
 });
 test("Calendar Day moves by week with the strip chevrons and back to today",async({page})=>{
  await page.clock.setFixedTime(NOW);

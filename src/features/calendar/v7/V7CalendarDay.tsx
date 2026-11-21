@@ -10,7 +10,7 @@ import {getStudyApi} from '../../../data/study';
 import type {CalendarBlockPatch,CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {HubHeader} from '../../../app/v7/V7Shell';
 import {useMinWidth} from '../../../app/v7/useMinWidth';
-import {Button,DatePicker,Sheet} from '../../../ui/v7/components';
+import {Button,DatePicker,Segmented,Sheet} from '../../../ui/v7/components';
 import {SubjectGlyph,subjectClass} from '../../../ui/v7/Subject';
 import {StatusBadge} from '../../../ui/v7/Status';
 import {formatShortDate} from '../../../lib/format';
@@ -46,7 +46,7 @@ export default function V7CalendarDay(){
  const [params,setParams]=useSearchParams();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const firstDay=settings.data?.weekStart??1,clock24h=settings.data?.clock24h??true;
- const desktop=useMinWidth(1100);
+ const desktop=useMinWidth(1100),wideControls=useMinWidth(700);
  const raw=params.get('date'),today=dayKey(new Date(),zone),date=validDayKey(raw)?raw:today,view=parseView(params.get('view')??(desktop?'week':'day'));
  const [entries,setEntries]=useState<StudyEntryRecord[]>([]),[blocks,setBlocks]=useState<CalendarBlockRecord[]>([]);
  const [dues,setDues]=useState<CalendarDues>(emptyCalendarDues);
@@ -59,6 +59,7 @@ export default function V7CalendarDay(){
  const [addedSlots,setAddedSlots]=useState<Set<string>>(new Set());
  const opener=useRef<HTMLElement|null>(null),[overdueOpen,setOverdueOpen]=useState(false);
  const planOpen=params.get('plan')==='1';
+ const blockMinutes=lengthFromParam(params.get('len'))??DEFAULT_LENGTH;
  const weekStart=weekStartDay(date,firstDay),cells=useMemo(()=>weekCells(weekStart),[weekStart]);
  // A1: blocks added after this day and view loaded (an accepted suggestion, a quick add) rise in; a loaded day never animates.
  const enter=useEnterMarks(blocks.map(block=>block.id),phase==='ready',date+'|'+view);
@@ -92,6 +93,7 @@ export default function V7CalendarDay(){
  function go(key:'view'|'date',value:string){
   const next=new URLSearchParams(params);next.set('view',view);next.set('date',date);next.set(key,value);setParams(next);
  }
+ const chooseView=(value:string)=>go('view',value.toLowerCase());
  function openDay(day:string){
   const next=new URLSearchParams(params);next.set('view','day');next.set('date',day);next.delete('new');next.delete('edit');next.delete('start');setParams(next);
  }
@@ -175,7 +177,8 @@ export default function V7CalendarDay(){
 
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
   <HubHeader title="Calendar" titleControl={<DatePicker compact label="Calendar date" value={date} today={today} onChange={day=>go('date',day)}/>}
-   control={<ViewMenu value={viewLabel(view)} options={views} onChange={value=>go('view',value.toLowerCase())}/>}>
+   control={wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
+    :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}>
    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
@@ -218,7 +221,7 @@ export default function V7CalendarDay(){
      value={scrub?.date===date?scrub.minute:Math.max(0,Math.min(1435,Math.round((now-Date.parse(dayRange.start))/300000)*5))}
      onChange={minute=>setScrub({date,minute})} format={minute=>clock(new Date(Date.parse(dayRange.start)+minute*60000).toISOString())}/>
    </Sheet>
-   <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={[...suggested,...visibleSlots]} draft={params.get('new')==='block'?{start:quickStart(date,zone,params.get('start')),minutes:lengthFromParam(params.get('len'))??DEFAULT_LENGTH}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
+   <DayGrid scrubTo={scrub?.date===date?scrub.minute:null} enterOf={enter} suggested={[...suggested,...visibleSlots]} draft={params.get('new')==='block'?{start:quickStart(date,zone,params.get('start')),minutes:blockMinutes}:null} date={date} zone={zone} clock={clock} entries={entries} blocks={blocks} busy={saving} now={now} lookOf={lookOf}
     onCreate={startsAt=>sheetParams(startsAt)} onEdit={block=>sheetParams(undefined,block.id)} onOpenEntry={openEntry} onAdjust={(block,patch)=>{void adjust(block,patch);}}
     onDropDay={dropDay} onSwipe={direction=>go('date',shiftDay(date,direction))}/>
    {/* IL5 (P3): the empty state lies over the grid's visible hours (taps pass through to the grid), not below it. */}
@@ -230,7 +233,7 @@ export default function V7CalendarDay(){
    onClose={closeEntry} onChanged={()=>setReload(value=>value+1)} onEdit={entry=>{const next=new URLSearchParams(params);next.delete('logged');setParams(next,{replace:true});setEditingEntry(entry);}}/>}
   {editingEntry&&<EntrySheetV7 key={editingEntry.id+'-'+editingEntry.version} entry={editingEntry} busy={false} onClose={()=>{setEditingEntry(null);restoreFocus();}}
    onChange={async()=>{setEditingEntry(null);setReload(value=>value+1);notify('Session updated',{tone:'success'});}}/>}
-  <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
+  <BlockSheetActions v7 showLaunchers={false} blocks={blocks} date={date} zone={zone} ready={phase==='ready'} startingMinutes={blockMinutes} onRefresh={()=>setReload(value=>value+1)} onClosed={restoreFocus}/>
  </main>;
 }
 

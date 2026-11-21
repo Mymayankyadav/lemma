@@ -10,10 +10,9 @@ for(const width of [360,390])test('Atlas v3 facets, views and settings at '+widt
  });
  await page.setViewportSize({width,height:844});await page.goto(url('atlas?view=list'));
  const layers=page.getByRole('button',{name:'Layers',exact:true}),sheet=page.getByRole('dialog',{name:'Layers',exact:true});
- await layers.click();await sheet.getByRole('button',{name:'Themes',exact:true}).click();
+ await layers.click();await expect(sheet.getByRole('button',{name:'Bridges',exact:true})).toHaveCount(0);
+ await sheet.getByRole('button',{name:'Themes',exact:true}).click();
  await expect(page.getByRole('region',{name:'Themes',exact:true}).getByRole('button',{name:'Compactness',exact:true})).toBeVisible();
- await layers.click();await sheet.getByRole('button',{name:'Bridges',exact:true}).click();
- await expect(page.getByRole('region',{name:'Bridges',exact:true}).getByRole('button',{name:/opportunities/})).toBeVisible();
  await page.getByRole('radio',{name:'Map',exact:true}).click();
  await expect(page.getByRole('region',{name:'Atlas map',exact:true})).toBeVisible();
  await page.getByRole('radio',{name:'List',exact:true}).click();
@@ -72,14 +71,17 @@ test('Atlas v3 suggests study times on the Calendar and adds one only when chose
  await expect(add).toHaveCount(count);
 });
 
-test('an approved link becomes a bridge whose uses and opportunities open on tap',async({page})=>{
+test('an approved link stays out of the Bridges layer until it has been used',async({page})=>{
  await page.setViewportSize({width:390,height:844});await page.goto(url('proposals'));
  const proposals=page.getByRole('region',{name:'Suggested links'});
  await proposals.getByRole('button',{name:'Approve link',exact:true}).click();await expect(proposals).toHaveCount(0);
  await page.goto(url('atlas?view=list'));await page.getByRole('button',{name:'Layers',exact:true}).click();
- await page.getByRole('dialog',{name:'Layers',exact:true}).getByRole('button',{name:'Bridges',exact:true}).click();
- const bridge=page.locator('.v7-atlas-bridge').first();await expect(bridge).toBeVisible();await expect(bridge).toHaveAttribute('data-dashed','true');
- const detail=bridge.getByRole('button',{name:/0 opportunities/});await expect(detail).toBeVisible();
- await detail.click();await expect(bridge.getByText('No opportunities yet.',{exact:true})).toBeVisible();
- expect((await detail.boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
+ const layers=page.getByRole('dialog',{name:'Layers',exact:true});
+ await expect(layers.getByRole('button',{name:'Constellations',exact:true})).toBeVisible();
+ await expect(layers.getByRole('button',{name:'Bridges',exact:true})).toHaveCount(0);
+ await expect(page.locator('.v7-atlas-bridge')).toHaveCount(0);
+ await page.goto(url('atlas?view=bridges').replace('atlasV3#','atlasV3,uiRepairV1#'));
+ await expect(page.getByRole('region',{name:'Atlas map',exact:true})).toBeVisible();
+ await expect(page.getByRole('radio',{name:'Map',exact:true})).toBeChecked();
+ await expect(page.getByRole('region',{name:'Bridges',exact:true})).toHaveCount(0);
 });

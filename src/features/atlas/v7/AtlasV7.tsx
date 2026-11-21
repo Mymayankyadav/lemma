@@ -3,7 +3,7 @@ import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
-import {ChevronLeft,ChevronRight,Crosshair,Layers2,Minus,Plus,Search,X} from 'lucide-react';
+import {ChevronDown,ChevronLeft,ChevronRight,ChevronUp,Crosshair,Layers2,Minus,Plus,Search,X} from 'lucide-react';
 import {useAtlas,useHome} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {FastTex} from '../../../ui/FastTex';
@@ -24,7 +24,7 @@ import {isFlagOn} from '../../../flags';
 import {matchesFilter,type AtlasFilter} from './filters';
 import {rememberRoomItem} from '../../../ui/v7/room';
 import {ConceptFacets} from '../../adaptive/panels/ConceptFacets';
-import {AtlasLayerContent,AtlasLayers} from '../../adaptive/panels/AtlasLayers';
+import {AtlasLayerContent,AtlasLayers,usedBridges} from '../../adaptive/panels/AtlasLayers';
 import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
@@ -92,13 +92,17 @@ function ConceptSheet({model,index,expanded,onExpand,onClose,onPick,onPin,onEdit
  </div>;
  return <section ref={sheetRef} className="v7-atlas-sheet" data-expanded={expanded} aria-labelledby="v7-atlas-sheet-title"
   style={offset?{transform:`translateY(${offset}px)`}:undefined}>
-  <button type="button" className="v7-atlas-handle" aria-expanded={expanded} aria-controls="v7-atlas-sheet-more"
-   aria-label={expanded?'Show less':'Show neighbours and actions'} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp}
-   onPointerCancel={()=>{drag.current=null;setOffset(0);}}
-   onClick={()=>{if(dragged.current){dragged.current=false;return;}onExpand(!expanded);}}><span/></button>
   <div className="v7-atlas-sheet-head">
    <h2 id="v7-atlas-sheet-title" className="v7-atlas-sheet-title"><FastTex source={star.name}/></h2>
-   <IconButton label="Close details" onClick={onClose}><X aria-hidden="true"/></IconButton>
+   <div className="v7-atlas-sheet-controls">
+    <button type="button" className="v7-icon-button v7-atlas-handle" aria-expanded={expanded} aria-controls="v7-atlas-sheet-more"
+     aria-label={expanded?'Show less':'Show neighbours and actions'} onPointerDown={handleDown} onPointerMove={handleMove} onPointerUp={handleUp}
+     onPointerCancel={()=>{drag.current=null;setOffset(0);}}
+     onClick={()=>{if(dragged.current){dragged.current=false;return;}onExpand(!expanded);}}>
+     {expanded?<ChevronDown aria-hidden="true"/>:<ChevronUp aria-hidden="true"/>}
+    </button>
+    <IconButton label="Close details" onClick={onClose}><X aria-hidden="true"/></IconButton>
+   </div>
   </div>
   <div className="v7-atlas-sheet-meta"><StateChip state={star.state}/><SubjectTag model={model} index={index}/></div>
   <p className={expanded?"v7-atlas-counts":"v7-sr-only"} data-testid="atlas-counts">{starCounts(model,index)}</p>
@@ -133,12 +137,14 @@ export default function AtlasV7(){
  const [panning,setPanning]=useState(false);
  const query=useAtlas(),navigate=useNavigate(),location=useLocation(),[params,setParams]=useSearchParams();
  const repair=studyRepair,urlView=params.get('view');
- const atlasView=repair?(urlView==='themes'||urlView==='bridges'?urlView:'map'):legacyView;
+ const requestedLayer=repair?(urlView==='themes'||urlView==='bridges'?urlView:'map'):legacyView;
  const setAtlasView=(value:'map'|'themes'|'bridges')=>{
   if(!repair){setLegacyView(value);return;}
   const next=new URLSearchParams(params);next.set('view',value);setParams(next);
  };
  const atlasModel=useAtlasModel();
+ const atlasView=requestedLayer==='themes'&&atlasModel.data?.themes.length?'themes':
+  requestedLayer==='bridges'&&usedBridges(atlasModel.data).length?'bridges':'map';
  const reduced=useReducedMotion();
  const model=useMemo(()=>query.data?buildAtlasModel({...query.data,concepts:query.data.concepts.map(c=>({...c,kind:atlasModel.data?.model.index[c.id]?.kind??c.kind,facets:atlasModel.data?.facets[c.id],gap:atlasModel.data?{p:Math.max(.05,...(atlasModel.data.facets[c.id]??[]).map(f=>f.gap)),lastAt:(d=>d?.length?new Date(d[d.length-1].at).toISOString():null)(atlasModel.data.model.direct[c.id])}:undefined}))}):null,[query.data,atlasModel.data]);
  const focusCluster=useMemo(()=>{
@@ -206,7 +212,7 @@ export default function AtlasV7(){
   <button type="button" className="v7-atlas-search-pill" aria-label="Search concepts" aria-expanded={searching}
    aria-controls="v7-atlas-search" onClick={()=>setSearching(open=>!open)}><Search size={16} aria-hidden="true"/>Search</button>
   <Segmented label="Atlas view" options={['Map','List']} value={view==='list'?'List':'Map'}
-   onChange={value=>{if(!repair&&atlasView!=='map')setAtlasView('map');update({view:value==='List'?'list':'map'});}}/>
+   onChange={value=>{if(!repair&&requestedLayer!=='map')setAtlasView('map');update({view:value==='List'?'list':'map'});}}/>
   {(view==='list'||atlasView!=='map')&&<IconButton label="Layers" onClick={()=>setLayers(true)} aria-haspopup="dialog"><Layers2 aria-hidden="true"/></IconButton>}
  </header>;
  if(query.isPending)return <main id="main-content" className="v7-atlas" aria-label="Atlas" aria-busy="true">{header}
