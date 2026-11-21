@@ -2,7 +2,7 @@
 
 The validation-selected configuration is **tutor-wording**: the existing contextual reward ranker with tutor wording enabled and tutor term/symbol options disabled. The selection was frozen before the main held-out trajectory replay. In validation it scored 30.139 modeled WPM at 40 ms attention per new list; all-on scored 30.133, inside the preregistered 0.10-WPM tie band. The selector chose the smaller observed state. The difference is tiny and does not establish that disabling term or symbol support helps people.
 
-On the held-out tasks, tutor-wording and the earlier contextual scorer with tutor context disabled produced **identical recorded trajectories and modeled WPM**. This trial therefore did not demonstrate an incremental test benefit from tutor wording, despite the validation tie-break.
+The 24-candidate table ran every ranker on the same engine revision. Enabling tutor wording produced the same recorded test trajectories as disabling it in that engine. A separate replay of the actual previous app revision found a Balanced tie on these tasks and a drop on the longer proof passages. [Frozen-version comparison](VERSION-COMPARISON.md)
 
 On 144 synthetic held-out tasks from 12 new profiles, the selected configuration scored 29.97 modeled WPM versus 29.48 for matched manual spelling recovery. The paired user bootstrap difference was 0.49 WPM (95% interval 0.20 to 0.87). At 0/40/100 ms per new list, selected-model estimates were 31.05/29.97/28.48 WPM. These values are simulated sensitivity estimates, not observed human or device speed.
 

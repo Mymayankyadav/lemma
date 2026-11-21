@@ -1,40 +1,19 @@
 // Full chronological keystroke replay through the real tutor-context pool.
 // The scorer receives only current input, eligible proposals and tutor signals.
 import {readFile,writeFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {chromium} from 'playwright';
 import {createServer} from 'vite';
 
-const dir='docs/implementation/2026-11-21/writing-aid-tutor';
-const data=JSON.parse(await readFile(`${dir}/dataset.json`,'utf8'));
-const manifest=JSON.parse(await readFile(`${dir}/manifest.json`,'utf8'));
-const trained=JSON.parse(await readFile(`${dir}/models.json`,'utf8'));
-const phase='test';
-const safety=JSON.parse(await readFile(`${dir}/adversarial-safety.json`,'utf8'));
-const frozen=JSON.parse(await readFile(`${dir}/validation-pre-fix.json`,'utf8'));
-const sha=async p=>createHash('sha256').update(await readFile(p)).digest('hex');
-const evaluatorSha=await sha('scripts/tutor-writing-evaluate.mjs'),modelsSha=await sha(`${dir}/models.json`),
-  safetySha=await sha(`${dir}/adversarial-safety.json`);
-if(await sha(`${dir}/dataset.json`)!==trained.trainDatasetSha256)throw Error('Dataset changed since fitting');
-const enginePath='src/features/tutor/writingAid/engine.ts',oldEngine=trained.engineSources[enginePath],newEngine=await sha(enginePath);
-if(await sha(`${dir}/tested-engine-pre-fix.ts`)!==oldEngine)throw Error('Pre-fix engine snapshot mismatch');
-for(const [p,h] of Object.entries(trained.engineSources))if(p!==enginePath&&await sha(p)!==h)throw Error(`${p} changed since extraction`);
-if(frozen&&(frozen.datasetSha256!==trained.trainDatasetSha256||JSON.stringify(frozen.engineSources)!==JSON.stringify(trained.engineSources)||
-  frozen.manifestSha256!==await sha(`${dir}/manifest.json`)||frozen.evaluatorSha256!==evaluatorSha||
-  frozen.modelsSha256!==modelsSha||frozen.safetySha256!==safetySha))throw Error('Frozen validation does not match current inputs');
-const server=await createServer({server:{host:'127.0.0.1',port:0},logLevel:'error',clearScreen:false});await server.listen();
-const base=`http://127.0.0.1:${server.httpServer.address().port}${server.config.base}`;
-const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
-try {
- const page=await browser.newPage();await page.goto(base);
- const result=await page.evaluate(async({base,cases,manifest,trained,phase,frozen,safety})=>{
+export async function replayTutorStudy({base,scoringBase=base,cases,manifest,trained,phase,frozen,safety,audit,composerActions=false}) {
   const {predictWritingAidPool,selectWritingAidPool}=await import(new URL('src/features/tutor/writingAid/engine.ts',base).href);
   const {advanceWritingAidAnchor,applyWritingAidProposal,continueWritingAidAnchor,writingAidProposalKey}=
     await import(new URL('src/features/tutor/writingAid/policy.ts',base).href);
   const {createWritingAidModel,scoreWritingAidProposal,updateWritingAidModel,writingAidFeatures,recordWritingAidVocabulary}=
     await import(new URL('src/features/tutor/writingAid/learning.ts',base).href);
   const {padEdit}=await import(new URL('src/features/pad/padEdit.ts',base).href);
-  const {features,mathRisk}=await import(new URL('scripts/tutor-writing-kernel.mjs',base).href);
+  const {features,mathRisk}=await import(new URL('scripts/tutor-writing-kernel.mjs',scoringBase).href);
   const actualDateNow=Date.now,DAY=86400000,baseTime=1710000000000;
   let virtualNow=baseTime;Date.now=()=>virtualNow;
   const draw=(...parts)=>{let h=2166136261;for(const c of parts.join('/'))h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0)/2**32;};
@@ -122,43 +101,53 @@ try {
     const surfaces=initialCounters(),editExclusions=new Map();let exposures=[];virtualNow=baseTime+row.time*DAY;
     const flush=()=>{const due=state.pending.filter(x=>x.at<=virtualNow);state.pending=state.pending.filter(x=>x.at>virtualNow);
       for(const item of due)update(state,item.signal,item.p,item.request,item.index,item.at);};
+    // The historical protocol predicted only after a manual keystroke.
+    // The composer also predicts after a word tap and owns its supplied space.
+    let checkAfterTap=false,replaceSuppliedSpace=false,consecutiveAccepts=0,punctuationAccepts=0;
     while(pos<sequence.length){
-     flush();const ch=sequence[pos++],next=padEdit(cursor.text+ch);
-     anchor=advanceWritingAidAnchor(cursor,next,anchor);cursor=next;manualCount++;manual+=ch;chunks[chunks.length-1]+=ch;virtualNow+=400;
-     if(ch==='ε'&&directRepair)taps++;
-     if(name!=='off'&&anchor&&!anchor.continuation){
-      const remaining=[];
-      for(const entry of exposures){
-       const p=entry.p;if(p.start<anchor.start||p.start>cursor.text.length)continue;
-       const tail=cursor.text.slice(p.start);let signal=null;
-       if(p.kind==='ghost'){
-        const actual=tail.toLocaleLowerCase(),expected=p.insert.toLocaleLowerCase();
-        const matches=actual.startsWith(expected),diverges=actual.length>=Math.min(5,expected.length)&&!expected.startsWith(actual)&&!matches;
-        if(matches||diverges)signal=matches?'continued-match':'divergent';
-       }else{
-        const completed=tail.match(/^([\p{L}\p{M}]+)(?=[^\p{L}\p{M}])/u);
-        if(completed)signal=completed[1].toLocaleLowerCase()===p.label.toLocaleLowerCase()?'continued-match':'divergent';
+     flush();
+     const followingTap=checkAfterTap;
+     checkAfterTap=false;
+     if(!followingTap){
+      const ch=sequence[pos++];
+      const next=padEdit((replaceSuppliedSpace?cursor.text.slice(0,-1):cursor.text)+ch);
+      replaceSuppliedSpace=false;
+      anchor=advanceWritingAidAnchor(cursor,next,anchor);cursor=next;manualCount++;manual+=ch;chunks[chunks.length-1]+=ch;virtualNow+=400;
+      if(ch==='ε'&&directRepair)taps++;
+      if(name!=='off'&&anchor&&!anchor.continuation){
+       const remaining=[];
+       for(const entry of exposures){
+        const p=entry.p;if(p.start<anchor.start||p.start>cursor.text.length)continue;
+        const tail=cursor.text.slice(p.start);let signal=null;
+        if(p.kind==='ghost'){
+         const actual=tail.toLocaleLowerCase(),expected=p.insert.toLocaleLowerCase();
+         const matches=actual.startsWith(expected),diverges=actual.length>=Math.min(5,expected.length)&&!expected.startsWith(actual)&&!matches;
+         if(matches||diverges)signal=matches?'continued-match':'divergent';
+        }else{
+         const completed=tail.match(/^([\p{L}\p{M}]+)(?=[^\p{L}\p{M}])/u);
+         if(completed)signal=completed[1].toLocaleLowerCase()===p.label.toLocaleLowerCase()?'continued-match':'divergent';
+        }
+        if(!signal)remaining.push(entry);else if(virtualNow-entry.seenAt>=300)update(state,signal,p,entry.request,entry.index,virtualNow);
        }
-       if(!signal)remaining.push(entry);else if(virtualNow-entry.seenAt>=300)update(state,signal,p,entry.request,entry.index,virtualNow);
+       exposures=remaining;
       }
-      exposures=remaining;
-     }
-     if(!/[\p{L}\p{M}]/u.test(ch)){
-      const typed=(chunks.at(-1).match(/[\p{L}\p{M}]+(?=[^\p{L}\p{M}]*$)/u)||[])[0];
-      if(typed&&typed.length>=4&&name!=='off'){
-       recordWritingAidVocabulary(state.model,typed,virtualNow);
-       updateWritingAidModel(state.model,'personal-use',{kind:'word',candidate:typed,previous:'',prefix:typed,mode},virtualNow);
+      if(!/[\p{L}\p{M}]/u.test(ch)){
+       const typed=(chunks.at(-1).match(/[\p{L}\p{M}]+(?=[^\p{L}\p{M}]*$)/u)||[])[0];
+       if(typed&&typed.length>=4&&name!=='off'){
+        recordWritingAidVocabulary(state.model,typed,virtualNow);
+        updateWritingAidModel(state.model,'personal-use',{kind:'word',candidate:typed,previous:'',prefix:typed,mode},virtualNow);
+       }
       }
-     }
-     if(name==='off'){
-      if(row.repair&&!directRepair&&pos===repairEnd&&cursor.text.endsWith(row.repair.source)){
-       cursor=padEdit(cursor.text.slice(0,-row.repair.source.length)+row.repair.target);anchor=null;
-       backspaces+=row.repair.source.length;manualCount+=row.repair.target.length;
-       const symbolTap=row.notationGoal?1:0;taps+=symbolTap;
-       const recovery=.4*(row.repair.source.length+row.repair.target.length)+.3*symbolTap;
-       virtualNow+=recovery*1000;recoverySeconds+=recovery;chunks.push(row.repair.target);manualRepair++;
+      if(name==='off'){
+       if(row.repair&&!directRepair&&pos===repairEnd&&cursor.text.endsWith(row.repair.source)){
+        cursor=padEdit(cursor.text.slice(0,-row.repair.source.length)+row.repair.target);anchor=null;
+        backspaces+=row.repair.source.length;manualCount+=row.repair.target.length;
+        const symbolTap=row.notationGoal?1:0;taps+=symbolTap;
+        const recovery=.4*(row.repair.source.length+row.repair.target.length)+.3*symbolTap;
+        virtualNow+=recovery*1000;recoverySeconds+=recovery;chunks.push(row.repair.target);manualRepair++;
+       }
+       continue;
       }
-      continue;
      }
      const request={cursor,anchor,mode,composing:false,readOnly:false,
       target:{scopeKey:row.id,mountId:'replay',editorRevision:pos,selectionRevision:pos,modeRevision:0},tutorContext:context};
@@ -178,12 +167,24 @@ try {
      if(newList){glances++;changedLists++;}
      for(const p of visible){surfaces[p.kind].exposed++;seenCandidates++;if(unsafe(p,row,request)){unsafeExposed++;
       if(unsafeExamples.length<20)unsafeExamples.push({case:row.id,kind:p.kind,label:p.label,before:p.before,evidence:p.tutorEvidence});}}
-     const consider=p=>{const after=applyWritingAidProposal(request,p);if(!after||after.text===cursor.text||!row.intent.startsWith(after.text))return null;
-       if(after.text.startsWith(cursor.text)){
-        const suffix=after.text.slice(cursor.text.length);if(!sequence.slice(pos).startsWith(suffix))return null;
-        return {p,after,skip:suffix.length};
+     const consider=p=>{
+      if(replaceSuppliedSpace)return null;
+      const after=applyWritingAidProposal(request,p);
+      if(!after||after.text===cursor.text)return null;
+      if(after.text.startsWith(cursor.text)){
+       let end=after.text, punctuationNext=false;
+       if(composerActions&&p.kind==='word'&&end.endsWith(' ')&&!row.intent.startsWith(end)){
+        const wordEnd=end.slice(0,-1);
+        const nextChar=sequence[pos+wordEnd.length-cursor.text.length];
+        if(wordEnd.length<=cursor.text.length||nextChar!==row.intent[wordEnd.length]||!['.',',',';',':','!','?'].includes(nextChar))return null;
+        end=wordEnd;punctuationNext=true;
        }
-       return ['replace','correction'].includes(p.kind)?{p,after,skip:0}:null;};
+       const suffix=end.slice(cursor.text.length);
+       if(!row.intent.startsWith(end)||!sequence.startsWith(suffix,pos))return null;
+       return {p,after,skip:suffix.length,punctuationNext};
+      }
+      return row.intent.startsWith(after.text)&&['replace','correction'].includes(p.kind)?{p,after,skip:0}:null;
+     };
      if([...pool.words,...pool.ghost,...pool.edit].some(consider))poolOracle++;
      let possible=visible.map(consider).filter(Boolean);if(possible.length)visibleOracle++;
      let acceptedThisEvent=false,refreshedThisEvent=false;
@@ -223,6 +224,11 @@ try {
       }else{
        cursor=choice.after;pos+=choice.skip;autotyped+=choice.skip;
        anchor=p.kind==='word'?continueWritingAidAnchor(oldAnchor,p,cursor):null;
+       if(composerActions&&p.kind==='word'){
+        if(followingTap)consecutiveAccepts++;
+        if(choice.punctuationNext){replaceSuppliedSpace=true;punctuationAccepts++;}
+        checkAfterTap=Boolean(anchor?.continuation);
+       }
        chunks.push('');state.pending.push({at:virtualNow+3000,signal:'kept',p,request,index:0});
       }
      }
@@ -244,7 +250,7 @@ try {
     records.push({id:row.id,user:row.user,step:row.step,kind:row.kind,truth:row.truth,regime:row.step===0?'cold':row.step<6?'regular':'shifted',
       targetChars:row.intent.length,manualChars:manualCount,manualUnits:units(chunks),backspaces,taps,glances,ignoredLists,changedLists,refreshes,
       correct,badAccepts,retained,unsafeExposed,logicAccepted,literalCorrections,manualRepair,autotyped,visibleOracle,poolOracle,seenCandidates,
-      surfaces,bytes,recoverySeconds,extraRecoverySeconds});
+      surfaces,bytes,recoverySeconds,extraRecoverySeconds,...(audit?{consecutiveAccepts,punctuationAccepts}:{})});
    }
    latencies.sort((a,b)=>a-b);return {records,unsafeExamples,latency:{n:latencies.length,
     median:latencies.length?latencies[Math.floor(latencies.length*.5)]:null,p95:latencies.length?latencies[Math.floor(latencies.length*.95)]:null}};
@@ -269,6 +275,14 @@ try {
     unsafeExamples:run.unsafeExamples,records:run.records};
   }
   try{
+   if(audit){
+    const results={};
+    for(const {candidate,mode} of audit){
+     const {byRegime,surfaces,records}=aggregate(runModel(candidate,cases,mode));
+     results[mode]={byRegime,surfaces,records};
+    }
+    return results;
+   }
    if(phase==='validation'){
     const validation={};for(const entry of manifest.candidates)validation[entry.id]=aggregate(runModel(entry.id,cases));
     const safetyFailure=safety.summary.validation.actualTutorLeaks>0||safety.summary.validation.overBudget>0;
@@ -285,16 +299,42 @@ try {
    const modeSafety={};for(const mode of ['strict','fast'])modeSafety[mode]=aggregate(runModel(winner,cases,mode));
    return {winner,selection:frozen.selection,test,modeSafety};
   }finally{Date.now=actualDateNow;}
- },{base,cases:data.cases.filter(x=>x.split===phase),manifest,trained,phase,frozen,safety});
- result.scope='Post-fix regression on previously exposed test trajectories; not a fresh independent held-out trial. Winner remains frozen from pre-fix validation.';
- for(const [p,h] of Object.entries(trained.engineSources))if(p!==enginePath&&await sha(p)!==h)throw Error(`${p} changed during evaluation`);
- if(await sha(enginePath)!==newEngine)throw Error('Engine changed during regression');
- if(await sha('scripts/tutor-writing-evaluate.mjs')!==evaluatorSha||await sha(`${dir}/models.json`)!==modelsSha)throw Error('Evaluator or model changed during evaluation');
- result.datasetSha256=trained.trainDatasetSha256;result.engineSources=trained.engineSources;
- result.preFixEngineSha256=oldEngine;result.postFixEngineSha256=newEngine;
- result.manifestSha256=await sha(`${dir}/manifest.json`);result.evaluatorSha256=evaluatorSha;result.modelsSha256=modelsSha;result.safetySha256=safetySha;
- const output='regression.json';
- await writeFile(`${dir}/${output}`,JSON.stringify(result)+'\n');
- console.log(JSON.stringify({phase,winner:result.winner,validationEligible:result.selection.eligible,
-  metrics:phase==='validation'?result.validation[result.winner].byRegime.all:result.test[result.winner].byRegime.all}));
-}finally{await browser.close();await server.close();}
+}
+
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href){
+ const dir='docs/implementation/2026-11-21/writing-aid-tutor';
+ const data=JSON.parse(await readFile(`${dir}/dataset.json`,'utf8'));
+ const manifest=JSON.parse(await readFile(`${dir}/manifest.json`,'utf8'));
+ const trained=JSON.parse(await readFile(`${dir}/models.json`,'utf8'));
+ const phase='test';
+ const safety=JSON.parse(await readFile(`${dir}/adversarial-safety.json`,'utf8'));
+ const frozen=JSON.parse(await readFile(`${dir}/validation-pre-fix.json`,'utf8'));
+ const sha=async p=>createHash('sha256').update(await readFile(p)).digest('hex');
+ const evaluatorSha=await sha('scripts/tutor-writing-evaluate.mjs'),modelsSha=await sha(`${dir}/models.json`),
+   safetySha=await sha(`${dir}/adversarial-safety.json`);
+ if(await sha(`${dir}/dataset.json`)!==trained.trainDatasetSha256)throw Error('Dataset changed since fitting');
+ const enginePath='src/features/tutor/writingAid/engine.ts',oldEngine=trained.engineSources[enginePath],newEngine=await sha(enginePath);
+ if(await sha(`${dir}/tested-engine-pre-fix.ts`)!==oldEngine)throw Error('Pre-fix engine snapshot mismatch');
+ for(const [p,h] of Object.entries(trained.engineSources))if(p!==enginePath&&await sha(p)!==h)throw Error(`${p} changed since extraction`);
+ if(frozen&&(frozen.datasetSha256!==trained.trainDatasetSha256||JSON.stringify(frozen.engineSources)!==JSON.stringify(trained.engineSources)||
+   frozen.manifestSha256!==await sha(`${dir}/manifest.json`)||frozen.evaluatorSha256!==evaluatorSha||
+   frozen.modelsSha256!==modelsSha||frozen.safetySha256!==safetySha))throw Error('Frozen validation does not match current inputs');
+ const server=await createServer({server:{host:'127.0.0.1',port:0},logLevel:'error',clearScreen:false});await server.listen();
+ const base=`http://127.0.0.1:${server.httpServer.address().port}${server.config.base}`;
+ const browser=await chromium.launch({headless:true,executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+ try {
+  const page=await browser.newPage();await page.goto(base);
+  const result=await page.evaluate(replayTutorStudy,{base,cases:data.cases.filter(x=>x.split===phase),manifest,trained,phase,frozen,safety});
+  result.scope='Post-fix regression on previously exposed test trajectories; not a fresh independent held-out trial. Winner remains frozen from pre-fix validation.';
+  for(const [p,h] of Object.entries(trained.engineSources))if(p!==enginePath&&await sha(p)!==h)throw Error(`${p} changed during evaluation`);
+  if(await sha(enginePath)!==newEngine)throw Error('Engine changed during regression');
+  if(await sha('scripts/tutor-writing-evaluate.mjs')!==evaluatorSha||await sha(`${dir}/models.json`)!==modelsSha)throw Error('Evaluator or model changed during evaluation');
+  result.datasetSha256=trained.trainDatasetSha256;result.engineSources=trained.engineSources;
+  result.preFixEngineSha256=oldEngine;result.postFixEngineSha256=newEngine;
+  result.manifestSha256=await sha(`${dir}/manifest.json`);result.evaluatorSha256=evaluatorSha;result.modelsSha256=modelsSha;result.safetySha256=safetySha;
+  const output=process.argv[2]??`${dir}/regression.json`;
+  await writeFile(output,JSON.stringify(result)+'\n');
+  console.log(JSON.stringify({phase,winner:result.winner,validationEligible:result.selection.eligible,
+   metrics:phase==='validation'?result.validation[result.winner].byRegime.all:result.test[result.winner].byRegime.all}));
+ }finally{await browser.close();await server.close();}
+}
