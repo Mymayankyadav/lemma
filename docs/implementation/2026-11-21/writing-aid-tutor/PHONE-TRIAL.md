@@ -1,5 +1,7 @@
 # Android keyboard follow-up
 
+The Android trial update is build **200001**. Its package ID and signing certificate match build 200000, so Android can update the existing demo in place. [Download the APK](../../../../artifacts/writing-aid-pr1738/lemma-tutor-writing-aid-test.apk?raw=true) · [Keyboard preview](../../../../artifacts/writing-aid-pr1738/lemma-tutor-writing-aid-test-word.png) · [Checksum and build record](../../../../artifacts/writing-aid-pr1738/lemma-tutor-writing-aid-test.apk.build.json)
+
 The trial keyboard displayed three empty slots after the learner typed `In the sample for testing jok`. The dictionary contained **joke**, but the former Balanced ranker required four typed letters for ordinary, low-frequency words. After unrelated word boundaries its fallback repeatedly offered **the**, **a** and **an**.
 
 Balanced and Faster now offer the final letter of a short ordinary word from three directly typed letters when the prefix is incomplete and the surrounding text is eligible. The keyboard also uses the app's existing math vocabulary for strongly typed endings. For example, `homeomorphis` can finish **homeomorphism**. Earlier direct use of a math name can support reusing its spelling in the current draft. Logical connectors, protected properties, variables, literal text, and pasted or accepted text keep their existing restrictions.
@@ -19,3 +21,7 @@ Both revisions used the same 30 WPM baseline, simulated users, tap decisions and
 In the 144-task simulation the new keyboard showed 1,381 lists versus 1,686 before. It took 316 taps versus 357 and required 38 more directly typed characters. All 144 final drafts matched the learner's intended text and the audit flagged zero premature proof suggestions in Balanced. Actual typing speed on the owner's phone is still unmeasured. The short-set simulator uses the two immediate word actions described in the [frozen-version comparison](VERSION-COMPARISON.md).
 
 Run `node scripts/writing-aid-phone-replay.mjs` with Chromium and the repository's Node dependencies installed. The script extracts the previous source from Git, replays both engines, and writes the JSON alongside this report. [Replay script](../../../../scripts/writing-aid-phone-replay.mjs)
+
+## Package verification
+
+The APK was built from `f94abbd7800b11122062d2bd1054c69cf51a0ccf`. Android unit tests, lint, signature verification and 16 KB alignment checks passed. Mobile Chromium loaded the assets extracted from the signed APK with external requests blocked. Typing `In the sample for testing jok` displayed **joke** in the middle slot. Tapping inserted **joke** and a space. Undo restored **jok**. The browser suite also exercised the longer reported passage using Lemma's on-screen letter keys. Installing and timing this version on a physical phone remain part of the owner trial.
