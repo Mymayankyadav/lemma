@@ -6,6 +6,16 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N219 CPU-only n-gram and spatial decoder
+
+Owner task: "Start working on this plan. You can open your pr on lemma but you have work within it don't merge the pr. Tell me what you need from me."
+Stage: Build · Status: open · Needs: — · Assigned: chat-628431#n8gm
+Done = Implement the attached staged plan with a default-off, verified worker path; complete each replay gate before enabling the next stage. The first milestone replaces prefix candidate lookup with a reproducible frequency lexicon and preserves the existing writing-aid policy, acceptance and Undo. Keep the PR draft and do not signal Ready or merge while the Owner's hold applies.
+Tests: deterministic assets, ranked prefix retrieval, learner-choice guards, stale replies, asset/worker failure fallback, flag-off parity, explicit acceptance and Undo; replay results distinguish implementation fixtures from qualified human/device performance.
+Scope: src/features/tutor/writingAid/**; src/flags.ts; public/models/writing-decoder/**; scripts/writing-decoder/**; tests/unit/tutor/**; tests/e2e/tutor-writing-decoder.spec.ts; docs/implementation/2026-11-22/ngram-spatial-decoder/**; docs/current/N219.md.
+Not: Production release or merge; GPU training; new runtime dependencies; uncalibrated autocorrection; importing the unfinished tutor trial; private-data collection without its required controls.
+Plan: [supplied section 16](docs/implementation/2026-11-22/ngram-spatial-decoder/PLAN.md).
+
 ## N201 Open the checkpoint tutor chat from the study path
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
