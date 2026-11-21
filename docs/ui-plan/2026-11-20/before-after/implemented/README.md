@@ -15,6 +15,8 @@ The comparisons use a 390 × 844 phone viewport in the Night theme and an accoun
 
 Additional frames show [Capture](capture-sheet.jpg), the [card editor](card-editor.jpg) and the [offline banner](offline.jpg). The [measurement export](measurements.json) also contains scenes without a comparison image. The runner uses the same browser checks as the design lint. Word counts depend on font loading, clipping and scene data. The source audit used an earlier version of the helper.
 
+The N211 regression captures are grouped under [records](regressions-records.jpg), [interactions](regressions-interactions.jpg) and [layout](regressions-layout.jpg).
+
 | Measure | Captured | Plan target |
 |---|---:|---:|
 | Atlas map clear area | 92.6% | ≥ 92% |

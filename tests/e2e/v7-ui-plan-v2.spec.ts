@@ -1,7 +1,13 @@
 import {test,expect} from '@playwright/test';
 import {NOW,at} from './v7-scenes';
+import {liveTutorFixtureResponse,prepareLiveTutor} from './helpers/live-tutor';
+import type {TutorThreadView} from '../../src/data/tutor/manual-api';
+import type {TutorAttachment} from '../../src/data/tutor/attachment-types';
+import {measureV7Design} from './helpers/v7-design';
 
 const pageAt=(route:string,flags='')=>at(route).replace(/(?=#)/,flags?','+flags:'');
+const photoFixture={name:'answer.png',mimeType:'image/png',
+  buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==','base64')};
 test.use({locale:'en-IN',timezoneId:'Asia/Kolkata',viewport:{width:390,height:844}});
 
 test('Today exposes the plan, time ruler and the first-run steps',async({page})=>{
@@ -24,7 +30,10 @@ test('Today exposes the plan, time ruler and the first-run steps',async({page})=
 
 test('the Atlas keeps filters in Layers and opens list concepts',async({page})=>{
   await page.goto(pageAt('/atlas'));
-  await expect(page.locator('.v7-atlas-sky')).toBeVisible();
+  await expect(page.locator('.v7-atlas-sky[data-drawn-extent]')).toBeVisible();
+  const area=(await page.evaluate(measureV7Design)).picture;
+  expect(area?.clear).toBeGreaterThanOrEqual(.92);
+  expect(area?.extent).toBeGreaterThanOrEqual(.60);
   const layers=page.getByRole('button',{name:'Layers',exact:true});
   await layers.click();
   const sheet=page.getByRole('dialog',{name:'Layers'});
@@ -57,16 +66,65 @@ test('Tutor opens in reading mode and sends an image-only answer',async({page})=
   await page.mouse.up();
   await expect(page.getByText('Drawing',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Photo',exact:true}).click();
-  await page.getByLabel('Choose photo file',{exact:true}).setInputFiles({
-    name:'answer.png',mimeType:'image/png',
-    buffer:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg==','base64'),
-  });
+  await page.getByLabel('Choose photo file',{exact:true}).setInputFiles(photoFixture);
   await expect(page.getByRole('button',{name:'Remove photo 1'})).toBeVisible();
   await page.getByRole('button',{name:'Remove photo 1'}).click();
   await expect(page.getByRole('button',{name:'Remove photo 1'})).toHaveCount(0);
   await page.getByRole('button',{name:'Send',exact:true}).click();
   await chat.getByRole('button',{name:'View drawing'}).click();
-  await expect(page.getByRole('dialog',{name:'Drawing'}).getByRole('img')).toBeVisible();
+  const viewer=page.getByRole('dialog',{name:'Drawing'});
+  await expect(viewer.getByRole('img')).toBeVisible();
+  await viewer.getByRole('button',{name:'Zoom in',exact:true}).click();
+  await expect.poll(()=>viewer.getByRole('img').evaluate(image=>
+    image.getBoundingClientRect().width-(image.parentElement?.clientWidth??0))).toBeGreaterThan(0);
+});
+
+test('Tutor reloads an offline image queue and attaches it once after reconnecting',async({page})=>{
+  const {owner,cpId,threadId,payload}=await prepareLiveTutor(page);
+  let disconnected=false, submissions=0;
+  const uploads:string[]=[];
+  let thread:TutorThreadView={head:{threadId:null,pendingTurnId:null,lastSequence:0},turns:[],recoveredDrafts:[],canSubmit:true,canConnect:false};
+  await page.route('**/storage/v1/object/tutor-ink/**',route=>{
+    if(route.request().method()==='POST'){
+      uploads.push(new URL(route.request().url()).pathname.split('/tutor-ink/')[1]);
+      return route.fulfill({json:{Key:'tutor-ink/'+uploads.at(-1)}});
+    }
+    return route.fulfill({body:photoFixture.buffer,contentType:'image/png'});
+  });
+  await page.route('**/rest/v1/**',route=>{
+    const request=route.request(),resource=new URL(request.url()).pathname.split('/rest/v1/')[1];
+    if(resource==='rpc/tutor_thread_state')return disconnected
+      ?route.fulfill({status:503,json:{message:'Offline fixture'}}):route.fulfill({json:thread});
+    if(resource==='rpc/tutor_owner_ink_command'){
+      const data=request.postDataJSON(),images=data.p_attachments as TutorAttachment[];
+      expect([data.p_owner,data.p_checkpoint]).toEqual([owner,cpId]);
+      expect(uploads).toEqual([owner+'/'+images[0].id]);
+      expect(images).toMatchObject([{mimeType:'image/jpeg',kind:'photo'}]);
+      submissions++;
+      const {operationId,question}=data.p_command;
+      thread={...thread,head:{threadId,pendingTurnId:operationId,lastSequence:1},
+        turns:[{id:operationId,threadId,sequence:1,status:'awaiting-tutor',version:1,snapshot:{question,selectedContext:[],attachments:images}}]};
+      return route.fulfill({json:{status:'submitted',operationId,turnId:operationId}});
+    }
+    return route.fulfill({json:liveTutorFixtureResponse(payload,resource,request.headers().accept)});
+  });
+  await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads,tutorScratch#/p/logic/cp/CP1/tutor');
+  await page.getByRole('button',{name:'Write a question'}).click();
+  await page.getByRole('button',{name:'Photo',exact:true}).click();
+  await page.getByLabel('Choose photo file',{exact:true}).setInputFiles(photoFixture);
+  await expect(page.getByRole('button',{name:'Remove photo 1'})).toBeVisible();
+  disconnected=true;
+  await page.evaluate(()=>dispatchEvent(new Event('offline')));
+  await page.getByRole('button',{name:'Queue answer'}).click();
+  await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
+  await page.reload();
+  await expect(page.getByText('Answer queued',{exact:false})).toBeVisible();
+  expect(submissions).toBe(0);
+  disconnected=false;
+  await page.evaluate(()=>dispatchEvent(new Event('online')));
+  await expect.poll(()=>submissions).toBe(1);
+  await expect(page.getByRole('log').getByRole('button',{name:'View photo'})).toBeVisible();
+  await expect(page.getByText('Answer queued',{exact:false})).toHaveCount(0);
 });
 
 test('calendar creation and direct results use the v7 shell',async({page})=>{

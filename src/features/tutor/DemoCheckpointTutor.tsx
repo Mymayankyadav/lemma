@@ -1,7 +1,7 @@
 import {Disclosure} from '../../ui/v7/Disclosure';
 import {TutorImage,useTutorInk} from './TutorInk';
 import {rasterizeInk} from '../../ui/v7/ink/images';
-import {emptyInk,uploadTutorImage} from '../../data/tutor/ink-storage';
+import {removeSubmittedInk,uploadTutorImage} from '../../data/tutor/ink-storage';
 import {IMAGE_ONLY_ANSWER,type TutorImageDraft} from '../../data/tutor/attachment-types';
 import {useCallback,useEffect,useId,useRef,useState,useSyncExternalStore} from 'react'
 import {Link} from 'react-router'
@@ -180,15 +180,20 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
   const pendingId=session?.thread.head.pendingTurnId
   useEffect(()=>{setGrant(undefined)},[pendingId])
   useEffect(()=>{
+    if(!scratchEnabled||!session)return;
+    const submitted=new Set(session.thread.turns.flatMap(turn=>turn.snapshot.attachments?.map(image=>image.id)??[]));
+    if(submitted.size)void ink.update(current=>removeSubmittedInk(current,submitted)).catch(()=>{});
+  },[scratchEnabled,session,ink.draft]);
+  useEffect(()=>{
     if(!live||!activeApi)return
     let active=true,refreshing=false
     const update=()=>{if(!refreshing&&document.visibilityState!=='hidden'){refreshing=true;void refresh(activeApi,true).catch(()=>{
       if(active)setError('Could not refresh. Showing the last confirmed conversation.')
     }).finally(()=>{refreshing=false})}}
-    window.addEventListener('focus',update);window.addEventListener('online',update)
+    window.addEventListener('focus',update);window.addEventListener('online',update);window.addEventListener('offline',update)
     document.addEventListener('visibilitychange',update)
     const timer=window.setInterval(update,pendingId?3000:10000)
-    return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);document.removeEventListener('visibilitychange',update)}
+    return ()=>{active=false;window.clearInterval(timer);window.removeEventListener('focus',update);window.removeEventListener('online',update);window.removeEventListener('offline',update);document.removeEventListener('visibilitychange',update)}
   },[live,activeApi,pendingId,refresh])
   async function saveQuestion(text=question.text,options:SendOptions={}) {
     const inkDraft=ink.draft;
@@ -228,7 +233,7 @@ function TutorBody({initialQuestion,page,connectorUrl,connectorLoading,scope,liv
         : await session.api.submit(id,draft,sequence)
       if(result.kind==='submitted' && !options.keepDraft) {
         question.clearIfUnchanged(text);attachedLocal.clearIfUnchanged(attachedLocal.text);sourceDraft.clearIfUnchanged(sourceDraft.text)
-        if(hasImages)await ink.update(emptyInk).catch(()=>{})
+        if(hasImages)await ink.update(current=>removeSubmittedInk(current,new Set(attachments.map(image=>image.id)))).catch(()=>{})
       }
       await refresh(session.api).catch(()=>setError('Question confirmed. Reconnect to refresh the conversation.'))
       if(result.kind!=='submitted')setError('The question was not saved. Your draft was kept.')

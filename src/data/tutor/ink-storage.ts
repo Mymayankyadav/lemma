@@ -5,6 +5,13 @@ import {getMode} from '../mode';
 export type InkDraft={drawingId?:string;strokes:PadStrokes;photos:TutorImageDraft[];width:number;accent:boolean;queuedText?:string};
 export const emptyInk:InkDraft={strokes:[],photos:[],width:3,accent:false};
 
+export function removeSubmittedInk(draft:InkDraft,submitted:ReadonlySet<string>):InkDraft {
+  const drawing=!!draft.drawingId&&submitted.has(draft.drawingId);
+  const photos=draft.photos.filter(photo=>!submitted.has(photo.id));
+  if(!drawing&&photos.length===draft.photos.length)return draft;
+  return {...draft,photos,queuedText:undefined,...(drawing&&{strokes:[],drawingId:undefined})};
+}
+
 async function persist<T>(mode:IDBTransactionMode,operation:(store:IDBObjectStore)=>IDBRequest<T>):Promise<T> {
   const db=await new Promise<IDBDatabase>((resolve,reject)=>{
     const request=indexedDB.open('lemma-tutor-ink',1);

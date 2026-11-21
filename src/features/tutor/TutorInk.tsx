@@ -1,5 +1,5 @@
 import {useEffect,useRef,useState} from 'react';
-import {Camera,Expand,Hand,ImagePlus,Pencil,Undo2,Eraser,X} from 'lucide-react';
+import {Camera,Expand,Hand,ImagePlus,Minus,Pencil,Plus,Undo2,Eraser,X} from 'lucide-react';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {InkCanvas} from '../../ui/v7/ink/InkCanvas';
 import {initializePadInk,undoPadInk,type PadInkHistory} from '../../ui/v7/ink/ink';
@@ -21,6 +21,7 @@ export function useTutorInk(key:string,enabled:boolean) {
   },[key,enabled]);
   function update(change:InkDraft|((draft:InkDraft)=>InkDraft)) {
     const next=typeof change==='function'?change(latest.current):change;
+    if(next===latest.current)return pending.current;
     latest.current=next;
     setDraft(next);
     pending.current=pending.current.catch(()=>{}).then(()=>writeInkDraft(key,next));
@@ -119,6 +120,7 @@ export function TutorInkTray({ink,shown,photoOpen,onClosePhoto,onKeys}: {
 
 export function TutorImage({owner,attachment}: {owner:string;attachment:TutorAttachment}) {
   const [src,setSrc]=useState(''),[open,setOpen]=useState(false),[error,setError]=useState(false);
+  const [zoom,setZoom]=useState(1);
   useEffect(()=>{
     let active=true,url='';
     void readTutorImage(owner,attachment).then(value=>{
@@ -133,8 +135,11 @@ export function TutorImage({owner,attachment}: {owner:string;attachment:TutorAtt
     <button className="tutor-image-thumb" type="button" aria-label={'View '+label.toLowerCase()} disabled={!src} onClick={()=>setOpen(true)}>
       {src&&<img src={src} alt={label}/>}<span>{error?label+' unavailable':label}</span>
     </button>
-    <Sheet open={open} onClose={()=>setOpen(false)} title={label}>
-      {open&&src&&<div className="tutor-image-view"><img src={src} alt={label}/></div>}
+    <Sheet open={open} onClose={()=>{setOpen(false);setZoom(1);}} title={label} footer={<>
+      <IconButton label="Zoom out" disabled={zoom<=1} onClick={()=>setZoom(value=>Math.max(1,value-.5))}><Minus aria-hidden="true"/></IconButton>
+      <IconButton label="Zoom in" disabled={zoom>=4} onClick={()=>setZoom(value=>Math.min(4,value+.5))}><Plus aria-hidden="true"/></IconButton>
+    </>}>
+      {open&&src&&<div className="tutor-image-view"><img src={src} alt={label} style={{width:zoom*100+'%'}}/></div>}
     </Sheet>
   </>;
 }

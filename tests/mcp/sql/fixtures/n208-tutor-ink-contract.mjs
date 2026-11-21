@@ -3,6 +3,8 @@ import {randomUUID} from 'node:crypto';
 
 export async function checkTutorInk({db,owner,other,slug,objective,as,q,one,ownerCmd,state,denied}) {
   await as();
+  assert.equal(await one(`select count(*)::int result from pg_trigger
+    where tgrelid='public.tutor_turn_attachments'::regclass and tgname='lemma_account_delete_write_guard'`),1);
   await db.exec('update public.tutor_release_controls set enabled=true');
   const checkpoint=await one(`insert into public.checkpoints(user_id,project_id,code,position,title,objective,criterion,steps)
     select $1,id,'CP99',99,'Image study',$3,'Explain','["Explain"]'::jsonb from public.projects where user_id=$1 and slug=$2 returning id result`,[owner,slug,objective]);

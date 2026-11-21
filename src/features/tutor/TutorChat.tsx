@@ -52,7 +52,8 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
   const previousReply = useRef<string | undefined>(undefined);
   const last = turns.at(-1), first = turns.at(0)?.id;
   const hintIndex = Math.min(hints.length - 1, hints.indexOf(last?.snapshot.question ?? '') + 1);
-  const overview = (view ?? (last || draft ? 'chat' : 'overview')) === 'overview';
+  const hasInk=Boolean(ink?.draft.strokes.length||ink?.draft.photos.length||ink?.draft.queuedText!==undefined);
+  const overview = (view ?? (last || draft || hasInk ? 'chat' : 'overview')) === 'overview';
   const latestReply = turns.filter(turn => turn.status === 'completed').at(-1);
   const question = latestReply?.status === 'completed' ? latestReply.finalReply.nextQuestion || questionPreview(latestReply.finalReply.body) : '';
   const step = page.detail.steps[page.detail.view.currentStep] || page.detail.objective;

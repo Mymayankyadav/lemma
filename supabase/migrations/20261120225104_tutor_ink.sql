@@ -16,6 +16,15 @@ grant select on public.tutor_turn_attachments to authenticated,service_role;
 create policy "Tutor owner reads attachments" on public.tutor_turn_attachments
  for select to authenticated using (user_id=(select auth.uid()));
 
+do $deletion_guard$
+begin
+ if to_regprocedure('public.lemma_block_account_deletion_writes()') is not null then
+  create trigger lemma_account_delete_write_guard
+   before insert or update or delete on public.tutor_turn_attachments for each row
+   execute function public.lemma_block_account_deletion_writes();
+ end if;
+end $deletion_guard$;
+
 do $storage$
 begin
  if to_regclass('storage.buckets') is not null and to_regclass('storage.objects') is not null then

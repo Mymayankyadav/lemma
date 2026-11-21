@@ -66,6 +66,7 @@ export default function CardsV7({embedded=false,selected,onFirst}:{embedded?:boo
  const [filtersOpen,setFiltersOpen]=useState(false);
  const [sheet,setSheet]=useState<'path'|'state'|'checkpoint'|'sort'|null>(null),[creating,setCreating]=useState(params.get('new')==='1');
  const sentinel=useRef<HTMLDivElement>(null);
+ useEffect(()=>{if(params.get('new')==='1')setCreating(true);},[params]);
  useEffect(()=>{const timer=setTimeout(()=>setQuery(search),250);return()=>clearTimeout(timer);},[search]);
  useEffect(()=>{const open=()=>setCreating(true);window.addEventListener('v7:new-card',open);return()=>window.removeEventListener('v7:new-card',open);},[]);
  const filters=cardFilters({query,slug,checkpoint,state,comments});
