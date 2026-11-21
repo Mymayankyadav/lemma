@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N217 Rank-sensitive Scribe replay measurement
+
+Stage: Build · Status: open · Needs: — · Assigned: chat-917642#x8q2
+Done = Reproduce actual baseline display order on synthetic math-writing examples and report candidate recall, Top-1, Top-3, MRR@3, exact random expectations and pool-size slices. Mechanically verify safety filtering, suppression, deterministic controls and rank-shuffle detection without claiming human results.
+Tests: actual baseline visible parity; finite six-candidate chance and smaller pools; blocked/suppressed cases; deterministic synthetic replay.
+Scope: a development-only replay script, tests, protocol and N217 documentation.
+Not: product behavior, policy or flags; learner data; logging, collection or upload; training, APKs, performance or release claims.
+
 ## N201 Open the checkpoint tutor chat from the study path
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"
