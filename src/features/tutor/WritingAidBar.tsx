@@ -1,5 +1,5 @@
 import {useRef, type PointerEvent} from 'react';
-import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
+import {ArrowRight, RefreshCw, Sigma, SpellCheck2, TextCursorInput, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
 import './writing-aid.css';
 
@@ -10,8 +10,8 @@ export interface WritingAidBarProps {
   ghost: WritingAidProposal | null;
   disabled: boolean;
   undoable: boolean;
+  autoCorrection?: {before: string; after: string};
   exhausted?: boolean;
-  swipeProgress?: number;
   onAccept: (proposal: WritingAidProposal) => void;
   onDismiss: () => void;
   onUndo: () => void;
@@ -23,12 +23,12 @@ export function WritingAidWords({words, disabled, onAccept}: Pick<WritingAidBarP
   const slots = [words[1], words[0], words[2]];
   return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
-      disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
+      disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label + (proposal.tutorEvidence ? ', from tutor' : '') : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
       title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}>
-      {proposal ? <span className="writing-aid-word-label">{proposal.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+      {proposal ? <><span className="writing-aid-word-label">{proposal.label}</span>{proposal.tutorEvidence && <span aria-hidden="true" className="writing-aid-word-origin">Tutor</span>}</> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
   </div>;
 }
@@ -38,16 +38,18 @@ function Choice({proposal, disabled, onAccept, onRefresh}: {
 }) {
   const pressed = useRef<WritingAidProposal | null>(null);
   const replacement = proposal.kind === 'replace' || proposal.kind === 'correction';
-  return <div className="writing-aid-floating-choice">
+  const kind = proposal.kind === 'correction' ? 'correction' : replacement ? 'notation' : 'continuation';
+  const Icon = kind === 'correction' ? SpellCheck2 : kind === 'notation' ? Sigma : TextCursorInput;
+  return <div className="writing-aid-floating-choice" data-kind={kind}>
     <button type="button" className="writing-aid-preview" disabled={disabled}
       data-writing-aid-edit={replacement ? '' : undefined} data-writing-aid-ghost={!replacement ? '' : undefined}
-      aria-label={replacement ? 'Replace ' + proposal.before + ' with ' + proposal.label : 'Accept continuation ' + proposal.label}
+      aria-label={(replacement ? 'Replace ' + proposal.before + ' with ' + proposal.label : 'Accept continuation ' + proposal.label) + (proposal.tutorEvidence ? ', from tutor' : '')}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}>
-      <small>{proposal.kind === 'correction' ? 'Spelling' : replacement ? 'Notation' : <>
-        <span className="writing-aid-touch-hint">Swipe right or tap</span><span className="writing-aid-key-hint">Tab or tap</span>
-      </>}</small>
+      <small><Icon aria-hidden="true"/>{kind === 'correction' ? 'Spelling' : kind === 'notation' ? 'Notation' : <>
+        Continuation <span className="writing-aid-touch-hint">· Tap</span><span className="writing-aid-key-hint">· Tab or tap</span>
+      </>}{proposal.tutorEvidence && <span>· From tutor</span>}</small>
       <span className="writing-aid-diff">{replacement && <><del>{proposal.before}</del><ArrowRight aria-hidden="true"/></>}
         <strong>{proposal.label}</strong>{!replacement && <ArrowRight aria-hidden="true"/>}</span>
     </button>
@@ -59,12 +61,15 @@ function Choice({proposal, disabled, onAccept, onRefresh}: {
 
 /** A small card floats beside the draft instead of allocating another keyboard row. */
 export function WritingAidBar(props: WritingAidBarProps) {
-  const {edit, ghost, disabled, undoable, exhausted, swipeProgress = 0} = props;
+  const {edit, ghost, disabled, undoable, autoCorrection, exhausted} = props;
   if (!edit && !ghost && !undoable && !exhausted) return null;
-  return <div className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions"
-    data-swiping={swipeProgress > 0 || undefined} style={{'--writing-swipe': Math.min(1, swipeProgress)} as React.CSSProperties}>
+  return <div className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions">
     <div className="writing-aid-floating-body">
-      {undoable ? <button type="button" className="writing-aid-undo" onPointerDown={holdCaret} disabled={disabled}
+      {undoable ? autoCorrection ? <div className="writing-aid-auto-correction" data-kind="correction">
+        <span className="writing-aid-auto-summary" role="status">Corrected <del>{autoCorrection.before}</del><span aria-hidden="true">→</span><span className="sr-only"> to </span><strong>{autoCorrection.after}</strong></span>
+        <button type="button" className="writing-aid-undo" aria-label="Undo suggestion" onPointerDown={holdCaret} disabled={disabled}
+          onClick={props.onUndo}><Undo2 aria-hidden="true"/>Undo</button>
+      </div> : <button type="button" className="writing-aid-undo" onPointerDown={holdCaret} disabled={disabled}
         onClick={props.onUndo}><Undo2 aria-hidden="true"/>Undo suggestion</button>
       : <>
         {edit && <Choice proposal={edit} disabled={disabled} onAccept={props.onAccept} onRefresh={props.onRefresh}/>}

@@ -1,7 +1,7 @@
 import {useMemo, useSyncExternalStore} from 'react';
 import {onAccountChange} from '../../../data/authBoundary';
 import {subscribeTutorLocalCleanup, writeTutorLocal} from '../../../data/tutor/local-storage';
-import {createWritingAidModel, parseWritingAidModel, type WritingAidModel} from './learning';
+import {createWritingAidModel, parseWritingAidModel, revokeWritingAutoTrust, type WritingAidModel} from './learning';
 import {currentWritingAidScope} from './preferences';
 
 const CHANGE = 'lemma:tutor-writing-aid-model';
@@ -69,6 +69,15 @@ function write(expectedScope: string, change: (current: WritingAidPersonalizatio
 export function saveWritingAidModel(scopeKey: string, generation: string, model: WritingAidModel): boolean {
   // Check storage again even if this composer has yet to observe a reset or pause.
   return write(scopeKey, current => current.enabled && current.generation === generation ? {...current, model} : null);
+}
+
+/** An explicit rejection can still revoke permission while learning is paused. */
+export function revokeStoredWritingAutoTrust(scopeKey: string, generation: string, ruleId: string): boolean {
+  return write(scopeKey, current => {
+    if (current.generation !== generation || !current.model.autoTrust[ruleId]) return null;
+    revokeWritingAutoTrust(current.model, ruleId);
+    return current;
+  });
 }
 
 export function setWritingAidPersonalization(enabled: boolean, scopeKey: string): boolean {

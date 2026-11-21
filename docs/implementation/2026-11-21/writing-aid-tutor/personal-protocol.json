@@ -1,0 +1,13 @@
+{
+  "seed": 4029931,
+  "usersPerClassPerSplit": 1200,
+  "splits": [
+    "calibration",
+    "test"
+  ],
+  "familiesPerSplit": 40,
+  "rule": "Last two same-pair attempts were explicit manual accepts, neither undone nor edited. Apply only after actual deterministic prose gate.",
+  "selection": "Choose k=2 per class only if calibration has at least 200 eligible distinct users and Wilson 95% lower precision >=0.98; do not change k after inspecting test.",
+  "report": "Held-out coverage, whole-population harmful correction rate, conditional precision, Wilson and family-cluster bootstrap; synthetic evidence is not human precision.",
+  "generativeAssumptions": "Family-dependent intention, behavior shift and acceptance noise; independent pseudo-random users conditional on family, with shared family context."
+}
