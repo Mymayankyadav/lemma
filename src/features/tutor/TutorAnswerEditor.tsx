@@ -100,12 +100,13 @@ export function renderTutorAnswer(editor: HTMLElement, value: string, images: re
 type Events = Pick<React.ComponentProps<'div'>,
   'onCopy' | 'onCut' | 'onFocus' | 'onPointerDown' | 'onInput' | 'onKeyDown' | 'onCompositionStart' | 'onCompositionEnd' | 'onPaste' | 'onDrop'>;
 
-export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, onSelection, onChip, ...events}: Events & {
+export function TutorAnswerEditor({editor, value, images, composing, placeholder, readOnly, ghost, onSelection, onChip, ...events}: Events & {
   editor: RefObject<HTMLDivElement | null>;
   value: string;
   images: readonly AnswerImage[];
   composing: boolean;
   placeholder: string;
+  ghost?: string;
   readOnly: boolean;
   onSelection: () => void;
   onChip: (id: string, offset: number, action: 'edit' | 'remove') => void;
@@ -131,7 +132,7 @@ export function TutorAnswerEditor({editor, value, images, composing, placeholder
   }, [editor, value, images, readOnly, composing]);
 
   return <div {...events} ref={editor} className="tutor-answer-editor" role="textbox" aria-label="Your answer"
-    aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}
+    data-completion={ghost || undefined} aria-multiline="true" aria-readonly={readOnly} aria-placeholder={placeholder} data-placeholder={placeholder}
     tabIndex={0} contentEditable={!readOnly} suppressContentEditableWarning inputMode="none" autoCorrect="off" autoCapitalize="off" spellCheck={false}
     onPointerDown={event => {
       if (event.target instanceof Element && event.target.closest('[data-chip-action]')) event.preventDefault();

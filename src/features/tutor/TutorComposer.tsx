@@ -1,5 +1,5 @@
 import {useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
-import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2} from 'lucide-react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal} from 'lucide-react';
 import {TutorInkTray,type TutorInkState} from './TutorInk';
 import {Button,IconButton,Sheet} from '../../ui/v7/components';
 import {authGeneration,authOwner} from '../../data/authBoundary';
@@ -10,7 +10,7 @@ import {
   changePadText, createPadTextHistory, deletePadBackward, movePadCaret, padEdit, redoPadText, undoPadText,
   type PadEdit, type PadTextHistory,
 } from '../pad/padEdit';
-import {applyNotationSuggestion, findNotationSlot, insertNotation, notation, notationSuggestions, typedNotation} from './notation';
+import {findNotationSlot, insertNotation, notation} from './notation';
 import {removeTutorImageReferences,TUTOR_ATTACHMENT_COUNT} from '../../data/tutor/attachment-types';
 import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
 import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../supabase/functions/_shared/tutor-answer';
@@ -24,14 +24,16 @@ import {useTutorInputAssist} from './input/useTutorInputAssist';
 import {useTutorInputPreferences} from './input/inputPreferences';
 import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
+import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
+import {WritingAidBar, WritingAidWords} from './WritingAidBar';
 import './keyboard.css';
 import './input/input.css';
+import './writing-aid.css';
 
 const keepSelection = (event: PointerEvent) => event.preventDefault();
 const ANSWER_CLIPBOARD = 'application/x-lemma-tutor-answer';
 const MAX_ANSWER_LENGTH = 2000;
 const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
-const EMPTY_CONTEXT: readonly string[] = [];
 
 interface Props {
   value: string;
@@ -72,11 +74,12 @@ export function TutorComposer(props: Props) {
   const [mountId] = useState(()=>crypto.randomUUID());
   const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
-  const [recent, setRecent] = useState<string[]>([]);
-  const [keptWords, setKeptWords] = useState<readonly string[]>([]);
-  const automatic = useRef<{before: PadTextHistory; after: PadEdit} | null>(null);
-  const context = props.notationContext ?? EMPTY_CONTEXT;
-  const suggestions = useMemo(() => notationSuggestions(cursor, context, recent, keptWords, revision.current), [cursor, context, recent, keptWords]);
+  const authoredAnchor = useRef<WritingAidAnchor | null>(null);
+  const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit} | null>(null);
+  const [aidSettings, setAidSettings] = useState(false);
+  const [dismissedAid, setDismissedAid] = useState<string | null>(null);
+  const rejectedEdits = useRef(new Set<string>());
+  const writingPrefs = useWritingAidPreferences();
   const incomplete = props.value.includes('□');
   const images = props.ink?.draft.photos;
   const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
@@ -112,6 +115,49 @@ export function TutorComposer(props: Props) {
     }});
 
 
+  const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
+  const writingRequest = {cursor, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
+    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown};
+  const writing = useWritingAid(writingRequest);
+  const aidVisible = dismissedAid !== aidSignature && !editingDisabled;
+  const writingWords = aidVisible ? writing.words : [];
+  const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
+  const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
+  const writingGhost = aidVisible ? writing.ghost : null;
+  const ghostSuffix = writingGhost && !writingEdit ? writingGhost.insert : undefined;
+  const suggestionUndoable = Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
+
+  useLayoutEffect(() => {
+    const hadEvidence = authoredAnchor.current !== null || acceptedSuggestion.current !== null;
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
+    rejectedEdits.current.clear();
+    setDismissedAid(null);
+    if (hadEvidence) setCursor({...history.current.present});
+  }, [scopeKey, writingPrefs.scopeKey, writingPrefs.mode]);
+
+  function dismissWriting() {
+    if (writingEdit) rejectedEdits.current.add(rejectionKey(writingEdit));
+    setDismissedAid(aidSignature);
+  }
+
+  function acceptWriting(proposal: WritingAidProposal) {
+    remember();
+    const before = history.current, anchor = authoredAnchor.current;
+    const next = applyWritingAidProposal({...writingRequest, cursor: before.present, anchor, target: editTarget(),
+      composing: composition.current, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown}, proposal);
+    if (!next || !commit(changePadText(before, next), true)) return;
+    authoredAnchor.current = continueWritingAidAnchor(anchor, proposal, next);
+    acceptedSuggestion.current = {before, after: next};
+    haptic('snap');
+  }
+  function undoWriting() {
+    const saved = acceptedSuggestion.current;
+    if (!saved || saved.after.text !== history.current.present.text || editingDisabled) return;
+    commit(saved.before, true);
+    haptic('snap');
+  }
+
   useLayoutEffect(() => {
     const input = fieldElement();
     if (!input) return;
@@ -123,7 +169,8 @@ export function TutorComposer(props: Props) {
       revision.current.editorRevision++;
       revision.current.selectionRevision++;
       assist.stop();
-      automatic.current = null;
+      acceptedSuggestion.current = null;
+      authoredAnchor.current = null;
       history.current = createPadTextHistory(padEdit(props.value));
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
@@ -154,7 +201,8 @@ export function TutorComposer(props: Props) {
     const invalidFuture = saved.future.findIndex(edit => !valid(edit));
     const future = invalidFuture < 0 ? saved.future : saved.future.slice(0, invalidFuture);
     if (past.length === saved.past.length && future.length === saved.future.length) return;
-    automatic.current = null;
+    acceptedSuggestion.current = null;
+    authoredAnchor.current = null;
     history.current = {...saved, past, future};
     setCursor({...saved.present});
   }, [availableIds, props.ink?.ready]);
@@ -177,13 +225,15 @@ export function TutorComposer(props: Props) {
     if (edit.text !== present.text || (edit.start === present.start && edit.end === present.end && edit.direction === present.direction)) return;
     revision.current.selectionRevision++;
     assist.pause();
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
     history.current = {...history.current, present: edit};
     setCursor(edit);
   }
   function tooManyImages(text: string) {
     return referencedImageIds(text).filter(id => availableIds.has(id)).length > TUTOR_ATTACHMENT_COUNT;
   }
-  function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false) {
+  function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false) {
     const edit = next.present;
     if (readOnly || edit.text.length > MAX_ANSWER_LENGTH) return false;
     if (tooManyImages(edit.text)) {
@@ -197,10 +247,12 @@ export function TutorComposer(props: Props) {
     if(moved)revision.current.selectionRevision++;
     if(!fromAssist&&(changed||moved))assist.pause();
     if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
+    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current) : null;
     history.current = next;
+    if (changed || moved) authoredAnchor.current = nextAnchor;
     setCursor(edit);
     if (changed) {
-      automatic.current = null;
+      acceptedSuggestion.current = null;
       setAnswerError('');
       if (restore) pendingSelection.current = edit;
       props.onChange(edit.text);
@@ -213,21 +265,13 @@ export function TutorComposer(props: Props) {
   function change(edit: PadEdit, focus = false) {
     commit(changePadText(history.current, edit), focus);
   }
-  function noteRecent(text: string) {
-    const symbol = text.trim();
-    if (!symbol || symbol.includes('□') || /^[\w\s]+$/u.test(symbol) || symbol.length > 12) return;
-    setRecent(old => [symbol, ...old.filter(item => item !== symbol)].slice(0, 6));
-  }
-  function typeText(edit: PadEdit, text: string, focus: boolean, onlyAutomatic = false) {
-    const plain = insertNotation(edit, text);
-    const replacement = typedNotation(edit, text, context, new Set(keptWords));
-    const corrected = replacement.text !== plain.text;
-    if (onlyAutomatic && !corrected) return false;
-    if (replacement.text.length > MAX_ANSWER_LENGTH) return false;
-    const before = history.current;
-    change(replacement, focus);
-    if (corrected) automatic.current = {before, after: replacement};
-    return true;
+  function typeText(edit: PadEdit, text: string, focus: boolean) {
+    // A candidate supplies its own trailing space. Punctuation replaces only
+    // that generated space; learner-authored spaces are left untouched.
+    const suppliedSpace = /^[.,;:!?]$/u.test(text) && edit.start === edit.end && edit.end === edit.text.length &&
+      edit.text.endsWith(' ') && acceptedSuggestion.current?.after.text === edit.text;
+    const target = suppliedSpace ? padEdit(edit.text, edit.start - 1, edit.end) : edit;
+    return commit(changePadText(history.current, insertNotation(target, text)), focus, true, false, true);
   }
   function insert(text: string, typed = false) {
     remember();
@@ -241,21 +285,6 @@ export function TutorComposer(props: Props) {
     }
     if (typed) typeText(edit, text, true);
     else change(insertNotation(edit, text), true);
-    if (!typed || /[^\w\s]/u.test(text)) noteRecent(text);
-  }
-  function keepWord(word: string) {
-    const lower = word.toLowerCase();
-    setKeptWords(old => [lower, ...old.filter(item => item !== lower)].slice(0, 32));
-  }
-  function undoAutomatic(focus: boolean) {
-    const fix = automatic.current;
-    const edit = history.current.present;
-    if (!fix || edit.text !== fix.after.text || edit.start !== fix.after.start || edit.end !== fix.after.end) return false;
-    const {text, start} = fix.before.present;
-    const word = text.slice(0, start).match(/[a-z]{3,24}$/i)?.[0]?.toLowerCase();
-    if (word) keepWord(word);
-    commit(fix.before, focus);
-    return true;
   }
   function nextSlot(backward = false) {
     remember();
@@ -292,6 +321,7 @@ export function TutorComposer(props: Props) {
     }
     if (!modified && !event.altKey && event.key === 'Escape' && shown) {
       event.preventDefault();
+      if (writingGhost || writingEdit || writingWords.length) {dismissWriting(); return;}
       if(assist.drawing)assist.stop();
       else setShown(false);
     }
@@ -304,6 +334,9 @@ export function TutorComposer(props: Props) {
     }
     remember();
     const edit = history.current.present;
+    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost && !writingEdit) {
+      event.preventDefault(); acceptWriting(writingGhost); return;
+    }
     if (!modified && !event.altKey && event.key === 'Tab' && edit.text.slice(edit.start, edit.end) === '□') {
       const slot = findNotationSlot(edit, event.shiftKey);
       if (slot && (event.shiftKey ? slot.start < edit.start : slot.start > edit.start)) {
@@ -312,7 +345,10 @@ export function TutorComposer(props: Props) {
       }
     }
     if (modified || event.altKey) return;
-    if (event.key === 'Backspace' && undoAutomatic(false)) {event.preventDefault(); return;}
+    if (/^[.,;:!?]$/u.test(event.key) && edit.start === edit.end && edit.end === edit.text.length &&
+        edit.text.endsWith(' ') && acceptedSuggestion.current?.after.text === edit.text) {
+      event.preventDefault(); typeText(edit, event.key, false); return;
+    }
     if (richField.current && event.key === 'Enter') {
       event.preventDefault();
       change(insertNotation(edit, '\n'));
@@ -322,24 +358,26 @@ export function TutorComposer(props: Props) {
       const range = imageDeletion(edit, event.key === 'Backspace');
       if (range) {event.preventDefault(); change(insertNotation(range, '')); return;}
     }
-    if (/^[ ,.;]$/.test(event.key) && typeText(edit, event.key, false, true)) event.preventDefault();
+
   }
   function beginComposition(input: HTMLElement) {
     remember();
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
     composition.current=true;
     revision.current.selectionRevision++;
     assist.pause();
     setCursor({...history.current.present});
     setCompositionText(fieldSelection(input).text);
   }
-  function inputChanged(input: HTMLElement) {
+  function inputChanged(input: HTMLElement, manuallyTyped = true) {
     if (readOnly) {
       if (input === richField.current) renderTutorAnswer(input, props.value, images ?? [], true);
       return;
     }
     const edit = fieldSelection(input);
     if (composition.current) setCompositionText(edit.text);
-    else if (edit.text.length <= MAX_ANSWER_LENGTH && !tooManyImages(edit.text)) commit(changePadText(history.current, edit), false, false);
+    else if (edit.text.length <= MAX_ANSWER_LENGTH && !tooManyImages(edit.text)) commit(changePadText(history.current, edit), false, false, false, manuallyTyped);
     else if (input === richField.current) {
       // A native edit may exceed the limit by a grapheme. Restore the saved value.
       if (tooManyImages(edit.text)) setAnswerError('An answer can have up to three images.');
@@ -485,7 +523,7 @@ export function TutorComposer(props: Props) {
     {!scratch && uncommitted && <p className="composer-status" role="status">Insert or discard your unfinished drawing before sending.</p>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
-      <div className="field">
+      <div className="writing-composer-card"><div className="field">
         {props.ink&&!scratch
           ? <IconButton label="Scratch" type="button" disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
               onPointerDown={keepSelection} onClick={()=>openDrawing()}><Pencil aria-hidden="true"/></IconButton>
@@ -493,7 +531,7 @@ export function TutorComposer(props: Props) {
               onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
         {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
           placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
-          composing={composing} onSelection={remember} onChip={chipAction} onFocus={event=>{
+          composing={composing} ghost={ghostSuffix} onSelection={remember} onChip={chipAction} onFocus={event=>{
             if (event.target === event.currentTarget) focusAnswer();
           }} onKeyDown={keyDown}
           onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly) setShown(true);}}
@@ -503,12 +541,12 @@ export function TutorComposer(props: Props) {
             inputChanged(event.currentTarget);
             setCompositionText(null);
           }}
-          onInput={event=>inputChanged(event.currentTarget)}
+          onInput={event=>inputChanged(event.currentTarget, (event.nativeEvent as InputEvent).inputType === 'insertText')}
           onCopy={event=>copyAnswer(event)}
           onCut={event=>copyAnswer(event, true)}
           onPaste={pasteAnswer}
           onDrop={event=>event.preventDefault()}
-        /> : <textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
+        /> : <div className="writing-editor-wrap">{ghostSuffix && <div className="writing-editor-mirror" aria-hidden="true"><span>{props.value}</span>{ghostSuffix}</div>}<textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
           inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
           value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
@@ -519,22 +557,37 @@ export function TutorComposer(props: Props) {
           onCompositionStart={event=>beginComposition(event.currentTarget)}
           onCompositionEnd={event => {
             composition.current = false;
-            commit(changePadText(history.current, fieldSelection(event.currentTarget)), false, false);
+            commit(changePadText(history.current, fieldSelection(event.currentTarget)), false, false, false, true);
             setCompositionText(null);
           }}
           onChange={event => {
             const edit = fieldSelection(event.currentTarget);
             if (composition.current) setCompositionText(edit.text);
-            else commit(changePadText(history.current, edit), false, false);
+            else commit(changePadText(history.current, edit), false, false, false, (event.nativeEvent as InputEvent).inputType === 'insertText');
           }}
-          onKeyDown={keyDown}/>}
+          onScroll={event => {const mirror = event.currentTarget.previousElementSibling; if (mirror) mirror.scrollTop = event.currentTarget.scrollTop;}}
+          onPaste={event => {
+            event.preventDefault();
+            if (editingDisabled) return;
+            remember();
+            const text = clipboardPlain(event.clipboardData.getData('text/plain')).replace(/\r\n?/g, '\n');
+            if (text) change(insertNotation(history.current.present, text));
+          }}
+          onDrop={event => event.preventDefault()}
+          onKeyDown={keyDown}/></div>}
         <IconButton label="Edit answer" type="button" aria-haspopup="dialog" onPointerDown={keepSelection} onClick={()=>{assist.pause();setEditMenu(true);}}><Ellipsis aria-hidden="true"/></IconButton>
         <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
           onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
       </div>
+      {shown && !scratch && <WritingAidBar words={writingWords} edit={writingEdit} ghost={writingGhost}
+        signature={aidSignature} mode={writingPrefs.mode} disabled={editingDisabled} undoable={suggestionUndoable}
+        onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
+        onSettings={() => {assist.pause(); setAidSettings(true);}}/>}
+      </div>
     </form>
     <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
       <div className="tutor-session-actions">
+        <Button onClick={() => {setEditMenu(false); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>
         <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('hint');}}>
           <HelpCircle aria-hidden="true"/>Hint {Math.max(1,Math.min(4,props.hintLevel??1))}/4
         </Button>
@@ -548,6 +601,7 @@ export function TutorComposer(props: Props) {
         <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{setEditMenu(false);undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
       </div>
     </Sheet>
+    <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
     {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
       editingImageId={editingImageId} canMigrate={!readOnly} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
     {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard">
@@ -560,20 +614,7 @@ export function TutorComposer(props: Props) {
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
         onAccept={assist.onAccept}/>
       : <><div className="strip">
-        <div className="sugg" role="group" aria-label="Suggestions">
-          {suggestions.map(item => <button className={item.kind} type="button" key={item.id}
-            disabled={editingDisabled} title={item.text} onPointerDown={keepSelection} onClick={() => {
-              remember();
-              const edit = history.current.present;
-              const next = notationSuggestions(edit, context, recent, keptWords, revision.current).find(suggestion=>suggestion.id===item.id
-                && suggestion.editorRevision===item.editorRevision && suggestion.selectionRevision===item.selectionRevision);
-              if (!next) return;
-              haptic('snap');
-              if (item.kind === 'keep') keepWord(item.text);
-              change(applyNotationSuggestion(edit, next, revision.current), true);
-              noteRecent(item.text);
-            }} aria-description={item.kind === 'fix' ? 'Spelling correction' : item.kind === 'keep' ? 'Keep what you typed' : undefined}>{item.text}</button>)}
-        </div>
+        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
         <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
           onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>
         <button className="sbtn" type="button" aria-label="Hide keyboard" onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
@@ -583,11 +624,9 @@ export function TutorComposer(props: Props) {
         onNextSlot={incomplete ? () => nextSlot() : undefined}
         onDelete={() => {
           remember();
-          if (!undoAutomatic(true)) {
-            const edit = history.current.present;
-            const image = imageDeletion(edit, true);
-            change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
-          }
+          const edit = history.current.present;
+          const image = imageDeletion(edit, true);
+          change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
         }}
         onMove={(direction, count) => {
           remember();

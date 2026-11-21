@@ -11,6 +11,8 @@ let root: Root;
 const dialogMethods = ['showModal', 'close'] as const;
 const originalMethods = dialogMethods.map(method => Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, method));
 beforeEach(() => {
+  sessionStorage.setItem('lemma.demo', '1');
+  localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
   Object.assign(globalThis, {IS_REACT_ACT_ENVIRONMENT: true});
   dialogMethods.forEach(method => {
     Object.defineProperty(HTMLDialogElement.prototype, method, {configurable: true,
@@ -28,6 +30,8 @@ afterEach(async () => {
     if (original) Object.defineProperty(HTMLDialogElement.prototype, method, original);
     else Reflect.deleteProperty(HTMLDialogElement.prototype, method);
   });
+  sessionStorage.removeItem('lemma.demo');
+  localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
   vi.useRealTimers();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
@@ -57,12 +61,21 @@ const suggestion = () => host.querySelector('.sugg')!;
 const key = (name: string, modifiers: KeyboardEventInit = {}) => act(async () => {
   field().dispatchEvent(new KeyboardEvent('keydown', {key: name, bubbles: true, cancelable: true, ...modifiers}));
 });
-const input = (value: string) => act(async () => {
-  const node = field();
-  Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(node, value);
-  node.setSelectionRange(value.length, value.length);
-  node.dispatchEvent(new InputEvent('input', {bubbles: true, data: value}));
-});
+const input = async (value: string) => {
+  await act(async () => {
+    const node = field();
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(node, value);
+    node.setSelectionRange(value.length, value.length);
+    node.dispatchEvent(new InputEvent('input', {bubbles: true, data: value, inputType: 'insertText'}));
+  });
+  await act(async () => {await new Promise(resolve => setTimeout(resolve, 35));});
+};
+const awaitAid = async (name: string) => {
+  await vi.waitFor(async () => {
+    await act(async () => {await new Promise(resolve => setTimeout(resolve, 20));});
+    expect(button(name)).toBeDefined();
+  });
+};
 
 test('uses the native caret for math templates, offers each slot and restores selections with undo', async () => {
   const onSend = vi.fn();
@@ -96,21 +109,24 @@ test('completes proof notation and asks for help without consuming a draft', asy
   await act(async () => root.render(<Harness onAsk={onAsk} onSend={onSend}/>));
   await act(async () => field().focus());
   expect(button('f⁻¹(B)', suggestion())).toBeUndefined();
-  await input('prei');
-  await click('preimage', suggestion());
-  expect(field().value).toBe('preimage ');
-  await input('for all');
-  expect(field().value).toBe('for all');
-  await click('∀', suggestion());
-  expect(field().value).toBe('∀ ');
+  await input('nota');
+  await awaitAid('Insert notation');
+  await click('Insert notation', suggestion());
+  expect(field().value).toBe('notation ');
+  await input('');
+  await input('Let eps');
+  expect(field().value).toBe('Let eps');
+  await awaitAid('Replace eps with ε');
+  await click('Replace eps with ε');
+  expect(field().value).toBe('Let ε');
   await answerAction('Undo typing');
-  expect(field().value).toBe('for all');
+  expect(field().value).toBe('Let eps');
   await answerAction('Hint 1/4');
   await answerAction('Stuck');
   await answerAction('Ask about notation');
   expect(onAsk.mock.calls).toEqual([['hint'], ['stuck'], ['notation']]);
   expect(onSend).not.toHaveBeenCalled();
-  expect(field().value).toBe('for all');
+  expect(field().value).toBe('Let eps');
 });
 
 test('shows both numeric layouts and keeps physical IME composition atomic', async () => {
@@ -232,15 +248,15 @@ test('keeps the tutor header anchored when opening the keyboard on short screens
   expect(host.querySelector<HTMLElement>('.kb')!.scrollTop).toBe(0);
 });
 
-test('completes a word at the caret while leaving strategy choices and mathematical identifiers intact', async () => {
+test('suppresses mid-draft completion while leaving strategy choices and mathematical identifiers intact', async () => {
   await act(async () => root.render(<Harness/>));
   await act(async () => field().focus());
   await input('PREI suffix');
   await act(async () => field().setSelectionRange(4, 4));
   // Selection updates from a native event before accepting a suggestion.
   await key('ArrowRight');
-  await click('PREIMAGE', suggestion());
-  expect(field().value).toBe('PREIMAGE suffix');
+  expect([...suggestion().querySelectorAll('button')].every(item => item.disabled)).toBe(true);
+  expect(field().value).toBe('PREI suffix');
   await input('by ');
   for(const strategy of ['definition','induction','contradiction'])
     expect(button(strategy, suggestion())).toBeUndefined();
@@ -253,13 +269,30 @@ test('offers local typo corrections and can immediately restore what the learner
   await act(async () => root.render(<Harness/>));
   await act(async () => field().focus());
   await input('teh');
-  expect(button('the', suggestion()).className).toBe('fix');
-  await click('Space', keyboard());
-  expect(field().value).toBe('the ');
-  await click('Delete', keyboard());
+  await awaitAid('Replace teh with the');
+  expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
+  await click('Replace teh with the');
+  expect(field().value).toBe('the');
+  await click('Undo suggestion');
   expect(field().value).toBe('teh');
   await click('Space', keyboard());
   expect(field().value).toBe('teh ');
+});
+
+test('punctuation replaces a suggestion-supplied space and preserves learner-authored spaces', async () => {
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('nota');
+  await awaitAid('Insert notation');
+  await click('Insert notation');
+  expect(field().value).toBe('notation ');
+  await click('.', keyboard());
+  expect(field().value).toBe('notation.');
+  await answerAction('Undo typing');
+  expect(field().value).toBe('notation ');
+  await input('notation  ');
+  await click('.', keyboard());
+  expect(field().value).toBe('notation  .');
 });
 
 test('uses the existing haptics switch for virtual keys, suggestions and mode changes', async () => {
@@ -272,8 +305,10 @@ test('uses the existing haptics switch for virtual keys, suggestions and mode ch
     vibrate.mockClear();
     await click('p', keyboard());
     await click('Maths symbols', keyboard());
-    await input('for all');
-    await click('∀', suggestion());
+    await input('');
+    await input('Let eps');
+    await awaitAid('Replace eps with ε');
+    await click('Replace eps with ε');
     expect(vibrate.mock.calls.length).toBe(3);
     setHapticsEnabled(false);
     await click('ABC', keyboard());
@@ -285,23 +320,27 @@ test('uses the existing haptics switch for virtual keys, suggestions and mode ch
   }
 });
 
-test('rejecting autocorrect leaves the previous learner edit at the top of Undo', async () => {
-  await act(async () => root.render(<Harness initial="te"/>));
+test('undoing an explicit correction leaves the previous learner edit at the top of Undo', async () => {
+  await act(async () => root.render(<Harness/>));
   await click('Keys');
+  await click('t', keyboard());
+  await click('e', keyboard());
   await click('h', keyboard());
-  await click('Space', keyboard());
-  expect(field().value).toBe('the ');
-  await click('Delete', keyboard());
+  await awaitAid('Replace teh with the');
+  await click('Replace teh with the');
+  expect(field().value).toBe('the');
+  await click('Undo suggestion');
   expect(field().value).toBe('teh');
   await answerAction('Undo typing');
   expect(field().value).toBe('te');
 });
 
 test('accepts a correction before punctuation and skips prefixes inside identifiers', async () => {
-  await act(async () => root.render(<Harness initial="teh, therefore"/>));
-  await act(async () => {field().focus(); field().setSelectionRange(3, 3);});
-  await key('ArrowRight');
-  await click('the', suggestion());
+  await act(async () => root.render(<Harness/>));
+  await act(async () => field().focus());
+  await input('teh, therefore');
+  await awaitAid('Replace teh with the');
+  await click('Replace teh with the');
   expect(field().value).toBe('the, therefore');
   await input('teh_2');
   await act(async () => field().setSelectionRange(3, 3));
@@ -309,17 +348,17 @@ test('accepts a correction before punctuation and skips prefixes inside identifi
   expect(button('the', suggestion())).toBeUndefined();
 });
 
-test('puts a safe correction in the middle of three suggestions and lets the learner keep the original', async () => {
+test('previews a correction with a strike-through and keeps the original without creating an edit', async () => {
   await act(async () => root.render(<Harness/>));
   await act(async () => field().focus());
   await input('teh');
-  const choices = suggestion().querySelectorAll('button');
-  expect(choices).toHaveLength(3);
-  expect(choices[1].textContent).toBe('the');
-  await click('teh', suggestion());
-  expect(field().value).toBe('teh ');
-  await input('teh');
-  expect(button('the', suggestion())).toBeUndefined();
+  await awaitAid('Replace teh with the');
+  expect(suggestion().querySelectorAll('button')).toHaveLength(3);
+  expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
+  await click('More writing suggestions');
+  await click('Keep what I typed');
+  expect(field().value).toBe('teh');
+  expect(button('Replace teh with the')).toBeUndefined();
   await click('Space', keyboard());
   expect(field().value).toBe('teh ');
 });
@@ -342,11 +381,13 @@ test('quick math keys insert at the caret without changing the alphabet layout',
   expect([field().selectionStart, field().selectionEnd]).toEqual([2, 2]);
 });
 
-test('completes a repeated name using the spelling already in the draft', async () => {
+test('does not use restored draft names as newly authored completion evidence', async () => {
   await act(async () => root.render(<Harness initial="Čech says Če"/>));
   await act(async () => field().focus());
-  await click('Čech', suggestion());
-  expect(field().value).toBe('Čech says Čech ');
+  expect(button('Insert Čech', suggestion())).toBeUndefined();
+  expect(field().value).toBe('Čech says Če');
+  await input('Čech says Čec');
+  expect(button('Insert Čech', suggestion())).toBeUndefined();
 });
 
 const localImageId = '12345678-0123-4123-8123-123456789abc';

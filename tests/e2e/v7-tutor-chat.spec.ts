@@ -270,18 +270,22 @@ for(const {width,height,minTranscriptHeight} of [
  })
 }
 
-test('Keyboard autocomplete completes only the text before the caret',async({page})=>{
+test('Keyboard autocomplete applies to newly typed text at the trailing caret',async({page})=>{
  await page.goto(path('real-analysis',true,'/cp/CP4/tutor'),{waitUntil:'domcontentloaded'})
  await openComposer(page)
  const editor=answer(page)
  await editor.fill('prei suffix')
  await editor.press('Home')
  for(let step=0;step<4;step++)await editor.press('ArrowRight')
- const suggestions=tutor(page).getByRole('group',{name:'Suggestions',exact:true})
- await suggestions.getByRole('button',{name:'preimage',exact:true}).click()
- await expect(editor).toHaveValue('preimage suffix')
- await undoTyping(page)
+ const suggestions=tutor(page).getByRole('group',{name:'Word suggestions',exact:true})
+ await expect(suggestions.locator('button:enabled')).toHaveCount(0)
  await expect(editor).toHaveValue('prei suffix')
+ await editor.fill('Read the ')
+ await page.keyboard.type('nota')
+ await suggestions.getByRole('button',{name:'Insert notation',exact:true}).click()
+ await expect(editor).toHaveValue('Read the notation ')
+ await undoTyping(page)
+ await expect(editor).toHaveValue('Read the nota')
 })
 
 test('a signed-in learner can retry connector delivery, receive the next question, and answer it',async({page})=>{

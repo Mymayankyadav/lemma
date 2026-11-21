@@ -1,0 +1,11 @@
+## N202 local writing aid and physical-device preview
+
+The owner explicitly continued PR #1738 with the previously researched writing aid, a theme-matched composer, interaction simulations, and a separate test APK before release. This extends the existing N202 input work in the same claimed PR; it does not start a second queue item or authorize production merge.
+
+The composer now provides three stationary word targets, visible strike-through replacement and spelling previews, a bounded inline faded continuation, and a nearby Undo after acceptance. More writing suggestions exposes complete alternatives, Keep what I typed, and Writing assistance. Declining an edit suppresses that occurrence as typing continues. Punctuation replaces only a candidate-supplied trailing space. Ordinary typing and spaces do not silently correct a draft.
+
+Settings → Tutor → Writing aid and the chat's Writing assistance sheet share owner-scoped preferences. Balanced, Faster typing, Strict and Off can be compared, with independent word, notation, spelling and continuation switches. Demo profiles default to Balanced; live owners opt in. Faster typing's earlier suggestions can influence mathematical wording and are labelled experimental.
+
+The local runtime is lazy-loaded and bundled for web/PWA and Android. It receives newly authored draft text, without the tutor's question or transcript. Revisions and the original learner anchor gate each application. Selection changes, account/checkpoint changes, pasted content, queued answers and composition cannot apply stale offers. A touch holds the original displayed proposal even if a slot changes before release. Typed words can complete one at a time within a bounded acceptance chain; they do not become new learner-authored evidence.
+
+See the [implementation checklist and design](../implementation/2026-11-21/writing-aid/README.md), [runtime provenance](../implementation/2026-11-21/writing-aid/ENGINE.md), and interaction evidence in that directory. Earlier research speed estimates are not treated as measured app or phone results. The side-by-side debug app is a demo for the owner's physical test; production settings, application ID, release signing and deployment workflows remain intact. Ready and production merge are withheld pending that test.

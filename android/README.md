@@ -22,6 +22,23 @@ release APK signed with the Owner's key and attaches it to a GitHub Release (`Le
 Carrel app. Install it on the phone directly. Every update must be signed with the same key, so keep a backup of it.
 Never commit the keystore, its passwords or `local.properties`.
 
+## Writing aid demo APK
+
+With Node.js 22+, JDK 21, Android SDK 36 and build-tools 36.0.0 installed, build the test APK from a Git checkout:
+
+```sh
+npm ci
+node scripts/android-writing-aid-demo.mjs /tmp/lemma-writing-aid-test.apk
+```
+
+The script builds from a temporary copy of the current files, runs native tests and lint, and verifies the APK signature.
+It uses the Gradle wrapper, or the Gradle installation in `GRADLE_HOME` when set. The `.sha256` file verifies the APK.
+The `.build.json` identifies the base commit and the SHA-256 of the build input paths and file contents, including local edits.
+
+Install the APK on an Android 7+ device and open **Lemma Writing Aid Test**. It can coexist with Lemma and launches the
+example workspace. The test app leaves sign-in callbacks and web links to the release. Open **Settings → Tutor → Writing aid**
+to change the mode, or open a checkpoint's Tutor, choose **Write a question**, and type `Let eps` to try a notation preview.
+
 ## Layout
 
 - `app/src/main/java/io/github/mymayankyadav/lemma/` — `MainActivity` and `LemmaNativePlugin` (the bridge to
