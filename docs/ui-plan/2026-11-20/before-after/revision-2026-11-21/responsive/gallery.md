@@ -1,6 +1,6 @@
 # Responsive and themes · November 21
 
-200 captured states and 366 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
+240 captured states and 622 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
 
 ### Sheet 1 · frames 1–12
 
@@ -122,6 +122,90 @@
 
 ![Contact sheet 30](contacts/sheet-30.webp)
 
-### Sheet 31 · frames 361–366
+### Sheet 31 · frames 361–372
 
 ![Contact sheet 31](contacts/sheet-31.webp)
+
+### Sheet 32 · frames 373–384
+
+![Contact sheet 32](contacts/sheet-32.webp)
+
+### Sheet 33 · frames 385–396
+
+![Contact sheet 33](contacts/sheet-33.webp)
+
+### Sheet 34 · frames 397–408
+
+![Contact sheet 34](contacts/sheet-34.webp)
+
+### Sheet 35 · frames 409–420
+
+![Contact sheet 35](contacts/sheet-35.webp)
+
+### Sheet 36 · frames 421–432
+
+![Contact sheet 36](contacts/sheet-36.webp)
+
+### Sheet 37 · frames 433–444
+
+![Contact sheet 37](contacts/sheet-37.webp)
+
+### Sheet 38 · frames 445–456
+
+![Contact sheet 38](contacts/sheet-38.webp)
+
+### Sheet 39 · frames 457–468
+
+![Contact sheet 39](contacts/sheet-39.webp)
+
+### Sheet 40 · frames 469–480
+
+![Contact sheet 40](contacts/sheet-40.webp)
+
+### Sheet 41 · frames 481–492
+
+![Contact sheet 41](contacts/sheet-41.webp)
+
+### Sheet 42 · frames 493–504
+
+![Contact sheet 42](contacts/sheet-42.webp)
+
+### Sheet 43 · frames 505–516
+
+![Contact sheet 43](contacts/sheet-43.webp)
+
+### Sheet 44 · frames 517–528
+
+![Contact sheet 44](contacts/sheet-44.webp)
+
+### Sheet 45 · frames 529–540
+
+![Contact sheet 45](contacts/sheet-45.webp)
+
+### Sheet 46 · frames 541–552
+
+![Contact sheet 46](contacts/sheet-46.webp)
+
+### Sheet 47 · frames 553–564
+
+![Contact sheet 47](contacts/sheet-47.webp)
+
+### Sheet 48 · frames 565–576
+
+![Contact sheet 48](contacts/sheet-48.webp)
+
+### Sheet 49 · frames 577–588
+
+![Contact sheet 49](contacts/sheet-49.webp)
+
+### Sheet 50 · frames 589–600
+
+![Contact sheet 50](contacts/sheet-50.webp)
+
+### Sheet 51 · frames 601–612
+
+![Contact sheet 51](contacts/sheet-51.webp)
+
+### Sheet 52 · frames 613–622
+
+![Contact sheet 52](contacts/sheet-52.webp)

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "label": "Revised application · November 21",
-  "states": 241,
-  "frames": 395,
+  "states": 243,
+  "frames": 405,
   "sources": [
     {
       "id": "1-shipping-after",
@@ -38,7 +38,7 @@
         }
       },
       "manifestSha256": "d4d91096bc37f880de89286feee566258a9f9599b91927f16018d23d2cc5ee85",
-      "selectedRecords": 237
+      "selectedRecords": 216
     },
     {
       "id": "2-shipping-final-detail",
@@ -110,7 +110,115 @@
         }
       },
       "manifestSha256": "a8b82c37540cc2a68d89661aa6147bccdc2a7fb0517dbb4511d123c4ac52cd3e",
-      "selectedRecords": 2
+      "selectedRecords": 1
+    },
+    {
+      "id": "4-atlas-eye-rail-phone",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:03:41.414Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "13ddc6f490af7187a1f408cd7021f208e7b4fbefc4b62fa9de07df4e374f625e",
+      "selectedRecords": 0
+    },
+    {
+      "id": "5-atlas-rail-final-phone",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:15:43.338Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "aa3c4ee06ad90f744b2809451fff07aed01a47537853b26c413aa0ff72977961",
+      "selectedRecords": 23
+    },
+    {
+      "id": "6-atlas-rail-final-retry-phone",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:20:05.460Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "b2cb7ba6158051e091acec276b752a783d49996f5e781f15b4a8e0b1443308c5",
+      "selectedRecords": 1
     }
   ],
   "records": [
@@ -150,7 +258,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -159,7 +267,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -185,7 +293,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -194,7 +302,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -220,7 +328,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -229,7 +337,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -244,7 +352,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -253,7 +361,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -268,7 +376,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -277,7 +385,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -292,7 +400,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -301,7 +409,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -317,7 +425,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -326,7 +434,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -349,7 +457,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -358,7 +466,39 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "phone",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "phone/night/atlas-list-options-collapsed.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-8.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -373,7 +513,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -382,7 +522,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -397,7 +537,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -406,7 +546,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -421,7 +561,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -430,7 +570,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -446,7 +586,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -455,7 +595,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -470,7 +610,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -479,7 +619,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -494,7 +634,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -503,7 +643,31 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "phone",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "phone/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "6-atlas-rail-final-retry-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -518,7 +682,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -527,7 +691,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -542,7 +706,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -551,7 +715,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -566,7 +730,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -575,7 +739,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -590,7 +754,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -599,7 +763,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "3-shipping-final-layout",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -614,7 +778,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -623,7 +787,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -639,7 +803,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -648,7 +812,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -663,7 +827,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -672,7 +836,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -1740,7 +1904,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=first-use&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1749,7 +1913,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-after",
+      "captureSource": "5-atlas-rail-final-phone",
       "buildEntriesSource": "capture"
     },
     {
@@ -6053,326 +6217,386 @@
       "height": 844
     },
     "phone/night/atlas.jpg": {
-      "sha256": "c26a8cf1e7a08de9fe396f008a109ad9bcabafe4d218df3f3528307f4b9d9536",
-      "bytes": 53315,
+      "sha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625",
+      "bytes": 54094,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept.jpg": {
-      "sha256": "5fbc0f1206f76d2b42a30a1c5cca521b9c8052f9ad9096abc1b9c3171ef9f0fa",
-      "bytes": 37413,
+      "sha256": "d5f1c96621a7189caed0938574b37a774dfab55b07717d1d9658f145426ad56b",
+      "bytes": 36907,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-1.jpg": {
-      "sha256": "144dc26403e0ff2e7e0ade856074944320a22198657131f0e5531bfd0186cfb5",
-      "bytes": 37257,
+      "sha256": "c049d68743701eef84d1e417f6ccec7591588181041e06bbc79d562a37235f94",
+      "bytes": 37833,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-2.jpg": {
-      "sha256": "200c238e9dc0349725fc4ce4f2b5ef9eb06d51154ef0402bc7d03f7cd35c3a79",
-      "bytes": 38452,
+      "sha256": "7cda8174080e8800589937c2156371f9e4dc39deea84958bcdb24e535e6d6d0f",
+      "bytes": 38095,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-3.jpg": {
-      "sha256": "b64e7f17217c12ab84d5f6d1f707a740412b678508a1c9c5005fa0dce2c179a8",
-      "bytes": 37958,
+      "sha256": "1497947a760d75e5720d9f922ca0ab045f6861ae873639a43077785b51166143",
+      "bytes": 38951,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-4.jpg": {
-      "sha256": "8170e044b722814128eca32971e535e93cb7ed52c1d3fda2c9e6591dc6552f03",
-      "bytes": 39110,
+      "sha256": "4193251a1144afefa620a5689dcd67952af24ef7c614b14f93ba15b4c5fe75b5",
+      "bytes": 38492,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-5.jpg": {
-      "sha256": "612498fd0003e605e6e54c20c949f67bceb56ec1e2c9e1d8042fafeb433514a1",
-      "bytes": 37530,
+      "sha256": "175fc49095fbd78e5a307e99cbb116186e5d02cc5574e55d5b31688511570bf3",
+      "bytes": 36932,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-6.jpg": {
-      "sha256": "b4fb85cb834f77aaa6ca5b6af2223021f1e0107c8ce7c65733142e1fb8a6e062",
-      "bytes": 39169,
+      "sha256": "1a7282acea50571c0abaa5325c3ebdff0efaf27b98d937a6fbf4342fe890c030",
+      "bytes": 38502,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-7.jpg": {
-      "sha256": "2d5884f5dead3b3ce1f5236ddba7cbc3532a80c6c758f32599bbbc099fb2d2d8",
-      "bytes": 37764,
+      "sha256": "b071013d48ca416fbd2c0a16e806eb5d9845b8f1aa20c4e26d4d539e1a354f67",
+      "bytes": 38281,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-8.jpg": {
-      "sha256": "7f6139d46d3e712125dae2916ee1f39932baa8afff56a51a07dcfdb4bc0771c9",
-      "bytes": 37616,
+      "sha256": "47938aa35620789e9e7e09681a8b42ffd06284f0c4d54aa0d7c09a0629589b62",
+      "bytes": 38253,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-0-9.jpg": {
-      "sha256": "9949f6057c98ed621ea5545b5cfad20c67654a08ab698f1c93e73ded3b716826",
-      "bytes": 37624,
+      "sha256": "c095c50cc6aa3cc4e804bda2d0f388a28abaebf7583f418c2636db537933417a",
+      "bytes": 37525,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-1-1.jpg": {
-      "sha256": "2ef85f440efe2d037ab8cf4f6103cfdeb436b011df862f0f78eed0c178ac5eed",
-      "bytes": 36111,
+      "sha256": "f68e3916fccf16f544d166ef51e653648d3af4d8e2c9936109979c48524ce1a6",
+      "bytes": 35156,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept--scroll-1-2.jpg": {
-      "sha256": "c709580bcd56418f9fb5a73ed51aacc7fb52744c95483e18ae9b9ae183272abf",
-      "bytes": 35510,
+      "sha256": "360d452e92d9e7077012832a13a41da535ec43bcc67a20e08688cb876a319b5a",
+      "bytes": 34640,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded.jpg": {
-      "sha256": "5fbc0f1206f76d2b42a30a1c5cca521b9c8052f9ad9096abc1b9c3171ef9f0fa",
-      "bytes": 37413,
+      "sha256": "d5f1c96621a7189caed0938574b37a774dfab55b07717d1d9658f145426ad56b",
+      "bytes": 36907,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-1.jpg": {
-      "sha256": "144dc26403e0ff2e7e0ade856074944320a22198657131f0e5531bfd0186cfb5",
-      "bytes": 37257,
+      "sha256": "c049d68743701eef84d1e417f6ccec7591588181041e06bbc79d562a37235f94",
+      "bytes": 37833,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-2.jpg": {
-      "sha256": "200c238e9dc0349725fc4ce4f2b5ef9eb06d51154ef0402bc7d03f7cd35c3a79",
-      "bytes": 38452,
+      "sha256": "7cda8174080e8800589937c2156371f9e4dc39deea84958bcdb24e535e6d6d0f",
+      "bytes": 38095,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-3.jpg": {
-      "sha256": "b64e7f17217c12ab84d5f6d1f707a740412b678508a1c9c5005fa0dce2c179a8",
-      "bytes": 37958,
+      "sha256": "1497947a760d75e5720d9f922ca0ab045f6861ae873639a43077785b51166143",
+      "bytes": 38951,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-4.jpg": {
-      "sha256": "8170e044b722814128eca32971e535e93cb7ed52c1d3fda2c9e6591dc6552f03",
-      "bytes": 39110,
+      "sha256": "4193251a1144afefa620a5689dcd67952af24ef7c614b14f93ba15b4c5fe75b5",
+      "bytes": 38492,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-5.jpg": {
-      "sha256": "612498fd0003e605e6e54c20c949f67bceb56ec1e2c9e1d8042fafeb433514a1",
-      "bytes": 37530,
+      "sha256": "175fc49095fbd78e5a307e99cbb116186e5d02cc5574e55d5b31688511570bf3",
+      "bytes": 36932,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-6.jpg": {
-      "sha256": "b4fb85cb834f77aaa6ca5b6af2223021f1e0107c8ce7c65733142e1fb8a6e062",
-      "bytes": 39169,
+      "sha256": "1a7282acea50571c0abaa5325c3ebdff0efaf27b98d937a6fbf4342fe890c030",
+      "bytes": 38502,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-7.jpg": {
-      "sha256": "2d5884f5dead3b3ce1f5236ddba7cbc3532a80c6c758f32599bbbc099fb2d2d8",
-      "bytes": 37764,
+      "sha256": "b071013d48ca416fbd2c0a16e806eb5d9845b8f1aa20c4e26d4d539e1a354f67",
+      "bytes": 38281,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-8.jpg": {
-      "sha256": "7f6139d46d3e712125dae2916ee1f39932baa8afff56a51a07dcfdb4bc0771c9",
-      "bytes": 37616,
+      "sha256": "47938aa35620789e9e7e09681a8b42ffd06284f0c4d54aa0d7c09a0629589b62",
+      "bytes": 38253,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-0-9.jpg": {
-      "sha256": "9949f6057c98ed621ea5545b5cfad20c67654a08ab698f1c93e73ded3b716826",
-      "bytes": 37624,
+      "sha256": "c095c50cc6aa3cc4e804bda2d0f388a28abaebf7583f418c2636db537933417a",
+      "bytes": 37525,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-1-1.jpg": {
-      "sha256": "2ef85f440efe2d037ab8cf4f6103cfdeb436b011df862f0f78eed0c178ac5eed",
-      "bytes": 36111,
+      "sha256": "f68e3916fccf16f544d166ef51e653648d3af4d8e2c9936109979c48524ce1a6",
+      "bytes": 35156,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-concept-expanded--scroll-1-2.jpg": {
-      "sha256": "c709580bcd56418f9fb5a73ed51aacc7fb52744c95483e18ae9b9ae183272abf",
-      "bytes": 35510,
+      "sha256": "360d452e92d9e7077012832a13a41da535ec43bcc67a20e08688cb876a319b5a",
+      "bytes": 34640,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-create-filled.jpg": {
-      "sha256": "f829f28ebdc8465e025097e3101de42accfea40a9c070a0e23c545b8db68c9be",
-      "bytes": 31460,
+      "sha256": "8d1a394d234fa6d3fb13bec66dfb1ed8418f6b8f1cf947542185bfdbcb131353",
+      "bytes": 31981,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-demonstrated.jpg": {
-      "sha256": "30eee1cd95a27f0aa336e0e04e3c849e5020dbc44cbd5597e697b1e122e43093",
-      "bytes": 29388,
+      "sha256": "77b8272f2547c05cd73fe5962430f5f8359edcc6618b4940a65ba77b3eaae4a0",
+      "bytes": 28546,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-edit-concept.jpg": {
-      "sha256": "e7613cba2da25ccba37fb129026e6b5a718c4253870f2812dbca8ed7e7f23263",
-      "bytes": 32776,
+      "sha256": "1e231ae404ddd315e50cf585841855a387df608b3eeefbb3d04ebfc727505636",
+      "bytes": 32204,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-legend.jpg": {
-      "sha256": "bc69c0b9924bec21285932f86690045bb99ab977ea92e1a797e04192c8eb6ad8",
-      "bytes": 31784,
+      "sha256": "bbf56ae0ba2bb9a178ef11648dcfcb5e0fd232013679cc41680687ef9c55239d",
+      "bytes": 31042,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-legend--scroll-0-1.jpg": {
-      "sha256": "ec0cc3b9b6d7036eddc6e96a7075f59aa2451be2fe7c1114707c5c6e27cc97c1",
-      "bytes": 34446,
+      "sha256": "03a197a5ee05169b9ecbe6d0d64932a5e08541e31451d2bb742caf6b75c73ac2",
+      "bytes": 33661,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list.jpg": {
-      "sha256": "fdb34efbf6b38f2e967de49b2ac18e4e8cf8dbe4e5b57906af6e95a3d3c1f834",
-      "bytes": 35282,
+      "sha256": "8e1547bd485fe04642dcb0227f4838ddeb4ce62440d4fa777880207b6892e04b",
+      "bytes": 35239,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-1.jpg": {
-      "sha256": "a4ad71587af3e594b975c59f66282f6a545a493a8d5fa2c96e4778e4d16c99dc",
-      "bytes": 34953,
+      "sha256": "60941d156f7bfe1f7e40a0c665cbc01147f7ddc2b89c34963a07c817229fcd05",
+      "bytes": 32891,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-2.jpg": {
-      "sha256": "97d312fa36bef4d062ebdcf7109d14fbde909b7e5ee3f7ba0b02ff662de47b37",
-      "bytes": 33331,
+      "sha256": "1d6c6a49f41b2d80e35b4a220e1e8dd78e19be026e3ef2da33ea3b022eadadeb",
+      "bytes": 32050,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-3.jpg": {
-      "sha256": "32cd43348f04c4993c4fd8c834a542886911de66571b157336a54e42fb8f7e27",
-      "bytes": 34599,
+      "sha256": "a10dc3a600ff4edf2e0072d61752b10e93e793b7becd64aac63b418f56fd0ea4",
+      "bytes": 36041,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-4.jpg": {
-      "sha256": "f67c061404c48f6681e7fa790e65cdfc37e61f2a012f00b72f483b6cf7522423",
-      "bytes": 32485,
+      "sha256": "54a21656d850926e6bfd3fa9adbec7f17dcb44644b4186ca799b9aab453c0af9",
+      "bytes": 33363,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-5.jpg": {
-      "sha256": "6dcc8a57f286d795831b0c80af384a1a8c025efba11be5741290e3207f29e230",
-      "bytes": 31248,
+      "sha256": "319d47eda6b95d395ddf3bf1b248fbb1eb301611be4f912bca08b1765038fcd3",
+      "bytes": 31912,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-6.jpg": {
-      "sha256": "da13d55cb15adb9c5aa8f880672f1c6b1f3b25d0949f0eed89b4e1d3fa54b840",
-      "bytes": 35054,
+      "sha256": "e5e4d38daed1a410cf8a5276ad9a82e32ee5361bf18beb970c96fea2070ac073",
+      "bytes": 33568,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-7.jpg": {
-      "sha256": "649a592405bd2cc275383c25d684a7f21376ade5fab965a077e20761e60aabff",
-      "bytes": 30546,
+      "sha256": "95fd3d675c2741df49602fb4ebaae695bf388a174d337799c0988933e9819077",
+      "bytes": 30483,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-list--scroll-0-8.jpg": {
-      "sha256": "7eff532cf2683b9b46f339b8db80db0652bc362cc77f3709fdd658271d473e07",
-      "bytes": 31692,
+      "sha256": "1dc74903907eafb652283f072bce7fd3ffb7f5879eacbfed9afaf981adac69c8",
+      "bytes": 31780,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "4a575f79f81e7012eef0c05bc6ae6d6c10f9be1c00daacc0205c35d9fd9bf892",
+      "bytes": 34518,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "b4043bb9af46d80a3a5a4716e0ab6ec8d067fdbdbe3a04b4bb46a30eaf73ba02",
+      "bytes": 34211,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "3ed8d92a98430b6fe421ec6d5508eafcd62f68f1863c9cfadea7452f63bdc99b",
+      "bytes": 32583,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "23e497ec0326994ff4cf458916c0381f1216e7a9fa7495c1d9a587ccc5124454",
+      "bytes": 33863,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "00b4177babd961657b4fa5ccc07ae03a318338fbddc2915bc77f059b56b0a7b2",
+      "bytes": 31715,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "4a716529e0c02a2dc94492fb58e138a0d60bf54fc1237a1a8cc8d6908718097d",
+      "bytes": 30503,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "f79cb8514ce8abfd4e64f007530603a4609013312bee4ab879c1aa67557270e6",
+      "bytes": 34311,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "5c935faddef02d18ad7aa25cb6773cab5657c608c6ed41c50a04b6c0848733e4",
+      "bytes": 29815,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "e0d48f47e0d34943bc70004829fa26b6a34be6d01541d4909f1d7c49f84754c9",
+      "bytes": 30920,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-map.jpg": {
-      "sha256": "c26a8cf1e7a08de9fe396f008a109ad9bcabafe4d218df3f3528307f4b9d9536",
-      "bytes": 53315,
+      "sha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625",
+      "bytes": 54094,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-new-concept.jpg": {
-      "sha256": "4126b0189ab6b5446814c14ab81b465ca90a670289ea3ce964f84fd4402d0721",
-      "bytes": 25277,
+      "sha256": "d513d2542a14d6997bb5157acefceac176122ad08dabb1429d00cb5f824b90b5",
+      "bytes": 25820,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-operation-link.jpg": {
-      "sha256": "73b24afa59bd81ee84c75ed2e8491cbf409e5b2f95720c267f3f5c33be0a3825",
-      "bytes": 30361,
+      "sha256": "e66ad8c8301d5c5555320ff8db6914b0fc8abadb96500800d3c292c726092a87",
+      "bytes": 29827,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-operation-merge.jpg": {
-      "sha256": "32c6f0acfff8d5b70cffa878590e812509f47a390441921372bd44feca4f8c54",
-      "bytes": 33601,
+      "sha256": "74eb8ffe4f2b858e201eb978225987e9d9847fcbd4794ccd6018573574e53e9f",
+      "bytes": 33797,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-operation-merge--scroll-0-1.jpg": {
-      "sha256": "faf563bfe544a06616f50780b228cb2a58dc6ad5651d96d6886f35f3a4db8902",
-      "bytes": 36762,
+      "sha256": "9211a854e23284d2177960a10605c3053783c5f68b754fb2275028efc1fa5b73",
+      "bytes": 36962,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-operation-reparent.jpg": {
-      "sha256": "1b38522669b2c27f8a6f97d5495763630dcff160e333e8155d0f8dcd74cf7af7",
-      "bytes": 29628,
+      "sha256": "80e4d1bd0bbe633a00b186463463d0e70bf2b5010a60bd5b1985193301180b34",
+      "bytes": 29097,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-operation-unlink.jpg": {
-      "sha256": "25aa07ca21c369bb8b256bd9a6cfeed9047e6faf6a17da1a5c7a3f6320e5d809",
-      "bytes": 30577,
+      "sha256": "5f170cbc8871928315db94db1732561927c1688690ca8cdf036a395c437c0466",
+      "bytes": 30016,
+      "width": 390,
+      "height": 844
+    },
+    "phone/night/atlas-options-collapsed.jpg": {
+      "sha256": "932842fbad83361885b95d222675e313e4ad74fae82c3c897080f772c90f01d9",
+      "bytes": 50154,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-peek.jpg": {
-      "sha256": "977586f0c792580070a945d3b67e911c24b99c1d523d3965dd71eee68cc1b5a7",
-      "bytes": 48007,
+      "sha256": "eb05505e09449b91d7c9c05418de0841db8792e210ea4be057f5f47d132597d2",
+      "bytes": 49559,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-pin-concept.jpg": {
-      "sha256": "1348dd501caad19571b02e3abf70c9300166c09355903339b3ea819b21ddf18e",
-      "bytes": 31785,
+      "sha256": "8a454ca2f40ca889e153dbcfe28baf1a8f763a59bcd197a94d8df6f9f7a4c398",
+      "bytes": 31267,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-preview-concept.jpg": {
-      "sha256": "76f64043cc2ca461c2ba86159752ff6c88eb17c49e00ac89abd10e53403e5340",
-      "bytes": 40267,
+      "sha256": "8ed36b34a0c35e95b94feb603f759e839060016db7d8d4809340e3100b22ec2f",
+      "bytes": 40402,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-search.jpg": {
-      "sha256": "7ab8e27f37f185ac4872868f7d5af80d9a43b6a6028cbfca15e386f921e41a27",
-      "bytes": 51719,
+      "sha256": "b82d09bde2dc69e7bcf5e6ba9a69ea5bec091021299d78386cbd885bafdca1ee",
+      "bytes": 43603,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-shaky.jpg": {
-      "sha256": "1f68cf393c2c3c578e552dccc99b5abac0e04647d2e40e776ff78826f1404202",
-      "bytes": 19135,
+      "sha256": "383db3149293dfffbf9cca183e7c5031b6a840824b8fb909cccb362c2b7e999f",
+      "bytes": 19810,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-subjects.jpg": {
-      "sha256": "7bf8baf5ca6a435a59ac2ef0ba4a0263d3bee60ad70593257deea6796f41946f",
-      "bytes": 31312,
+      "sha256": "13cc80c638fdbdec8fdeea918ff311964ea1e3746b5eadba5c2a87e549a03344",
+      "bytes": 30438,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-subjects--scroll-0-1.jpg": {
-      "sha256": "5e688996d17be78d5ce48f3b725b54b2deccb6e15e524c75aef968e9924e2fab",
-      "bytes": 36501,
+      "sha256": "3f80a1810a521147b8e419791dd65347df992c0a49d1ea13ce3ff3532b362cbc",
+      "bytes": 35573,
       "width": 390,
       "height": 844
     },
     "phone/night/atlas-tonight.jpg": {
-      "sha256": "22a740956a7088fcfcee629944c2adf7790eac76dd7e498816af759bffa680f3",
-      "bytes": 25095,
+      "sha256": "ce1b420a2fd2d49a1f001f10940e8b7d6501aa43eacff17b422a1bf9a86224af",
+      "bytes": 25262,
       "width": 390,
       "height": 844
     },
@@ -6899,8 +7123,8 @@
       "height": 844
     },
     "phone/night/empty-atlas-list.jpg": {
-      "sha256": "6fbb43558e2195cd91068688792ce9a7331148245dec047a741afabebbaf7308",
-      "bytes": 8865,
+      "sha256": "87400f3438c2503d3b324fe2c175a2a1c4e1abefccf5eb4b75862355cd133d8a",
+      "bytes": 9888,
       "width": 390,
       "height": 844
     },
@@ -8436,7 +8660,7 @@
         "phone/night/atlas-concept--scroll-0-8.jpg",
         "phone/night/atlas-concept--scroll-0-9.jpg"
       ],
-      "sha256": "3e5c02e60b37d70dc65f1fb9a020fc8b40dbfc46f14e62e07e04862abe93eb83"
+      "sha256": "c0e97c86d9e6d1b6d3a9ed74e618e566eb0fe084413be7fbd52f46234888ac9f"
     },
     {
       "file": "contacts/sheet-02.webp",
@@ -8456,7 +8680,7 @@
         "phone/night/atlas-concept-expanded--scroll-0-8.jpg",
         "phone/night/atlas-concept-expanded--scroll-0-9.jpg"
       ],
-      "sha256": "773af46259c963eda5642ec39382959da63668a436fc3d5027f449b034ad8764"
+      "sha256": "01778172274a45610c185c65d73a7ff2813ede7c403568697cad10715b7562ab"
     },
     {
       "file": "contacts/sheet-03.webp",
@@ -8476,7 +8700,7 @@
         "phone/night/atlas-list--scroll-0-3.jpg",
         "phone/night/atlas-list--scroll-0-4.jpg"
       ],
-      "sha256": "0399b7498aa95de856683fec0047c0e20df1a38d6b5d3d9bd51ab4f6db6fd82d"
+      "sha256": "9bd3d6fc1b459b25bc13c2d7653119ffcb3a0e0bb4aa2bdce4fdc7b4bd68cbe4"
     },
     {
       "file": "contacts/sheet-04.webp",
@@ -8487,6 +8711,23 @@
         "phone/night/atlas-list--scroll-0-6.jpg",
         "phone/night/atlas-list--scroll-0-7.jpg",
         "phone/night/atlas-list--scroll-0-8.jpg",
+        "phone/night/atlas-list-options-collapsed.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "phone/night/atlas-list-options-collapsed--scroll-0-7.jpg"
+      ],
+      "sha256": "58563947629d02bb4c8a5215fff4453e8cf18e8d57bec4dfaf2791d2466be760"
+    },
+    {
+      "file": "contacts/sheet-05.webp",
+      "firstFrame": 49,
+      "lastFrame": 60,
+      "images": [
+        "phone/night/atlas-list-options-collapsed--scroll-0-8.jpg",
         "phone/night/atlas-map.jpg",
         "phone/night/atlas-new-concept.jpg",
         "phone/night/atlas-operation-link.jpg",
@@ -8494,17 +8735,18 @@
         "phone/night/atlas-operation-merge--scroll-0-1.jpg",
         "phone/night/atlas-operation-reparent.jpg",
         "phone/night/atlas-operation-unlink.jpg",
-        "phone/night/atlas-peek.jpg"
+        "phone/night/atlas-options-collapsed.jpg",
+        "phone/night/atlas-peek.jpg",
+        "phone/night/atlas-pin-concept.jpg",
+        "phone/night/atlas-preview-concept.jpg"
       ],
-      "sha256": "9b48a04c9d84031e2ec156a42d1e5e3c89789768c1c6df741790547a3490d0d7"
+      "sha256": "728ffacf922e0f5a3b8e9f70b392a16623d1f832ba4d153a04ddaa85bca3b5ae"
     },
     {
-      "file": "contacts/sheet-05.webp",
-      "firstFrame": 49,
-      "lastFrame": 60,
+      "file": "contacts/sheet-06.webp",
+      "firstFrame": 61,
+      "lastFrame": 72,
       "images": [
-        "phone/night/atlas-pin-concept.jpg",
-        "phone/night/atlas-preview-concept.jpg",
         "phone/night/atlas-search.jpg",
         "phone/night/atlas-shaky.jpg",
         "phone/night/atlas-subjects.jpg",
@@ -8514,17 +8756,17 @@
         "phone/night/calendar-agenda.jpg",
         "phone/night/calendar-agenda--scroll-0-1.jpg",
         "phone/night/calendar-block-sheet.jpg",
-        "phone/night/calendar-block-sheet--scroll-0-1.jpg"
+        "phone/night/calendar-block-sheet--scroll-0-1.jpg",
+        "phone/night/calendar-block-sheet--scroll-0-2.jpg",
+        "phone/night/calendar-browse-day.jpg"
       ],
-      "sha256": "de8726f6b10be740d26298f4ae6f8f948cb9241389eed9a164726a885154448f"
+      "sha256": "b9b88e52d1e7a01f9c9ee4f945c88d85bbc610ff0d579539a53b673fa0dd44e9"
     },
     {
-      "file": "contacts/sheet-06.webp",
-      "firstFrame": 61,
-      "lastFrame": 72,
+      "file": "contacts/sheet-07.webp",
+      "firstFrame": 73,
+      "lastFrame": 84,
       "images": [
-        "phone/night/calendar-block-sheet--scroll-0-2.jpg",
-        "phone/night/calendar-browse-day.jpg",
         "phone/night/calendar-date-picker.jpg",
         "phone/night/calendar-day.jpg",
         "phone/night/calendar-day--scroll-0-1.jpg",
@@ -8534,17 +8776,17 @@
         "phone/night/calendar-delete-confirmation.jpg",
         "phone/night/calendar-delete-confirmation--scroll-0-1.jpg",
         "phone/night/calendar-delete-confirmation--scroll-0-2.jpg",
-        "phone/night/calendar-edit-block.jpg"
+        "phone/night/calendar-edit-block.jpg",
+        "phone/night/calendar-edit-block--scroll-0-1.jpg",
+        "phone/night/calendar-edit-block--scroll-0-2.jpg"
       ],
-      "sha256": "f10fda32452102d0e31e8380826827c3dc0862f3d19221efdb543c4de0e37df5"
+      "sha256": "e970fd85023d7d456631f2b0a4937f73ac56daf8ffd9d202e0531c2e9ca7db79"
     },
     {
-      "file": "contacts/sheet-07.webp",
-      "firstFrame": 73,
-      "lastFrame": 84,
+      "file": "contacts/sheet-08.webp",
+      "firstFrame": 85,
+      "lastFrame": 96,
       "images": [
-        "phone/night/calendar-edit-block--scroll-0-1.jpg",
-        "phone/night/calendar-edit-block--scroll-0-2.jpg",
         "phone/night/calendar-edit-time.jpg",
         "phone/night/calendar-edit-time--scroll-0-1.jpg",
         "phone/night/calendar-edit-time--scroll-0-2.jpg",
@@ -8554,17 +8796,17 @@
         "phone/night/calendar-empty-day--scroll-1-2.jpg",
         "phone/night/calendar-empty-day--scroll-1-3.jpg",
         "phone/night/calendar-jump-date.jpg",
-        "phone/night/calendar-month.jpg"
+        "phone/night/calendar-month.jpg",
+        "phone/night/calendar-new-busy.jpg",
+        "phone/night/calendar-new-busy--scroll-0-1.jpg"
       ],
-      "sha256": "08172bb35e217fe97b67f3573bf058282e66dd2af5664a70c7bcdb132b8a1382"
+      "sha256": "604a84f5eb17d9adc8b03f91cdf30a06fce3efcd4042285e593fccfce4ade4e3"
     },
     {
-      "file": "contacts/sheet-08.webp",
-      "firstFrame": 85,
-      "lastFrame": 96,
+      "file": "contacts/sheet-09.webp",
+      "firstFrame": 97,
+      "lastFrame": 108,
       "images": [
-        "phone/night/calendar-new-busy.jpg",
-        "phone/night/calendar-new-busy--scroll-0-1.jpg",
         "phone/night/calendar-new-busy--scroll-0-2.jpg",
         "phone/night/calendar-overdue.jpg",
         "phone/night/calendar-path-picker.jpg",
@@ -8574,17 +8816,17 @@
         "phone/night/calendar-quick-add--scroll-0-1.jpg",
         "phone/night/calendar-quick-add--scroll-0-2.jpg",
         "phone/night/calendar-task-picker.jpg",
-        "phone/night/calendar-week.jpg"
+        "phone/night/calendar-week.jpg",
+        "phone/night/calendar-week--scroll-0-1.jpg",
+        "phone/night/capture-block.jpg"
       ],
-      "sha256": "e832cbed78d0f7b1bacfd5df3bd63c4b2cbcbbcbabda9e3fa58446abdd50aa19"
+      "sha256": "ad875f9f4ecb8144ee94618e21346f57abdc777045b8281c4de6787b4c74288d"
     },
     {
-      "file": "contacts/sheet-09.webp",
-      "firstFrame": 97,
-      "lastFrame": 108,
+      "file": "contacts/sheet-10.webp",
+      "firstFrame": 109,
+      "lastFrame": 120,
       "images": [
-        "phone/night/calendar-week--scroll-0-1.jpg",
-        "phone/night/capture-block.jpg",
         "phone/night/capture-card.jpg",
         "phone/night/capture-sheet.jpg",
         "phone/night/capture-task.jpg",
@@ -8594,17 +8836,17 @@
         "phone/night/card--scroll-0-1.jpg",
         "phone/night/card--scroll-0-2.jpg",
         "phone/night/card--scroll-0-3.jpg",
-        "phone/night/card-actions.jpg"
+        "phone/night/card-actions.jpg",
+        "phone/night/card-delete-confirmation.jpg",
+        "phone/night/card-delete-undo.jpg"
       ],
-      "sha256": "98303c14289eb8ed6832090a9b2a493771321416d8c3062100e4169686f62725"
+      "sha256": "e0ba8854e001d6c51a6faf38c594cb9d3dccfe1cb599568087a89834ea2bf2ff"
     },
     {
-      "file": "contacts/sheet-10.webp",
-      "firstFrame": 109,
-      "lastFrame": 120,
+      "file": "contacts/sheet-11.webp",
+      "firstFrame": 121,
+      "lastFrame": 132,
       "images": [
-        "phone/night/card-delete-confirmation.jpg",
-        "phone/night/card-delete-undo.jpg",
         "phone/night/card-delete-undo--scroll-0-1.jpg",
         "phone/night/card-delete-undo--scroll-0-2.jpg",
         "phone/night/card-delete-undo--scroll-0-3.jpg",
@@ -8614,17 +8856,17 @@
         "phone/night/card-edit.jpg",
         "phone/night/card-edit--scroll-0-1.jpg",
         "phone/night/card-editor.jpg",
-        "phone/night/cards.jpg"
+        "phone/night/cards.jpg",
+        "phone/night/cards--scroll-0-1.jpg",
+        "phone/night/cards--scroll-0-2.jpg"
       ],
-      "sha256": "688f65a861e56f628446ebf37b197a37603e33208833a0e0d676851e56b5c4c8"
+      "sha256": "caa50e91658e8947640b4b383eb280f0b124a9909cf13e2b5e67eefc4aecd0e7"
     },
     {
-      "file": "contacts/sheet-11.webp",
-      "firstFrame": 121,
-      "lastFrame": 132,
+      "file": "contacts/sheet-12.webp",
+      "firstFrame": 133,
+      "lastFrame": 144,
       "images": [
-        "phone/night/cards--scroll-0-1.jpg",
-        "phone/night/cards--scroll-0-2.jpg",
         "phone/night/cards--scroll-0-3.jpg",
         "phone/night/cards--scroll-0-4.jpg",
         "phone/night/cards--scroll-0-5.jpg",
@@ -8634,17 +8876,17 @@
         "phone/night/cards-picker-path.jpg",
         "phone/night/cards-picker-state.jpg",
         "phone/night/checkpoint.jpg",
-        "phone/night/checkpoint--scroll-0-1.jpg"
+        "phone/night/checkpoint--scroll-0-1.jpg",
+        "phone/night/checkpoint--scroll-0-2.jpg",
+        "phone/night/checkpoint-actions.jpg"
       ],
-      "sha256": "85a7bb9a22607632e13b51ca9997993753802832d5dfcaf224de7c9a9416f558"
+      "sha256": "420c781157549ba1083175bb0b2be235ea9264ea25160bad0a0c6cf4e6caab19"
     },
     {
-      "file": "contacts/sheet-12.webp",
-      "firstFrame": 133,
-      "lastFrame": 144,
+      "file": "contacts/sheet-13.webp",
+      "firstFrame": 145,
+      "lastFrame": 156,
       "images": [
-        "phone/night/checkpoint--scroll-0-2.jpg",
-        "phone/night/checkpoint-actions.jpg",
         "phone/night/checkpoint-demonstrated.jpg",
         "phone/night/checkpoint-demonstrated--scroll-0-1.jpg",
         "phone/night/close-day-proof.jpg",
@@ -8654,17 +8896,17 @@
         "phone/night/edit-task.jpg",
         "phone/night/edit-task--scroll-0-1.jpg",
         "phone/night/empty-atlas-list.jpg",
-        "phone/night/empty-calendar-agenda.jpg"
+        "phone/night/empty-calendar-agenda.jpg",
+        "phone/night/empty-calendar-day.jpg",
+        "phone/night/empty-calendar-day--scroll-0-1.jpg"
       ],
-      "sha256": "70470b311eb22683498e8961f3f4fc029a816b88aa4d731d06cbabb0fb5de591"
+      "sha256": "8b1936d84755e31e59dd3b6560c462c978fc0e5d9c6178a523d5dd78cadf097b"
     },
     {
-      "file": "contacts/sheet-13.webp",
-      "firstFrame": 145,
-      "lastFrame": 156,
+      "file": "contacts/sheet-14.webp",
+      "firstFrame": 157,
+      "lastFrame": 168,
       "images": [
-        "phone/night/empty-calendar-day.jpg",
-        "phone/night/empty-calendar-day--scroll-0-1.jpg",
         "phone/night/empty-calendar-day--scroll-1-1.jpg",
         "phone/night/empty-calendar-day--scroll-1-2.jpg",
         "phone/night/empty-calendar-day--scroll-1-3.jpg",
@@ -8674,17 +8916,17 @@
         "phone/night/empty-cards.jpg",
         "phone/night/empty-inbox.jpg",
         "phone/night/empty-inbox-plans.jpg",
-        "phone/night/empty-paths.jpg"
+        "phone/night/empty-paths.jpg",
+        "phone/night/empty-practice.jpg",
+        "phone/night/empty-progress.jpg"
       ],
-      "sha256": "276ae796c271646004b73ffed58feb7533d5270842ada02af2a3fe94005d0d9e"
+      "sha256": "4edf08918a752dc8ab576ff6fb5589243f9517d808ad3b354f1d5d2d26cb4a5c"
     },
     {
-      "file": "contacts/sheet-14.webp",
-      "firstFrame": 157,
-      "lastFrame": 168,
+      "file": "contacts/sheet-15.webp",
+      "firstFrame": 169,
+      "lastFrame": 180,
       "images": [
-        "phone/night/empty-practice.jpg",
-        "phone/night/empty-progress.jpg",
         "phone/night/empty-progress-learning.jpg",
         "phone/night/empty-review-hub.jpg",
         "phone/night/empty-settings.jpg",
@@ -8694,17 +8936,17 @@
         "phone/night/focus-break.jpg",
         "phone/night/focus-desk-clock.jpg",
         "phone/night/focus-edit-intention.jpg",
-        "phone/night/focus-finish-empty.jpg"
+        "phone/night/focus-finish-empty.jpg",
+        "phone/night/focus-log-session.jpg",
+        "phone/night/focus-parked-thought.jpg"
       ],
-      "sha256": "c503525c2d1eb7de44bbe35416d2a562a0e66d1ae85c340ef855953c270b4a48"
+      "sha256": "133322d852d3502737d2c9ae48fc11ad9c143863139d78e2bba49d50428d31f7"
     },
     {
-      "file": "contacts/sheet-15.webp",
-      "firstFrame": 169,
-      "lastFrame": 180,
+      "file": "contacts/sheet-16.webp",
+      "firstFrame": 181,
+      "lastFrame": 192,
       "images": [
-        "phone/night/focus-log-session.jpg",
-        "phone/night/focus-parked-thought.jpg",
         "phone/night/focus-paused.jpg",
         "phone/night/focus-running.jpg",
         "phone/night/focus-timer-menu.jpg",
@@ -8714,17 +8956,17 @@
         "phone/night/inbox-edit-card--scroll-0-1.jpg",
         "phone/night/inbox-list.jpg",
         "phone/night/inbox-list--scroll-0-1.jpg",
-        "phone/night/inbox-plans.jpg"
+        "phone/night/inbox-plans.jpg",
+        "phone/night/inbox-plans--scroll-0-1.jpg",
+        "desktop/night/keyboard-shortcuts.jpg"
       ],
-      "sha256": "81dfdd4ddc2f2aa5f180d33b178c6bcfdc75be6e34e1607374219af631dfde67"
+      "sha256": "44f6a708b68a7ee82a146094c1c154605200b5d215ae6360ad2a343fb9213048"
     },
     {
-      "file": "contacts/sheet-16.webp",
-      "firstFrame": 181,
-      "lastFrame": 192,
+      "file": "contacts/sheet-17.webp",
+      "firstFrame": 193,
+      "lastFrame": 204,
       "images": [
-        "phone/night/inbox-plans--scroll-0-1.jpg",
-        "desktop/night/keyboard-shortcuts.jpg",
         "phone/night/new-path.jpg",
         "phone/night/new-task.jpg",
         "phone/night/new-task-date-picker.jpg",
@@ -8734,17 +8976,17 @@
         "phone/night/new-task-path-picker.jpg",
         "phone/night/new-task-subject-picker.jpg",
         "phone/night/new-task-time-picker.jpg",
-        "phone/night/new-task-validation.jpg"
+        "phone/night/new-task-validation.jpg",
+        "phone/night/not-found.jpg",
+        "phone/night/offline.jpg"
       ],
-      "sha256": "1eaae1663742b18e3861675de97dd7bb8eacc542f54654e085cfae061253544e"
+      "sha256": "fb664cdb52a3eb2d9d5d0c555c3aff5d6e5c8dea4cb37528070b1a536fcc11aa"
     },
     {
-      "file": "contacts/sheet-17.webp",
-      "firstFrame": 193,
-      "lastFrame": 204,
+      "file": "contacts/sheet-18.webp",
+      "firstFrame": 205,
+      "lastFrame": 216,
       "images": [
-        "phone/night/not-found.jpg",
-        "phone/night/offline.jpg",
         "phone/night/offline--scroll-0-1.jpg",
         "phone/night/offline--scroll-0-2.jpg",
         "desktop/night/paper-dot.jpg",
@@ -8754,17 +8996,17 @@
         "phone/night/paper-graph.jpg",
         "phone/night/paper-graph--scroll-0-1.jpg",
         "desktop/night/paper-ruled.jpg",
-        "phone/night/paper-ruled.jpg"
+        "phone/night/paper-ruled.jpg",
+        "phone/night/paper-ruled--scroll-0-1.jpg",
+        "phone/night/path.jpg"
       ],
-      "sha256": "d7bd79ceac91d3ca52184dfb70f386fb6b00c5fa1ff295bdd917637533c7d2d7"
+      "sha256": "e1e169fe05bbdb786fdf352d61c567acc2e82d92c0f003edd47315d9bccf5418"
     },
     {
-      "file": "contacts/sheet-18.webp",
-      "firstFrame": 205,
-      "lastFrame": 216,
+      "file": "contacts/sheet-19.webp",
+      "firstFrame": 217,
+      "lastFrame": 228,
       "images": [
-        "phone/night/paper-ruled--scroll-0-1.jpg",
-        "phone/night/path.jpg",
         "phone/night/path--scroll-0-1.jpg",
         "phone/night/path-actions.jpg",
         "phone/night/path-cards.jpg",
@@ -8774,17 +9016,17 @@
         "phone/night/path-estimates.jpg",
         "phone/night/path-estimates--scroll-0-1.jpg",
         "phone/night/path-goal.jpg",
-        "phone/night/path-goal--scroll-0-1.jpg"
+        "phone/night/path-goal--scroll-0-1.jpg",
+        "phone/night/path-map.jpg",
+        "phone/night/path-map--scroll-0-1.jpg"
       ],
-      "sha256": "0fd3956d4a7a50097f6e7a9533787f832dc8065c26d9b6a60c9c7d683323e9b6"
+      "sha256": "44e81f5d1b8235f73d3746b9c1d0d1c3fbb5feeac41636dc874db31ce255e196"
     },
     {
-      "file": "contacts/sheet-19.webp",
-      "firstFrame": 217,
-      "lastFrame": 228,
+      "file": "contacts/sheet-20.webp",
+      "firstFrame": 229,
+      "lastFrame": 240,
       "images": [
-        "phone/night/path-map.jpg",
-        "phone/night/path-map--scroll-0-1.jpg",
         "phone/night/path-marked-done.jpg",
         "phone/night/path-marked-done--scroll-0-1.jpg",
         "phone/night/path-sessions.jpg",
@@ -8794,17 +9036,17 @@
         "phone/night/paths.jpg",
         "phone/night/paths--scroll-0-1.jpg",
         "phone/night/paths-actions.jpg",
-        "phone/night/paths-empty-search.jpg"
+        "phone/night/paths-empty-search.jpg",
+        "phone/night/plan-proposal.jpg",
+        "phone/night/plan-proposal--scroll-0-1.jpg"
       ],
-      "sha256": "e549e5171dcf0489fb56cbc664957b8d9985d1e53f9ba53b1b177994d93847de"
+      "sha256": "cf97ab08b9e45a1d65b0cc36328cd43f09265b1fd6bdbfe84e747b0f968e8a9b"
     },
     {
-      "file": "contacts/sheet-20.webp",
-      "firstFrame": 229,
-      "lastFrame": 240,
+      "file": "contacts/sheet-21.webp",
+      "firstFrame": 241,
+      "lastFrame": 252,
       "images": [
-        "phone/night/plan-proposal.jpg",
-        "phone/night/plan-proposal--scroll-0-1.jpg",
         "phone/night/plan-proposal--scroll-0-2.jpg",
         "phone/night/practice.jpg",
         "phone/night/practice-manage.jpg",
@@ -8814,17 +9056,17 @@
         "phone/night/progress--scroll-0-2.jpg",
         "phone/night/progress-details.jpg",
         "phone/night/progress-empty.jpg",
-        "phone/night/progress-empty-range.jpg"
+        "phone/night/progress-empty-range.jpg",
+        "phone/night/progress-empty-range--scroll-0-1.jpg",
+        "phone/night/progress-goal.jpg"
       ],
-      "sha256": "8e238c345775d61f6f24510799b4d47ca5a6d2cf5e61724532792cbd3fe4cf4c"
+      "sha256": "4eec6d0cdc7a2df282a0bf5a44469271d9ac81f24e760bb55218877b932d6fb1"
     },
     {
-      "file": "contacts/sheet-21.webp",
-      "firstFrame": 241,
-      "lastFrame": 252,
+      "file": "contacts/sheet-22.webp",
+      "firstFrame": 253,
+      "lastFrame": 264,
       "images": [
-        "phone/night/progress-empty-range--scroll-0-1.jpg",
-        "phone/night/progress-goal.jpg",
         "phone/night/progress-learning.jpg",
         "phone/night/progress-learning--scroll-0-1.jpg",
         "phone/night/progress-learning--scroll-0-2.jpg",
@@ -8834,17 +9076,17 @@
         "phone/night/review-answer.jpg",
         "phone/night/review-complete.jpg",
         "phone/night/review-customise.jpg",
-        "phone/night/review-done.jpg"
+        "phone/night/review-done.jpg",
+        "phone/night/review-empty.jpg",
+        "phone/night/review-empty-details.jpg"
       ],
-      "sha256": "590c400a520422e5fa3dc9afd13c7643c371f63897fc107005445ac1128c3dc9"
+      "sha256": "388fc522c64ce803955362b5e95c217f43545a89e13b898929a68189bcd8ea36"
     },
     {
-      "file": "contacts/sheet-22.webp",
-      "firstFrame": 253,
-      "lastFrame": 264,
+      "file": "contacts/sheet-23.webp",
+      "firstFrame": 265,
+      "lastFrame": 276,
       "images": [
-        "phone/night/review-empty.jpg",
-        "phone/night/review-empty-details.jpg",
         "phone/night/review-hub.jpg",
         "phone/night/review-hub--scroll-0-1.jpg",
         "phone/night/review-nothing-due.jpg",
@@ -8854,17 +9096,17 @@
         "phone/night/review-scratch-revealed--scroll-0-1.jpg",
         "phone/night/search-empty.jpg",
         "phone/night/search-results.jpg",
-        "phone/night/search-results--scroll-0-1.jpg"
+        "phone/night/search-results--scroll-0-1.jpg",
+        "phone/night/search-sheet.jpg",
+        "phone/night/session.jpg"
       ],
-      "sha256": "c52fd1f2f598ac9da60a8f0a3e81a6088ee9435dee0028b23df72d23626f41ed"
+      "sha256": "ff8b1d7ebe525ca83dfe856c8616e86da9984aeec03166ef9e454ee503a636f6"
     },
     {
-      "file": "contacts/sheet-23.webp",
-      "firstFrame": 265,
-      "lastFrame": 276,
+      "file": "contacts/sheet-24.webp",
+      "firstFrame": 277,
+      "lastFrame": 288,
       "images": [
-        "phone/night/search-sheet.jpg",
-        "phone/night/session.jpg",
         "phone/night/session--scroll-0-1.jpg",
         "phone/night/session--scroll-0-2.jpg",
         "phone/night/session-bottom.jpg",
@@ -8874,17 +9116,17 @@
         "phone/night/settings-advanced.jpg",
         "phone/night/settings-appearance.jpg",
         "phone/night/settings-appearance--scroll-0-1.jpg",
-        "phone/night/settings-data.jpg"
+        "phone/night/settings-data.jpg",
+        "phone/night/settings-data--scroll-0-1.jpg",
+        "phone/night/settings-edit-subject.jpg"
       ],
-      "sha256": "b5a971243a21812436089214b332d742d109cc862a309bc35824bafe2feb20a0"
+      "sha256": "fcb7124d64c7b5daf327b258af2ac4feec458a5b0e6964b52670f9d4cef38cff"
     },
     {
-      "file": "contacts/sheet-24.webp",
-      "firstFrame": 277,
-      "lastFrame": 288,
+      "file": "contacts/sheet-25.webp",
+      "firstFrame": 289,
+      "lastFrame": 300,
       "images": [
-        "phone/night/settings-data--scroll-0-1.jpg",
-        "phone/night/settings-edit-subject.jpg",
         "phone/night/settings-planning.jpg",
         "phone/night/settings-planning--scroll-0-1.jpg",
         "phone/night/settings-planning-advanced.jpg",
@@ -8894,17 +9136,17 @@
         "phone/night/settings-planning-time-display.jpg",
         "phone/night/settings-planning-week-starts-on.jpg",
         "phone/night/settings-reminders.jpg",
-        "phone/night/settings-reminders--scroll-0-1.jpg"
+        "phone/night/settings-reminders--scroll-0-1.jpg",
+        "phone/night/settings-reminders-at-most.jpg",
+        "phone/night/settings-reminders-day.jpg"
       ],
-      "sha256": "d2c4ffb343b0cc69f6f8547f4b7026657cad7e91256968781d576ec84a876b70"
+      "sha256": "bbb5e9b33646b3f5557f0c18f3c749f9089124b618913ff371ea52a41ca9046c"
     },
     {
-      "file": "contacts/sheet-25.webp",
-      "firstFrame": 289,
-      "lastFrame": 300,
+      "file": "contacts/sheet-26.webp",
+      "firstFrame": 301,
+      "lastFrame": 312,
       "images": [
-        "phone/night/settings-reminders-at-most.jpg",
-        "phone/night/settings-reminders-day.jpg",
         "phone/night/settings-reminders-ends.jpg",
         "phone/night/settings-reminders-preferred-study-time.jpg",
         "phone/night/settings-reminders-schedule.jpg",
@@ -8914,17 +9156,17 @@
         "phone/night/settings-study.jpg",
         "phone/night/settings-study--scroll-0-1.jpg",
         "phone/night/settings-study-advanced.jpg",
-        "phone/night/settings-study-advanced--scroll-0-1.jpg"
+        "phone/night/settings-study-advanced--scroll-0-1.jpg",
+        "phone/night/settings-study-advanced--scroll-0-2.jpg",
+        "phone/night/settings-study-advanced--scroll-0-3.jpg"
       ],
-      "sha256": "fbe5934f69f07c4795ae381534a1f05017a0737d95ce0038110f01e92edc20e5"
+      "sha256": "dc3ff6d41eba4581fa25caffd83e4a7c080218df0305b037de9355a6b000a04c"
     },
     {
-      "file": "contacts/sheet-26.webp",
-      "firstFrame": 301,
-      "lastFrame": 312,
+      "file": "contacts/sheet-27.webp",
+      "firstFrame": 313,
+      "lastFrame": 324,
       "images": [
-        "phone/night/settings-study-advanced--scroll-0-2.jpg",
-        "phone/night/settings-study-advanced--scroll-0-3.jpg",
         "phone/night/settings-study-advanced--scroll-0-4.jpg",
         "phone/night/settings-study-break.jpg",
         "phone/night/settings-study-cards-a-day.jpg",
@@ -8934,17 +9176,17 @@
         "phone/night/settings-study-minutes-a-day.jpg",
         "phone/night/settings-study-new-cards-a-day.jpg",
         "phone/night/settings-study-target-recall.jpg",
-        "phone/night/settings-subjects.jpg"
+        "phone/night/settings-subjects.jpg",
+        "phone/night/settings-tutor.jpg",
+        "phone/night/settings-tutor--scroll-0-1.jpg"
       ],
-      "sha256": "f355e05f5046431930b913ec210c66ca7e29245113b2d12c66c7c730395081a7"
+      "sha256": "19332d3f71ca66ad21b6b9531c5b7537d542566fbd0246a739c2506e46691ff3"
     },
     {
-      "file": "contacts/sheet-27.webp",
-      "firstFrame": 313,
-      "lastFrame": 324,
+      "file": "contacts/sheet-28.webp",
+      "firstFrame": 325,
+      "lastFrame": 336,
       "images": [
-        "phone/night/settings-tutor.jpg",
-        "phone/night/settings-tutor--scroll-0-1.jpg",
         "phone/night/settings-tutor--scroll-0-2.jpg",
         "phone/night/sign-in.jpg",
         "phone/night/sky-stars.jpg",
@@ -8954,17 +9196,17 @@
         "phone/night/source-pages.jpg",
         "phone/night/study-details.jpg",
         "phone/night/study-details--scroll-0-1.jpg",
-        "phone/night/study-details--scroll-0-2.jpg"
+        "phone/night/study-details--scroll-0-2.jpg",
+        "phone/night/task-menu.jpg",
+        "phone/night/task-path-filter.jpg"
       ],
-      "sha256": "0a537bd4f56aeba4cf335d6a65a1db325b1824c3f65eb74506421210ccbe7f4e"
+      "sha256": "f68f30c7cfc8375653248aae2fa3b198cf304461f8c375db25dce5c6ae575d4b"
     },
     {
-      "file": "contacts/sheet-28.webp",
-      "firstFrame": 325,
-      "lastFrame": 336,
+      "file": "contacts/sheet-29.webp",
+      "firstFrame": 337,
+      "lastFrame": 348,
       "images": [
-        "phone/night/task-menu.jpg",
-        "phone/night/task-path-filter.jpg",
         "phone/night/tasks.jpg",
         "phone/night/tasks-doing.jpg",
         "phone/night/tasks-done.jpg",
@@ -8974,17 +9216,17 @@
         "phone/night/time-log-add--scroll-0-1.jpg",
         "phone/night/time-log-edit.jpg",
         "phone/night/time-log-edit--scroll-0-1.jpg",
-        "phone/night/time-log-previous-week.jpg"
+        "phone/night/time-log-previous-week.jpg",
+        "phone/night/time-log-void-confirmation.jpg",
+        "phone/night/today.jpg"
       ],
-      "sha256": "4f95d52d173066c8594dbbee9bf4208652b91b68eab975cc4dbceadd24d8bf99"
+      "sha256": "5f3d7f175de7330c1e37d8f4df3d263e94ea940d1a58aa3bf475f006894b6071"
     },
     {
-      "file": "contacts/sheet-29.webp",
-      "firstFrame": 337,
-      "lastFrame": 348,
+      "file": "contacts/sheet-30.webp",
+      "firstFrame": 349,
+      "lastFrame": 360,
       "images": [
-        "phone/night/time-log-void-confirmation.jpg",
-        "phone/night/today.jpg",
         "phone/night/today--scroll-0-1.jpg",
         "phone/night/today--scroll-0-2.jpg",
         "phone/night/today-first-run.jpg",
@@ -8994,17 +9236,17 @@
         "phone/night/tutor-beta-settings.jpg",
         "phone/night/tutor-beta-settings--scroll-0-1.jpg",
         "phone/night/tutor-beta-settings--scroll-0-2.jpg",
-        "phone/night/tutor-connection.jpg"
+        "phone/night/tutor-connection.jpg",
+        "phone/night/tutor-context.jpg",
+        "phone/night/tutor-conversation.jpg"
       ],
-      "sha256": "0139e562dd5efd68687a103185e29e4d5135b2ab94b1844c0ec2168e95405612"
+      "sha256": "10db2e8b5e85c5c259108401edecb4e5d07b5f965c7a98710a8d0de07c396c5d"
     },
     {
-      "file": "contacts/sheet-30.webp",
-      "firstFrame": 349,
-      "lastFrame": 360,
+      "file": "contacts/sheet-31.webp",
+      "firstFrame": 361,
+      "lastFrame": 372,
       "images": [
-        "phone/night/tutor-context.jpg",
-        "phone/night/tutor-conversation.jpg",
         "phone/night/tutor-drawing-preview.jpg",
         "phone/night/tutor-drawing-preview--scroll-0-1.jpg",
         "phone/night/tutor-drawing-preview--scroll-0-2.jpg",
@@ -9014,17 +9256,17 @@
         "phone/night/tutor-keyboard-initial.jpg",
         "phone/night/tutor-multiple-drawings.jpg",
         "phone/night/tutor-presence-tooltip.jpg",
-        "phone/night/tutor-reading.jpg"
+        "phone/night/tutor-reading.jpg",
+        "phone/night/tutor-scratch.jpg",
+        "phone/night/tutor-scratch--scroll-0-1.jpg"
       ],
-      "sha256": "9cc4d040d98b07a6717716c6b0f31c815589319614ba5f411b3483f562d6b9c1"
+      "sha256": "b708c70f6f433492cbcaeed4630d72f0ed02103152e7909845a6f4bb234c80aa"
     },
     {
-      "file": "contacts/sheet-31.webp",
-      "firstFrame": 361,
-      "lastFrame": 372,
+      "file": "contacts/sheet-32.webp",
+      "firstFrame": 373,
+      "lastFrame": 384,
       "images": [
-        "phone/night/tutor-scratch.jpg",
-        "phone/night/tutor-scratch--scroll-0-1.jpg",
         "phone/night/tutor-scratch--scroll-0-2.jpg",
         "phone/night/tutor-scratch-actions.jpg",
         "phone/night/tutor-scratch-drawing.jpg",
@@ -9034,17 +9276,17 @@
         "phone/night/tutor-scratch-resized--scroll-0-1.jpg",
         "phone/night/tutor-scratch-resized--scroll-0-2.jpg",
         "phone/night/tutor-session-actions.jpg",
-        "phone/night/tutor-start.jpg"
+        "phone/night/tutor-start.jpg",
+        "phone/night/tutor-symbol-catalogue.jpg",
+        "phone/night/tutor-symbol-catalogue--scroll-0-1.jpg"
       ],
-      "sha256": "585bc061315de8a42c3603015dec11630fc50ff64477786c4df705f45c9e4865"
+      "sha256": "b389c603a509092f52f192eb9c55a79aca2576e0c03edc5694e2e09eff50bb71"
     },
     {
-      "file": "contacts/sheet-32.webp",
-      "firstFrame": 373,
-      "lastFrame": 384,
+      "file": "contacts/sheet-33.webp",
+      "firstFrame": 385,
+      "lastFrame": 396,
       "images": [
-        "phone/night/tutor-symbol-catalogue.jpg",
-        "phone/night/tutor-symbol-catalogue--scroll-0-1.jpg",
         "phone/night/tutor-symbol-catalogue--scroll-0-2.jpg",
         "phone/night/tutor-symbol-catalogue--scroll-0-3.jpg",
         "phone/night/tutor-symbol-catalogue--scroll-0-4.jpg",
@@ -9054,17 +9296,17 @@
         "phone/night/tutor-symbol-keyboard.jpg",
         "phone/night/tutor-symbol-recognition-completion.jpg",
         "phone/night/tutor-symbol-recognition-inserted.jpg",
-        "phone/night/tutor-symbol-recognition-loading.jpg"
+        "phone/night/tutor-symbol-recognition-loading.jpg",
+        "phone/night/tutor-symbol-recognition-match.jpg",
+        "phone/night/tutor-symbol-search.jpg"
       ],
-      "sha256": "185949d23540e6f8c1f41d35d66dd244f988968c6e9b15c7148369e4744198bd"
+      "sha256": "55a398b7992aca2607ca48b8f84c3eb0a32f7830c021589a81b8af28092a18ea"
     },
     {
-      "file": "contacts/sheet-33.webp",
-      "firstFrame": 385,
-      "lastFrame": 395,
+      "file": "contacts/sheet-34.webp",
+      "firstFrame": 397,
+      "lastFrame": 405,
       "images": [
-        "phone/night/tutor-symbol-recognition-match.jpg",
-        "phone/night/tutor-symbol-search.jpg",
         "phone/night/tutor-symbol-search-description.jpg",
         "phone/night/tutor-symbols-analysis.jpg",
         "phone/night/tutor-symbols-greek.jpg",
@@ -9075,7 +9317,7 @@
         "phone/night/welcome-rhythm.jpg",
         "phone/night/welcome-tutor.jpg"
       ],
-      "sha256": "175aed78c8e9286b2d74e45720ca9b98ac006f7ef517b47fd2a1cf0c23ffa72d"
+      "sha256": "01c1b314daa80bbb2e56108ee25210d8a54f70daef1e53953227e7291f3022a8"
     }
   ]
 }

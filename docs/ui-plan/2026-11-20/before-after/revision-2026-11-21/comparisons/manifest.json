@@ -13,7 +13,7 @@
     "before": "phone/night/atlas-list.jpg",
     "beforeSha256": "dee54d560d6d522baa91d499ebace41d17358cc96bbfbbb55b98eef90dcb082b",
     "after": "phone/night/atlas-list.jpg",
-    "afterSha256": "fdb34efbf6b38f2e967de49b2ac18e4e8cf8dbe4e5b57906af6e95a3d3c1f834"
+    "afterSha256": "8e1547bd485fe04642dcb0227f4838ddeb4ce62440d4fa777880207b6892e04b"
   },
   {
     "file": "tutor.jpg",
@@ -69,17 +69,22 @@
     "before": "phone/night/atlas-new-concept.jpg",
     "beforeSha256": "7eeda787fa489dc42e10b8fdb24bbaf21a0d770c72ca1dfe529a670c8f43fe78",
     "after": "phone/night/atlas-new-concept.jpg",
-    "afterSha256": "4126b0189ab6b5446814c14ab81b465ca90a670289ea3ce964f84fd4402d0721"
+    "afterSha256": "d513d2542a14d6997bb5157acefceac176122ad08dabb1429d00cb5f824b90b5"
   },
   {
     "file": "atlas-map-final.jpg",
     "after": "phone/night/atlas.jpg",
-    "afterSha256": "c26a8cf1e7a08de9fe396f008a109ad9bcabafe4d218df3f3528307f4b9d9536"
+    "afterSha256": "14d586340e5f16e67ac15b6b9e9c0132fe7ac6e1b024460962ba231bb929c625"
+  },
+  {
+    "file": "atlas-options-collapsed.jpg",
+    "after": "phone/night/atlas-options-collapsed.jpg",
+    "afterSha256": "932842fbad83361885b95d222675e313e4ad74fae82c3c897080f772c90f01d9"
   },
   {
     "file": "atlas-search-final.jpg",
     "after": "phone/night/atlas-search.jpg",
-    "afterSha256": "7ab8e27f37f185ac4872868f7d5af80d9a43b6a6028cbfca15e386f921e41a27"
+    "afterSha256": "b82d09bde2dc69e7bcf5e6ba9a69ea5bec091021299d78386cbd885bafdca1ee"
   },
   {
     "file": "inline-drawings.jpg",

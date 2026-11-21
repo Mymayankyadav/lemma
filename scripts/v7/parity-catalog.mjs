@@ -85,6 +85,11 @@ for(const name of ['plan-proposal','path-marked-done']){
 }
 const add=(name,hash,prepare,extra={})=>catalog.push({name,hash,prepare,...extra});
 
+if(!baseline){
+ add('atlas-options-collapsed','/atlas',tap('Hide options'));
+ add('atlas-list-options-collapsed','/atlas?view=list',tap('Hide options'));
+}
+
 if(!baseline)add('card-delete-undo','/cards/1',chain(tap('More card actions'),tap('Delete card'),async page=>{
  await page.getByRole('dialog',{name:'Delete this card?',exact:true})
   .getByRole('button',{name:'Delete card',exact:true}).click();

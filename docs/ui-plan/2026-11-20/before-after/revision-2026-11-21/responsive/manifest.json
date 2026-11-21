@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "label": "Responsive and themes · November 21",
-  "states": 200,
-  "frames": 366,
+  "states": 240,
+  "frames": 622,
   "sources": [
     {
       "id": "1-shipping-responsive",
@@ -38,7 +38,7 @@
         }
       },
       "manifestSha256": "b4c2dc56a05732f363ef8269fe12f825852166850f873a33cc8833b16878fd5f",
-      "selectedRecords": 180
+      "selectedRecords": 150
     },
     {
       "id": "2-shipping-final-responsive",
@@ -74,10 +74,1054 @@
         }
       },
       "manifestSha256": "6cb9b488993d23849a530a946a221b4d65009a54adaa0e081ddcdd63b4b7150d",
-      "selectedRecords": 20
+      "selectedRecords": 10
+    },
+    {
+      "id": "3-atlas-eye-rail-responsive",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:05:10.527Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "603505b1eb65675789fa854242b90384c4c6252945e3be4ffb492f504cb7b3c7",
+      "selectedRecords": 50
+    },
+    {
+      "id": "4-atlas-rail-final-responsive",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:17:47.720Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "aa888700491e7190a07886e61b889d75bad0eca42a9b8a10588c8e8bdf8792cf",
+      "selectedRecords": 26
+    },
+    {
+      "id": "5-atlas-rail-final-retry-responsive",
+      "sourceCommit": "8746813bea82c2c096139b9198295e6bdfec7916",
+      "dirty": true,
+      "baseline": false,
+      "capturedAt": "2026-11-21T10:21:04.165Z",
+      "profiles": {
+        "phone": {
+          "width": 390,
+          "height": 844
+        },
+        "small": {
+          "width": 320,
+          "height": 640
+        },
+        "large": {
+          "width": 390,
+          "height": 844,
+          "text": 160
+        },
+        "landscape": {
+          "width": 844,
+          "height": 390
+        },
+        "tablet": {
+          "width": 834,
+          "height": 1112
+        },
+        "desktop": {
+          "width": 1440,
+          "height": 1000
+        }
+      },
+      "manifestSha256": "4dc379a6f64afe002894c616cd403993d6aa6d98cef51c8bacd140217b1ffe87",
+      "selectedRecords": 4
     }
   ],
   "records": [
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas",
+      "route": "/atlas",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/atlas.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/atlas-list.jpg",
+        "desktop/day/atlas-list--scroll-0-1.jpg",
+        "desktop/day/atlas-list--scroll-0-2.jpg",
+        "desktop/day/atlas-list--scroll-0-3.jpg",
+        "desktop/day/atlas-list--scroll-0-4.jpg",
+        "desktop/day/atlas-list--scroll-0-5.jpg",
+        "desktop/day/atlas-list--scroll-0-6.jpg",
+        "desktop/day/atlas-list--scroll-0-7.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/atlas-list.jpg",
+        "desktop/night/atlas-list--scroll-0-1.jpg",
+        "desktop/night/atlas-list--scroll-0-2.jpg",
+        "desktop/night/atlas-list--scroll-0-3.jpg",
+        "desktop/night/atlas-list--scroll-0-4.jpg",
+        "desktop/night/atlas-list--scroll-0-5.jpg",
+        "desktop/night/atlas-list--scroll-0-6.jpg",
+        "desktop/night/atlas-list--scroll-0-7.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/atlas-list.jpg",
+        "landscape/day/atlas-list--scroll-0-1.jpg",
+        "landscape/day/atlas-list--scroll-0-2.jpg",
+        "landscape/day/atlas-list--scroll-0-3.jpg",
+        "landscape/day/atlas-list--scroll-0-4.jpg",
+        "landscape/day/atlas-list--scroll-0-5.jpg",
+        "landscape/day/atlas-list--scroll-0-6.jpg",
+        "landscape/day/atlas-list--scroll-0-7.jpg",
+        "landscape/day/atlas-list--scroll-0-8.jpg",
+        "landscape/day/atlas-list--scroll-0-9.jpg",
+        "landscape/day/atlas-list--scroll-0-10.jpg",
+        "landscape/day/atlas-list--scroll-0-11.jpg",
+        "landscape/day/atlas-list--scroll-0-12.jpg",
+        "landscape/day/atlas-list--scroll-0-13.jpg",
+        "landscape/day/atlas-list--scroll-0-14.jpg",
+        "landscape/day/atlas-list--scroll-0-15.jpg",
+        "landscape/day/atlas-list--scroll-0-16.jpg",
+        "landscape/day/atlas-list--scroll-0-17.jpg",
+        "landscape/day/atlas-list--scroll-0-18.jpg",
+        "landscape/day/atlas-list--scroll-0-19.jpg",
+        "landscape/day/atlas-list--scroll-0-20.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/atlas-list.jpg",
+        "landscape/night/atlas-list--scroll-0-1.jpg",
+        "landscape/night/atlas-list--scroll-0-2.jpg",
+        "landscape/night/atlas-list--scroll-0-3.jpg",
+        "landscape/night/atlas-list--scroll-0-4.jpg",
+        "landscape/night/atlas-list--scroll-0-5.jpg",
+        "landscape/night/atlas-list--scroll-0-6.jpg",
+        "landscape/night/atlas-list--scroll-0-7.jpg",
+        "landscape/night/atlas-list--scroll-0-8.jpg",
+        "landscape/night/atlas-list--scroll-0-9.jpg",
+        "landscape/night/atlas-list--scroll-0-10.jpg",
+        "landscape/night/atlas-list--scroll-0-11.jpg",
+        "landscape/night/atlas-list--scroll-0-12.jpg",
+        "landscape/night/atlas-list--scroll-0-13.jpg",
+        "landscape/night/atlas-list--scroll-0-14.jpg",
+        "landscape/night/atlas-list--scroll-0-15.jpg",
+        "landscape/night/atlas-list--scroll-0-16.jpg",
+        "landscape/night/atlas-list--scroll-0-17.jpg",
+        "landscape/night/atlas-list--scroll-0-18.jpg",
+        "landscape/night/atlas-list--scroll-0-19.jpg",
+        "landscape/night/atlas-list--scroll-0-20.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/atlas-list.jpg",
+        "large/day/atlas-list--scroll-0-1.jpg",
+        "large/day/atlas-list--scroll-0-2.jpg",
+        "large/day/atlas-list--scroll-0-3.jpg",
+        "large/day/atlas-list--scroll-0-4.jpg",
+        "large/day/atlas-list--scroll-0-5.jpg",
+        "large/day/atlas-list--scroll-0-6.jpg",
+        "large/day/atlas-list--scroll-0-7.jpg",
+        "large/day/atlas-list--scroll-0-8.jpg",
+        "large/day/atlas-list--scroll-0-9.jpg",
+        "large/day/atlas-list--scroll-0-10.jpg",
+        "large/day/atlas-list--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/atlas-list.jpg",
+        "large/night/atlas-list--scroll-0-1.jpg",
+        "large/night/atlas-list--scroll-0-2.jpg",
+        "large/night/atlas-list--scroll-0-3.jpg",
+        "large/night/atlas-list--scroll-0-4.jpg",
+        "large/night/atlas-list--scroll-0-5.jpg",
+        "large/night/atlas-list--scroll-0-6.jpg",
+        "large/night/atlas-list--scroll-0-7.jpg",
+        "large/night/atlas-list--scroll-0-8.jpg",
+        "large/night/atlas-list--scroll-0-9.jpg",
+        "large/night/atlas-list--scroll-0-10.jpg",
+        "large/night/atlas-list--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/atlas-list.jpg",
+        "small/day/atlas-list--scroll-0-1.jpg",
+        "small/day/atlas-list--scroll-0-2.jpg",
+        "small/day/atlas-list--scroll-0-3.jpg",
+        "small/day/atlas-list--scroll-0-4.jpg",
+        "small/day/atlas-list--scroll-0-5.jpg",
+        "small/day/atlas-list--scroll-0-6.jpg",
+        "small/day/atlas-list--scroll-0-7.jpg",
+        "small/day/atlas-list--scroll-0-8.jpg",
+        "small/day/atlas-list--scroll-0-9.jpg",
+        "small/day/atlas-list--scroll-0-10.jpg",
+        "small/day/atlas-list--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/atlas-list.jpg",
+        "small/night/atlas-list--scroll-0-1.jpg",
+        "small/night/atlas-list--scroll-0-2.jpg",
+        "small/night/atlas-list--scroll-0-3.jpg",
+        "small/night/atlas-list--scroll-0-4.jpg",
+        "small/night/atlas-list--scroll-0-5.jpg",
+        "small/night/atlas-list--scroll-0-6.jpg",
+        "small/night/atlas-list--scroll-0-7.jpg",
+        "small/night/atlas-list--scroll-0-8.jpg",
+        "small/night/atlas-list--scroll-0-9.jpg",
+        "small/night/atlas-list--scroll-0-10.jpg",
+        "small/night/atlas-list--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/atlas-list.jpg",
+        "tablet/day/atlas-list--scroll-0-1.jpg",
+        "tablet/day/atlas-list--scroll-0-2.jpg",
+        "tablet/day/atlas-list--scroll-0-3.jpg",
+        "tablet/day/atlas-list--scroll-0-4.jpg",
+        "tablet/day/atlas-list--scroll-0-5.jpg",
+        "tablet/day/atlas-list--scroll-0-6.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list",
+      "route": "/atlas?view=list",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/atlas-list.jpg",
+        "tablet/night/atlas-list--scroll-0-1.jpg",
+        "tablet/night/atlas-list--scroll-0-2.jpg",
+        "tablet/night/atlas-list--scroll-0-3.jpg",
+        "tablet/night/atlas-list--scroll-0-4.jpg",
+        "tablet/night/atlas-list--scroll-0-5.jpg",
+        "tablet/night/atlas-list--scroll-0-6.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DmZnSAjb.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/atlas-list-options-collapsed.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-7.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/atlas-list-options-collapsed.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-7.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/atlas-list-options-collapsed.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-12.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-13.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-14.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-15.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-16.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-17.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-18.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-19.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-20.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/atlas-list-options-collapsed.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-12.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-13.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-14.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-15.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-16.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-17.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-18.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-19.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-20.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/atlas-list-options-collapsed.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-9.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/atlas-list-options-collapsed.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-9.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/atlas-list-options-collapsed.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/atlas-list-options-collapsed.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-11.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/atlas-list-options-collapsed.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-6.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-list-options-collapsed",
+      "route": "/atlas?view=list",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/atlas-list-options-collapsed.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-6.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
     {
       "scene": "atlas-new-concept",
       "route": "/atlas?view=list",
@@ -90,7 +1134,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -99,7 +1143,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "5-atlas-rail-final-retry-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -114,7 +1158,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -123,7 +1167,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "5-atlas-rail-final-retry-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -139,7 +1183,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -148,7 +1192,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -164,7 +1208,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -173,7 +1217,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -188,7 +1232,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -197,7 +1241,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -212,7 +1256,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -221,7 +1265,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -236,7 +1280,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -245,7 +1289,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -260,7 +1304,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -269,7 +1313,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -284,7 +1328,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -293,7 +1337,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "5-atlas-rail-final-retry-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -308,7 +1352,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -317,7 +1361,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "5-atlas-rail-final-retry-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -332,7 +1376,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -341,7 +1385,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -356,7 +1400,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -365,7 +1409,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -380,7 +1424,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -389,7 +1433,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -404,7 +1448,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -413,7 +1457,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -428,7 +1472,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -437,7 +1481,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -452,7 +1496,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -461,7 +1505,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -476,7 +1520,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -485,7 +1529,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -500,7 +1544,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -509,7 +1553,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -524,7 +1568,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -533,7 +1577,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -548,7 +1592,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?view=list&id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DmZnSAjb.js"
       ],
       "layout": {
         "overflow": 0,
@@ -557,7 +1601,247 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "4-atlas-rail-final-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "desktop",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "desktop/day/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "desktop",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "desktop/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "landscape",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "landscape/day/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "landscape",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "landscape/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "large",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "large/day/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "large",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "large/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "small",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "small/day/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "small",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "small/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "tablet",
+      "theme": "day",
+      "account": "populated",
+      "files": [
+        "tablet/day/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
+      "buildEntriesSource": "capture"
+    },
+    {
+      "scene": "atlas-options-collapsed",
+      "route": "/atlas",
+      "profile": "tablet",
+      "theme": "night",
+      "account": "populated",
+      "files": [
+        "tablet/night/atlas-options-collapsed.jpg"
+      ],
+      "errors": [],
+      "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
+      "buildEntries": [
+        "/lemma/assets/index-DNK5kJFQ.js"
+      ],
+      "layout": {
+        "overflow": 0,
+        "headings": [
+          "Atlas"
+        ]
+      },
+      "ok": true,
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -572,7 +1856,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -581,7 +1865,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -596,7 +1880,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -605,7 +1889,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -620,7 +1904,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -629,7 +1913,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -644,7 +1928,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -653,7 +1937,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -668,7 +1952,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -677,7 +1961,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -692,7 +1976,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -701,7 +1985,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -716,7 +2000,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -725,7 +2009,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -740,7 +2024,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -749,7 +2033,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -764,7 +2048,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -773,7 +2057,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -788,7 +2072,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas?id=concept-compactness",
       "buildEntries": [
-        "/lemma/assets/index-DbuBXbEI.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -797,7 +2081,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "1-shipping-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -812,7 +2096,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -821,7 +2105,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -836,7 +2120,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -845,7 +2129,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -861,7 +2145,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -870,7 +2154,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -886,7 +2170,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -895,7 +2179,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -911,7 +2195,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -920,7 +2204,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -936,7 +2220,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -945,7 +2229,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -961,7 +2245,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -970,7 +2254,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -986,7 +2270,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -995,7 +2279,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1010,7 +2294,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1019,7 +2303,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -1034,7 +2318,7 @@
       "errors": [],
       "url": "http://127.0.0.1:4182/lemma/?demo=1&flags=v6Shell,v7Shell,focusOrbit,v7Margin,v7Spread,v7Room,v7Ruler,v7Qed,v7Scratch,v7Paper,v7DeskClock,v7Week#/atlas",
       "buildEntries": [
-        "/lemma/assets/index-D908AYTv.js"
+        "/lemma/assets/index-DNK5kJFQ.js"
       ],
       "layout": {
         "overflow": 0,
@@ -1043,7 +2327,7 @@
         ]
       },
       "ok": true,
-      "captureSource": "2-shipping-final-responsive",
+      "captureSource": "3-atlas-eye-rail-responsive",
       "buildEntriesSource": "capture"
     },
     {
@@ -5032,291 +6316,1827 @@
     }
   ],
   "images": {
+    "desktop/day/atlas.jpg": {
+      "sha256": "dd656c5233ce61a26e8437e4bf919915a28ca4d3b12310030e708855289360e0",
+      "bytes": 97916,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas.jpg": {
+      "sha256": "cd3c35e083bd41a31ca8a83a62c80754203d9e26c4b01d7ffa27ef345845e9b4",
+      "bytes": 80441,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/atlas.jpg": {
+      "sha256": "f2b9f656b5524756389d788476a07cc0fe2aa060de36acd3afdd6a7d26cab770",
+      "bytes": 59028,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas.jpg": {
+      "sha256": "40ce9e58b69ec5617f2afbc3a071b69505ebae03e4952e4beb967daebfeeb8ad",
+      "bytes": 49098,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/atlas.jpg": {
+      "sha256": "0a71a56ce7a9a53cfb45a5d1263e26b65947785774b3a2f7cd85fb009751ec33",
+      "bytes": 53985,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas.jpg": {
+      "sha256": "0b16ca90f610486bc95036ea65cea0d080534e508d899edd3096e26906d93c14",
+      "bytes": 52895,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/atlas.jpg": {
+      "sha256": "6f17cbd0c89c4a97384b41b995698eacbd1ff1080d6cb7b4c17ca5abf9119625",
+      "bytes": 43107,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas.jpg": {
+      "sha256": "15a6ff35c58450bcfeab4df7d29e59a9199cd4bbedb05294a5d53fd21b4cbcb8",
+      "bytes": 42360,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/atlas.jpg": {
+      "sha256": "a9070383dd4d1b34a4475c592e025a26319d12a4143e95011f44031763334a39",
+      "bytes": 81610,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas.jpg": {
+      "sha256": "49323305cb37dbd3c538375b39ae18e5f2e09f7e790fc6a2cd545c6703a6e51c",
+      "bytes": 63585,
+      "width": 834,
+      "height": 1112
+    },
+    "desktop/day/atlas-list.jpg": {
+      "sha256": "361054510bafa596247f89b97c7522cbf2a35e33689a39adecd57046dbad3755",
+      "bytes": 54798,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-1.jpg": {
+      "sha256": "eb71bc17a7213a702aa91f48041d5429845ab87f3733a353ee6c7b1f759c640a",
+      "bytes": 54758,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-2.jpg": {
+      "sha256": "f0ee55e6daeb10a34575d9550a5cb4016462c2361935b0c44bf43c7e91912499",
+      "bytes": 55916,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-3.jpg": {
+      "sha256": "920acab797e0d7babb0d5c3b500adb5aa1f0c641e59e88b8e16c67ed6af2869a",
+      "bytes": 50266,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-4.jpg": {
+      "sha256": "24392d9c3ad21d6fdb7d4ca7f921a443a6f29412119055e4b2c9f2f8e9a67ccd",
+      "bytes": 51558,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-5.jpg": {
+      "sha256": "be1566343e3f40fb14ea3491bf709d7b22f038bb6708585d135134fd3853c2ff",
+      "bytes": 53451,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-6.jpg": {
+      "sha256": "fbd00c35851f940c50707428d806f1a6b2e8ec3df761ab5ebb0b8a30634a8b1a",
+      "bytes": 50279,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list--scroll-0-7.jpg": {
+      "sha256": "248dd74b163bed6d68f7dab9796f7b0d2927cf464b7d4e804df51422226b2ef6",
+      "bytes": 51150,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list.jpg": {
+      "sha256": "8890db1662a4febe95641a40a711406df6732bb0702af87e56d1ab40c4874633",
+      "bytes": 54001,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-1.jpg": {
+      "sha256": "d7cbb26900bed7cec94152d3fc8529ddb1ae908afb576d64cd8d96a6ed066135",
+      "bytes": 53955,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-2.jpg": {
+      "sha256": "e3a97c3f908b7b83107a74c8433f6de1cac40621963a8e5ce8f127cf965c5191",
+      "bytes": 54778,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-3.jpg": {
+      "sha256": "6a81867553e7e648a1ad805dd1fea68904e6c8e569a8afe0090ddb1015b3387e",
+      "bytes": 50421,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-4.jpg": {
+      "sha256": "30b91b3d9f661b21efc08d7feac86c04dc5af7a05bb321567cd0382c05089761",
+      "bytes": 51200,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-5.jpg": {
+      "sha256": "659c07a55c881e6a5dad0d28692ee8eb92dcd9127da371898653632770431af2",
+      "bytes": 53014,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-6.jpg": {
+      "sha256": "a9db657ae546041aefd0ec5950b90f427e7e1227c9a3a3a7af5d97bab2629a9a",
+      "bytes": 49804,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list--scroll-0-7.jpg": {
+      "sha256": "3635878abc70aa5415f0360f66281f638aa0ec2855077b466f5ce3dcb9d98c78",
+      "bytes": 50412,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/atlas-list.jpg": {
+      "sha256": "7e5c4eb4ed88f036cafd21b844bbbc5aecad36e530d1ee5a768ce15909c5d9b7",
+      "bytes": 20893,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-1.jpg": {
+      "sha256": "a27c02361a458f8dc28fa5a75fd129e095ae224f359be3736a38f1deaba089af",
+      "bytes": 22028,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-2.jpg": {
+      "sha256": "c0c2e891392f335d6047d979c3dc198769dc77a2dd9637545cc7d5c8fdb11a2f",
+      "bytes": 22499,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-3.jpg": {
+      "sha256": "c377fbd03a71791614fe83e83fa59680cee6810810d2228b03f6335a869d7c1c",
+      "bytes": 21224,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-4.jpg": {
+      "sha256": "24cb6f99f247d00461161f479ea7a2a0d44a59ae2028ae96389c1238fd2aaf48",
+      "bytes": 21518,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-5.jpg": {
+      "sha256": "fc3e435caec332b452771f3a40b302f00d9d6d45b30a4a7d513cd8efb9eccd56",
+      "bytes": 22707,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-6.jpg": {
+      "sha256": "9766f8b245998f57a5123142c5c1efbbc3e499f73d589a74cf8b046509a5d88f",
+      "bytes": 19781,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-7.jpg": {
+      "sha256": "26700b66741c555d7589209148f08a5741583bfd0e1cde94dec695a158b7f69f",
+      "bytes": 22876,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-8.jpg": {
+      "sha256": "47cd68e40a7cb7628939358fad9e7d448b67b83357590cf912436e57d93c0fb5",
+      "bytes": 21787,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-9.jpg": {
+      "sha256": "52cff5b203fd5acd3db6ed9974f650ff0a0f2e96dc2799e213d3549915987ed6",
+      "bytes": 21832,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-10.jpg": {
+      "sha256": "55309d46364abcb3a85b90b2929875a57780972b8ddadee1a42a389915c3be58",
+      "bytes": 21463,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-11.jpg": {
+      "sha256": "51a7bec82afa89497ba101389cd9cd9bfab4935fa74c8de79c354b1e336278f5",
+      "bytes": 20121,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-12.jpg": {
+      "sha256": "5b386528b4010ff9f845b12b44833b380cc7ea107782f619b882cd4c2f530bfc",
+      "bytes": 21521,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-13.jpg": {
+      "sha256": "dc448b9087e96b8f17aea7ebf676c3f53fa211d364158da4e9b616d046ef8ba4",
+      "bytes": 19853,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-14.jpg": {
+      "sha256": "e3646443873595fbfc6cc5c880367d34955b8fc154ab7eb128a400124feffcba",
+      "bytes": 21635,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-15.jpg": {
+      "sha256": "9cb5b1e2d3f32faf2eba5e48830eb48ff3f7e4154b97da7afd0ae31fc38b6cc4",
+      "bytes": 22743,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-16.jpg": {
+      "sha256": "6728b1baa7af6e6f6ba10764c3ff84c697732004a5fb0cd5d7791584ebc9be29",
+      "bytes": 21206,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-17.jpg": {
+      "sha256": "7d58f9eba3e2cc3eebeabb2c5eb9d9c28f3a023f8635bc601a8ee0a37eb8bc51",
+      "bytes": 22195,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-18.jpg": {
+      "sha256": "3b875884156c113bfc7a0bd53829567a314bcb235d308ec92083f46f1df069d5",
+      "bytes": 18649,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-19.jpg": {
+      "sha256": "4c3565103337e6bd3aeff0fd286a8272e72c2e139f3bb7c2a246c5e4de6124b8",
+      "bytes": 21303,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list--scroll-0-20.jpg": {
+      "sha256": "72e57aa587a34815cd840a3b73ecfd415899b63801757fe19f7244cc0819a636",
+      "bytes": 22970,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list.jpg": {
+      "sha256": "17143c83ecd9de72ed3993bf9a267d3ca7a19daa8846dc53f9aed597f876da77",
+      "bytes": 20545,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-1.jpg": {
+      "sha256": "3201b1fbd47464d4ab7418ddfb06cab618041694f62783f59402363a10019fda",
+      "bytes": 21689,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-2.jpg": {
+      "sha256": "3fd67845509bd26c14946cf127e97eb173079cd62bae9cf0e16412c9ba830d11",
+      "bytes": 21983,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-3.jpg": {
+      "sha256": "ae61a24d1eb49921d551e64c61ba2acfeb56df90fa502746d16ebd10aeff8dd9",
+      "bytes": 21177,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-4.jpg": {
+      "sha256": "e9cfa8e938434a01340523d359458cb60cf08e066218a5a6c8849e5f6c79e3a2",
+      "bytes": 21181,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-5.jpg": {
+      "sha256": "d802ac4012d883f3ba20c3f4d8573c5e88d6667ebb937a6cce2828fb4e099e74",
+      "bytes": 22353,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-6.jpg": {
+      "sha256": "c4e71a513a36ceaac3cb3c326cb550d481ed775a6926e90b68b90a0edc7f8401",
+      "bytes": 19657,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-7.jpg": {
+      "sha256": "43151c9390812d23099338ca921fca7b2273d71b3afed39211c190a50574342a",
+      "bytes": 22393,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-8.jpg": {
+      "sha256": "c2685a3fe8ca9f1dc708711854289543f576dfb7703e354b911304a2a50b54a4",
+      "bytes": 21873,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-9.jpg": {
+      "sha256": "1f77eba6359f1767adf856c592685ac2617ad4b7cf5d64d55c4fc5b2f67b0bf4",
+      "bytes": 21681,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-10.jpg": {
+      "sha256": "d6e11d0469ca6b3a00151cddfb780637e45016776da06598cbed76d7b94dc327",
+      "bytes": 21270,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-11.jpg": {
+      "sha256": "2f75b9d35f88ef5a550f2d887fc5bf41d2a003585629a84d5d7781ab68c60cf3",
+      "bytes": 19891,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-12.jpg": {
+      "sha256": "135a2087b7b921f7eb45374a945d061b0e1b911d489eea4c76df88aabed7ffd1",
+      "bytes": 21068,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-13.jpg": {
+      "sha256": "d2f18dcfca586c2cfcc2b7c820401d00d1438cb5663aef1dcbc61c85c4c207b6",
+      "bytes": 19848,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-14.jpg": {
+      "sha256": "09a311027352dff48911697c8955d68264bb661c9e3ccd432f0ca8a0e077b7a7",
+      "bytes": 21383,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-15.jpg": {
+      "sha256": "c63023c85b29ea785d803cda44ed16a1258af3e18f0593c2afc9f858e7900b83",
+      "bytes": 22299,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-16.jpg": {
+      "sha256": "b64837e0677382d226d4178133e49006b78b93c28b2bae34c070756fba6a30f4",
+      "bytes": 20972,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-17.jpg": {
+      "sha256": "5b49eaa6e50e2f8838d4e6340ece12bc1a721955c0557011f353ca049c908765",
+      "bytes": 21769,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-18.jpg": {
+      "sha256": "376af4d4f4756ccdb9e5b54bf385e52d4537fd8df3c71c981e2fa3e1cba3b2a0",
+      "bytes": 18485,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-19.jpg": {
+      "sha256": "c5d358d778f63b5b761d275b166ace799efed43b2e45aedf842711744ec0583e",
+      "bytes": 21003,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list--scroll-0-20.jpg": {
+      "sha256": "55ad6846b08039e73b7ee747a840ed3fb23a20248239def631816ced08a7e52d",
+      "bytes": 22664,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/atlas-list.jpg": {
+      "sha256": "f721682673f93ea8ea492b9c790897d5dd3a5336fd46a352ffea8b36ed92a07f",
+      "bytes": 41304,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-1.jpg": {
+      "sha256": "40217ba6e8ac77faed428c7cbc0394b9d727776a68c197cc4c531cf80329572b",
+      "bytes": 42292,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-2.jpg": {
+      "sha256": "1c62ef8831692389570e3d63910ba4f7bfad8a656287604956d69bdeca1f914a",
+      "bytes": 40924,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-3.jpg": {
+      "sha256": "b21af91ff18b905cd92b05da56f2cae786768cd2649ef1a575790fd31efab549",
+      "bytes": 41077,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-4.jpg": {
+      "sha256": "2fc72784c4ca6aedee0aaf118488e466536105f56fc232252a277a9ec3488166",
+      "bytes": 43479,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-5.jpg": {
+      "sha256": "85cf9afe3e8c9bc8463444620adbba5fce50ba0952f944cc502070f151861616",
+      "bytes": 41663,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-6.jpg": {
+      "sha256": "4ec0a1e4165fa5c0bce678b0bbac5de6a9a65d42c6fad3db51f62e6c65e13791",
+      "bytes": 39721,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-7.jpg": {
+      "sha256": "3f1324391b9cb750e67013cea46ee3de29a5719d8ca450aba9a9bf70844a52c1",
+      "bytes": 38386,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-8.jpg": {
+      "sha256": "0c1deebc307f078fa9473d88653125dd12ec33fb50afadd94f2cd66022598940",
+      "bytes": 41642,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-9.jpg": {
+      "sha256": "2b11ab6602ca0672085cc01f348643d3a9bf04933855d4dcd9e230b82d47fb64",
+      "bytes": 39880,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-10.jpg": {
+      "sha256": "04fa624d3972ffdf956d2d392e68361c869251b7098b9263944e4acc2f775b78",
+      "bytes": 38219,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list--scroll-0-11.jpg": {
+      "sha256": "c81c6e1f302f561cb2070d034f44be05fa8b7cebbb7f965acbd63fb6b2e8718c",
+      "bytes": 39927,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list.jpg": {
+      "sha256": "798c6dcc3a3ca5f22eab78dd93c5a56616c163111c43013e2b9b72fee0b23628",
+      "bytes": 40150,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-1.jpg": {
+      "sha256": "e379acf5a0b1b69d6110b7cf3bc32713f93171caf117dd106c8b4b21375bf2de",
+      "bytes": 41197,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-2.jpg": {
+      "sha256": "91faa298d3389a668559ff2261358a83eb5f730a399c33f9b0b8c73bd03ee11a",
+      "bytes": 40090,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-3.jpg": {
+      "sha256": "5ba60fa8db20bf110754977c7c5cfdd7c6d986fdf44c5792122ebd2b1e1b11b4",
+      "bytes": 39957,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-4.jpg": {
+      "sha256": "de181c54065d3b62850454f31af8dfff26ecfbbf36c2dbc971987be496838ce8",
+      "bytes": 42483,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-5.jpg": {
+      "sha256": "d9c8068c91a0de66c35c72fffac432caa12268c1c68bf3cc0582a0c7331265e7",
+      "bytes": 40812,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-6.jpg": {
+      "sha256": "79026633b1c53925ed0e8c584c577de4fbc009d55c92aa8f4b9ac2c8e3f3093d",
+      "bytes": 38839,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-7.jpg": {
+      "sha256": "50d5cc3cebd02cee85a8b26fe17e0c48b197848cde6b4339d13583ebeb796f30",
+      "bytes": 37429,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-8.jpg": {
+      "sha256": "8b03d2492033358e7f81e9f83b2a357e67bfec41ce662236511918fcdb80c29d",
+      "bytes": 40609,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-9.jpg": {
+      "sha256": "5cd595dcefb3a3fbee84c2716b97b3452118a3fede89ad95ca3b8c08e9a144fa",
+      "bytes": 38924,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-10.jpg": {
+      "sha256": "828f5dc150d06ea5ccfdbe1d858583420cf60f73f8a773a1c850b90dad726a38",
+      "bytes": 37319,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list--scroll-0-11.jpg": {
+      "sha256": "7a6c3e119a61a5a75426ab7784b56dd940cac90825cf349bec9105a2f895dacd",
+      "bytes": 39063,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/atlas-list.jpg": {
+      "sha256": "89488406452b91094a1506bdfa7414b9f3dfa8c303edc3d0aa7dc23d9e202502",
+      "bytes": 24221,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-1.jpg": {
+      "sha256": "f29538531007f161e80e10978c196cec5afb1ca4282dc79b556660c8f9096e2d",
+      "bytes": 26189,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-2.jpg": {
+      "sha256": "f983ddafc25f685116e9ae5263280ed45abd11797f3c44cfd83dd40853ba68be",
+      "bytes": 24847,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-3.jpg": {
+      "sha256": "485da61389e1df47e312f9148a18c0f2596c9671abb5596acf9e9cb81e0eaa0d",
+      "bytes": 25002,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-4.jpg": {
+      "sha256": "bb6cabcc255f1f08e72274b54a00dcfb7ddadbc376d8818355d20a81a47f37ff",
+      "bytes": 26239,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-5.jpg": {
+      "sha256": "3a697c7e54d94670748be1ab69a5cd5f1fb3c9623bbd28a1191948fb50a79089",
+      "bytes": 24071,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-6.jpg": {
+      "sha256": "cc947dc4050fec56897c7f39875a0281a6a5bae5e69199bfb96ac76b7ac5ebc7",
+      "bytes": 24226,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-7.jpg": {
+      "sha256": "a08a260e89df76af0e92e80f75f3f12b5f9715118ab66b8c1adce68c013e3cbe",
+      "bytes": 23789,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-8.jpg": {
+      "sha256": "bbaad277f1aa72420bb3686e2f9b5efbfea4d6873fbef57970f7d030cb0a1fbc",
+      "bytes": 24327,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-9.jpg": {
+      "sha256": "31c0441badc303195750a3a273994c1d5360ad9d5d62b80bcce2c8fd4ea75afd",
+      "bytes": 23993,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-10.jpg": {
+      "sha256": "7ab909fa92b6d58264928ffb540bdd93f626058a3902a37baadaf1feb8609d2d",
+      "bytes": 23789,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list--scroll-0-11.jpg": {
+      "sha256": "42ffb59e68bf94e00aaa1f93991ed8d64b547ff864c1e3325b806fbfb726fe18",
+      "bytes": 22383,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list.jpg": {
+      "sha256": "62cd93bb72e0898ca5f721ec8f5ba81e52998d613ede8af111ddbcafe2d9c849",
+      "bytes": 23732,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-1.jpg": {
+      "sha256": "f817ebcc996f0509f2a8ae0de09d6d5b4fc000ca3a0dd6a70e965a345aabfc95",
+      "bytes": 25577,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-2.jpg": {
+      "sha256": "c3118e61d462f9dcf25cf04f3a85fcb8169dd769f8f33a0151ab9be6939c8041",
+      "bytes": 24372,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-3.jpg": {
+      "sha256": "e01ee22340ee5ce27b379ef952528822ae10dd29211ef592b759847fdc8316e5",
+      "bytes": 24545,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-4.jpg": {
+      "sha256": "049e413319a84721648d3f2e185264a8bb0d3135ea8606d845f69f9c316a325e",
+      "bytes": 25674,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-5.jpg": {
+      "sha256": "223481efaab28a8b132ebdce32090f3044878225a60b129223663e57aa434cdc",
+      "bytes": 23744,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-6.jpg": {
+      "sha256": "0530eaf639fd5e1327a48d01e985f0185b942985b81530417eb632132e6ff893",
+      "bytes": 23847,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-7.jpg": {
+      "sha256": "e9d29cde3353f8e1a8fc9855e247761756a639b4f14a6c2b870cf2435c8d9092",
+      "bytes": 23291,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-8.jpg": {
+      "sha256": "45fac7aae56656b7bebb7b133d75c6b621cac93da8b0c294587d47e1f2441333",
+      "bytes": 23880,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-9.jpg": {
+      "sha256": "38bd9893b8bdfef64d09c62333ab8b9f803c931bf6ddd2baff6302a2f4396750",
+      "bytes": 23484,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-10.jpg": {
+      "sha256": "a336091f5b91306305bdf2afa2cd3e69d17e75a92d59415253867744f242de5e",
+      "bytes": 23314,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list--scroll-0-11.jpg": {
+      "sha256": "561b1e3527977034f64de8b606d544a3f68611594b26006aa1598c45dd397dca",
+      "bytes": 22043,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/atlas-list.jpg": {
+      "sha256": "43ae26c72dedb08c44b98811cab1708e7df8f20ecdb1204aad96e3334152c146",
+      "bytes": 57669,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-1.jpg": {
+      "sha256": "ccf6ee4e1f9fb28a127553f8d4ec5e148cbfca03ec6f48dc19e2fc6f3cad4dde",
+      "bytes": 55029,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-2.jpg": {
+      "sha256": "087437985736d6bbd4c8e0c501a091b6d35c303c901b056b16a38eaf7545e5fd",
+      "bytes": 56973,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-3.jpg": {
+      "sha256": "fc88e108a4507c645a7d36cc226588248782bad2ae71058a84d9d27f794d52a2",
+      "bytes": 52091,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-4.jpg": {
+      "sha256": "7f9c7f30e210c632c5beef14bb4ae1168e37365da2cc95b2ebbd810cfdb0bb53",
+      "bytes": 55827,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-5.jpg": {
+      "sha256": "66c3e94f52a82839cb36c09a262b277ad7ca8911a2fbd706356d173c3a80728c",
+      "bytes": 51169,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list--scroll-0-6.jpg": {
+      "sha256": "c36f03d657e6085a03d476d9294b3aff214839c74a164167d5ac2d1052bde3cd",
+      "bytes": 51282,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list.jpg": {
+      "sha256": "7fa5580e1d5d5ecb696cb14e4e9f8c364590ec5b5a8ee05d492ba6cbaea38d1d",
+      "bytes": 56395,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-1.jpg": {
+      "sha256": "d4a44489a1a6919b8bfede9180e05b76dbaadb835b4c2de173ddc0ff719c0afc",
+      "bytes": 54052,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-2.jpg": {
+      "sha256": "ceb3d5843a804415605f6cfae784661d4936a9fa4707f441e9355993b521a1c1",
+      "bytes": 55868,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-3.jpg": {
+      "sha256": "0cf403b19e4d47ff6a2c33e59b31a169aefcca850a8e0f2758f8072f4b08a4eb",
+      "bytes": 51337,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-4.jpg": {
+      "sha256": "3d41dc59410d97400297fcd4e5d6c4f91f0949b39a146b2ef0092821c2027f0f",
+      "bytes": 54643,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-5.jpg": {
+      "sha256": "02edb9de5cbc6d9b6231a04ee611ff6e1f18dd2685c4666fcad328feabb0700b",
+      "bytes": 50458,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list--scroll-0-6.jpg": {
+      "sha256": "61cc32091f8ca6005da3755b0589fee93210a21bccc844063f7e99e47bb2ca33",
+      "bytes": 50340,
+      "width": 834,
+      "height": 1112
+    },
+    "desktop/day/atlas-list-options-collapsed.jpg": {
+      "sha256": "99721f91fada501d6de99dcac27773219e452bdc18e51dd338c7150a63c2c277",
+      "bytes": 53530,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "1a0c80f1ad06850f2bed5fc85759b814e92e8705a29979517ff8af2842e7dc6a",
+      "bytes": 53310,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "70929f19b6d0514a08622b22fb2b9b1e3b6f1e10871dce4480d4645f53aa553a",
+      "bytes": 54319,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "98003e162f4f66975eaba772a1046941d5f5b6467b0631e9f2b9bc480048e3e4",
+      "bytes": 48697,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "5ba59da2f96e6771296a351edf7f873a46cfbea546e9805eb59c8bf191a1b179",
+      "bytes": 50409,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "921e44d4010d1ffd7661ebea5429063781c2596402f043e28b056e202fede433",
+      "bytes": 52295,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "347f0be68a8620c7ffff6a182b51791cd1009188d32bac12e091bc8b918e1bd9",
+      "bytes": 48868,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/day/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "26979b8b4a4c0a7836545577d726909451e159a31e5a37ef590008effaf9adf6",
+      "bytes": 49626,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "98cc50b2f6770fac546e4ba012590764c2cdfa4f62727991814f7b9ed7b4ad7a",
+      "bytes": 52695,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "da197d268cdf8f45f43bfe001ebfda14b72e3cc9e56c135dc308e3ae5d0c342b",
+      "bytes": 52666,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "f10d5e48c2812c6f1a46fe10399c5f60fc06e19225cf7381e3ecb60f477d5efc",
+      "bytes": 53237,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "84ebae1186c6cd222892c7b1b97f53e116509f8522ee4391b02c0e5f0f0f2e20",
+      "bytes": 48964,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "801b4297fecf5b84a381c2edafaed9ce2dad5906669115017ea835c899679150",
+      "bytes": 49919,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "eb531cfb53732a19ca69ff0f56fad4eb2406ad92925d07d2d75f15260d7d2e13",
+      "bytes": 51737,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "344f9fbe9bbcfc9a6cc2e865429253cefbd5bdc5ac70b40b07bd46685332fe30",
+      "bytes": 48443,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "c1b69a81e546bef326e078c2ed14570314fd635643f293afeb91a47291fa3077",
+      "bytes": 49068,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/atlas-list-options-collapsed.jpg": {
+      "sha256": "1ebc890e7ea039000a95d7d1709b8856d3dd000e0055d7c96e1328757e3a90df",
+      "bytes": 18516,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "f40498da3bb72028625ab070013e4bedd75b2a8a5bf5f7c4c1adc12c8fd1863f",
+      "bytes": 19688,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "71674f7781ce121fe1fdddc6c9629656ec1fdd1ccb9d06fbe38ca070456eb0cf",
+      "bytes": 20251,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "8ccb6a7b67cb6f8919fb4eea6a6630ae5d31b1cdd6c602d6ad86091ac0322f12",
+      "bytes": 19173,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "94d650de50e53292cdbeb01b5936247dd1854eba8d3452d5ad3b7fa122851714",
+      "bytes": 19173,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "7c608dbd5f8bc4cb9371547cdfb4fd628c2337d02531580bab1f38fb75b94a74",
+      "bytes": 20460,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "ef03fef0bbd8601ee326026bfb35056d9bcc4af5573ddb026de7325a53944a6e",
+      "bytes": 17634,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "263c56fd36023fc0c1358bd9fdb8a3da3d05ae57d91926e02c9749741965265b",
+      "bytes": 20731,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "f6c0581420f7ffa48c84184ee3a9dd3ab915dbdb53d124733ab145e09630f2f1",
+      "bytes": 19744,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "6cb4b44a90177ab0462d2b69e5d471e9e84a7dbe9b7b0777f3d6f418043ce72a",
+      "bytes": 19592,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-10.jpg": {
+      "sha256": "a6046d83d0ca5ed34c8aecf9f8ee32cbf22f54998d0db5a4c44600631499425c",
+      "bytes": 19204,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-11.jpg": {
+      "sha256": "c17bcf8a644c52196802776efd4766296079ab98863c1a43a58c4df3318378ff",
+      "bytes": 17890,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-12.jpg": {
+      "sha256": "c8db9a7a544d43dcf5743565ddd5910d3110a9a5569b6b7198750651eb437d8e",
+      "bytes": 19257,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-13.jpg": {
+      "sha256": "cd8b5da4197dcd40cfc1b1f18c1c73223980da4dd220663aff1b9130e07ea868",
+      "bytes": 17611,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-14.jpg": {
+      "sha256": "0c789375a5a40436682893a24c1f9a1d234d219f750817a2cc7ff18e07b6d9a8",
+      "bytes": 19128,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-15.jpg": {
+      "sha256": "f7513ffcc9f89784a3758b5d34aa490350174a6576f3f1e3d5ed72fd7d09fd5f",
+      "bytes": 20176,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-16.jpg": {
+      "sha256": "b1d9c4e3e41216fca86ea15d2e1a8168bd22b67feda1a7de376dfd5de205f4d1",
+      "bytes": 18934,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-17.jpg": {
+      "sha256": "ded408800571a340153e936c72886eee8d4e832f61a0a344dd4aeb569b7e1d61",
+      "bytes": 19904,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-18.jpg": {
+      "sha256": "3ae6c0f0e4905ceccd37ee199609370368ac185b37b469802f3acbf2800e4c08",
+      "bytes": 16435,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-19.jpg": {
+      "sha256": "c447eb3d17d4daa7bb3aa6117d3341aa6efb7a8125f15aff2ffe0fbfe3cc2875",
+      "bytes": 19014,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/day/atlas-list-options-collapsed--scroll-0-20.jpg": {
+      "sha256": "bfd8569e8c1bf94334d8cd74d58c8dd580277c4e35cff8b1963eb2cf73c19cf4",
+      "bytes": 20814,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "d506f208c4d4c2a8e79c6b9aeb5a6334c7a52bcea15736bfca4152bfbcf4a76b",
+      "bytes": 18285,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "85d1bab83f25cc9f874e2f1c642e91db9aceb249782febe5109773526cf5cefe",
+      "bytes": 19554,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "bd7e61b84fae20c88fe7a8d51752c8ffc3232298845bcbf12aa8cc1114a5b332",
+      "bytes": 19948,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "07768d3d9ba8f216aea082b9371c1e0edac0495a8f5f8a67f44e3004079c32cd",
+      "bytes": 19312,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "bba18c25dd94d7104d39cc9430f7a0fea4e6b7f3a5f42ccc5a04d2e5e7adfa18",
+      "bytes": 19042,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "5c1dbde4e4226af13d84e559810dc42cc0463217f5534ca0407c9dc7463089ec",
+      "bytes": 20270,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "b5d7b44871c2882b5347d3e6e790f8315cfdd6bf189de8cc2a7fe6386b579f41",
+      "bytes": 17733,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "8907f344865dc1b5114180569a666a366dbd0346726c7b9dec550af1bebd30fa",
+      "bytes": 20423,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "737800393df50a4c0ee20bcfbc68e689b6f32ed8a734e63598238e1a947db1b8",
+      "bytes": 19967,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "3309513dba7a96a8db6b2010b143b3e533fc1bb74d130a4091c52c758bdf219c",
+      "bytes": 19551,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-10.jpg": {
+      "sha256": "0a1556a4535dec33cc0c349abd5171258699bffa1cae091a6204b208d5621149",
+      "bytes": 19140,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-11.jpg": {
+      "sha256": "faada176e3458814e96a1b3bb616c8cc5fe322a6639d8975cef63791b32dab15",
+      "bytes": 17839,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-12.jpg": {
+      "sha256": "b2bc2e8b4fcf832cb27ba4d538413119f61f2c1a41d279696f8eb6652d02bc7e",
+      "bytes": 18965,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-13.jpg": {
+      "sha256": "9d397ee6a871f0836a1e90634f0c93203c611e4fd4381b43db727a7433554cef",
+      "bytes": 17739,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-14.jpg": {
+      "sha256": "b7e9c49183e599ba0d4fe3719db739da18be9cf2e029e38fe33f54e5f524ab3f",
+      "bytes": 19056,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-15.jpg": {
+      "sha256": "3568ad855ac232a1c74910bbe65bd746081af3cd322972769653fe0d63516a1c",
+      "bytes": 19956,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-16.jpg": {
+      "sha256": "84896ebff92919433a3b546518a120d37514fb34027fd3426dba1363d6fbcdac",
+      "bytes": 18881,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-17.jpg": {
+      "sha256": "d3c371e60e0d12fe12299bc42053cfd1862ae816aa0c5f76f0cd662c68dac94a",
+      "bytes": 19645,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-18.jpg": {
+      "sha256": "34170dedacb76c930c4eb81156dbe4ebc6271faf2663cf7b9534ad30d220f9ff",
+      "bytes": 16494,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-19.jpg": {
+      "sha256": "05451c16587e4a8e9d129dbdd7af5f1d2f7349b9429f51f53249ce1914164f3a",
+      "bytes": 18915,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-list-options-collapsed--scroll-0-20.jpg": {
+      "sha256": "5aaef54ec2fcafda6c919af50572baba821cec513e3758f22a2de387df96c691",
+      "bytes": 20725,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/atlas-list-options-collapsed.jpg": {
+      "sha256": "b7c8b67fa4dfeb41cfcf8dd1ff8e02116c1b7dc2bb0034cad77758f00f684a4d",
+      "bytes": 44480,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "1e712b3184946dae44e7223c788ba81721a699263ad5471148926c1e14b33e53",
+      "bytes": 42630,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "ee43a563e29657998c3651d9e0fae15dcf266cea301adf7f16c79890999251e4",
+      "bytes": 45697,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "7bd0a4066e41a8a1de77d0bf96bef651bfad8961db0d75c06f6f3ae986a5b730",
+      "bytes": 48069,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "d0d94dbd2b6d2072a8b2448e65a3371fb5d7674156c6d0c51ffc8144e4ee44da",
+      "bytes": 48470,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "8bb20a7ccd6bf60d0dafecee4f31322965b8464b56fdae9ed92d9cbcbdbd948d",
+      "bytes": 41816,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "1a2c4e00ea5e828219d4fc513657bc93bab99a1aa9b97156c423ecd7ee3bdb57",
+      "bytes": 45204,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "912ae6c9c2f9fd6e13c206f63bd19d5dd430353a56a852d2674cd2752ea6345b",
+      "bytes": 48085,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "69ecf5fa305140c0af20d48aacd8827684cc9785a3eca9bab24494e979cad585",
+      "bytes": 40285,
+      "width": 390,
+      "height": 844
+    },
+    "large/day/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "65c4be6f97ede54210cf42edcfff004998fa75d44274c58abfbd5d3b2b841f08",
+      "bytes": 41363,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "780629e4672b267d0ab3b9c4cd72ab784dee9ef9535991be48ab69c21dad46da",
+      "bytes": 43419,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "af514ace20e32d9a5bbfbc6ce083429903e5cd5ce1e0ea891ebcb68332b50452",
+      "bytes": 41698,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "c652f96e00c96930599b4328ea0575c8533f97c230f60f5eecbf5c6a38cd5bd9",
+      "bytes": 44652,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "48d5e6eff1cb0a980ccb7f037ab8df2715d595b6697c7924a6092e1f388c6b08",
+      "bytes": 46779,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "e4061b4ca6a5b3c4ed9419e80dc4af27d409d8ad9ef6b9bb54524579cc8349f3",
+      "bytes": 47507,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "0ae183f83467f3444e8aafccd2d56237bdad3ed238fdeb24ba1eca72d87e0a68",
+      "bytes": 40878,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "ee3c56e9c5df98de1b5e876ea215ef87dc65e64ca7af00709bd6be2c12ae886e",
+      "bytes": 44123,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "73688f9f233d696d8f3ff7ed406edc398920f5300ad5714e3c89894248a06edf",
+      "bytes": 47087,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "4ee5026bfeadc4ed457b8741a2614118f8c93bd6fd0162e69bad2e0167e6e7c5",
+      "bytes": 39336,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "7bf4fab04a1ab04fdc907946cd70e6cfbe3bacf01bc7031fb97a73e4efa3e418",
+      "bytes": 40544,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/atlas-list-options-collapsed.jpg": {
+      "sha256": "17129d8f371011e30d7fbd71a84fd4204d1f507400a96ecc540f0707e5612b1d",
+      "bytes": 24370,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "848359aec3d34acef213c3e14dd1e3606741a0e87bde1c8de09092c14034c41e",
+      "bytes": 26335,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "da29f34edb4385cd0f12dcbe17505ae66b89986747e85037732cfe96fc1706d4",
+      "bytes": 25211,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "817f89b19e7180af1f9d7f88cb8227f16de7db2b6676a4036f17f200ba7d2034",
+      "bytes": 23228,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "d32cfa2d0b9ca1d042809a552388a3811fee9a13413c07eb5358d48fb1d62e26",
+      "bytes": 26348,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "d19a8904d53f53eff689a956a6837f4339466a49a0026a3aad6b4bb8ebd8a21b",
+      "bytes": 25528,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "8046fd8bfdf5c870b6e8dc0977e337de8dc98d73f12798b485ec7077d0e1423d",
+      "bytes": 23874,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "af7e6657cdd7d0e3aac886e87d54e3eff38b3b0ed72a73c423b4735fcbec8f41",
+      "bytes": 21849,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "261a4809b0b20e0bf323e0f0e9590208b38eeb2ce7ff9afebc5d28d5061fc9b6",
+      "bytes": 24810,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "e69df6738a18464016ba0634e7a9eaeece865c84b8ff20ba2c9e4d2417206e62",
+      "bytes": 25130,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-10.jpg": {
+      "sha256": "3be2e16bee0027df173933dc4aa6c9bcba589e97d57452be11601239a6189169",
+      "bytes": 20576,
+      "width": 320,
+      "height": 640
+    },
+    "small/day/atlas-list-options-collapsed--scroll-0-11.jpg": {
+      "sha256": "69bcffbf677f0eb1de15d94e2182c0381c19d63ad8027d30ad1151741a00807a",
+      "bytes": 21569,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "efaa5fee3fd74b9b3383f83777db61c042bfc48641c32370348a799536f163d5",
+      "bytes": 23959,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "744a270e3b060fbba521b9f2a49e25be560db2f6ae4ed315199a9e19dd5b6aae",
+      "bytes": 25794,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "bfdd069cbd6016742193ac341fe48ad7728cc3496c2732c5d665f8b629a0b406",
+      "bytes": 25086,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "dccf84cd53ba60b2fb7aea56edf8b00ce3991a4ecd6908ab01dede67e3a5886f",
+      "bytes": 22939,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "20f0a11ddd8b262efbe9a2378232569aa8442c984adbb62aff6bd34e29d441ea",
+      "bytes": 26098,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "3f3eefe96b1e6e84d61838f80a76e5e2a0ac93afc46bff4d841ea04aa058e4c4",
+      "bytes": 25313,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "00a7fc959e19f0ceec1c34c776295053f60f6c807e053a2db9c5e88e95dcb3ce",
+      "bytes": 23482,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-7.jpg": {
+      "sha256": "47233cbdc7e8cc762c183b2f83e95204eb78dd68ca92e2ec6349374bba1b132d",
+      "bytes": 21566,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-8.jpg": {
+      "sha256": "4c3fa340ddecc1278c0fd020bf4a30f4b5bc5700ae4b943a44a5f6e513816c9d",
+      "bytes": 24622,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-9.jpg": {
+      "sha256": "0e2c6f48ed0ccfbfa7c86db2e188e69fcf898ab02908bdee7de5baaef597f0a2",
+      "bytes": 24859,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-10.jpg": {
+      "sha256": "cd4f6a3531820622e40baf615d8b814fd7e1fbd7c83e740bd17868e8ed12f319",
+      "bytes": 20431,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-list-options-collapsed--scroll-0-11.jpg": {
+      "sha256": "bd41edafaf2b6c437bdfaeadc59eba5b02635f3826de647a83d0422e0ec5a7d4",
+      "bytes": 21335,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/atlas-list-options-collapsed.jpg": {
+      "sha256": "874f994f9a1d8601a24c095fad7fe35610484ac8636de5b0c63d0b75e4330428",
+      "bytes": 55681,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "c9647c90071a24cdcc7ca50c17ddcb6ec81490e0de6ea73895305062f2d9a3b1",
+      "bytes": 53048,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "dfb0a714c792f69269cce594937752d3df7ca3314ad54ff6912513add4027a97",
+      "bytes": 55124,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "164179aba66ce7699979d68aa4ded185a71a631ef2fc25784d7b314992dc7e00",
+      "bytes": 50243,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "20d099a0e249bdaa80f2cee89814a697ea8f081d716052578f9d1f2cdf12a14b",
+      "bytes": 54114,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "88aa89d39146090e53440f2c03b3159a5cab4c1992715a24809448a0e0033190",
+      "bytes": 49339,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/day/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "0d3c710e9a1359b5aecc4c61036208f6d6a9e61faf6d596c34e3bb1a9875429d",
+      "bytes": 49519,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed.jpg": {
+      "sha256": "49c262f1db6ce68bdd380e27122a591fad4a15fc0f7cdcb964d45e9933656066",
+      "bytes": 55063,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-1.jpg": {
+      "sha256": "3b90b609b07d291c83bc39eac201223fdc8363d6505ce1b28fd65811459dc07d",
+      "bytes": 52722,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-2.jpg": {
+      "sha256": "08ed20078421a755b711558861e684797d80f5dcd99ebf02afe8e14a57c30418",
+      "bytes": 54612,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-3.jpg": {
+      "sha256": "e6f222438a053e085a7266862f47ad2f3864b67d952b96ba370cfbbf1be1d7b2",
+      "bytes": 50002,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-4.jpg": {
+      "sha256": "98fed20390f341e30ce88fcf3e0527c8af819f7c0cabe4b5668e38383f1e1939",
+      "bytes": 53492,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-5.jpg": {
+      "sha256": "90fedf54484ab0e866a6e67b4f947b655aab8a59e099a7ec0fa7b3662141d269",
+      "bytes": 49181,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-list-options-collapsed--scroll-0-6.jpg": {
+      "sha256": "9b265a057411c0f0b3fba9c59a3a430ba5f8f17c957fcbb2cae9ee417f71a000",
+      "bytes": 49069,
+      "width": 834,
+      "height": 1112
+    },
     "desktop/day/atlas-new-concept.jpg": {
-      "sha256": "586881a0dfb4b31510fd89993185d99e92fa0eb8db1017cd27b56942bd1e6e62",
-      "bytes": 54942,
+      "sha256": "eff9913550b970b63b97a0ed3dd19dd699040d086c391628d756f3e1f812f98e",
+      "bytes": 55514,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-new-concept.jpg": {
-      "sha256": "6df11965f0f5030a0c887f0db198cc2b65ec198f461f20b9d70afe996319141b",
-      "bytes": 46309,
+      "sha256": "d7e0bc30d93e013938007624af07fb63951f322eff59804e400acb79cb461692",
+      "bytes": 47222,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-new-concept.jpg": {
-      "sha256": "2dab155e683fcdf62aab032119b1f2906ed5d6123bf0bd57dd6877b65bcac426",
-      "bytes": 28469,
+      "sha256": "93ee7d969ceb041078031879ecd0c00a9512789a5c70e26f7a4157cdbd59c842",
+      "bytes": 28227,
       "width": 844,
       "height": 390
     },
     "landscape/day/atlas-new-concept--scroll-0-1.jpg": {
-      "sha256": "d3854e2cafc20d6f81396a3a2256424095b8c04697cc5a5b436abc107f181311",
-      "bytes": 26723,
+      "sha256": "ef079d0cfc4dc36df9ae964515073f082132f70e101542bff8e90c0a5f6fdca7",
+      "bytes": 26452,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-new-concept.jpg": {
-      "sha256": "810501faeb247430dad47e5e7f3c2122234f76f054c356eb62ed24ea84f007a4",
-      "bytes": 24847,
+      "sha256": "e3cae649b83ba743f8b100b8bcae66bb2f0e809760b071b1c13d0b9e65a0e203",
+      "bytes": 24776,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-new-concept--scroll-0-1.jpg": {
-      "sha256": "b2ac4398133a8c8ec3b0764c203cc90e103b786c53923022f358eb4113e6376d",
-      "bytes": 22570,
+      "sha256": "5e94d9f8fa4397f6eba4b46a8e8d8bcd778ebcb6ef8027d101c550678aec8883",
+      "bytes": 22510,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-new-concept.jpg": {
-      "sha256": "4e8bd18bd1c5dc233dae9fcf899adc228306a8975d4b1796a4cd406b608e9792",
-      "bytes": 36185,
+      "sha256": "68b2b8b263e329ebef25658c3399c7ba8049aae8bf7e0b48aed0310d5fd309ac",
+      "bytes": 35412,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-new-concept.jpg": {
-      "sha256": "3ec2461d36e6808767ac383fb5560c0a8b663823d6262e3c352dd31aca51b2c7",
-      "bytes": 31508,
+      "sha256": "a2f47a9268561a3982c16cb40639220f1ec9f4fb1f47d0f5e69ab55c4aa906e1",
+      "bytes": 30831,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-new-concept.jpg": {
-      "sha256": "562978d4e2c23309f667a12dd32e1bcfbdef26c50d04b028e404c4f517fa2926",
-      "bytes": 19976,
+      "sha256": "061d00f9530a10eda5eb022d12f18955df5b7560dc38389f1be0e78b441da9a0",
+      "bytes": 20112,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-new-concept.jpg": {
-      "sha256": "e7fd9308aefb75b963478924cfc744aceab8e3151d8ea0aca4189ef09c50654c",
-      "bytes": 17362,
+      "sha256": "d5756ebba4c8a03f78f7f35ee6536752e18343814c247fa5c2666d1fb08159da",
+      "bytes": 17530,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-new-concept.jpg": {
-      "sha256": "9ed1287beb6eb7aab2c4127a6d7a7f6bb9d019801f77e3d3f9d8338e06d8073e",
-      "bytes": 54411,
+      "sha256": "93474c2f81b22cfe592fde76e4709fef8b062af0f15fad26aa5e7c93c5b345dd",
+      "bytes": 56505,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-new-concept.jpg": {
-      "sha256": "e2cbf36b03550c96efce36530eaa4d890a1735507260a2b4f738abb2cb4c245c",
-      "bytes": 46574,
+      "sha256": "a19727a521b767b29be666f2d501ff2bcec62b7bc2fd0a2a03f8a08e180bbc19",
+      "bytes": 47766,
       "width": 834,
       "height": 1112
     },
     "desktop/day/atlas-operation-reparent.jpg": {
-      "sha256": "0fee88cdf08225f5f53bdd9bdf0b074586c84be7801ebeabde29401a97829a0d",
-      "bytes": 58949,
+      "sha256": "1156fbe2905524697d0fcc671951d09da2f1e8cbb5c06a29d5cd6e0ce77d092d",
+      "bytes": 64712,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-operation-reparent.jpg": {
-      "sha256": "659bf26b899d1094e8a62f079c99988daf3da7c6eb1bac64e5745f9bfdbc2cf9",
-      "bytes": 48259,
+      "sha256": "18f88a34dc26d6e62183a6ac3f0027b69357dfd42be15c61d5988789370c66ca",
+      "bytes": 52963,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-operation-reparent.jpg": {
-      "sha256": "bab192fd39c3f1e369cf0bf875c4e1a4b36203785a5c12bf19698bb5d1f2d64c",
-      "bytes": 30196,
+      "sha256": "62ee43299bada49ce45bfcc0e44556c7028a3bb2decb39e8855232d4e7f6d5a1",
+      "bytes": 29958,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-operation-reparent.jpg": {
-      "sha256": "de2acb84ab3fcda75239b29a1faf1cea3dec49602c0635f214c340f1d866714e",
-      "bytes": 25305,
+      "sha256": "949920a5dd6529b6dfeb31d2964060be665b8d9d13adf2cae76d03e7c2a99090",
+      "bytes": 25317,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-operation-reparent.jpg": {
-      "sha256": "edeaedcd364c17f412482b5f94f4d20cb4e6a60f435b4997ef42abba926fa3a2",
-      "bytes": 37378,
+      "sha256": "365387188b6eab9db1cec1fdc4637426e3b9d244843a5d20c242f0d12825fb36",
+      "bytes": 37747,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-operation-reparent.jpg": {
-      "sha256": "714e61d5033de2085d84d9ebc0fdcee3eb178b7747855f3aec068451680bb121",
-      "bytes": 32534,
+      "sha256": "0adfdc008f31f915f5c9486a855d994655392a410109a42786ae159467c3ce43",
+      "bytes": 32692,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-operation-reparent.jpg": {
-      "sha256": "a86f1d79805f50467845b6c78a69c3a418a964e9688c5854f8d56063228af02d",
-      "bytes": 23709,
+      "sha256": "ff2847290f2d73f0c522b48f8ea186cf1bdc5c3caf4c1d102da93a12ccce7c90",
+      "bytes": 23329,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-operation-reparent.jpg": {
-      "sha256": "1d4c990f18c2d5a4c9cd1244379342127d4132b335ffb761ad35d2a584a4e9f0",
-      "bytes": 20290,
+      "sha256": "190632dfa6b7875e8c5a10cfda2546f52fbae2a9180bd68a47e23637ba1cb3be",
+      "bytes": 20133,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-operation-reparent.jpg": {
-      "sha256": "9c01ee5931fd28e570406dd79724885dad03024d2fc4b986e05536888691c6d3",
-      "bytes": 58021,
+      "sha256": "2f8359d3542b07539cac4a81d21dd2e3eefc6cae2eebd0b059f1f005168ce25b",
+      "bytes": 60962,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-operation-reparent.jpg": {
-      "sha256": "503eeebf286a0d9670f6f01ba3a4688670053652533c11da55ac41612f45b1ba",
-      "bytes": 47810,
+      "sha256": "a6ba6802f69293ea0600d29c78bcde68f3864b6c4fae2f7df0af6d3f7bad547d",
+      "bytes": 49519,
+      "width": 834,
+      "height": 1112
+    },
+    "desktop/day/atlas-options-collapsed.jpg": {
+      "sha256": "feac758188c34819aea8cf442abea51965ce83aa68293b99d6a6afbe5a82e606",
+      "bytes": 91789,
+      "width": 1440,
+      "height": 1000
+    },
+    "desktop/night/atlas-options-collapsed.jpg": {
+      "sha256": "8f5d596ee08eeb6608ce4374fe3a15e913da8598b69b9464a21a3319c777d6eb",
+      "bytes": 74581,
+      "width": 1440,
+      "height": 1000
+    },
+    "landscape/day/atlas-options-collapsed.jpg": {
+      "sha256": "5cd4950f7e0c32ebe9336ad4dffcc83424a5eefe77818dd66845082ee241252b",
+      "bytes": 55841,
+      "width": 844,
+      "height": 390
+    },
+    "landscape/night/atlas-options-collapsed.jpg": {
+      "sha256": "deaa86e3c708e175aaf22d97b66255b5d1e9e569c3fd3eae85e58339d65a1483",
+      "bytes": 45851,
+      "width": 844,
+      "height": 390
+    },
+    "large/day/atlas-options-collapsed.jpg": {
+      "sha256": "21d55e9c40b069ec78d39c20383a7a6b6ecc83c534c4b5c314c8993be620b356",
+      "bytes": 63658,
+      "width": 390,
+      "height": 844
+    },
+    "large/night/atlas-options-collapsed.jpg": {
+      "sha256": "49d41c1840ea8647d079c5fd34d498d065a22de16a80de87bca81604239ea2a2",
+      "bytes": 49799,
+      "width": 390,
+      "height": 844
+    },
+    "small/day/atlas-options-collapsed.jpg": {
+      "sha256": "ea0d8223bd88222f6f2de4ed9ef4967edfadeae29f7f9c5dba4c0afdeec6f82f",
+      "bytes": 45859,
+      "width": 320,
+      "height": 640
+    },
+    "small/night/atlas-options-collapsed.jpg": {
+      "sha256": "c26ff7a0eea94d4046bc36c6f188a1b987d037d1713280748a95bd8a808f434e",
+      "bytes": 45294,
+      "width": 320,
+      "height": 640
+    },
+    "tablet/day/atlas-options-collapsed.jpg": {
+      "sha256": "fecb5ef8af4a317f7dcc3c80c8579784c6a7f4caef23e6b9b123fe7e690b3e2d",
+      "bytes": 75094,
+      "width": 834,
+      "height": 1112
+    },
+    "tablet/night/atlas-options-collapsed.jpg": {
+      "sha256": "a8f9c26fe677a37cc50f4afdd8c57460e0926145ba8be7e32e264532965698cb",
+      "bytes": 58797,
       "width": 834,
       "height": 1112
     },
     "desktop/day/atlas-peek.jpg": {
-      "sha256": "36d16c31c0674b22ed4c9551ed8a7cc2ddc0603fbf99464bd76e28105af02e1c",
-      "bytes": 89272,
+      "sha256": "584092d2307b0007a53943e5d00e747e8cf34e92aa5171ff7689add7cf719d9c",
+      "bytes": 89687,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-peek.jpg": {
-      "sha256": "cd3047f3f77c356fc2436db4b091c1d913f3aef9dc4c1241330502bb552f10bb",
-      "bytes": 69940,
+      "sha256": "34f6aabef55fba43e4eb9c14dc00cec035bf66a014415b40feb924545f5e30be",
+      "bytes": 70427,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-peek.jpg": {
-      "sha256": "2120c3048589953eb688a271e4ebfb923512ddb76b27d399fe24b56db6d9fe87",
-      "bytes": 49849,
+      "sha256": "cb6ea1fcd3f34b03f4dbb01df0e2e96ff0f8bdaad93978dfd0c44b9c9e0f413c",
+      "bytes": 48793,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-peek.jpg": {
-      "sha256": "7900e9ceb10c78ef7cbab0bcc96681ec5cfb8abf3769cead06cdeed00f65134b",
-      "bytes": 42574,
+      "sha256": "7b52e8d793ed8a5f3647c80406e2e9857259b7247ff65bced849d98391e8533a",
+      "bytes": 41689,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-peek.jpg": {
-      "sha256": "dcac2a850a71b838945801d0af24040e3ba6c5f06fe9d8dec2e2acd429bc7a25",
-      "bytes": 59797,
+      "sha256": "5b66579025c6bdd4dff09ff127f885ad4a751709ec37a40f8fa866eb7c4526db",
+      "bytes": 61423,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-peek.jpg": {
-      "sha256": "7364e15f0826a201b85e99359d22e014db656e345225a8b1ed2ecfc8bb4076fd",
-      "bytes": 52277,
+      "sha256": "7f5165fb4c8b4c0984e0b0ed8474982451ff8a1fca815298cb720197cf5c9f7f",
+      "bytes": 53803,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-peek.jpg": {
-      "sha256": "7330794f7826a29cc5f2742d3679a7145bd7ddb4052c2a71980cdf106c80ec4f",
-      "bytes": 41918,
+      "sha256": "5b7f05d1b5f668af64a44c2bf00dcd31e589e0b6db5a6a764a22dc5babac8503",
+      "bytes": 41712,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-peek.jpg": {
-      "sha256": "1189cdd9453b550329b5b536f7e3442f6e1facc2972ebe5df1e7c369d28c0e8d",
-      "bytes": 37706,
+      "sha256": "5fd6acdb87a09c5662f4e1e856d5340afdac5d150de9dc2972d770e2cd5d7555",
+      "bytes": 37099,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-peek.jpg": {
-      "sha256": "6a5e1d312817b4cfcde0a19dc7a7e4adf1b234f782e400586ba62fbd5981ad1a",
-      "bytes": 80225,
+      "sha256": "dcabc6c21b7db0c7237884a9f40d824d5a8dbe6ca3738f786e3600c89bad68fe",
+      "bytes": 83029,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-peek.jpg": {
-      "sha256": "3a862a89008c0882d28a23a016d98915e830a0ec3a4ea87eb12aa3e82377c638",
-      "bytes": 63997,
+      "sha256": "e7a3adf4ebf282cb8c23fd7ed8fcdbca8aab78c70b7eb1a27a8616fa6359742a",
+      "bytes": 65434,
       "width": 834,
       "height": 1112
     },
     "desktop/day/atlas-search.jpg": {
-      "sha256": "efd11de217182fd21f23700448f55d9ae4f2bcbfaff5b345ca624ea6a06ff18a",
-      "bytes": 116190,
+      "sha256": "44b818e629564e1dc42257249912d6b52e4956b1c46562cb9dd2fc8f6705515d",
+      "bytes": 118064,
       "width": 1440,
       "height": 1000
     },
     "desktop/night/atlas-search.jpg": {
-      "sha256": "9879a74c4a46c255b83865b7e0a6d9a41ae0fb7c26efd77a9db20503372c0b30",
-      "bytes": 98209,
+      "sha256": "b0841d3f76337646f61b26bca9431b58ca6520777317d1254d2495ae02295f68",
+      "bytes": 99672,
       "width": 1440,
       "height": 1000
     },
     "landscape/day/atlas-search.jpg": {
-      "sha256": "cc842e24e86a7729df15d82f2d42d45c0930fcb097c359fac7808afda6b23318",
-      "bytes": 57405,
+      "sha256": "f2610787304ba8a10e7dc9cfad53ff9329de5f3a44dccd33195f22cd34c4dfad",
+      "bytes": 48951,
       "width": 844,
       "height": 390
     },
     "landscape/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "e4c4ca1cdb72a46e034acab0973cc101815a0385b5ce992f9511a2e519308337",
-      "bytes": 58502,
+      "sha256": "8fa44a64a4e1f7f735fcc7312c193cf4047c84115eea3df02b88dc0af556f070",
+      "bytes": 49243,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-search.jpg": {
-      "sha256": "78e01d38b51e84be5701717f7cb37a064c95b9cf9dbd5ed2bebafb05210dd3e3",
-      "bytes": 49205,
+      "sha256": "dabf80855195a3e65dff0ec7892b1d6eef59b18cffa2f11aebf5e111c005013f",
+      "bytes": 40875,
       "width": 844,
       "height": 390
     },
     "landscape/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "14770aea77824bfaedf401e3c69d98305b994b6dfab729de99440adebc49c3f1",
-      "bytes": 50143,
+      "sha256": "2fff8d2901094de27bef1bd97f7e9dc67c57ad7bbf2f5169e20a574fee76e604",
+      "bytes": 40944,
       "width": 844,
       "height": 390
     },
     "large/day/atlas-search.jpg": {
-      "sha256": "0c733b51e6df2673b78dbd363ab6a9b7255b37026d36443447232ddb956d6de8",
-      "bytes": 64384,
+      "sha256": "196c9da0144c3b4dbb675d32a233452d3991e6f122ed412746d813a0b94d220c",
+      "bytes": 50315,
       "width": 390,
       "height": 844
     },
     "large/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "8943115036f6b4bb5abf6bd4649ebcd292194a92dc72f7b9e81e3715118eeee9",
-      "bytes": 60977,
+      "sha256": "fae15924b048bacbc6032f08c6882092a1da700089722d34581b6d2383e4c606",
+      "bytes": 47844,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-search.jpg": {
-      "sha256": "a827b8289aa7db8dc240bb843520f70f52598f7ce61f1e432a6a93d5a7a4331d",
-      "bytes": 54279,
+      "sha256": "6faed8252eedd5d798985b34d8dc7dc84d6084dcc22bfd7ad722b45029f93245",
+      "bytes": 46196,
       "width": 390,
       "height": 844
     },
     "large/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "37fe864103a88ab139829f809b119fdc27756ac880454a1a3b4c944139c25cbd",
-      "bytes": 51196,
+      "sha256": "5fd6b3c5695017f1bf214a250769f6bb292996962ed838136550cc4b5bba98dc",
+      "bytes": 43934,
       "width": 390,
       "height": 844
     },
     "small/day/atlas-search.jpg": {
-      "sha256": "dada635fe6a83fe90fdfb813f17795814bfbbeb941471eace921104bba87f23d",
-      "bytes": 42597,
+      "sha256": "365392ca33585ee9a0c4e2598f1c2de149785865b368e75fa0472048bb40b44c",
+      "bytes": 37870,
       "width": 320,
       "height": 640
     },
     "small/day/atlas-search--scroll-0-1.jpg": {
-      "sha256": "502eaaa9fb7b35caae1be17a6f8f27fafac66ea64368d0371fa16679ef19ab68",
-      "bytes": 42120,
+      "sha256": "0866f1ba84ce91a0e82a8a9d4633aa5633f5dca9166463ec0c4e17dc08cd5931",
+      "bytes": 37185,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-search.jpg": {
-      "sha256": "0b9a938c363f7b8c6595588a56dc958ba6e4cdf84c669345272ec3a5cc82241a",
-      "bytes": 39408,
+      "sha256": "34b1b83ca477ec5cba5bb6cb52b7049786483c534c4677a4022b79f3fe7c5333",
+      "bytes": 34917,
       "width": 320,
       "height": 640
     },
     "small/night/atlas-search--scroll-0-1.jpg": {
-      "sha256": "198df601c21f330ff2f1c708a7a43d848491cdfe3a79c6b5e31b2d1f250e54b3",
-      "bytes": 39047,
+      "sha256": "328646e1b284f4c0f4c205d13600b4ad244f34249bf36feea3bd41b20e14f34e",
+      "bytes": 34169,
       "width": 320,
       "height": 640
     },
     "tablet/day/atlas-search.jpg": {
-      "sha256": "5a8e880d1e3652d95bbce51fdcfa46d9bb46e0b65e4566f8a31bd13c2dd92ece",
-      "bytes": 100361,
+      "sha256": "d363332472a752eed4f2713e315dbf9667f89afc83607942ebb8b2da97a28705",
+      "bytes": 101759,
       "width": 834,
       "height": 1112
     },
     "tablet/night/atlas-search.jpg": {
-      "sha256": "1876598f502af1372f89b8b3a7fdf450851c82c676adb104c3b30f5be10a258e",
-      "bytes": 83661,
+      "sha256": "ef915689cd6b55e63ad11f2f789a1703570795f8af0cb47f1a3c94d10a6a0b34",
+      "bytes": 84277,
       "width": 834,
       "height": 1112
     },
@@ -7235,46 +10055,470 @@
       "firstFrame": 1,
       "lastFrame": 12,
       "images": [
-        "desktop/day/atlas-new-concept.jpg",
-        "desktop/night/atlas-new-concept.jpg",
-        "landscape/day/atlas-new-concept.jpg",
-        "landscape/day/atlas-new-concept--scroll-0-1.jpg",
-        "landscape/night/atlas-new-concept.jpg",
-        "landscape/night/atlas-new-concept--scroll-0-1.jpg",
-        "large/day/atlas-new-concept.jpg",
-        "large/night/atlas-new-concept.jpg",
-        "small/day/atlas-new-concept.jpg",
-        "small/night/atlas-new-concept.jpg",
-        "tablet/day/atlas-new-concept.jpg",
-        "tablet/night/atlas-new-concept.jpg"
+        "desktop/day/atlas.jpg",
+        "desktop/night/atlas.jpg",
+        "landscape/day/atlas.jpg",
+        "landscape/night/atlas.jpg",
+        "large/day/atlas.jpg",
+        "large/night/atlas.jpg",
+        "small/day/atlas.jpg",
+        "small/night/atlas.jpg",
+        "tablet/day/atlas.jpg",
+        "tablet/night/atlas.jpg",
+        "desktop/day/atlas-list.jpg",
+        "desktop/day/atlas-list--scroll-0-1.jpg"
       ],
-      "sha256": "d27145a548ec533c0472032cf9a45adfa56a199d0e5ac7177b847270e9d42bc8"
+      "sha256": "5362900c5945e8bdf0962662f1dec2a10327039e7c65380f8b962e7ee4f4dbb2"
     },
     {
       "file": "contacts/sheet-02.webp",
       "firstFrame": 13,
       "lastFrame": 24,
       "images": [
-        "desktop/day/atlas-operation-reparent.jpg",
-        "desktop/night/atlas-operation-reparent.jpg",
-        "landscape/day/atlas-operation-reparent.jpg",
-        "landscape/night/atlas-operation-reparent.jpg",
-        "large/day/atlas-operation-reparent.jpg",
-        "large/night/atlas-operation-reparent.jpg",
-        "small/day/atlas-operation-reparent.jpg",
-        "small/night/atlas-operation-reparent.jpg",
-        "tablet/day/atlas-operation-reparent.jpg",
-        "tablet/night/atlas-operation-reparent.jpg",
-        "desktop/day/atlas-peek.jpg",
-        "desktop/night/atlas-peek.jpg"
+        "desktop/day/atlas-list--scroll-0-2.jpg",
+        "desktop/day/atlas-list--scroll-0-3.jpg",
+        "desktop/day/atlas-list--scroll-0-4.jpg",
+        "desktop/day/atlas-list--scroll-0-5.jpg",
+        "desktop/day/atlas-list--scroll-0-6.jpg",
+        "desktop/day/atlas-list--scroll-0-7.jpg",
+        "desktop/night/atlas-list.jpg",
+        "desktop/night/atlas-list--scroll-0-1.jpg",
+        "desktop/night/atlas-list--scroll-0-2.jpg",
+        "desktop/night/atlas-list--scroll-0-3.jpg",
+        "desktop/night/atlas-list--scroll-0-4.jpg",
+        "desktop/night/atlas-list--scroll-0-5.jpg"
       ],
-      "sha256": "0e01b1a7d091db0fc50673750b2e36f14de490a9fffc48d53100fa99218ace8e"
+      "sha256": "cad33d118a78ec8532867c53337ec06a502f36824f97846b16c1dddb40353c2a"
     },
     {
       "file": "contacts/sheet-03.webp",
       "firstFrame": 25,
       "lastFrame": 36,
       "images": [
+        "desktop/night/atlas-list--scroll-0-6.jpg",
+        "desktop/night/atlas-list--scroll-0-7.jpg",
+        "landscape/day/atlas-list.jpg",
+        "landscape/day/atlas-list--scroll-0-1.jpg",
+        "landscape/day/atlas-list--scroll-0-2.jpg",
+        "landscape/day/atlas-list--scroll-0-3.jpg",
+        "landscape/day/atlas-list--scroll-0-4.jpg",
+        "landscape/day/atlas-list--scroll-0-5.jpg",
+        "landscape/day/atlas-list--scroll-0-6.jpg",
+        "landscape/day/atlas-list--scroll-0-7.jpg",
+        "landscape/day/atlas-list--scroll-0-8.jpg",
+        "landscape/day/atlas-list--scroll-0-9.jpg"
+      ],
+      "sha256": "7d1e71dd8cdc442ba0ad737c788c325521a09a46f76b3ce6a48c53c1fdfd32b4"
+    },
+    {
+      "file": "contacts/sheet-04.webp",
+      "firstFrame": 37,
+      "lastFrame": 48,
+      "images": [
+        "landscape/day/atlas-list--scroll-0-10.jpg",
+        "landscape/day/atlas-list--scroll-0-11.jpg",
+        "landscape/day/atlas-list--scroll-0-12.jpg",
+        "landscape/day/atlas-list--scroll-0-13.jpg",
+        "landscape/day/atlas-list--scroll-0-14.jpg",
+        "landscape/day/atlas-list--scroll-0-15.jpg",
+        "landscape/day/atlas-list--scroll-0-16.jpg",
+        "landscape/day/atlas-list--scroll-0-17.jpg",
+        "landscape/day/atlas-list--scroll-0-18.jpg",
+        "landscape/day/atlas-list--scroll-0-19.jpg",
+        "landscape/day/atlas-list--scroll-0-20.jpg",
+        "landscape/night/atlas-list.jpg"
+      ],
+      "sha256": "32430c30acf0f755c53bf381ea4a7353a519e93c18bbbb7d2e08b5c23b3678a7"
+    },
+    {
+      "file": "contacts/sheet-05.webp",
+      "firstFrame": 49,
+      "lastFrame": 60,
+      "images": [
+        "landscape/night/atlas-list--scroll-0-1.jpg",
+        "landscape/night/atlas-list--scroll-0-2.jpg",
+        "landscape/night/atlas-list--scroll-0-3.jpg",
+        "landscape/night/atlas-list--scroll-0-4.jpg",
+        "landscape/night/atlas-list--scroll-0-5.jpg",
+        "landscape/night/atlas-list--scroll-0-6.jpg",
+        "landscape/night/atlas-list--scroll-0-7.jpg",
+        "landscape/night/atlas-list--scroll-0-8.jpg",
+        "landscape/night/atlas-list--scroll-0-9.jpg",
+        "landscape/night/atlas-list--scroll-0-10.jpg",
+        "landscape/night/atlas-list--scroll-0-11.jpg",
+        "landscape/night/atlas-list--scroll-0-12.jpg"
+      ],
+      "sha256": "56c71ff12119b0b07fd28f8a0e4e6c639a9d1e233ac0ce1178f9268d1bcdd8cf"
+    },
+    {
+      "file": "contacts/sheet-06.webp",
+      "firstFrame": 61,
+      "lastFrame": 72,
+      "images": [
+        "landscape/night/atlas-list--scroll-0-13.jpg",
+        "landscape/night/atlas-list--scroll-0-14.jpg",
+        "landscape/night/atlas-list--scroll-0-15.jpg",
+        "landscape/night/atlas-list--scroll-0-16.jpg",
+        "landscape/night/atlas-list--scroll-0-17.jpg",
+        "landscape/night/atlas-list--scroll-0-18.jpg",
+        "landscape/night/atlas-list--scroll-0-19.jpg",
+        "landscape/night/atlas-list--scroll-0-20.jpg",
+        "large/day/atlas-list.jpg",
+        "large/day/atlas-list--scroll-0-1.jpg",
+        "large/day/atlas-list--scroll-0-2.jpg",
+        "large/day/atlas-list--scroll-0-3.jpg"
+      ],
+      "sha256": "f0bc850f5e20b800090ee75d6341ad48065164e5a27834e1ea565ecb8166eb21"
+    },
+    {
+      "file": "contacts/sheet-07.webp",
+      "firstFrame": 73,
+      "lastFrame": 84,
+      "images": [
+        "large/day/atlas-list--scroll-0-4.jpg",
+        "large/day/atlas-list--scroll-0-5.jpg",
+        "large/day/atlas-list--scroll-0-6.jpg",
+        "large/day/atlas-list--scroll-0-7.jpg",
+        "large/day/atlas-list--scroll-0-8.jpg",
+        "large/day/atlas-list--scroll-0-9.jpg",
+        "large/day/atlas-list--scroll-0-10.jpg",
+        "large/day/atlas-list--scroll-0-11.jpg",
+        "large/night/atlas-list.jpg",
+        "large/night/atlas-list--scroll-0-1.jpg",
+        "large/night/atlas-list--scroll-0-2.jpg",
+        "large/night/atlas-list--scroll-0-3.jpg"
+      ],
+      "sha256": "374e8edddd1e8aa35b699de927c9cb490ab45eabcc0f36bb07d42c86a4898520"
+    },
+    {
+      "file": "contacts/sheet-08.webp",
+      "firstFrame": 85,
+      "lastFrame": 96,
+      "images": [
+        "large/night/atlas-list--scroll-0-4.jpg",
+        "large/night/atlas-list--scroll-0-5.jpg",
+        "large/night/atlas-list--scroll-0-6.jpg",
+        "large/night/atlas-list--scroll-0-7.jpg",
+        "large/night/atlas-list--scroll-0-8.jpg",
+        "large/night/atlas-list--scroll-0-9.jpg",
+        "large/night/atlas-list--scroll-0-10.jpg",
+        "large/night/atlas-list--scroll-0-11.jpg",
+        "small/day/atlas-list.jpg",
+        "small/day/atlas-list--scroll-0-1.jpg",
+        "small/day/atlas-list--scroll-0-2.jpg",
+        "small/day/atlas-list--scroll-0-3.jpg"
+      ],
+      "sha256": "f1f1374f85c43e4a4ca6d0dc3968872737fc388147c42f107b8c17bc254518e5"
+    },
+    {
+      "file": "contacts/sheet-09.webp",
+      "firstFrame": 97,
+      "lastFrame": 108,
+      "images": [
+        "small/day/atlas-list--scroll-0-4.jpg",
+        "small/day/atlas-list--scroll-0-5.jpg",
+        "small/day/atlas-list--scroll-0-6.jpg",
+        "small/day/atlas-list--scroll-0-7.jpg",
+        "small/day/atlas-list--scroll-0-8.jpg",
+        "small/day/atlas-list--scroll-0-9.jpg",
+        "small/day/atlas-list--scroll-0-10.jpg",
+        "small/day/atlas-list--scroll-0-11.jpg",
+        "small/night/atlas-list.jpg",
+        "small/night/atlas-list--scroll-0-1.jpg",
+        "small/night/atlas-list--scroll-0-2.jpg",
+        "small/night/atlas-list--scroll-0-3.jpg"
+      ],
+      "sha256": "371bdfb76d4e477912fd46c96cec0be41dd1b29451bab525ecf6ce8f3c602890"
+    },
+    {
+      "file": "contacts/sheet-10.webp",
+      "firstFrame": 109,
+      "lastFrame": 120,
+      "images": [
+        "small/night/atlas-list--scroll-0-4.jpg",
+        "small/night/atlas-list--scroll-0-5.jpg",
+        "small/night/atlas-list--scroll-0-6.jpg",
+        "small/night/atlas-list--scroll-0-7.jpg",
+        "small/night/atlas-list--scroll-0-8.jpg",
+        "small/night/atlas-list--scroll-0-9.jpg",
+        "small/night/atlas-list--scroll-0-10.jpg",
+        "small/night/atlas-list--scroll-0-11.jpg",
+        "tablet/day/atlas-list.jpg",
+        "tablet/day/atlas-list--scroll-0-1.jpg",
+        "tablet/day/atlas-list--scroll-0-2.jpg",
+        "tablet/day/atlas-list--scroll-0-3.jpg"
+      ],
+      "sha256": "e22650971af4515907d71aaf0a8162d07c0f4c6298213b9ecfc6c67f051f22dc"
+    },
+    {
+      "file": "contacts/sheet-11.webp",
+      "firstFrame": 121,
+      "lastFrame": 132,
+      "images": [
+        "tablet/day/atlas-list--scroll-0-4.jpg",
+        "tablet/day/atlas-list--scroll-0-5.jpg",
+        "tablet/day/atlas-list--scroll-0-6.jpg",
+        "tablet/night/atlas-list.jpg",
+        "tablet/night/atlas-list--scroll-0-1.jpg",
+        "tablet/night/atlas-list--scroll-0-2.jpg",
+        "tablet/night/atlas-list--scroll-0-3.jpg",
+        "tablet/night/atlas-list--scroll-0-4.jpg",
+        "tablet/night/atlas-list--scroll-0-5.jpg",
+        "tablet/night/atlas-list--scroll-0-6.jpg",
+        "desktop/day/atlas-list-options-collapsed.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-1.jpg"
+      ],
+      "sha256": "8686c574315686429166a5d44e0b1df1ee740aee8b41d6d0353ef3392430a63c"
+    },
+    {
+      "file": "contacts/sheet-12.webp",
+      "firstFrame": 133,
+      "lastFrame": 144,
+      "images": [
+        "desktop/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "desktop/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "desktop/night/atlas-list-options-collapsed.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-5.jpg"
+      ],
+      "sha256": "446ec53c5fd52df02c8518323af57d21e8faa4e56d3e5e592c09f457b8c96b1a"
+    },
+    {
+      "file": "contacts/sheet-13.webp",
+      "firstFrame": 145,
+      "lastFrame": 156,
+      "images": [
+        "desktop/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "desktop/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "landscape/day/atlas-list-options-collapsed.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-9.jpg"
+      ],
+      "sha256": "fe57d4a5c73d710561e86b1b8b03a398b444022c1a991bcf74a0163aa09238d4"
+    },
+    {
+      "file": "contacts/sheet-14.webp",
+      "firstFrame": 157,
+      "lastFrame": 168,
+      "images": [
+        "landscape/day/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-12.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-13.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-14.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-15.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-16.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-17.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-18.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-19.jpg",
+        "landscape/day/atlas-list-options-collapsed--scroll-0-20.jpg",
+        "landscape/night/atlas-list-options-collapsed.jpg"
+      ],
+      "sha256": "188127c71e96e698ef5108aad25cc8205c26af6d538ba27edd1fd8cc1e4c89c7"
+    },
+    {
+      "file": "contacts/sheet-15.webp",
+      "firstFrame": 169,
+      "lastFrame": 180,
+      "images": [
+        "landscape/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-12.jpg"
+      ],
+      "sha256": "5c4fcc7179602e9c697762691d04655102d377dec416e5bf63f8af21d5dcf508"
+    },
+    {
+      "file": "contacts/sheet-16.webp",
+      "firstFrame": 181,
+      "lastFrame": 192,
+      "images": [
+        "landscape/night/atlas-list-options-collapsed--scroll-0-13.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-14.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-15.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-16.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-17.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-18.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-19.jpg",
+        "landscape/night/atlas-list-options-collapsed--scroll-0-20.jpg",
+        "large/day/atlas-list-options-collapsed.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-3.jpg"
+      ],
+      "sha256": "eb46f5b338c30db30b17c8b41f9fe075475fcfec7bae4b8070fd0f19e9fc4479"
+    },
+    {
+      "file": "contacts/sheet-17.webp",
+      "firstFrame": 193,
+      "lastFrame": 204,
+      "images": [
+        "large/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "large/day/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "large/night/atlas-list-options-collapsed.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-5.jpg"
+      ],
+      "sha256": "d3a3954cf74fcbb0e9baae233c23180ec7a5cbed0c77ff93da34c5f68b2a5e05"
+    },
+    {
+      "file": "contacts/sheet-18.webp",
+      "firstFrame": 205,
+      "lastFrame": 216,
+      "images": [
+        "large/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-7.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "large/night/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "small/day/atlas-list-options-collapsed.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-7.jpg"
+      ],
+      "sha256": "3bfee61cd648ee7cc26b914ffbf3a20759cf5d95b44fc202a153e21913ba4111"
+    },
+    {
+      "file": "contacts/sheet-19.webp",
+      "firstFrame": 217,
+      "lastFrame": 228,
+      "images": [
+        "small/day/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "small/day/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "small/night/atlas-list-options-collapsed.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-7.jpg"
+      ],
+      "sha256": "0406630f08db726804d534729cd104038345f30c11e8a76aacfde7c03fafd7d4"
+    },
+    {
+      "file": "contacts/sheet-20.webp",
+      "firstFrame": 229,
+      "lastFrame": 240,
+      "images": [
+        "small/night/atlas-list-options-collapsed--scroll-0-8.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-9.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-10.jpg",
+        "small/night/atlas-list-options-collapsed--scroll-0-11.jpg",
+        "tablet/day/atlas-list-options-collapsed.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "tablet/day/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "tablet/night/atlas-list-options-collapsed.jpg"
+      ],
+      "sha256": "76abe0b284afda6de303792e9321d08eaa606bf90d741085b286e5f54148f2b5"
+    },
+    {
+      "file": "contacts/sheet-21.webp",
+      "firstFrame": 241,
+      "lastFrame": 252,
+      "images": [
+        "tablet/night/atlas-list-options-collapsed--scroll-0-1.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-2.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-3.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-4.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-5.jpg",
+        "tablet/night/atlas-list-options-collapsed--scroll-0-6.jpg",
+        "desktop/day/atlas-new-concept.jpg",
+        "desktop/night/atlas-new-concept.jpg",
+        "landscape/day/atlas-new-concept.jpg",
+        "landscape/day/atlas-new-concept--scroll-0-1.jpg",
+        "landscape/night/atlas-new-concept.jpg",
+        "landscape/night/atlas-new-concept--scroll-0-1.jpg"
+      ],
+      "sha256": "b89c239aba76cb0212bab5e6b365e882f9f295a998ba061888cf6fbb059d4eaa"
+    },
+    {
+      "file": "contacts/sheet-22.webp",
+      "firstFrame": 253,
+      "lastFrame": 264,
+      "images": [
+        "large/day/atlas-new-concept.jpg",
+        "large/night/atlas-new-concept.jpg",
+        "small/day/atlas-new-concept.jpg",
+        "small/night/atlas-new-concept.jpg",
+        "tablet/day/atlas-new-concept.jpg",
+        "tablet/night/atlas-new-concept.jpg",
+        "desktop/day/atlas-operation-reparent.jpg",
+        "desktop/night/atlas-operation-reparent.jpg",
+        "landscape/day/atlas-operation-reparent.jpg",
+        "landscape/night/atlas-operation-reparent.jpg",
+        "large/day/atlas-operation-reparent.jpg",
+        "large/night/atlas-operation-reparent.jpg"
+      ],
+      "sha256": "fe002050bf884f8fd43733a9179f518e03e9236af7144fa11d9a26a199260379"
+    },
+    {
+      "file": "contacts/sheet-23.webp",
+      "firstFrame": 265,
+      "lastFrame": 276,
+      "images": [
+        "small/day/atlas-operation-reparent.jpg",
+        "small/night/atlas-operation-reparent.jpg",
+        "tablet/day/atlas-operation-reparent.jpg",
+        "tablet/night/atlas-operation-reparent.jpg",
+        "desktop/day/atlas-options-collapsed.jpg",
+        "desktop/night/atlas-options-collapsed.jpg",
+        "landscape/day/atlas-options-collapsed.jpg",
+        "landscape/night/atlas-options-collapsed.jpg",
+        "large/day/atlas-options-collapsed.jpg",
+        "large/night/atlas-options-collapsed.jpg",
+        "small/day/atlas-options-collapsed.jpg",
+        "small/night/atlas-options-collapsed.jpg"
+      ],
+      "sha256": "d3ba7f9f25c9dd586a10f158b72cc6535df881c830d3b93dd9fa212a78b0cb88"
+    },
+    {
+      "file": "contacts/sheet-24.webp",
+      "firstFrame": 277,
+      "lastFrame": 288,
+      "images": [
+        "tablet/day/atlas-options-collapsed.jpg",
+        "tablet/night/atlas-options-collapsed.jpg",
+        "desktop/day/atlas-peek.jpg",
+        "desktop/night/atlas-peek.jpg",
         "landscape/day/atlas-peek.jpg",
         "landscape/night/atlas-peek.jpg",
         "large/day/atlas-peek.jpg",
@@ -7282,19 +10526,19 @@
         "small/day/atlas-peek.jpg",
         "small/night/atlas-peek.jpg",
         "tablet/day/atlas-peek.jpg",
-        "tablet/night/atlas-peek.jpg",
+        "tablet/night/atlas-peek.jpg"
+      ],
+      "sha256": "3b8a7fc7979aa4332dedc3c038c723692af15293930d4b1611badb15cbb79fbe"
+    },
+    {
+      "file": "contacts/sheet-25.webp",
+      "firstFrame": 289,
+      "lastFrame": 300,
+      "images": [
         "desktop/day/atlas-search.jpg",
         "desktop/night/atlas-search.jpg",
         "landscape/day/atlas-search.jpg",
-        "landscape/day/atlas-search--scroll-0-1.jpg"
-      ],
-      "sha256": "a4d060b307f7b80da6aee448a732b43db71dd98780f46d02fcb11e8a8d0609d2"
-    },
-    {
-      "file": "contacts/sheet-04.webp",
-      "firstFrame": 37,
-      "lastFrame": 48,
-      "images": [
+        "landscape/day/atlas-search--scroll-0-1.jpg",
         "landscape/night/atlas-search.jpg",
         "landscape/night/atlas-search--scroll-0-1.jpg",
         "large/day/atlas-search.jpg",
@@ -7302,19 +10546,19 @@
         "large/night/atlas-search.jpg",
         "large/night/atlas-search--scroll-0-1.jpg",
         "small/day/atlas-search.jpg",
-        "small/day/atlas-search--scroll-0-1.jpg",
+        "small/day/atlas-search--scroll-0-1.jpg"
+      ],
+      "sha256": "77352138c86d058f37e077179f7c162e145bbc5cf32c3841a8d4a00970f59cd9"
+    },
+    {
+      "file": "contacts/sheet-26.webp",
+      "firstFrame": 301,
+      "lastFrame": 312,
+      "images": [
         "small/night/atlas-search.jpg",
         "small/night/atlas-search--scroll-0-1.jpg",
         "tablet/day/atlas-search.jpg",
-        "tablet/night/atlas-search.jpg"
-      ],
-      "sha256": "7ec412454db1d4374c4881616b5b02e1cac90973b04dab418975fd342f9efae2"
-    },
-    {
-      "file": "contacts/sheet-05.webp",
-      "firstFrame": 49,
-      "lastFrame": 60,
-      "images": [
+        "tablet/night/atlas-search.jpg",
         "desktop/day/calendar-month.jpg",
         "desktop/night/calendar-month.jpg",
         "landscape/day/calendar-month.jpg",
@@ -7322,19 +10566,19 @@
         "landscape/night/calendar-month.jpg",
         "landscape/night/calendar-month--scroll-0-1.jpg",
         "large/day/calendar-month.jpg",
-        "large/day/calendar-month--scroll-0-1.jpg",
+        "large/day/calendar-month--scroll-0-1.jpg"
+      ],
+      "sha256": "b4a33700cb9ec3b079d440e57a01c3f2b84683baafbdb9912136b296e90dcb35"
+    },
+    {
+      "file": "contacts/sheet-27.webp",
+      "firstFrame": 313,
+      "lastFrame": 324,
+      "images": [
         "large/night/calendar-month.jpg",
         "large/night/calendar-month--scroll-0-1.jpg",
         "small/day/calendar-month.jpg",
-        "small/day/calendar-month--scroll-0-1.jpg"
-      ],
-      "sha256": "ec9a9ff69db818fa4c86cd11e4b39aaffc06b8f7bf6bebe1b4f2a636aa5d3855"
-    },
-    {
-      "file": "contacts/sheet-06.webp",
-      "firstFrame": 61,
-      "lastFrame": 72,
-      "images": [
+        "small/day/calendar-month--scroll-0-1.jpg",
         "small/night/calendar-month.jpg",
         "small/night/calendar-month--scroll-0-1.jpg",
         "tablet/day/calendar-month.jpg",
@@ -7342,19 +10586,19 @@
         "desktop/day/calendar-week.jpg",
         "desktop/day/calendar-week--scroll-0-1.jpg",
         "desktop/day/calendar-week--scroll-1-1.jpg",
-        "desktop/night/calendar-week.jpg",
+        "desktop/night/calendar-week.jpg"
+      ],
+      "sha256": "4a5288a2e2435de2f0e807ae90c456f9de2fe27b379a7c9111cdcdc995d9e134"
+    },
+    {
+      "file": "contacts/sheet-28.webp",
+      "firstFrame": 325,
+      "lastFrame": 336,
+      "images": [
         "desktop/night/calendar-week--scroll-0-1.jpg",
         "desktop/night/calendar-week--scroll-1-1.jpg",
         "landscape/day/calendar-week.jpg",
-        "landscape/day/calendar-week--scroll-0-1.jpg"
-      ],
-      "sha256": "aea6cae00d66ea68ec35635d0b768e66d1361edb052fb8a9cb6773d4d9c3fae4"
-    },
-    {
-      "file": "contacts/sheet-07.webp",
-      "firstFrame": 73,
-      "lastFrame": 84,
-      "images": [
+        "landscape/day/calendar-week--scroll-0-1.jpg",
         "landscape/day/calendar-week--scroll-1-1.jpg",
         "landscape/day/calendar-week--scroll-1-2.jpg",
         "landscape/day/calendar-week--scroll-1-3.jpg",
@@ -7362,19 +10606,19 @@
         "landscape/night/calendar-week.jpg",
         "landscape/night/calendar-week--scroll-0-1.jpg",
         "landscape/night/calendar-week--scroll-1-1.jpg",
-        "landscape/night/calendar-week--scroll-1-2.jpg",
+        "landscape/night/calendar-week--scroll-1-2.jpg"
+      ],
+      "sha256": "6713957e9f6c8960efabd4d5e8e37fbde4face2c1725db6c289f581e6cbc7319"
+    },
+    {
+      "file": "contacts/sheet-29.webp",
+      "firstFrame": 337,
+      "lastFrame": 348,
+      "images": [
         "landscape/night/calendar-week--scroll-1-3.jpg",
         "landscape/night/calendar-week--scroll-1-4.jpg",
         "large/day/calendar-week.jpg",
-        "large/day/calendar-week--scroll-0-1.jpg"
-      ],
-      "sha256": "5b1412a46df411aa2156f694715a6a32a22d11aa700b36dda4728e730d2fb0c1"
-    },
-    {
-      "file": "contacts/sheet-08.webp",
-      "firstFrame": 85,
-      "lastFrame": 96,
-      "images": [
+        "large/day/calendar-week--scroll-0-1.jpg",
         "large/day/calendar-week--scroll-1-1.jpg",
         "large/night/calendar-week.jpg",
         "large/night/calendar-week--scroll-0-1.jpg",
@@ -7382,19 +10626,19 @@
         "small/day/calendar-week.jpg",
         "small/day/calendar-week--scroll-0-1.jpg",
         "small/day/calendar-week--scroll-1-1.jpg",
-        "small/day/calendar-week--scroll-1-2.jpg",
+        "small/day/calendar-week--scroll-1-2.jpg"
+      ],
+      "sha256": "2eee03f4972b00779fc2d32ece760b833138c7983a54e45149b31e285bf91c5f"
+    },
+    {
+      "file": "contacts/sheet-30.webp",
+      "firstFrame": 349,
+      "lastFrame": 360,
+      "images": [
         "small/night/calendar-week.jpg",
         "small/night/calendar-week--scroll-0-1.jpg",
         "small/night/calendar-week--scroll-1-1.jpg",
-        "small/night/calendar-week--scroll-1-2.jpg"
-      ],
-      "sha256": "214f9ac7499786fd9773734981a211ff40de3fc4d402b53d6bc5c0621e0bb7bf"
-    },
-    {
-      "file": "contacts/sheet-09.webp",
-      "firstFrame": 97,
-      "lastFrame": 108,
-      "images": [
+        "small/night/calendar-week--scroll-1-2.jpg",
         "tablet/day/calendar-week.jpg",
         "tablet/day/calendar-week--scroll-0-1.jpg",
         "tablet/night/calendar-week.jpg",
@@ -7402,19 +10646,19 @@
         "desktop/day/capture-type-picker.jpg",
         "desktop/night/capture-type-picker.jpg",
         "landscape/day/capture-type-picker.jpg",
-        "landscape/day/capture-type-picker--scroll-0-1.jpg",
+        "landscape/day/capture-type-picker--scroll-0-1.jpg"
+      ],
+      "sha256": "b272c37ef617f68f67b50bde1b4da18c1ead2eb56ce5bb27179b263683717569"
+    },
+    {
+      "file": "contacts/sheet-31.webp",
+      "firstFrame": 361,
+      "lastFrame": 372,
+      "images": [
         "landscape/night/capture-type-picker.jpg",
         "landscape/night/capture-type-picker--scroll-0-1.jpg",
         "large/day/capture-type-picker.jpg",
-        "large/night/capture-type-picker.jpg"
-      ],
-      "sha256": "cba412f31063b99bab41cf19c1314edcaddc5507ce595edc9caa2e46577db925"
-    },
-    {
-      "file": "contacts/sheet-10.webp",
-      "firstFrame": 109,
-      "lastFrame": 120,
-      "images": [
+        "large/night/capture-type-picker.jpg",
         "small/day/capture-type-picker.jpg",
         "small/night/capture-type-picker.jpg",
         "tablet/day/capture-type-picker.jpg",
@@ -7422,19 +10666,19 @@
         "desktop/day/new-task-filled.jpg",
         "desktop/night/new-task-filled.jpg",
         "landscape/day/new-task-filled.jpg",
-        "landscape/day/new-task-filled--scroll-0-1.jpg",
+        "landscape/day/new-task-filled--scroll-0-1.jpg"
+      ],
+      "sha256": "472402a2d9a77c4cc664b99109074b696da930152712e865ede0dc7213b70d96"
+    },
+    {
+      "file": "contacts/sheet-32.webp",
+      "firstFrame": 373,
+      "lastFrame": 384,
+      "images": [
         "landscape/day/new-task-filled--scroll-0-2.jpg",
         "landscape/night/new-task-filled.jpg",
         "landscape/night/new-task-filled--scroll-0-1.jpg",
-        "landscape/night/new-task-filled--scroll-0-2.jpg"
-      ],
-      "sha256": "697e190cd2984a040765ef88965765d33a419f3605dc11a8638fdfd287f1bd63"
-    },
-    {
-      "file": "contacts/sheet-11.webp",
-      "firstFrame": 121,
-      "lastFrame": 132,
-      "images": [
+        "landscape/night/new-task-filled--scroll-0-2.jpg",
         "large/day/new-task-filled.jpg",
         "large/day/new-task-filled--scroll-0-1.jpg",
         "large/night/new-task-filled.jpg",
@@ -7442,19 +10686,19 @@
         "small/day/new-task-filled.jpg",
         "small/day/new-task-filled--scroll-0-1.jpg",
         "small/night/new-task-filled.jpg",
-        "small/night/new-task-filled--scroll-0-1.jpg",
+        "small/night/new-task-filled--scroll-0-1.jpg"
+      ],
+      "sha256": "1058340e2c120f7a52a7a68e0157ddc6a7351475b127c762e5ccbd5ec06e77d4"
+    },
+    {
+      "file": "contacts/sheet-33.webp",
+      "firstFrame": 385,
+      "lastFrame": 396,
+      "images": [
         "tablet/day/new-task-filled.jpg",
         "tablet/night/new-task-filled.jpg",
         "desktop/day/path-marked-done.jpg",
-        "desktop/day/path-marked-done--scroll-0-1.jpg"
-      ],
-      "sha256": "118790bbe0e169cdc15433a24d4958db0fb8acedbfcf0b5028296564174e665a"
-    },
-    {
-      "file": "contacts/sheet-12.webp",
-      "firstFrame": 133,
-      "lastFrame": 144,
-      "images": [
+        "desktop/day/path-marked-done--scroll-0-1.jpg",
         "desktop/night/path-marked-done.jpg",
         "desktop/night/path-marked-done--scroll-0-1.jpg",
         "landscape/day/path-marked-done.jpg",
@@ -7462,19 +10706,19 @@
         "landscape/day/path-marked-done--scroll-0-2.jpg",
         "landscape/day/path-marked-done--scroll-0-3.jpg",
         "landscape/night/path-marked-done.jpg",
-        "landscape/night/path-marked-done--scroll-0-1.jpg",
+        "landscape/night/path-marked-done--scroll-0-1.jpg"
+      ],
+      "sha256": "404a727aa9a19d74301909083a8b24b0f5419cd8f3f1884e469687a0057874cf"
+    },
+    {
+      "file": "contacts/sheet-34.webp",
+      "firstFrame": 397,
+      "lastFrame": 408,
+      "images": [
         "landscape/night/path-marked-done--scroll-0-2.jpg",
         "landscape/night/path-marked-done--scroll-0-3.jpg",
         "large/day/path-marked-done.jpg",
-        "large/day/path-marked-done--scroll-0-1.jpg"
-      ],
-      "sha256": "9139ddda0451dd6a6873a7203eb12f3eacec9c1df5201f11938fd269e652304f"
-    },
-    {
-      "file": "contacts/sheet-13.webp",
-      "firstFrame": 145,
-      "lastFrame": 156,
-      "images": [
+        "large/day/path-marked-done--scroll-0-1.jpg",
         "large/day/path-marked-done--scroll-0-2.jpg",
         "large/night/path-marked-done.jpg",
         "large/night/path-marked-done--scroll-0-1.jpg",
@@ -7482,19 +10726,19 @@
         "small/day/path-marked-done.jpg",
         "small/day/path-marked-done--scroll-0-1.jpg",
         "small/day/path-marked-done--scroll-0-2.jpg",
-        "small/night/path-marked-done.jpg",
+        "small/night/path-marked-done.jpg"
+      ],
+      "sha256": "42bd82dfe6cfd3aad0b40c0bb5f2238f9d43e3117aa7139ba8560e5f91ffaf8c"
+    },
+    {
+      "file": "contacts/sheet-35.webp",
+      "firstFrame": 409,
+      "lastFrame": 420,
+      "images": [
         "small/night/path-marked-done--scroll-0-1.jpg",
         "small/night/path-marked-done--scroll-0-2.jpg",
         "tablet/day/path-marked-done.jpg",
-        "tablet/day/path-marked-done--scroll-0-1.jpg"
-      ],
-      "sha256": "a5898d5984ec77b9ae3a38de06d1be7d51a710f6686b007025cf77070550cef7"
-    },
-    {
-      "file": "contacts/sheet-14.webp",
-      "firstFrame": 157,
-      "lastFrame": 168,
-      "images": [
+        "tablet/day/path-marked-done--scroll-0-1.jpg",
         "tablet/night/path-marked-done.jpg",
         "tablet/night/path-marked-done--scroll-0-1.jpg",
         "desktop/day/review-scratch-revealed.jpg",
@@ -7502,19 +10746,19 @@
         "landscape/day/review-scratch-revealed.jpg",
         "landscape/day/review-scratch-revealed--scroll-0-1.jpg",
         "landscape/day/review-scratch-revealed--scroll-0-2.jpg",
-        "landscape/night/review-scratch-revealed.jpg",
+        "landscape/night/review-scratch-revealed.jpg"
+      ],
+      "sha256": "4f657e6961404a080e860fc1f21388f85d7c924d3b7f72272a98e2a3ff194324"
+    },
+    {
+      "file": "contacts/sheet-36.webp",
+      "firstFrame": 421,
+      "lastFrame": 432,
+      "images": [
         "landscape/night/review-scratch-revealed--scroll-0-1.jpg",
         "landscape/night/review-scratch-revealed--scroll-0-2.jpg",
         "large/day/review-scratch-revealed.jpg",
-        "large/day/review-scratch-revealed--scroll-0-1.jpg"
-      ],
-      "sha256": "a5cc67d6e1b9e9475b60b717c5d75f06cea2f261852954c851f90e3f3cce128e"
-    },
-    {
-      "file": "contacts/sheet-15.webp",
-      "firstFrame": 169,
-      "lastFrame": 180,
-      "images": [
+        "large/day/review-scratch-revealed--scroll-0-1.jpg",
         "large/night/review-scratch-revealed.jpg",
         "large/night/review-scratch-revealed--scroll-0-1.jpg",
         "small/day/review-scratch-revealed.jpg",
@@ -7522,19 +10766,19 @@
         "small/night/review-scratch-revealed.jpg",
         "small/night/review-scratch-revealed--scroll-0-1.jpg",
         "tablet/day/review-scratch-revealed.jpg",
-        "tablet/night/review-scratch-revealed.jpg",
+        "tablet/night/review-scratch-revealed.jpg"
+      ],
+      "sha256": "4418585138bfd845cb41502f6f2c9b0aba2586805791f089df19e27e2a4290ae"
+    },
+    {
+      "file": "contacts/sheet-37.webp",
+      "firstFrame": 433,
+      "lastFrame": 444,
+      "images": [
         "desktop/day/settings-study-cards-a-day.jpg",
         "desktop/night/settings-study-cards-a-day.jpg",
         "landscape/day/settings-study-cards-a-day.jpg",
-        "landscape/night/settings-study-cards-a-day.jpg"
-      ],
-      "sha256": "702ef7da3c4fe3a9aa975d8e692b3facbb1da4b00e42a01c68e2df0533aacab8"
-    },
-    {
-      "file": "contacts/sheet-16.webp",
-      "firstFrame": 181,
-      "lastFrame": 192,
-      "images": [
+        "landscape/night/settings-study-cards-a-day.jpg",
         "large/day/settings-study-cards-a-day.jpg",
         "large/night/settings-study-cards-a-day.jpg",
         "small/day/settings-study-cards-a-day.jpg",
@@ -7542,19 +10786,19 @@
         "tablet/day/settings-study-cards-a-day.jpg",
         "tablet/night/settings-study-cards-a-day.jpg",
         "desktop/day/tutor-beta-settings.jpg",
-        "desktop/day/tutor-beta-settings--scroll-0-1.jpg",
+        "desktop/day/tutor-beta-settings--scroll-0-1.jpg"
+      ],
+      "sha256": "eae92467f444521fea68a05a11e770434579dbc00c8f04b13dae7a1d56ac919f"
+    },
+    {
+      "file": "contacts/sheet-38.webp",
+      "firstFrame": 445,
+      "lastFrame": 456,
+      "images": [
         "desktop/night/tutor-beta-settings.jpg",
         "desktop/night/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/day/tutor-beta-settings.jpg",
-        "landscape/day/tutor-beta-settings--scroll-0-1.jpg"
-      ],
-      "sha256": "2a2ea5c98eb548e4c5ef7c3ede55137e6c545a641f4a05e5060a29982f9119a2"
-    },
-    {
-      "file": "contacts/sheet-17.webp",
-      "firstFrame": 193,
-      "lastFrame": 204,
-      "images": [
+        "landscape/day/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/day/tutor-beta-settings--scroll-0-2.jpg",
         "landscape/day/tutor-beta-settings--scroll-0-3.jpg",
         "landscape/day/tutor-beta-settings--scroll-0-4.jpg",
@@ -7562,19 +10806,19 @@
         "landscape/night/tutor-beta-settings--scroll-0-1.jpg",
         "landscape/night/tutor-beta-settings--scroll-0-2.jpg",
         "landscape/night/tutor-beta-settings--scroll-0-3.jpg",
-        "landscape/night/tutor-beta-settings--scroll-0-4.jpg",
+        "landscape/night/tutor-beta-settings--scroll-0-4.jpg"
+      ],
+      "sha256": "7ff2853ad059437c4bf6cff654b51441a6673fa3a4b791057cb5e4511fb9f552"
+    },
+    {
+      "file": "contacts/sheet-39.webp",
+      "firstFrame": 457,
+      "lastFrame": 468,
+      "images": [
         "large/day/tutor-beta-settings.jpg",
         "large/day/tutor-beta-settings--scroll-0-1.jpg",
         "large/day/tutor-beta-settings--scroll-0-2.jpg",
-        "large/day/tutor-beta-settings--scroll-0-3.jpg"
-      ],
-      "sha256": "734a7272ab2162ca219740732326e81f8a3dfe4895c16548835b48fb42ac8c5a"
-    },
-    {
-      "file": "contacts/sheet-18.webp",
-      "firstFrame": 205,
-      "lastFrame": 216,
-      "images": [
+        "large/day/tutor-beta-settings--scroll-0-3.jpg",
         "large/night/tutor-beta-settings.jpg",
         "large/night/tutor-beta-settings--scroll-0-1.jpg",
         "large/night/tutor-beta-settings--scroll-0-2.jpg",
@@ -7582,19 +10826,19 @@
         "small/day/tutor-beta-settings.jpg",
         "small/day/tutor-beta-settings--scroll-0-1.jpg",
         "small/day/tutor-beta-settings--scroll-0-2.jpg",
-        "small/night/tutor-beta-settings.jpg",
+        "small/night/tutor-beta-settings.jpg"
+      ],
+      "sha256": "de0b309c80bb754d8e18c2262eabbd1cd6c7c046e98fd6d09a1d07a40c1f95e4"
+    },
+    {
+      "file": "contacts/sheet-40.webp",
+      "firstFrame": 469,
+      "lastFrame": 480,
+      "images": [
         "small/night/tutor-beta-settings--scroll-0-1.jpg",
         "small/night/tutor-beta-settings--scroll-0-2.jpg",
         "tablet/day/tutor-beta-settings.jpg",
-        "tablet/day/tutor-beta-settings--scroll-0-1.jpg"
-      ],
-      "sha256": "edb2776577adb978715cd782c36be138d218cbbc96a2fcb7dc225c171cd5f587"
-    },
-    {
-      "file": "contacts/sheet-19.webp",
-      "firstFrame": 217,
-      "lastFrame": 228,
-      "images": [
+        "tablet/day/tutor-beta-settings--scroll-0-1.jpg",
         "tablet/night/tutor-beta-settings.jpg",
         "tablet/night/tutor-beta-settings--scroll-0-1.jpg",
         "desktop/day/tutor-drawing-preview.jpg",
@@ -7602,19 +10846,19 @@
         "desktop/day/tutor-drawing-preview--scroll-0-2.jpg",
         "desktop/day/tutor-drawing-preview--scroll-0-3.jpg",
         "desktop/night/tutor-drawing-preview.jpg",
-        "desktop/night/tutor-drawing-preview--scroll-0-1.jpg",
+        "desktop/night/tutor-drawing-preview--scroll-0-1.jpg"
+      ],
+      "sha256": "a16a12a3e3eddcec03a10baa1e92e04181bcd15ac3ba8ae813534a13f4184a80"
+    },
+    {
+      "file": "contacts/sheet-41.webp",
+      "firstFrame": 481,
+      "lastFrame": 492,
+      "images": [
         "desktop/night/tutor-drawing-preview--scroll-0-2.jpg",
         "desktop/night/tutor-drawing-preview--scroll-0-3.jpg",
         "landscape/day/tutor-drawing-preview.jpg",
-        "landscape/night/tutor-drawing-preview.jpg"
-      ],
-      "sha256": "3a0186a682fa7e079b3d2506d7db81dfc4c253b0cf2b017627e70dc1606af0ef"
-    },
-    {
-      "file": "contacts/sheet-20.webp",
-      "firstFrame": 229,
-      "lastFrame": 240,
-      "images": [
+        "landscape/night/tutor-drawing-preview.jpg",
         "large/day/tutor-drawing-preview.jpg",
         "large/day/tutor-drawing-preview--scroll-0-1.jpg",
         "large/day/tutor-drawing-preview--scroll-0-2.jpg",
@@ -7622,19 +10866,19 @@
         "large/day/tutor-drawing-preview--scroll-2-1.jpg",
         "large/day/tutor-drawing-preview--scroll-2-2.jpg",
         "large/night/tutor-drawing-preview.jpg",
-        "large/night/tutor-drawing-preview--scroll-0-1.jpg",
+        "large/night/tutor-drawing-preview--scroll-0-1.jpg"
+      ],
+      "sha256": "a4d2dc6f46242dffe2c45d30846c8e36827cc8c7f31f13ab4fd236ddc5412cd2"
+    },
+    {
+      "file": "contacts/sheet-42.webp",
+      "firstFrame": 493,
+      "lastFrame": 504,
+      "images": [
         "large/night/tutor-drawing-preview--scroll-0-2.jpg",
         "large/night/tutor-drawing-preview--scroll-1-1.jpg",
         "large/night/tutor-drawing-preview--scroll-2-1.jpg",
-        "large/night/tutor-drawing-preview--scroll-2-2.jpg"
-      ],
-      "sha256": "5eaff9a20c49749d914a96b3c460b8f6ae61e558f9896e3f94efa8d7e418a509"
-    },
-    {
-      "file": "contacts/sheet-21.webp",
-      "firstFrame": 241,
-      "lastFrame": 252,
-      "images": [
+        "large/night/tutor-drawing-preview--scroll-2-2.jpg",
         "small/day/tutor-drawing-preview.jpg",
         "small/day/tutor-drawing-preview--scroll-0-1.jpg",
         "small/day/tutor-drawing-preview--scroll-0-2.jpg",
@@ -7642,19 +10886,19 @@
         "small/day/tutor-drawing-preview--scroll-1-2.jpg",
         "small/night/tutor-drawing-preview.jpg",
         "small/night/tutor-drawing-preview--scroll-0-1.jpg",
-        "small/night/tutor-drawing-preview--scroll-0-2.jpg",
+        "small/night/tutor-drawing-preview--scroll-0-2.jpg"
+      ],
+      "sha256": "02ef1b16640bae69e5f4335d833838ffe52feddcbe05fdd5be05ba67599b10c4"
+    },
+    {
+      "file": "contacts/sheet-43.webp",
+      "firstFrame": 505,
+      "lastFrame": 516,
+      "images": [
         "small/night/tutor-drawing-preview--scroll-1-1.jpg",
         "small/night/tutor-drawing-preview--scroll-1-2.jpg",
         "tablet/day/tutor-drawing-preview.jpg",
-        "tablet/day/tutor-drawing-preview--scroll-0-1.jpg"
-      ],
-      "sha256": "885c4122b01f3bc55e8593fe97738fb21ba4c66afa274a13a731538f742bdf12"
-    },
-    {
-      "file": "contacts/sheet-22.webp",
-      "firstFrame": 253,
-      "lastFrame": 264,
-      "images": [
+        "tablet/day/tutor-drawing-preview--scroll-0-1.jpg",
         "tablet/day/tutor-drawing-preview--scroll-0-2.jpg",
         "tablet/day/tutor-drawing-preview--scroll-0-3.jpg",
         "tablet/night/tutor-drawing-preview.jpg",
@@ -7662,19 +10906,19 @@
         "tablet/night/tutor-drawing-preview--scroll-0-2.jpg",
         "tablet/night/tutor-drawing-preview--scroll-0-3.jpg",
         "desktop/day/tutor-keyboard.jpg",
-        "desktop/night/tutor-keyboard.jpg",
+        "desktop/night/tutor-keyboard.jpg"
+      ],
+      "sha256": "ccb9ea63a35ee1574106ad4dc1d61680042c4b9f540d8da0689eee8ad6bb6173"
+    },
+    {
+      "file": "contacts/sheet-44.webp",
+      "firstFrame": 517,
+      "lastFrame": 528,
+      "images": [
         "landscape/day/tutor-keyboard.jpg",
         "landscape/night/tutor-keyboard.jpg",
         "large/day/tutor-keyboard.jpg",
-        "large/day/tutor-keyboard--scroll-0-1.jpg"
-      ],
-      "sha256": "79cd9d8730e6295e22270f349e76392c3e778fca4399bf8d7dfebe1a3b9438c1"
-    },
-    {
-      "file": "contacts/sheet-23.webp",
-      "firstFrame": 265,
-      "lastFrame": 276,
-      "images": [
+        "large/day/tutor-keyboard--scroll-0-1.jpg",
         "large/night/tutor-keyboard.jpg",
         "large/night/tutor-keyboard--scroll-0-1.jpg",
         "small/day/tutor-keyboard.jpg",
@@ -7682,19 +10926,19 @@
         "small/night/tutor-keyboard.jpg",
         "small/night/tutor-keyboard--scroll-0-1.jpg",
         "tablet/day/tutor-keyboard.jpg",
-        "tablet/night/tutor-keyboard.jpg",
+        "tablet/night/tutor-keyboard.jpg"
+      ],
+      "sha256": "887f37bd462c2a0400cdaf74f774462ddfb7b13f1d55c34eefd8f01233e76e68"
+    },
+    {
+      "file": "contacts/sheet-45.webp",
+      "firstFrame": 529,
+      "lastFrame": 540,
+      "images": [
         "desktop/day/tutor-multiple-drawings.jpg",
         "desktop/night/tutor-multiple-drawings.jpg",
         "landscape/day/tutor-multiple-drawings.jpg",
-        "landscape/night/tutor-multiple-drawings.jpg"
-      ],
-      "sha256": "c88cad93f42ffec07414ca645ab8a7fca2b519d3e3c0e3e24b50b5b9d1ca1b94"
-    },
-    {
-      "file": "contacts/sheet-24.webp",
-      "firstFrame": 277,
-      "lastFrame": 288,
-      "images": [
+        "landscape/night/tutor-multiple-drawings.jpg",
         "large/day/tutor-multiple-drawings.jpg",
         "large/day/tutor-multiple-drawings--scroll-0-1.jpg",
         "large/day/tutor-multiple-drawings--scroll-1-1.jpg",
@@ -7702,19 +10946,19 @@
         "large/night/tutor-multiple-drawings--scroll-0-1.jpg",
         "large/night/tutor-multiple-drawings--scroll-1-1.jpg",
         "small/day/tutor-multiple-drawings.jpg",
-        "small/day/tutor-multiple-drawings--scroll-0-1.jpg",
+        "small/day/tutor-multiple-drawings--scroll-0-1.jpg"
+      ],
+      "sha256": "3c45f873e44a0043d2b459a5a3cfa42ed7319f93314b4d6251cb6635196c8b4e"
+    },
+    {
+      "file": "contacts/sheet-46.webp",
+      "firstFrame": 541,
+      "lastFrame": 552,
+      "images": [
         "small/night/tutor-multiple-drawings.jpg",
         "small/night/tutor-multiple-drawings--scroll-0-1.jpg",
         "tablet/day/tutor-multiple-drawings.jpg",
-        "tablet/night/tutor-multiple-drawings.jpg"
-      ],
-      "sha256": "4142d611b5114ced2713609f7224c950d542f3ca88c932cd8520bab547d82e2d"
-    },
-    {
-      "file": "contacts/sheet-25.webp",
-      "firstFrame": 289,
-      "lastFrame": 300,
-      "images": [
+        "tablet/night/tutor-multiple-drawings.jpg",
         "desktop/day/tutor-scratch-drawing.jpg",
         "desktop/day/tutor-scratch-drawing--scroll-0-1.jpg",
         "desktop/day/tutor-scratch-drawing--scroll-0-2.jpg",
@@ -7722,19 +10966,19 @@
         "desktop/night/tutor-scratch-drawing.jpg",
         "desktop/night/tutor-scratch-drawing--scroll-0-1.jpg",
         "desktop/night/tutor-scratch-drawing--scroll-0-2.jpg",
-        "desktop/night/tutor-scratch-drawing--scroll-0-3.jpg",
+        "desktop/night/tutor-scratch-drawing--scroll-0-3.jpg"
+      ],
+      "sha256": "b7618ec368c70cbceebeb956e3d61bcba6d81baefbdde0fddcc37071e2f0e709"
+    },
+    {
+      "file": "contacts/sheet-47.webp",
+      "firstFrame": 553,
+      "lastFrame": 564,
+      "images": [
         "landscape/day/tutor-scratch-drawing.jpg",
         "landscape/night/tutor-scratch-drawing.jpg",
         "large/day/tutor-scratch-drawing.jpg",
-        "large/day/tutor-scratch-drawing--scroll-0-1.jpg"
-      ],
-      "sha256": "e7b5261a8349e39d70890b0e88fea8c92b3f0a0d08abe0a3871060d33350d0e5"
-    },
-    {
-      "file": "contacts/sheet-26.webp",
-      "firstFrame": 301,
-      "lastFrame": 312,
-      "images": [
+        "large/day/tutor-scratch-drawing--scroll-0-1.jpg",
         "large/day/tutor-scratch-drawing--scroll-1-1.jpg",
         "large/day/tutor-scratch-drawing--scroll-1-2.jpg",
         "large/night/tutor-scratch-drawing.jpg",
@@ -7742,19 +10986,19 @@
         "large/night/tutor-scratch-drawing--scroll-1-1.jpg",
         "large/night/tutor-scratch-drawing--scroll-1-2.jpg",
         "small/day/tutor-scratch-drawing.jpg",
-        "small/day/tutor-scratch-drawing--scroll-0-1.jpg",
+        "small/day/tutor-scratch-drawing--scroll-0-1.jpg"
+      ],
+      "sha256": "afd46abde4279e651ff9ef4ca6e65be2ddae9c2ec600da2e36ef5a4603cf2359"
+    },
+    {
+      "file": "contacts/sheet-48.webp",
+      "firstFrame": 565,
+      "lastFrame": 576,
+      "images": [
         "small/day/tutor-scratch-drawing--scroll-1-1.jpg",
         "small/day/tutor-scratch-drawing--scroll-1-2.jpg",
         "small/night/tutor-scratch-drawing.jpg",
-        "small/night/tutor-scratch-drawing--scroll-0-1.jpg"
-      ],
-      "sha256": "2496d0824ebdbcf4bfc190c35a9615ba027bfe74195a64eed99d3431e67c9960"
-    },
-    {
-      "file": "contacts/sheet-27.webp",
-      "firstFrame": 313,
-      "lastFrame": 324,
-      "images": [
+        "small/night/tutor-scratch-drawing--scroll-0-1.jpg",
         "small/night/tutor-scratch-drawing--scroll-1-1.jpg",
         "small/night/tutor-scratch-drawing--scroll-1-2.jpg",
         "tablet/day/tutor-scratch-drawing.jpg",
@@ -7762,19 +11006,19 @@
         "tablet/day/tutor-scratch-drawing--scroll-0-2.jpg",
         "tablet/day/tutor-scratch-drawing--scroll-0-3.jpg",
         "tablet/night/tutor-scratch-drawing.jpg",
-        "tablet/night/tutor-scratch-drawing--scroll-0-1.jpg",
+        "tablet/night/tutor-scratch-drawing--scroll-0-1.jpg"
+      ],
+      "sha256": "297ae8a6583ed8358efdb88fc67caed15ed6cc2a9594fdea6829ccc928a8df3e"
+    },
+    {
+      "file": "contacts/sheet-49.webp",
+      "firstFrame": 577,
+      "lastFrame": 588,
+      "images": [
         "tablet/night/tutor-scratch-drawing--scroll-0-2.jpg",
         "tablet/night/tutor-scratch-drawing--scroll-0-3.jpg",
         "desktop/day/tutor-symbol-keyboard.jpg",
-        "desktop/night/tutor-symbol-keyboard.jpg"
-      ],
-      "sha256": "bc4e87e476d7626ee42528518a5474ab9f72f789e446e0d59aac62dddb7b8156"
-    },
-    {
-      "file": "contacts/sheet-28.webp",
-      "firstFrame": 325,
-      "lastFrame": 336,
-      "images": [
+        "desktop/night/tutor-symbol-keyboard.jpg",
         "landscape/day/tutor-symbol-keyboard.jpg",
         "landscape/night/tutor-symbol-keyboard.jpg",
         "large/day/tutor-symbol-keyboard.jpg",
@@ -7782,19 +11026,19 @@
         "large/night/tutor-symbol-keyboard.jpg",
         "large/night/tutor-symbol-keyboard--scroll-0-1.jpg",
         "small/day/tutor-symbol-keyboard.jpg",
-        "small/day/tutor-symbol-keyboard--scroll-0-1.jpg",
+        "small/day/tutor-symbol-keyboard--scroll-0-1.jpg"
+      ],
+      "sha256": "a916d110f3b3c882653f9a08d35271de8b0b8f602d978ec091ac2682273d1f13"
+    },
+    {
+      "file": "contacts/sheet-50.webp",
+      "firstFrame": 589,
+      "lastFrame": 600,
+      "images": [
         "small/night/tutor-symbol-keyboard.jpg",
         "small/night/tutor-symbol-keyboard--scroll-0-1.jpg",
         "tablet/day/tutor-symbol-keyboard.jpg",
-        "tablet/night/tutor-symbol-keyboard.jpg"
-      ],
-      "sha256": "332dd7b32d4505e87b7c43c39763571e920b69d0900806005a2162abbd112f04"
-    },
-    {
-      "file": "contacts/sheet-29.webp",
-      "firstFrame": 337,
-      "lastFrame": 348,
-      "images": [
+        "tablet/night/tutor-symbol-keyboard.jpg",
         "desktop/day/tutor-symbol-recognition-completion.jpg",
         "desktop/night/tutor-symbol-recognition-completion.jpg",
         "landscape/day/tutor-symbol-recognition-completion.jpg",
@@ -7802,19 +11046,19 @@
         "large/day/tutor-symbol-recognition-completion.jpg",
         "large/night/tutor-symbol-recognition-completion.jpg",
         "small/day/tutor-symbol-recognition-completion.jpg",
-        "small/night/tutor-symbol-recognition-completion.jpg",
+        "small/night/tutor-symbol-recognition-completion.jpg"
+      ],
+      "sha256": "4301cd56d2b01ac9e7517fc7db57904d5acdb8387087952a78a23c3e9e89b20b"
+    },
+    {
+      "file": "contacts/sheet-51.webp",
+      "firstFrame": 601,
+      "lastFrame": 612,
+      "images": [
         "tablet/day/tutor-symbol-recognition-completion.jpg",
         "tablet/night/tutor-symbol-recognition-completion.jpg",
         "desktop/day/tutor-symbol-recognition-match.jpg",
-        "desktop/night/tutor-symbol-recognition-match.jpg"
-      ],
-      "sha256": "c1fb1f8ba890325518eeca84f7dece1ce43b2cf34f1e2196b15ac137ad35693e"
-    },
-    {
-      "file": "contacts/sheet-30.webp",
-      "firstFrame": 349,
-      "lastFrame": 360,
-      "images": [
+        "desktop/night/tutor-symbol-recognition-match.jpg",
         "landscape/day/tutor-symbol-recognition-match.jpg",
         "landscape/night/tutor-symbol-recognition-match.jpg",
         "large/day/tutor-symbol-recognition-match.jpg",
@@ -7822,19 +11066,19 @@
         "small/day/tutor-symbol-recognition-match.jpg",
         "small/night/tutor-symbol-recognition-match.jpg",
         "tablet/day/tutor-symbol-recognition-match.jpg",
-        "tablet/night/tutor-symbol-recognition-match.jpg",
+        "tablet/night/tutor-symbol-recognition-match.jpg"
+      ],
+      "sha256": "856c80d6fb031ccd8777a35065f8f8f8d66114283585ddefcd54fbaa396b1bf8"
+    },
+    {
+      "file": "contacts/sheet-52.webp",
+      "firstFrame": 613,
+      "lastFrame": 622,
+      "images": [
         "desktop/day/tutor-symbol-search.jpg",
         "desktop/night/tutor-symbol-search.jpg",
         "landscape/day/tutor-symbol-search.jpg",
-        "landscape/night/tutor-symbol-search.jpg"
-      ],
-      "sha256": "3a4469a8fdb17ae7b002fff83d64de4a31029519c4d5fdc61ff934435467d49a"
-    },
-    {
-      "file": "contacts/sheet-31.webp",
-      "firstFrame": 361,
-      "lastFrame": 366,
-      "images": [
+        "landscape/night/tutor-symbol-search.jpg",
         "large/day/tutor-symbol-search.jpg",
         "large/night/tutor-symbol-search.jpg",
         "small/day/tutor-symbol-search.jpg",
@@ -7842,7 +11086,7 @@
         "tablet/day/tutor-symbol-search.jpg",
         "tablet/night/tutor-symbol-search.jpg"
       ],
-      "sha256": "ebee23595e1dfda5973f7efe38fddde49a983de9c4b557d66771f38a4d9c2e58"
+      "sha256": "95683ff0d54b5cefc4502647200f202a555459038b5e57c252ff1862b8e329f3"
     }
   ]
 }

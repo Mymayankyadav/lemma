@@ -3,7 +3,7 @@ import {reviewHref} from '../../../data/review-target';
 import {useEffect,useMemo,useRef,useState,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react';
 import {useMotionReduced} from '../../../ui/v7/effects';
 import {Link,useLocation,useNavigate,useSearchParams} from 'react-router';
-import {ChevronDown,ChevronLeft,ChevronRight,ChevronUp,Crosshair,Layers2,List,Minus,Plus,Search,X} from 'lucide-react';
+import {ChevronDown,ChevronLeft,ChevronRight,ChevronUp,Crosshair,Eye,EyeOff,Layers2,List,Minus,Plus,Search,X} from 'lucide-react';
 import {useAtlas,useHome} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {FastTex} from '../../../ui/FastTex';
@@ -30,6 +30,8 @@ import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
 const PAGE=200,PEEK=150;
+// 44 px targets, 8 px scroll padding, a 12 px outer margin and 4 px of camera breathing room.
+const OPTION_RAIL_INSET=68;
 const legendOrder:StarState[]=['demonstrated','in_progress','up_next','revisit','not_started'];
 
 // A1: the system setting or Settings › Reduce effects (src/ui/v7/effects.ts).
@@ -166,12 +168,13 @@ export default function AtlasV7(){
  const mapVisible=atlasView==='map'&&view==='map';
  const [layout,setLayout]=useState<{model:AtlasModel;result:LayoutResult;source:LayoutSource}|null>(null);
  const [layoutError,setLayoutError]=useState(false);
+ const [optionsShown,setOptionsShown]=useState(true);
  const [searching,setSearching]=useState(false),[term,setTerm]=useState(''),[expanded,setExpanded]=useState(false);
  const [shown,setShown]=useState(PAGE);
  const [dialog,setDialog]=useState<null|'pin'|'edit'|'preview'|'new'>(null);
  const map=useRef<AtlasMapHandle>(null),searchInput=useRef<HTMLInputElement>(null),searchButton=useRef<HTMLButtonElement>(null);
  const searchResults=useRef<HTMLUListElement>(null),focusResult=useRef<string|null>(null);
- const listButton=useRef<HTMLButtonElement>(null),returnFocusToList=useRef(false);
+ const listButton=useRef<HTMLButtonElement>(null),optionToggle=useRef<HTMLButtonElement>(null),returnFocusToList=useRef(false);
  useEffect(()=>{
   if(!model||!mapVisible||layout?.model===model)return;
   const job=new AbortController();
@@ -252,13 +255,42 @@ export default function AtlasV7(){
   else navigate('/');
  };
  useEffect(()=>{
-  if(mapVisible&&returnFocusToList.current){returnFocusToList.current=false;listButton.current?.focus();}
- },[mapVisible]);
+  if(mapVisible&&returnFocusToList.current){
+   returnFocusToList.current=false;
+   (optionsShown?listButton.current:optionToggle.current)?.focus();
+  }
+ },[mapVisible,optionsShown]);
  const refetch=async()=>{await query.refetch();};
  const header=<header className="v7-atlas-bar">
   <IconButton label={mapVisible?'Back':'Back to map'} onClick={back}><ChevronLeft aria-hidden="true"/></IconButton>
   <h1 className="v7-sr-only">Atlas</h1>
-  {searching&&model?<div className="v7-atlas-search" role="search" onKeyDown={onSearchKey}>
+  <div className="v7-atlas-option-rail" role="group" aria-label="Atlas options">
+   <button type="button" ref={optionToggle} className="v7-icon-button" aria-label={optionsShown?'Hide options':'Show options'}
+    title={optionsShown?'Hide options':'Show options'} aria-expanded={optionsShown} aria-controls="v7-atlas-options"
+    onClick={()=>{if(optionsShown){setSearching(false);setTerm('');}setOptionsShown(shown=>!shown);}}>
+    {optionsShown?<EyeOff aria-hidden="true"/>:<Eye aria-hidden="true"/>}
+   </button>
+   <div id="v7-atlas-options" className="v7-atlas-controls" hidden={!optionsShown}>
+    {searching?<span className="v7-atlas-search-slot" aria-hidden="true"/>:
+     <button type="button" ref={searchButton} className="v7-icon-button" aria-label="Search concepts" title="Search concepts" aria-expanded={false}
+      onClick={event=>{event.currentTarget.parentElement?.scrollTo({top:0});setSearching(true);}} disabled={!model?.stars.length}><Search aria-hidden="true"/></button>}
+    {view==='map'&&<button type="button" ref={listButton} className="v7-icon-button" aria-label="List" title="List" onClick={()=>{setSearching(false);setTerm('');if(!repair&&requestedLayer!=='map')setAtlasView('map');update({view:'list'});}}><List aria-hidden="true"/></button>}
+    <IconButton label="Layers" onClick={()=>setLayers(true)} aria-haspopup="dialog" disabled={!model?.stars.length}><Layers2 aria-hidden="true"/></IconButton>
+    {mapVisible&&!!model?.stars.length&&<>
+     <IconButton label="Recentre map" aria-pressed={allSky} onClick={()=>setMapFrame(allSky?'here':'all')}><Crosshair aria-hidden="true"/></IconButton>
+     <div className="v7-atlas-zoom" role="group" aria-label="Map zoom">
+      <IconButton label="Zoom in" onClick={()=>map.current?.zoomBy(1.5)}><Plus aria-hidden="true"/></IconButton>
+      <IconButton label="Zoom out" onClick={()=>map.current?.zoomBy(1/1.5)}><Minus aria-hidden="true"/></IconButton>
+     </div>
+     {!allSky&&focusCluster!==null&&<nav className="v7-atlas-compass" aria-label="Nearby constellations">
+      {model.clusters.filter(cluster=>cluster.index!==focusCluster).slice(0,2).map(cluster=>
+       <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name} onClick={()=>map.current?.flyToCluster(cluster.index)}>
+        <SubjectMark subject={cluster.subject}/></IconButton>)}
+     </nav>}
+    </>}
+   </div>
+  </div>
+  {searching&&model&&<div className="v7-atlas-search" role="search" onKeyDown={onSearchKey}>
    <div className="v7-atlas-search-field">
     <Search aria-hidden="true"/>
     <input ref={searchInput} type="search" aria-label="Find a concept" placeholder="Find a concept" value={term} aria-controls="v7-atlas-search-results"
@@ -274,17 +306,13 @@ export default function AtlasV7(){
       <span className="v7-atlas-meta">{model.clusters.find(c=>c.index===model.stars[i].cluster)?.name}</span>
      </button></li>)}</ul>
    </div>
-  </div>:<button type="button" ref={searchButton} className="v7-icon-button" aria-label="Search concepts" title="Search concepts" aria-expanded={false} onClick={()=>setSearching(true)} disabled={!model?.stars.length}><Search aria-hidden="true"/></button>}
-  <div className="v7-atlas-bar-actions">
-   {view==='map'&&<button type="button" ref={listButton} className="v7-icon-button" aria-label="List" title="List" onClick={()=>{setSearching(false);setTerm('');if(!repair&&requestedLayer!=='map')setAtlasView('map');update({view:'list'});}}><List aria-hidden="true"/></button>}
-   <IconButton label="Layers" onClick={()=>setLayers(true)} aria-haspopup="dialog" disabled={!model?.stars.length}><Layers2 aria-hidden="true"/></IconButton>
-  </div>
+  </div>}
  </header>;
  if(query.isPending)return <main id="main-content" className="v7-atlas" aria-label="Atlas" aria-busy="true">{header}
   <p role="status" className="v7-atlas-state">Loading the Atlas…</p></main>;
  if(query.error||!model)return <main id="main-content" className="v7-atlas" aria-label="Atlas">{header}
   <div className="v7-atlas-state" role="alert"><ErrorEmblem/><Button onClick={()=>{void query.refetch();}}>Retry loading the Atlas</Button></div></main>;
- if(model.stars.length===0)return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-atlas-layer={view==='list'||dialog!==null||undefined}>{header}
+ if(model.stars.length===0)return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-view={view} data-options={optionsShown||undefined} data-atlas-layer={view==='list'||dialog!==null||undefined}>{header}
   <div className="v7-atlas-state"><EmptyMoment art="atlas" title="No concepts yet"
    action={home.data?.projects.some(path=>!path.system)?{label:'New concept',onClick:()=>setDialog('new')}
     :{label:'Start a path',to:'/projects/new'}}/></div>
@@ -296,7 +324,7 @@ export default function AtlasV7(){
  const details=selected!==null&&<ConceptSheet key={'concept-sheet:'+model.stars[selected].id} model={model} index={selected} expanded={expanded} onExpand={setExpanded}
    onClose={()=>select(null)} onPick={index=>select(index,true)}
    onPin={()=>setDialog('pin')} onEdit={()=>setDialog('edit')} onPreview={()=>setDialog('preview')}/>;
- return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-study-ui={repair?'':undefined} data-view={mapVisible?'map':'list'} data-atlas-layer={!mapVisible||selectedStar!==null||layers||dialog!==null||undefined} data-panning={panning||undefined} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
+ return <main id="main-content" className="v7-atlas" aria-label="Atlas" data-study-ui={repair?'':undefined} data-view={mapVisible?'map':'list'} data-options={optionsShown||undefined} data-atlas-layer={!mapVisible||selectedStar!==null||layers||dialog!==null||undefined} data-panning={panning||undefined} data-sheet={selectedStar?(expanded?'expanded':'peek'):'closed'}>
   {header}
   <p className="v7-sr-only" data-testid="atlas-summary">{summary}</p>
   {repair&&highlighted!==null&&<div className="v7-atlas-filter-summary" role="status">
@@ -307,20 +335,10 @@ export default function AtlasV7(){
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?.model===model?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} paused={!mapVisible}
      focusCluster={allSky?null:focusCluster} focusSelected={mapFrame==='initial'} highlighted={highlighted}
-     insets={{top:64,right:8,bottom:selectedStar?PEEK:0,left:8}} onSelect={index=>select(index,index!==null)} onPan={setPanning}/>
+     insets={{top:64,right:optionsShown?OPTION_RAIL_INSET:8,bottom:selectedStar?PEEK:0,left:8}} onSelect={index=>select(index,index!==null)} onPan={setPanning}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
       <Button onClick={()=>update({view:'list'})}>Show the list</Button></div>
     :<p role="status" className="v7-atlas-state">Arranging the sky…</p>}
-   <div className="v7-atlas-controls">
-    <IconButton label="Recentre map" aria-pressed={allSky} onClick={()=>setMapFrame(allSky?'here':'all')}><Crosshair aria-hidden="true"/></IconButton>
-    <IconButton label="Zoom in" onClick={()=>map.current?.zoomBy(1.5)}><Plus aria-hidden="true"/></IconButton>
-    <IconButton label="Zoom out" onClick={()=>map.current?.zoomBy(1/1.5)}><Minus aria-hidden="true"/></IconButton>
-   </div>
-   {!allSky&&focusCluster!==null&&<nav className="v7-atlas-compass" aria-label="Nearby constellations">
-    {model.clusters.filter(cluster=>cluster.index!==focusCluster).slice(0,2).map(cluster=>
-     <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name} onClick={()=>map.current?.flyToCluster(cluster.index)}>
-      <SubjectMark subject={cluster.subject}/></IconButton>)}
-   </nav>}
   </section>}
   {atlasView!=='map'?<AtlasLayerContent view={atlasView} model={atlasModel.data}/>:view==='list'?<section className="v7-atlas-list" aria-label="Concept list">
    {model.clusters.map(cluster=>{

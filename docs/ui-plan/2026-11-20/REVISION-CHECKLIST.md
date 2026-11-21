@@ -14,6 +14,7 @@ This revision continues PR #1738. The original N202–N216 main-commit checklist
 - [x] Insert editable image-reference chips at the caret, preserve text/image order in the saved answer and MCP, and retain recent image edits through Undo.
 - [x] Guard offline queued edits, attachment limits, storage-write failure and legacy draft migration.
 - [x] Apply the latest Atlas direction with translucent floating controls, in-place search, List above the paused map, and navigation hidden for both List and idea panels with restoration on close.
+- [x] Consolidate Atlas options into one transparent vertical rail with translucent buttons, subject shortcuts underneath and a pinned eye / crossed-out-eye Hide/Show control; preserve Back, search, navigation and map state.
 - [x] Finish responsive fixes for Tutor viewport anchoring, Calendar hour labels, the compact dock, Path actions and Day-theme contrast.
 - [x] Restore active or paused cards through Undo, scoped to the account that deleted them.
 - [x] Run production regressions after integrating the latest input and layout changes. [Validation](VALIDATION.md)

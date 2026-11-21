@@ -17,9 +17,11 @@ The supplied ZIP contained 50 visual assets, all reviewed. Its index refers to a
 
 ## Latest Atlas changes
 
-The map has a transparent header with separate glass controls. Search expands in place; selecting a suggestion closes search and opens the idea's actions. List opens above the retained map, whose rendering and pending layout work pause while covered. The main navigation hides for both List and idea/details panels and returns on the unobstructed map.
+The map has one vertical option rail floating on the right. The rail background is transparent; each button has its own translucent glass surface. Subject shortcuts sit below the map controls. An eye shows the options, and a crossed-out eye hides them. Back stays separately available. Search expands from the rail; selecting a suggestion closes search and opens the idea's actions. List opens above the retained map, whose rendering and pending layout work pause while covered. The main navigation hides for both List and idea/details panels and returns on the unobstructed map.
 
 ![Atlas map with floating controls](comparisons/atlas-map-final.jpg)
+
+![Atlas with its option rail collapsed](comparisons/atlas-options-collapsed.jpg)
 
 ![Expanded Atlas search](comparisons/atlas-search-final.jpg)
 
@@ -87,6 +89,6 @@ The beta uses a local model and currently requires explicit candidate selection.
 
 Use [parity-audit.mjs](../../../../../scripts/v7/parity-audit.mjs) with the [scene catalogue](../../../../../scripts/v7/parity-catalog.mjs), then [package-parity.py](../../../../../scripts/v7/package-parity.py). Capture manifests record the source revision, uncommitted-work indicator, loaded build entries, viewport, theme, route, errors and horizontal overflow. Archive checksums preserve the original JPEG bytes. [Comparison manifest](comparisons/manifest.json) identifies each paired frame.
 
-The loading-only capture pauses the worker's preparation request to hold the real loading UI for inspection. Recognition captures run the actual local model. Screenshots use reduced motion. Atlas search and Calendar Week were recaptured after the final readability fixes; their per-state build entries identify that update, while unaffected frames retain their preceding capture build.
+The loading-only capture pauses the worker's preparation request to hold the real loading UI for inspection. Recognition captures run the actual local model. Screenshots use reduced motion. Atlas search and Calendar Week were recaptured after the readability fixes. All Atlas scenes were refreshed again for the vertical rail and eye toggle, including its expanded and collapsed states. Per-state build entries identify those updates, while unaffected frames retain their preceding capture build.
 
 Today recommendation and picture scratchpad captures explicitly enable their existing release flags for review. Those flags remain off by default. The separately controlled single-symbol beta is offered through Settings.

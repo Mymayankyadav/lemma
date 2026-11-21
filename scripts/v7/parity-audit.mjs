@@ -34,14 +34,16 @@ async function worker(){while(cursor<jobs.length){
   await page.clock.setFixedTime(new Date('2026-11-09T13:43:00+05:30'));
   await page.goto('/lemma/?demo='+(scene.demo??'1')+'&flags='+FLAGS.join(',')+(scene.flags?','+scene.flags:'')+'#'+scene.hash);
   const atlas=scene.hash.startsWith('/atlas');
-  if(atlas)await page.locator('.v7-atlas').waitFor();
+  if(atlas)await page.locator('.v7-atlas:not([aria-busy="true"])').waitFor();
   else await page.waitForLoadState('networkidle',{timeout:20000});
   await page.evaluate(()=>document.fonts.ready);
   await scene.prepare?.(page);
   if(atlas){
    await page.locator('.v7-atlas').waitFor();
-   const sky=page.locator('.v7-atlas[data-view="map"] .v7-atlas-sky');
-   if(await sky.isVisible())await page.locator('.v7-atlas-sky[data-drawn-extent]').waitFor();
+   const map=page.locator('.v7-atlas[data-view="map"] .v7-atlas-map:not([data-covered])');
+   // The map region exists while its worker is still arranging the sky.
+   // Wait for the canvas even when the sky element has not mounted yet.
+   if(await map.count())await map.locator('.v7-atlas-sky[data-drawn-extent]').waitFor();
   }else await page.waitForLoadState('networkidle',{timeout:20000});
   await page.getByRole('heading',{name:'Loading screen…',exact:true}).waitFor({state:'hidden',timeout:15000});
   await page.locator('.v7-skeleton').first().waitFor({state:'hidden',timeout:10000});

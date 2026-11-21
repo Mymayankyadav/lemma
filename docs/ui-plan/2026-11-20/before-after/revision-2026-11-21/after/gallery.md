@@ -1,6 +1,6 @@
 # Revised application · November 21
 
-241 captured states and 395 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
+243 captured states and 405 original frames. Extract the full-resolution archive and open `index.html` to search by scene, viewport, or theme. [Full-resolution archive](screenshots.zip) · [Capture manifest](manifest.json)
 
 ### Sheet 1 · frames 1–12
 
@@ -130,6 +130,10 @@
 
 ![Contact sheet 32](contacts/sheet-32.webp)
 
-### Sheet 33 · frames 385–395
+### Sheet 33 · frames 385–396
 
 ![Contact sheet 33](contacts/sheet-33.webp)
+
+### Sheet 34 · frames 397–405
+
+![Contact sheet 34](contacts/sheet-34.webp)
