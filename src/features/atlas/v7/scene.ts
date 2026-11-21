@@ -133,6 +133,11 @@ export class AtlasScene{
   const k=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,width/Math.max(1,right-left+24),height/Math.max(1,bottom-top+24)));
   return {x:(left+right)/2+label/2/k,y:(top+bottom)/2,k};
  }
+ drawnExtent() {
+  const top=this.insets.top,bottom=this.height-this.insets.bottom;
+  const ys=this.visible.map(index=>this.toScreen(this.layout.x[index],this.layout.y[index])[1]).filter(y=>y>=top&&y<=bottom);
+  return ys.length>1?(Math.max(...ys)-Math.min(...ys))/Math.max(1,bottom-top):0;
+ }
  /** Zoom around a screen point, keeping that point still. */
  zoomCamera(sx:number,sy:number,factor:number,from:Camera=this.camera):Camera{
   const k=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,from.k*factor));
@@ -143,13 +148,13 @@ export class AtlasScene{
   let best:number|null=null,bestDistance=Infinity;
   for(const i of this.visible){
    const [x,y]=this.toScreen(this.layout.x[i],this.layout.y[i]),d=Math.hypot(x-sx,y-sy);
-   if(d<=Math.max(HIT_SLOP,this.model.stars[i].radius*this.camera.k+8)&&d<bestDistance){best=i;bestDistance=d;}
+   if(d<=Math.max(11,HIT_SLOP,this.model.stars[i].radius*this.camera.k+8)&&d<bestDistance){best=i;bestDistance=d;}
   }
   return best;
  }
  private colour(cluster:number){return this.palette.subjects[cluster]??this.palette.textSecondary;}
  private sprite(i:number):Sprite{
-  const star=this.model.stars[i],colour=this.colour(star.cluster),r=star.radius;
+  const star=this.model.stars[i],colour=this.colour(star.cluster),r=Math.max(star.state==='not_started'?2:3.5,star.radius);
   const key=star.state+'|'+colour+'|'+r.toFixed(2)+'|'+(this.palette.night?1:0);
   let sprite=this.sprites.get(key);
   if(sprite)return sprite;
@@ -274,7 +279,7 @@ export class AtlasScene{
    if(!spot)return;
    const [x,y]=spot;
    if(packed){const alpha=ctx.globalAlpha;ctx.globalAlpha=alpha*.25;ctx.strokeStyle=colour;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(Math.max(x,Math.min(x+w,sx)),y);ctx.stroke();ctx.globalAlpha=alpha;}
-   placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,y);
+   placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.strokeStyle=palette.sky;ctx.lineWidth=4;ctx.lineJoin='round';ctx.strokeText(text,x,y);ctx.fillStyle=colour;ctx.fillText(text,x,y);
   };
   if(this.selected!==null&&visible.includes(this.selected))label(this.selected,16,600,palette.text,true);
   // Constellation names in wide capitals, above each cluster.
@@ -292,7 +297,7 @@ export class AtlasScene{
   const dim=this.selected!==null;
   const candidates=(this.labelCluster!==null?visible.filter(i=>model.stars[i].cluster===this.labelCluster):camera.k<FAR_ZOOM?visible.filter(i=>this.topLabels.has(i)):visible)
    .filter(i=>i!==this.selected).sort((a,b)=>model.stars[b].radius-model.stars[a].radius||a-b).slice(0,220);
-  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,12,500,palette.textSecondary,this.labelCluster!==null);}
+  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,13,500,palette.textSecondary,this.labelCluster!==null);}
   ctx.globalAlpha=1;
  }
 }

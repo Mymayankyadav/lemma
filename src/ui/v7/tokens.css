@@ -280,6 +280,12 @@
   --v7-switch-height: 28px;
   --v7-meter: 6px;
   --v7-hero-alpha: 10%;
+  --v7-z-base: 0;
+  --v7-z-sticky: 8;
+  --v7-z-dock: 20;
+  --v7-z-sheet: 25;
+  --v7-z-toast: 30;
+  --v7-z-modal: 40;
   --v7-menu-layer: 10;
   --v7-toast-layer: 30;
   --v7-hairline: 1px;

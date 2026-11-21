@@ -31,6 +31,20 @@
   max-width: min(100%, calc(720px + 2 * var(--v7-page-margin)));
   padding: 0 var(--v7-page-margin);
 }
+/* The connectivity notice is in flow and can wrap. Allocate the remaining
+   viewport height to Tutor without assuming a fixed notice height. */
+.v7-shell:has(> .v7-offline-notice):has(> .lemma-tutor) {
+  display:flex;
+  flex-direction:column;
+  height:var(--tutor-visual-height,100dvh);
+  min-height:0;
+}
+.v7-shell:has(> .lemma-tutor) > .v7-offline-notice {flex:none;}
+.v7-shell:has(> .v7-offline-notice) > .lemma-tutor.v7-page {
+  flex:1 1 0;
+  height:auto;
+  min-height:0;
+}
 .lemma-tutor .v7-detail-header {flex: none;}
 
 /* ── chat ── */
@@ -39,18 +53,18 @@
 @keyframes tutor-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .lemma-tutor .msg p{margin:0 0 12px} .lemma-tutor .msg p:last-child{margin-bottom:0}
 .lemma-tutor .msg ul,.lemma-tutor .msg ol{margin:0 0 12px;padding-left:22px} .lemma-tutor .msg li{margin:4px 0}
-.lemma-tutor .msg code{font:400 13px ui-monospace,monospace}
+.lemma-tutor .msg code{font:400 var(--v7-type-supporting) ui-monospace,monospace}
 .lemma-tutor .msg.a b{font-weight:600;color:var(--v7-role-text-primary)}
-.lemma-tutor .msg.u{align-self:flex-end;max-width:84%;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);padding:10px 15px;border-radius:var(--v7-radius-3) var(--v7-radius-3) var(--v7-radius-1) var(--v7-radius-3);font:400 17px/1.5 var(--v7-serif)}
-.lemma-tutor .note{align-self:center;display:flex;align-items:center;gap:10px;font:600 11px/1.3 var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--v7-role-text-tertiary);text-align:center}
+.lemma-tutor .msg.u{align-self:flex-end;max-width:84%;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);padding:10px 15px;border-radius:var(--v7-radius-3) var(--v7-radius-3) var(--v7-radius-1) var(--v7-radius-3);font:400 var(--v7-type-reading)/1.5 var(--v7-serif)}
+.lemma-tutor .note{align-self:center;display:flex;align-items:center;gap:10px;font:600 var(--v7-type-caption)/1.3 var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--v7-role-text-tertiary);text-align:center}
 .lemma-tutor .note::before,.lemma-tutor .note::after{content:"";width:24px;height:1px;background:var(--v7-role-border-subtle)}
 .lemma-tutor .note.strong{color:var(--v7-role-text-secondary)}
-.lemma-tutor .note button{border:0;background:var(--v7-role-surface-muted);border-radius:9999px;padding:6px 12px;font:600 12.5px var(--v7-sans);letter-spacing:0;text-transform:none;color:var(--v7-role-text-primary)}
+.lemma-tutor .note button{border:0;background:var(--v7-role-surface-muted);border-radius:9999px;padding:6px 12px;font:600 var(--v7-type-caption) var(--v7-sans);letter-spacing:0;text-transform:none;color:var(--v7-role-text-primary)}
 /* ── composer ── */
 .lemma-tutor .composer{flex:none;padding:6px 0 8px}
 .lemma-tutor .field{display:flex;align-items:center;gap:6px;min-height:56px;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);padding:4px 6px 4px 18px;box-shadow:var(--v7-shadow-1);transition:border-color .15s}
 .lemma-tutor .field:focus-within{border-color:var(--v7-role-action-bg)}
-.lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 16.5px/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
+.lemma-tutor .composer textarea{flex:1;min-width:0;height:44px;max-height:120px;border:0;background:transparent;padding:11px 0;color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/1.4 var(--v7-sans);resize:none;caret-color:var(--v7-role-action-bg);overflow-y:auto;outline:none}
 .lemma-tutor .composer textarea:focus-visible{outline:none;box-shadow:none}
 .lemma-tutor textarea::placeholder{color:var(--v7-role-text-disabled)}
 .lemma-tutor .send{flex:none;width:var(--v7-touch);height:var(--v7-touch);border:0;border-radius:9999px;background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);display:grid;place-items:center}
@@ -131,8 +145,8 @@
 /* session rail (Segmented, 4 parts) */
 .lemma-tutor .rail{flex:none;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;padding:var(--v7-space-3) 0 0}
 .lemma-tutor .seg-r{min-height:56px;border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);padding:6px 8px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;text-align:left;min-width:0}
-.lemma-tutor .seg-r b{font:600 14px/1.2 var(--v7-sans);color:var(--v7-role-text-secondary)}
-.lemma-tutor .seg-r small{font:500 12px/1.2 var(--v7-sans);color:var(--v7-role-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lemma-tutor .seg-r b{font:600 var(--v7-type-supporting)/1.2 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.lemma-tutor .seg-r small{font:500 var(--v7-type-caption)/1.2 var(--v7-sans);color:var(--v7-role-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .lemma-tutor .seg-r.cur{background:var(--v7-role-selection-subtle);border-color:transparent}
 .lemma-tutor .seg-r.cur b,.lemma-tutor .seg-r.cur small{color:var(--v7-role-selection-fg)}
 .lemma-tutor .seg-r.done{background:var(--v7-role-status-success-subtle);border-color:transparent}
@@ -140,12 +154,12 @@
 
 /* chat */
 .lemma-tutor .turn{display:flex;flex-direction:column;gap:8px}
-.lemma-tutor .msg.a{border-left:2px solid var(--subject);padding-left:16px;font:400 18px/1.55 var(--v7-serif);max-width:36em}
-.lemma-tutor .msg.a .who{font:600 11px/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary);margin:0 0 8px}
+.lemma-tutor .msg.a{border-left:2px solid var(--subject);padding-left:16px;font:400 var(--v7-type-lead)/1.55 var(--v7-serif);max-width:36em}
+.lemma-tutor .msg.a .who{font:600 var(--v7-type-caption)/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary);margin:0 0 8px}
 .lemma-tutor .msg.a .bd p{margin:0 0 10px}.lemma-tutor .msg.a .bd p:last-child{margin:0}
 .lemma-tutor .ans{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.lemma-tutor .ctag{font:600 12px var(--v7-sans);color:var(--v7-role-text-tertiary)}
-.lemma-tutor .chip{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 12px;border-radius:9999px;border:0;background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);font:500 13px/1 var(--v7-sans);white-space:nowrap;max-width:100%}
+.lemma-tutor .ctag{font:600 var(--v7-type-caption) var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.lemma-tutor .chip{display:inline-flex;align-items:center;gap:8px;min-height:28px;padding:0 12px;border-radius:9999px;border:0;background:var(--v7-role-surface-muted);color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);white-space:nowrap;max-width:100%}
 .lemma-tutor .chip.subjchip{background:var(--subject-subtle);color:var(--v7-role-text-primary)}
 .lemma-tutor .chip.subjchip .sd{margin:0}
 .lemma-tutor .sd{width:10px;height:10px;border-radius:50%;background:var(--subject);flex:none;display:inline-block;margin-right:8px;vertical-align:middle}
@@ -156,24 +170,24 @@
 .lemma-tutor .hero>*{position:relative;z-index:1}
 .lemma-tutor .hero .emblem{position:absolute;z-index:0;right:-48px;bottom:-40px;width:260px;height:260px;color:var(--subject);opacity:.10;pointer-events:none}
 .lemma-tutor .hero .emblem circle{fill:none;stroke:currentColor;stroke-width:26}.lemma-tutor .hero .emblem path{fill:currentColor}
-.lemma-tutor .hero h2{margin:0;font:400 34px/1.1 var(--v7-serif);letter-spacing:-.015em;text-wrap:balance;color:var(--v7-role-text-primary)}
-.lemma-tutor .hero .sub{margin:-4px 0 0;font:400 18px/1.4 var(--v7-serif);color:var(--v7-role-text-secondary)}
+.lemma-tutor .hero h2{margin:0;font:400 var(--v7-type-title)/1.1 var(--v7-serif);letter-spacing:-.015em;text-wrap:balance;color:var(--v7-role-text-primary)}
+.lemma-tutor .hero .sub{margin:-4px 0 0;font:400 var(--v7-type-lead)/1.4 var(--v7-serif);color:var(--v7-role-text-secondary)}
 .lemma-tutor .chips{display:flex;flex-wrap:wrap;gap:8px}
 .lemma-tutor .steps{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
 .lemma-tutor .steps li{height:6px;border-radius:3px;background:var(--v7-role-surface-muted-hover)}
 .lemma-tutor .steps li.done{background:var(--subject);opacity:.5}.lemma-tutor .steps li.cur{background:var(--subject)}
-.lemma-tutor .hero .now{margin:0;font:400 15px/1.5 var(--v7-sans);color:var(--v7-role-text-secondary)}
-.lemma-tutor .goal{display:flex;flex-direction:column;gap:6px;margin-top:4px;font:400 20px/1.4 var(--v7-serif);color:var(--v7-role-text-primary)}
-.lemma-tutor .goal .eyebrow{font:600 12px/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
+.lemma-tutor .hero .now{margin:0;font:400 var(--v7-type-supporting)/1.5 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.lemma-tutor .goal{display:flex;flex-direction:column;gap:6px;margin-top:4px;font:400 var(--v7-type-subhead)/1.4 var(--v7-serif);color:var(--v7-role-text-primary)}
+.lemma-tutor .goal .eyebrow{font:600 var(--v7-type-caption)/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
 .lemma-tutor .hero :is(.now,.goal) p{margin:0}
-.lemma-tutor .eyebrow{font:600 12px/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
-.lemma-tutor .facts{display:flex;flex-wrap:wrap;gap:6px 24px;font:400 14px var(--v7-sans);color:var(--v7-role-text-secondary)}
+.lemma-tutor .eyebrow{font:600 var(--v7-type-caption)/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
+.lemma-tutor .facts{display:flex;flex-wrap:wrap;gap:6px 24px;font:400 var(--v7-type-supporting) var(--v7-sans);color:var(--v7-role-text-secondary)}
 .lemma-tutor .facts b{font-weight:600;color:var(--v7-role-text-primary)}
 .lemma-tutor .actions{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .lemma-tutor .cta{min-height:56px;}
 .lemma-tutor .cta svg{width:20px;height:20px}
 .lemma-tutor .duo{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:12px}
-.lemma-tutor .btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--v7-button);padding:0 20px;border:0;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 16px var(--v7-sans)}
+.lemma-tutor .btn{display:inline-flex;align-items:center;justify-content:center;min-height:var(--v7-button);padding:0 20px;border:0;border-radius:var(--v7-radius-3);background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);font:600 var(--v7-type-body) var(--v7-sans)}
 .lemma-tutor .btn.primary{background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action)}
 .lemma-tutor .btn.primary:active{background:var(--v7-role-action-hover)}
 .lemma-tutor .btn.small{min-height:var(--v7-touch)}
@@ -181,8 +195,8 @@
 .lemma-tutor .tbar{flex:none;display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:2px 8px 0;background:var(--v7-role-surface-page);border-top:1px solid var(--v7-role-border-subtle)}
 .lemma-tutor .tb{min-height:48px;border:0;border-radius:var(--v7-radius-2);background:transparent;color:var(--v7-role-text-secondary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:0;padding:2px}
 .lemma-tutor .tb svg{width:22px;height:22px}
-.lemma-tutor .tb .sg{font:400 22px/1 var(--v7-glyph);height:22px}
-.lemma-tutor .tb small{font:600 12px/1 var(--v7-sans);color:var(--v7-role-text-secondary);white-space:nowrap}
+.lemma-tutor .tb .sg{font:400 var(--v7-type-subhead)/1 var(--v7-glyph);height:22px}
+.lemma-tutor .tb small{font:600 var(--v7-type-caption)/1 var(--v7-sans);color:var(--v7-role-text-secondary);white-space:nowrap}
 .lemma-tutor .tb.on{background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg)}.lemma-tutor .tb.on small{color:var(--v7-role-selection-fg)}
 .lemma-tutor .tb:active{background:var(--v7-role-surface-muted-hover)}
 @media (prefers-reduced-motion: reduce){.lemma-tutor *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
@@ -196,21 +210,25 @@
 .lemma-tutor .msg.a .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd p {white-space: pre-wrap;}
-.lemma-tutor .keyboard-composer {display:flex; flex-direction:column; flex:0 1 auto; min-height:0;}
+.lemma-tutor .keyboard-composer {display:flex; flex-direction:column; flex:none; min-height:0;padding-bottom:env(safe-area-inset-bottom);container:tutor-composer / inline-size;}
 .lemma-tutor .composer .send {padding: 0;}
 .lemma-tutor .composer-preview {max-height: 100px; overflow: auto; padding: 0 16px 8px;}
-.lemma-tutor .composer-status {padding: 4px 16px; margin: 0; font-size: 13px; color: var(--v7-role-text-tertiary);}
+.lemma-tutor .composer-status {padding: 4px 16px; margin: 0; font-size: var(--v7-type-supporting); color: var(--v7-role-text-tertiary);}
 .lemma-tutor .kb {flex:none; overflow-x:clip;}
 .lemma-tutor .kb .strip {flex:none;}
 .lemma-tutor .kb .grid {scrollbar-width:thin; scrollbar-color:var(--v7-role-border-default) transparent;}
 .lemma-tutor.v7-page:has(.keyboard-composer) {overflow-y:auto; scroll-padding-top:calc(52px + env(safe-area-inset-top));}
-.lemma-tutor:has(.keyboard-composer) .chat {min-height:min(112px,28dvh);}
+.lemma-tutor.v7-page:has(.keyboard-composer[data-keyboard="math"]) {
+  overflow:clip;
+  overflow-anchor:none;
+}
+.lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .chat {min-height:0;}
 .lemma-tutor .kb .k.space {touch-action: none;}
 .lemma-tutor .kb .k:active::before {background: var(--key-down);}
 .lemma-tutor .tb:disabled, .lemma-tutor .k:disabled {opacity: .4;}
-.lemma-tutor .tutor-message-status {margin: 0; color: var(--v7-role-text-tertiary); font: 400 14px/1.4 var(--v7-sans);}
+.lemma-tutor .tutor-message-status {margin: 0; color: var(--v7-role-text-tertiary); font: 400 var(--v7-type-supporting)/1.4 var(--v7-sans);}
 .lemma-tutor .tutor-message-status[role=alert] {color: var(--v7-role-status-danger);}
-.lemma-tutor .tutor-details {font: 400 14px/1.5 var(--v7-sans); color: var(--v7-role-text-secondary);}
+.lemma-tutor .tutor-details {font: 400 var(--v7-type-supporting)/1.5 var(--v7-sans); color: var(--v7-role-text-secondary);}
 .lemma-tutor .tutor-details summary {cursor: pointer; min-height: 44px; display: flex; align-items: center;}
 .lemma-tutor .tutor-details a {color: var(--v7-role-action-bg); text-decoration: underline;}
 .lemma-tutor .tutor-plan ol {margin: 0; padding-left: 24px;}
@@ -218,7 +236,7 @@
 .lemma-tutor .tutor-plan li[aria-current="step"] {color: var(--v7-role-selection-fg); font-weight: 600;}
 .lemma-tutor .tutor-plan a {text-decoration:underline; color:var(--v7-role-link-fg);}
 .lemma-tutor .tutor-timer-actions {display:grid;grid-template-columns:repeat(auto-fit,minmax(7rem,1fr));gap:8px;}
-.lemma-tutor .v7-sheet .tbig {font: 400 48px/1 var(--v7-mono);}
+.lemma-tutor .v7-sheet .tbig {font: 400 var(--v7-type-display)/1 var(--v7-mono);}
 .lemma-tutor .v7-field-group {display:flex; flex-direction:column; gap:var(--v7-space-3);}
 .lemma-tutor .v7-field-group :is(textarea,input:not([type=checkbox])) {width:100%;}
 .tutor-message.v7-page {display:flex; flex-direction:column; gap:var(--v7-space-4);}
@@ -247,8 +265,97 @@
 @media (max-width:360px) {
   .lemma-tutor .rail {gap:4px;}
   .lemma-tutor .seg-r {padding-inline:6px;}
-  .lemma-tutor .tb small {font-size:11px;}
+  .lemma-tutor .tb small {font-size:var(--v7-type-caption);}
 }
 @media (forced-colors:active) {
   .lemma-tutor :is(.chip,.seg-r,.btn), .lemma-tutor .k::before {border:1px solid ButtonText;}
+}
+
+.lemma-tutor .tutor-header {
+ display:flex;align-items:center;position:relative;
+ gap:var(--v7-space-1);min-height:48px;padding-block:var(--v7-space-1);flex:none;
+}
+.lemma-tutor .tutor-header-title {display:flex;align-items:center;flex:1;min-width:0;}
+.lemma-tutor .tutor-header-title strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--v7-type-supporting);}
+.lemma-tutor .tutor-presence-control {display:inline-flex;flex:none;}
+.lemma-tutor .tutor-presence-light {color:var(--v7-role-text-secondary);}
+.lemma-tutor .tutor-presence-light>span {width:8px;height:8px;border-radius:var(--v7-round);background:currentColor;}
+.lemma-tutor .tutor-presence-light[data-presence="Listening"] {color:var(--v7-role-status-success);}
+.lemma-tutor .tutor-presence-light[data-presence="Replying"] {color:var(--v7-role-selection-fg);}
+.lemma-tutor .tutor-presence-tooltip {
+ position:absolute;inset-block-start:100%;inset-inline-start:var(--v7-space-3);z-index:var(--v7-z-sticky);
+ width:max-content;max-width:calc(100% - 2 * var(--v7-space-3));padding:var(--v7-space-2) var(--v7-space-3);
+ border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);
+ background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);font-size:var(--v7-type-caption);
+}
+.lemma-tutor .tutor-session-progress {
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--v7-space-1);height:3px;flex:none;
+}
+.lemma-tutor .tutor-session-progress span {background:var(--v7-role-border-subtle);}
+.lemma-tutor .tutor-session-progress span[data-reached] {background:var(--v7-role-selection-fg);}
+.lemma-tutor .tutor-start {
+ display:grid;gap:var(--v7-space-2);padding:var(--v7-space-3);border-radius:var(--v7-radius-3);
+ border:var(--v7-hairline) solid var(--v7-role-border-subtle);background:var(--v7-role-surface-raised);
+}
+.lemma-tutor .tutor-start h2 {font:400 var(--v7-type-subhead)/1.2 var(--v7-serif);}
+.lemma-tutor .tutor-start-goal {
+ display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;
+ font:400 var(--v7-type-supporting)/1.3 var(--v7-serif);color:var(--v7-role-text-secondary);
+}
+.lemma-tutor .tutor-start-actions {display:flex;gap:var(--v7-space-2);align-items:center;}
+.lemma-tutor .tutor-pinned {
+ min-height:40px;display:flex;align-items:center;gap:var(--v7-space-2);margin-top:var(--v7-space-2);
+ padding:var(--v7-space-2);border-radius:var(--v7-round);background:var(--v7-role-surface-raised);
+ text-align:left;font-size:var(--v7-type-caption);flex:none;
+}
+.lemma-tutor .tutor-pinned span {font-weight:600;text-transform:uppercase;color:var(--v7-role-selection-fg);white-space:nowrap;}
+.lemma-tutor .tutor-pinned strong {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400;}
+.lemma-tutor .msg.a {width:100%;font:400 var(--v7-type-reading)/1.52 var(--v7-serif);}
+.lemma-tutor .tbar {grid-template-columns:repeat(auto-fit,minmax(max(var(--v7-touch),calc(var(--v7-type-caption) * 4)),1fr));gap:var(--v7-space-1);padding:var(--v7-space-1);}
+.lemma-tutor .tbar .v7-button {min-width:0;min-height:48px;padding:var(--v7-space-1);margin:0;}
+.lemma-tutor .tbar .v7-button > span:first-child {display:flex;flex-direction:column;justify-content:center;align-items:center;gap:var(--v7-space-1);font-size:var(--v7-type-caption);line-height:1.2;white-space:nowrap;}
+.lemma-tutor .tbar .v7-button svg {width:16px;height:16px;}
+.lemma-tutor .tbar .v7-button[aria-pressed="true"] {color:var(--v7-role-selection-fg);background:var(--v7-role-selection-subtle);}
+.lemma-tutor [data-tutor-send] {background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);}
+.lemma-tutor .tutor-ink-tools {
+ display:flex;gap:var(--v7-space-1);align-items:center;overflow-x:auto;padding:var(--v7-space-1) 0;margin-bottom:var(--v7-space-1);scrollbar-width:thin;
+}
+.lemma-tutor .tutor-ink-tools > * {flex:none;}
+.lemma-tutor .tutor-ink-tools .v7-filter-chip {min-width:var(--v7-touch);min-height:var(--v7-touch);display:inline-flex;justify-content:center;align-items:center;}
+.lemma-tutor .tutor-ink-tools [aria-pressed="true"] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+.lemma-tutor .tutor-ink-tools .v7-filter-chip > span {display:block;border-radius:var(--v7-round);background:currentColor;}
+.lemma-tutor .tutor-ink-pad svg[data-ink-canvas] {height:min(28dvh,235px);}
+.lemma-tutor .tutor-attachment-chips {display:flex;flex-wrap:wrap;gap:var(--v7-space-1);}
+.lemma-tutor .tutor-attachment-chips .v7-icon-button {min-height:32px;width:32px;}
+.lemma-tutor .tutor-image-thumb {display:grid;justify-items:start;gap:var(--v7-space-1);font-size:var(--v7-type-caption);}
+.lemma-tutor .tutor-image-thumb img {max-width:100%;max-height:160px;border-radius:var(--v7-radius-2);object-fit:contain;}
+.lemma-tutor .tutor-image-view {max-height:70dvh;overflow:auto;}
+.lemma-tutor .tutor-image-view img {max-width:none;min-width:100%;object-fit:contain;}
+@media (max-width:699px) {
+ .lemma-tutor {--cell:var(--v7-touch);}
+ .lemma-tutor .kb {padding-bottom:var(--v7-space-1);}
+ .lemma-tutor .kb .strip {height:var(--v7-touch);}
+ .lemma-tutor .kb .sugg button {height:var(--v7-touch);}
+ .lemma-tutor .tutor-header-clock {display:none;}
+}
+
+@container tutor-composer (max-width:17.5rem) {
+ .lemma-tutor .tbar {grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+
+/* On short wide screens, keep the transcript independently scrollable beside
+   the keyboard while the title and session progress span both columns. */
+@media (min-width:560px) and (max-height:559px) and (orientation:landscape) {
+  .lemma-tutor.v7-page:has(.keyboard-composer[data-keyboard="math"]) {
+    display:grid;
+    grid-template-columns:minmax(0, 1fr) minmax(0, 1.45fr);
+    grid-template-rows:auto auto auto minmax(0, 1fr);
+    column-gap:var(--v7-space-3);
+  }
+  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) :is(.tutor-header,.tutor-session-progress) {grid-column:1 / -1;}
+  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .tutor-pinned {grid-area:3 / 1;}
+  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) .chat {grid-area:4 / 1;max-height:none;}
+  .lemma-tutor:has(.keyboard-composer[data-keyboard="math"]) > .composer-status {grid-area:3 / 2;}
+  .lemma-tutor .keyboard-composer[data-keyboard="math"] {grid-area:4 / 2;align-self:end;min-width:0;}
+  .lemma-tutor .keyboard-composer[data-keyboard="math"] :is(.composer textarea,.tutor-answer-editor) {max-height:44px;}
 }

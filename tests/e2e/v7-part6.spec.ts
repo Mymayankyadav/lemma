@@ -72,7 +72,7 @@ test("Path More pauses a path, its Cards tab lists cards, and Review opens a rou
  await expect(page.locator(".v7-path-chips")).toContainText("Paused");
  await page.getByRole("tab",{name:/^Cards/}).click();
  await expect(page.getByRole("list",{name:"Cards on this path"})).toBeVisible();
- const review=page.getByRole("navigation",{name:"Page actions"}).getByRole("link",{name:/^Review/});
+ const review=page.getByRole("group",{name:"Path actions"}).getByRole("link",{name:/^Review/});
  await expect(review).toHaveAttribute("href","#/review/run?target=path&id=project-analysis");
  await review.click();
  await expect(page).toHaveURL(/#\/review\/run\?run=/);
@@ -100,7 +100,9 @@ test("Tasks groups To do into cards and completing a task offers Undo",async({pa
  await expect(page.locator("html")).toHaveAttribute("data-v7","");
  await expect(page.getByRole("navigation",{name:"Calendar sections"}).getByRole("link",{name:"Tasks"})).toHaveAttribute("aria-current","page");
  await expect(page.getByRole("radiogroup",{name:"Task status"})).toBeVisible();
- await expect(page.getByRole("group",{name:"Filters"})).toBeVisible();
+ await page.getByRole("button",{name:"Filter",exact:true}).click();
+ await expect(page.getByRole("dialog",{name:"Task filters",exact:true}).getByRole("group",{name:"Filters"})).toBeVisible();
+ await page.keyboard.press("Escape");
  const box=page.locator(".v7-tk-card").first();
  if(await box.count()===0)return;
  await expect(box.locator(".v7-tk-card")).toHaveCount(0);
@@ -134,12 +136,27 @@ test("Close the day walks three steps: Today, Loose ends, Tomorrow",async({page}
 
 // Part 7c: Calendar Week, Month, Agenda.
 test("Calendar Week shows a seven-day grid with the strip as its header",async({page})=>{
- await page.goto(at("/calendar?view=week"));
+ await page.goto(at("/calendar?view=week&date=2026-11-11"));
  // N161: on a phone the view is the header menu button.
- await expect(page.getByRole("button",{name:"Calendar view: Week"})).toBeVisible();
- await expect(page.getByRole("region",{name:"Week time grid"})).toBeVisible();
+ const view=page.getByRole("button",{name:"Calendar view: Week"});
+ const grid=page.getByRole("region",{name:"Week time grid"});
+ await expect(view).toBeVisible();
+ await expect(grid).toBeVisible();
  await expect(page.locator("[data-strip-day]")).toHaveCount(7);
- await expect(page.getByRole("button",{name:"Next week"})).toBeVisible();
+ await page.getByRole("button",{name:"Calendar actions",exact:true}).click();
+ const menu=page.getByRole("menu",{name:"Calendar actions"});
+ const chooseDate=menu.getByRole("menuitem").nth(3);
+ await expect(chooseDate).toHaveAccessibleName("Choose date");
+ await chooseDate.click();
+ const picker=page.getByRole("dialog",{name:"Choose a date"});
+ await expect(picker).toBeVisible();
+ await picker.getByRole("button",{name:/Wednesday.*(?:November 18|18 November).*2026/}).click();
+ await expect(picker).toHaveCount(0);
+ await expect(page).toHaveURL(/date=2026-11-18/);
+ await expect(view).toBeVisible();
+ await expect(grid).toBeVisible();
+ await expect(page.locator("[data-strip-day]")).toHaveCount(7);
+ await expect(page.locator('[data-strip-day="2026-11-18"]')).toHaveAttribute('data-selected','true');
 });
 test("Calendar Month tints days, offers Open day, and never prints a zero",async({page})=>{
  await page.goto(at("/calendar?view=month"));
@@ -162,26 +179,30 @@ test("Calendar Agenda lists days with headings and switches back to Day",async({
  await expect(page.getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
 });
 
-// Part 7d: quick-add, suggestions banner, overdue sheet.
-test("Calendar quick-add takes a title and a length, and More options opens the full block sheet",async({page})=>{
+// Part 7d: the Calendar block editor, suggestions and overdue sheet.
+test("Calendar grid opens the block editor with a duration ruler and More link fields",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11"));
  await page.locator(".v7-cal-slots").click({position:{x:120,y:12}});
- const sheet=page.getByRole("dialog",{name:"New block"});
+ const sheet=page.getByRole("dialog",{name:"New time block"});
  await expect(sheet).toBeVisible();
- await expect(sheet.getByRole("textbox",{name:"Title"})).toBeFocused();
- await sheet.getByRole("button",{name:"90 min"}).click();
- await expect(sheet.getByRole("button",{name:"90 min"})).toHaveAttribute("aria-pressed","true");
- await sheet.getByRole("button",{name:"Add block"}).click();
- await expect(sheet.getByText("Give the block a title.")).toBeVisible();
- await sheet.getByRole("button",{name:"More options"}).click();
+ await expect(sheet.getByRole("textbox",{name:"Calendar block title"})).toBeFocused();
+ const length=sheet.getByRole("slider",{name:"Length"});
+ for(let step=0;step<8;step++)await length.press("ArrowRight");
+ await expect(length).toHaveValue("90");
+ await sheet.getByRole("button",{name:"Create block"}).click();
+ await expect(sheet.getByRole("alert")).toHaveText("Enter a title of at most 200 characters.");
+ await sheet.getByRole("button",{name:"More",exact:true}).click();
+ await expect(sheet.getByRole("button",{name:"Task: No task"})).toBeVisible();
  await expect(page).toHaveURL(/new=block/);
- await expect(page.getByRole("dialog",{name:/block/i}).first()).toBeVisible();
+ await expect(page.getByRole("dialog",{name:/block/i})).toHaveCount(1);
 });
-test("Calendar quick-add opens from a Tasks Schedule link and carries the length",async({page})=>{
+test("Calendar block editor opens from a Tasks Schedule link and carries the length",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1&len=25"));
- await expect(page.getByRole("dialog",{name:"New block"}).getByRole("button",{name:"25 min"})).toHaveAttribute("aria-pressed","true");
+ const sheet=page.getByRole("dialog",{name:"New time block"});
+ await expect(sheet.getByRole("slider",{name:"Length"})).toHaveValue("25");
  await page.keyboard.press("Escape");
- await expect(page).not.toHaveURL(/quick=1/);
+ await expect(page).not.toHaveURL(/quick=1|new=block/);
+ await expect(sheet).toBeHidden();
 });
 test("Calendar plan=1 opens the planner on the day view",async({page})=>{
  await page.goto(at("/calendar?view=day&plan=1"));
@@ -220,15 +241,14 @@ test("Today Needs you completes a due task with Undo, and every section stays un
  await expect(page.getByRole("button",{name:"Undo"})).toBeVisible();
 });
 
-// Part 7f: block sheet in the kit, and quick-add hand-over.
-test("Quick-add More options keeps the title and length in the full block sheet",async({page})=>{
+test("Calendar More keeps the title and length in the block editor",async({page})=>{
  await page.goto(at("/calendar?view=day&date=2026-11-11&quick=1"));
- const sheet=page.getByRole("dialog",{name:"New block"});
- await sheet.getByRole("textbox",{name:"Title"}).fill("Compactness drill");
- await sheet.getByRole("button",{name:"25 min"}).click();
- await sheet.getByRole("button",{name:"More options"}).click();
- const full=page.getByRole("dialog",{name:"New time block"});
- await expect(full).toBeVisible();
- await expect(full.getByRole("textbox",{name:"Calendar block title"})).toHaveValue("Compactness drill");
- await expect(full.locator(".v7-field").first()).toBeVisible();
+ const sheet=page.getByRole("dialog",{name:"New time block"});
+ const title=sheet.getByRole("textbox",{name:"Calendar block title"}),length=sheet.getByRole("slider",{name:"Length"});
+ await title.fill("Compactness drill");
+ for(let step=0;step<5;step++)await length.press("ArrowLeft");
+ await sheet.getByRole("button",{name:"More",exact:true}).click();
+ await expect(title).toHaveValue("Compactness drill");
+ await expect(length).toHaveValue("25");
+ await expect(sheet.getByRole("button",{name:"Task: No task"})).toBeVisible();
 });

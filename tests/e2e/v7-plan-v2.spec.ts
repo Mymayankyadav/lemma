@@ -1,7 +1,14 @@
 import {test,expect} from '@playwright/test';
-test('Today and Progress expose the shared Atlas model',async({page})=>{
- await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,atlasV3#/');await expect(page.getByRole('region',{name:'Study model'})).toBeVisible();
- await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,atlasV3#/insights?tab=learning');const panel=page.getByRole('region',{name:'Atlas model health'});await expect(panel.getByRole('heading',{name:'Track record'})).toBeVisible();await expect(panel.getByText('insufficient data').first()).toBeVisible();
+test('Settings Advanced exposes model health for Today and Progress',async({page})=>{
+ const url='/lemma/?demo=1&flags=v7Shell,v6Shell,atlasV3#';
+ await page.goto(url+'/');await expect(page.getByRole('main',{name:'Today',exact:true})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Study model'})).toHaveCount(0);
+ await page.goto(url+'/insights?tab=learning');await expect(page.getByRole('heading',{name:'Progress',level:1})).toBeVisible();
+ await expect(page.getByRole('region',{name:'Atlas model health'})).toHaveCount(0);
+ await page.goto(url+'/settings?section=advanced');
+ await page.getByRole('button',{name:'Model health',exact:true}).click();
+ await expect(page.getByRole('heading',{name:'Track record',exact:true})).toBeVisible();
+ await expect(page.getByText('Insufficient data to compare predictions with outcomes.',{exact:true})).toBeVisible();
 });
 
 for(const width of [360,390])test('A course conversion is reviewed in full at '+width+' px; a rule-breaking one cannot be approved',async({page})=>{

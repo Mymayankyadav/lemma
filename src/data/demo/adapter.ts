@@ -1,4 +1,5 @@
 import {AuthoredCards} from './authored-cards';
+import {authGeneration,authOwner} from '../authBoundary';
 import {firstUseStore,type FirstCardInput,type FirstCardReceipt} from './first-card';
 import {pathForecast} from '../path-review-forecast';
 import {demoConversionProposal} from '../adaptive/demo-conversion';
@@ -11,6 +12,7 @@ import type {
   ProposalEdit,
   CreateNoteInput,
   NotePatch,
+  NoteStatusGuard,
   InsightDays,
   ReviewLogEntry,
   SubjectPatch,
@@ -2462,10 +2464,15 @@ export class DemoAdapter implements LemmaApi {
       this.reconcile(n);
     });
   }
-  async setNoteStatus(noteNo: number, status: NoteStatus) {
+  async setNoteStatus(noteNo: number, status: NoteStatus, guard?: NoteStatusGuard) {
     if (!["active", "suspended", "deleted"].includes(status))
       invalid("Unknown note status");
-    this.note(noteNo).note.status = status;
+    if (guard&&(guard.ownerId!==authOwner()||guard.generation!==authGeneration()))
+      throw new LemmaError('auth','The card account changed.');
+    const note=this.note(noteNo).note;
+    if (guard&&(note.noteId!==guard.noteId||note.status!==guard.expectedStatus))
+      throw new LemmaError('conflict','The card status changed.');
+    note.status = status;
     this.authoredCards?.save(this.store);
     this.dueSnapshotCache=null;
   }

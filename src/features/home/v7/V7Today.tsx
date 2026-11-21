@@ -1,10 +1,14 @@
-import {AtlasToday} from '../../adaptive/AtlasPanels';
-import {TodayScheduler} from '../../adaptive/Views';
+import {Disclosure} from '../../../ui/v7/Disclosure';
+import {StudyModelDetails} from '../../adaptive/panels/LearningDetails';
+import {formatShortDate} from '../../../lib/format';
+import {NextStep,TodayFirstRun} from './NextStep';
 import {lazy,Suspense,useCallback,useEffect,useMemo,useState,type CSSProperties} from 'react';
 import {haptic} from '../../../ui/v7/haptics';
 import {Link,useNavigate,useSearchParams} from 'react-router';
 import {Check,ChevronRight,Pause,Play} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
+import {readWeekdayMinutes,weekdayOwner} from '../../../data/study-weekdays';
+import {useQuery} from '@tanstack/react-query';
 import {useHome,useSettings} from '../../../data/hooks';
 import {getApi} from '../../../data';
 import {getStudyApi} from '../../../data/study';
@@ -47,7 +51,7 @@ function SubjectChip({subject,name}:{subject:Subject;name:string}){
 /** PLAN §6.2: Today decides what to do now, in one glance. */
 export default function V7Today(){
  const home=useHome(),settings=useSettings(),navigate=useNavigate(),notify=useToast();
- const desktop=useMinWidth(1100);
+ const desktop=useMinWidth(1100),nextStepEnabled=isFlagOn('todayNextStep');
  const {entry,refresh:refreshFocus}=useActiveFocus();
  const now=useNow(30_000),date=new Date(now);
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
@@ -164,18 +168,30 @@ export default function V7Today(){
   first:{chip:'First path',title:'Start your first path',line:'A path gives your ideas a place to grow.'},
  };
  const copy=heroCopy[state];
+ const weekday=useQuery({queryKey:['study-weekdays',weekdayOwner()],queryFn:readWeekdayMinutes,enabled:nextStepEnabled&&!!weekdayOwner()});
+ const firstRun=nextStepEnabled&&state==='first';
+ const currentProject=projects.find(project=>project.current)??projects[0];
+ const nextCommitment=blocks.find(block=>block.status==='planned'&&Date.parse(block.startsAt)>now);
  const todayLabel=new Intl.DateTimeFormat('en-GB',{timeZone:zone,weekday:'long',day:'numeric',month:'long'}).format(date);
  const nowLeft=stripSegment(localMinute(date,zone),localMinute(date,zone),windowMinutes).left;
  return <main id="main-content" className="v7-page v7-today" aria-label="Today">
-  <HubHeader title={todayGreeting(date,zone)} date={todayLabel} settings display>
-   <p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>
+  <HubHeader title={firstRun?'Welcome to Lemma':nextStepEnabled&&localMinute(date,zone)<240?'Still up?':todayGreeting(date,zone)} date={nextStepEnabled?formatShortDate(day,{zone}):todayLabel} settings display>
+   {!nextStepEnabled&&<p className="v7-today-briefing">{ready?briefing:' '}{ready&&asOf!==null&&<> <AsOf at={asOf} zone={zone}/></>}</p>}
   </HubHeader>
-  <TodayScheduler/>
   {!ready?<div className="v7-today-skeleton" role="status" aria-label="Today loading">
    {error||home.error?<div className="v7-alert" role="alert">Couldn't load Today. Your study data is safe.
     <Button small onClick={()=>{void home.refetch();reload();}}>Retry</Button></div>:<><span/><span/><span/></>}
   </div>:<>
-   <section className={'v7-today-hero v7-starfield '+subjectClass(hero.subject)} aria-label="Your next step" data-state={state}>
+   {nextStepEnabled?firstRun?<TodayFirstRun configured={Boolean(typeof weekday.data==='number'?weekday.data:weekday.data?.some(value=>value>0))} tutor={Boolean(settings.data?.connectorLastSeenAt)} onFocus={()=>setQuick(true)}/>
+    :<NextStep now={now} day={day} zone={zone} localMinute={localMinute(date,zone)} logged={logged} focusMinutes={settings.data?.focusDefaults?.focus_minutes??25}
+      due={due} reviewMinutes={reviewMinutes??10} pending={!!entry} closed={!!data?.closed}
+      project={currentProject} commitment={nextCommitment} onStartReview={()=>navigate('/review?start=1')}
+      onFocus={()=>setQuick(true)} onStartFocus={title=>{void act(async()=>{
+        const study=getStudyApi();
+        if(await study.activeStudyEntry())throw Error('A focus session is already running.');
+        await study.startStudyEntry({source:'timer',intent:title});
+      },()=>navigate('/focus'));}}/>
+    :<section className={'v7-today-hero v7-starfield '+subjectClass(hero.subject)} aria-label="Your next step" data-state={state}>
     <div className="v7-today-hero-emblem" aria-hidden="true"><Emblem subject={hero.subject} seed={heroLink??'today'} size={164} animate={false}/></div>
     <div className="v7-today-hero-labels">
      {hero.subject!=='Other'&&(state==='session'||state==='now'||state==='upcoming')&&<SubjectChip subject={hero.subject} name={hero.name}/>}
@@ -199,14 +215,13 @@ export default function V7Today(){
      {state!=='free'&&<Button variant="ghost" className="v7-today-quick" onClick={()=>setQuick(true)}>Quick focus</Button>}
      {state==='first'&&<Link className="v7-button v7-primary" to="/projects/new"><span>Start a path</span></Link>}
     </div>
-   </section>
+   </section>}
    {!!actionError&&<p className="v7-alert" role="alert">{actionError} <Button small onClick={reload}>Refresh</Button></p>}
-   <AtlasToday/>
-  {state==='first'?<section className="v7-card v7-today-tips" aria-label="Getting started">
+  {state==='first'?!firstRun&&<section className="v7-card v7-today-tips" aria-label="Getting started">
     <h2>Three ways to begin</h2>
     <ol><li>Start a path for what you want to prove.</li><li>Connect your tutor and approve its plan in the Inbox.</li><li>Put a study block on today's calendar.</li></ol>
    </section>:<>
-   {isFlagOn('v7Ruler')?<Ruler window={windowMinutes} now={localMinute(date,zone)} summary={minutesLabel(planned)+' planned · '+minutesLabel(logged)+' done'}
+   {(nextStepEnabled||isFlagOn('v7Ruler'))?<Ruler window={windowMinutes} now={localMinute(date,zone)} summary={minutesLabel(planned)+' planned · '+minutesLabel(logged)+' done'}
     blocks={blocks.map(block=>{const start=localMinute(block.startsAt,zone);return {id:block.id,start,end:start+(Date.parse(block.endsAt)-Date.parse(block.startsAt))/60_000,
      klass:subjectClass(subjectOf(block.projectId).subject),past:Date.parse(block.endsAt)<=now,title:block.title};})}/>:
    <Link to="/calendar?view=day" className="v7-card v7-today-strip-card" aria-label={'Today: '+minutesLabel(planned)+' planned, '+minutesLabel(logged)+' done. Open Calendar Day.'}>
@@ -219,14 +234,21 @@ export default function V7Today(){
     </span>
     <span className="v7-today-hours" aria-hidden="true">{stripTicks(windowMinutes).map(tick=><span key={tick.label} style={{left:tick.left+'%'}}>{tick.label}</span>)}</span>
    </Link>}
-   {targets.length>0&&<section className="v7-card" aria-label="Targets">
+   {nextStepEnabled&&<nav className="v7-today-glance" aria-label="Needs you">
+    {(data?.overdue??0)>0&&<Link className="v7-meta-chip" to="/calendar?view=day&overdue=1">{data?.overdue} overdue</Link>}
+    {needTasks.length>0&&<Link className="v7-meta-chip" to="/tasks">Tasks due</Link>}
+    {practice.due.length>0&&<Link className="v7-meta-chip" to="/practice">Practice due</Link>}
+    {due>0&&<Link className="v7-meta-chip" to="/review">{due} due</Link>}
+    {pending>0&&<Link className="v7-meta-chip" to="/proposals">{pending} to approve</Link>}
+   </nav>}
+   {targets.length>0&&<Disclosure label="Daily targets" defaultOpen={!nextStepEnabled}><section className="v7-card" aria-label="Targets">
     {targets.map(row=><div key={row.key} className="v7-today-target"><span>{row.label}</span>
      {targetDone(row)?<span className="v7-notice"><Check aria-hidden="true"/>Done</span>:<span className="v7-meta">{row.value} of {row.max}{row.key==='focus'?' min':''}{row.key==='reviews'&&row.max>row.value?' · '+(row.max-row.value)+' left':''}</span>}
      <span className="v7-today-target-track" data-complete={targetDone(row)?'true':undefined} role="meter" aria-label={row.label} aria-valuemin={0} aria-valuemax={row.max} aria-valuenow={Math.min(row.value,row.max)}>
       <span style={{width:Math.min(100,row.value/row.max*100)+'%'}}/></span>
     </div>)}
-   </section>}
-   {(needs.total>0||pending>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
+   </section></Disclosure>}
+   {!nextStepEnabled&&(needs.total>0||pending>0)&&<section className="v7-card v7-today-needs" aria-label="Needs you">
     <h2>Needs you</h2>
     {needs.rows.map(row=>row.kind==='overdue'?<div key="overdue" className="v7-today-need"><StatusBadge tone="warning">{row.count} overdue</StatusBadge><span/>
       <Link className="v7-button v7-ghost v7-small" to="/calendar?view=day&overdue=1"><span>Triage</span></Link></div>
@@ -241,7 +263,7 @@ export default function V7Today(){
    </section>}
    {projects.length>0&&<section className="v7-today-continue" aria-label="Continue">
     <div className="v7-card-heading"><h2>Continue</h2><Link to="/projects">All paths<ChevronRight aria-hidden="true"/></Link></div>
-    <div className="v7-today-tiles">{projects.slice(0,6).map(project=>{const subject=kitSubject(project.subject.name);
+    <div className="v7-today-tiles">{projects.slice(0,nextStepEnabled?3:6).map(project=>{const subject=kitSubject(project.subject.name);
      return <Link key={project.id} className={'v7-today-tile '+subjectClass(subject)} to={'/p/'+encodeURIComponent(project.slug)}>
       <span className="v7-today-tile-cover"><Emblem subject={subject} seed={project.id} size={96} animate={false}/></span>
       <strong>{project.title}</strong><small>{project.current?'Now: '+project.current.title:'Explore the next checkpoint'}</small>
@@ -249,7 +271,8 @@ export default function V7Today(){
        <span style={{width:(project.total?Math.min(100,project.done/project.total*100):0)+'%'}}/></span>
      </Link>;})}</div>
    </section>}
-   {offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
+   <StudyModelDetails/>
+   {!nextStepEnabled&&offerClose(hourNow,!!data?.closed)&&<section className="v7-card v7-today-close" aria-label="Close the day">
     <span><strong>{minutesLabel(logged)} studied today</strong><small>Look back and set up tomorrow.</small></span>
     <Link className="v7-button v7-secondary" to="/today/close"><span>Close the day</span></Link></section>}
    </>}

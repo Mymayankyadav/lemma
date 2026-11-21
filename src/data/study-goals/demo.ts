@@ -72,9 +72,9 @@ function validStored(r:GoalRecord):boolean{
   validated(r);return true;
  }catch{return false}
 }
-function read():Snapshot|null{
+function read(key:string):Snapshot|null{
  try{
-  const raw=sessionStorage.getItem(KEY);
+  const raw=sessionStorage.getItem(key);
   if(!raw)return null;
   const data:unknown=JSON.parse(raw);
   if(!data||typeof data!=='object')return null;
@@ -85,7 +85,7 @@ function read():Snapshot|null{
   return value;
  }catch{return null}
 }
-function write(snapshot:Snapshot){try{sessionStorage.setItem(KEY,JSON.stringify(snapshot))}catch{/* in-memory fallback */}}
+function write(key:string,snapshot:Snapshot){try{sessionStorage.setItem(key,JSON.stringify(snapshot))}catch{/* in-memory fallback */}}
 function overlaps(a:GoalRecord,b:GoalRecord):boolean{
  return !a.archivedAt&&!b.archivedAt&&a.period===b.period&&
   a.subjectId===b.subjectId&&a.projectId===b.projectId&&
@@ -132,11 +132,12 @@ function checkVersion(row:GoalRecord,expected:number){
  if(!Number.isSafeInteger(expected)||row.version!==expected)
   fail('conflict','Goal changed elsewhere: current version '+row.version);
 }
-export function createDemoGoalApi():GoalApi{
- let snapshot=read()??initial();
- write(snapshot);
- const current=()=>{snapshot=read()??snapshot;return snapshot.goals};
- const save=(goals:GoalRecord[])=>{snapshot={schema:1,goals};write(snapshot)};
+export function createDemoGoalApi(firstUse=false):GoalApi{
+ const key=firstUse?KEY+'.first-use':KEY;
+ let snapshot:Snapshot=read(key)??(firstUse?{schema:1,goals:[]}:initial());
+ write(key,snapshot);
+ const current=()=>{snapshot=read(key)??snapshot;return snapshot.goals};
+ const save=(goals:GoalRecord[])=>{snapshot={schema:1,goals};write(key,snapshot)};
  const getOwned=(id:string,expected:number)=>{
   const r=current().find(g=>g.id===id);if(!r)return fail('not_found','Goal not found');
   checkVersion(r,expected);return r;

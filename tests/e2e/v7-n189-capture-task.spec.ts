@@ -16,7 +16,8 @@ for(const expanded of [false,true]){
    const dialog=page.getByRole('dialog',{name:'New task'});
    await expect(dialog.getByLabel('Title',{exact:true})).toHaveValue('Review lemma');
    await expect(dialog.getByLabel(/Estimate/)).toHaveValue('45');
-   await expect(dialog.getByRole('radio',{name:'Date & time'})).toHaveAttribute('aria-checked','true');
+   await expect(dialog.getByRole('button',{name:'Due: Date & time',exact:true})).toBeVisible();
+   await expect(dialog.getByRole('slider',{name:'Due time',exact:true})).toHaveValue('977');
    // Draft contents travel in navigation state, never the URL.
    expect(decodeURIComponent(page.url())).not.toContain('Review lemma');
    await dialog.getByRole('button',{name:'Save task'}).click();

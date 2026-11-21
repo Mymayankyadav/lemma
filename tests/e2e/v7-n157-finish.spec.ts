@@ -22,20 +22,25 @@ for(const width of [390,1440])for(const scheme of ['light','dark'] as const)test
 });
 test('New block ruler changes the saved duration, with keyboard access and exact-version Undo',async({page})=>{
  await go(page,'/calendar?view=day&date='+DATE+'&quick=1',390);
- const sheet=page.getByRole('dialog',{name:'New block',exact:true}),slider=sheet.getByRole('slider',{name:'Length'});
+ const sheet=page.getByRole('dialog',{name:'New time block',exact:true}),slider=sheet.getByRole('slider',{name:'Length'});
  await expect(slider).toHaveValue('50');await slider.focus();await page.keyboard.press('ArrowRight');await expect(slider).toHaveValue('55');
- await sheet.getByLabel('Title',{exact:true}).fill('Ruler integration proof');await sheet.getByRole('button',{name:'Add block',exact:true}).click();
+ await sheet.getByRole('textbox',{name:'Calendar block title'}).fill('Ruler integration proof');await sheet.getByRole('button',{name:'Create block',exact:true}).click();
  const block=page.getByRole('button',{name:/Ruler integration proof, Planned study/});await expect(block).toBeVisible();
  await expect(block).toHaveAttribute('aria-label',/14:00–14:55/);
  await page.getByRole('button',{name:'Undo',exact:true}).click();await expect(block).toHaveCount(0);
 });
 test('Calendar ruler scrolls the actual day grid and exposes spoken times',async({page})=>{
  await go(page,'/calendar?view=day&date='+DATE,390);
- const slider=page.getByRole('slider',{name:'Browse day'}),grid=page.getByRole('region',{name:'Day time grid'});
- await expect(slider).toBeVisible();const before=await grid.evaluate(node=>node.scrollTop);
+ const browse=page.getByRole('button',{name:'Browse day',exact:true}),grid=page.locator('.v7-cal-scroll');
+ const sheet=page.getByRole('dialog',{name:'Browse day',exact:true}),slider=sheet.getByRole('slider',{name:'Time'});
+ await expect(slider).toHaveCount(0);
+ await expect(grid).toBeVisible();const before=await grid.evaluate(node=>node.scrollTop);
+ await browse.click();await expect(slider).toBeVisible();
  await slider.focus();await page.keyboard.press('End');await expect(slider).toHaveAttribute('aria-valuetext','23:55');
  await expect.poll(()=>grid.evaluate(node=>node.scrollTop)).toBeGreaterThan(before);
- await page.keyboard.press('Home');await expect.poll(()=>grid.evaluate(node=>node.scrollTop)).toBe(0);
+ await page.keyboard.press('Home');await expect(slider).toHaveAttribute('aria-valuetext','00:00');
+ await expect.poll(()=>grid.evaluate(node=>node.scrollTop)).toBe(0);
+ await page.keyboard.press('Escape');await expect(browse).toBeFocused();
  await expect(grid.locator('.v7-cal-gutter time').first()).toHaveText('00:00');
 });
 for(const width of [600,900,1280,1728])test('Cards and Paths keep list beside detail at '+width,async({page})=>{
@@ -53,11 +58,14 @@ for(const width of [600,900,1280,1728])test('Cards and Paths keep list beside de
 test('Phone and explicit flag-off navigation retain one page and the original controls',async({page})=>{
  await go(page,'/cards/1',390);await expect(page.locator('.v7-library-split')).toHaveCount(0);
  await page.setViewportSize({width:1280,height:844});await page.goto(url('/cards/1',false));await expect(page.locator('.v7-library-split')).toHaveCount(0);
- await page.goto(url('/calendar?view=day&date='+DATE,false));await expect(page.getByRole('slider',{name:'Browse day'})).toHaveCount(0);
+ await page.goto(url('/calendar?view=day&date='+DATE,false));await expect(page.getByRole('button',{name:'Browse day',exact:true})).toHaveCount(0);
 });
 test('New task opens the complete form and saves the entered title and estimate',async({page})=>{
  await go(page,'/tasks?new=1',390);const sheet=page.getByRole('dialog',{name:'New task',exact:true});
- await sheet.getByLabel('Title',{exact:true}).fill('Capture approval task');await sheet.getByLabel(/^Estimate · minutes/).fill('35');
+ await sheet.getByLabel('Title',{exact:true}).fill('Capture approval task');
+ await sheet.getByRole('button',{name:'More options',exact:true}).click();const estimate=sheet.getByRole('slider',{name:'Estimate'});
+ for(let step=0;step<7;step++)await estimate.press('ArrowRight');
+ await expect(estimate).toHaveValue('35');
  await sheet.getByRole('button',{name:'Save task',exact:true}).click();await expect(sheet).toHaveCount(0);
  await expect(page.locator('.v7-tk-row').filter({hasText:'Capture approval task'})).toContainText('35 min');
 });

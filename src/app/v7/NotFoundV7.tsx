@@ -10,7 +10,7 @@ import '../../ui/v7/empty-moment.css';
 export default function NotFoundV7(){
  const location=useLocation();
  return <main id="main-content" className="v7-page v7-not-found" aria-label="Page not found">
-  <HubHeader title="Not in the notebook"/>
+  <HubHeader title="Page not found"/>
   <section className="v7-card v7-not-found-card">
    <p className="v7-empty-title">This page isn't in the notebook.</p>
    <p className="v7-meta">The link may be old, or what it pointed to was deleted. <span className="v7-not-found-path">{location.pathname}</span></p>

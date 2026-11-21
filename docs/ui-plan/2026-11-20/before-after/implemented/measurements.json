@@ -1,0 +1,809 @@
+{
+  "before": {
+    "sourceCommit": "7d018c4da4416bc80979eb64d19c0d8b9677401f",
+    "dirty": true,
+    "viewport": [
+      390,
+      844
+    ],
+    "frames": [
+      {
+        "scene": "today",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 75,
+            "all": 128
+          },
+          "offFonts": [
+            "h2 Newsreader",
+            "h3 Newsreader"
+          ],
+          "offSizes": [
+            "h2 17.6px"
+          ],
+          "native": [
+            "summary"
+          ],
+          "overlaps": [],
+          "raw": [
+            "p"
+          ],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "review-hub",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 61,
+            "all": 87
+          },
+          "offFonts": [],
+          "offSizes": [
+            "small 24px",
+            "strong 40px"
+          ],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-day",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 37,
+            "all": 82
+          },
+          "offFonts": [
+            "h2 Newsreader"
+          ],
+          "offSizes": [
+            "h2 17.6px",
+            "small 12.8px"
+          ],
+          "native": [],
+          "overlaps": [],
+          "raw": [
+            "a"
+          ],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "atlas",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 14,
+            "all": 14
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": {
+            "clear": 0.6918238993710691,
+            "extent": null
+          },
+          "detail": false
+        }
+      },
+      {
+        "scene": "progress",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 104,
+            "all": 176
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "settings",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 38,
+            "all": 38
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "path",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 66,
+            "total": 119
+          },
+          "words": {
+            "view": 91,
+            "all": 180
+          },
+          "offFonts": [
+            "h2 Newsreader"
+          ],
+          "offSizes": [
+            "h2 17.6px",
+            "small 12.8px"
+          ],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "tutor-start",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 0,
+            "total": 53
+          },
+          "words": {
+            "view": 49,
+            "all": 49
+          },
+          "offFonts": [],
+          "offSizes": [
+            "h2 34px",
+            "p 15px",
+            "span.chip 13px"
+          ],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      }
+    ],
+    "capture": "Baseline phone flows",
+    "comparisonSource": "24c8a225"
+  },
+  "after": {
+    "sourceCommit": "7d018c4da4416bc80979eb64d19c0d8b9677401f",
+    "dirty": true,
+    "viewport": [
+      390,
+      844
+    ],
+    "frames": [
+      {
+        "scene": "review-hub",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 40,
+            "all": 66
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-day",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 25,
+            "all": 35
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-week",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 15,
+            "all": 16
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-month",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 59,
+            "all": 59
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "capture-sheet",
+        "account": "populated",
+        "facts": {
+          "chrome": null,
+          "words": {
+            "view": 17,
+            "all": 17
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "checkpoint",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 66,
+            "total": 119
+          },
+          "words": {
+            "view": 59,
+            "all": 133
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "session",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 66,
+            "total": 119
+          },
+          "words": {
+            "view": 68,
+            "all": 175
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "inbox",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 66,
+            "total": 119
+          },
+          "words": {
+            "view": 70,
+            "all": 84
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "progress",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 50,
+            "all": 133
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        },
+        "sourceCommit": "b8216a5eb2d301392adaf556b1429f1447b47df6",
+        "dirty": true
+      },
+      {
+        "scene": "settings",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 40,
+            "all": 40
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "today-next-step",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 47,
+            "all": 68
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "atlas-map",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 3,
+            "all": 3
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": {
+            "clear": 0.9253472222222222,
+            "extent": 0.6035621415901772
+          },
+          "detail": false
+        }
+      },
+      {
+        "scene": "atlas-list",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 56,
+            "bottom": 66,
+            "total": 122
+          },
+          "words": {
+            "view": 26,
+            "all": 176
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "atlas-peek",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 12,
+            "all": 12
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": {
+            "clear": 0.7769097222222222,
+            "extent": 0.5482238267148014
+          },
+          "detail": false
+        },
+        "sourceCommit": "65c0fcc963d2a44db92f57e11842abed86d343c3",
+        "dirty": true
+      },
+      {
+        "scene": "path",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 64,
+            "total": 117
+          },
+          "words": {
+            "view": 60,
+            "all": 66
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "tutor-start",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 0,
+            "total": 0
+          },
+          "words": {
+            "view": 40,
+            "all": 44
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "tutor-reading",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 0,
+            "total": 0
+          },
+          "words": {
+            "view": 36,
+            "all": 36
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "tutor-scratch",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 0,
+            "total": 0
+          },
+          "words": {
+            "view": 23,
+            "all": 24
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "settings-tutor",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 66,
+            "total": 119
+          },
+          "words": {
+            "view": 81,
+            "all": 94
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "review-done",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 53,
+            "bottom": 0,
+            "total": 53
+          },
+          "words": {
+            "view": 14,
+            "all": 14
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": true
+        }
+      },
+      {
+        "scene": "review-empty",
+        "account": "first-use",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 11,
+            "all": 11
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "review-nothing-due",
+        "account": "first-use",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 7,
+            "all": 7
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        },
+        "sourceCommit": "b8216a5eb2d301392adaf556b1429f1447b47df6",
+        "dirty": true
+      },
+      {
+        "scene": "today-first-run",
+        "account": "first-use",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 36,
+            "all": 36
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "offline",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 0,
+            "bottom": 66,
+            "total": 66
+          },
+          "words": {
+            "view": 61,
+            "all": 109
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "card-editor",
+        "account": "populated",
+        "facts": {
+          "chrome": null,
+          "words": {
+            "view": 22,
+            "all": 32
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      },
+      {
+        "scene": "calendar-agenda",
+        "account": "populated",
+        "facts": {
+          "chrome": {
+            "top": 52,
+            "bottom": 66,
+            "total": 118
+          },
+          "words": {
+            "view": 59,
+            "all": 107
+          },
+          "offFonts": [],
+          "offSizes": [],
+          "native": [],
+          "overlaps": [],
+          "raw": [],
+          "picture": null,
+          "detail": false
+        }
+      }
+    ],
+    "capture": "Implemented phone flows",
+    "comparisonSource": "checkout with implementation changes"
+  }
+}

@@ -104,7 +104,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   localStorage.removeItem(prefix+command.operationId)
  }
  function rpcCommand(command:Command){
-  const {connectorOperationId:_,...request}=command
+  const {connectorOperationId:_,attachments:__ ,...request}=command
   return request
  }
  async function dispatch(command:Command,persist=false):Promise<RpcResult>{
@@ -117,7 +117,9 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
    if(remembered!==null && remembered!==serialized)throw new Error('This pending operation changed.')
    writeTutorLocal(scope,key,serialized)
   }
-  const {data,error}=await client.rpc('tutor_owner_command',{...target,p_command:rpcCommand(command)})
+  const {data,error}=command.attachments
+   ?await client.rpc('tutor_owner_ink_command',{...target,p_command:rpcCommand(command),p_attachments:command.attachments})
+   :await client.rpc('tutor_owner_command',{...target,p_command:rpcCommand(command)})
   active()
   if(error){
    // Database rejection has no partial effect. Keep unknown transport outcomes retriable.
@@ -148,6 +150,7 @@ export function openLiveManualTutor(scope:Scope):ManualTutor {
   const objective=draft.selectedContext.find(selection=>selection.kind==='checkpoint')?.excerpt
   const source=draft.selectedContext.find(selection=>selection.kind==='source')
   return {operation:'start',operationId:id,expectedVersion:sequence,question:draft.question,
+   ...(draft.attachments?.length?{attachments:draft.attachments}:{}),
    ...(draft.localExcerpt?{localExcerpt:draft.localExcerpt.text}:{}),...(objective?{objective}:{}),...(source?{source}:{})}
  }
  async function confirmDelivery(turnId:string,{grantId,expiresAt}:ConnectorReceipt,operationId:string):Promise<ConnectorDelivery|undefined>{

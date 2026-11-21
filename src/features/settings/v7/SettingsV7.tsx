@@ -1,5 +1,7 @@
+import {setTutorAutomatic,setTutorRecognition,useTutorInputPreferences} from '../../tutor/input/inputPreferences';
+import {PlanningGoals} from '../../insights/v7/GoalEditor';
 import {useStudyUi} from '../../../data/StudyUiRelease';
-import {AtlasSettings} from '../../adaptive/AtlasPanels';
+import {Diagnostics} from '../../adaptive/panels/Diagnostics';
 import {lazy,Suspense,useEffect,useRef,useState,type ReactNode} from 'react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {setHapticsEnabled} from '../../../ui/v7/haptics';
@@ -34,8 +36,8 @@ import {PAPERS,SKIES,choosePaper,chooseSky,readPaper,readSky,type Paper,type Sky
 const PhoneAbout=lazy(()=>import('./PhoneSettings').then(module=>({default:module.PhoneAbout})));
 
 type Mode='auto'|'day'|'night';
-type Section='appearance'|'tutor'|'study'|'planning'|'reminders'|'subjects'|'data';
-const sectionTitle:Record<Section,string>={appearance:'Appearance',tutor:'Tutor',study:'Study and review',planning:'Planning',reminders:'Reminders',subjects:'Subjects',data:'Data and account'};
+type Section='appearance'|'tutor'|'study'|'planning'|'reminders'|'subjects'|'data'|'advanced';
+const sectionTitle:Record<Section,string>={appearance:'Appearance',tutor:'Tutor',study:'Study and review',planning:'Planning',reminders:'Reminders',subjects:'Subjects',data:'Data and account',advanced:'Advanced'};
 /** Old `?section=` links keep working: each v6 section id opens the v7 page that now holds it. */
 const legacySection:Record<string,Section>={appearance:'appearance',connector:'tutor',tutor:'tutor',study:'study',activities:'study',focus:'study',planning:'planning',reminders:'reminders',notifications:'reminders',subjects:'subjects',account:'data',export:'data'};
 export const sectionOf=(value:string|null):Section|null=>value?legacySection[value]??((value in sectionTitle)?value as Section:null):null;
@@ -45,6 +47,7 @@ const modeWord:Record<Mode,string>={auto:'Auto',day:'Day',night:'Night'};
 export function settingsSummary(section:Section,settings:Settings|undefined,subjectCount:number,mode:Mode,systemNight:boolean,tutorReleased=false):string{
  if(!settings)return '';
  switch(section){
+  case 'advanced':return 'Diagnostics';
   case 'appearance':return mode==='auto'?(systemNight?'Night':'Day')+' · follows the system':modeWord[mode];
   case 'tutor':
    if(tutorReleased)return settings.connectorLastSeenAt?'Checkpoint chat · Connector used':'Checkpoint chat';
@@ -56,8 +59,8 @@ export function settingsSummary(section:Section,settings:Settings|undefined,subj
   case 'data':return getMode()==='demo'?'Example workspace':'Export, sign out or delete';
  }
 }
-const icons:Record<Section,typeof Palette>={appearance:Palette,tutor:MessageCircle,study:MEANING_ICON.study,planning:CalendarClock,reminders:Bell,subjects:Shapes,data:Database};
-const groups:Section[][]=[['appearance','tutor'],['study','planning','reminders'],['subjects','data']];
+const icons:Record<Section,typeof Palette>={appearance:Palette,tutor:MessageCircle,study:MEANING_ICON.study,planning:CalendarClock,reminders:Bell,subjects:Shapes,data:Database,advanced:Shapes};
+const groups:Section[][]=[['appearance','tutor'],['study','planning','reminders'],['subjects','data','advanced']];
 
 function ThemeCard({mode,selected,onSelect}:{mode:Mode;selected:boolean;onSelect:()=>void}){
  return <button type="button" role="radio" aria-checked={selected} className="v7-theme-card" onClick={onSelect}>
@@ -153,6 +156,7 @@ function Subjects({settings}:{settings:Settings}){
 }
 function Tutor({settings,released}:{settings:Settings;released:boolean}){
  const rotate=useRotateConnectorSecret(),notify=useToast(),[revealed,setRevealed]=useState(false);
+ const input=useTutorInputPreferences();
  const lastUsed=settings.connectorLastSeenAt?new Date(settings.connectorLastSeenAt):null;
  return <div className="v7-settings-body">
   {released&&<Group title="Checkpoint tutor">
@@ -161,6 +165,13 @@ function Tutor({settings,released}:{settings:Settings;released:boolean}){
    <InfoRow label="ChatGPT plan on this phone" value="Unavailable" hint="Lemma needs provider approval for direct access to a ChatGPT plan."/>
    <InfoRow label="Last connector activity" value={lastUsed&&Number.isFinite(lastUsed.getTime())?lastUsed.toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}):'No activity recorded'}/>
   </Group>}
+  <Group title="Math input beta">
+   <li className="v7-set-switch"><Switch label="Draw single symbols" checked={input.recognition}
+    onChange={enabled=>{if(!setTutorRecognition(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
+   <li className="v7-set-switch"><Switch label="Automatic insertion when qualified" checked={input.automatic} disabled={!input.recognition}
+    onChange={enabled=>{if(!setTutorAutomatic(enabled))notify('Could not save math input settings.',{tone:'danger'});}}/></li>
+   <InfoRow label="Choose a match" hint="Draw one symbol at a time on this device. The beta requires a tap to insert a match."/>
+  </Group>
   <div className="v7-settings-card">
    <p className="v7-eyebrow">Connector address</p>
    <ConnectorAddress value={revealed?settings.connectorUrl:settings.connectorUrl.replace(/\/[^/]+$/,'/••••••')}/>
@@ -179,7 +190,7 @@ function Legacy({children}:{children:ReactNode}){return <div className="v7-setti
 /** PLAN §6.14 Settings: grouped index rows with the current value; Appearance and Subjects rebuilt; the other sections keep
  *  their forms on v7 pages with their `?section=` links. */
 export default function SettingsV7(){
- const [params]=useSearchParams(),navigate=useNavigate(),settings=useSettings(),subjects=useSubjects(),signOut=useSignOut();
+ const [params,setParams]=useSearchParams(),navigate=useNavigate(),settings=useSettings(),subjects=useSubjects(),signOut=useSignOut();
  const tutorReleased=usePlanRelease('tutorThreads');
  const section=sectionOf(params.get('section'));
  const location=useLocation(),navigation=useNavigationType(),heading=useRef<HTMLHeadingElement>(null);
@@ -209,7 +220,12 @@ export default function SettingsV7(){
   {section==='study'&&(params.get('advanced')==='1'
    ?<div className="v7-settings-body"><h2 className="v7-subhead">Advanced</h2><Legacy><StudyDefaults settings={data} part="study"/></Legacy><Legacy><Focus settings={data}/></Legacy><Legacy><Activities/></Legacy></div>
    :<StudyLists settings={data} onAdvanced={()=>navigate('/settings?section=study&advanced=1')}/>)}
-  {section==='planning'&&<><AtlasSettings/><PlanningLists settings={data}/></>}
+  {section==='planning'&&<><PlanningLists settings={data} capacityRequested={params.get('capacity')==='1'} onCapacityOpen={()=>{
+   const next=new URLSearchParams(params);
+   next.delete('capacity');
+   setParams(next,{replace:true});
+  }}/><PlanningGoals/></>}
+  {section==='advanced'&&<><h2 className="v7-subhead">Diagnostics</h2><Diagnostics/></>}
   {section==='reminders'&&<ReminderLists settings={data}/>}
   {section==='data'&&<>
    <DataAccount demo={getMode()==='demo'} signingOut={signOut.isPending} onSignOut={()=>{void signOut.mutateAsync().then(()=>navigate('/sign-in'));}}/>

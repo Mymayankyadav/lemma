@@ -1,12 +1,12 @@
 import {useState, useSyncExternalStore} from 'react';
-import {Link, Navigate, useParams} from 'react-router';
+import {Link, Navigate, useParams,useSearchParams} from 'react-router';
 import {DetailHeader} from '../../app/v7/V7Shell';
 import {authGeneration, authOwner, onAccountChange} from '../../data/authBoundary';
 import {useCheckpoint, useProject, useSettings} from '../../data/hooks';
 import {getMode} from '../../data/mode';
 import {tutorOwnerDeleted} from '../../data/tutor/local-storage';
 import {isFlagOn} from '../../flags';
-import {chatLink, studyPrompt} from '../../lib/chat';
+import {chatLink, planPrompt, studyPrompt} from '../../lib/chat';
 import {CheckpointTutor} from './DemoCheckpointTutor';
 import {TutorLayout, type TutorPageContext} from './TutorLayout';
 import {tutorHref} from './tutorHref';
@@ -40,7 +40,8 @@ export default function TutorPage() {
       <h1>{project.data.project.title}</h1>
       {checkpoints.length ? <><p>Choose a checkpoint to continue with your tutor.</p>
         {checkpoints.map(cp => <Link key={cp.id} to={tutorHref(slug, cp.code)}>{cp.title}</Link>)}</>
-        : <p>Approve a checkpoint in your plan to start a tutor conversation.</p>}
+        : <><p>This path has no plan yet.</p><a className="v7-button v7-primary"
+          href={chatLink('claude',planPrompt(project.data.project.title))} target="_blank" rel="noopener noreferrer">Plan with your tutor</a></>}
       <Link to={'/p/' + encodeURIComponent(slug)}>Back to path</Link>
     </main>;
   }
@@ -49,6 +50,7 @@ export default function TutorPage() {
 
 function SelectedTutor({slug, code, project}: {slug: string; code: string; project: ProjectDetail}) {
   useSyncExternalStore(onAccountChange, authGeneration);
+  const [params]=useSearchParams();
   const checkpoint = useCheckpoint(slug, code), settings = useSettings();
   const detail = checkpoint.data;
   if (!detail || detail.view.code !== code) return <RouteMessage slug={slug}
@@ -60,7 +62,7 @@ function SelectedTutor({slug, code, project}: {slug: string; code: string; proje
     return <RouteMessage slug={slug} message="Reopen this checkpoint with its signed-in account." retry={() => void checkpoint.refetch()}/>;
   const page: TutorPageContext = {project, detail, client: settings.data?.preferredChat ?? 'claude'};
   if (live && !isFlagOn('tutorThreads')) return <HandoffOnly page={page}/>;
-  return <CheckpointTutor page={page} connectorUrl={live ? settings.data?.connectorUrl : undefined}
+  return <CheckpointTutor initialQuestion={params.get('question')?.trim().slice(0,2000)} page={page} connectorUrl={live ? settings.data?.connectorUrl : undefined}
     connectorLoading={live && settings.isPending} scope={{pathId: slug, checkpointId: detail.view.id, title: detail.view.title,
     objective: detail.objective, sourceShort: detail.sourceShort, authScope: detail.authScope,
     linkedSessions: detail.sessions.filter(s => s.display !== 'ended')}}/>;
@@ -73,7 +75,7 @@ function HandoffOnly({page}: {page: TutorPageContext}) {
   return <TutorLayout page={page} sequence={0}>
     <div className="chat"><p>Saved conversations are unavailable. Open this checkpoint in your tutor to continue.</p>
       <label>Question<textarea className="v7-field" value={draft} maxLength={2000} onChange={e => setDraft(e.target.value)}/></label>
-      <a className="btn primary" href={chatLink(page.client, [prompt, draft].filter(Boolean).join('\n\n'))}
+      <a className="v7-button v7-primary" href={chatLink(page.client, [prompt, draft].filter(Boolean).join('\n\n'))}
         target="_blank" rel="noopener noreferrer">Open {page.client === 'claude' ? 'Claude' : 'ChatGPT'}</a>
     </div>
   </TutorLayout>;

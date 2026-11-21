@@ -1,3 +1,4 @@
+import {currentStudyStep} from '../../project/v7/pathModel';
 import type {DeckNode,ProjectStatus,ProjectSummary} from '../../../data/types';
 
 /** PLAN §6.8. Pure rules for the v7 Paths hub: filters, order, subject headings and the due count per path. */
@@ -49,10 +50,9 @@ export function dueBySlug(nodes:readonly DeckNode[]|undefined):Map<string,number
 }
 /** "Now: Compactness · step 3 of 4", or a plain status line when nothing is current. */
 export function nowLine(project:ProjectSummary):string{
- const current=project.current;
- if(!current)return project.total===0?'Waiting for a plan from your tutor':project.done>=project.total?'Every checkpoint demonstrated':'No current checkpoint';
- const total=Math.max(0,current.stepsTotal),step=total?Math.min(Math.max(1,current.step),total):0;
- return 'Now: '+current.title+(total?' · step '+step+' of '+total:'');
+ if(!project.current)return project.total>0?'Plan complete':'No plan yet';
+ const step=currentStudyStep({currentStep:project.current.step,stepsTotal:project.current.stepsTotal});
+ return project.current.title+(step.ordinal===null?'':' · step '+step.ordinal+' of '+step.total);
 }
 /** The schedule chip only when the app has a forecast: "On track" is good, anything "behind" is a warning. */
 export function scheduleTone(headline:string|null|undefined):{text:string;tone:'success'|'warning'|'info'}|null{

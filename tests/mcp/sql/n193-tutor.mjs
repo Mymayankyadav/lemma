@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {readdir,readFile} from 'node:fs/promises';
 import {openN191Postgres} from './fixtures/n191-pg-fixture.mjs';
+import {checkTutorInk} from './fixtures/n208-tutor-ink-contract.mjs';
 import {checkRegularTutorConnector} from './fixtures/n201-connector-contract.mjs';
 
 const db=process.env.NOTIF_TEST_DATABASE_URL ? await openN191Postgres(process.env.NOTIF_TEST_DATABASE_URL) :
@@ -39,13 +40,25 @@ try {
     nullif(coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb->>'sub','')::uuid,
     nullif(current_setting('test.uid',true),'')::uuid) $a$;
   grant usage on schema auth to authenticated; grant execute on function auth.uid() to authenticated;`);
+ await db.exec(`create schema storage;
+  create table storage.buckets(id text primary key,name text,public boolean,file_size_limit integer,allowed_mime_types text[]);
+  create table storage.objects(bucket_id text,name text,owner_id text,created_at timestamptz default clock_timestamp(),metadata jsonb,
+    primary key(bucket_id,name));
+  alter table storage.objects enable row level security;
+  create function storage.foldername(value text) returns text[] language sql immutable as
+    'select (string_to_array(value,''/''))[1:cardinality(string_to_array(value,''/''))-1]';
+  create function storage.filename(value text) returns text language sql immutable as
+    'select (string_to_array(value,''/''))[cardinality(string_to_array(value,''/''))]';
+  grant usage on schema storage to authenticated;
+  grant select,insert on storage.objects to authenticated;
+ `);
  if(db.native)await db.exec('create extension pgcrypto with schema extensions');
  else await db.exec("create function extensions.gen_random_bytes(n int) returns bytea language sql as $b$ select decode(repeat('00',n),'hex') $b$");
  const dir=new URL('../../../supabase/migrations/',import.meta.url);
  let names=(await readdir(dir)).filter(name=>name.endsWith('.sql')&&!name.includes('_storage')).sort();
  // --include-all can install the tutor migrations after the previously deployed, future-dated chain.
  if(process.env.N193_TEST_MIGRATION_LAST==='1'){
-  const tutorMigration=name=>/_(n193_tutor_threads|n201_tutor_\w+)\.sql$/.test(name);
+  const tutorMigration=name=>/_(n193_tutor_threads|n201_tutor_\w+|tutor_presence|tutor_ink)\.sql$/.test(name);
   names=[...names.filter(name=>!tutorMigration(name)),...names.filter(tutorMigration)];
  }
  for(const name of names){
@@ -291,6 +304,7 @@ try {
  await denied(ownerCmd(cmd('start',{question:'Disabled',expectedVersion:3})),'55000');
  await as('service_role');await denied(hostCmd(hash,{operation:'get',turnId}));
  if(db.native)await checkRegularTutorConnector({db,owner,other,as,one,ownerCmd,state,denied});
+ await checkTutorInk({db,owner,other,slug,objective,seed,as,q,one,ownerCmd,state,denied});
  await as('service_role');await q('select public.lemma_begin_account_delete($1)',[owner]);
  await as('authenticated',owner);await denied(state());
  await as('service_role');await q('select public.lemma_purge_account_rows($1)',[owner]);

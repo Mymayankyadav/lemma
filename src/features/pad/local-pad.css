@@ -67,3 +67,4 @@ html[data-native-app] .local-pad-controls button {min-width:48px; min-height:48p
 .local-pad-page h2,.local-pad-page p,.local-pad-page a {overflow-wrap:anywhere}
 .local-pad-page :is(button,a,input,select,textarea):focus-visible {outline:2px solid var(--ink,currentColor); outline-offset:3px}
 @media (max-width:360px) {.local-pad-page {padding-inline:.75rem}.local-pad-chooser {padding:.75rem}}
+:where(html[data-v7]) .v7-page.local-pad-page {padding-inline:var(--v7-page-margin);}

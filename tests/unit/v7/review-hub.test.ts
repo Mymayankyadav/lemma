@@ -45,10 +45,10 @@ describe('v7 review hub model',()=>{
   expect(roundSummary([],{startedAt:'2026-11-11T09:00:00Z',endedAt:'2026-11-11T09:01:00Z',graded:3})).toMatchObject({recalledPct:null,seconds:60,counted:0});
  });
  it('formats minutes and seconds',()=>{expect(clock(75)).toBe('1:15');expect(clock(5)).toBe('0:05');});
- it('routes the hub always and the results page only for a saved run',()=>{
+ it('routes the hub and direct results through v7',()=>{
   expect(v7ScreenFor('/review')).toBe('review');
   expect(v7ScreenFor('/review/done','?run=abc')).toBe('review-done');
-  expect(v7ScreenFor('/review/done')).toBeNull();
+  expect(v7ScreenFor('/review/done')).toBe('review-done');
   expect(v7ScreenFor('/practice')).toBe('practice');
  });
 });

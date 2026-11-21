@@ -1,7 +1,10 @@
-import {AttemptHistory} from '../../adaptive/AtlasPanels';
+import {AttemptHistory} from '../../adaptive/panels/LearningDetails';
+import {Dock} from '../../../ui/v7/Dock';
 import {useState} from 'react';
-import {Link,useParams} from 'react-router';
-import {ChevronRight,Copy} from 'lucide-react';
+import {Link,useNavigate,useParams} from 'react-router';
+import {ChevronRight,Copy,ExternalLink} from 'lucide-react';
+import {MoreActions} from '../../../ui/v7/ActionSheet';
+import {tutorHref} from '../../tutor/tutorHref';
 import {useProject,useResolveMisconception,useSession,useSettings} from '../../../data/hooks';
 import {DetailHeader} from '../../../app/v7/V7Shell';
 import {isFlagOn} from '../../../flags';
@@ -22,10 +25,10 @@ import '../../project/v7/learning.css';
 
 const clientName=(client:string)=>client==='claude'?'Claude':client==='chatgpt'?'ChatGPT':'Tutor';
 
-/** PLAN §6.9 Session: goal as the title with its chips, a summary card, the timeline with times, and "Start another session". */
+/** PLAN §6.9 Session: goal as the title with its chips, a summary card, the timeline with times, and "Continue with tutor". */
 export default function SessionV7(){
  const {slug='',n=''}=useParams(),number=Number(n),query=useSession(slug,number),project=useProject(slug),settings=useSettings(),notify=useToast();
- const resolve=useResolveMisconception();
+ const resolve=useResolveMisconception(),navigate=useNavigate();
  const [shown,setShown]=useState(40),[cards,setCards]=useState(5);
  const zone=ownerZone(settings.data),session=query.data,summary=session?.summary;
  const title=project.data?.project.title??slug,klass=subjectClass(kitSubject(project.data?.subject.name??''));
@@ -45,7 +48,11 @@ export default function SessionV7(){
  const open=session.misconceptions.filter(item=>!item.resolvedAt);
  const pending=session.pendingProposals.cards+session.pendingProposals.planChanges;
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Session">
-  <DetailHeader title={isFlagOn('v7Room')?plainMath(summary.goal):'Session '+summary.number} back={back}/>
+  <DetailHeader title={isFlagOn('v7Room')?plainMath(summary.goal):'Session '+summary.number} back={back}
+   extraAction={<MoreActions label="More session actions" title={'Session '+summary.number} items={[
+    {label:'Open in '+clientName(settings.data?.preferredChat??'claude'),icon:<ExternalLink/>,onClick:launch},
+    {label:'Copy tutor prompt',icon:<Copy/>,onClick:()=>{void navigator.clipboard.writeText(resumePrompt(title)).then(()=>notify('Tutor prompt copied')).catch(()=>notify('Could not copy the prompt.'));}},
+   ]}/>}/>
   {/* N157 · U1 S11 (flag v7Margin): where this session sits on its path, and its pages. */}
   <Margin notes={[
    {title:'Path',body:<p><Link to={'/p/'+encodeURIComponent(slug)}>{title}</Link>{summary.checkpointCode&&<> · <Link to={'/p/'+encodeURIComponent(slug)+'/cp/'+encodeURIComponent(summary.checkpointCode)}>{project.data?.checkpoints.find(item=>item.code===summary.checkpointCode)?.title??summary.checkpointCode}</Link></>}</p>},
@@ -61,7 +68,6 @@ export default function SessionV7(){
     <StatusBadge tone={goal.tone}>{goal.text}</StatusBadge>
    </div>
   </header>
-  <AttemptHistory sessionId={session.summary.id}/>
   <section className="v7-learn-card" aria-label="Summary">
    <p className="v7-eyebrow">Summary</p>
    {session.summaryText?<MathText source={session.summaryText}/>:<p className="v7-meta">Your tutor has not written a summary yet.</p>}
@@ -78,14 +84,15 @@ export default function SessionV7(){
     :<p className="v7-learn-empty">No reasoning was recorded in this session.</p>}
    {shown<events.length&&<Button onClick={()=>setShown(value=>value+40)}>Show {Math.min(40,events.length-shown)} more</Button>}
   </section>
+  <AttemptHistory sessionId={summary.id}/>
   {session.cards.length>0&&<section aria-label="Cards from this session"><h2 className="v7-learn-h2">{sessionCardSummary(session.cards.length,session.cards.filter(card=>card.state==='pending').length)}</h2>
    <ul className="v7-learn-list">{session.cards.slice(0,cards).map((card,index)=><li key={card.noteNo+'-'+index}>
     <Link className="v7-learn-row" to={card.state==='pending'?'/proposals':'/cards/'+card.noteNo}><span className="v7-learn-front"><MathText source={card.front}/></span><small>{card.state==='pending'?'Waiting for approval':'In your cards'}</small><ChevronRight aria-hidden="true"/></Link></li>)}</ul>
    {cards<session.cards.length&&<Button onClick={()=>setCards(value=>value+20)}>Show {Math.min(20,session.cards.length-cards)} more cards</Button>}
   </section>}
   {pending>0&&<Link className="v7-learn-row" to="/proposals"><span>{pending} {pending===1?'proposal':'proposals'} waiting in your Inbox</span><ChevronRight aria-hidden="true"/></Link>}
-  <div className="v7-learn-bar v7-learn-bar-single" role="group" aria-label="Session actions">
-   <Button variant="primary" onClick={launch}>{summary.display==='ended'?'Start another session':'Resume session'}</Button>
-  </div>
+  <Dock className="v7-learn-bar v7-learn-bar-single" role="group" aria-label="Session actions">
+   <Button variant="primary" onClick={()=>navigate(tutorHref(slug,summary.checkpointCode||undefined))}>{summary.display==='ended'?'Continue with tutor':'Resume session'}</Button>
+  </Dock>
  </main>;
 }

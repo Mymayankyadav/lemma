@@ -90,7 +90,7 @@ describe('V34 · copy',()=>{
   expect(readFileSync('src/features/settings/v7/SettingsV7.tsx','utf8')).not.toContain("' · glyph '");
   const progress=readFileSync('src/features/insights/v7/ProgressV7.tsx','utf8');
   expect(progress).not.toContain("' in tutor sessions'");
-  expect(progress.match(/format=\{axis\} totalFormat=\{minutes\}/g)).toHaveLength(3);
+  expect(progress).toContain('kind="bars" format={axis} totalFormat={minutes}');
  });
 });
 

@@ -15,6 +15,12 @@ export type SourcePatch = Partial<Pick<Source, 'title' | 'kind'>>
 export interface ProposalEdit { front?: string; back?: string; type?: NoteType; kind?: NoteKind }
 export interface CreateNoteInput { projectSlug: string; front: string; back: string; type: NoteType; kind: NoteKind; checkpointCode?: string }
 export type NotePatch = Partial<Pick<CardDetail['note'], 'front' | 'back' | 'type' | 'kind' | 'tags'>>
+export interface NoteStatusGuard {
+ noteId:string
+ ownerId:string|null
+ generation:number
+ expectedStatus:NoteStatus
+}
 export type InsightDays = 7 | 30 | 90
 export interface ReviewLogEntry { cardId: string; reviewedAt: string; rating: Rating }
 /** N105.2: only the audited owner command changes the concept graph. */
@@ -176,7 +182,7 @@ export interface LemmaApi {
  /** Edit note content and reconcile card ordinals. */
  updateNote(noteNo: number, patch: NotePatch): Promise<void>
  /** Activate, suspend or soft-delete a note. */
- setNoteStatus(noteNo: number, status: NoteStatus): Promise<void>
+ setNoteStatus(noteNo: number, status: NoteStatus, guard?: NoteStatusGuard): Promise<void>
  /** Leave a note for the tutor. */
  addComment(noteNo: number, body: string): Promise<CardComment>
  /** Dismiss a tutor comment. */

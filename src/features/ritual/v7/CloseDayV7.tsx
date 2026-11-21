@@ -1,3 +1,4 @@
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {isFlagOn} from '../../../flags';
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react';
@@ -54,7 +55,7 @@ export default function CloseDayV7(){
  const zone=ownerZone(settings.data),today=useMemo(()=>ownerCivilDate(new Date(),zone),[zone]);
  const given=params.get('date');
  const {date,invalid}=useMemo(()=>{if(given===null)return {date:today,invalid:false};try{return {date:civilPlanDate(given),invalid:false};}catch{return {date:today,invalid:true};}},[given,today]);
- // N157 · U4 S3 / V25 (flag v7Qed): Close the day as one page written like a proof: Given and shown, Left open, Tomorrow
+ // N157 · U4 S3 / V25 (flag v7Qed): Close the day as one page written like a proof: Today, Left open, Tomorrow
  // opens with, and one button "Close the day ∎". Without the flag, the three steps as before.
  const page=isFlagOn('v7Qed');
  const [step,setStep]=useState<CloseStep>(0),[data,setData]=useState<DayData|null>(null),[error,setError]=useState(''),[reload,setReload]=useState(0);
@@ -161,9 +162,9 @@ export default function CloseDayV7(){
   {invalid&&<p role="alert" className="v7-alert">Choose a real YYYY-MM-DD date.</p>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
   {!invalid&&!data&&!error&&<Loader className="v7-meta" label="Loading your day…"/>}
-  {data&&(page||step===0)&&<section className="v7-cd-step" aria-label={page?'Given and shown':'Today'}>
+  {data&&(page||step===0)&&<section className="v7-cd-step" aria-label={page?'Today':'Today'}>
    <p className="v7-eyebrow">{date===today?'Today · ':''}{dayName}</p>
-   {page?<h2 className="v7-subhead">Given and shown</h2>:<h1 className="v7-hub-title">Today</h1>}
+   {page?<h2 className="v7-subhead">Today</h2>:<h1 className="v7-hub-title">Today</h1>}
    <p className="v7-cd-figure" aria-label={lead.value+' '+lead.unit+' '+lead.line}>{lead.value}<small>{'\u00a0'+lead.unit}</small></p>
    <p className="v7-meta">{lead.line}</p>
    {rows.length>0&&<div className="v7-cd-meters">{rows.map(row=><MeterRow key={row.key} label={row.label} value={row.value} max={row.max}/>)}</div>}
@@ -191,13 +192,13 @@ export default function CloseDayV7(){
     options={['Not chosen yet',...data.tasks.map(task=>task.title)]} onChange={title=>setFirst(data.tasks.find(task=>task.title===title)?.id??'')}/>}
    {already&&<p className="v7-meta" role="status"><Check aria-hidden="true"/> This day is closed.</p>}
   </section>}
-  {data&&page&&<footer className="v7-cd-footer v7-cd-footer-page">
+  {data&&page&&<Dock inset="edge" className="v7-cd-footer v7-cd-footer-page">
    <Button variant="primary" loading={busy} disabled={already} onClick={()=>{void finish();}}>{already?'Day already closed':<>Close the day<span className="v7-qed-mark" aria-hidden="true"> ∎</span></>}</Button>
-  </footer>}
-  {data&&!page&&<footer className="v7-cd-footer">
+  </Dock>}
+  {data&&!page&&<Dock inset="edge" className="v7-cd-footer">
    {step>0?<Button variant="ghost" onClick={()=>setStep((step-1) as CloseStep)}>Back</Button>:<span/>}
    {step<2?<Button variant="primary" onClick={()=>setStep((step+1) as CloseStep)}>Next</Button>
     :<Button variant="primary" loading={busy} disabled={already} onClick={()=>{void finish();}}>{already?'Day already closed':'Close the day'}</Button>}
-  </footer>}
+  </Dock>}
  </main>;
 }

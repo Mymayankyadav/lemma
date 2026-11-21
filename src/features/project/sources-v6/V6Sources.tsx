@@ -78,7 +78,7 @@ function V6SourcesWithStats({projectId,sources,manage,focusSourceId}:Props){
        <p className="mt-1 text-caption text-ink-2">
         {source.planCheckedAt?'Checked against plan '+new Intl.DateTimeFormat('en',{month:'short',day:'numeric'}).format(new Date(source.planCheckedAt)):'Not yet checked against plan'}</p>
        <div className="mt-3 min-w-0 break-words [overflow-wrap:anywhere]">
-        <SourceTranscriptionView source={source} stat={stat}/></div>
+        <SourceTranscriptionView source={source} stat={stat} showCoverage={false}/></div>
       </div>
      </div>
     </li>;

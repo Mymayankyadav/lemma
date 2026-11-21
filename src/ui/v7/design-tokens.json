@@ -2016,6 +2016,30 @@
         "$type": "string",
         "$value": "10%"
       },
+      "z-base": {
+        "$type": "number",
+        "$value": 0
+      },
+      "z-sticky": {
+        "$type": "number",
+        "$value": 8
+      },
+      "z-dock": {
+        "$type": "number",
+        "$value": 20
+      },
+      "z-sheet": {
+        "$type": "number",
+        "$value": 25
+      },
+      "z-toast": {
+        "$type": "number",
+        "$value": 30
+      },
+      "z-modal": {
+        "$type": "number",
+        "$value": 40
+      },
       "menu-layer": {
         "$type": "number",
         "$value": "10"
@@ -2509,6 +2533,36 @@
         "$type": "string",
         "$value": "{foundation.raw.hero-alpha}",
         "$description": "Shared hero alpha foundation."
+      },
+      "z-base": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-base}",
+        "$description": "Page content."
+      },
+      "z-sticky": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-sticky}",
+        "$description": "Sticky page controls."
+      },
+      "z-dock": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-dock}",
+        "$description": "Pinned action bars."
+      },
+      "z-sheet": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-sheet}",
+        "$description": "Sheets and map details."
+      },
+      "z-toast": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-toast}",
+        "$description": "Toast messages."
+      },
+      "z-modal": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-modal}",
+        "$description": "Modal overlays."
       },
       "menu-layer": {
         "$type": "number",

@@ -264,6 +264,8 @@ export function Sheet({
   footer,
   full = false,
   hideTitle = false,
+  focusTitle = false,
+  containFocus = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -275,6 +277,9 @@ export function Sheet({
   full?: boolean;
   /** The body's first field is the header (SE3); the title stays for assistive technology. */
   hideTitle?: boolean;
+  focusTitle?: boolean;
+  /** Wrap Tab at the modal boundaries, including when browser chrome would be next. */
+  containFocus?: boolean;
 }) {
   const ref = useRef<HTMLDialogElement>(null),
     id = useId(),
@@ -299,7 +304,30 @@ export function Sheet({
       ref={ref}
       className={`v7-sheet${full ? " v7-sheet-full" : ""}`}
       aria-labelledby={id}
+      onKeyDown={containFocus ? (event) => {
+        const dialog = event.currentTarget;
+        const active = document.activeElement;
+        if (event.key !== "Tab" || event.defaultPrevented || active?.closest("dialog") !== dialog) return;
+        const controls = [...dialog.querySelectorAll<HTMLElement>("button, a[href], input, select, textarea, [tabindex]")]
+          .filter(control => control.tabIndex >= 0 && !control.matches(":disabled")
+            && control.closest("dialog") === dialog && control.getClientRects().length > 0
+            && getComputedStyle(control).visibility === "visible");
+        const radioName = (control: Element | null) =>
+          control instanceof HTMLInputElement && control.type === "radio" ? control.name : "";
+        const sameStop = (control: Element | null, edge: HTMLElement) =>
+          control === edge || (!!radioName(edge) && radioName(control) === radioName(edge));
+        const first = controls[0], last = controls[controls.length - 1];
+        const edge = event.shiftKey ? first : last;
+        if (edge && !sameStop(active, edge) && !(event.shiftKey && active instanceof HTMLElement && active.tabIndex < 0)) return;
+        event.preventDefault();
+        const opposite = event.shiftKey ? last : first;
+        if (opposite) {
+          const checked = radioName(opposite) && controls.find(control => sameStop(control, opposite) && control.matches(":checked"));
+          (checked || opposite).focus();
+        } else dialog.focus();
+      } : undefined}
       onCancel={(e) => {
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         close.current();
       }}
@@ -320,7 +348,8 @@ export function Sheet({
       <header className="v7-sheet-header">
         <div>
           {eyebrow && <p className="v7-eyebrow">{eyebrow}</p>}
-          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-headline"}>
+          <h2 id={id} className={hideTitle ? "v7-sr-only" : "v7-headline"} tabIndex={focusTitle ? -1 : undefined}
+            data-v7-autofocus={focusTitle ? "true" : undefined}>
             {title}
           </h2>
         </div>
@@ -341,6 +370,7 @@ export function Picker({
   disabled = false,
   disabledReason,
   optional = false,
+  containFocus = false,
 }: {
   label: string;
   value: string;
@@ -349,6 +379,7 @@ export function Picker({
   disabled?: boolean;
   disabledReason?: string;
   optional?: boolean;
+  containFocus?: boolean;
 }) {
   const [open, setOpen] = useState(false),
     [query, setQuery] = useState(""),
@@ -356,6 +387,7 @@ export function Picker({
     id = useId(),
     ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if(typeof matchMedia!=="function")return;
     const media = matchMedia("(min-width:700px)");
     const update = () => {
       setDesktop(media.matches);
@@ -450,6 +482,7 @@ export function Picker({
           open={open && !desktop}
           onClose={() => setOpen(false)}
           title={label}
+          containFocus={containFocus}
         >
           {search}
           <div role="radiogroup" aria-label={label}>
@@ -480,14 +513,25 @@ export function DatePicker({
   onChange,
   label = "Date",
   today,
+  compact = false,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: {
   value: string;
   today?: string;
+  compact?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
   onChange: (v: string) => void;
   label?: string;
 }) {
-  const [open, setOpen] = useState(false),
+  const [localOpen, setLocalOpen] = useState(false),
     [month, setMonth] = useState(() => new Date(value + "T12:00:00"));
+  const open = controlledOpen ?? localOpen;
+  const setOpen = (value: boolean) => {setLocalOpen(value);onOpenChange?.(value);};
+  useEffect(() => {if (open) setMonth(new Date(value + "T12:00:00"));}, [open, value]);
   const selected = new Date(value + "T12:00:00");
   const first = new Date(month.getFullYear(), month.getMonth(), 1),
     count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
@@ -502,19 +546,19 @@ export function DatePicker({
     pick(date);
   }
   return (
-    <div className="v7-field-group">
-      <span>{label}</span>
-      <button
+    <div className={compact?"v7-date-pill":"v7-field-group"}>
+      {!hideTrigger&&!compact&&<span>{label}</span>}
+      {!hideTrigger&&<button
         type="button"
         className="v7-field v7-picker"
         aria-label={`${label}: ${value}`}
         aria-haspopup="dialog"
-        onClick={() => setOpen(true)}
+        onClick={() => {setMonth(new Date(value + "T12:00:00"));setOpen(true);}}
       >
         {/* F51: one date format ("Sat 7 Nov"), with Today/Tomorrow/Yesterday in front when it applies. */}
         {pickerDate(value)}
         <ChevronDown />
-      </button>
+      </button>}
       <Sheet open={open} onClose={() => setOpen(false)} title="Choose a date">
         <div className="v7-wrap">
           <Button small onClick={() => shortcut(0)}>
@@ -1001,6 +1045,7 @@ export function Menu({
     interacted = useRef(false),
     ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
+    if(typeof matchMedia!=="function")return;
     const media = matchMedia("(min-width:700px)");
     const update = () => setDesktop(media.matches);
     update();media.addEventListener("change", update);

@@ -1,3 +1,8 @@
+import {LemmaError} from '../../../data/api';
+import {authGeneration,authOwner} from '../../../data/authBoundary';
+import {getApi} from '../../../data';
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {useMemo,useRef,useState} from 'react';
 import {useNavigate,useParams,Link} from 'react-router';
@@ -44,7 +49,8 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  const project=projects.data?.find(row=>row.slug===note?.projectSlug),subject=kitSubject(project?.subject.name??'');
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Card"><DetailHeader title="Card" back="/cards"/><Skeleton/><Skeleton/></main>;
  if(query.isError||!note)return <main id="main-content" className="v7-page v7-learn" aria-label="Card"><DetailHeader title="Card" back="/cards"/>
-  <div role="alert" className="v7-learn-empty"><p>This card could not be loaded.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
+  {query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title={"Card #"+number+" doesn't exist."} action={{label:'Back to Cards',to:'/cards'}}/>
+   :<div role="alert" className="v7-learn-empty"><p>{navigator.onLine?'Could not open this card.':'You’re offline.'}</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
  const paused=note.status==='suspended';
  const due=note.status==='active'&&!!card&&(card.state===0||Date.parse(card.due)<=now);
  async function reviewNow(){
@@ -62,12 +68,31 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
  const intervals=new Map(series?.dots.map(dot=>[dot.at,dot.intervalDays])??[]);
  async function setNoteStatus(next:'active'|'suspended'|'deleted'){
   if(!note)return;
+  const adapter=getApi(),ownerId=authOwner(),generation=authGeneration();
+  const current=()=>adapter===getApi()&&ownerId===authOwner()&&generation===authGeneration();
+  const {noteNo,noteId,status:previous}=note;
+  const scope={adapter,guard:{ownerId,generation,noteId,expectedStatus:previous}};
   try{
-   await status.mutateAsync({noteNo:note.noteNo,status:next});
+   await status.mutateAsync({noteNo,status:next,scope});
+   if(!current())return;
    setDeleting(false);
-   notify(next==='deleted'?'Card deleted':next==='suspended'?'Card paused':'Card resumed',{tone:'success'});
-   if(next==='deleted')navigate('/cards');
-  }catch{notify('Could not update the card.',{tone:'danger'});}
+   if(next!=='deleted'){
+    notify(next==='suspended'?'Card paused':'Card resumed',{tone:'success'});
+    return;
+   }
+   navigate('/cards');
+   const action=previous==='deleted'?undefined:{
+    label:'Undo',
+    onClick:()=>{
+     if(!current())return;
+     const restore={adapter,guard:{...scope.guard,expectedStatus:'deleted' as const}};
+     void status.mutateAsync({noteNo,status:previous,scope:restore})
+      .then(()=>{if(current())notify('Card restored',{tone:'success'});})
+      .catch(()=>{if(current())notify('Could not restore the card.',{tone:'danger'});});
+    },
+   };
+   notify('Card deleted',{tone:'success',action});
+  }catch{if(current())notify('Could not update the card.',{tone:'danger'});}
  }
  async function save(value:EditorValue){
   if(!note)return;
@@ -132,10 +157,10 @@ export default function CardV7({selectedNo}:{selectedNo?:number}={}){
   </section>
   {/* V38 (v7 UX audit r3): the pinned primary is "Review now" when the card is due (a round with only this card);
       editing is a secondary action, and Pause / Resume live in the ⋯ menu. */}
-  <div className={'v7-learn-bar'+(due?'':' v7-learn-bar-single')} role="group" aria-label="Card actions">
+  <Dock className={'v7-learn-bar'+(due?'':' v7-learn-bar-single')} role="group" aria-label="Card actions">
    {due&&<Button variant="primary" loading={reviewing} onClick={()=>{void reviewNow();}}>Review now</Button>}
    <Button onClick={()=>setEditing(true)}>Edit card</Button>
-  </div>
+  </Dock>
   <ActionSheet open={more} onClose={()=>setMore(false)} title="This card" label="Card actions" items={[
    {label:paused?'Resume card':'Pause card',hint:paused?'Bring it back into reviews':'Keep it out of reviews until you resume',icon:paused?<Play aria-hidden="true"/>:<Pause aria-hidden="true"/>,onClick:()=>{void setNoteStatus(paused?'active':'suspended');}},
    {label:'Delete card',hint:'Its review history is kept',destructive:true,icon:<Trash2 aria-hidden="true"/>,onClick:()=>setDeleting(true)},

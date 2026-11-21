@@ -85,14 +85,15 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
  const creating=location.pathname==='/projects/new';
  const Tag=embedded?'section':'main';
  return <Tag id={embedded?undefined:'main-content'} className="v7-page v7-paths" aria-label="Paths">
-  <HubHeader title="Paths"><PathsTabs current="paths"/></HubHeader>
-  <label className="v7-paths-search"><span className="v7-sr-only">Search paths and checkpoints</span>
-   <input type="search" className="v7-search-field" placeholder="Search paths and checkpoints" value={query}
-    onChange={event=>{setQuery(event.target.value);setLimit(PAGE);}}/></label>
-  <div className="v7-paths-filters" role="radiogroup" aria-label="Path status">
+  <HubHeader title="Paths">
+   <PathsTabs current="paths"/>
+   <input type="search" className="v7-field" aria-label="Search paths and checkpoints"
+    placeholder="Search paths" value={query} onChange={event=>{setQuery(event.target.value);setLimit(PAGE);}}/>
+  </HubHeader>
+  {(all.length>0||projects.isPending)&&<div className="v7-paths-filters" role="radiogroup" aria-label="Path status">
    {pathFilters.map(item=><button key={item} type="button" role="radio" aria-checked={filter===item} className="v7-filter-chip"
     onClick={()=>{setFilter(item);setLimit(PAGE);}}>{filterWord[item]}{counts[item]>0?' '+counts[item]:''}</button>)}
-  </div>
+  </div>}
   {projects.isPending&&<><Skeleton/><Skeleton/></>}
   {projects.isError&&<div role="alert" className="v7-paths-empty"><p>Erratum: your paths didn’t load. Try again.</p><Button onClick={()=>{void projects.refetch();}}>Try again</Button></div>}
   {projects.isSuccess&&<>
@@ -100,14 +101,14 @@ export default function PathsV7({embedded=false,selected}:{embedded?:boolean;sel
    {visible.length===0?(all.length===0
      ?<EmptyMoment art="paths" title="Every proof starts somewhere" action={{label:'Start a new path',to:'/projects/new'}}>Start a path and your tutor will plan it with you.</EmptyMoment>
      :query.trim()?<EmptyMoment title={'No paths match “'+query.trim()+'”'} action={{label:'Clear search',onClick:()=>setQuery('')}}/>
-     :<EmptyMoment title={'No '+filterWord[filter].toLowerCase()+' paths'}>Paths you mark this way will gather here.</EmptyMoment>)
+     :<EmptyMoment title={'Nothing '+filterWord[filter].toLowerCase()+'.'}/>)
    :<div className="v7-paths-groups">{groups.map(group=><section key={group.key} className="v7-paths-group" aria-label={group.subject+' paths'}>
      {group.heading&&<h2 className={'v7-eyebrow v7-paths-heading '+subjectClass(kitSubject(group.subject))}><SubjectMark subject={kitSubject(group.subject)}/>{group.subject}</h2>}
      <ul className="v7-paths-list">{group.items.map(project=><PathCard key={project.id} project={project} due={due.get(project.slug)??0} pinnedCount={pinned} selected={selected}/>)}</ul>
     </section>)}</div>}
    {shown.length<visible.length&&<Button className="v7-paths-moreButton" onClick={()=>setLimit(value=>value+PAGE)}>Show {Math.min(PAGE,visible.length-shown.length)} more</Button>}
   </>}
-  {(!studyRepair||all.length>0)&&<Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>}
+  {filter==='active'&&all.length>0&&<Link className="v7-paths-new" to="/projects/new"><Plus aria-hidden="true"/><span>Start a new path</span></Link>}
   {creating&&<Suspense fallback={null}><NewPathSheet onClose={()=>navigate('/projects')}/></Suspense>}
  </Tag>;
 }

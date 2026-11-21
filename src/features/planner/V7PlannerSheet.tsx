@@ -1,5 +1,5 @@
 import {useStudyUi} from '../../data/StudyUiRelease';
-import {useState} from 'react';
+import {useState,type ReactNode} from 'react';
 import {Link} from 'react-router';
 import type {TaskRecord} from '../../data/tasks';
 import {Button,Checkbox,DatePicker,Picker,Sheet} from '../../ui/v7/components';
@@ -32,9 +32,9 @@ export function unplacedLine(entry:PlannerUnplaced,task:TaskRecord|undefined,pre
 
 /** B1: the planner's Adjust panel as the kit's Sheet — 24 px top corners, surface.overlay, header and footer — with the kit's
  *  Select (a sheet of radio rows on phones), Checkbox, Date and Time range fields, and an action.bg primary. */
-export default function V7PlannerSheet({anchor,zone,busy,loading,error,selectionError,preview,tasks,selected,overrides,unplaced,count,rangeDays,onClose,onCommit,onToggle,onMove,onRange}:{
+export default function V7PlannerSheet({anchor,zone,busy,loading,error,selectionError,preview,tasks,selected,overrides,unplaced,count,rangeDays,onClose,onCommit,onToggle,onMove,onRange,suggestedTimes}:{
  anchor:string;zone:string;busy:boolean;loading:boolean;error:string|null;selectionError:string|null;preview:PlannerResult|null;tasks:TaskRecord[];
- selected:Set<string>;overrides:Map<string,Move>;unplaced:PlannerUnplaced[];count:number;rangeDays:number;
+ selected:Set<string>;overrides:Map<string,Move>;unplaced:PlannerUnplaced[];count:number;rangeDays:number;suggestedTimes?:ReactNode;
  onClose:()=>void;onCommit:()=>void;onToggle:(key:string,on:boolean)=>void;onMove:(key:string,part:'date'|'start'|'end',value:string,original:Move)=>void;onRange:(days:number)=>void;
 }){
  const repair=useStudyUi();
@@ -45,6 +45,7 @@ export default function V7PlannerSheet({anchor,zone,busy,loading,error,selection
   <div className="v7-plan">
    <Picker label="Days to plan" value={rangeLabel(rangeDays)} options={ranges.map(rangeLabel)} disabled={loading||busy}
     onChange={label=>onRange(ranges.find(n=>rangeLabel(n)===label)??1)}/>
+   {suggestedTimes}
    {loading&&<p role="status" className="v7-meta">Finding free time for your tasks…</p>}
    {error&&<p role="alert" className="v7-alert">{error}</p>}
    {selectionError&&<p role="alert" className="v7-alert">{selectionError}</p>}

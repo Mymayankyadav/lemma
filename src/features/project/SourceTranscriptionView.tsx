@@ -8,10 +8,10 @@ import {MathPreview} from '../../ui/MathPreview';
 import {useToast} from '../../ui/Toast';
 import {sourceMarkdown,sourceTex} from './transcriptionExport';
 
-export function SourceTranscriptionView({source,stat}:{
- source:Source;stat:SourceTranscriptionStat|undefined
+export function SourceTranscriptionView({source,stat,initiallyOpen=false,showCoverage=true}:{
+ source:Source;stat:SourceTranscriptionStat|undefined;initiallyOpen?:boolean;showCoverage?:boolean
 }){
- const [open,setOpen]=useState(false),[page,setPage]=useState(1);
+ const [open,setOpen]=useState(initiallyOpen),[page,setPage]=useState(1);
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState('');
  const [exporting,setExporting]=useState(false);
  const notify=useToast(),edit=useUpdateSourcePage();
@@ -54,15 +54,17 @@ export function SourceTranscriptionView({source,stat}:{
  };
  const hasPages=(source.pageCount??0)>0;
  const label=stat?.transcribed??0;
+ const origin=source.origin==='claude'?'Claude':source.origin==='chatgpt'?'ChatGPT':null;
+ const showProgress=showCoverage&&(label>0||!source.hasText);
+ const needsCheck=showCoverage?stat?.needsCheck??0:0;
  return <div className="flex flex-col gap-2 text-label">
-  <div className="flex flex-wrap items-center gap-2 text-ink-2">
-   {source.origin==='claude'||source.origin==='chatgpt'?
-    <span data-source-origin className="text-ink-2">Transcribed by {source.origin==='claude'?'Claude':'ChatGPT'}</span>:null}
-   {(label>0||!source.hasText)&&<span aria-label="Transcription progress">{label} of {source.pageCount??0} pages transcribed</span>}
-   {!!stat?.needsCheck&&<span aria-label={stat.needsCheck+' pages need checking'} className="inline-flex items-center gap-1">
-    <span className="size-2 rounded-full bg-[var(--late)]" aria-hidden="true"/>{stat.needsCheck} to check
+  {(origin||showProgress||needsCheck>0)&&<div className="flex flex-wrap items-center gap-2 text-ink-2">
+   {origin&&<span data-source-origin className="text-ink-2">Transcribed by {origin}</span>}
+   {showProgress&&<span aria-label="Transcription progress">{label} of {source.pageCount??0} pages transcribed</span>}
+   {needsCheck>0&&<span aria-label={needsCheck+' pages need checking'} className="inline-flex items-center gap-1">
+    <span className="size-2 rounded-full bg-[var(--late)]" aria-hidden="true"/>{needsCheck} to check
    </span>}
-  </div>
+  </div>}
   <div className="flex flex-wrap items-center gap-3">
    {hasPages&&<button type="button" data-source-view-pages className="min-h-11 min-w-11 px-2 text-ink-2" aria-expanded={open}
      onClick={()=>setOpen(v=>!v)}>{open?'Hide transcription':'View pages'}</button>}

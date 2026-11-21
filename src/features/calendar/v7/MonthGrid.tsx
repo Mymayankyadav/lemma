@@ -1,4 +1,5 @@
-import {useMemo} from 'react';
+import {useMemo,useState} from 'react';
+import {Info} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import type {CalendarBlockRecord,StudyEntryRecord} from '../../../data/study/contract';
 import {monthDays} from '../model';
@@ -6,6 +7,7 @@ import {dueForDay,type CalendarDues} from '../deadlines/DueDayItems';
 import type {BlockLook} from './DayGrid';
 import {dotClasses,heatLegend,tintStep} from './viewModel';
 import {SubjectGlyph} from '../../../ui/v7/Subject';
+import {IconButton,Sheet} from '../../../ui/v7/components';
 
 /** PLAN §6.5 Month: a tinted grid with subject dots and a flag for due items. No cell prints "0". */
 export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,lookOf,onPick}:{
@@ -13,6 +15,7 @@ export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,
  lookOf:(block:CalendarBlockRecord)=>BlockLook;onPick:(day:string)=>void;
 }){
  const grid=useMemo(()=>monthDays(date,zone,entries,blocks,firstDay),[date,zone,entries,blocks,firstDay]);
+ const [legend,setLegend]=useState(false);
  const names=grid.days.slice(0,7).map(day=>new Intl.DateTimeFormat('en',{timeZone:'UTC',weekday:'short'}).format(new Date(day.day+'T12:00:00Z')));
  return <section className="v7-mo" aria-label="Month calendar">
   <div className="v7-mo-names" aria-hidden="true">{names.map((name,index)=><span key={index}>{name}</span>)}</div>
@@ -34,9 +37,10 @@ export default function MonthGrid({date,today,zone,firstDay,entries,blocks,dues,
    })}
   </div>
   {/* KC6: the kit's five labelled swatches; glyphs, not dots, mark planned study (KC2). */}
-  <div className="v7-mo-legend" aria-label="Legend">
+  <div className="v7-mo-key"><IconButton label="Calendar key" aria-haspopup="dialog" onClick={()=>setLegend(true)}><Info aria-hidden="true"/></IconButton></div>
+  <Sheet open={legend} onClose={()=>setLegend(false)} title="Calendar key"><div className="v7-mo-legend">
    <span className="v7-mo-swatches">Logged {heatLegend.map((label,index)=><span key={label}><i data-tint={index} aria-hidden="true"/>{label}</span>)}</span>
    <span>Glyphs mark planned study · <MEANING_ICON.deadline aria-hidden="true"/> something due</span>
-  </div>
+  </div></Sheet>
  </section>;
 }

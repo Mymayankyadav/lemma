@@ -7,9 +7,10 @@ import {readCalendarBlockDraft} from './blockDraft';
 const action = 'min-h-11 rounded-ctl border border-edge px-3 text-label font-semibold text-ink hover:bg-fill-1 focus-visible:outline-2 focus-visible:outline-amber';
 
 /** Isolated N27 controls; N26 owns the surrounding Agenda/Day/Week/Month switcher and ranges. */
-export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,showLaunchers=true,onClosed,v7=false}:{
+export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,showLaunchers=true,onClosed,v7=false,startingMinutes}:{
  blocks:CalendarBlockRecord[];date:string;zone:string;ready:boolean;onRefresh:()=>void;
  showLaunchers?:boolean;
+ startingMinutes?:number;
  /** The v7 calendar draws the sheet with the kit. */
  v7?:boolean;
  /** N121: the Calendar page restores focus to whatever opened the dialog (grid, events list, menu). */
@@ -24,8 +25,7 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
  useEffect(()=>{
   const key=(params.get('new')??'')+'|'+(params.get('edit')??'')+'|'+(params.get('start')??'');
   if(params.get('new')!=='block'&&!params.get('edit')){
-   // Query navigation reuses Calendar. Release the URL-opened sheet before
-   // quick-add can open its own modal.
+   // Query navigation reuses Calendar. Release the previous URL-opened sheet.
    if(handled.current!==null)setSelected(undefined);
    handled.current=null;return;
   }
@@ -54,7 +54,7 @@ export default function BlockSheetActions({blocks,date,zone,ready,onRefresh,show
   });
  };
  return <>
-  {selected!==undefined&&<BlockSheet v7={v7} draft={draft} initialTitle={params.get('title')??undefined} initialTaskId={params.get('task')??undefined} initialMinutes={Number(params.get('len'))||undefined} key={(selected?.id??'new')+':'+(draft?location.key:params.get('start')??'')} block={selected}
+  {selected!==undefined&&<BlockSheet v7={v7} draft={draft} initialTitle={params.get('title')??undefined} initialTaskId={params.get('task')??undefined} initialMinutes={startingMinutes??(Number(params.get('len'))||undefined)} key={(selected?.id??'new')+':'+(draft?location.key:params.get('start')??'')} block={selected}
    initialStart={params.get('start')??undefined} date={date} zone={zone} onRefresh={onRefresh} onClose={close}/>}
  </>;
 }

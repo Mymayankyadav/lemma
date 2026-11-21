@@ -236,6 +236,14 @@ export function createDemoTaskApi(): TaskApi {
       save(before.map(task => task.id === id ? updated : task));
       return receipt(updated);
     },
+    async restoreDeletedTask(task) {
+      const before=current().tasks;
+      if(before.some(item=>item.id===task.id))return fail('conflict','This task has already been restored');
+      validLinks(task);
+      const record={...task,version:task.version+1,updatedAt:new Date().toISOString()};
+      save([...before,record]);
+      return record;
+    },
     async deleteTask(id, expectedVersion) {
       const before = current().tasks;
       const record = before.find(t => t.id === id);

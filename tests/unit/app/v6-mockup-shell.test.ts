@@ -28,8 +28,12 @@ describe('N110 mockup shell',()=>{
   }
   expect(readFileSync('src/ui/v6/mockup.css','utf8')).not.toMatch(/@import|https?:\/\//);
   const shell=readFileSync('src/app/AppShell.tsx','utf8');
-  expect(shell).toContain("import '../ui/v6/mockup.css'");
-  expect(shell).toContain("import '../ui/v6/mockup-bindings.css'");
+  const legacy=readFileSync('src/app/LegacyStyles.tsx','utf8');
+  expect(shell).toContain("import('./LegacyStyles')");
+  for(const css of ['mockup.css','mockup-bindings.css']){
+   expect(shell).not.toContain("import '../ui/v6/"+css+"'");
+   expect(legacy).toContain("import '../ui/v6/"+css+"'");
+  }
  });
  it('ports the mockup palette: navy primary in Day, pale blue in Night',()=>{
   const css=readFileSync('src/ui/v6/mockup.css','utf8');

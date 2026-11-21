@@ -1,3 +1,4 @@
+import {IMAGE_ONLY_ANSWER,type TutorAttachment} from './attachment-types'
 import {freezeLocalTutorExcerpt,type LocalTutorExcerpt} from './local-excerpt'
 
 /**
@@ -23,12 +24,14 @@ export type TutorComposerDraft = Readonly<{
   question: string
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
+  attachments?: readonly TutorAttachment[]
 }>
 
 type TutorQuestionSnapshot = Readonly<{
   question: string
   selectedContext: readonly TutorContextSelection[]
   localExcerpt?: LocalTutorExcerpt
+  attachments?: readonly TutorAttachment[]
 }>
 
 type TurnIdentity = Readonly<{
@@ -84,14 +87,15 @@ export function submitTutorTurn(
   head: TutorThreadHead, turnId: string, draft: TutorComposerDraft,
 ): SubmitResult {
   if (head.pendingTurnId !== null) return { kind: 'turn-pending', turnId: head.pendingTurnId }
-  if (!draft.question.trim()) return { kind: 'empty-question' }
+  if (!draft.question.trim() && !draft.attachments?.length) return { kind: 'empty-question' }
 
   const localExcerpt = draft.localExcerpt && freezeLocalTutorExcerpt(draft.localExcerpt)
   if (draft.localExcerpt && !localExcerpt) return { kind: 'invalid-local-excerpt' }
   const sequence = head.lastSequence + 1
   // Copy selected scalar fields only. Never retain a pointer into the editor's draft.
   const snapshot: TutorQuestionSnapshot = Object.freeze({
-    question: draft.question,
+    question: draft.question.trim() || IMAGE_ONLY_ANSWER,
+    ...(draft.attachments?.length ? {attachments: Object.freeze(draft.attachments.map(attachment=>Object.freeze({...attachment})))} : {}),
     ...(localExcerpt ? {localExcerpt} : {}),
     selectedContext: Object.freeze(draft.selectedContext.map(({ kind, refId, version, excerpt, page }) =>
       Object.freeze({ kind, refId, version, excerpt, ...(kind==='source'&&page!==undefined?{page}:{}) }))),

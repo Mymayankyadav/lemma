@@ -1,5 +1,6 @@
 import {readFile} from 'node:fs/promises';
 import {expect,test,type Page} from '@playwright/test';
+import {choosePadCheckpoint,padPicker} from './helpers/pad-picker';
 
 const app = './?demo=1&flags=v7Shell,tutorManualDemo#/';
 const checkpoint = (code: string) => app + 'p/real-analysis/cp/' + code;
@@ -66,7 +67,7 @@ test('saved Pad revisions stay scoped to their checkpoint and recover through th
 
   await page.goto(pad('CP4'));
   await expect(checkpointActions).toHaveCount(0);
-  await expect(page.getByLabel('Checkpoint', {exact:true})).toHaveValue('CP4');
+  await expect(padPicker(page, 'Checkpoint')).toHaveText(/^CP4 · Compactness$/);
   await notes.fill('First compactness proof');
   await save.click();
   await expect(page.getByText('Saved on this device.',{exact:true})).toBeVisible();
@@ -168,11 +169,11 @@ test('a saved Pad reopens offline after leaving its checkpoint and retains ink a
   expect(html).toContain('<path d="' + path + '"/>');
   expect(html).toContain('Content-Security-Policy');
   // Switching checkpoints while offline loads each Pad's own saved revision.
-  await page.getByLabel('Checkpoint', {exact:true}).selectOption('CP2');
+  await choosePadCheckpoint(page, 'CP2');
   await expect(page.getByRole('link',{name:'Return to checkpoint'})).toHaveAttribute('href', /#\/p\/real-analysis\/cp\/CP2$/);
   await expect(notes).toHaveValue('');
   await expect(strokes).toHaveCount(0);
-  await page.getByLabel('Checkpoint', {exact:true}).selectOption('CP4');
+  await choosePadCheckpoint(page, 'CP4');
   await expect(notes).toHaveValue(offlineNote);
   await expect(strokes.first()).toHaveAttribute('d',path ?? '');
   expect(outbound).toEqual([]);

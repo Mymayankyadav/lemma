@@ -1,4 +1,6 @@
 import { getApi } from '..'
+import {demoCapacityOverrides} from './capacity-override'
+import {localDay} from '../../features/home/v7/todayModel'
 import { getStudyApi } from '../study'
 import { getTaskApi } from '../tasks'
 import { zonedInstant } from '../../platform/reminders'
@@ -25,8 +27,14 @@ export async function readDemoAgenda(){
   const intervals=blocks.filter(b=>b.status==='planned').map(b=>({id:b.id,revision:b.version,startsAt:b.startsAt,endsAt:b.endsAt,
     projectId:b.projectId,kind:b.kind,taskId:b.taskId}))
   const available=intervals.filter(b=>b.kind==='study'),watermark='demo/'+asOf
+  const day=localDay(settings.timeZone??'UTC',now),minutes=demoCapacityOverrides()[day]
+  const nextStart=intervals.filter(b=>Date.parse(b.startsAt)>+now).map(b=>Date.parse(b.startsAt)).sort((a,b)=>a-b)[0]
+  const end=Math.min(+now+minutes*60_000,nextStart??Infinity)
+  const extra=minutes>0&&end>+now&&!available.some(b=>Date.parse(b.startsAt)<=+now)
+    ? [{id:'capacity/'+day,revision:1,startsAt:asOf,endsAt:new Date(end).toISOString()}] : []
+  const windows=[...extra,...available]
   const {decision,label,baselineLabel,practice}=ownerAgenda('demo',{asOf,watermark,rows:{...rows,settings:{...rows.settings,scheduling_algorithm:settings.schedulingAlgorithm}},
-    calendar:{asOf,watermark,horizonEnd,status:'ok',fixed:intervals.filter(b=>b.kind==='busy'),availability:available.length?available:null},
+    calendar:{asOf,watermark,horizonEnd,status:'ok',fixed:intervals.filter(b=>b.kind==='busy'),availability:windows.length?windows:null},
     occupied:!!active,tasks:tasks.map(t=>({id:t.id,title:t.title,project_id:t.projectId??null,estimate_minutes:t.estimateMinutes??null,
       deadline:deadline(t),priority:t.priority})),reservations:available.filter(b=>b.taskId).map(b=>({task_id:b.taskId!,starts_at:b.startsAt,ends_at:b.endsAt}))},true)
   return {decision,label,baselineLabel,practice}

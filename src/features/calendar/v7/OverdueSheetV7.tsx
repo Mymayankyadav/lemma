@@ -48,7 +48,7 @@ export default function OverdueSheetV7({open,dues,zone,onClose,onRefresh}:{open:
     <p><strong>{task.title}</strong><small>Task · due {task.due.kind==='date'?formatShortDate(task.due.date,{zone}):task.due.kind==='instant'?formatShortDate(task.due.at,{zone}):''}</small></p>
     <div className="v7-od-actions">
      <Button small variant="secondary" aria-label={'Mark '+task.title+' done'} onClick={()=>{void completeTask(task);}}>Done</Button>
-     <Link className="v7-button v7-ghost v7-small" to={'/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:'')}><span>Reschedule</span></Link></div>
+     <Link className="v7-button v7-ghost v7-small" onClick={onClose} to={'/calendar?view=day&quick=1&task='+encodeURIComponent(task.id)+(task.estimateMinutes?'&len='+task.estimateMinutes:'')}><span>Reschedule</span></Link></div>
    </li>)}
    {deadlines.map(row=><li key={row.id}>
     <p><strong>{row.title}</strong><small>Due {formatShortDate(deadlineDay(row,zone),{zone})}</small></p>

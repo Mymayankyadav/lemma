@@ -1,0 +1,69 @@
+{
+  "assetSetVersion": "detypify-0.3.0-lemma-v1",
+  "cacheGeneration": 1,
+  "model": {
+    "id": "detypify",
+    "version": "0.3.0",
+    "license": "MIT",
+    "packageUrl": "https://registry.npmjs.org/detypify-service/-/detypify-service-0.3.0.tgz",
+    "packageIntegrity": "sha512-kpJumpOeQJrOZxZXfEoICz/jIwoA3qV9iuCfVpRrPMHFCl75q/8/SEc+56aRBwZq3qyhjKBmJd1Q9/2HMy+vUA==",
+    "packageGitHead": "7f7a236a486e1a4149f5e5748c1fb7a8d09b3722",
+    "inputName": "x",
+    "inputShape": [1, 1, 224, 224],
+    "outputName": "linear",
+    "outputShape": [1, 411],
+    "scoreKind": "logit"
+  },
+  "preprocessing": {
+    "version": "detypify-canvas-9px-v1",
+    "sourceCommit": "983a887e553b42725d2555695b7bbfac982117dc",
+    "paddingPx": 9,
+    "strokeWidthPx": 9,
+    "pixelOffset": 0.5
+  },
+  "runtime": {
+    "package": "onnxruntime-web",
+    "version": "1.27.0",
+    "license": "MIT",
+    "provider": "wasm",
+    "threads": 1,
+    "packageIntegrity": "sha512-ogDLsqIozHZwifPuN37OproAo0byX6t43/bP8GzeZWBWD6MOGExswFAx3up4NS/vvWBOg2u2PXomDt3rMmdQSg=="
+  },
+  "catalogueVersion": "lemma-tutor-symbols-v1",
+  "partialTemplateVersion": "lemma-relations-v1",
+  "calibrationVersion": "unqualified",
+  "files": {
+    "model": {
+      "path": "model.onnx",
+      "bytes": 4943153,
+      "sha256": "ce4c35a43cf18fa1ca4bf530699393005152bc50e3911a5b6e8e55d8f1599149"
+    },
+    "classes": {
+      "path": "infer.json",
+      "bytes": 15878,
+      "sha256": "e376dbe4b66078863e8170b6defe40a23b72ac54af98663ea172fc29b012e7cd"
+    },
+    "wasm": {
+      "path": "ort-wasm-simd-threaded.wasm",
+      "bytes": 13479978,
+      "sha256": "d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6"
+    }
+  },
+  "notices": [
+    {
+      "path": "Detypify-LICENSE.txt",
+      "bytes": 1067,
+      "sha256": "b71c582f4150bd249c1a9a14c071e8276116231b858434b2ad0d146d7d3b56af"
+    },
+    {
+      "path": "ONNX-Runtime-LICENSE.txt",
+      "bytes": 1073,
+      "sha256": "2f07c72751aed99790b8a4869cf2311df85a860b22ded05fa22803587a48922c"
+    },
+    {
+      "path": "ONNX-Runtime-ThirdPartyNotices.txt",
+      "bytes": 325054,
+      "sha256": "0e07b95f3a8d6230037707c5c4a2b554d12c4cb67369669ac255635528ffcee2"
+    }
+  ]
+}

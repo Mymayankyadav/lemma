@@ -1,4 +1,5 @@
 import {expect, test} from '@playwright/test';
+import {choosePadCheckpoint,choosePadOption} from './helpers/pad-picker';
 
 const route = (suffix = '') => './?demo=1&flags=v7Shell#/pad' + suffix;
 
@@ -15,8 +16,8 @@ test('Lemma Pad is accessible from Data and account and opens a full checkpoint 
   await page.getByRole('link', {name: /Data and account/}).click();
   await page.getByRole('link', {name: 'Open saved notes'}).click();
   await expect(page.getByRole('heading', {name: 'Lemma Pad', level: 1})).toBeVisible();
-  await page.getByLabel('Path', {exact: true}).selectOption('real-analysis');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');
+  await choosePadOption(page, 'Path', 'Real Analysis');
+  await choosePadCheckpoint(page, 'CP4');
   const notes = page.getByRole('textbox', {name: 'Pad notes'});
   await expect(notes).toBeVisible();
   await expect(page.getByRole('region', {name: 'Math keyboard'}).getByRole('button', {name: 'Hide math keyboard'})).toBeVisible();
@@ -26,9 +27,9 @@ test('Lemma Pad is accessible from Data and account and opens a full checkpoint 
   await expect(page.getByText('Saved on this device.', {exact: true})).toBeVisible();
   await page.reload();
   await expect(notes).toHaveValue('A full-page compactness proof.');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP2');
+  await choosePadCheckpoint(page, 'CP2');
   await expect(notes).toHaveValue('');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');
+  await choosePadCheckpoint(page, 'CP4');
   await expect(notes).toHaveValue('A full-page compactness proof.');
 });
 

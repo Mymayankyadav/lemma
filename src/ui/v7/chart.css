@@ -17,6 +17,7 @@
 :where(html[data-v7]) .v7-chart-axis {stroke:var(--v7-role-border-default);stroke-width:1;}
 :where(html[data-v7]) .v7-chart-target {stroke:var(--v7-role-text-primary);stroke-width:1;stroke-dasharray:4 4;}
 :where(html[data-v7]) .v7-chart-text {fill:var(--v7-role-text-tertiary);font:500 var(--v7-type-caption) var(--v7-sans);}
+:where(html[data-v7]) .v7-chart-caption-probe {position:absolute;width:1em;height:1em;visibility:hidden;pointer-events:none;font:500 var(--v7-type-caption) var(--v7-sans);}
 :where(html[data-v7]) .v7-chart-data-label {fill:var(--v7-role-text-secondary);font:500 var(--v7-type-caption) var(--v7-sans);}
 :where(html[data-v7]) .v7-chart-tooltip {min-height:var(--v7-leading-supporting);font-size:var(--v7-type-supporting);color:var(--v7-role-text-secondary);}
 :where(html[data-v7]) .v7-chart-scroll {overflow:auto;max-width:100%;width:100%;}

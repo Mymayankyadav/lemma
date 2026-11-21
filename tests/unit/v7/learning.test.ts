@@ -13,7 +13,7 @@ const path=(over:Partial<ProjectSummary>):ProjectSummary=>({id:over.slug??'x',sl
 
 describe('v7 Paths hub (PLAN §6.8)',()=>{
  const rows=[
-  path({slug:'a',title:'Real Analysis',lastActivityAt:'2026-11-08T10:00:00Z',current:{code:'CP4',title:'Compactness',step:3,stepsTotal:4}}),
+  path({slug:'a',title:'Real Analysis',lastActivityAt:'2026-11-08T10:00:00Z',current:{code:'CP4',title:'Compactness',step:2,stepsTotal:4}}),
   path({slug:'b',title:'Measure',lastActivityAt:'2026-11-09T10:00:00Z',sourceTitles:['Rudin']}),
   path({slug:'c',title:'Topology',pinned:true,subject:subject('s2','Topology'),lastActivityAt:'2026-10-01T10:00:00Z'}),
   path({slug:'d',title:'Old',status:'archived'}),path({slug:'e',title:'Inbox',system:true}),
@@ -38,8 +38,8 @@ describe('v7 Paths hub (PLAN §6.8)',()=>{
   expect(groups.map(group=>[group.subject,group.heading])).toEqual([['Topology',false],['Analysis',true]]);
  });
  it('says where the path stands and colours the schedule chip',()=>{
-  expect(nowLine(rows[0])).toBe('Now: Compactness · step 3 of 4');
-  expect(nowLine(path({total:0}))).toBe('Waiting for a plan from your tutor');
+  expect(nowLine(rows[0])).toBe('Compactness · step 3 of 4');
+  expect(nowLine(path({total:0}))).toBe('No plan yet');
   expect(scheduleTone('4 days behind')).toEqual({text:'4 days behind',tone:'warning'});
   expect(scheduleTone('On track')?.tone).toBe('success');
   expect(scheduleTone(null)).toBeNull();

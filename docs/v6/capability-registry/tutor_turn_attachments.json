@@ -1,0 +1,55 @@
+{
+  "table": "tutor_turn_attachments",
+  "version": 1,
+  "columns": {
+    "id": {
+      "classification": "command-managed",
+      "appPath": "src/data/tutor/live-manual.ts binds the uploaded drawing or photo",
+      "mcpPath": "Used by the tutor_attachment read with an active grant",
+      "exportPolicy": "Included with the owner's image backup",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "user_id": {
+      "classification": "command-managed",
+      "appPath": "Bound by the authenticated tutor command",
+      "mcpPath": "Resolved from the active grant",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "turn_id": {
+      "classification": "command-managed",
+      "appPath": "Bound with the learner turn in the tutor command",
+      "mcpPath": "Used to verify attachment access against the granted turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "position": {
+      "classification": "command-managed",
+      "appPath": "Determines the image order in the learner turn",
+      "mcpPath": "Determines the order of image content blocks",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "kind": {
+      "classification": "command-managed",
+      "appPath": "Determines the drawing or photo label in the transcript",
+      "mcpPath": "Describes the image type in the turn",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "mime_type": {
+      "classification": "derived",
+      "appPath": "Collected from the bounded upload before binding",
+      "mcpPath": "Validated against the image content block",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    },
+    "byte_size": {
+      "classification": "derived",
+      "appPath": "Read from the bounded upload before binding",
+      "mcpPath": "Validated before returning the image content block",
+      "exportPolicy": "Included in the authenticated owner snapshot",
+      "deletionPolicy": "Removed with the turn or owner"
+    }
+  }
+}

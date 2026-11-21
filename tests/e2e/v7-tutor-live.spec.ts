@@ -37,7 +37,10 @@ for(const entry of ['chat','Pad'] as const){
   const warning=/draft.*may be lost on reload/i
   await expect(tutor.getByRole('alert').filter({hasText:warning})).toHaveCount(0)
 
-  if(chat)await tutor.getByRole('button',{name:'Context',exact:true}).click()
+  if(chat){
+   await tutor.getByRole('button',{name:'Edit answer',exact:true}).click()
+   await tutor.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
+  }
   const context=chat?page.getByRole('dialog',{name:'Context for your tutor'}):tutor
   await context.getByText('Add a page from '+short,{exact:true}).click()
   await context.getByRole('button',{name:'Preview linked source page'}).click()
@@ -115,7 +118,7 @@ test('live checkpoint restores a lost acknowledgement, accepts a reviewed paste 
  await dialog.getByRole('button',{name:'Confirm import'}).click()
  const result=dialog.getByRole('article',{name:'Imported reply'})
  await expect(result.getByRole('heading',{name:'Imported by you'})).toBeVisible()
- await result.getByText('Draft a card from this reply').click()
+ await result.getByRole('button',{name:'Draft a card',exact:true}).click()
  await result.getByLabel('Front').fill('Is the converse always true?')
  await result.getByLabel('Back').fill('It needs a separate proof.')
  await result.getByRole('button',{name:'Send to proposal review'}).click()
@@ -163,7 +166,7 @@ test('global hold keeps owner history and receipt recovery available without sub
  await expect(draft).toHaveJSProperty('readOnly',true)
  await expect(tutor.getByRole('region',{name:'Pending tutor submission'})).toContainText('Never submitted question')
  await expect(tutor.getByRole('button',{name:'Send',exact:true})).toBeDisabled()
- await expect(tutor.getByText('Draft a card from this reply')).toHaveCount(0)
+ await expect(tutor.getByRole('button',{name:'Draft a card',exact:true})).toHaveCount(0)
  await tutor.getByRole('button',{name:'Check saved receipt'}).click()
  await expect(tutor.getByRole('alert')).toContainText('No saved receipt was found')
  expect(receipts).toContain(committed.operationId);expect(receipts).toContain(unconfirmed.operationId)
