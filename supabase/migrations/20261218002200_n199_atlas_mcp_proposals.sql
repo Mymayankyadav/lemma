@@ -68,7 +68,13 @@ begin
  end if;
  v_from := (v_patch->>'from_id')::uuid;
  v_to := (v_patch->>'to_id')::uuid;
- if (v_patch->>'from_version') !~ '^[1-9][0-9]*
+ if (v_patch->>'from_version') !~ '^[1-9][0-9]*$'
+    or (v_patch->>'to_version') !~ '^[1-9][0-9]*$'
+    or (v_patch->>'from_version')::numeric>2147483647
+    or (v_patch->>'to_version')::numeric>2147483647 then
+   raise exception 'Positive endpoint versions required';end if;
+ v_from_version := (v_patch->>'from_version')::integer;
+ v_to_version := (v_patch->>'to_version')::integer;
  v_kind := v_patch->>'kind';
  v_conf := (v_patch->>'confidence')::real;
  v_reason := pg_catalog.btrim(v_patch->>'rationale');
@@ -144,7 +150,7 @@ begin
  insert into public.command_receipts(user_id,operation_id,resource,result)
  values(v_owner,v_opid,'atlas_link_proposals',v_result||pg_catalog.jsonb_build_object('_request',p));
  return v_result;
-end
+end;
 $atlas_links_mcp$;
 
 revoke all on function public.atlas_links_mcp_command(jsonb) from public,anon;
