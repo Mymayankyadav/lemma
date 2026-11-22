@@ -27,7 +27,7 @@ begin
    raise exception 'Atlas concept has learning evidence or semantic links; preserve the source and create an alias instead of merging';
  end if;
  return old;
-end
+end;
 $guard$;
 revoke all on function public.lemma_guard_concept_evidence_delete() from public,anon;
 create trigger zz_atlas_preserve_evidence before delete on public.concepts
@@ -234,7 +234,7 @@ begin
  insert into public.command_receipts(user_id,operation_id,resource,result)
   values(v_owner,v_opid,'atlas_graph_edits',v_result||pg_catalog.jsonb_build_object('_request',p));
  return v_result;
-end
+end;
 $command$;
 revoke all on function public.atlas_graph_edits_command(jsonb) from public,anon;
 grant execute on function public.atlas_graph_edits_command(jsonb) to authenticated,service_role;
