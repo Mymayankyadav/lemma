@@ -249,3 +249,10 @@
   font-size: 0; color: var(--v7-role-text-secondary);}
 .lemma-tutor .kb .strip > .writing-aid-floating[data-undo] .writing-aid-undo svg {width: 20px; height: 20px;}
 .lemma-tutor .kb .strip > .writing-aid-floating[data-undo] .writing-aid-dismiss {display: none;}
+
+/* N221 (Owner) · equation mode: √ in the strip turns it on (marked like a pressed key); its strip offers the usual next
+   pieces of an equation in glyphs, and Keep (the typed text, as Gboard offers after an autocorrection) at the left. */
+.lemma-tutor .kb .strip .eq-toggle[aria-pressed="true"] {color: var(--v7-role-selection-fg); background: var(--v7-role-selection-subtle);}
+.lemma-tutor .kb .strip .equation-words button {font: 400 1.4rem/1 var(--v7-glyph); color: var(--v7-role-text-primary); background: transparent;}
+.lemma-tutor .kb .strip .equation-words button.preferred {color: var(--v7-role-selection-fg);}
+.lemma-tutor .kb .strip .equation-words button.keep {font: 400 1rem/1.1 var(--v7-sans); color: var(--v7-role-text-secondary);}

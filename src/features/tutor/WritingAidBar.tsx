@@ -49,6 +49,33 @@ export function SymbolWords({options, disabled, onAccept}: {
   </div>;
 }
 
+/** N221: one of the equation strip's pieces; `keep` puts back what equation mode just changed. */
+export interface EquationChoice {
+  readonly label: string;
+  readonly start: number;
+  readonly end: number;
+  readonly insert: string;
+  /** The text [start, end) held when the choice was offered. */
+  readonly from: string;
+  readonly keep?: boolean;
+}
+
+/** N221: equation mode's strip: the usual next pieces of an equation (best in the middle), or Keep after a change. */
+export function EquationWords({choices, disabled, onAccept}: {
+  choices: readonly EquationChoice[]; disabled: boolean; onAccept: (choice: EquationChoice) => void;
+}) {
+  const slots = [choices[1], choices[0], choices[2]];
+  return <div className="sugg equation-words" role="group" aria-label="Equation suggestions">
+    {slots.map((choice, index) => <button type="button" key={index} disabled={disabled || !choice}
+      aria-label={!choice ? 'No suggestion' : choice.keep ? 'Keep ' + choice.label : 'Insert ' + choice.label}
+      className={(index === 1 && choice ? 'preferred' : '') + (choice?.keep ? ' keep' : '')}
+      onPointerDown={holdCaret} onClick={() => {if (choice) onAccept(choice);}}>
+      {choice ? <span className={choice.keep ? 'writing-aid-word-label' : 'symbol-glyph'}>{choice.label}</span>
+        : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+    </button>)}
+  </div>;
+}
+
 function Choice({proposal, disabled, onAccept, onRefresh}: {
   proposal: WritingAidProposal; disabled: boolean; onAccept: WritingAidBarProps['onAccept']; onRefresh: WritingAidBarProps['onRefresh'];
 }) {
