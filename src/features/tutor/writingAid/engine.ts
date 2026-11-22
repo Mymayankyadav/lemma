@@ -15,6 +15,7 @@ import wordList from './vendor/wordlist.txt?raw';
 import wordAssets from './vendor/word-assets.json';
 import compactRanks from './vendor/compact-ranks.json';
 import speedPolicy from './vendor/speed-policy.json';
+import {decodeWord, writingDecoderReady} from './decoder/ngramSpatial';
 
 // Lemma already offers these spellings. The pinned rank asset includes
 // preimage, while the general-purpose dictionary omits both forms.
@@ -91,9 +92,16 @@ function keyProposals(
   }
   const result = aid.predict(text, {mode, surface: 'keys', origin: 'learner', authoredText});
   const proposals: WritingAidProposal[] = [];
-  for (const {word, kind, risk} of result.keys) {
+  for (const {word, kind, risk, correction, decoded: fromDecoder} of decoded(result.keys, cursor.text.slice(0, rangeStart), prefix ?? '', rangeStart,
+    text, authoredText)) {
     if (word.length > MAX_WORD || !LETTERS.test(word) || kind === 'transcription' || proposals.some(item => item.label === word)) continue;
-    if (prefix ? !word.startsWith(prefix) || word === prefix : !FILLERS.has(word.toLowerCase())) continue;
+    // N221: a decoded correction replaces the typed letters with the word their taps were nearest to. It is only a
+    // choice in the strip, never applied by itself, and never a proof word or a word in a protected gap.
+    if (correction) {
+      if (!prefix || prefix.length < 2 || mode === 'strict' || protectedGap || risk === 'logic' ||
+          RISKY_PERSONAL_WORD.test(word) || word.toLowerCase() === prefix.toLowerCase() || word.length < prefix.length) continue;
+    } else if (prefix ? !(fromDecoder ? word.toLowerCase().startsWith(prefix.toLowerCase()) : word.startsWith(prefix)) ||
+        word === prefix : !FILLERS.has(word.toLowerCase())) continue;
     // A wider pool must not promote a proof method, property, quantifier, or
     // polarity from a weak stem merely to fill an alternative slot.
     if ((risk === 'logic' || RISKY_PERSONAL_WORD.test(word)) &&
@@ -102,7 +110,8 @@ function keyProposals(
     if (mode === 'strict' && (!prefix || prefix.length < 4)) continue;
     const insert = word + ' ';
     if (cursor.text.length - (prefix?.length ?? 0) + insert.length > WRITING_AID_LIMIT) continue;
-    proposals.push(writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word));
+    const proposal = writingAidProposal(request, 'word', rangeStart, cursor.end, insert, word);
+    proposals.push(fromDecoder ? {...proposal, source: 'decoder'} : proposal);
   }
   // Long-term vocabulary only supplies strongly typed word endings. It never
   // supplies a gap, a full already-written word, a proof choice, or new context.
@@ -123,6 +132,39 @@ function keyProposals(
     }
   }
   return proposals;
+}
+
+interface KeyCandidate {
+  readonly word: string; readonly kind?: string; readonly risk?: string; readonly correction?: boolean;
+  /** From the N221 decoder: may change the case of the typed letters (a capitalised name from the tutor's question). */
+  readonly decoded?: boolean;
+}
+/** The existing engine's protected proof gaps ("take x in", "by", "=", …), where it offers no new words. */
+const PROTECTED_GAP = /(?:\b(?:take|choose|let)\s+\p{L}[\p{L}\d_]*\s+(?:in|from)|\b(?:by|equals?|witness|implies|therefore|hence|consequently)|[=<>≤≥∈∉⊆⊂≠])\s*$/iu;
+
+/**
+ * N221: once N219's lexicon has loaded, the n-gram and touch decoder widens and ranks the word pool. The existing
+ * engine's words keep their spelling and risk tags; the decoder adds completions and near-tap corrections, and every
+ * word is ordered by the decoder's score. Before it loads (and in tests without it) the pool is the existing one.
+ */
+function decoded(keys: readonly KeyCandidate[], before: string, prefix: string, start: number, text: string,
+  authoredText: string): readonly KeyCandidate[] {
+  // The decoder never invents a next word, stays out of protected proof gaps, and, like the existing engine, stops
+  // after two accepted words in a row.
+  if (!writingDecoderReady() || !prefix || PROTECTED_GAP.test(before) ||
+      (text.slice(authoredText.length).match(OUTPUT_TOKEN)?.length ?? 0) >= 2) return keys;
+  const own = new Map(keys.filter(key => key.kind !== 'transcription').map(key => [key.word.toLowerCase(), key]));
+  const ranked = decodeWord(before, prefix, start, [...own.keys()]);
+  const seen = new Set<string>();
+  const merged: KeyCandidate[] = [];
+  for (const item of ranked) {
+    const lower = item.word.toLowerCase();
+    const existing = own.get(lower);
+    seen.add(lower);
+    merged.push(existing ?? {word: item.word, ...(item.risk ? {risk: item.risk} : {}), correction: item.correction, decoded: true});
+  }
+  for (const key of keys) if (!seen.has(key.word.toLowerCase())) merged.push(key);
+  return merged;
 }
 
 function ghostProposals(
@@ -236,9 +278,12 @@ export function selectWritingAidPool(
   }
   const candidates = ranked(pool.words, excluded.words);
   const words: WritingAidProposal[] = [], families = new Set<string>();
+  // N221: a decoder word yields its family's slot to the existing engine's word (notation, not notate), and can still
+  // fill a slot left over below.
+  const engineFamilies = new Set(candidates.filter(proposal => proposal.source !== 'decoder').map(family));
   for (const proposal of candidates) {
     const key = family(proposal);
-    if (families.has(key)) continue;
+    if (families.has(key) || proposal.source === 'decoder' && engineFamilies.has(key)) continue;
     words.push(proposal);
     families.add(key);
     if (words.length === 3) break;

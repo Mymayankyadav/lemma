@@ -27,7 +27,8 @@ export function WritingAidWords({words, disabled, onAccept}: Pick<WritingAidBarP
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
-      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}>
+      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}
+      data-length={!proposal || proposal.label.length < 10 ? undefined : proposal.label.length < 12 ? 'mid' : proposal.label.length < 14 ? 'long' : 'xlong'}>
       {proposal ? <span className="writing-aid-word-label">{proposal.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
   </div>;

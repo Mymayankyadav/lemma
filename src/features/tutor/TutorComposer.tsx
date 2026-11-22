@@ -26,6 +26,7 @@ import {sameEditTarget} from './input/recognitionPolicy';
 import type {EditTarget} from './input/types';
 import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
 import {WritingAidBar, WritingAidWords} from './WritingAidBar';
+import {prepareWritingDecoder, recordKeyTouch, setDecoderContext, type KeyTouch} from './writingAid/decoder/ngramSpatial';
 import './keyboard.css';
 import './input/input.css';
 import './writing-aid.css';
@@ -146,6 +147,12 @@ export function TutorComposer(props: Props) {
     document.addEventListener('visibilitychange', reportVisibility);
     return () => document.removeEventListener('visibilitychange', reportVisibility);
   }, [writing.shown, writingWords, writingEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+
+  // N221: load N219's lexicon for the n-gram and touch decoder when the keyboard opens, and let the tutor's question
+  // (with the checkpoint's title and step) favour its own words while the learner answers it.
+  useEffect(() => {if (shown) void prepareWritingDecoder();}, [shown]);
+  const decoderContext = JSON.stringify(props.notationContext ?? []);
+  useEffect(() => {setDecoderContext(JSON.parse(decoderContext) as string[]);}, [decoderContext]);
 
   useEffect(() => {
     swipe.current = null;
@@ -328,9 +335,11 @@ export function TutorComposer(props: Props) {
     const target = suppliedSpace ? padEdit(edit.text, edit.start - 1, edit.end) : edit;
     return commit(changePadText(history.current, insertNotation(target, text)), focus, true, false, true);
   }
-  function insert(text: string, typed = false) {
+  function insert(text: string, typed = false, touch?: KeyTouch) {
     remember();
     const edit = history.current.present;
+    // N221: the decoder's spatial model reads where this letter was tapped (memory only).
+    if (touch && /^[A-Za-z]$/.test(text)) recordKeyTouch(edit.start, text, touch);
     const symbol=symbolByGlyph(text.trim());
     if(symbol && tutorMathContext(edit)!=='prose') {
       const converted=insertTutorSymbol(edit,symbol.id);
@@ -611,6 +620,11 @@ export function TutorComposer(props: Props) {
     remember();
     if (!readOnly) {setShown(true); setScratch(false);}
   }
+  // N221: in the Android app Hide keyboard sits in the band under the keys, where Gboard's ⌄ is; browsers keep it in the strip.
+  const hideButton = (className: string) => <button className={className} type="button" aria-label="Hide keyboard"
+    onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>;
+  const drawButton = <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
+    onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>;
   return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
     {props.value.includes('$') && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
     {answerError && <p className="composer-status" role="alert">{answerError}</p>}
@@ -722,22 +736,24 @@ export function TutorComposer(props: Props) {
         }}
         onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
         onAccept={assist.onAccept}/>
-      : <><div className="strip">
+      : <><div className="strip" data-words={writingWords.length > 0 || undefined}>
         {/* N220 (Owner report): the one-tap maths symbols and Next □ sit in the suggestion strip, so the bottom row keeps
             Gboard's wide space bar. As in Gboard, a word being typed gives its suggestions the whole strip: the symbols
-            step aside until the caret is at a word boundary (Next □ stays while a slot is empty). */}
+            step aside until the caret is at a word boundary (Next □ stays while a slot is empty).
+            N221 (Owner screenshots): Gboard's strip. Idle, its icons are spaced evenly across it; with words, Draw symbol
+            at the left and Refresh at the right frame three equal word slots (a browser adds Hide keyboard). */}
         <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={wordInProgress && !incomplete}>
           {['∀', '∈', ...(incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="sbtn qsym" aria-label={symbol}
             hidden={wordInProgress} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
           {incomplete && <button type="button" className="sbtn qsym" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
             onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button>}
         </div>
+        {wordInProgress && !incomplete && drawButton}
         <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
         {refreshable && <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled}
           onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>}
-        <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
-          onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>
-        <button className="sbtn" type="button" aria-label="Hide keyboard" onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
+        {!(wordInProgress && !incomplete) && drawButton}
+        {hideButton('sbtn')}
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
         wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
@@ -758,7 +774,7 @@ export function TutorComposer(props: Props) {
             if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
           }
           change(edit, true);
-        }}/></>}
+        }}/>{hideButton('sbtn kb-band-hide')}</>}
     </div> : null}
     {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;
