@@ -1,0 +1,100 @@
+{
+  "assetSetVersion": "unigram-v1",
+  "file": {
+    "path": "lexicon.json",
+    "bytes": 1688748,
+    "sha256": "3c60a7226fcabd574caaf0f152fc8451c9d7173af8e2470a96052f3bd5ed2594"
+  },
+  "entryCount": 49232,
+  "sources": [
+    {
+      "id": "aosp",
+      "path": "scripts/writing-decoder/sources/aosp-en_US-v54.combined.gz",
+      "url": "https://android.googlesource.com/platform/packages/inputmethods/LatinIME/+/127336e9f29d69607eab55982324b210279ae8c5/dictionaries/en_US_wordlist.combined.gz",
+      "license": "Apache-2.0",
+      "description": "AOSP LatinIME English (US), dictionary version54, blob8aed9c5e0b94d0f3e9654f66104d7af1e84c454f",
+      "sha256": "0f78dd455b532be169a23f233227b811fabced4b5bd7fc9c40cc05839793bcbd"
+    },
+    {
+      "id": "aospNotice",
+      "path": "scripts/writing-decoder/sources/AOSP-NOTICE.txt",
+      "url": "https://android.googlesource.com/platform/packages/inputmethods/LatinIME/+/127336e9f29d69607eab55982324b210279ae8c5/NOTICE",
+      "license": "Apache-2.0",
+      "description": "Copyright (c)2008 The Android Open Source Project",
+      "sha256": "d04394c729fc9fda050d5733d8ee11663fb54fe54d94532de968cf85c1cc42fb"
+    },
+    {
+      "id": "aospLicenseDeclaration",
+      "path": "scripts/writing-decoder/sources/AOSP-Android.bp.txt",
+      "url": "https://android.googlesource.com/platform/packages/inputmethods/LatinIME/+/127336e9f29d69607eab55982324b210279ae8c5/Android.bp",
+      "license": "Apache-2.0",
+      "description": "Package licence declaration includes subpackages",
+      "sha256": "c971d67105a5b1f69077c1c8420fedd31ed14f531b98314f57731ab27112f630"
+    },
+    {
+      "id": "scowl",
+      "path": "src/features/tutor/writingAid/vendor/wordlist.txt",
+      "url": "https://github.com/Mymayankyadav/lemma/blob/d1b3135f99ae54d52b312f4b728c4460abdabc06/src/features/tutor/writingAid/vendor/wordlist.txt",
+      "license": "SCOWL notices",
+      "description": "Existing pinned SCOWL-derived spellings",
+      "sha256": "67689f3f4ea057f0b57a07b1e3d54fc28257c47691eb8acfab681b7e38b37755"
+    },
+    {
+      "id": "scowlNotice",
+      "path": "src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt",
+      "url": "https://github.com/Mymayankyadav/lemma/blob/d1b3135f99ae54d52b312f4b728c4460abdabc06/src/features/tutor/writingAid/vendor/wordlist-LICENSE.txt",
+      "license": "SCOWL notices",
+      "description": "Full source notice retained",
+      "sha256": "1d7c0128f6c72d2270bf1b271b37a3a21267f759161b68c4dc6c501574c0892e"
+    },
+    {
+      "id": "mathlib",
+      "path": "src/features/tutor/writingAid/vendor/compact-ranks.json",
+      "url": "https://github.com/leanprover-community/mathlib4/tree/c44e0c8ee63ca166450922a373c7409c5d26b00b",
+      "license": "Apache-2.0",
+      "description": "Existing 1500 unigrams; bigrams deliberately unused",
+      "sha256": "8e22aa214182878e8182dc0d6231801cb83b7a60555a7739e02f3128fc48de81"
+    },
+    {
+      "id": "mathlibNotice",
+      "path": "src/features/tutor/writingAid/vendor/math-ranks-LICENSE.txt",
+      "url": "https://github.com/leanprover-community/mathlib4/blob/c44e0c8ee63ca166450922a373c7409c5d26b00b/LICENSE",
+      "license": "Apache-2.0",
+      "description": "Full source licence retained",
+      "sha256": "b40930bbcf80744c86c46a12bc9da056641d722716c378f5659b9e555ef833e1"
+    },
+    {
+      "id": "common",
+      "path": "src/features/tutor/writingAid/vendor/word-assets.json",
+      "url": "https://github.com/Mymayankyadav/lemma/blob/d1b3135f99ae54d52b312f4b728c4460abdabc06/src/features/tutor/writingAid/vendor/word-assets.json",
+      "license": "Existing Lemma asset",
+      "description": "Curated common math vocabulary",
+      "sha256": "05d59054ecdc6983531f9b2a1cae5c5b212c262078ee066f759f1ca96ddbeb92"
+    },
+    {
+      "id": "wordPolicy",
+      "path": "scripts/writing-decoder/sources/baseline-words.mjs.txt",
+      "url": "https://github.com/Mymayankyadav/lemma/blob/d1b3135f99ae54d52b312f4b728c4460abdabc06/src/features/tutor/writingAid/vendor/words.mjs",
+      "license": "Existing Lemma source",
+      "description": "Immutable baseline source snapshot; build copies original LOGIC tags while runtime ranking can evolve independently",
+      "sha256": "1c584932ca2f69dbc0d6af8f0c4aba73b5e9d8c764731a951f00d86ee52f37ba"
+    }
+  ],
+  "sourceDetails": {
+    "aospHeader": "dictionary=main:en_us,locale=en_US,description=English (US),date=1414726260,version=54",
+    "aospWordRows": 160715,
+    "mobileAdditions": 8192,
+    "domainRanked": 786
+  },
+  "build": {
+    "command": "node scripts/writing-decoder/build-lexicon.mjs",
+    "check": "node scripts/writing-decoder/build-lexicon.mjs --check",
+    "normalization": "Lowercase ASCII words of 2–32 letters; original source casing is not folded.",
+    "vocabulary": "SCOWL, existing curated common/math words and lexical logic terms; 8,192 additional AOSP words by frequency; remove AOSP excluded flags and listed Lean command fragments.",
+    "frequency": "max(1, AOSP f, round(24 * log1p(filtered mathlib count))); this is a heuristic rank, not a calibrated probability.",
+    "mathFilter": "Use counts only for known vocabulary with length >=6 or existing curated common terms; never add raw count-file tokens.",
+    "risk": "Preserve the complete LOGIC set from the pinned vendor words.mjs; application policy runs independently.",
+    "ordering": "Unique ASCII lexical order; frequency rank is applied at retrieval over the entire matching range."
+  },
+  "qualification": "Development unigram completion asset. No n-gram context, spatial model, calibrated autocorrection, human accuracy or phone latency claim."
+}

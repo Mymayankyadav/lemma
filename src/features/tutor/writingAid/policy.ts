@@ -37,6 +37,8 @@ export interface WritingAidProposal {
   readonly insert: string;
   readonly label: string;
   readonly snapshot: WritingAidRequest;
+  /** N221: offered by the n-gram and touch decoder rather than the existing engine. */
+  readonly source?: 'decoder';
 }
 
 export interface WritingAidSuggestions {

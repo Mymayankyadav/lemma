@@ -1,6 +1,7 @@
 import {useRef, type PointerEvent} from 'react';
 import {ArrowRight, RefreshCw, Undo2, X} from 'lucide-react';
 import type {WritingAidProposal} from './writingAid';
+import type {SymbolOption} from './input/latexShortcuts';
 import './writing-aid.css';
 
 const holdCaret = (event: PointerEvent) => event.preventDefault();
@@ -18,17 +19,32 @@ export interface WritingAidBarProps {
   onRefresh: (surface: 'edit' | 'ghost', displayed: readonly WritingAidProposal[]) => void;
 }
 
-export function WritingAidWords({words, disabled, onAccept}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'>) {
+export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean}) {
   const pressed = useRef<WritingAidProposal | null>(null);
   const slots = [words[1], words[0], words[2]];
-  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
+  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions" hidden={hidden}>
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
       disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
       onPointerCancel={() => {pressed.current = null;}}
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
-      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}>
+      title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}
+      data-length={!proposal || proposal.label.length < 10 ? undefined : proposal.label.length < 12 ? 'mid' : proposal.label.length < 14 ? 'long' : 'xlong'}>
       {proposal ? <span className="writing-aid-word-label">{proposal.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+    </button>)}
+  </div>;
+}
+
+/** N221: symbols for the LaTeX command or short form being typed, in the word slots (best in the middle, as Gboard). */
+export function SymbolWords({options, disabled, onAccept}: {
+  options: readonly SymbolOption[]; disabled: boolean; onAccept: (option: SymbolOption) => void;
+}) {
+  const slots = [options[1], options[0], options[2]];
+  return <div className="sugg symbol-words" role="group" aria-label="Symbol suggestions">
+    {slots.map((option, index) => <button type="button" key={index} disabled={disabled || !option}
+      aria-label={option ? 'Insert ' + option.symbol.glyph + ' (' + option.symbol.name + ')' : 'No symbol'} title={option?.symbol.tex}
+      className={index === 1 && option ? 'preferred' : ''} onPointerDown={holdCaret} onClick={() => {if (option) onAccept(option);}}>
+      {option ? <span className="symbol-glyph">{option.symbol.glyph}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
   </div>;
 }
@@ -61,7 +77,7 @@ function Choice({proposal, disabled, onAccept, onRefresh}: {
 export function WritingAidBar(props: WritingAidBarProps) {
   const {edit, ghost, disabled, undoable, exhausted, swipeProgress = 0} = props;
   if (!edit && !ghost && !undoable && !exhausted) return null;
-  return <div className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions"
+  return <div className="writing-aid-floating" data-writing-aid-review="" role="group" aria-label="Writing suggestions" data-undo={undoable || undefined}
     data-swiping={swipeProgress > 0 || undefined} style={{'--writing-swipe': Math.min(1, swipeProgress)} as React.CSSProperties}>
     <div className="writing-aid-floating-body">
       {undoable ? <button type="button" className="writing-aid-undo" onPointerDown={holdCaret} disabled={disabled}

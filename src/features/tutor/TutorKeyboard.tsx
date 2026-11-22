@@ -3,6 +3,7 @@ import {ArrowBigUp, ArrowBigUpDash, ChevronLeft, ChevronRight, CornerDownLeft, D
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
 import {correctTap, prepareTapCorrection, type KeyBox} from './tapCorrection';
+import type {KeyTouch} from './writingAid/decoder/ngramSpatial';
 
 const keepSelection = (event: PointerEvent) => event.preventDefault();
 /** How long a key's enlarged preview stays after the finger lifts (Gboard keeps it briefly, so a quick tap is seen). */
@@ -26,7 +27,8 @@ interface KeyHold {
  */
 export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
-  onInsert: (text: string, typed?: boolean) => void; onDelete: () => void;
+  /** `touch`: where a letter was tapped, in key pitches and rows from the top-left of the letter rows (N221 decoder). */
+  onInsert: (text: string, typed?: boolean, touch?: KeyTouch) => void; onDelete: () => void;
   onMove: (direction: 'left' | 'right', count: number) => void;
   onBrowse: () => void;
   /** The letters of the word before the caret, for tap correction. */
@@ -66,6 +68,11 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
     const box = button.getBoundingClientRect();
     return {letter: button.dataset.letter!, x: box.left, y: box.top, width: box.width, height: box.height};
   });
+  /** A tap in the decoder's key units: q's cell is the unit (a pitch wide, a row tall), measured from its top-left. */
+  const keyTouch = (point: {x: number; y: number}, boxes: KeyBox[]): KeyTouch | undefined => {
+    const q = boxes.find(box => box.letter === 'q');
+    return q && q.width > 0 && q.height > 0 ? {x: (point.x - q.x) / q.width, y: (point.y - q.y) / q.height} : undefined;
+  };
   function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string} = {}) {
     const {style = '', icon, alt, printable, letter} = options;
     const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
@@ -157,9 +164,10 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       return key(letter, () => {
         const point = touch.current;
         touch.current = null;
-        const typed = point && Date.now() - point.at < 1500 && wordBefore
-          ? correctTap(letter, point, letterBoxes(), wordBefore()) : letter;
-        onInsert(typed, true);
+        const recent = point && Date.now() - point.at < 1500 ? point : null;
+        const boxes = recent ? letterBoxes() : [];
+        const typed = recent && wordBefore ? correctTap(letter, recent, boxes, wordBefore()) : letter;
+        onInsert(typed, true, recent ? keyTouch(recent, boxes) : undefined);
         if (shift === 'once') setShift('off');
       }, {style: 'ch' + edge, printable: true, letter: char, alt: digit < 0 ? undefined : String((digit + 1) % 10)});
     });
@@ -208,10 +216,10 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       </>}
       <div className="row bottom">
         {key(view === 'abc' ? '?123' : 'ABC', () => onView(view === 'abc' ? 'num' : 'abc'), {style: 'fn pill w15 lbl'})}
-        {key(',', () => onInsert(',', true), {style: 'ch', printable: true})}
+        {key(',', () => onInsert(',', true), {style: 'ch tint', printable: true})}
         {key('Maths symbols', () => onView(lastMath), {style: 'fn sym2', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
         {key('Space', () => onInsert(' ', true), {style: 'space', icon: <span aria-hidden="true"/>})}
-        {key('.', () => onInsert('.', true), {style: 'ch', printable: true})}
+        {key('.', () => onInsert('.', true), {style: 'ch tint', printable: true})}
         {key('New line', () => onInsert('\n', true), {style: 'go w15', icon: <CornerDownLeft/>})}
       </div>
     </>}
