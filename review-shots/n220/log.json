@@ -337,7 +337,7 @@
    "keyboard": null,
    "space": null,
    "strip": null,
-   "compass": 3,
+   "compass": 2,
    "peek": null,
    "tooltip": null
   },
@@ -352,7 +352,7 @@
    "keyboard": null,
    "space": null,
    "strip": null,
-   "compass": 3,
+   "compass": 2,
    "peek": [
     8,
     714,
@@ -485,10 +485,10 @@
    "compass": 0,
    "peek": null,
    "tooltip": [
-    -5,
-    355,
-    197,
-    26
+    44,
+    323,
+    229,
+    27
    ]
   },
   "progress-learning": {
