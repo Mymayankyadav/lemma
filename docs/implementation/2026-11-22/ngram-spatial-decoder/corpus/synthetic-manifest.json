@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "protocol": "n219-corpus-audit-v1",
+  "normalization": "nfc-v1",
+  "auditTokenizer": "unicode-word-v1",
+  "ownerSplit": "utc-days-floor-60-80-v1",
+  "records": {
+    "path": "synthetic-records.jsonl",
+    "bytes": 1180,
+    "sha256": "85e5289c3f139378873b79e0038972b427ce564fe4ebda3d3a9c99f50b263dfc"
+  },
+  "sources": [
+    {
+      "id": "handwritten-synthetic",
+      "kind": "synthetic",
+      "revision": "handwritten-regression-v1",
+      "license": "LicenseRef-Lemma-Test-Fixture",
+      "attribution": "N219 Lemma corpus-audit fixture authors",
+      "obligations": [
+        "Preserve the synthetic designation and attached notice; do not claim human evaluation evidence."
+      ],
+      "licenseEvidence": {
+        "path": "SYNTHETIC-NOTICE.txt",
+        "bytes": 732,
+        "sha256": "90bae07e512e66bb11cce06918c401f5f66a1b09253e6426d9ba2ac03b126c6d"
+      },
+      "review": {
+        "status": "reviewed",
+        "reviewedBy": "N219 fixture author",
+        "reviewedAt": "2026-11-22T00:00:00.000Z",
+        "scope": "offline-preparation",
+        "notes": "Hand-written synthetic test fixture. No external corpus or private learner data. Not an independent legal review."
+      }
+    }
+  ]
+}

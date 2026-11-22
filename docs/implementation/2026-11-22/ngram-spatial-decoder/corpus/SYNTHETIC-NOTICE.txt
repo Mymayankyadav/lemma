@@ -1,0 +1,12 @@
+N219 hand-written synthetic corpus audit fixture, version 1.
+
+The three example records were written for the Lemma repository's offline audit
+tests. They are not learner transcripts, public corpus extracts or model outputs.
+The generator metadata labels this deterministic, manually authored fixture; no
+generative model or random sampling was used. Keep its synthetic designation and
+this notice with copied fixture data.
+
+LicenseRef-Lemma-Test-Fixture records this repository-authored test data and its
+limited intended use for offline implementation tests. It is not a licence label
+for any external corpus. The review entry is the fixture author's declaration,
+not an independent legal review or human evaluation certification.

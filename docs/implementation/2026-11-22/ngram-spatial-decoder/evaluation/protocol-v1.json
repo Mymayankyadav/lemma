@@ -1,0 +1,25 @@
+{
+  "id": "n219-development-measurement-v1",
+  "status": "development-only; not a qualified research protocol",
+  "fixturePath": "docs/implementation/2026-11-22/ngram-spatial-decoder/replay/fixtures.json",
+  "fixtureSha256": "c4ac2a64d1effeaa108e17472cb9c63455b0baf1fa24d1b3b5457df50bd36d47",
+  "targetSource": "completionCases only; remove each typed terminal prefix from text, then replay intended at every prefix from 0 through length minus 1",
+  "prefixLengthsReported": [0, 1, 2, 3],
+  "kValues": [1, 3],
+  "randomSeeds": [17, 29, 43, 71, 101, 137, 173, 211, 257, 313, 367, 419, 467, 523, 577, 631],
+  "retrievalLimit": 64,
+  "personalization": "omitted for both paths",
+  "primaryDiagnosticMetric": "MRR@3 over all target-word prefix opportunities",
+  "savingsDenominator": "sum of intended ASCII target-word character counts; repeated context, punctuation, separators, and keyboard page switches excluded",
+  "acceptanceCost": "one tap at the earliest prefix with intended in displayed top-k; no credit for the runtime's inserted trailing space",
+  "humanQualification": "blocked",
+  "winnerSelection": "prohibited",
+  "heldOut": false,
+  "missingQualificationInputs": [
+    "deliberately supplied real learner text and a frozen chronological split manifest",
+    "independently labelled D13 blocked/allowed opportunities and a validated judge",
+    "opt-in impression/outcome logs for behavior estimates",
+    "a recorded release APK, device, WebView, latency and memory measurements",
+    "a preregistered human-trial protocol and consent"
+  ]
+}

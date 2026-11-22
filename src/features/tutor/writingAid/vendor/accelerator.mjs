@@ -51,6 +51,13 @@ function studentChoices(text,opts,seed) {
   const chosen=opts.mode==='coin'?[names[coin(seed,names)]]:names;
   return {keys:chosen.map(word=>({word,kind:opts.mode==='coin'?'operand-coin':'operand-menu'})),ghost:null};
 }
+/** Shared by the baseline and expanded lexicon; ranking never grants learner intent. */
+export const isWritingWord=word=>writingWords.has(word.toLowerCase());
+export function permitAcceleratedWord(text,candidate,opts,dict,{strength='balanced'}={}) {
+  const stem=text.match(/[\p{L}\p{M}]+$/u)?.[0]?.toLowerCase()||'';
+  if(strength==='balanced' && stem.length>=2 && isWritingWord(candidate.word) && candidate.word.toLowerCase().startsWith(stem))return true;
+  return permitWord(text,candidate,opts,dict,{strength});
+}
 export function makeAccelerator(assets,config={}) {
   const seed=config.seed??globalThis.crypto.getRandomValues(new Uint32Array(1))[0];
   const base=makeSpeedAid(assets,{...config,seed}), dict={...assets.wordAssets,words:assets.words};
@@ -64,12 +71,10 @@ export function makeAccelerator(assets,config={}) {
     }
     const prediction=base.predict(text,{...opts,surface,mode:'fast'});
     if(surface!=='keys')return prediction;
-    const stem=text.match(/[\p{L}\p{M}]+$/u)?.[0]?.toLowerCase()||'';
     const strength=mode==='committed'?'committed':'balanced';
     return {...prediction,keys:prediction.keys.filter(k=>{
       if(k.kind==='transcription')return true;
-      if(strength==='balanced' && stem.length>=2 && writingWords.has(k.word.toLowerCase()) && k.word.toLowerCase().startsWith(stem))return true;
-      return permitWord(text,k,opts,dict,{strength});
+      return permitAcceleratedWord(text,k,opts,dict,{strength});
     })};
   }};
 }

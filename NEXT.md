@@ -14,6 +14,16 @@ Done = The Owner's November screenshots are fixed in one PR. Headings use one ty
 Tests: updated e2e for the Calendar header, block sheet, charts, Atlas rail, Path goal and Inbox-only reminders; new unit tests for tap correction and the typed time field; the v7 kit check and lint.
 Scope: src/ui/v7/**; src/app/v7/**; src/features/{atlas,calendar,home,insights,pad,practice,project,review-run,ritual,focus,settings,tutor}/**; src/platform/{bridge,haptics}.ts; android/app/src/main/java/io/github/mymayankyadav/lemma/LemmaNativePlugin.java; tests/**; docs/current/N220.md.
 
+## N219 CPU-only n-gram and spatial decoder
+
+Owner task: "Start working on this plan. You can open your pr on lemma but you have work within it don't merge the pr. Tell me what you need from me."
+Stage: Build · Status: open · Needs: — · Assigned: chat-732640#d9k2
+Done = Implement the attached staged plan with a default-off, verified worker path; complete each replay gate before enabling the next stage. The first milestone replaces prefix candidate lookup with a reproducible frequency lexicon and preserves the existing writing-aid policy, acceptance and Undo. Keep the PR draft and do not signal Ready or merge while the Owner's hold applies.
+Tests: deterministic assets, ranked prefix retrieval, learner-choice guards, stale replies, asset/worker failure fallback, flag-off parity, explicit acceptance and Undo; replay results distinguish implementation fixtures from qualified human/device performance.
+Scope: src/features/tutor/writingAid/**; src/flags.ts; public/models/writing-decoder/**; scripts/writing-decoder/**; tests/unit/tutor/**; tests/e2e/tutor-writing-decoder.spec.ts; docs/implementation/2026-11-22/ngram-spatial-decoder/**; docs/current/N219.md.
+Not: Production release or merge; GPU training; new runtime dependencies; uncalibrated autocorrection; importing the unfinished tutor trial; private-data collection without its required controls.
+Plan: [supplied section 16](docs/implementation/2026-11-22/ngram-spatial-decoder/PLAN.md).
+
 ## N201 Open the checkpoint tutor chat from the study path
 
 Owner task: "I want exactly this page as chatbot in lemma app when I click on continue with tutor. You can us le already existing contracts to make this page work as it was intended usage. Remove ugly pad and shit"

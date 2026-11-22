@@ -6,6 +6,8 @@
  * from explicit authoredText; models, tutor text, and mathematical truth are
  * never consulted. `mode:'menu'` is deterministic and distinct from words.
  */
+import {createCorpusContextScorer} from './corpus-context.mjs';
+
 const INDEX = new WeakMap();
 const TOKEN = /[\p{L}\p{M}]+$/u;
 function indexFor(assets) {
@@ -72,7 +74,7 @@ function menuNames(text, authoredText) {
 }
 export function candidates(text, options = {}, assets = {}, config = {}) {
   const {authoredText, mode='fast', recent=[]} = options;
-  const ranker=config.ranker ?? 'manual', contextWords=config.contextWords ?? 1;
+  const ranker=config.ranker ?? 'manual';
   if (typeof text !== 'string' || !['fast','strict','menu'].includes(mode)) return {keys:[], lane:'none'};
   if (mode === 'menu') {
     const names = menuNames(text,authoredText);
@@ -97,8 +99,7 @@ export function candidates(text, options = {}, assets = {}, config = {}) {
     ? index.oneLetter : groupFor(index,lower);
   const scores=new Map(), previous=(left.toLocaleLowerCase().match(/[\p{L}\p{M}]+(?=\s*$)/u)||[])[0] || '';
   const next=assets.next?.[previous] || [];
-  const previousWords=ranker==='corpus' && contextWords>0 ? (left.toLocaleLowerCase().match(/[\p{L}\p{M}]+/gu)||[]) : [];
-  const lastPair=previousWords.slice(-2).join(' ');
+  const contextScore=createCorpusContextScorer(left,assets.ranks,config);
   for (const word of pool) {
     if (!word.startsWith(lower) || word===lower) continue;
     if (LOGIC.has(word) && plen < Math.min(5,word.length)) continue;
@@ -111,8 +112,7 @@ export function candidates(text, options = {}, assets = {}, config = {}) {
     if (ranker === 'corpus' && assets.ranks) {
       const ranks=assets.ranks;
       score = Math.log1p(ranks.unigram?.[word] || 0)*14;
-      if(contextWords>=1 && previousWords.length) score+=Math.log1p(ranks.bigram?.[previousWords.at(-1)+' '+word] || 0)*28;
-      if(contextWords>=2 && previousWords.length>=2) score+=Math.log1p(ranks.trigram?.[lastPair+' '+word] || 0)*35;
+      score = contextScore(word,score);
     } else { const p=next.indexOf(word); if(p>=0) score+=70-p*8; }
     scores.set(word,score-recentPenalty(word,recent));
   }
