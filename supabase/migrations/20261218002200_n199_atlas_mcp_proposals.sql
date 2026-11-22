@@ -1,4 +1,4 @@
--- N199 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
+-- N224 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
 -- No model API key, new credential, scheduler, or implicit approval is introduced.
 -- Preserve the existing atlas_command implementation for approve/reject and other Atlas resources.
 create function public.atlas_links_mcp_command(p jsonb) returns jsonb
@@ -17,21 +17,23 @@ declare
  v_reason text;
  v_from_hash text;
  v_to_hash text;
+ v_from_version integer;
+ v_to_version integer;
+ v_current_from integer;
+ v_current_to integer;
  v_row public.atlas_links%rowtype;
  v_previous jsonb;
  v_result jsonb;
  v_action bigint;
 begin
  -- Decisions keep their original audited owner-bound implementation and receipts.
- if v_op is distinct from 'create' then
-   return public.atlas_command(p);
- end if;
+ if v_op is distinct from 'create' then raise exception 'Only proposed-link creation is supported';end if;
  if v_owner is null or v_role not in ('authenticated','service_role') then
    raise exception 'Authenticated owner required';
  end if;
  if p is null or pg_catalog.jsonb_typeof(p) is distinct from 'object'
      or p->>'schemaVersion' is distinct from '1'
-     or p->>'resource' is distinct from 'atlas_links'
+     or p->>'resource' is distinct from 'atlas_link_proposals'
      or pg_catalog.jsonb_typeof(p->'operationId') is distinct from 'string' then
    raise exception 'Invalid Atlas link command envelope';
  end if;
@@ -48,22 +50,25 @@ begin
    raise exception 'Atlas link patch must be an object';
  end if;
  select key into v_bad from pg_catalog.jsonb_object_keys(v_patch) as keys(key)
- where key not in ('from_id','to_id','kind','confidence','rationale','from_hash','to_hash') limit 1;
+ where key not in ('from_id','to_id','kind','confidence','rationale','from_hash','to_hash','from_version','to_version') limit 1;
  if v_bad is not null then raise exception 'Unknown Atlas link field %',v_bad; end if;
- if (select count(*) from pg_catalog.jsonb_object_keys(v_patch))<5
+ if (select count(*) from pg_catalog.jsonb_object_keys(v_patch))<7
      or not (v_patch?'from_id' and v_patch?'to_id' and v_patch?'kind'
-             and v_patch?'confidence' and v_patch?'rationale') then
-   raise exception 'Proposal requires from_id, to_id, kind, confidence and rationale';
+             and v_patch?'confidence' and v_patch?'rationale' and v_patch?'from_version' and v_patch?'to_version') then
+   raise exception 'Proposal requires from_id, to_id, kind, confidence, rationale and endpoint versions';
  end if;
  if pg_catalog.jsonb_typeof(v_patch->'from_id') is distinct from 'string'
      or pg_catalog.jsonb_typeof(v_patch->'to_id') is distinct from 'string'
      or pg_catalog.jsonb_typeof(v_patch->'kind') is distinct from 'string'
      or pg_catalog.jsonb_typeof(v_patch->'confidence') is distinct from 'number'
-     or pg_catalog.jsonb_typeof(v_patch->'rationale') is distinct from 'string' then
+     or pg_catalog.jsonb_typeof(v_patch->'rationale') is distinct from 'string'
+     or pg_catalog.jsonb_typeof(v_patch->'from_version') is distinct from 'number'
+     or pg_catalog.jsonb_typeof(v_patch->'to_version') is distinct from 'number' then
    raise exception 'Invalid Atlas link value types';
  end if;
  v_from := (v_patch->>'from_id')::uuid;
  v_to := (v_patch->>'to_id')::uuid;
+ if (v_patch->>'from_version') !~ '^[1-9][0-9]*
  v_kind := v_patch->>'kind';
  v_conf := (v_patch->>'confidence')::real;
  v_reason := pg_catalog.btrim(v_patch->>'rationale');
@@ -103,10 +108,14 @@ begin
    return pg_catalog.jsonb_build_object('status','conflict','operationId',v_opid,
      'reason','operationId reused with a different payload','actionNo',null,'changed','[]'::jsonb);
  end if;
- if not exists(select 1 from public.concepts where user_id=v_owner and id=v_from)
-     or not exists(select 1 from public.concepts where user_id=v_owner and id=v_to) then
-   raise exception 'Atlas link endpoint not found for owner';
- end if;
+ select version into v_current_from from public.concepts
+ where user_id=v_owner and id=v_from for update;
+ if not found then raise exception 'Atlas link source not found for owner';end if;
+ select version into v_current_to from public.concepts
+ where user_id=v_owner and id=v_to for update;
+ if not found then raise exception 'Atlas link target not found for owner';end if;
+ if v_current_from<>v_from_version or v_current_to<>v_to_version then
+   raise exception 'Concept version conflict: refresh graph before proposing';end if;
  if exists(select 1 from public.atlas_links l
    where l.user_id=v_owner and l.kind=v_kind and
     ((l.from_id=v_from and l.to_id=v_to) or
@@ -133,15 +142,14 @@ begin
    pg_catalog.jsonb_build_object('resource','atlas_links','id',v_row.id,'version',v_row.version)),
    'proposal',pg_catalog.jsonb_build_object('id',v_row.id,'status',v_row.status,'kind',v_row.kind));
  insert into public.command_receipts(user_id,operation_id,resource,result)
- values(v_owner,v_opid,'atlas_links',v_result||pg_catalog.jsonb_build_object('_request',p));
+ values(v_owner,v_opid,'atlas_link_proposals',v_result||pg_catalog.jsonb_build_object('_request',p));
  return v_result;
 end
 $atlas_links_mcp$;
 
 revoke all on function public.atlas_links_mcp_command(jsonb) from public,anon;
 grant execute on function public.atlas_links_mcp_command(jsonb) to authenticated,service_role;
--- Generic MCP dispatch resolves command_fn from this allowlisted registry row.
-update public.lemma_command_resources
- set command_fn='atlas_links_mcp_command',
-     "schema"='{"operations":["create","approve","reject"],"fields":["from_id","to_id","kind","status","origin","confidence","rationale","from_hash","to_hash"]}'::jsonb
- where resource='atlas_links' and mcp_ok=true;
+-- Additive-only registry entry: atlas_links approval and rejection remain unchanged.
+insert into public.lemma_command_resources(resource,command_fn,mcp_ok,"schema")
+ values('atlas_link_proposals','atlas_links_mcp_command',true,
+ '{"operations":["create"],"fields":["from_id","to_id","kind","confidence","rationale","from_hash","to_hash","from_version","to_version"]}'::jsonb);

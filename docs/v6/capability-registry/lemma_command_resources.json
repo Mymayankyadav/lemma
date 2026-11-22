@@ -692,6 +692,18 @@
       }
     },
     {
+      "resource": "atlas_link_proposals",
+      "command_fn": "atlas_links_mcp_command",
+      "mcp_ok": true,
+      "schema": {
+        "operations": ["create"],
+        "fields": [
+          "from_id", "to_id", "kind", "confidence", "rationale",
+          "from_hash", "to_hash", "from_version", "to_version"
+        ]
+      }
+    },
+    {
       "resource": "atlas_concepts",
       "command_fn": "atlas_command",
       "mcp_ok": true,

@@ -99,7 +99,7 @@ async function mcpPage(resource,id,userId=owner){
 }
 // N94 (#1231, #1237): command-only resources are verified on the rows their
 // operations change, so they have no table inventory of their own.
-const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls']);
+const COMMAND_ONLY=new Set(['card_schedule','review_corrections','session_event_corrections','session_progress','account_controls','atlas_link_proposals']);
 const docsBase=new URL('../../../docs/v6/capability-registry/',import.meta.url);
 /** The legacy mcp_commit allowlist (`allowed` in tools/control.ts) is a real MCP write path. */
 async function legacyMcpFields(){
@@ -1927,6 +1927,38 @@ try{
   const linkStatus=id=>async()=>(await q('select status from public.atlas_links where id=$1',[id]))[0].status;
   await atlasStep('atlas_links','approve',{target:{id:A(1)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(1))())==='approved');
   await atlasStep('atlas_links','reject',{target:{id:A(2)},expectedVersion:1,patch:{}},async()=>(await linkStatus(A(2))())==='rejected');
+  // N224: command-only pending Atlas link through MCP (not owner autoapproval).
+  await role('service_role');
+  const versions=await q('select id,version from public.concepts where id=$1 or id=$2 order by id',[n169Concept,n170Concept2]);
+  const vm=new Map(versions.map(r=>[r.id,r.version]));
+  const typedPatch={from_id:n169Concept,to_id:n170Concept2,kind:'equivalent',
+   confidence:0.94,rationale:'The same mathematical concept',
+   from_version:vm.get(n169Concept),to_version:vm.get(n170Concept2)};
+  const typedRequest=command('atlas_link_proposals','create',{patch:typedPatch});
+  const typedReceipt=status(await mcp(typedRequest),'atlas_link_proposals','create');
+  const typedId=typedReceipt.changed[0].id;
+  assert.deepEqual(await mcp(typedRequest),typedReceipt,'typed link exact replay');
+  assert.equal((await mcp({...typedRequest,patch:{...typedPatch,rationale:'Altered claim'}})).status,
+   'conflict','typed link changed operationId accepted');
+  await role(null);
+  assert.equal((await q('select status from public.atlas_links where id=$1',[typedId]))[0].status,
+   'proposed','created typed link not pending');
+  assert.equal((await mcpPage('atlas_links',typedId)).items[0].status,'proposed',
+   'pending link missing from owner MCP read');
+  await as(other);
+  assert.equal((await q('select count(*)::int n from public.atlas_links where id=$1',[typedId]))[0].n,0,
+   'typed link leaked to foreign owner');
+  await role('service_role');
+  await assert.rejects(q('select public.mcp_command($1::uuid,$2::text,$3::jsonb) data',
+    [other,'chatgpt',JSON.stringify(command('atlas_link_proposals','create',{patch:typedPatch}))]),
+    /not found for owner/i,'MCP accepted foreign link endpoints');
+  await as(owner);
+  assert.equal(Number((await undo(typedReceipt.actionNo)).undone),Number(typedReceipt.actionNo),
+   'typed link Undo failed');
+  await role(null);
+  assert.equal((await q('select count(*)::int n from public.atlas_links where id=$1',[typedId]))[0].n,0,
+   'typed link Undo retained proposed row');
+  mark('atlas_link_proposals','create');
   const conceptVersion=Number((await q('select version from public.concepts where id=$1',[n169Concept]))[0].version);
   await atlasStep('atlas_concepts','update',{target:{id:n169Concept},expectedVersion:conceptVersion,patch:{kind:'technique'}},
    async()=>(await q('select kind from public.concepts where id=$1',[n169Concept]))[0].kind==='technique');
