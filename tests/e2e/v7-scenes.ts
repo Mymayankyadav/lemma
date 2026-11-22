@@ -113,7 +113,8 @@ export const redesignShots: Shot[] = [
  }},
  {name:"tutor-scratch",hash:"/p/real-analysis/cp/CP4/tutor",flags:"tutorScratch",prepare:async page=>{
   await page.getByRole("button",{name:"Write a question"}).click();
-  await page.getByRole("button",{name:"Scratch",exact:true}).click();
+  // N223: the composer's pencil opens the scratch pad on a double tap.
+  await page.getByRole("button",{name:"Write by hand",exact:true}).dblclick();
  }},
  {name:"settings-tutor",hash:"/settings?section=tutor"},
  {name:"review-done",hash:"/review/done"},

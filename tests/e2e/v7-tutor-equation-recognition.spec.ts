@@ -24,7 +24,7 @@ test('Recognize equation asks before its one-time download and keeps the drawing
   });
   await page.goto(url);
   await page.getByRole('button', {name: 'Write a question'}).click();
-  await page.getByRole('button', {name: 'Scratch', exact: true}).click();
+  await page.getByRole('button', {name: 'Write by hand', exact: true}).dblclick();
   await expect(recognize(page)).toBeDisabled();
   await drawOnePlusOne(page);
   await expect(recognize(page)).toBeEnabled();
@@ -52,7 +52,7 @@ test('a model file that does not match its checksum is refused', async ({page, c
     route.fulfill({status: 200, body: 'not the model', headers: {'access-control-allow-origin': '*'}}));
   await page.goto(url);
   await page.getByRole('button', {name: 'Write a question'}).click();
-  await page.getByRole('button', {name: 'Scratch', exact: true}).click();
+  await page.getByRole('button', {name: 'Write by hand', exact: true}).dblclick();
   await drawOnePlusOne(page);
   await recognize(page).click();
   const sheet = page.getByRole('dialog', {name: 'Recognize equation'});

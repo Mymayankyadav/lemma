@@ -92,7 +92,7 @@ test('Account deletion removes only that owner’s tutor ink and fences a delaye
  await page.evaluate(()=>{location.hash='/p/logic/cp/CP1/tutor'})
  await expect(page).toHaveURL(/#\/p\/logic\/cp\/CP1\/tutor$/)
  await page.getByRole('button',{name:'Write a question',exact:true}).click()
- await page.getByRole('button',{name:'Scratch',exact:true}).click()
+ await page.getByRole('button',{name:'Write by hand',exact:true}).dblclick()
  await expect(page.getByRole('button',{name:'Pen',exact:true})).toBeEnabled()
  await page.evaluate(()=>{
   const open=IDBFactory.prototype.open

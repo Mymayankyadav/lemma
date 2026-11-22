@@ -9,7 +9,7 @@ test('a drawing is inserted at the saved caret and stays atomic through typing, 
   await answer.fill('left right');
   await page.keyboard.press('Home');
   for(let index=0;index<5;index++) await page.keyboard.press('ArrowRight');
-  await page.getByRole('button',{name:'Scratch',exact:true}).click();
+  await page.getByRole('button',{name:'Write by hand',exact:true}).dblclick();
   const canvas=page.getByRole('img',{name:'Draw your answer'});
   await expect(canvas).toBeVisible();
   const box=(await canvas.boundingBox())!;
