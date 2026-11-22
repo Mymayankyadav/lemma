@@ -53,3 +53,15 @@
 :where(html[data-v7]) .v7-chart[data-study-ui] [data-chart-point]:focus-visible .v7-chart-band {
   opacity:1; fill-opacity:.1; stroke-opacity:1; stroke-width:2; vector-effect:non-scaling-stroke;
 }
+
+/* N220 (Owner report) · a tapped bar or day shows its values in a small tip, the way charts usually answer a tap; the
+   bar chart's tip floats above the tapped bar. There is no Table switch: the data table is for screen readers. */
+:where(html[data-v7]) .v7-chart-plot {position:relative;}
+:where(html[data-v7]) .v7-chart-tooltip {display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px var(--v7-space-2);width:max-content;max-width:min(100%,300px);min-height:0;margin:0;
+ padding:var(--v7-space-1) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);
+ background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);color:var(--v7-role-text-primary);
+ font:400 var(--v7-type-caption)/1.35 var(--v7-sans);font-variant-numeric:tabular-nums;}
+:where(html[data-v7]) .v7-chart-tooltip strong {font-weight:600;}
+:where(html[data-v7]) .v7-chart-tooltip span {display:inline-flex;align-items:center;gap:var(--v7-space-1);}
+:where(html[data-v7]) .v7-chart-tooltip i {display:inline-block;width:8px;height:8px;border-radius:2px;}
+:where(html[data-v7]) .v7-chart-tooltip[data-floating] {position:absolute;top:0;z-index:2;transform:translateX(-50%);pointer-events:none;}

@@ -9,3 +9,14 @@ export async function nativeHaptic(pattern: number | number[]): Promise<void> {
     }
   } catch { /* haptics are a nicety */ }
 }
+
+/** N220 · a keyboard tap: Android's own KEYBOARD_TAP feedback through Lemma's plugin (short and crisp, and it follows the
+ *  system's touch-feedback setting); falls back to a light impact on an older app build without the method. */
+export async function nativeKeyTap(): Promise<void> {
+  try {
+    const {lemmaNative} = await import('./bridge');
+    await (await lemmaNative()).keyTap();
+  } catch {
+    await nativeHaptic(8);
+  }
+}

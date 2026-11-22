@@ -29,7 +29,7 @@ import {AtlasLayerContent,AtlasLayers,usedBridges} from '../../adaptive/panels/A
 import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 
 /** The peek height, and the floating dock's height (tab bar, margins) the map keeps clear. */
-const PAGE=200,PEEK=150;
+const PAGE=200,PEEK=190;
 const legendOrder:StarState[]=['demonstrated','in_progress','up_next','revisit','not_started'];
 
 // A1: the system setting or Settings › Reduce effects (src/ui/v7/effects.ts).
@@ -280,9 +280,11 @@ export default function AtlasV7(){
       <IconButton label="Zoom in" onClick={()=>map.current?.zoomBy(1.5)}><Plus aria-hidden="true"/></IconButton>
       <IconButton label="Zoom out" onClick={()=>map.current?.zoomBy(1/1.5)}><Minus aria-hidden="true"/></IconButton>
      </div>
-     {!allSky&&focusCluster!==null&&<nav className="v7-atlas-compass" aria-label="Nearby constellations">
-      {model.clusters.filter(cluster=>cluster.index!==focusCluster).slice(0,2).map(cluster=>
-       <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name} onClick={()=>map.current?.flyToCluster(cluster.index)}>
+     {/* N220 (Owner report): every subject has its button, the one in view marked, instead of two neighbours only. */}
+     {model.clusters.length>1&&<nav className="v7-atlas-compass" aria-label="Subjects">
+      {model.clusters.map(cluster=>
+       <IconButton key={cluster.id} label={'Go to '+cluster.name} title={cluster.name} aria-current={!allSky&&cluster.index===focusCluster?'true':undefined}
+        onClick={()=>map.current?.flyToCluster(cluster.index)}>
         <SubjectMark subject={cluster.subject}/></IconButton>)}
      </nav>}
     </>}
@@ -333,7 +335,8 @@ export default function AtlasV7(){
    <p id="v7-atlas-map-summary" className="v7-sr-only">{summary}. The map is visual; use List view to browse concepts with assistive technology.</p>
    {layout?.model===model?<AtlasMap ref={map} model={model} layout={layout.result} source={layout.source} selected={selected} reduced={reduced} paused={!mapVisible}
      focusCluster={allSky?null:focusCluster} focusSelected={mapFrame==='initial'} highlighted={highlighted}
-     insets={{top:64,right:8,bottom:selectedStar?PEEK:0,left:8}} onSelect={index=>select(index,index!==null)} onPan={setPanning}/>
+     insets={{top:64,right:8,bottom:selectedStar?PEEK:0,left:8}} labelMargin={{top:56,right:optionsShown?72:12,bottom:selectedStar?PEEK+16:8,left:8}}
+     onSelect={index=>select(index,index!==null)} onPan={setPanning}/>
     :layoutError?<div className="v7-atlas-state" role="alert"><p>Couldn't arrange the map. The List view still works.</p>
       <Button onClick={()=>update({view:'list'})}>Show the list</Button></div>
     :<p role="status" className="v7-atlas-state">Arranging the sky…</p>}

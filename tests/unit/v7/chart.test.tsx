@@ -13,8 +13,9 @@ describe('v7 charts',()=>{
    expect(mark.getAttribute('aria-label')).toBe('Mon: Analysis 2 h, Algebra 3 h');
    await act(async()=>mark.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true})));
    expect(host.querySelector('[role=status]')?.textContent).toContain('2 h Analysis');
-   await act(async()=>host.querySelector('button')!.click());
-   expect(host.querySelector('table')?.textContent).toContain('3 h');
+   // N220 (Owner report): no Table switch; the equivalent table is always there for screen readers.
+   expect(host.querySelector('.v7-chart-toggle')).toBeNull();
+   expect(host.querySelector('.v7-sr-only table')?.textContent).toContain('3 h');
   }finally{await act(async()=>root.unmount());host.remove();}
  });
  it('exposes heatmap and ranked values through table and keyboard',async()=>{
@@ -25,9 +26,11 @@ describe('v7 charts',()=>{
    expect(host.querySelector('.v7-heatmap button')?.getAttribute('aria-label')).toMatch(/3/);
    await act(async()=>host.querySelector<HTMLButtonElement>('.v7-heatmap button')!.click());
    expect(host.querySelector('[role=status]')?.textContent).toContain('3');
-   const toggles=host.querySelectorAll<HTMLButtonElement>('.v7-chart-toggle');
-   await act(async()=>toggles[1].click());
-   expect(host.querySelector('table')?.textContent).toContain('Analysis');
+   expect(host.querySelectorAll('.v7-chart-toggle')).toHaveLength(0);
+   const tables=host.querySelectorAll('.v7-sr-only table');
+   expect(tables).toHaveLength(2);
+   expect(tables[0].textContent).toContain('3');
+   expect(tables[1].textContent).toContain('Analysis');
   }finally{await act(async()=>root.unmount());host.remove();}
  });
  it('renders an empty state',async()=>{

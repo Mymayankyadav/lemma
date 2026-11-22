@@ -55,6 +55,7 @@
   --v7-role-state-hover: #121B310F;
   --v7-role-state-pressed: #121B311F;
   --v7-role-viz-neutral: #40495C;
+  --v7-role-viz-easy: #1C64C8;
   --v7-backdrop: rgb(18 27 49 / 40%);
   --v7-shadow-1: 0 1px 2px rgb(18 27 49 / 6%);
   --v7-shadow-2: 0 4px 12px rgb(18 27 49 / 8%),0 12px 32px rgb(18 27 49 / 10%);
@@ -114,6 +115,7 @@
   --v7-role-state-hover: #FFFFFF0F;
   --v7-role-state-pressed: #FFFFFF1F;
   --v7-role-viz-neutral: #B1B7C6;
+  --v7-role-viz-easy: #58A6FF;
   --v7-backdrop: rgb(0 0 0 / 60%);
   --v7-shadow-1: inset 0 1px rgb(255 255 255 / 5%);
   --v7-shadow-2: inset 0 1px rgb(255 255 255 / 5%),0 12px 32px rgb(0 0 0 / 50%);
@@ -173,6 +175,7 @@
   --v7-role-state-hover: #121B310F;
   --v7-role-state-pressed: #121B311F;
   --v7-role-viz-neutral: #40495C;
+  --v7-role-viz-easy: #1C64C8;
 }
 [data-v7][data-theme="graph-night"][data-contrast="high"] {
   --v7-role-surface-page: #091023;
@@ -228,6 +231,7 @@
   --v7-role-state-hover: #FFFFFF0F;
   --v7-role-state-pressed: #FFFFFF1F;
   --v7-role-viz-neutral: #B1B7C6;
+  --v7-role-viz-easy: #58A6FF;
 }
 [data-v7] {
   --v7-sans: "Lemma v7 Instrument Sans", "Lemma v7 Sans fallback", sans-serif;

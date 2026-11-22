@@ -55,7 +55,7 @@
 .lemma-tutor .msg ul,.lemma-tutor .msg ol{margin:0 0 12px;padding-left:22px} .lemma-tutor .msg li{margin:4px 0}
 .lemma-tutor .msg code{font:400 var(--v7-type-supporting) ui-monospace,monospace}
 .lemma-tutor .msg.a b{font-weight:600;color:var(--v7-role-text-primary)}
-.lemma-tutor .msg.u{align-self:flex-end;max-width:84%;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);padding:10px 15px;border-radius:var(--v7-radius-3) var(--v7-radius-3) var(--v7-radius-1) var(--v7-radius-3);font:400 var(--v7-type-reading)/1.5 var(--v7-serif)}
+.lemma-tutor .msg.u{align-self:flex-end;max-width:84%;background:var(--v7-role-selection-subtle);color:var(--v7-role-text-primary);padding:10px 15px;border-radius:var(--v7-radius-3) var(--v7-radius-3) var(--v7-radius-1) var(--v7-radius-3);font:400 var(--v7-type-body)/1.5 var(--v7-sans)}
 .lemma-tutor .note{align-self:center;display:flex;align-items:center;gap:10px;font:600 var(--v7-type-caption)/1.3 var(--v7-sans);letter-spacing:.08em;text-transform:uppercase;color:var(--v7-role-text-tertiary);text-align:center}
 .lemma-tutor .note::before,.lemma-tutor .note::after{content:"";width:24px;height:1px;background:var(--v7-role-border-subtle)}
 .lemma-tutor .note.strong{color:var(--v7-role-text-secondary)}
@@ -72,7 +72,7 @@
 
 /* ── keyboard: Gboard's proportions and behaviour in Lemma's colours ──
    Each key is a full cell with no dead gaps; the keycap is drawn inside it. */
-.lemma-tutor .kb{flex:none;background:var(--kb);padding:0 4px calc(4px + env(safe-area-inset-bottom));display:flex;flex-direction:column;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.lemma-tutor .kb{flex:none;background:var(--kb);padding:0 4px calc(4px + var(--v7-safe-bottom,env(safe-area-inset-bottom)));display:flex;flex-direction:column;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .lemma-tutor .strip{display:flex;align-items:center;height:var(--v7-touch);gap:2px}
 .lemma-tutor .sbtn{flex:none;width:var(--v7-touch);height:var(--v7-touch);border:0;border-radius:9999px;background:transparent;color:var(--v7-role-text-secondary);display:grid;place-items:center}
 .lemma-tutor .sbtn svg{width:20px;height:20px}
@@ -171,13 +171,13 @@
 .lemma-tutor .hero .emblem{position:absolute;z-index:0;right:-48px;bottom:-40px;width:260px;height:260px;color:var(--subject);opacity:.10;pointer-events:none}
 .lemma-tutor .hero .emblem circle{fill:none;stroke:currentColor;stroke-width:26}.lemma-tutor .hero .emblem path{fill:currentColor}
 .lemma-tutor .hero h2{margin:0;font:400 var(--v7-type-title)/1.1 var(--v7-serif);letter-spacing:-.015em;text-wrap:balance;color:var(--v7-role-text-primary)}
-.lemma-tutor .hero .sub{margin:-4px 0 0;font:400 var(--v7-type-lead)/1.4 var(--v7-serif);color:var(--v7-role-text-secondary)}
+.lemma-tutor .hero .sub{margin:-4px 0 0;font:400 var(--v7-type-body)/1.45 var(--v7-sans);color:var(--v7-role-text-secondary)}
 .lemma-tutor .chips{display:flex;flex-wrap:wrap;gap:8px}
 .lemma-tutor .steps{list-style:none;margin:4px 0 0;padding:0;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
 .lemma-tutor .steps li{height:6px;border-radius:3px;background:var(--v7-role-surface-muted-hover)}
 .lemma-tutor .steps li.done{background:var(--subject);opacity:.5}.lemma-tutor .steps li.cur{background:var(--subject)}
 .lemma-tutor .hero .now{margin:0;font:400 var(--v7-type-supporting)/1.5 var(--v7-sans);color:var(--v7-role-text-secondary)}
-.lemma-tutor .goal{display:flex;flex-direction:column;gap:6px;margin-top:4px;font:400 var(--v7-type-subhead)/1.4 var(--v7-serif);color:var(--v7-role-text-primary)}
+.lemma-tutor .goal{display:flex;flex-direction:column;gap:6px;margin-top:4px;font:400 var(--v7-type-reading)/1.45 var(--v7-sans);color:var(--v7-role-text-primary)}
 .lemma-tutor .goal .eyebrow{font:600 var(--v7-type-caption)/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
 .lemma-tutor .hero :is(.now,.goal) p{margin:0}
 .lemma-tutor .eyebrow{font:600 var(--v7-type-caption)/1 var(--v7-sans);letter-spacing:.1em;text-transform:uppercase;color:var(--v7-role-text-tertiary)}
@@ -210,14 +210,14 @@
 .lemma-tutor .msg.a .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd {white-space: normal;}
 .lemma-tutor .msg.u .bd p {white-space: pre-wrap;}
-.lemma-tutor .keyboard-composer {display:flex; flex-direction:column; flex:none; min-height:0;padding-bottom:env(safe-area-inset-bottom);container:tutor-composer / inline-size;}
+.lemma-tutor .keyboard-composer {display:flex; flex-direction:column; flex:none; min-height:0;padding-bottom:var(--v7-safe-bottom,env(safe-area-inset-bottom));container:tutor-composer / inline-size;}
 .lemma-tutor .composer .send {padding: 0;}
 .lemma-tutor .composer-preview {max-height: 100px; overflow: auto; padding: 0 16px 8px;}
 .lemma-tutor .composer-status {padding: 4px 16px; margin: 0; font-size: var(--v7-type-supporting); color: var(--v7-role-text-tertiary);}
 .lemma-tutor .kb {flex:none; overflow-x:clip;}
 .lemma-tutor .kb .strip {flex:none;}
 .lemma-tutor .kb .grid {scrollbar-width:thin; scrollbar-color:var(--v7-role-border-default) transparent;}
-.lemma-tutor.v7-page:has(.keyboard-composer) {overflow-y:auto; scroll-padding-top:calc(52px + env(safe-area-inset-top));}
+.lemma-tutor.v7-page:has(.keyboard-composer) {overflow-y:auto; scroll-padding-top:calc(52px + var(--v7-safe-top,env(safe-area-inset-top)));}
 .lemma-tutor.v7-page:has(.keyboard-composer[data-keyboard="math"]) {
   overflow:clip;
   overflow-anchor:none;
@@ -297,10 +297,10 @@
  display:grid;gap:var(--v7-space-2);padding:var(--v7-space-3);border-radius:var(--v7-radius-3);
  border:var(--v7-hairline) solid var(--v7-role-border-subtle);background:var(--v7-role-surface-raised);
 }
-.lemma-tutor .tutor-start h2 {font:400 var(--v7-type-subhead)/1.2 var(--v7-serif);}
+.lemma-tutor .tutor-start h2 {margin:0;font:600 var(--v7-type-reading)/1.3 var(--v7-sans);}
 .lemma-tutor .tutor-start-goal {
  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:1;overflow:hidden;
- font:400 var(--v7-type-supporting)/1.3 var(--v7-serif);color:var(--v7-role-text-secondary);
+ font:400 var(--v7-type-supporting)/1.4 var(--v7-sans);color:var(--v7-role-text-secondary);
 }
 .lemma-tutor .tutor-start-actions {display:flex;gap:var(--v7-space-2);align-items:center;}
 .lemma-tutor .tutor-pinned {
@@ -359,3 +359,30 @@
   .lemma-tutor .keyboard-composer[data-keyboard="math"] {grid-area:4 / 2;align-self:end;min-width:0;}
   .lemma-tutor .keyboard-composer[data-keyboard="math"] :is(.composer textarea,.tutor-answer-editor) {max-height:44px;}
 }
+
+/* N220 · the header clears the status bar on phones that draw under it. */
+.lemma-tutor .tutor-header {padding-top:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1));}
+/* N220 · session parts: the second line wraps instead of being cut ("after Lear…"). */
+.lemma-tutor .seg-r {padding:6px;}
+.lemma-tutor .seg-r small {white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;}
+.lemma-tutor .tutor-start-goal {-webkit-line-clamp:2;}
+.lemma-tutor .tutor-start .v7-eyebrow {margin:0;}
+/* N220 · action sheets list their actions as full-width rows: icon, then the label, left aligned, never wrapped. */
+.lemma-tutor .tutor-session-actions {grid-template-columns:minmax(0,1fr);gap:var(--v7-space-1);}
+.lemma-tutor .tutor-session-actions > .v7-button {justify-content:flex-start;min-height:var(--v7-button);padding-inline:var(--v7-space-4);}
+.lemma-tutor .tutor-session-actions > .v7-button > span:first-child {justify-content:flex-start;gap:var(--v7-space-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lemma-tutor .tutor-session-actions > .v7-button:disabled {opacity:1;background:transparent;color:var(--v7-role-text-disabled);}
+/* N220 · the answer composer reads like a chat app's input: the text on top, its tools and Send on one row beneath. */
+.lemma-tutor .writing-composer-card {border-radius:var(--v7-radius-4);}
+.lemma-tutor .writing-composer-card .field {
+ display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;grid-template-areas:"editor editor editor editor" "tool more . send";
+ align-items:center;gap:2px var(--v7-space-1);min-height:0;padding:var(--v7-space-1) var(--v7-space-2) var(--v7-space-2);
+}
+.lemma-tutor .writing-composer-card .field > :is(.writing-editor-wrap,.tutor-answer-editor) {grid-area:editor;padding-inline:var(--v7-space-2);}
+.lemma-tutor .writing-composer-card .field > .v7-icon-button:first-child {grid-area:tool;}
+.lemma-tutor .writing-composer-card .field > .v7-icon-button[aria-label="Edit answer"] {grid-area:more;}
+.lemma-tutor .writing-composer-card .field > [data-tutor-send] {grid-area:send;}
+.lemma-tutor .writing-composer-card .field > .v7-icon-button {width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border-radius:var(--v7-round);}
+.lemma-tutor .writing-composer-card .field > .v7-icon-button:not([data-tutor-send]) {border:1px solid var(--v7-role-border-subtle);color:var(--v7-role-text-secondary);}
+.lemma-tutor .writing-composer-card .field > .v7-icon-button[aria-pressed="true"] {background:var(--v7-role-selection-subtle);border-color:transparent;color:var(--v7-role-selection-fg);}
+.lemma-tutor .writing-composer-card .field > [data-tutor-send]:disabled {background:var(--v7-role-surface-muted);color:var(--v7-role-text-disabled);opacity:1;}

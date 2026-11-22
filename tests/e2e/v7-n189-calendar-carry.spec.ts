@@ -10,9 +10,10 @@ test('the shared editor saves a Busy block with its task, exact bounds and no pa
  await expect(field).toHaveValue('Prove continuity');
  await field.fill(title);
  await sheet.getByRole('radio',{name:'Busy'}).click();
- const length=sheet.getByRole('slider',{name:'Length'});
- for(let step=0;step<5;step++)await length.press('ArrowLeft');
- await expect(length).toHaveValue('25');
+ // N220 (Owner report): the length is a preset, not a ruler.
+ const length=sheet.getByRole('group',{name:'Length',exact:true}).getByRole('button',{name:'25 min',exact:true});
+ await length.click();
+ await expect(length).toHaveAttribute('aria-pressed','true');
  await expect(sheet.getByRole('button',{name:'Path: No path'})).toBeVisible();
  await sheet.getByRole('button',{name:'More',exact:true}).click();
  await expect(sheet.getByRole('button',{name:'Task: Prove continuity'})).toBeVisible();

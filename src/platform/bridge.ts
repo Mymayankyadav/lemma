@@ -99,6 +99,9 @@ export interface LemmaNativePlugin {
   /** N163: this phone's Firebase Cloud Messaging token. `configured` is false when the app has no Firebase values; `token` is null until Firebase issues one (a `pushToken` event follows). */
   pushToken(): Promise<{configured: boolean; token: string | null}>;
 
+  /** N220: the system keyboard-tap haptic (HapticFeedbackConstants.KEYBOARD_TAP) on the web view. */
+  keyTap(): Promise<void>;
+
   addListener(event: 'timerAction' | 'shareReceived' | 'pushToken' | 'timerChanged', handler: () => void): Promise<{remove: () => Promise<void>}>;
 }
 

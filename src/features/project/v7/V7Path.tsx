@@ -12,7 +12,7 @@ import {lazy,Suspense,useEffect,useMemo,useState} from 'react';
 import {Link,useNavigate,useParams,useSearchParams} from 'react-router';
 import {useQueryClient} from '@tanstack/react-query';
 import {getApi} from '../../../data';
-import {Archive,Copy,Pause,Play,Share2} from 'lucide-react';
+import {Archive,ChevronDown,ChevronRight,Clock3,Copy,Pause,Play,Share2} from 'lucide-react';
 import {MEANING_ICON} from '../../../ui/v7/meanings';
 import {useCheckpoint,useHome,useProject,useSearchCards,useSettings} from '../../../data/hooks';
 import {MathText} from '../../../ui/MathText';
@@ -76,6 +76,14 @@ function SessionRows({slug,sessions}:{slug:string;sessions:SessionSummary[]}){
    {session.goalMet==='yes'?<Chip kind="status">Goal met</Chip>:<Chip>{session.goalMet==='partial'?'Partly met':session.display==='ended'?'Ended':'Open'}</Chip>}
   </Link>
  </li>)}</ul>;
+}
+/** N220 (Owner report): the goal is one line under the title that opens in place, instead of a preview line and then the
+ *  same text again beneath it. */
+function GoalLine({goal}:{goal:string}){
+ const [open,setOpen]=useState(false);
+ return <button type="button" className="v7-path-goal-line" aria-expanded={open} onClick={()=>setOpen(value=>!value)}>
+  <span className="v7-path-goal" data-open={open||undefined}>{goal}</span><ChevronDown aria-hidden="true"/>
+ </button>;
 }
 /** The path's own cards, first twelve by number; the library has the rest. */
 function PathCards({slug}:{slug:string}){
@@ -172,12 +180,12 @@ export default function V7Path({selectedSlug}:{selectedSlug?:string}={}){
   <header className="v7-path-head">
    <span className="v7-path-emblem" aria-hidden="true"><Emblem subject={subject} seed={project.id} size={40} tier="tile" animate={false}/></span>
    <h1 className="v7-hub-title">{project.title}</h1>
-   {project.goal?.trim()&&<Disclosure label={<span className="v7-path-goal">{project.goal.trim()}</span>}><p>{project.goal.trim()}</p></Disclosure>}
+   {project.goal?.trim()&&<GoalLine goal={project.goal.trim()}/>}
    <div className="v7-path-meter"><span role="meter" aria-label={project.title+' progress'} aria-valuemin={0} aria-valuemax={Math.max(1,data.total)} aria-valuenow={data.done}
     aria-valuetext={data.done+' of '+data.total}><span style={{width:(data.total?Math.min(100,data.done/data.total*100):0)+'%'}}/></span><strong aria-hidden="true">{data.done}/{data.total}</strong></div>
-   <div className="v7-path-chips">{target&&<span title="Target date"><MEANING_ICON.targetDate size={14} aria-label="Target date"/> {target}</span>}
-    {!!estimates.total&&<span title={'About '+hoursEstimate(estimates.total)+' left'}>~{hoursEstimate(estimates.total).replace(' ','')} left</span>}
-    {!!estimates.total&&!estimates.hasCapacity&&<Link to="/settings?section=planning&capacity=1">Set time</Link>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>
+   {(target||!!estimates.total||project.status==='paused')&&<div className="v7-path-chips">{target&&<span title="Target date"><MEANING_ICON.targetDate size={14} aria-label="Target date"/> {target}</span>}
+    {!!estimates.total&&<span title={'About '+hoursEstimate(estimates.total)+' left'}><Clock3 size={14} aria-hidden="true"/>~{hoursEstimate(estimates.total).replace(' ','')} left</span>}
+    {!!estimates.total&&!estimates.hasCapacity&&<Link className="v7-path-chip-action" to="/settings?section=planning&capacity=1">Set time<ChevronRight size={14} aria-hidden="true"/></Link>}{project.status==='paused'&&<StatusBadge tone="warning">Paused</StatusBadge>}</div>}
    {isFlagOn('v7Qed')&&(project.status==='done'||data.total>0&&data.done>=data.total)&&<p className="v7-subhead"><ProofEnd/> Q.E.D.</p>}
   </header>
   {params.get('new')==='1'&&cps.length>0&&<section className="v7-path-tell" aria-label="Tell your tutor">

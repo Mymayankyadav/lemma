@@ -156,7 +156,7 @@
  :where(html[data-v7]) .v7-mo-legend > span {white-space:normal;}
  :where(html[data-v7]) .v7-mo-day {display:grid;gap:var(--v7-space-2);}
  :where(html[data-v7]) .v7-mo-day-head {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
-:where(html[data-v7]) .v7-mo-day-head h2 {margin:0;font:400 var(--v7-type-subhead)/1.3 var(--v7-serif);}
+:where(html[data-v7]) .v7-mo-day-head h2 {margin:0;font:600 var(--v7-type-reading)/1.35 var(--v7-sans);}
  /* Agenda rows (also used under the Month grid). */
  :where(html[data-v7]) .v7-ag {display:grid;gap:var(--v7-space-3);}
  :where(html[data-v7]) .v7-ag-day {display:grid;gap:var(--v7-space-2);}
@@ -308,3 +308,16 @@
 :where(html[data-v7]) .v7-cal-ranked-slots li {display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-cal-ranked-slots p {display:grid;gap:var(--v7-space-1);margin:0;}
 :where(html[data-v7]) .v7-cal-ranked-slots small {color:var(--v7-role-text-secondary);}
+
+/* N220 · Calendar's toolbar: the view on the left, Browse day and the period arrows on the right, under the hub's tabs. */
+:where(html[data-v7]) .v7-cal-toolbar {display:flex;align-items:center;gap:var(--v7-space-1);min-height:var(--v7-touch);min-width:0;}
+:where(html[data-v7]) .v7-cal-toolbar > .v7-segmented {flex:none;}
+:where(html[data-v7]) .v7-cal-toolbar-gap {flex:1;min-width:0;}
+:where(html[data-v7]) .v7-cal-toolbar .v7-icon-button {flex:none;}
+:where(html[data-v7]) .v7-cal-viewmenu-list {right:auto;left:0;}
+/* N220 · the status row under the week strip: chips of one height on one line, the planning action at the end, and room
+   before the first hour line. */
+:where(html[data-v7]) .v7-cal-grid-actions {gap:var(--v7-space-2);min-height:0;padding-block:var(--v7-space-1) var(--v7-space-2);}
+:where(html[data-v7]) .v7-cal-grid-actions:empty {display:none;}
+:where(html[data-v7]) .v7-cal-grid-actions > .v7-badge {min-height:32px;padding-inline:var(--v7-space-3);border-radius:var(--v7-round);}
+:where(html[data-v7]) .v7-cal-grid-actions > .v7-button {margin-inline-start:auto;}

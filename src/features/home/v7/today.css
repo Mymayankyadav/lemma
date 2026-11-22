@@ -15,7 +15,7 @@
 :where(html[data-v7]) .v7-today-hero-emblem {position:absolute;right:-72px;bottom:-64px;width:var(--v7-emblem-hero);height:var(--v7-emblem-hero);opacity:var(--v7-hero-alpha);pointer-events:none;z-index:-1;color:var(--v7-subject,var(--v7-role-text-secondary));}
 :where(html[data-v7]) .v7-today-hero > :not(.v7-today-hero-emblem) {position:relative;}
  :where(html[data-v7]) .v7-today-hero-labels {display:flex;flex-wrap:wrap;gap:var(--v7-space-2);}
- :where(html[data-v7]) .v7-today-hero-title {max-width:22ch;font:400 var(--v7-type-headline)/1.2 var(--v7-serif);overflow-wrap:anywhere;}
+ :where(html[data-v7]) .v7-today-hero-title {max-width:22ch;font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);overflow-wrap:anywhere;}
  :where(html[data-v7]) .v7-today-hero-line {color:var(--v7-role-text-secondary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-today-hero-clock {display:flex;flex-wrap:wrap;align-items:baseline;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-today-figure {font:600 var(--v7-numeric-lg)/1 var(--v7-sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums lining-nums;}
@@ -113,7 +113,7 @@
 :where(html[data-v7]) .v7-loop-ribbon li {border-top:3px solid var(--v7-role-border-subtle);padding-top:var(--v7-space-1);}
 :where(html[data-v7]) .v7-loop-ribbon li[data-step="reached"] {border-color:var(--v7-role-selection-fg);}
 :where(html[data-v7]) .v7-today-now-heading {display:flex;align-items:flex-start;justify-content:space-between;gap:var(--v7-space-2);}
-:where(html[data-v7]) .v7-today-now-heading h2 {font:400 var(--v7-type-headline)/1.2 var(--v7-serif);margin:0;}
+:where(html[data-v7]) .v7-today-now-heading h2 {font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);margin:0;}
 :where(html[data-v7]) .v7-today-next-actions {display:flex;gap:var(--v7-space-2);}
 :where(html[data-v7]) .v7-today-next-actions > .v7-primary {flex:1;}
 :where(html[data-v7]) .v7-today-then a,

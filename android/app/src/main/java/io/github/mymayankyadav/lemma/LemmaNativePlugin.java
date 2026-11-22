@@ -62,6 +62,22 @@ public class LemmaNativePlugin extends Plugin {
         if (plugin != null) plugin.notifyListeners(event, new JSObject());
     }
 
+    // ---- keyboard ------------------------------------------------------------------------------------------------
+
+    /**
+     * N220 · the answer keyboard's key press: Android's own KEYBOARD_TAP feedback on the web view, the short tick an input
+     * method plays. It follows the system's touch-feedback setting; the web layer checks Lemma's Haptics switch first.
+     */
+    @PluginMethod
+    public void keyTap(PluginCall call) {
+        getActivity().runOnUiThread(() -> {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP);
+            }
+            call.resolve();
+        });
+    }
+
     // ---- session -------------------------------------------------------------------------------------------------
 
     @PluginMethod

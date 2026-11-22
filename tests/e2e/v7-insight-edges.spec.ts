@@ -24,7 +24,8 @@ test("§6.13 one range control changes every figure on the tab",async({page})=>{
  await expect(page.getByRole("radiogroup",{name:"Range"})).toHaveCount(1);
 });
 
-test("§6.13 every chart has a Show as table switch, the almanac uses one hue and subject charts have a legend",async({page})=>{
+// N220 (Owner report): charts answer a tap with a tip; the data table is for screen readers, not a visible Table switch.
+test("§6.13 every chart carries its data table for screen readers without a Table switch, the almanac uses one hue and subject charts have a legend",async({page})=>{
  for(const tab of ["","?tab=learning"]){
   await open(page,"/insights"+tab);
   const charts=page.locator("section.v7-chart:not(.v7-chart-empty)");
@@ -34,15 +35,17 @@ test("§6.13 every chart has a Show as table switch, the almanac uses one hue an
   for(let index=0;index<count;index++){
    const chart=charts.nth(index);
    if(await chart.locator("[role=meter]").count())continue; // "When you said" is a meter list, not a chart.
-   await expect(chart.getByRole("button",{name:"Show as table"})).toHaveCount(1);
+   await expect(chart.getByRole("button",{name:"Show as table"})).toHaveCount(0);
+   await expect(chart.locator(".v7-sr-only table")).toHaveCount(1);
   }
  }
  await open(page,"/insights");
  const heat=await page.locator(".v7-heatmap button").evaluateAll(cells=>[...new Set(cells.map(cell=>(cell as HTMLElement).style.getPropertyValue("--v7-heat-color")).filter(value=>value&&value!=="transparent").map(value=>value.replace(/\d\)$/,")")))]);
  expect(heat.length).toBeLessThanOrEqual(1);
  const table=page.getByRole("region",{name:"Study almanac"}).or(page.locator("section.v7-chart",{hasText:"Study almanac"}));
- await table.first().getByRole("button",{name:"Show as table"}).click();
- await expect(table.first().locator("table")).toBeVisible();
+ await expect(table.first().locator(".v7-sr-only table tbody tr")).toHaveCount(await table.first().locator(".v7-heatmap [data-chart-point]").count());
+ await table.first().locator(".v7-heatmap [data-chart-point]").last().click();
+ await expect(table.first().getByRole("status")).toBeVisible();
 });
 
 test("Recall chart labels stay readable at 160% text",async({page})=>{
@@ -73,15 +76,16 @@ test("Recall chart labels stay readable at 160% text",async({page})=>{
  expect(measured.minimumSize).toBeGreaterThan(18);
  expect(measured.clipped).toEqual([]);
  expect(measured.overlaps).toEqual([]);
- await chart.getByRole("button",{name:"Show as table",exact:true}).click();
- await expect(chart.getByRole("table")).toBeVisible();
+ await expect(chart.getByRole("button",{name:"Show as table",exact:true})).toHaveCount(0);
+ await expect(chart.getByRole("table")).toHaveCount(1);
+ await expect(chart.locator("tbody tr").first()).not.toBeEmpty();
 });
 
 test("§6.13 the hero equals the sum of the Focus by day columns",async({page})=>{
  await open(page,"/insights?tab=time&range=7");
  const chart=page.locator("section.v7-chart",{hasText:"Focus by day"}).first();
- await chart.getByRole("button",{name:"Show as table"}).click();
- const cells=await chart.locator("tbody tr td:last-child").allTextContents();
+ const cells=await chart.locator(".v7-sr-only table tbody tr td:last-child").allTextContents();
+ expect(cells.length).toBeGreaterThan(0);
  const minutes=(text:string)=>{const h=/([\d.]+)\s*h/.exec(text),m=/(\d+)\s*min/.exec(text);return (h?Number(h[1])*60:0)+(m&&!h?Number(m[1]):0);};
  const sum=cells.reduce((total,text)=>total+minutes(text),0);
  const heroText=(await page.locator(".v7-progress-figure").textContent())!;

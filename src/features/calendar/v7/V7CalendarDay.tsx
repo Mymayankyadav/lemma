@@ -35,6 +35,7 @@ import {dotClasses,loadRange,parseView,viewLabel} from './viewModel';
 import {weekCells,monthLabel,moveToDay,movedLabel} from './dayModel';
 import {useEnterMarks} from '../../../ui/v7/useEnterMarks';
 import './calendar.css';
+import {isFlagOn} from '../../../flags';
 import {RulerSlider} from '../../../ui/v7/RulerSlider';
 import {LoggedSessionSheet} from './LoggedSessionSheet';
 import {EntrySheetV7} from '../../time-log/v7/EntrySheetV7';
@@ -194,23 +195,24 @@ export default function V7CalendarDay(){
  };
 
  return <main id="main-content" className="v7-page v7-cal" aria-label="Calendar" data-calendar-view={view}>
-  <HubHeader title="Calendar" titleFollowsTab={false}
-   control={wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
-    :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}>
-   <div className="v7-cal-navigation">
-    <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
-    <div className="v7-cal-period-actions" role="group" aria-label="Calendar navigation">
-     <IconButton label={view==='month'?'Previous month':'Previous week'} onClick={()=>movePeriod(-1)}><ChevronLeft aria-hidden="true"/></IconButton>
-     <IconButton label={view==='month'?'Next month':'Next week'} onClick={()=>movePeriod(1)}><ChevronRight aria-hidden="true"/></IconButton>
-     <MoreActions label="Calendar actions" title="Calendar" items={[
-      {label:'Go to today',icon:<RotateCcw/>,onClick:()=>go('date',today)},
-      {label:'Browse day',icon:<Clock/>,onClick:()=>{if(view!=='day')openDay(date);setBrowse(true);}},
-      {label:'Plan study tasks',icon:<ListTodo/>,onClick:()=>{const next=new URLSearchParams(params);next.set('plan','1');setParams(next);}},
-      {label:'Choose date',icon:<CalendarDays/>,onClick:()=>setPickingDate(true)},
-     ]}/>
-    </div>
-   </div>
+  {/* N220 (Owner report): the same header as every hub (title, Search, Inbox, then the page's ⋯), the sections as tabs
+      beneath it, and the view and the period arrows on their own toolbar row. */}
+  <HubHeader title="Calendar" titleFollowsTab={false} extraAction={<MoreActions label="Calendar actions" title="Calendar" items={[
+    {label:'Go to today',icon:<RotateCcw/>,onClick:()=>go('date',today)},
+    {label:'Browse day',icon:<Clock/>,onClick:()=>{if(view!=='day')openDay(date);setBrowse(true);}},
+    {label:'Plan study tasks',icon:<ListTodo/>,onClick:()=>{const next=new URLSearchParams(params);next.set('plan','1');setParams(next);}},
+    {label:'Choose date',icon:<CalendarDays/>,onClick:()=>setPickingDate(true)},
+   ]}/>}>
+   <nav className="v7-hub-tabs" aria-label="Calendar sections"><Link to="/calendar" aria-current="page">Schedule</Link><Link to="/tasks">Tasks</Link></nav>
   </HubHeader>
+  <div className="v7-cal-toolbar" role="group" aria-label="Calendar navigation">
+   {wideControls?<Segmented label="Calendar view" options={[...views]} value={viewLabel(view)} onChange={chooseView}/>
+    :<ViewMenu value={viewLabel(view)} options={views} onChange={chooseView}/>}
+   <span className="v7-cal-toolbar-gap" aria-hidden="true"/>
+   {view==='day'&&isFlagOn('v7Ruler')&&<IconButton label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></IconButton>}
+   <IconButton label={view==='month'?'Previous month':'Previous week'} onClick={()=>movePeriod(-1)}><ChevronLeft aria-hidden="true"/></IconButton>
+   <IconButton label={view==='month'?'Next month':'Next week'} onClick={()=>movePeriod(1)}><ChevronRight aria-hidden="true"/></IconButton>
+  </div>
   <DatePicker hideTrigger compact open={pickingDate} onOpenChange={setPickingDate} label="Calendar date" value={date} today={today} onChange={day=>go('date',day)}/>
   {desktop&&<aside className="v7-cal-desktop-panel" aria-label="Selected day">
    <h2 className="v7-headline">{monthWord}</h2>
@@ -233,7 +235,6 @@ export default function V7CalendarDay(){
   {(view==='day'||view==='week'||view==='agenda'&&!desktop&&overdueCount>0||planOpen)&&<div className="v7-cal-grid-actions" data-view={view}>
    {phase==='ready'&&overdueCount>0&&<StatusBadge tone="warning" onClick={()=>setOverdueOpen(true)} label={overdueCount+' overdue. Triage'}>{overdueCount} overdue</StatusBadge>}
    {phase==='ready'&&view==='day'&&!desktop&&dueToday.length>0&&<DayDueDisclosure key={date} count={dueToday.length}>{dueRows}</DayDueDisclosure>}
-   {view==='day'&&<Button small variant="ghost" aria-label="Browse day" onClick={()=>setBrowse(true)}><Clock aria-hidden="true"/></Button>}
    {((view==='day'||view==='week')&&date>=today||planOpen)&&<SuggestionsBanner inline date={date} zone={zone} openPlanner={planOpen}
     suggestedTimes={rankedSlots.length>0&&<Disclosure label="Suggested study times"><ul className="v7-cal-ranked-slots" aria-label="Ranked study times">
      {rankedSlots.map(({slot,evidence})=>{

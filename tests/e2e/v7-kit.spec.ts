@@ -71,7 +71,8 @@ test("every chart has a summary, keyboard data and an equivalent table",async({p
  const point=study.getByRole("button",{name:/Mon: Analysis/});
  await point.focus();await page.keyboard.press("Enter");
  await expect(study.getByRole("status")).toContainText("Analysis");
- await study.getByRole("button",{name:"Show as table"}).click();
+ // N220 (Owner report): no Table switch; the equivalent table is there for screen readers.
+ await expect(study.getByRole("button",{name:"Show as table"})).toHaveCount(0);
  await expect(study.getByRole("table")).toContainText("2 h");
  const heat=charts.locator(".v7-chart").filter({has:page.getByRole("heading",{name:"Activity"})});
  await expect(heat.locator(".v7-heat-swatches span")).toHaveCount(5);

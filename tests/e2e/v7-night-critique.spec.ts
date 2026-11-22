@@ -50,6 +50,8 @@ test("CD1/PA5 · the Day grid starts above 45% of the viewport and shows at leas
  await expect(page.getByRole("button",{name:"New time block"})).toHaveCount(0);
 });
 
+// N220 (Owner report): Calendar's header is every hub's header (title, Search, Inbox, then the page's ⋯), the sections
+// are tabs beneath it, and the view and period controls share one toolbar row under the tabs.
 for(const view of ["Day","Week","Month"])test(`B4 · Calendar ${view} period actions fit one line at 320 px and Choose date works`,async({page})=>{
  await open(page,"/calendar?view="+view.toLowerCase()+"&date=2026-11-11",320);
  await expect(page.getByRole("heading",{name:"Calendar",exact:true})).toBeVisible();
@@ -59,21 +61,28 @@ for(const view of ["Day","Week","Month"])test(`B4 · Calendar ${view} period act
  const navigation=page.getByRole("group",{name:"Calendar navigation"});
  const period=view==="Month"?"month":"week";
  const controls=[navigation.getByRole("button",{name:`Previous ${period}`,exact:true}),
-  navigation.getByRole("button",{name:`Next ${period}`,exact:true}),
-  navigation.getByRole("button",{name:"Calendar actions",exact:true})];
- for(const control of [menu,sections,...controls])await expect(control).toBeVisible();
- const row=(await navigation.boundingBox())!,tabs=(await sections.boundingBox())!,viewBox=(await menu.boundingBox())!;
+  navigation.getByRole("button",{name:`Next ${period}`,exact:true})];
+ const header=page.locator(".v7-hub-bar"),more=header.getByRole("navigation",{name:"Page actions"}).getByRole("button",{name:"Calendar actions",exact:true});
+ for(const control of [menu,sections,more,...controls])await expect(control).toBeVisible();
+ await expect(navigation.getByRole("button",{name:`Calendar view: ${view}`,exact:true})).toBeVisible();
+ await expect(header.getByRole("button",{name:/^Calendar view:/})).toHaveCount(0);
+ const row=(await navigation.boundingBox())!,tabs=(await sections.boundingBox())!,viewBox=(await menu.boundingBox())!,bar=(await header.boundingBox())!;
  expect(row.height).toBeLessThanOrEqual(48);
  expect(viewBox.height).toBeLessThanOrEqual(48);
- expect(Math.abs(row.y+row.height/2-tabs.y-tabs.height/2)).toBeLessThanOrEqual(4);
+ expect(row.y).toBeGreaterThanOrEqual(tabs.y+tabs.height-1);
+ expect(row.y-(tabs.y+tabs.height)).toBeLessThanOrEqual(16);
+ expect(Math.abs(viewBox.y+viewBox.height/2-row.y-row.height/2)).toBeLessThanOrEqual(4);
  expect(viewBox.x+viewBox.width).toBeLessThanOrEqual(320);
  for(const control of controls){
   const box=(await control.boundingBox())!;
-  expect(Math.abs(box.y-row.y)).toBeLessThanOrEqual(4);
+  expect(Math.abs(box.y+box.height/2-row.y-row.height/2)).toBeLessThanOrEqual(4);
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x+box.width).toBeLessThanOrEqual(320);
  }
- await controls[2].click();
+ const moreBox=(await more.boundingBox())!;
+ expect(moreBox.y+moreBox.height).toBeLessThanOrEqual(bar.y+bar.height+1);
+ expect(moreBox.x+moreBox.width).toBeLessThanOrEqual(320);
+ await more.click();
  const actions=page.getByRole("menu",{name:"Calendar actions"});
  await expect(actions.getByRole("menuitem")).toHaveText(["Go to today","Browse day","Plan study tasks","Choose date"]);
  await actions.getByRole("menuitem",{name:"Choose date",exact:true}).click();

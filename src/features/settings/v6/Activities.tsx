@@ -169,7 +169,8 @@ export default function Activities(){
      <button type="button" className={action} disabled={busy}
       onClick={()=>void run(()=>getPresetApi().archivePreset(row.id,row.version),'Activity archived')}
       aria-label={'Archive '+row.label}>Archive</button>
-     <label className="text-label">Order for {row.label}
+     {/* N220: the input's own label names the activity; the row already shows it. */}
+     <label className="text-label">Order
       <input className={field+' w-20'} type="number" min={0} max={2147483647}
        step={1} aria-label={'Order '+row.label}
        value={positions[row.id]??String(row.position)}

@@ -1,9 +1,14 @@
 import {useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode} from 'react';
-import {ArrowBigUp, ArrowBigUpDash, ChevronLeft, ChevronRight, CornerDownLeft, Delete, MoveRight, Search} from 'lucide-react';
+import {ArrowBigUp, ArrowBigUpDash, ChevronLeft, ChevronRight, CornerDownLeft, Delete, Search} from 'lucide-react';
 import {haptic} from '../../ui/v7/haptics';
 import {notation} from './notation';
+import {correctTap, prepareTapCorrection, type KeyBox} from './tapCorrection';
 
 const keepSelection = (event: PointerEvent) => event.preventDefault();
+/** How long a key's enlarged preview stays after the finger lifts (Gboard keeps it briefly, so a quick tap is seen). */
+const PREVIEW_LINGER = 110;
+const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  || typeof document !== 'undefined' && document.documentElement.hasAttribute('data-v7-reduce-effects');
 
 interface KeyHold {
   key: string;
@@ -13,12 +18,19 @@ interface KeyHold {
   timer?: ReturnType<typeof setTimeout>;
 }
 
-export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onNextSlot, onBrowse}: {
+/**
+ * N220: the answer keyboard follows Gboard's phone layout. Three staggered letter rows with number hints, Shift and Delete
+ * a key and a half wide, and a bottom row of ?123 · comma · maths · a four-key space bar · full stop · Enter. A pressed
+ * letter shows an enlarged preview above the finger, every key gives the system's keyboard tap, and a touch near the
+ * edge of a letter counts for its neighbour when only the neighbour continues a word (tap correction).
+ */
+export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove, onBrowse, wordBefore}: {
   view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
   onInsert: (text: string, typed?: boolean) => void; onDelete: () => void;
   onMove: (direction: 'left' | 'right', count: number) => void;
-  onNextSlot?: () => void;
   onBrowse: () => void;
+  /** The letters of the word before the caret, for tap correction. */
+  wordBefore?: () => string;
 }) {
   const [phrasePage, setPhrasePage] = useState(0);
   const [shift, setShift] = useState<'off' | 'once' | 'locked'>('off');
@@ -27,17 +39,35 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
   const skipClick = useRef<string | null>(null);
   const pressed = useRef<HTMLButtonElement | null>(null);
   const popup = useRef<HTMLDivElement>(null);
+  const rows = useRef<HTMLDivElement>(null);
+  const touch = useRef<{x: number; y: number; at: number} | null>(null);
+  const previewTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const actions = useRef({onInsert, onDelete, onMove, disabled});
   useLayoutEffect(() => {actions.current = {onInsert, onDelete, onMove, disabled};}, [onInsert, onDelete, onMove, disabled]);
+  useEffect(() => {if (view === 'abc') void prepareTapCorrection();}, [view]);
+  const hidePreview = (linger: boolean) => {
+    const preview = popup.current;
+    clearTimeout(previewTimer.current);
+    if (!preview) return;
+    if (!linger || preview.hidden || reducedMotion()) {preview.hidden = true; preview.removeAttribute('data-leaving'); return;}
+    preview.setAttribute('data-leaving', '');
+    previewTimer.current = setTimeout(() => {preview.hidden = true; preview.removeAttribute('data-leaving');}, PREVIEW_LINGER);
+  };
   useEffect(() => () => {
     clearTimeout(hold.current?.timer);
     hold.current = null;
     pressed.current?.classList.remove('down', 'sliding');
     pressed.current = null;
-    if (popup.current) popup.current.hidden = true;
+    clearTimeout(previewTimer.current);
+    if (popup.current) {popup.current.hidden = true; popup.current.removeAttribute('data-leaving');}
   }, [view, disabled]);
-  function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean} = {}) {
-    const {style = '', icon, alt, printable} = options;
+  /** The letter keys' boxes, for tap correction. */
+  const letterBoxes = (): KeyBox[] => [...(rows.current?.querySelectorAll<HTMLButtonElement>('.row .k.ch[data-letter]') ?? [])].map(button => {
+    const box = button.getBoundingClientRect();
+    return {letter: button.dataset.letter!, x: box.left, y: box.top, width: box.width, height: box.height};
+  });
+  function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean; letter?: string} = {}) {
+    const {style = '', icon, alt, printable, letter} = options;
     const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
       const current = hold.current;
       if (!current || current.pointer !== event.pointerId) return;
@@ -45,26 +75,33 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       if (current.fired) skipClick.current = current.key;
       hold.current = null;
       event.currentTarget.classList.remove('down', 'sliding');
-      if (popup.current) popup.current.hidden = true;
+      hidePreview(event.type === 'pointerup');
     };
     return <button type="button" key={label} className={'k ' + style} aria-label={label} disabled={disabled}
+      data-letter={letter}
       aria-pressed={label === 'Shift' || label === 'Caps lock on' ? shift !== 'off' : undefined}
       onPointerDown={event => {
         if (!event.isPrimary || event.button !== 0) return;
         keepSelection(event);
         skipClick.current = null;
-        haptic('snap');
+        haptic('key');
+        touch.current = {x: event.clientX, y: event.clientY, at: Date.now()};
         pressed.current = event.currentTarget;
         event.currentTarget.classList.add('down');
         const current: KeyHold = {key: label, pointer: event.pointerId, x: event.clientX, fired: false};
         hold.current = current;
         const preview = printable ? popup.current : null;
+        clearTimeout(previewTimer.current);
+        if (popup.current && !preview) {popup.current.hidden = true; popup.current.removeAttribute('data-leaving');}
         if (preview) {
           const keyboard = preview.parentElement!.getBoundingClientRect();
           const cell = event.currentTarget.querySelector('.kl')!.getBoundingClientRect();
-          preview.style.left = Math.max(27, Math.min(keyboard.width - 27, cell.left + cell.width / 2 - keyboard.left)) + 'px';
-          preview.style.top = cell.top - keyboard.top + 5 + 'px';
+          preview.style.minWidth = Math.round(Math.max(48, cell.width + 16)) + 'px';
+          preview.style.left = Math.max(30, Math.min(keyboard.width - 30, cell.left + cell.width / 2 - keyboard.left)) + 'px';
+          preview.style.top = cell.top - keyboard.top + 6 + 'px';
           preview.textContent = label;
+          preview.toggleAttribute('data-glyph', !/^[A-Za-z0-9.,]$/.test(label));
+          preview.removeAttribute('data-leaving');
           preview.hidden = false;
         }
         if (label === 'Space' || label === 'Delete') event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -73,6 +110,7 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
           function repeat() {
             if (actions.current.disabled) return;
             actions.current.onDelete();
+            haptic('key');
             current.fired = true;
             current.timer = setTimeout(repeat, Date.now() - started > 1300 ? 40 : 75);
           }
@@ -97,14 +135,14 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
         current.x += steps * 12;
         current.fired = true;
         event.currentTarget.classList.add('sliding');
-        haptic('snap');
+        haptic('key');
         actions.current.onMove(steps > 0 ? 'right' : 'left', Math.abs(steps));
       }}
       onPointerUp={swallowing} onPointerCancel={swallowing} onLostPointerCapture={swallowing}
       onPointerLeave={event => {if (!event.currentTarget.hasPointerCapture?.(event.pointerId)) swallowing(event);}}
       onClick={event => {
         if (event.detail && skipClick.current === label) {skipClick.current = null; return;}
-        if (!event.detail || pressed.current !== event.currentTarget) haptic('snap');
+        if (!event.detail || pressed.current !== event.currentTarget) {haptic('key'); touch.current = null;}
         pressed.current = null;
         action();
       }}>
@@ -117,23 +155,25 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
       const digit = 'qwertyuiop'.indexOf(char);
       const edge = edges && index === 0 ? ' edgeL' : edges && index === text.length - 1 ? ' edgeR' : '';
       return key(letter, () => {
-        onInsert(letter, true);
+        const point = touch.current;
+        touch.current = null;
+        const typed = point && Date.now() - point.at < 1500 && wordBefore
+          ? correctTap(letter, point, letterBoxes(), wordBefore()) : letter;
+        onInsert(typed, true);
         if (shift === 'once') setShift('off');
-      }, {style: 'ch' + edge, printable: true, alt: digit < 0 ? undefined : String((digit + 1) % 10)});
+      }, {style: 'ch' + edge, printable: true, letter: char, alt: digit < 0 ? undefined : String((digit + 1) % 10)});
     });
   }
   const back = key('Delete', onDelete, {style: 'fn w15 bk', icon: <Delete/>});
   const chars = (list: string[]) => list.map(char => key(char, () => onInsert(char, true), {style: 'ch sym', printable: true}));
   const phrases = view === 'Phrases';
   const math = phrases ? notation[view].slice(phrasePage * 9, (phrasePage + 1) * 9) : notation[view];
-  const slot = onNextSlot && key('Next □', onNextSlot, {style: 'fn quick-action', icon: <MoveRight aria-hidden="true"/>});
-  const quick = (symbol: string) => key(symbol, () => onInsert(symbol), {style: 'fn sym', printable: true});
-  return <div className="rows" data-view={view}>
+  return <div className="rows" data-view={view} ref={rows}>
     <div className="tutor-key-preview" aria-hidden="true" ref={popup} hidden/>
     {math ? <>
       <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
         <button key={name} type="button" disabled={disabled} className={view === name ? 'cur' : ''} aria-pressed={view === name}
-          onPointerDown={keepSelection} onClick={() => {haptic('snap'); onView(name);}}>{name}</button>)}</div>
+          onPointerDown={keepSelection} onClick={() => {haptic('key'); onView(name);}}>{name}</button>)}</div>
       <div className={'grid' + (phrases ? ' two' : '')} role="group" aria-label={view + ' keys'}>
         {math.map(([label, text]) => key(label, () => onInsert(text), {
           style: phrases ? 'txt' : label.length <= 2 ? 'sym' : 'mid',
@@ -146,7 +186,7 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
         {phrases && key(phrasePage ? 'Previous phrase page' : 'Next phrase page', () => setPhrasePage(page => 1 - page), {
           style: 'fn phrase-page', icon: phrasePage ? <ChevronLeft aria-hidden="true"/> : <ChevronRight aria-hidden="true"/>,
         })}
-        {slot}{back}
+        {back}
       </div>
     </> : <>
       {view === 'abc' ? <>
@@ -170,10 +210,7 @@ export function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDel
         {key(view === 'abc' ? '?123' : 'ABC', () => onView(view === 'abc' ? 'num' : 'abc'), {style: 'fn pill w15 lbl'})}
         {key(',', () => onInsert(',', true), {style: 'ch', printable: true})}
         {key('Maths symbols', () => onView(lastMath), {style: 'fn sym2', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
-        {key('Space', () => onInsert(' ', true), {style: 'space', icon: 'Lemma'})}
-        <div className="tutor-quick-math" role="group" aria-label="Quick math symbols">
-          {quick('∀')}{quick('∈')}{slot || quick('⇒')}
-        </div>
+        {key('Space', () => onInsert(' ', true), {style: 'space', icon: <span aria-hidden="true"/>})}
         {key('.', () => onInsert('.', true), {style: 'ch', printable: true})}
         {key('New line', () => onInsert('\n', true), {style: 'go w15', icon: <CornerDownLeft/>})}
       </div>
