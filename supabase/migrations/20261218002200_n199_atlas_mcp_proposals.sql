@@ -71,7 +71,7 @@ begin
  if v_kind not in ('equivalent','generalises','instance_of','uses_technique','contrasts','analogous','part_of') then
    raise exception 'Invalid typed Atlas link kind';
  end if;
- if not (v_conf between 0 and 1) or not pg_catalog.isfinite(v_conf) then
+ if not (v_conf between 0 and 1) then
    raise exception 'Confidence must be a finite number from 0 to 1';
  end if;
  if pg_catalog.char_length(v_reason) not between 1 and 200 or
