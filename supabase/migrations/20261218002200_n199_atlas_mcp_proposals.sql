@@ -1,4 +1,4 @@
--- N224 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
+-- N225 / X1: owner-scoped proposal creation for ChatGPT/Claude through the existing MCP study command.
 -- No model API key, new credential, scheduler, or implicit approval is introduced.
 -- Preserve the existing atlas_command implementation for approve/reject and other Atlas resources.
 create function public.atlas_links_mcp_command(p jsonb) returns jsonb

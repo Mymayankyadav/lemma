@@ -6,13 +6,13 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
-## N224 Finish Atlas MCP typed-link proposal draft with repository checks
+## N225 Finish Atlas MCP typed-link proposal draft with repository checks
 
 Owner task: "Complete your draft pr and please follow rules of repo to pass scope of the repo."
 Stage: Build · Status: done · Needs: — · Assigned: chat-947#b6q8
 Done = PR #1831 provides an additive, audited, owner-scoped MCP command for proposed Atlas V3 typed links; ChatGPT/Claude can read complete paginated graph data, request advisory attempt tags, and approved cross-subject aliases influence shared V3 ability without automatically certifying mastery. Registry documentation, SQL parity, unit tests, version and owner guards pass repository checks. Independent review is required before deployment.
 Tests: tests/mcp/sql/{parity,command-manifest-mirror,registries}.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; tests/unit/mcp/incident-1173-budget.test.ts.
-Scope: supabase/migrations/20261218002200_n199_atlas_mcp_proposals.sql; supabase/functions/mcp/{server.ts,tools/read.ts,tools/atlas-worker-read.ts}; supabase/functions/_shared/adaptive/atlas.ts; src/data/adaptive/live.ts; tests/mcp/sql/parity.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; docs/v6/capability-registry/lemma_command_resources.json; docs/current/N224.md; NEXT.md.
+Scope: supabase/migrations/20261218002200_n199_atlas_mcp_proposals.sql; supabase/functions/mcp/{server.ts,tools/read.ts,tools/atlas-worker-read.ts}; supabase/functions/_shared/adaptive/atlas.ts; src/data/adaptive/live.ts; tests/mcp/sql/parity.mjs; tests/unit/adaptive/atlas-mcp-worker.test.ts; docs/v6/capability-registry/lemma_command_resources.json; docs/current/N225.md; NEXT.md.
 Not: production deployment without review; autonomous approvals, merges, evidence or tiers; protected CI/rules changes; provider API keys.
 
 ## N223 Equations inline, equation mode in the keys' place and one way to write by hand
