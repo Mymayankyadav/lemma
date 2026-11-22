@@ -23,26 +23,31 @@ type PreviewPart =
   | {kind: 'text' | 'unrendered'; source: string}
   | {kind: 'rendered'; html: string; display: boolean};
 
+/** Shared safe KaTeX rendering for the Pad preview and Equation Assist. */
+export function renderPadMath(tex: string, display = false): string | null {
+  if (tex.length > MAX_TEX) return null;
+  try {
+    const html = katex.renderToString(tex, {
+      displayMode: display, trust: false, throwOnError: true, strict: 'error',
+      output: 'htmlAndMathml', maxExpand: 100, maxSize: MAX_SIZE_EM,
+      macros: {[PAD_SLOT]: '\\square'},
+    });
+    return html.length <= MAX_HTML && !hasOversizedNegativeDimension(html) ? html : null;
+  } catch {
+    return null;
+  }
+}
+
 function previewParts(source: string): PreviewPart[] {
   let formulas = 0, remaining = MAX_HTML;
   return scanPad(source).map(segment => {
     if (segment.kind === 'text') return segment;
     const literal = {kind: 'unrendered' as const, source: segment.source};
-    if (segment.kind !== 'math' || ++formulas > MAX_FORMULAS || segment.tex.length > MAX_TEX || remaining <= 0) return literal;
-    try {
-      // Do not use MathPreview's Markdown pipeline: Pad treats prose as text,
-      // never embeds remote content, and doesn't inherit macros from other views.
-      const html = katex.renderToString(segment.tex, {
-        displayMode: segment.display, trust: false, throwOnError: true, strict: 'error',
-        output: 'htmlAndMathml', maxExpand: 100, maxSize: MAX_SIZE_EM,
-        macros: {[PAD_SLOT]: '\\square'},
-      });
-      if (html.length > remaining || hasOversizedNegativeDimension(html)) return literal;
-      remaining -= html.length;
-      return {kind: 'rendered', html, display: segment.display};
-    } catch {
-      return literal;
-    }
+    if (segment.kind !== 'math' || ++formulas > MAX_FORMULAS || remaining <= 0) return literal;
+    const html = renderPadMath(segment.tex, segment.display);
+    if (!html || html.length > remaining) return literal;
+    remaining -= html.length;
+    return {kind: 'rendered', html, display: segment.display};
   });
 }
 
