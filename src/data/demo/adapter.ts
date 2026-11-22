@@ -2672,7 +2672,7 @@ export class DemoAdapter implements LemmaApi {
       }));
   }
   async getInsightData(days: InsightDays): Promise<InsightData> {
-    if (![7, 30, 90].includes(days)) invalid("Invalid insight range");
+    if (![1, 7, 30, 90].includes(days)) invalid("Invalid insight range");
     const aggregate = makeStressInsightAggregate(this.store,days,this.now(),this.store.settings.timeZone,this.store.settings.rolloverHour);
     // Match ST-5 live semantics: the browser receives bounded aggregates, not raw history.
     if (aggregate) return {aggregate,reviews:[],sessions:[],checkpointEvents:[],projects:[],misconceptions:[]};

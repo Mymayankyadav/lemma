@@ -232,3 +232,13 @@
 /* N221 · only the rail's buttons take taps; the gaps and padding between them leave the map to the finger. */
 :where(html[data-v7]) .v7-atlas-controls {pointer-events:none;}
 :where(html[data-v7]) .v7-atlas-controls :is(.v7-icon-button,input,.v7-atlas-search-slot) {pointer-events:auto;}
+
+/* N223 (Owner: "why no breathing room in the concept"): the peek grows with its content and the reader's text size
+   instead of a fixed 196 px, so the title, the chips and the actions never overlap; the title is not hyphenated, and
+   each row has room around it. */
+:where(html[data-v7]) .v7-atlas-sheet {gap:6px;}
+:where(html[data-v7]) .v7-atlas-sheet[data-expanded="false"] {max-height:calc(min(46dvh,var(--atlas-detail-max)) + var(--v7-safe-bottom));
+ padding-block-start:var(--v7-space-1);}
+:where(html[data-v7]) .v7-atlas-sheet-head {align-items:flex-start;}
+:where(html[data-v7]) .v7-atlas-sheet-title {padding-block:var(--v7-space-1) 2px;line-height:1.25;hyphens:manual;overflow-wrap:break-word;}
+:where(html[data-v7]) .v7-atlas-sheet-meta {row-gap:var(--v7-space-2);}

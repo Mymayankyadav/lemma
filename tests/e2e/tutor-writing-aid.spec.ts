@@ -2,7 +2,9 @@ import {expect, test, type CDPSession, type Locator, type Page} from '@playwrigh
 import {liveTutorFixtureResponse, prepareLiveTutor} from './helpers/live-tutor';
 import {createWritingAidModel, updateWritingAidModel} from '../../src/features/tutor/writingAid/learning';
 
-const routes = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch#';
+// N223: suggestions are always on with no settings and no grey text by default; this spec keeps testing the settings and
+// the grey-text continuation behind their flags.
+const routes = '/lemma/?demo=1&flags=v7Shell,v6Shell,tutorScratch,proofAssistGhost,writingAidSettings#';
 const tutor = routes + '/p/real-analysis/cp/CP4/tutor';
 
 async function openAnswer(page: Page) {
@@ -557,7 +559,7 @@ test('a read-only tutor draft remains intact with a saved Balanced preference', 
       canSubmit: false, canConnect: false, recoveredDrafts: [], turns: []}});
     return route.fulfill({json: liveTutorFixtureResponse(payload, path, request.headers().accept)});
   });
-  await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads#/p/logic/cp/CP1/tutor');
+  await page.goto('/lemma/?demo=0&flags=v7Shell,tutorThreads,-tutorScratch,proofAssistGhost,writingAidSettings#/p/logic/cp/CP1/tutor');
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   await expect(answer).toHaveJSProperty('readOnly', true);
   await answer.click();
@@ -571,7 +573,7 @@ test('a read-only tutor draft remains intact with a saved Balanced preference', 
 });
 
 test('the default demo textarea supports visible edits, refresh, swipe and Balanced personalization', async ({page, context}) => {
-  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch,proofAssistGhost,writingAidSettings#/p/real-analysis/cp/CP4/tutor');
   await page.getByRole('button', {name: 'Write a question', exact: true}).click();
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   await expect(answer).toHaveJSProperty('tagName', 'TEXTAREA');
@@ -617,7 +619,7 @@ test('the default demo textarea supports visible edits, refresh, swipe and Balan
 });
 
 test('a capped textarea shows the continuation at its end and still scrolls normally', async ({page, context}) => {
-  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+  await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch,proofAssistGhost,writingAidSettings#/p/real-analysis/cp/CP4/tutor');
   await page.getByRole('button', {name: 'Write a question', exact: true}).click();
   const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
   const draft = 'Explanation '.repeat(18) + '. could you restate';
@@ -640,7 +642,7 @@ for (const {width, height, textSize} of [{width: 320, height: 640, textSize: 160
     await page.addInitScript(size => {
       document.addEventListener('DOMContentLoaded', () => {document.documentElement.style.fontSize = `${size}%`;});
     }, textSize);
-    await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell#/p/real-analysis/cp/CP4/tutor');
+    await page.goto('/lemma/?demo=1&flags=v7Shell,v6Shell,-tutorScratch,proofAssistGhost,writingAidSettings#/p/real-analysis/cp/CP4/tutor');
     await page.getByRole('button', {name: 'Write a question', exact: true}).click();
     const answer = page.getByRole('textbox', {name: 'Your answer', exact: true});
     await answer.focus();

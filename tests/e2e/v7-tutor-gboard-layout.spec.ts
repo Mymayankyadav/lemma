@@ -80,15 +80,25 @@ test('in a browser the caps keep Gboard\'s shape and layout with shorter rows an
   await expect(page.locator('.kb .strip').getByRole('button', {name: 'Hide keyboard', exact: true})).toBeVisible();
 });
 
-test('the strip spreads its icons when idle and frames three word slots while typing, as Gboard', async ({page}) => {
+// N223 (Owner: the pencil at the left edge; "the symbols suggested should live inside the suggestion strip"): the strip
+// keeps Gboard's frame in every state, so the idle ∀ ∈ ⇒ are slots between the edge icons, like the words.
+test('the strip keeps Gboard\'s frame, an icon at each edge and three equal slots, idle and while typing', async ({page}) => {
   await page.setViewportSize({width: 393, height: 873});
   const {keyboard, decoderReady} = await openKeyboard(page, true);
   await decoderReady();
   const strip = page.locator('.kb .strip');
-  // ∀ ∈ ⇒, Draw symbol and Equation mode.
-  const icons = await strip.locator('.sbtn:visible').evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().width));
-  expect(icons).toHaveLength(5);
-  expect(Math.max(...icons) - Math.min(...icons)).toBeLessThan(2);
+  const stripBox = (await strip.boundingBox())!;
+  const [draw, equation] = await Promise.all(['Draw symbol', 'Equation mode'].map(name =>
+    keyboard.getByRole('button', {name, exact: true}).boundingBox()));
+  expect(draw!.width).toBeCloseTo(equation!.width, 0);
+  expect(draw!.x - stripBox.x).toBeLessThan(10);
+  expect(stripBox.x + stripBox.width - (equation!.x + equation!.width)).toBeLessThan(10);
+  const quick = await keyboard.getByRole('group', {name: 'Quick math symbols'}).getByRole('button')
+    .evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()));
+  expect(quick).toHaveLength(3);
+  for (const box of quick) expect(box.width).toBeCloseTo(quick[0].width, 0);
+  expect(quick[0].x).toBeGreaterThanOrEqual(draw!.x + draw!.width - 1);
+  expect(quick[2].x + quick[2].width).toBeLessThanOrEqual(equation!.x + 1);
   // In the app, Hide keyboard sits in the band under the keys, where Gboard draws its chevron.
   const hide = keyboard.getByRole('button', {name: 'Hide keyboard', exact: true});
   await expect(hide).toHaveCount(1);
@@ -101,7 +111,7 @@ test('the strip spreads its icons when idle and frames three word slots while ty
   await expect(words.and(page.locator(':enabled'))).toHaveCount(3);
   const boxes = await words.evaluateAll(nodes => nodes.map(node => node.getBoundingClientRect().toJSON()));
   for (const box of boxes) expect(box.width).toBeCloseTo(boxes[0].width, 0);
-  const [first, last] = [boxes[0], boxes[2]], stripBox = (await strip.boundingBox())!;
+  const [first, last] = [boxes[0], boxes[2]];
   // One icon at each end: the slots start and end about 48 px in.
   expect(first.x - stripBox.x).toBeCloseTo(48, -1);
   expect(stripBox.x + stripBox.width - (last.x + last.width)).toBeCloseTo(48, -1);

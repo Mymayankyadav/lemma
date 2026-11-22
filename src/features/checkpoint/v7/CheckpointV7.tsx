@@ -95,11 +95,17 @@ export default function CheckpointV7(){
      <span className="v7-sr-only">{state==='deferred'?'Deferred':state==='done'?'Done':state==='current'?'Current step':'Later'}</span>
     </li>;})}</ol></section>}
   {(detail.prereqs.length>0||detail.sourceShort||detail.pages)&&<section aria-label="Prerequisites and sources"><h2 className="v7-learn-h2">Prerequisites</h2>
-   <div className="v7-learn-chiprow">
+   {/* N223 (Owner: "looks weird"): one full-width row each, the title wrapping in its own column and the state at the
+       end, instead of chips that ran off the screen with a long title. */}
+   <ul className="v7-prereqs">
     {detail.prereqs.map(code=>{const cp=project.data?.checkpoints.find(item=>item.code===code);
-     return <Link key={code} className="v7-learn-chip v7-learn-link" to={back+'/cp/'+encodeURIComponent(code)}>{cp?nodeWord[nodeStateOf(cp.ui)]+' · ':''}{cp?.title??code}</Link>;})}
-    {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
-   </div></section>}
+     return <li key={code}><Link className="v7-prereq" to={back+'/cp/'+encodeURIComponent(code)}>
+      <span className="v7-prereq-title">{cp?.title??code}</span>
+      {cp&&<span className="v7-prereq-state">{nodeWord[nodeStateOf(cp.ui)]}</span>}<ChevronRight aria-hidden="true"/></Link></li>;})}
+    {(detail.sourceShort||detail.pages)&&<li><Link className="v7-prereq" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>
+     <span className="v7-prereq-title">{detail.sourceShort??'Source'}</span>
+     {detail.pages&&<span className="v7-prereq-state">p. {detail.pages}</span>}<ChevronRight aria-hidden="true"/></Link></li>}
+   </ul></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
   {view.ui!=='locked'&&atlas.data&&<p className="v7-learn-empty">Recheck: {view.ui==='revisit'?'due':view.ui==='done'?'not due yet':'not ready yet'}</p>}
   <CheckpointReadiness checkpointId={view.id}/>

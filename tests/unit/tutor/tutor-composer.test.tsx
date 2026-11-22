@@ -13,6 +13,8 @@ const dialogMethods = ['showModal', 'close'] as const;
 const originalMethods = dialogMethods.map(method => Object.getOwnPropertyDescriptor(HTMLDialogElement.prototype, method));
 const writingModelKey = 'lemma.demo-tutor.writing-aid-model.v1:default';
 beforeEach(() => {
+  // N223: these tests cover the Writing assistance settings and the grey-text continuation, now behind their flags.
+  window.history.replaceState(null, '', '/?flags=writingAidSettings,proofAssistGhost');
   sessionStorage.setItem('lemma.demo', '1');
   localStorage.removeItem('lemma.demo-tutor.writing-aid.v1:default');
   localStorage.removeItem(writingModelKey);
@@ -62,7 +64,8 @@ const answerAction = async (name: string) => {
   await click(name, host.querySelector('dialog[open]')!);
 };
 const keyboard = () => host.querySelector('.rows')!;
-const suggestion = () => host.querySelector('.sugg')!;
+// N223: the word slots when the strip shows words; otherwise the whole strip (its slots then hold symbols or ∀ ∈ ⇒).
+const suggestion = () => host.querySelector('.writing-aid-words') ?? host.querySelector('.kb .strip')!;
 const key = (name: string, modifiers: KeyboardEventInit = {}) => act(async () => {
   field().dispatchEvent(new KeyboardEvent('keydown', {key: name, bubbles: true, cancelable: true, ...modifiers}));
 });
@@ -293,7 +296,7 @@ test('suppresses mid-draft completion while leaving strategy choices and mathema
   await act(async () => field().setSelectionRange(4, 4));
   // Selection updates from a native event before accepting a suggestion.
   await key('ArrowRight');
-  expect([...suggestion().querySelectorAll('button')].every(item => item.disabled)).toBe(true);
+  expect(host.querySelectorAll('.writing-aid-words button:not(:disabled)')).toHaveLength(0);
   expect(field().value).toBe('PREI suffix');
   await input('by ');
   for(const strategy of ['definition','induction','contradiction'])
@@ -391,7 +394,8 @@ test('previews a correction with a strike-through and keeps the original without
   await act(async () => field().focus());
   await input('teh');
   await awaitAid('Replace teh with the');
-  expect(suggestion().querySelectorAll('button')).toHaveLength(3);
+  // The three slots stay in place under the fix (N223: ∀ ∈ ⇒ when there are no words).
+  expect(host.querySelector('.kb .strip .sugg')!.querySelectorAll('button')).toHaveLength(3);
   expect(host.querySelector('[data-writing-aid-edit] del')?.textContent).toBe('teh');
   expect(host.querySelector('[data-writing-aid-source]')?.textContent).toBe('teh');
   await click('Dismiss suggestion');

@@ -47,6 +47,11 @@ function equationWorker() {
   return worker ??= new Worker(new URL('./equationRecognizer.worker.ts', import.meta.url), {type: 'module'});
 }
 
+/** N223: start loading the model if it is already on this device, so the first Read is not a cold start. */
+export async function prepareEquationModel(): Promise<void> {
+  if (await equationModelCached().catch(() => false)) equationWorker().postMessage({type: 'prepare'} satisfies EquationWorkerRequest);
+}
+
 /** Whether the model is already on this device. */
 export function equationModelCached(): Promise<boolean> {
   return new Promise(resolve => {

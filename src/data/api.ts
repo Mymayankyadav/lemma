@@ -21,7 +21,8 @@ export interface NoteStatusGuard {
  generation:number
  expectedStatus:NoteStatus
 }
-export type InsightDays = 7 | 30 | 90
+/** N223: Today is one study day (Progress fetched seven and showed a week's tutor sessions as today's). */
+export type InsightDays = 1 | 7 | 30 | 90
 export interface ReviewLogEntry { cardId: string; reviewedAt: string; rating: Rating }
 /** N105.2: only the audited owner command changes the concept graph. */
 export type ConceptLinkKind = 'prereq' | 'related'

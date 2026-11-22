@@ -105,8 +105,8 @@ test('the real Pad sends only a frozen selection through preview, Add and Save q
   await fill(field('Question'), 'How do I finish this proof?');
   expect(button('Save question').disabled).toBe(true);
   await click('Cancel excerpt preview');
-  expect(field('Paste selected local text').value).toBe(excerpt);
-  await click('Preview selected text'); await click('Add local excerpt');
+  expect(field('Excerpt').value).toBe(excerpt);
+  await click('Preview excerpt'); await click('Add local excerpt');
   expect(commands()).toEqual([]);
   await click('Close');
   await fill(notes, 'A later private edit, which must not replace the attached excerpt.');
@@ -128,8 +128,8 @@ test('a checkpoint or account boundary cannot carry an unadded selection to the 
   await render(detail(nextCheckpoint));
   await vi.waitFor(() => expect(host.querySelector('[aria-label="Local excerpt preview"]')).toBeNull());
   await click('Open checkpoint tutor');
-  await vi.waitFor(() => expect(host.textContent).toContain('Add selected local text'));
-  expect(field('Paste selected local text').value).toBe('');
+  await vi.waitFor(() => expect(host.textContent).toContain('Add an excerpt'));
+  expect(field('Excerpt').value).toBe('');
   expect(host.textContent).not.toContain('Private selection');
   await act(async () => publishAuth({id: '00000000-0000-4000-8000-000000000004'}));
   expect(host.querySelector('textarea')).toBeNull();
