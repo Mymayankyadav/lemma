@@ -69,7 +69,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
     patch:z.record(S(),z.unknown()).optional()
   }).strict();
   m.registerTool('study',{
-    description:'Study.',
+    description:'Study. For atlas_links, create makes a pending typed proposal; approve/reject require separate owner review.',
     inputSchema:lean(z.object({
       command:studyEnvelope,
       client:z.enum(['claude','chatgpt','other']).optional()
@@ -90,7 +90,7 @@ export function buildServer(c:Context,tutor?:TutorConnector):McpServer{
   register('resume',"Resume.",z.object({
     project:optProject,mix:z.boolean().optional(),brief:z.boolean().optional()
   }),true,(a,ctx)=>packet(ctx,a));
-  register('get',"Read, including tutor_turn.",z.object({
+  register('get',"Read, including tutor_turn. atlas_worker: id=concepts|concept_links|atlas_links|concept_aliases|subjects|projects|checkpoints|checkpoint_concepts, paginate by cursor. atlas_tag_suggestions: id=concept UUID, advisory only.",z.object({
     what:z.enum(['plan','plan_revisions','checkpoint','session','sources','outline','cards','feedback','concepts','projects','prompt','diagnostics','study_entries','calendar_blocks','tasks','resources'])
       .or(S().regex(/^[a-z][a-z0-9_]{0,60}$/)),project:optProject,
     id:S().max(120).optional(),limit:z.number().int().min(1).max(50).optional(),
