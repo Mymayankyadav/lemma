@@ -59,11 +59,11 @@ export async function readAtlasTagSuggestions(c:Context,a:{id?:string}):Promise<
   if(!target.data)throw Error('Concept not found for owner');
   const [old,typed]=await Promise.all([
     c.db.from('concept_links').select('from_id,to_id,kind').eq('user_id',c.userId).eq('to_id',a.id).limit(501),
-    c.db.from('atlas_links').select('from_id,to_id,kind,status').eq('user_id',c.userId).eq('status','approved').limit(1001)
+    c.db.from('atlas_links').select('id,from_id,to_id,kind,status').eq('user_id',c.userId).eq('status','approved').limit(1001)
   ]);
   if(old.error||typed.error)throw Error((old.error??typed.error).message);
   if((old.data?.length??0)>500||(typed.data?.length??0)>1000)throw Error('Too many links for a complete tag suggestion; inspect Atlas graph pages');
-  const links=[...(old.data??[]),...(typed.data??[])];
+  const links=[...(old.data??[]).map((l:any)=>({...l,id:'legacy:'+l.from_id+':'+l.to_id})),...(typed.data??[])];
   const facets:Facet[]=['recall','understand','use','select','execute','transfer'];
   const byFacet=Object.fromEntries(facets.map(f=>[f,defaultTags(a.id!,f,[],links)]));
   return JSON.stringify({concept:{id:a.id,name:target.data.name},byFacet,advisoryOnly:true,
