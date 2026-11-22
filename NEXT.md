@@ -12,7 +12,7 @@ Owner task: "Complete the whole job like all X nothing should remain deploy full
 Stage: Build · Status: done · Needs: N225 · Assigned: chat-947#b6q8
 Done = The Atlas V3 graph never silently deletes learning evidence during a merge, duplicate concepts with evidence can be retained and aliased, and authenticated ChatGPT/Claude MCP can change concept levels with hierarchy validation, remove truly empty orphan concepts, reclassify an existing prerequisite/related link atomically, and create up to 50 version-checked links in one audited transaction. App and MCP operations preserve existing owner checks and Undo. Full SQL and unit regression tests pass before independent Supabase review.
 Tests: tests/mcp/sql/parity.mjs, tests/mcp/sql/registries.mjs, tests/mcp/sql/command-manifest-mirror.mjs; tests/unit/mcp/{capability-map,instructions-coverage}.test.ts.
-Scope: supabase/migrations/20261218002300_n226_atlas_safe_graph_edits.sql; docs/current/N226.md; NEXT.md; docs/v6/capability-registry/{lemma_command_resources,atlas_graph_edits}.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; tests/mcp/sql/parity.mjs.
+Scope: supabase/migrations/20261218002300_n226_atlas_safe_graph_edits.sql; docs/current/N226.md; NEXT.md; docs/v6/capability-registry/{lemma_command_resources,atlas_graph_edits}.json; docs/mcp/capability-map.json; supabase/functions/mcp/rules.ts; tests/mcp/sql/parity.mjs; tests/unit/mcp/instructions-coverage.test.ts.
 Not: losing any learner evidence, altering study results, auto-approving V3 suggestions, modifying protected CI paths, bypassing owner review, or adding a model API key.
 
 ## N224 One suggestion strip, equation mode as paper, the rich answer on, and the Owner's phone review
