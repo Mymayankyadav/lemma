@@ -1,0 +1,187 @@
+{"id": "A3-quadratic-1", "plain": "x = -b +- sqrt(b^2-4ac)/2a", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A3-quadratic-2", "plain": "x = (-b +- sqrt(b^2 - 4ac))/(2a)", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A3-quadratic-3", "plain": "x = -b +/- sq(b^2-4ac)/2a", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A3-quadratic-4", "plain": "x=(-b±√(b^2-4ac))/2a", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A3-quadratic-5", "plain": "x = (-b ± sqrt(b^2-4ac)) / 2a", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A3-quadratic-6", "plain": "x=-b+-sqrt(b^2-4ac)/2a", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}"}
+{"id": "A1-1", "plain": "1/2a", "top1": "\\frac{1}{2a}"}
+{"id": "A1-2", "plain": "x/2pi", "top1": "\\frac{x}{2\\pi}"}
+{"id": "A1-3", "plain": "x^2/2", "top1": "\\frac{x^2}{2}"}
+{"id": "A1-4", "plain": "x^n/n!", "top1": "\\frac{x^n}{n!}"}
+{"id": "A1-5", "plain": "a/bc", "top1": "\\frac{a}{bc}"}
+{"id": "A1-6", "plain": "1/(2a)", "top1": "\\frac{1}{2a}"}
+{"id": "A1-7", "plain": "v^2/c^2", "top1": "\\frac{v^2}{c^2}"}
+{"id": "A2-1", "plain": "1/2 x", "top1": "\\frac{1}{2}x"}
+{"id": "A2-2", "plain": "1/2 mv^2", "top1": "\\frac{1}{2}mv^2"}
+{"id": "A2-3", "plain": "1/n sum_{i=1}^n x_i", "top1": "\\frac{1}{n}\\sum_{i=1}^nx_i"}
+{"id": "A3-1", "plain": "a+b/c", "top1": "a+\\frac{b}{c}", "in_top3": ["\\frac{a+b}{c}"]}
+{"id": "A3-2", "plain": "(a+b)/c", "top1": "\\frac{a+b}{c}"}
+{"id": "A4-1", "plain": "(a/b)/c", "top1": "\\frac{\\frac{a}{b}}{c}"}
+{"id": "A4-2", "plain": "a/(b/c)", "top1": "\\frac{a}{\\frac{b}{c}}"}
+{"id": "A5-1", "plain": "x^2y", "top1": "x^2y"}
+{"id": "A5-2", "plain": "x^10", "top1": "x^{10}"}
+{"id": "A5-3", "plain": "2^n+1", "top1": "2^n+1"}
+{"id": "A5-4", "plain": "x^-1", "top1": "x^{-1}"}
+{"id": "A5-5", "plain": "x^(n+1)", "top1": "x^{n+1}"}
+{"id": "A5-6", "plain": "a^{m+n}", "top1": "a^{m+n}"}
+{"id": "A6-1", "plain": "e^-x^2/2", "top1": "e^{-\\frac{x^2}{2}}"}
+{"id": "A6-2", "plain": "e^-x", "top1": "e^{-x}"}
+{"id": "A6-3", "plain": "e^x+1", "top1": "e^x+1"}
+{"id": "A6-4", "plain": "e^i pi", "top1": "e^i\\pi", "in_top3": ["e^{i\\pi}"], "note": "space ends the exponent under the rules; the human reading is offered as an alternative"}
+{"id": "A6-5", "plain": "e^(i theta)", "top1": "e^{i\\theta}"}
+{"id": "A6-6", "plain": "e^-(x-mu)^2/2sigma^2", "top1": "e^{-\\frac{(x-\\mu)^2}{2\\sigma^2}}"}
+{"id": "A7-1", "plain": "sum_i=1^n a_i", "top1": "\\sum_{i=1}^na_i"}
+{"id": "A7-2", "plain": "int_0^2pi sin x dx", "top1": "\\int_0^{2\\pi}\\sin x\\,dx"}
+{"id": "A7-3", "plain": "int_-inf^inf e^-x^2 dx", "top1": "\\int_{-\\infty}^{\\infty}e^{-x^2}\\,dx"}
+{"id": "A7-4", "plain": "sum_{k=0}^{n} k^2", "top1": "\\sum_{k=0}^nk^2"}
+{"id": "A7-5", "plain": "sum from i=1 to n i", "top1": "\\sum_{i=1}^ni"}
+{"id": "A7-6", "plain": "prod_(k=1)^n k", "top1": "\\prod_{k=1}^nk"}
+{"id": "A8-1", "plain": "sum_{i=1}^n a_i + b", "top1": "\\sum_{i=1}^na_i+b"}
+{"id": "A9-1", "plain": "sqrt 2x", "top1": "\\sqrt{2x}"}
+{"id": "A9-2", "plain": "√x+1", "top1": "\\sqrt{x}+1"}
+{"id": "A9-3", "plain": "sq(x)", "top1": "\\sqrt{x}"}
+{"id": "A9-4", "plain": "sqrt(x^2+1)", "top1": "\\sqrt{x^2+1}"}
+{"id": "A9-5", "plain": "cbrt(x)", "top1": "\\sqrt[3]{x}"}
+{"id": "A9-6", "plain": "root(3,x)", "top1": "\\sqrt[3]{x}"}
+{"id": "A9-7", "plain": "sqrt2", "top1": "\\sqrt{2}"}
+{"id": "A10-1", "plain": "sin x cos y", "top1": "\\sin x\\cos y"}
+{"id": "A10-2", "plain": "sin 2x", "top1": "\\sin 2x"}
+{"id": "A10-3", "plain": "sin^2 x", "top1": "\\sin^2x"}
+{"id": "A10-4", "plain": "sin(x)^2", "top1": "\\sin(x)^2"}
+{"id": "A10-5", "plain": "sin x + y", "top1": "\\sin x+y"}
+{"id": "A10-6", "plain": "ln 2x", "top1": "\\ln 2x"}
+{"id": "A10-7", "plain": "log_2 x", "top1": "\\log_2x"}
+{"id": "A10-8", "plain": "log10 x", "top1": "\\log_{10}x"}
+{"id": "A10-9", "plain": "sinx", "top1": "\\sin x"}
+{"id": "A10-10", "plain": "cos(theta)", "top1": "\\cos(\\theta)"}
+{"id": "A11-1", "plain": "pi n", "top1": "\\pi n"}
+{"id": "A11-2", "plain": "2ab", "top1": "2ab"}
+{"id": "A11-3", "plain": "alpha beta", "top1": "\\alpha\\beta"}
+{"id": "A11-4", "plain": "2 pi r", "top1": "2\\pi r"}
+{"id": "A12-1", "plain": "2*3", "top1": "2\\cdot3"}
+{"id": "A12-2", "plain": "a*b", "top1": "ab"}
+{"id": "A12-3", "plain": "2*x", "top1": "2x"}
+{"id": "A12-4", "plain": "a×b", "top1": "a\\times b"}
+{"id": "A12-5", "plain": "a·b", "top1": "a\\cdot b"}
+{"id": "A13-1", "plain": "x1 + x2", "top1": "x_1+x_2"}
+{"id": "A13-2", "plain": "x12", "top1": "x_{12}"}
+{"id": "A13-3", "plain": "x_ij", "top1": "x_{ij}"}
+{"id": "A13-4", "plain": "a_n+1", "top1": "a_n+1"}
+{"id": "A13-5", "plain": "a_{n+1}", "top1": "a_{n+1}"}
+{"id": "A13-6", "plain": "x1^2", "top1": "x_1^2"}
+{"id": "A13-7", "plain": "x2y", "top1": "x_2y"}
+{"id": "A14-1", "plain": "dy/dx", "top1": "\\frac{dy}{dx}"}
+{"id": "A14-2", "plain": "d/dx x^2", "top1": "\\frac{d}{dx}x^2"}
+{"id": "A14-3", "plain": "∂f/∂x", "top1": "\\frac{\\partial f}{\\partial x}"}
+{"id": "A14-4", "plain": "int f(x) dx", "top1": "\\int f(x)\\,dx"}
+{"id": "A14-5", "plain": "2d", "top1": "2d"}
+{"id": "A14-6", "plain": "d^2y/dx^2", "top1": "\\frac{d^2y}{dx^2}"}
+{"id": "A15-1", "plain": "|x+1|", "top1": "|x+1|"}
+{"id": "A15-2", "plain": "||v||", "top1": "\\|v\\|"}
+{"id": "A15-3", "plain": "{x | x>0}", "top1": "\\{x\\mid x>0\\}"}
+{"id": "A15-4", "plain": "|a| |b|", "top1": "|a||b|"}
+{"id": "A16-1", "plain": "{a,b}", "top1": "\\{a,b\\}"}
+{"id": "A16-2", "plain": "{}", "top1": "\\emptyset"}
+{"id": "A16-3", "plain": "x^{n+1}", "top1": "x^{n+1}"}
+{"id": "A17-1", "plain": "[[a,b],[c,d]]", "top1": "\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}"}
+{"id": "A17-2", "plain": "[a,b;c,d]", "top1": "\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}"}
+{"id": "A17-3", "plain": "((a,b),(c,d))", "top1": "\\begin{pmatrix}a&b\\\\c&d\\end{pmatrix}"}
+{"id": "A17-4", "plain": "[a,b]", "top1": "[a,b]"}
+{"id": "A17-5", "plain": "det[[a,b],[c,d]]", "top1": "\\det\\begin{bmatrix}a&b\\\\c&d\\end{bmatrix}"}
+{"id": "A17-6", "plain": "|a,b;c,d|", "top1": "\\begin{vmatrix}a&b\\\\c&d\\end{vmatrix}"}
+{"id": "A18-1", "plain": "x <= y", "top1": "x\\leq y"}
+{"id": "A18-2", "plain": "f: X -> Y", "top1": "f:X\\to Y"}
+{"id": "A18-3", "plain": "p => q", "top1": "p\\Rightarrow q"}
+{"id": "A18-4", "plain": "p <=> q", "top1": "p\\iff q"}
+{"id": "A18-5", "plain": "<u,v>", "top1": "\\langle u,v\\rangle"}
+{"id": "A18-6", "plain": "x |-> x^2", "top1": "x\\mapsto x^2"}
+{"id": "A19-1", "plain": "n!", "top1": "n!"}
+{"id": "A19-2", "plain": "(n+1)!", "top1": "(n+1)!"}
+{"id": "A19-3", "plain": "a != b", "top1": "a\\neq b"}
+{"id": "A19-4", "plain": "f'(x)", "top1": "f'(x)"}
+{"id": "A19-5", "plain": "!p", "top1": "\\neg p"}
+{"id": "A20-1", "plain": "a ~= b", "top1": "a\\approx b"}
+{"id": "A20-2", "plain": "a == b", "top1": "a\\equiv b"}
+{"id": "A20-3", "plain": "y prop x", "top1": "y\\propto x"}
+{"id": "A21-1", "plain": "lim_{n->inf} a_n", "top1": "\\lim_{n\\to\\infty}a_n"}
+{"id": "A21-2", "plain": "x -> oo", "top1": "x\\to\\infty"}
+{"id": "A22-1", "plain": "x in R", "top1": "x\\in\\mathbb{R}"}
+{"id": "A22-2", "plain": "f: R -> R", "top1": "f:\\mathbb{R}\\to\\mathbb{R}"}
+{"id": "A22-3", "plain": "x in R^n", "top1": "x\\in\\mathbb{R}^n"}
+{"id": "A22-4", "plain": "R = 5", "top1": "R=5"}
+{"id": "A22-5", "plain": "RR", "top1": "\\mathbb{R}"}
+{"id": "A23-1", "plain": "A and B", "top1": "A\\land B"}
+{"id": "A23-2", "plain": "A union B", "top1": "A\\cup B"}
+{"id": "A23-3", "plain": "A subset B", "top1": "A\\subseteq B"}
+{"id": "A23-4", "plain": "not A or B", "top1": "\\neg A\\lor B"}
+{"id": "A23-5", "plain": "forall x in R, x^2 >= 0", "top1": "\\forall x\\in\\mathbb{R},x^2\\geq0"}
+{"id": "A23-6", "plain": "exists y : y > x", "top1": "\\exists y:y>x"}
+{"id": "A24-1", "plain": "xbar", "top1": "\\bar{x}"}
+{"id": "A24-2", "plain": "vec v", "top1": "\\vec{v}"}
+{"id": "A24-3", "plain": "hat x", "top1": "\\hat{x}"}
+{"id": "A24-4", "plain": "x̄", "top1": "\\bar{x}"}
+{"id": "A24-5", "plain": "xdot", "top1": "\\dot{x}"}
+{"id": "A25-1", "plain": "1 + 2 + ... + n", "top1": "1+2+\\cdots+n"}
+{"id": "A25-2", "plain": "a_1, ..., a_n", "top1": "a_1,\\ldots,a_n"}
+{"id": "A26-1", "plain": "a mod n", "top1": "a\\bmod n"}
+{"id": "A26-2", "plain": "a ≡ b (mod n)", "top1": "a\\equiv b\\pmod{n}"}
+{"id": "A26-3", "plain": "a = b mod n", "top1": "a\\equiv b\\pmod{n}"}
+{"id": "A27-1", "plain": "C(n,k)", "top1": "\\binom{n}{k}"}
+{"id": "A27-2", "plain": "n choose k", "top1": "\\binom{n}{k}"}
+{"id": "A27-3", "plain": "binom(n,k)", "top1": "\\binom{n}{k}"}
+{"id": "A28-1", "plain": "-x/2", "top1": "-\\frac{x}{2}"}
+{"id": "A28-2", "plain": "-b/2a", "top1": "-\\frac{b}{2a}"}
+{"id": "A29-1", "plain": "lim x->0 f(x)", "top1": "\\lim_{x\\to0}f(x)"}
+{"id": "A29-2", "plain": "lim_{x->0} sin x / x = 1", "top1": "\\lim_{x\\to0}\\frac{\\sin x}{x}=1"}
+{"id": "A29-3", "plain": "lim x->0+ 1/x", "top1": "\\lim_{x\\to0^+}\\frac{1}{x}"}
+{"id": "A30-1", "plain": "x = -b +- sq(b^2-4ac)/", "top1": "x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{}"}
+{"id": "A30-2", "plain": "sum_{i=1}^", "top1": "\\sum_{i=1}^{}"}
+{"id": "A30-3", "plain": "[[a,b],[c", "top1": "\\begin{bmatrix}a&b\\\\c\\end{bmatrix}"}
+{"id": "A30-4", "plain": "sqrt(", "top1": "\\sqrt{}"}
+{"id": "A30-5", "plain": "x^", "top1": "x^{}"}
+{"id": "A30-6", "plain": "e^-x^2/", "top1": "e^{-\\frac{x^2}{}}"}
+{"id": "misc-1", "plain": "E = mc^2", "top1": "E=mc^2"}
+{"id": "misc-2", "plain": "a^2 + b^2 = c^2", "top1": "a^2+b^2=c^2"}
+{"id": "misc-3", "plain": "e^(i pi) + 1 = 0", "top1": "e^{i\\pi}+1=0"}
+{"id": "misc-4", "plain": "f(x) = 1/sqrt(2pi) e^-x^2/2", "top1": "f(x)=\\frac{1}{\\sqrt{2\\pi}}e^{-\\frac{x^2}{2}}"}
+{"id": "misc-5", "plain": "P(A|B) = P(B|A)P(A)/P(B)", "top1": "P(A|B)=\\frac{P(B|A)P(A)}{P(B)}"}
+{"id": "misc-6", "plain": "sum_{n=1}^inf 1/n^2 = pi^2/6", "top1": "\\sum_{n=1}^{\\infty}\\frac{1}{n^2}=\\frac{\\pi^2}{6}"}
+{"id": "misc-7", "plain": "T = 2 pi sqrt(L/g)", "top1": "T=2\\pi\\sqrt{\\frac{L}{g}}"}
+{"id": "misc-8", "plain": "gamma = 1/sqrt(1 - v^2/c^2)", "top1": "\\gamma=\\frac{1}{\\sqrt{1-\\frac{v^2}{c^2}}}"}
+{"id": "new-1", "plain": "E[X] = sum_i x_i p_i", "top1": "E[X]=\\sum_ix_ip_i"}
+{"id": "new-2", "plain": "Cov(X,Y) = E[XY] - E[X]E[Y]", "top1": "\\mathrm{Cov}(X,Y)=E[XY]-E[X]E[Y]"}
+{"id": "new-3", "plain": "K_max = hf - phi", "top1": "K_{max}=hf-\\phi"}
+{"id": "new-4", "plain": "(n-1 choose k-1)", "top1": "\\binom{n-1}{k-1}"}
+{"id": "new-5", "plain": "(f/g)' = (f'g - fg')/g^2", "top1": "(\\frac{f}{g})'=\\frac{f'g-fg'}{g^2}"}
+{"id": "new-6", "plain": "v = u + at", "top1": "v=u+at"}
+{"id": "new-7", "plain": "x = ta", "top1": "x=ta"}
+{"id": "new-8", "plain": "theta <- theta - eta grad L", "top1": "\\theta\\leftarrow\\theta-\\eta\\nabla L"}
+{"id": "new-9", "plain": "nabla . E = rho/epsilon_0", "top1": "\\nabla\\cdot E=\\frac{\\rho}{\\epsilon_0}"}
+{"id": "new-10", "plain": "E = hbar omega", "top1": "E=\\hbar\\omega"}
+{"id": "new-11", "plain": "sin x/2", "top1": "\\frac{\\sin x}{2}"}
+{"id": "new-12", "plain": "(n/e)^n", "top1": "(\\frac{n}{e})^n"}
+{"id": "new-13", "plain": "xbar_i", "top1": "\\bar{x}_i"}
+{"id": "new-14", "plain": "sqr", "top1": "sqr"}
+{"id": "wide-1", "plain": "x = 1e-5", "top1": "x=1\\times10^{-5}"}
+{"id": "wide-2", "plain": "3.2e8", "top1": "3.2\\times10^8"}
+{"id": "wide-3", "plain": "2e^x", "top1": "2e^x"}
+{"id": "wide-4", "plain": "2 e", "top1": "2e"}
+{"id": "wide-5", "plain": "{x^2 if x>0; 0 otherwise}", "top1": "\\begin{cases}x^2&\\text{if}\\,x>0\\\\0&\\text{otherwise}\\end{cases}"}
+{"id": "wide-6", "plain": "x^2 if x>0 else 0", "top1": "\\begin{cases}x^2&\\text{if}\\,x>0\\\\0&\\text{otherwise}\\end{cases}"}
+{"id": "wide-7", "plain": "f(x) = {x if x >= 0; -x otherwise}", "top1": "f(x)=\\begin{cases}x&\\text{if}\\,x\\geq0\\\\-x&\\text{otherwise}\\end{cases}"}
+{"id": "wide-8", "plain": "\"speed of light\"", "top1": "\\text{speed\\ of\\ light}"}
+{"id": "wide-9", "plain": "A otimes B", "top1": "A\\otimes B"}
+{"id": "wide-10", "plain": "A^dagger", "top1": "A^{\\dagger}"}
+{"id": "wide-11", "plain": "A ≅ B", "top1": "A\\cong B"}
+{"id": "wide-12", "plain": "delta_ij = {1 if i=j; 0 otherwise}", "top1": "\\delta_{ij}=\\begin{cases}1&\\text{if}\\,i=j\\\\0&\\text{otherwise}\\end{cases}"}
+{"id": "wide-13", "plain": "iint f dA", "top1": "\\iint f\\,dA"}
+{"id": "A35-underline", "plain": "\\underline{M}", "top1": "\\underline{M}"}
+{"id": "A35-widehat", "plain": "\\widehat{A}", "top1": "\\widehat{A}"}
+{"id": "A35-aleph", "plain": "\\aleph", "top1": "\\aleph"}
+{"id": "A35-overset", "plain": "\\overset{a}{b}", "top1": "\\overset{a}{b}"}
+{"id": "A35-top", "plain": "\\top", "top1": "\\top"}
+{"id": "A35-frac-arg", "plain": "\\underline{a/b}", "top1": "\\underline{\\frac{a}{b}}"}
+{"id": "A35-inline", "plain": "x = \\underline{M} + 1", "top1": "x=\\underline{M}+1"}
+{"id": "A35-spelled", "plain": "\\varprojlim", "top1": "\\varprojlim"}
+{"id": "A35-spelled-arg", "plain": "\\thicksim{x}", "top1": "\\thicksim{x}"}
+{"id": "A35-spelled-mix", "plain": "y = \\circledast", "top1": "y=\\circledast"}

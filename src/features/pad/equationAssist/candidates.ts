@@ -71,10 +71,10 @@ function typeset(text: string) {
 
 function mathText(text: string) {
   return text.replace(numbers, (_, word: string) => String(numberWords.indexOf(word.toLowerCase())))
-    .replace(/\b(?:greater than or equal to|at least)\b/gi, '>=')
-    .replace(/\b(?:less than or equal to|at most)\b/gi, '<=')
-    .replace(/\b(?:greater than|bigger than)\b/gi, '>')
-    .replace(/\b(?:less than|smaller than)\b/gi, '<')
+    .replace(/\b(?:is )?(?:greater than or equal to|at least)\b/gi, '>=')
+    .replace(/\b(?:is )?(?:less than or equal to|at most)\b/gi, '<=')
+    .replace(/\b(?:is )?(?:greater than|bigger than)\b/gi, '>')
+    .replace(/\b(?:is )?(?:less than|smaller than)\b/gi, '<')
     .replace(/\b(?:is not equal to|not equal to)\b/gi, '!=')
     .replace(/\b(?:is equal to|equals|equal to|is)\b/gi, '=')
     .replace(/\b(?:plus|adds?)\b/gi, '+')
@@ -196,16 +196,29 @@ function numericTokens(text: string) {
     .match(/\d+(?:\.\d+)?/g) ?? []).join('|');
 }
 
-export function modelEquationCandidates(text: string, outputs: readonly string[]): EquationCandidate[] {
-  const seen = new Set<string>();
-  const facts = numericTokens(text);
+export function acceptEquationOutput(text: string): (latex: string) => boolean {
+  // The cbrt shorthand carries an implicit root degree.
+  const facts = numericTokens(text.replace(/\bcbrt(?=\b|\d)/gi, 'cbrt 3 '));
   const equals = (value: string) => (value.match(/(?<![<>!=])=(?!=)/g) ?? []).length;
   const relations = equals(text);
+  return latex => !!latex.trim() && latex.length <= 512 && !/\{\s*\}|[\r\n$]|\\[()[\]]/.test(latex)
+    && facts === numericTokens(latex) && relations === equals(latex);
+}
+
+export function equationCandidateKey(latex: string) {
+  // In a plain selection, an italic/upright spelling of the same letter
+  // should not crowd out a different mathematical interpretation.
+  return normalizeLatex(latex.replace(/\\(?:mathrm|mathit)\{([A-Za-z])\}/g, '$1')
+    .replace(/\\(le|ge|ne)(?![A-Za-z])/g, '\\$1q'));
+}
+
+export function modelEquationCandidates(text: string, outputs: readonly string[]): EquationCandidate[] {
+  const seen = new Set<string>();
+  const accept = acceptEquationOutput(text);
   const candidates: EquationCandidate[] = [];
   for (const latex of outputs) {
-    if (!latex.trim() || latex.length > 512 || /\{\s*\}|[\r\n$]|\\[()[\]]/.test(latex)) continue;
-    if (facts !== numericTokens(latex) || relations !== equals(latex)) continue;
-    const key = normalizeLatex(latex);
+    if (!accept(latex)) continue;
+    const key = equationCandidateKey(latex);
     if (seen.has(key)) continue;
     seen.add(key);
     candidates.push({label:'Interpretation ' + (candidates.length + 1), latex});

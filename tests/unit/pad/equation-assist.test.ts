@@ -6,6 +6,10 @@ import {
   applyEquationCandidate, autoeqInput, equationSelection, localEquationCandidates, modelEquationCandidates,
 } from '../../../src/features/pad/equationAssist/candidates';
 import {renderPadMath} from '../../../src/features/pad/LocalPadPreview';
+import vocabulary from '../../../public/models/equation-assist/autoeq-v1.4/vocab.json';
+import {algebraReadingKey} from '../../../src/features/pad/equationAssist/algebra';
+import {algebraSourceConstraint} from '../../../src/features/pad/equationAssist/sourceConstraints';
+
 import {applyPadNotation, padEdit, padNotationSuggestion, PAD_SLOT} from '../../../src/features/pad/padEdit';
 
 function selected(text: string, expression = text) {
@@ -28,6 +32,7 @@ test.each([
 
 test('renders common verbal formulas, domains, and explicit quantifiers', () => {
   expect(alternatives('root 2')[0].latex).toBe('\\sqrt{2}');
+  expect(alternatives('R is bigger than 4')[0].latex).toBe('R>4');
   expect(alternatives('let p be a polynomial in x with real coefficients')[0].latex)
     .toBe('p\\in\\mathbb{R}[x]');
   expect(alternatives('let p be polynomials with coefficients in R').map(option => option.latex))
@@ -102,4 +107,42 @@ test('bundles the pinned local INT8 assets', () => {
     expect(bytes.length).toBe(file.bytes);
     expect(createHash('sha256').update(bytes).digest('hex')).toBe(file.sha256);
   }
+});
+
+test('groups typographic variants while keeping real fraction scopes distinct', () => {
+  expect(algebraReadingKey('a+\\frac{b}{c}')).toBe(algebraReadingKey('\\mathrm{a} + \\dfrac{b}{c\\ }'));
+  expect(algebraReadingKey('a+\\frac{b}{c}')).not.toBe(algebraReadingKey('\\frac{a+b}{c}'));
+  for (const malformed of ['a+\\frac{b}{c}(', '\\frac{h(z)=z}{5}', 'x^2=4[', '4*', '\\mathit']) {
+    expect(algebraReadingKey(malformed)).toBeNull();
+  }
+  expect(algebraReadingKey('x<y\\leq 2')).not.toBeNull();
+});
+
+test('source constraints reject unsupported continuations before beam ranking', () => {
+  const accepts = (text: string, tokens: string[]) => {
+    const policy = algebraSourceConstraint(text, vocabulary)!;
+    let state = 0;
+    for (const token of tokens) {
+      const id = vocabulary.output_tokens.indexOf(token);
+      expect(id).toBeGreaterThanOrEqual(0);
+      state = policy.transitions(state)[id];
+      if (state < 0) return false;
+    }
+    return policy.transitions(state)[vocabulary.eos_id] >= 0;
+  };
+  expect(accepts('a+b/c', ['a','+','\\frac','{','b','}','{','c','}'])).toBe(true);
+  expect(accepts('a+b/c', ['\\frac','{','a','+','b','}','{','c','}'])).toBe(true);
+  expect(accepts('a+b/c', ['a','+','\\frac','{','b','}','{','c','}','a'])).toBe(false);
+  expect(accepts('a+b/c', ['a','+','b','c'])).toBe(false);
+  expect(accepts('x<=2', ['x','\\geq','2'])).toBe(false);
+  expect(accepts('x<=2', ['x','\\leq','2'])).toBe(true);
+  expect(algebraSourceConstraint('int_0^2pi sin x dx', vocabulary)).toBeUndefined();
+  expect(algebraSourceConstraint('6.022e23', vocabulary)).toBeUndefined();
+  for (const input of ['sq(x)', 'x/2pi', 'ln 2x', 'RR', 'p => q', 'a == b', 'x^n/n!']) {
+    expect(algebraSourceConstraint(input, vocabulary)).toBeUndefined();
+  }
+  expect(modelEquationCandidates('cbrt(x)', ['\\sqrt[3]{x}']).map(candidate => candidate.latex))
+    .toEqual(['\\sqrt[3]{x}']);
+  expect(modelEquationCandidates('sqrt(2x)', ['\\sqrt{3x}', '\\sqrt{2x}']).map(candidate => candidate.latex))
+    .toEqual(['\\sqrt{2x}']);
 });

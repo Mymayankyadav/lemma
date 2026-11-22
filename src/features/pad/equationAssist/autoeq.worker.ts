@@ -1,7 +1,8 @@
 import {env, InferenceSession, Tensor} from 'onnxruntime-web/wasm';
 import manifest from '../../../../public/models/equation-assist/autoeq-v1.4/manifest.json';
 import {loadTutorModelWasm, loadVerifiedModelAsset, MODEL_MANIFEST} from '../../tutor/input/modelAssets';
-import {beamSearch, encodeInput, OrtStepper, type Vocabulary} from './upstreamDecoder.js';
+import {decodeEquation} from './decode';
+import {OrtStepper, type Vocabulary} from './upstreamDecoder.js';
 
 type Request = {id: number; text: string};
 export type AutoeqReply = {id: number; latex: string[] | null};
@@ -60,13 +61,7 @@ async function drain() {
           throw error;
         }));
         if (latestId !== id) continue;
-        const input = encodeInput(text, vocabulary);
-        const known = vocabulary.input_chars.indexOf('<unk>');
-        const candidates = input.length && input.length <= vocabulary.max_input && !input.includes(known)
-          ? await beamSearch(stepper, input, vocabulary, {
-            k: 3, maxLen: vocabulary.max_output, shouldAbort: () => latestId !== id,
-          })
-          : [];
+        const candidates = await decodeEquation(stepper, vocabulary, text, () => latestId !== id);
         if (latestId === id) scope.postMessage({id, latex: candidates?.map(candidate => candidate.latex) ?? []});
       } catch {
         if (latestId === id) scope.postMessage({id, latex: null});

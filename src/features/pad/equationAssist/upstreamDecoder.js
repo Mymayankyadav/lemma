@@ -1,5 +1,7 @@
+// Lemma adds optional source constraints and completed-candidate validation.
 // Tokenizer + constrained beam search, shared by the browser worker and the
-// Node parity test.  Mirrors autoeq/tokenizer.py and autoeq/decode.py exactly.
+// Node parity test. With the optional constraints off, it mirrors autoeq's
+// tokenizer.py and decode.py.
 // No DOM dependencies; `ort` (onnxruntime-web or onnxruntime-node) is injected.
 
 export function normalizeInput(text, vocab) {
@@ -232,16 +234,21 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
   const k = opts.k ?? 3, maxLen = opts.maxLen ?? 128, alpha = opts.alpha ?? 0.6;
   const nReturn = opts.nReturn ?? 3, constrained = opts.constrained ?? true;
   const shouldAbort = opts.shouldAbort || (() => false);
+  const source = opts.source;
+  const finishKey = opts.finishKey;
+  const maxStepsAfterFinish = opts.maxStepsAfterFinish ?? maxLen;
+  let firstFinish = null;
   const T = vocab._con || (vocab._con = buildConstraintTables(vocab));
   const enc1 = await stepper.encode(srcIds);
   let enc = enc1;
-  let live = [{ tokens: [], score: 0.0, con: new ConState() }];
+  let live = [{ tokens: [], score: 0.0, con: new ConState(), sourceState: 0 }];
   const finished = [];
+  const finishedKeys = new Map();
   let past = null;
   let tokens = [vocab.bos_id];
   let pos0 = 0;
   const draft = opts.draft || null;
-  if (draft && draft.length && stepper.stepSeq) {
+  if (!source && !finishKey && draft && draft.length && stepper.stepSeq) {
     // Speculative draft (the previous keystroke's output): verify all of it in ONE decoder
     // pass, keep the longest prefix the model still agrees with, resume beam search there.
     const st = await stepper.stepSeq([vocab.bos_id, ...draft], enc1);
@@ -266,6 +273,7 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
   const finalScore = (h) => h.score / lengthPenalty(h.tokens.length, alpha);
   for (let pos = pos0; pos < maxLen; pos++) {
     if (shouldAbort()) return null;
+    if (firstFinish !== null && pos > firstFinish + maxStepsAfterFinish) break;
     const st = await stepper.step(tokens, pos, past, enc);
     past = st.past;
     const V = st.V;
@@ -273,6 +281,7 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
     for (let bi = 0; bi < live.length; bi++) {
       const h = live[bi];
       const row = Float64Array.from(st.rows[bi]);
+      const transitions = source?.transitions(h.sourceState);
       if (constrained) for (const f of h.con.forbidden(T, vocab)) row[f] = -Infinity;
       // top k+1 by (score desc, id asc) — same selection as numpy stable argsort on -row,
       // but O(V*k) with no comparator calls: scanning t ascending and shifting only on a
@@ -283,7 +292,7 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
       let n = 0;
       for (let t = 0; t < V; t++) {
         const v = row[t];
-        if (!isFinite(v)) continue;
+        if (!isFinite(v) || (transitions && transitions[t] < 0)) continue;
         if (n < need) {
           let i = n++;
           while (i > 0 && row[order[i - 1]] < v) { order[i] = order[i - 1]; i--; }
@@ -294,25 +303,45 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
           order[i] = t;
         }
       }
-      for (let i = 0; i < n; i++) cands.push([h.score + row[order[i]], bi, order[i]]);
+      for (let i = 0; i < n; i++) {
+        const t = order[i];
+        cands.push([h.score + row[t], bi, t, transitions?.[t] ?? 0]);
+      }
     }
     cands.sort((a, b) => (b[0] - a[0]) || (a[1] - b[1]) || (a[2] - b[2]));
     const newLive = [], idx = [];
     tokens = [];
-    for (const [sc, bi, t] of cands) {
+    for (const [sc, bi, t, sourceState] of cands) {
       const h = live[bi];
-      if (t === vocab.eos_id) { finished.push({ tokens: h.tokens, score: sc, con: h.con }); continue; }
+      if (t === vocab.eos_id) {
+        const result = { tokens: h.tokens, score: sc, con: h.con };
+        if (finishKey) {
+          const key = finishKey(detokenize(h.tokens, vocab));
+          if (key === null) continue;
+          result.key = key;
+          const previous = finishedKeys.get(key);
+          if (previous !== undefined) {
+            if (finalScore(result) > finalScore(finished[previous])) finished[previous] = result;
+            continue;
+          }
+          finishedKeys.set(key, finished.length);
+          firstFinish ??= pos;
+        }
+        finished.push(result);
+        continue;
+      }
       const con = h.con.copy();
       con.push(t, T);
-      newLive.push({ tokens: h.tokens.concat([t]), score: sc, con });
+      newLive.push({ tokens: h.tokens.concat([t]), score: sc, con, sourceState });
       idx.push(bi);
       tokens.push(t);
       if (newLive.length === k) break;
     }
     if (!newLive.length) break;
-    if (finished.length >= k) {
+    const target = finishKey ? nReturn : k;
+    if (finished.length >= target) {
       const fs = finished.map(finalScore).sort((a, b) => b - a);
-      const worstTop = fs[k - 1];
+      const worstTop = fs[target - 1];
       const bestLive = Math.max(...newLive.map((h) => h.score));
       if (bestLive / lengthPenalty(newLive[0].tokens.length + 1, alpha) < worstTop) break;
     }
@@ -321,13 +350,13 @@ export async function beamSearch(stepper, srcIds, vocab, opts = {}) {
     if (enc === enc1 && live.length > 1) enc = stepper.expand(enc1, live.length);
     else if (enc !== enc1 && enc.B !== live.length) enc = stepper.expand(enc1, live.length);
   }
-  let fin = finished.length ? finished : live;
+  let fin = finished.length || finishKey ? finished : live;
   // stable sort by final score desc
   fin = fin.map((h, i) => [h, i]).sort((a, b) => (finalScore(b[0]) - finalScore(a[0])) || (a[1] - b[1])).map((x) => x[0]);
   const out = [], seen = new Set();
   for (const h of fin) {
     const latex = detokenize(h.tokens, vocab);
-    const key = normalizeLatex(latex);
+    const key = h.key ?? normalizeLatex(latex);
     if (seen.has(key)) continue;
     seen.add(key);
     out.push({ latex, score: finalScore(h), tokens: h.tokens });
