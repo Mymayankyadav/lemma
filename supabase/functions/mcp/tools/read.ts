@@ -13,9 +13,12 @@ import {readContext,CONTEXT_WHAT} from './context-read.ts';
 import {signedSourceUpload} from './source-upload.ts';
 import {readAdaptive,flagOn} from '../adaptive.ts';
 import {ATLAS_READS} from '../atlas.ts';
+import {readAtlasWorker,readAtlasTagSuggestions} from './atlas-worker-read.ts';
 
 export async function get(c: Context, a:any):Promise<string>{
   if(a.what==='resources')return registeredResources(c);
+  if(a.what==='atlas_worker')return readAtlasWorker(c,a);
+  if(a.what==='atlas_tag_suggestions')return readAtlasTagSuggestions(c,a);
   if(['time','queue','feasibility','forecast','node','calibration',...ATLAS_READS].includes(a.what))return readAdaptive(c,a);
   if(a.what==='calendar_overlaps')return readCalendarOverlaps(c,a);
   if(a.what==='source_upload')return signedSourceUpload(c,a);
