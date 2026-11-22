@@ -1,25 +1,27 @@
 import {test,expect} from '@playwright/test';
 import {at} from './v7-scenes';
 
-test('More options saves a Busy block with exact bounds and no hidden path',async({page})=>{
+test('the shared editor saves a Busy block with its task, exact bounds and no path',async({page})=>{
  const startsAt='2026-11-11T12:00:00.000Z';
  await page.goto(at('/calendar?view=day&date=2026-11-11&quick=1&task=demo-task-1&start='+encodeURIComponent(startsAt)));
- const quick=page.getByRole('dialog',{name:'New block'});
+ const sheet=page.getByRole('dialog',{name:'New time block'});
  const title='Busy fixture appointment';
- await expect(quick.getByRole('textbox',{name:'Title'})).toHaveValue('Prove continuity');
- await quick.getByRole('textbox',{name:'Title'}).fill(title);
- const path=quick.getByRole('group',{name:'Path',exact:true}).getByRole('button').first();
- await path.click();
- await expect(path).toHaveAttribute('aria-pressed','true');
- await quick.getByRole('radio',{name:'Busy'}).click();
- await quick.getByRole('button',{name:'25 min'}).click();
- await quick.getByRole('button',{name:'More options'}).click();
- const full=page.getByRole('dialog',{name:'New time block'});
- await expect(full.getByRole('textbox',{name:'Calendar block title'})).toHaveValue(title);
- await expect(full.getByRole('radio',{name:'Busy'})).toHaveAttribute('aria-checked','true');
+ const field=sheet.getByRole('textbox',{name:'Calendar block title'});
+ await expect(field).toHaveValue('Prove continuity');
+ await field.fill(title);
+ await sheet.getByRole('radio',{name:'Busy'}).click();
+ // N220 (Owner report): the length is a preset, not a ruler.
+ const length=sheet.getByRole('group',{name:'Length',exact:true}).getByRole('button',{name:'25 min',exact:true});
+ await length.click();
+ await expect(length).toHaveAttribute('aria-pressed','true');
+ await expect(sheet.getByRole('button',{name:'Path: No path'})).toBeVisible();
+ await sheet.getByRole('button',{name:'More',exact:true}).click();
+ await expect(sheet.getByRole('button',{name:'Task: Prove continuity'})).toBeVisible();
+ await expect(field).toHaveValue(title);
+ await expect(sheet.getByRole('radio',{name:'Busy'})).toBeChecked();
  expect(decodeURIComponent(page.url())).not.toContain(title);
- await full.getByRole('button',{name:'Create block'}).click();
- await expect(full).toBeHidden();
+ await sheet.getByRole('button',{name:'Create block'}).click();
+ await expect(sheet).toBeHidden();
  await expect(page).not.toHaveURL(/new=block/);
  const saved=await page.evaluate(name=>{
   const snapshot=JSON.parse(sessionStorage.getItem('lemma.v6.demo.study.v1')??'null');
@@ -29,27 +31,25 @@ test('More options saves a Busy block with exact bounds and no hidden path',asyn
   startsAt,endsAt:'2026-11-11T12:25:00.000Z'});
  expect(saved.projectId??null).toBeNull();
  await page.reload();
- await expect(full).toBeHidden();
+ await expect(sheet).toBeHidden();
 });
 
-test('More options retains the Study path and discards a cancelled draft',async({page})=>{
+test('More retains the Study path and cancelling discards the draft',async({page})=>{
  await page.goto(at('/calendar?view=day&date=2026-11-11&quick=1'));
- const quick=page.getByRole('dialog',{name:'New block'});
+ const sheet=page.getByRole('dialog',{name:'New time block'});
  const title='Unsaved study fixture';
- await quick.getByRole('textbox',{name:'Title'}).fill(title);
- const path=quick.getByRole('group',{name:'Path',exact:true}).getByRole('button').first();
- const pathTitle=(await path.textContent())?.trim();
- expect(pathTitle).toBeTruthy();
- await path.click();
- await quick.getByRole('button',{name:'More options'}).click();
- const full=page.getByRole('dialog',{name:'New time block'});
- await expect(full.getByRole('radio',{name:'Study'})).toHaveAttribute('aria-checked','true');
- await expect(full.getByRole('button',{name:'Path: '+pathTitle,exact:true})).toBeVisible();
- await full.getByRole('button',{name:'Cancel'}).click();
- await expect(full).toBeHidden();
+ await sheet.getByRole('textbox',{name:'Calendar block title'}).fill(title);
+ await sheet.getByRole('button',{name:'Path: No path'}).click();
+ await page.getByRole('dialog',{name:'Path',exact:true}).getByRole('radio',{name:'Real Analysis',exact:true}).check();
+ await sheet.getByRole('button',{name:'More',exact:true}).click();
+ await expect(sheet.getByRole('radio',{name:'Study'})).toBeChecked();
+ await expect(sheet.getByRole('button',{name:'Path: Real Analysis',exact:true})).toBeVisible();
+ await expect(sheet.getByRole('button',{name:'Checkpoint: No checkpoint'})).toBeVisible();
+ await sheet.getByRole('button',{name:'Cancel'}).click();
+ await expect(sheet).toBeHidden();
  await expect(page).not.toHaveURL(/new=block|quick=1/);
  await page.reload();
- await expect(full).toBeHidden();
+ await expect(sheet).toBeHidden();
  const persisted=await page.evaluate(name=>
   JSON.parse(sessionStorage.getItem('lemma.v6.demo.study.v1')??'null')?.blocks.some((block:{title:string})=>block.title===name)??false,title);
  expect(persisted).toBe(false);

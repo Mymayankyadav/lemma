@@ -1,0 +1,10 @@
+{
+  "blueMode": "anchored",
+  "redMode": "extended",
+  "scope": "sentence",
+  "ranker": "frequency",
+  "window": 0,
+  "keysMinChars": 1,
+  "ghostMinWords": 2,
+  "outputPolicy": "strict"
+}

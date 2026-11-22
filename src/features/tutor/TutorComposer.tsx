@@ -1,15 +1,39 @@
-import {useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode} from 'react';
-import {ArrowBigUp, ArrowBigUpDash, ArrowDown, ArrowUp, ChevronDown, CornerDownLeft, Delete, HelpCircle, Keyboard, Paperclip, Plug, Sparkle, Undo2} from 'lucide-react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState, type ClipboardEvent, type KeyboardEvent, type PointerEvent} from 'react';
+import {ArrowDown, ArrowUp, ChevronDown, Ellipsis, HelpCircle, Keyboard, MoveRight, Paperclip, Camera, Pencil, PenLine, Undo2, Redo2, SlidersHorizontal, RefreshCw} from 'lucide-react';
+import {TutorInkTray,type TutorInkState} from './TutorInk';
+import {Button,IconButton,Sheet} from '../../ui/v7/components';
+import {authGeneration,authOwner} from '../../data/authBoundary';
+import {tutorOwnerDeleted} from '../../data/tutor/local-storage';
 import {MathText} from '../../ui/MathText';
 import {haptic} from '../../ui/v7/haptics';
 import {
   changePadText, createPadTextHistory, deletePadBackward, movePadCaret, padEdit, redoPadText, undoPadText,
   type PadEdit, type PadTextHistory,
 } from '../pad/padEdit';
-import {applyNotationSuggestion, findNotationSlot, insertNotation, notation, notationSuggestions, typedNotation} from './notation';
+import {findNotationSlot, insertNotation, notation} from './notation';
+import {removeTutorImageReferences,TUTOR_ATTACHMENT_COUNT} from '../../data/tutor/attachment-types';
+import {inkIssueText,tutorInkIssue} from '../../data/tutor/ink-storage';
+import {imageReference, referencedImageIds, tutorAnswerParts} from '../../../supabase/functions/_shared/tutor-answer';
+import {readTutorAnswer, renderTutorAnswer, setTutorAnswerSelection, TutorAnswerEditor} from './TutorAnswerEditor';
+import {TutorKeyboard} from './TutorKeyboard';
+import {TutorInkPad} from './input/TutorInkPad';
+import {TutorSymbolPicker} from './input/TutorSymbolPicker';
+import {insertTutorSymbol, tutorMathContext} from './input/symbolEdit';
+import {symbolByGlyph} from './input/symbolCatalog';
+import {useTutorInputAssist} from './input/useTutorInputAssist';
+import {useTutorInputPreferences} from './input/inputPreferences';
+import {sameEditTarget} from './input/recognitionPolicy';
+import type {EditTarget} from './input/types';
+import {useWritingAid, useWritingAidPreferences, WritingAidSettings, advanceWritingAidAnchor, continueWritingAidAnchor, applyWritingAidProposal, type WritingAidAnchor, type WritingAidProposal} from './writingAid';
+import {WritingAidBar, WritingAidWords} from './WritingAidBar';
+import './keyboard.css';
+import './input/input.css';
+import './writing-aid.css';
 
 const keepSelection = (event: PointerEvent) => event.preventDefault();
-const EMPTY_CONTEXT: readonly string[] = [];
+const ANSWER_CLIPBOARD = 'application/x-lemma-tutor-answer';
+const MAX_ANSWER_LENGTH = 2000;
+const IMAGE_REFERENCE_LENGTH = imageReference('00000000-0000-0000-0000-000000000000').length;
 
 interface Props {
   value: string;
@@ -21,173 +45,299 @@ interface Props {
   readOnly: boolean;
   pending: boolean;
   onContext: () => void;
-  onConnection: () => void;
   hasContext: boolean;
   notationContext?: readonly string[];
+  ink?: TutorInkState;
+  canQueueImage?: boolean;
+  inputScopeKey?: string;
 }
 
 export function TutorComposer(props: Props) {
   const field = useRef<HTMLTextAreaElement>(null);
-  const compactStart = useRef(false);
-  const [shown, setShown] = useState(true);
+  const richField = useRef<HTMLDivElement>(null);
+  const fieldElement = () => richField.current ?? field.current;
+  const drawingSelection = useRef<PadEdit | null>(null);
+  const drawingOccurrence = useRef<number | null>(null);
+  const focusAfterSymbol = useRef(false);
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
+  const [scratch,setScratch]=useState(false),[photo,setPhoto]=useState(false);
+  const [editMenu,setEditMenu]=useState(false);
+  const [answerError,setAnswerError]=useState('');
+  const [shown, setShown] = useState(false);
   const [view, setView] = useState('abc');
   const [lastMath, setLastMath] = useState('∀∃');
-  const [native, setNative] = useState(false);
   const composition = useRef(false);
   const [compositionText, setCompositionText] = useState<string | null>(null);
   const composing = compositionText !== null;
   const history = useRef(createPadTextHistory(padEdit(props.value)));
   const [cursor, setCursor] = useState(history.current.present);
+  const [mountId] = useState(()=>crypto.randomUUID());
+  const revision = useRef({editorRevision:0,selectionRevision:0,modeRevision:0});
   const pendingSelection = useRef<PadEdit | null>(history.current.present);
-  const [recent, setRecent] = useState<string[]>([]);
-  const [keptWords, setKeptWords] = useState<readonly string[]>([]);
-  const automatic = useRef<{before: PadTextHistory; after: PadEdit} | null>(null);
-  const strip = useRef<HTMLDivElement>(null);
-  const keyboard = useRef<HTMLDivElement>(null);
-  const context = props.notationContext ?? EMPTY_CONTEXT;
-  const suggestions = useMemo(() => notationSuggestions(cursor, context, recent), [cursor, context, recent]);
+  const authoredAnchor = useRef<WritingAidAnchor | null>(null);
+  const acceptedSuggestion = useRef<{before: PadTextHistory; after: PadEdit; proposal: WritingAidProposal} | null>(null);
+  const [hideSuggestionUndo, setHideSuggestionUndo] = useState(false);
+  const [swipeProgress, setSwipeProgress] = useState(0);
+  const swipe = useRef<{pointer: number; x: number; y: number; time: number; proposal: WritingAidProposal; cursor: PadEdit} | null>(null);
+  const [aidSettings, setAidSettings] = useState(false);
+  const [dismissedAid, setDismissedAid] = useState<string | null>(null);
+  const rejectedEdits = useRef(new Set<string>());
+  const writingPrefs = useWritingAidPreferences();
   const incomplete = props.value.includes('□');
-  const blocked = !props.canSend || props.readOnly || incomplete || composing;
-  const editingDisabled = props.readOnly || composing;
+  const images = props.ink?.draft.photos;
+  const availableIds = useMemo(() => new Set(images?.map(image => image.id.toLowerCase())), [images]);
+  const previousIds = useRef(availableIds);
+  const imageReferences = useMemo(() => referencedImageIds(props.value), [props.value]);
+  const refs = imageReferences.filter(id => availableIds.has(id));
+  const hasImage = refs.length > 0;
+  const imageTarget = drawingSelection.current?.text === props.value ? drawingSelection.current : cursor;
+  const canInsertImage = props.value.length - (imageTarget.end - imageTarget.start) + IMAGE_REFERENCE_LENGTH <= MAX_ANSWER_LENGTH;
+  const inkDraft = props.ink?.draft;
+  const readOnly = props.readOnly || inkDraft?.queuedText !== undefined;
+  const imageIssue = tutorInkIssue(props.value, props.ink);
+  const recoveryIssue = imageIssue ?? (props.ink?.status === 'failed' ? 'failed' : undefined);
+  const uncommitted = props.ink?.ready && inkDraft && (inkDraft.inlineImages || hasImage) && Boolean(inkDraft.strokes.length ||
+    (inkDraft.editingDrawing && refs.includes(inkDraft.editingDrawing.id)));
+  const queue=props.canQueueImage&&hasImage;
+  const blocked = readOnly || !queue&&!props.canSend || incomplete || composing || scratch || uncommitted || Boolean(imageIssue);
+  const editingDisabled = readOnly || composing;
+  const inputPrefs = useTutorInputPreferences();
+  const scopeKey = props.inputScopeKey ?? 'tutor-preview';
+  const editTarget = ():EditTarget => ({scopeKey:scopeKey+'|'+authGeneration(),mountId,...revision.current});
+  const assist = useTutorInputAssist({scopeKey,enabled:inputPrefs.recognition,automatic:inputPrefs.automatic,readOnly,composing,
+    target:editTarget,insert:(id,target)=>{
+      remember();
+      const live = editTarget(), owner=authOwner();
+      if (readOnly || owner&&tutorOwnerDeleted(owner) || composition.current || !sameEditTarget(target,live)) return false;
+      const edited = insertTutorSymbol(history.current.present,id);
+      if (!edited || !commit(changePadText(history.current,edited),false,true,true))return false;
+      focusAfterSymbol.current=true;
+      setShown(true);
+      haptic('snap');
+      return true;
+    }});
 
-  useLayoutEffect(() => {
-    const pageHeight = field.current?.closest('.lemma-tutor')?.getBoundingClientRect().height;
-    if (window.innerWidth < 700 && pageHeight && pageHeight < 560) {
-      compactStart.current = true;
-      setShown(false);
-    }
-  }, []);
 
-  useLayoutEffect(() => {
-    const input = field.current;
-    const page = input?.closest<HTMLElement>('.lemma-tutor');
-    const viewport = window.visualViewport;
-    if (!native || !input || !page || !viewport) return;
+  const aidSignature = JSON.stringify([scopeKey, writingPrefs.scopeKey, writingPrefs.mode, revision.current, cursor]);
+  const writingRequest = {cursor, anchor: authoredAnchor.current, target: editTarget(), mode: writingPrefs.mode,
+    surfaces: writingPrefs.surfaces, composing, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown};
+  const writing = useWritingAid(writingRequest);
+  const aidVisible = dismissedAid !== aidSignature && !editingDisabled;
+  const writingWords = aidVisible ? writing.words : [];
+  const rejectionKey = (proposal: WritingAidProposal) => JSON.stringify([proposal.start, proposal.end, proposal.before, proposal.insert]);
+  const writingEdit = aidVisible && writing.edit && !rejectedEdits.current.has(rejectionKey(writing.edit)) ? writing.edit : null;
+  const writingGhost = aidVisible ? writing.ghost : null;
+  const ghostSuffix = writingGhost?.insert;
+  const suggestionUndoable = !hideSuggestionUndo && Boolean(acceptedSuggestion.current && acceptedSuggestion.current.after.text === cursor.text);
+  const refreshable = writingWords.length > 0 || Boolean(writingEdit || writingGhost);
+  /** N220: a word is being typed (a collapsed caret right after a letter), so the strip is the word suggestions'. */
+  const wordInProgress = cursor.start === cursor.end && /[A-Za-z]$/.test(cursor.text.slice(0, cursor.start));
 
-    function fit() {
-      if (!input || !page || !viewport) return;
-      // Mobile Safari and Chrome can leave the layout viewport full-height
-      // while the keyboard covers its lower portion. Android adjustResize
-      // already resizes the layout, so the page continues to use 100dvh.
-      const focused = document.activeElement === input;
-      const covered = viewport.scale === 1 && window.innerHeight - viewport.height > 120;
-      if (focused && covered) page.style.setProperty('--tutor-visual-height', Math.floor(viewport.height) + 'px');
-      else page.style.removeProperty('--tutor-visual-height');
-
-      if (!focused || viewport.scale !== 1) return;
-      const box = input.getBoundingClientRect();
-      const bottom = viewport.height + viewport.offsetTop;
-      if (box.top < viewport.offsetTop || box.bottom > bottom) input.scrollIntoView?.({block: 'nearest'});
-    }
-    fit();
-    viewport.addEventListener('resize', fit);
-    window.addEventListener('resize', fit);
-    input.addEventListener('focus', fit);
-    input.addEventListener('blur', fit);
-    return () => {
-      viewport.removeEventListener('resize', fit);
-      window.removeEventListener('resize', fit);
-      input.removeEventListener('focus', fit);
-      input.removeEventListener('blur', fit);
-      page.style.removeProperty('--tutor-visual-height');
+  useEffect(() => {
+    const reportVisibility = () => {
+      const visible = shown && !editingDisabled && !scratch && !assist.drawing && !aidSettings && !editMenu && document.visibilityState !== 'hidden';
+      writing.shown('words', visible ? writingWords : []);
+      writing.shown('edit', visible && writingEdit && !suggestionUndoable ? [writingEdit] : []);
+      writing.shown('ghost', visible && writingGhost ? [writingGhost] : []);
     };
-  }, [native]);
+    reportVisibility();
+    document.addEventListener('visibilitychange', reportVisibility);
+    return () => document.removeEventListener('visibilitychange', reportVisibility);
+  }, [writing.shown, writingWords, writingEdit, writingGhost, shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, suggestionUndoable]);
+
+  useEffect(() => {
+    swipe.current = null;
+    setSwipeProgress(0);
+  }, [shown, editingDisabled, scratch, assist.drawing, aidSettings, editMenu, scopeKey, writingPrefs.mode]);
 
   useLayoutEffect(() => {
-    const input = field.current;
+    const hadEvidence = authoredAnchor.current !== null || acceptedSuggestion.current !== null;
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
+    rejectedEdits.current.clear();
+    setDismissedAid(null);
+    if (hadEvidence) setCursor({...history.current.present});
+  }, [scopeKey, writingPrefs.scopeKey, writingPrefs.mode]);
+
+  function dismissWriting() {
+    if (suggestionUndoable && acceptedSuggestion.current) {
+      writing.feedback('kept', acceptedSuggestion.current.proposal);
+      setHideSuggestionUndo(true);
+      return;
+    }
+    if (writingEdit) writing.feedback('dismiss', writingEdit);
+    if (writingGhost) writing.feedback('dismiss', writingGhost);
+    if (writingEdit) rejectedEdits.current.add(rejectionKey(writingEdit));
+    setDismissedAid(aidSignature);
+  }
+
+  function acceptWriting(proposal: WritingAidProposal) {
+    remember();
+    if (!writing.isCurrent(proposal)) return;
+    const before = history.current, anchor = authoredAnchor.current;
+    const next = applyWritingAidProposal({...writingRequest, cursor: before.present, anchor, target: editTarget(),
+      composing: composition.current, readOnly: readOnly || scratch || assist.drawing || editMenu || aidSettings || !shown}, proposal);
+    if (!next || !commit(changePadText(before, next), true)) return;
+    authoredAnchor.current = continueWritingAidAnchor(anchor, proposal, next);
+    acceptedSuggestion.current = {before, after: next, proposal};
+    setHideSuggestionUndo(false);
+    writing.feedback('accept', proposal);
+    haptic('snap');
+  }
+  function undoWriting() {
+    const saved = acceptedSuggestion.current;
+    if (!saved || saved.after.text !== history.current.present.text || editingDisabled) return;
+    writing.feedback('undo', saved.proposal);
+    commit(saved.before, true);
+    haptic('snap');
+  }
+
+  useLayoutEffect(() => {
+    const input = fieldElement();
     if (!input) return;
-    input.style.height = '44px';
-    input.style.height = Math.min(120, Math.max(44, input.scrollHeight)) + 'px';
+    if (input instanceof HTMLTextAreaElement) {
+      input.style.paddingBottom = '';
+      input.style.height = '44px';
+      const mirror = input.previousElementSibling instanceof HTMLElement ? input.previousElementSibling : null;
+      if (ghostSuffix && mirror) {
+        // The mirror includes faded text, while the native value does not.
+        // Reserve its wrapped lines as padding so both short and capped inputs
+        // can display the continuation without changing the learner's text.
+        const extra = Math.max(0, mirror.scrollHeight - input.scrollHeight);
+        if (extra) input.style.paddingBottom = (parseFloat(getComputedStyle(input).paddingBottom) + extra) + 'px';
+      }
+      input.style.height = Math.min(120, Math.max(44, input.scrollHeight)) + 'px';
+      if (ghostSuffix && mirror) {
+        input.scrollTop = Math.max(0, input.scrollHeight - input.clientHeight);
+        mirror.scrollTop = input.scrollTop;
+      }
+    }
     if (history.current.present.text !== props.value) {
-      automatic.current = null;
+      revision.current.editorRevision++;
+      revision.current.selectionRevision++;
+      assist.stop();
+      acceptedSuggestion.current = null;
+      authoredAnchor.current = null;
+      rejectedEdits.current.clear();
       history.current = createPadTextHistory(padEdit(props.value));
       setCursor(history.current.present);
       pendingSelection.current = history.current.present;
     }
-    const edit = pendingSelection.current;
-    if (edit) {
-      input.setSelectionRange(edit.start, edit.end, edit.direction);
+    if (pendingSelection.current && input instanceof HTMLTextAreaElement) {
+      // Focusing dispatches remember synchronously. Restore the inserted caret before it can pause Keep drawing.
+      selectField(pendingSelection.current);
       pendingSelection.current = null;
     }
-  }, [props.value, compositionText]);
+    if(focusAfterSymbol.current&&!assist.picker) {
+      focusAfterSymbol.current=false;
+      input.focus({preventScroll:true});
+    }
+    const edit = pendingSelection.current;
+    if (edit && document.activeElement === input) {
+      selectField(edit);
+      pendingSelection.current = null;
+    }
+  }, [props.value, compositionText, assist.picker, assist.drawing, ghostSuffix]);
 
   useLayoutEffect(() => {
-    if (strip.current) strip.current.scrollLeft = 0;
-  }, [cursor]);
+    const previous = previousIds.current;
+    previousIds.current = availableIds;
+    if (!props.ink?.ready || ![...previous].some(id => !availableIds.has(id))) return;
+    const saved = history.current;
+    const valid = (edit: PadEdit) => referencedImageIds(edit.text).every(id => availableIds.has(id));
+    const past = saved.past.slice(saved.past.map(valid).lastIndexOf(false) + 1);
+    const invalidFuture = saved.future.findIndex(edit => !valid(edit));
+    const future = invalidFuture < 0 ? saved.future : saved.future.slice(0, invalidFuture);
+    if (past.length === saved.past.length && future.length === saved.future.length) return;
+    acceptedSuggestion.current = null;
+    authoredAnchor.current = null;
+    history.current = {...saved, past, future};
+    setCursor({...saved.present});
+  }, [availableIds, props.ink?.ready]);
 
-  useLayoutEffect(() => {
-    const board = keyboard.current;
-    const page = board?.closest<HTMLElement>('.lemma-tutor');
-    if (compactStart.current || !board || !page?.clientHeight) return;
-    const bottom = page.getBoundingClientRect().top + page.clientTop + page.clientHeight;
-    const clipped = Math.ceil(board.getBoundingClientRect().bottom - bottom);
-    // Move only the outer tutor pane. The transcript and the key rows each
-    // have their own scrolling and should retain their positions.
-    if (clipped > 0) page.scrollTop += clipped;
-  }, [shown, view]);
 
-  function fieldSelection(input: HTMLTextAreaElement) {
-    return padEdit(input.value, input.selectionStart, input.selectionEnd, input.selectionDirection);
+  function fieldSelection(input: HTMLElement) {
+    return input instanceof HTMLTextAreaElement
+      ? padEdit(input.value, input.selectionStart, input.selectionEnd, input.selectionDirection)
+      : readTutorAnswer(input);
+  }
+  function selectField(edit: PadEdit) {
+    if (field.current) field.current.setSelectionRange(edit.start, edit.end, edit.direction);
+    else if (richField.current && document.activeElement === richField.current) setTutorAnswerSelection(richField.current, edit);
   }
   function remember() {
-    const input = field.current;
-    if (!input || composition.current) return;
+    if (swipe.current) return;
+    const input = fieldElement();
+    if (!input || composition.current || (input === richField.current && document.activeElement !== input)) return;
     const edit = fieldSelection(input);
     const present = history.current.present;
     if (edit.text !== present.text || (edit.start === present.start && edit.end === present.end && edit.direction === present.direction)) return;
+    revision.current.selectionRevision++;
+    assist.pause();
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
     history.current = {...history.current, present: edit};
     setCursor(edit);
   }
-  function commit(next: PadTextHistory, focus = false, restore = true) {
+  function tooManyImages(text: string) {
+    return referencedImageIds(text).filter(id => availableIds.has(id)).length > TUTOR_ATTACHMENT_COUNT;
+  }
+  function commit(next: PadTextHistory, focus = false, restore = true, fromAssist = false, manuallyTyped = false) {
     const edit = next.present;
-    if (props.readOnly || edit.text.length > 2000) return;
-    const changed = edit.text !== history.current.present.text;
-    if (focus && !(document.activeElement instanceof HTMLButtonElement)) field.current?.focus({preventScroll: true});
+    if (readOnly || edit.text.length > MAX_ANSWER_LENGTH) return false;
+    if (tooManyImages(edit.text)) {
+      setAnswerError('An answer can have up to three images.');
+      return false;
+    }
+    const previous=history.current.present;
+    const changed = edit.text !== previous.text;
+    const moved = edit.start!==previous.start||edit.end!==previous.end||edit.direction!==previous.direction;
+    if(changed)revision.current.editorRevision++;
+    if(moved)revision.current.selectionRevision++;
+    if(!fromAssist&&(changed||moved))assist.pause();
+    if (focus && !(document.activeElement instanceof HTMLButtonElement)) fieldElement()?.focus({preventScroll: true});
+    const nextAnchor = manuallyTyped ? advanceWritingAidAnchor(previous, edit, authoredAnchor.current) : null;
     history.current = next;
+    if (changed || moved) authoredAnchor.current = nextAnchor;
     setCursor(edit);
     if (changed) {
-      automatic.current = null;
+      acceptedSuggestion.current = null;
+      for (const key of rejectedEdits.current) {
+        const [start, end, source] = JSON.parse(key) as [number, number, string, string];
+        if (edit.text.slice(start, end) !== source) rejectedEdits.current.delete(key);
+      }
+      setAnswerError('');
       if (restore) pendingSelection.current = edit;
       props.onChange(edit.text);
     } else if (restore) {
-      field.current?.setSelectionRange(edit.start, edit.end, edit.direction);
+      if(fromAssist)pendingSelection.current=edit;
+      else selectField(edit);
     }
+    return true;
   }
   function change(edit: PadEdit, focus = false) {
     commit(changePadText(history.current, edit), focus);
   }
-  function noteRecent(text: string) {
-    const symbol = text.trim();
-    if (!symbol || symbol.includes('□') || /^[\w\s]+$/u.test(symbol) || symbol.length > 12) return;
-    setRecent(old => [symbol, ...old.filter(item => item !== symbol)].slice(0, 6));
-  }
-  function typeText(edit: PadEdit, text: string, focus: boolean, onlyAutomatic = false) {
-    const plain = insertNotation(edit, text);
-    const replacement = typedNotation(edit, text, context, new Set(keptWords));
-    const corrected = replacement.text !== plain.text;
-    if (onlyAutomatic && !corrected) return false;
-    if (replacement.text.length > 2000) return false;
-    const before = history.current;
-    change(replacement, focus);
-    if (corrected) automatic.current = {before, after: replacement};
-    return true;
+  function typeText(edit: PadEdit, text: string, focus: boolean) {
+    // A candidate supplies its own trailing space. Punctuation replaces only
+    // that generated space; learner-authored spaces are left untouched.
+    const suppliedSpace = /^[.,;:!?]$/u.test(text) && edit.start === edit.end && edit.end === edit.text.length &&
+      edit.text.endsWith(' ') && acceptedSuggestion.current?.after.text === edit.text;
+    const target = suppliedSpace ? padEdit(edit.text, edit.start - 1, edit.end) : edit;
+    return commit(changePadText(history.current, insertNotation(target, text)), focus, true, false, true);
   }
   function insert(text: string, typed = false) {
     remember();
     const edit = history.current.present;
+    const symbol=symbolByGlyph(text.trim());
+    if(symbol && tutorMathContext(edit)!=='prose') {
+      const converted=insertTutorSymbol(edit,symbol.id);
+      if(converted)change(converted,true);
+      else setAnswerError('Choose a selection within one math or text region.');
+      return;
+    }
     if (typed) typeText(edit, text, true);
     else change(insertNotation(edit, text), true);
-    if (!typed || /[^\w\s]/u.test(text)) noteRecent(text);
-  }
-  function undoAutomatic(focus: boolean) {
-    const fix = automatic.current;
-    const edit = history.current.present;
-    if (!fix || edit.text !== fix.after.text || edit.start !== fix.after.start || edit.end !== fix.after.end) return false;
-    const {text, start} = fix.before.present;
-    const word = text.slice(0, start).match(/[a-z]{3,24}$/i)?.[0]?.toLowerCase();
-    if (word) setKeptWords(old => [word, ...old.filter(item => item !== word)].slice(0, 32));
-    commit(fix.before, focus);
-    return true;
   }
   function nextSlot(backward = false) {
     remember();
@@ -195,305 +345,419 @@ export function TutorComposer(props: Props) {
     if (slot) change(slot, true);
   }
   function undo(redo = false) {
+    if (!redo && acceptedSuggestion.current?.after.text === history.current.present.text) writing.feedback('undo', acceptedSuggestion.current.proposal);
     commit(redo ? redoPadText(history.current) : undoPadText(history.current), true);
   }
   function changeView(next: string) {
+    revision.current.modeRevision++;
+    assist.pause();
     setView(next);
     if (notation[next]) setLastMath(next);
   }
   function send() {
-    if (!blocked && props.value.trim()) props.onSend(props.value);
+    if (!blocked && (props.value.trim()||hasImage)) {
+      revision.current.modeRevision++;
+      assist.stop();
+      props.onSend(props.value);
+    }
   }
 
-  return <div className="keyboard-composer" data-keyboard={native ? 'native' : shown ? 'math' : 'hidden'}>
-    {props.value.includes('$') && <div className="composer-preview"><MathText source={props.value}/></div>}
+  function keys() {
+    setScratch(false);
+    setShown(true);
+  }
+  function keyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.target !== event.currentTarget || composition.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
+    const modified = event.ctrlKey || event.metaKey;
+    if (event.key === 'Enter' && modified) {
+      event.preventDefault();
+      send();
+    }
+    if (!modified && !event.altKey && event.key === 'Escape' && shown) {
+      event.preventDefault();
+      if (writingGhost || writingEdit || writingWords.length) {dismissWriting(); return;}
+      if(assist.drawing)assist.stop();
+      else setShown(false);
+    }
+    if (readOnly) return;
+    const key = event.key.toLowerCase();
+    if (modified && !event.altKey && (key === 'z' || key === 'y')) {
+      event.preventDefault();
+      undo(key === 'y' || event.shiftKey);
+      return;
+    }
+    remember();
+    const edit = history.current.present;
+    if (!modified && !event.altKey && !event.shiftKey && event.key === 'Tab' && writingGhost) {
+      event.preventDefault(); acceptWriting(writingGhost); return;
+    }
+    if (!modified && !event.altKey && event.key === 'Tab' && edit.text.slice(edit.start, edit.end) === '□') {
+      const slot = findNotationSlot(edit, event.shiftKey);
+      if (slot && (event.shiftKey ? slot.start < edit.start : slot.start > edit.start)) {
+        event.preventDefault();
+        change(slot);
+      }
+    }
+    if (modified || event.altKey) return;
+    if (/^[.,;:!?]$/u.test(event.key) && edit.start === edit.end && edit.end === edit.text.length &&
+        edit.text.endsWith(' ') && acceptedSuggestion.current?.after.text === edit.text) {
+      event.preventDefault(); typeText(edit, event.key, false); return;
+    }
+    if (richField.current && event.key === 'Enter') {
+      event.preventDefault();
+      change(insertNotation(edit, '\n'));
+      return;
+    }
+    if (richField.current && (event.key === 'Backspace' || event.key === 'Delete')) {
+      const range = imageDeletion(edit, event.key === 'Backspace');
+      if (range) {event.preventDefault(); change(insertNotation(range, '')); return;}
+    }
+
+  }
+  function beginComposition(input: HTMLElement) {
+    remember();
+    authoredAnchor.current = null;
+    acceptedSuggestion.current = null;
+    composition.current=true;
+    revision.current.selectionRevision++;
+    assist.pause();
+    setCursor({...history.current.present});
+    setCompositionText(fieldSelection(input).text);
+  }
+  function inputChanged(input: HTMLElement, manuallyTyped = true) {
+    if (readOnly) {
+      if (input === richField.current) renderTutorAnswer(input, props.value, images ?? [], true);
+      return;
+    }
+    const edit = fieldSelection(input);
+    if (composition.current) setCompositionText(edit.text);
+    else if (edit.text.length <= MAX_ANSWER_LENGTH && !tooManyImages(edit.text)) commit(changePadText(history.current, edit), false, false, false, manuallyTyped);
+    else if (input === richField.current) {
+      // A native edit may exceed the limit by a grapheme. Restore the saved value.
+      if (tooManyImages(edit.text)) setAnswerError('An answer can have up to three images.');
+      const saved = history.current.present;
+      renderTutorAnswer(input, saved.text, images ?? [], readOnly);
+      setTutorAnswerSelection(input, saved);
+    }
+  }
+  function imageRanges(text: string) {
+    let offset = 0;
+    return tutorAnswerParts(text).flatMap(part => {
+      if (part.type === 'text') {offset += part.text.length; return [];}
+      const start = offset;
+      offset += imageReference(part.id).length;
+      return [{id: part.id, start, end: offset}];
+    });
+  }
+  function imageDeletion(edit: PadEdit, backward: boolean) {
+    if (edit.start !== edit.end) return;
+    const image = imageRanges(edit.text).find(item => backward ? edit.start === item.end : edit.start === item.start);
+    if (image) return padEdit(edit.text, image.start, image.end);
+  }
+  function openDrawing(id: string | null = null, offset: number | null = null) {
+    if (editingDisabled) return;
+    remember();
+    revision.current.modeRevision++;
+    assist.stop();
+    drawingOccurrence.current = offset;
+    drawingSelection.current = history.current.present;
+    fieldElement()?.blur();
+    setShown(false);
+    setEditingImageId(id);
+    setScratch(true);
+  }
+  function closeDrawing() {
+    setScratch(false);
+    setEditingImageId(null);
+    setShown(true);
+    const saved = drawingSelection.current;
+    drawingSelection.current = null;
+    drawingOccurrence.current = null;
+    fieldElement()?.focus({preventScroll: true});
+    if (saved?.text === history.current.present.text) change(saved);
+  }
+  function insertImage(id: string, replacesId?: string) {
+    const edit = history.current.present;
+    if (readOnly) return false;
+    const saved = drawingSelection.current;
+    const replaced = replacesId && saved?.text === edit.text && imageRanges(edit.text).find(item =>
+      item.id === replacesId && item.start === drawingOccurrence.current);
+    if (replacesId && !replaced) {
+      setAnswerError('That drawing is no longer at this position in the answer.');
+      return false;
+    }
+    const target = replaced ? padEdit(edit.text, replaced.start, replaced.end) : saved?.text === edit.text ? saved : edit;
+    const inserted = insertNotation(target, imageReference(id));
+    if (inserted.text.length > MAX_ANSWER_LENGTH) {
+      setAnswerError('Shorten your answer to insert another image.');
+      return false;
+    }
+    if (referencedImageIds(inserted.text).filter(ref => ref === id || availableIds.has(ref)).length > TUTOR_ATTACHMENT_COUNT) {
+      setAnswerError('An answer can have up to three images.');
+      return false;
+    }
+    change(inserted);
+    closeDrawing();
+    return true;
+  }
+  function migrateImages(ids: readonly string[]) {
+    if (readOnly) return false;
+    const {text} = history.current.present;
+    const present = new Set(referencedImageIds(text));
+    const markers = ids.filter(id => !present.has(id)).slice(0, TUTOR_ATTACHMENT_COUNT - present.size).map(imageReference);
+    const withImages = insertNotation(padEdit(text), markers.join(''));
+    if (withImages.text.length > MAX_ANSWER_LENGTH) {
+      setAnswerError('Shorten your answer to restore the saved images.');
+      return false;
+    }
+    if (markers.length) change(withImages);
+    return true;
+  }
+  function chipAction(id: string, offset: number, action: 'edit' | 'remove') {
+    if (editingDisabled || props.ink?.draft.queuedText !== undefined) return;
+    if (action === 'edit') {if (availableIds.has(id)) openDrawing(id, offset); return;}
+    const {text} = history.current.present;
+    const image = imageRanges(text).find(item => item.id === id && item.start === offset);
+    if (image) {
+      fieldElement()?.focus({preventScroll: true});
+      change(insertNotation(padEdit(text, image.start, image.end), ''));
+    }
+  }
+  function clipboardPlain(text: string) {
+    return tutorAnswerParts(text).map(part => {
+      if (part.type === 'text') return part.text;
+      const image = images?.find(item => item.id === part.id);
+      return image?.kind === 'drawing' ? '[Drawing]' : image?.kind === 'photo' ? '[Photo]' : '[Image]';
+    }).join('');
+  }
+  function copyAnswer(event: ClipboardEvent<HTMLDivElement>, cut = false) {
+    const edit = fieldSelection(event.currentTarget);
+    if (edit.start === edit.end) return;
+    event.preventDefault();
+    const text = edit.text.slice(edit.start, edit.end);
+    event.clipboardData.setData('text/plain', clipboardPlain(text));
+    event.clipboardData.setData(ANSWER_CLIPBOARD, text);
+    if (cut && !editingDisabled) {
+      remember();
+      change(insertNotation(edit, ''));
+    }
+  }
+  function pasteAnswer(event: ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    if (editingDisabled) return;
+    remember();
+    const local = event.clipboardData.getData(ANSWER_CLIPBOARD);
+    const known = local && referencedImageIds(local).every(id => availableIds.has(id));
+    const text = known ? tutorAnswerParts(local).map(part => part.type === 'text' ? part.text : imageReference(part.id)).join('')
+      : clipboardPlain(event.clipboardData.getData('text/plain'));
+    if (!text) return;
+    change(insertNotation(history.current.present, text.replace(/\r\n?/g, '\n')));
+  }
+  function refreshWriting() {
+    if (editingDisabled) return;
+    if (writingWords.length) writing.refresh('words', writingWords);
+    if (writingEdit) writing.refresh('edit', [writingEdit]);
+    if (writingGhost) writing.refresh('ghost', [writingGhost]);
+    haptic('snap');
+  }
+  function stopSwipe() {
+    swipe.current = null;
+    setSwipeProgress(0);
+    remember();
+  }
+  function beginSwipe(event: PointerEvent<HTMLDivElement>) {
+    const editor = fieldElement();
+    if (!writingGhost || editingDisabled || event.pointerType !== 'touch' || !event.isPrimary ||
+        !editor || !(event.target instanceof Node) || !editor.contains(event.target) ||
+        event.target instanceof Element && event.target.closest('button') || cursor.start !== cursor.end) return;
+    swipe.current = {pointer: event.pointerId, x: event.clientX, y: event.clientY, time: performance.now(),
+      proposal: writingGhost, cursor: history.current.present};
+  }
+  function moveSwipe(event: PointerEvent<HTMLDivElement>) {
+    const held = swipe.current;
+    if (!held || held.pointer !== event.pointerId) return;
+    const dx = event.clientX - held.x, dy = Math.abs(event.clientY - held.y);
+    if (performance.now() - held.time > 600 || dy > 18 || dx < -12) {stopSwipe(); return;}
+    if (dx > 24 && dx >= 2 * dy) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      setSwipeProgress(Math.min(1, dx / 56));
+    }
+  }
+  function endSwipe(event: PointerEvent<HTMLDivElement>) {
+    const held = swipe.current;
+    if (!held || held.pointer !== event.pointerId) return;
+    const dx = event.clientX - held.x, dy = Math.abs(event.clientY - held.y);
+    const input = fieldElement();
+    const selected = input && fieldSelection(input);
+    const accept = dx >= 56 && dy <= 18 && dx >= 2 * dy && performance.now() - held.time <= 600 &&
+      selected?.start === selected?.end && history.current.present.text === held.cursor.text && !editingDisabled;
+    swipe.current = null;
+    setSwipeProgress(0);
+    if (accept) {
+      event.preventDefault();
+      selectField(held.cursor);
+      acceptWriting(held.proposal);
+    } else remember();
+  }
+  function focusAnswer() {
+    const pending=pendingSelection.current;
+    if(pending && pending.text===props.value) {
+      selectField(pending);
+      pendingSelection.current=null;
+    }
+    remember();
+    if (!readOnly) {setShown(true); setScratch(false);}
+  }
+  return <div className="keyboard-composer" data-keyboard={shown ? 'math' : 'hidden'} data-symbols={shown && Boolean(notation[view]) || undefined}>
+    {props.value.includes('$') && <div className="composer-preview"><MathText source={tutorAnswerParts(props.value).map(part=>part.type==='text'?part.text:' ').join('')}/></div>}
+    {answerError && <p className="composer-status" role="alert">{answerError}</p>}
+    {recoveryIssue && <div className="composer-status" role={recoveryIssue==='loading'?'status':'alert'}>
+      {inkIssueText[recoveryIssue]}
+      {props.ink && (recoveryIssue==='failed'||recoveryIssue==='missing') &&
+        <Button small type="button" onClick={props.ink.retry}>Retry restoring images</Button>}
+      {props.ink && imageIssue==='failed' && !imageReferences.length && !editingDisabled && props.value.trim() &&
+        <Button small type="button" onClick={()=>{props.ink?.continueWithText();setScratch(false);}}>Continue with text</Button>}
+      {!props.ink && imageIssue==='unavailable' && !editingDisabled &&
+        <Button small type="button" onClick={()=>change(padEdit(removeTutorImageReferences(props.value)))}>Remove image references</Button>}
+    </div>}
+    {!scratch && uncommitted && <p className="composer-status" role="status">Insert or discard your unfinished drawing before sending.</p>}
     {incomplete && <p className="composer-status" role="status">Fill each □ before sending.</p>}
     <form className="composer" onSubmit={event => {event.preventDefault(); send();}}>
+      <div className="writing-composer-card" data-can-swipe={Boolean(writingGhost) || undefined}
+        onPointerDownCapture={beginSwipe} onPointerMove={moveSwipe} onPointerUp={endSwipe} onPointerCancel={stopSwipe}
+        onLostPointerCapture={event => {if (event.target === event.currentTarget && swipe.current) stopSwipe();}}>
       <div className="field">
-        <textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
-          inputMode={native ? 'text' : 'none'} rows={1} maxLength={2000} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
-          value={compositionText ?? props.value} readOnly={props.readOnly} onSelect={remember} onClick={remember} onFocus={remember}
+        {props.ink&&!scratch
+          ? <IconButton label="Scratch" type="button" disabled={editingDisabled || props.ink.draft.queuedText!==undefined}
+              onPointerDown={keepSelection} onClick={()=>openDrawing()}><Pencil aria-hidden="true"/></IconButton>
+          : <IconButton label="Keys" type="button" aria-pressed={shown} disabled={editingDisabled} onPointerDown={keepSelection}
+              onClick={()=>{if(shown){assist.pause();setShown(false);}else keys();}}><Keyboard aria-hidden="true"/></IconButton>}
+        {props.ink ? <TutorAnswerEditor editor={richField} value={props.value} images={props.ink.draft.photos}
+          placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'} readOnly={readOnly}
+          composing={composing} ghost={ghostSuffix} marked={writingEdit ? {start: writingEdit.start, end: writingEdit.end} : undefined} onSelection={remember} onChip={chipAction} onFocus={event=>{
+            if (event.target === event.currentTarget) focusAnswer();
+          }} onKeyDown={keyDown}
+          onPointerDown={event=>{if (event.target === event.currentTarget && !readOnly) setShown(true);}}
+          onCompositionStart={event=>beginComposition(event.currentTarget)}
+          onCompositionEnd={event=>{
+            composition.current = false;
+            inputChanged(event.currentTarget);
+            setCompositionText(null);
+          }}
+          onInput={event=>inputChanged(event.currentTarget, (event.nativeEvent as InputEvent).inputType === 'insertText')}
+          onCopy={event=>copyAnswer(event)}
+          onCut={event=>copyAnswer(event, true)}
+          onPaste={pasteAnswer}
+          onDrop={event=>event.preventDefault()}
+        /> : <div className="writing-editor-wrap">{(ghostSuffix || writingEdit) && <div className="writing-editor-mirror" aria-hidden="true">
+          <span>{writingEdit ? <>{props.value.slice(0, writingEdit.start)}<span data-writing-aid-source="">{props.value.slice(writingEdit.start, writingEdit.end)}</span>{props.value.slice(writingEdit.end)}</> : props.value}</span>{ghostSuffix}
+        </div>}<textarea ref={field} aria-label="Your answer" placeholder={props.pending ? 'Draft your next answer…' : 'Write your answer…'}
+          inputMode="none" rows={1} maxLength={MAX_ANSWER_LENGTH} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false}
+          value={compositionText ?? props.value} readOnly={readOnly} onSelect={remember} onClick={remember} onFocus={focusAnswer}
           onPointerDown={() => {
-            if (!shown && !native && !props.readOnly) {
-              compactStart.current = false;
+            if (!shown && !readOnly) {
               setShown(true);
             }
           }}
-          onCompositionStart={event => {
-            remember();
-            composition.current = true;
-            setCompositionText(event.currentTarget.value);
-          }}
+          onCompositionStart={event=>beginComposition(event.currentTarget)}
           onCompositionEnd={event => {
             composition.current = false;
-            commit(changePadText(history.current, fieldSelection(event.currentTarget)), false, false);
+            commit(changePadText(history.current, fieldSelection(event.currentTarget)), false, false, false, true);
             setCompositionText(null);
           }}
           onChange={event => {
             const edit = fieldSelection(event.currentTarget);
             if (composition.current) setCompositionText(edit.text);
-            else commit(changePadText(history.current, edit), false, false);
+            else commit(changePadText(history.current, edit), false, false, false, (event.nativeEvent as InputEvent).inputType === 'insertText');
           }}
-          onKeyDown={event => {
-            if (composition.current || event.nativeEvent.isComposing || event.keyCode === 229) return;
-            const modified = event.ctrlKey || event.metaKey;
-            if (event.key === 'Enter' && modified) {
-              event.preventDefault();
-              send();
-            }
-            if (!modified && !event.altKey && event.key === 'Escape' && shown) {
-              event.preventDefault();
-              setShown(false);
-            }
-            if (props.readOnly) return;
-            const key = event.key.toLowerCase();
-            if (modified && !event.altKey && (key === 'z' || key === 'y')) {
-              event.preventDefault();
-              undo(key === 'y' || event.shiftKey);
-              return;
-            }
+          onScroll={event => {const mirror = event.currentTarget.previousElementSibling; if (mirror) mirror.scrollTop = event.currentTarget.scrollTop;}}
+          onPaste={event => {
+            event.preventDefault();
+            if (editingDisabled) return;
             remember();
-            const edit = history.current.present;
-            if (!modified && !event.altKey && event.key === 'Tab' && edit.text.slice(edit.start, edit.end) === '□') {
-              const slot = findNotationSlot(edit, event.shiftKey);
-              if (slot && (event.shiftKey ? slot.start < edit.start : slot.start > edit.start)) {
-                event.preventDefault();
-                change(slot);
-              }
-            }
-            if (modified || event.altKey) return;
-            if (event.key === 'Backspace' && undoAutomatic(false)) event.preventDefault();
-            if (/^[ ,.;]$/.test(event.key) && typeText(edit, event.key, false, true)) event.preventDefault();
-          }}/>
-        <button className="send" type="submit" aria-label="Send" disabled={blocked || !props.value.trim()}
-          onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></button>
+            const text = clipboardPlain(event.clipboardData.getData('text/plain')).replace(/\r\n?/g, '\n');
+            if (text) change(insertNotation(history.current.present, text));
+          }}
+          onDrop={event => event.preventDefault()}
+          onKeyDown={keyDown}/></div>}
+        <IconButton label="Edit answer" type="button" aria-haspopup="dialog" onPointerDown={keepSelection} onClick={()=>{assist.pause();setEditMenu(true);}}><Ellipsis aria-hidden="true"/></IconButton>
+        <IconButton label={queue?'Queue answer':'Send'} data-tutor-send="" type="submit" disabled={blocked || !props.value.trim()&&!hasImage}
+          onPointerDown={keepSelection}><ArrowUp aria-hidden="true"/></IconButton>
+      </div>
+      {shown && !scratch && !assist.drawing && <WritingAidBar words={writingWords} edit={writingEdit} ghost={writingGhost}
+        disabled={editingDisabled} undoable={suggestionUndoable} swipeProgress={swipeProgress}
+        exhausted={aidVisible && (writing.exhausted.edit || writing.exhausted.ghost)}
+        onAccept={acceptWriting} onUndo={undoWriting} onDismiss={dismissWriting}
+        onRefresh={(surface, displayed) => {writing.refresh(surface, displayed); haptic('snap');}}/>}
       </div>
     </form>
-    <div className="tbar" role="group" aria-label="Answer tools">
-      <button type="button" className={'tb' + (props.hasContext ? ' on' : '')} onClick={props.onContext}><Paperclip/><small>Context</small></button>
-      <button type="button" className="tb" disabled={!props.canSend || editingDisabled} onClick={() => props.onAsk('hint')}><HelpCircle/><small>Hint {Math.max(1, Math.min(4, props.hintLevel ?? 1))}/4</small></button>
-      <button type="button" className="tb" disabled={!props.canSend || editingDisabled} onClick={() => props.onAsk('stuck')}><ArrowDown/><small>Stuck</small></button>
-      <button type="button" className="tb" disabled={!history.current.past.length || editingDisabled}
-        onPointerDown={keepSelection} onClick={() => undo()}><Undo2/><small>Undo</small></button>
-      <button type="button" className={'tb' + (view !== 'abc' && shown ? ' on' : '')}
-        aria-label="Symbols" aria-pressed={view !== 'abc' && shown} disabled={composing} onClick={() => {
-          haptic('snap');
-          compactStart.current = false;
-          if (native) field.current?.blur();
-          setNative(false);
-          setShown(true);
-          changeView(!shown || view === 'abc' ? lastMath : 'abc');
-        }}><span className="sg" aria-hidden="true">∑</span><small>Symbols</small></button>
-      {props.pending
-        ? <button type="button" className="tb" onClick={props.onConnection}><Plug/><small>Connect</small></button>
-        : <button type="button" className="tb" disabled={!props.canSend || editingDisabled}
-            onClick={() => props.onAsk('notation')}><Sparkle/><small>Ask</small></button>}
-    </div>
-    {shown ? <div className="kb" ref={keyboard} role="group" aria-label="Answer keyboard">
-      <div className="strip">
-        <div className="sugg" ref={strip} role="group" aria-label="Suggestions">
-          {incomplete && <button type="button" className="next" disabled={editingDisabled}
-            onPointerDown={keepSelection} onClick={() => {haptic('snap'); nextSlot();}}>Next □</button>}
-          {suggestions.map(item => <button className={item.kind} type="button" key={item.text}
-            disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {
-              remember();
-              const edit = history.current.present;
-              const next = notationSuggestions(edit, context, recent).find(suggestion => suggestion.text === item.text);
-              if (!next) return;
-              haptic('snap');
-              change(applyNotationSuggestion(edit, next), true);
-              noteRecent(item.text);
-            }} aria-description={item.kind === 'fix' ? 'Spelling correction' : undefined}>{item.text}</button>)}
+    <Sheet open={editMenu} onClose={()=>setEditMenu(false)} title="Answer actions">
+      <div className="tutor-session-actions">
+        <Button onClick={() => {setEditMenu(false); setAidSettings(true);}}><SlidersHorizontal aria-hidden="true"/>Writing assistance</Button>
+        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('hint');}}>
+          <HelpCircle aria-hidden="true"/>Hint {Math.max(1,Math.min(4,props.hintLevel??1))}/4
+        </Button>
+        <Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('stuck');}}><ArrowDown aria-hidden="true"/>Stuck</Button>
+        {!props.pending&&<Button disabled={!props.canSend||editingDisabled} onClick={()=>{setEditMenu(false);props.onAsk('notation');}}>
+          <HelpCircle aria-hidden="true"/>Ask about notation
+        </Button>}
+        {props.ink&&<Button disabled={editingDisabled || props.ink.draft.queuedText!==undefined} onClick={()=>{assist.stop();drawingSelection.current=history.current.present;setEditMenu(false);setPhoto(true);}}><Camera aria-hidden="true"/>Photo</Button>}
+        <Button disabled={inkDraft?.queuedText!==undefined} onClick={()=>{setEditMenu(false);props.onContext();}}><Paperclip aria-hidden="true"/>Context</Button>
+        <Button disabled={!history.current.past.length||editingDisabled} onClick={()=>{setEditMenu(false);undo();}}><Undo2 aria-hidden="true"/>Undo typing</Button>
+        <Button disabled={!history.current.future.length||editingDisabled} onClick={()=>{setEditMenu(false);undo(true);}}><Redo2 aria-hidden="true"/>Redo typing</Button>
+      </div>
+    </Sheet>
+    <Sheet open={aidSettings} onClose={() => setAidSettings(false)} title="Writing assistance"><WritingAidSettings showTitle={false}/></Sheet>
+    {props.ink&&<TutorInkTray ink={props.ink} shown={scratch} photoOpen={photo} onClosePhoto={()=>setPhoto(false)}
+      editingImageId={editingImageId} canMigrate={!readOnly} answerLength={props.value.length} canInsertImage={canInsertImage} referencedImageIds={refs} onInsertImage={insertImage} onMigrateImages={migrateImages} onCloseDrawing={closeDrawing}/>}
+    {shown ? <div className="kb" data-v7-keyboard="" role="group" aria-label="Answer keyboard">
+      {assist.drawing ? <TutorInkPad enabled={inputPrefs.recognition} strokes={assist.snapshot?.strokes??[]}
+        readiness={assist.readiness} recognized={assist.recognized} completions={assist.completions} actionable={assist.actionable}
+        keepDrawing={assist.keepDrawing} overBudget={assist.snapshot?.overBudget??false} error={assist.error} onBegin={assist.onBegin} onMove={assist.onMove} onEnd={assist.onEnd}
+        onInterrupt={assist.onInterrupt} onUndo={assist.onUndo} onClear={assist.onClear} onClose={()=>{
+          assist.stop();fieldElement()?.focus({preventScroll:true});selectField(history.current.present);
+        }}
+        onBrowse={assist.openPicker} onKeepDrawing={assist.onKeepDrawing} onLockAutomatic={assist.lockAutomatic} onPressCandidate={assist.pressCandidate} onReleaseCandidate={assist.releaseCandidate}
+        onAccept={assist.onAccept}/>
+      : <><div className="strip">
+        {/* N220 (Owner report): the one-tap maths symbols and Next □ sit in the suggestion strip, so the bottom row keeps
+            Gboard's wide space bar. As in Gboard, a word being typed gives its suggestions the whole strip: the symbols
+            step aside until the caret is at a word boundary (Next □ stays while a slot is empty). */}
+        <div className="tutor-quick-math" role="group" aria-label="Quick math symbols" hidden={wordInProgress && !incomplete}>
+          {['∀', '∈', ...(incomplete ? [] : ['⇒'])].map(symbol => <button key={symbol} type="button" className="sbtn qsym" aria-label={symbol}
+            hidden={wordInProgress} disabled={editingDisabled} onPointerDown={keepSelection} onClick={() => {haptic('key'); insert(symbol);}}>{symbol}</button>)}
+          {incomplete && <button type="button" className="sbtn qsym" aria-label="Next □" disabled={editingDisabled} onPointerDown={keepSelection}
+            onClick={() => {haptic('key'); nextSlot();}}><MoveRight aria-hidden="true"/></button>}
         </div>
-        <button className="sbtn" type="button" aria-label="Use device keyboard" disabled={editingDisabled} onClick={() => {
-          haptic('snap');
-          setNative(true);
-          setShown(false);
-          const input = field.current;
-          if (input) {
-            // Re-focus inside the gesture so iOS can open its IME from an
-            // already-focused field whose input mode was set to none.
-            if (document.activeElement === input) input.blur();
-            input.inputMode = 'text';
-            input.focus();
-          }
-        }}><Keyboard aria-hidden="true"/></button>
-        <button className="sbtn" type="button" aria-label="Hide keyboard" onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
+        <WritingAidWords words={writingWords} disabled={editingDisabled} onAccept={acceptWriting}/>
+        {refreshable && <button className="sbtn" type="button" aria-label="Refresh suggestions" disabled={editingDisabled}
+          onPointerDown={keepSelection} onClick={refreshWriting}><RefreshCw aria-hidden="true"/></button>}
+        <button className="sbtn" type="button" aria-label="Draw symbol" disabled={editingDisabled} onPointerDown={keepSelection}
+          onClick={()=>{remember();revision.current.modeRevision++;haptic('snap');assist.openDraw();}}><PenLine aria-hidden="true"/></button>
+        <button className="sbtn" type="button" aria-label="Hide keyboard" onPointerDown={keepSelection} onClick={() => {haptic('snap'); setShown(false);}}><ChevronDown aria-hidden="true"/></button>
       </div>
       <TutorKeyboard view={view} lastMath={lastMath} onView={changeView} disabled={editingDisabled} onInsert={insert}
+        wordBefore={() => {const present = history.current.present; return /[A-Za-z]+$/.exec(present.text.slice(0, present.start))?.[0] ?? '';}}
+        onBrowse={()=>{remember();assist.openPicker();}}
         onDelete={() => {
           remember();
-          if (!undoAutomatic(true)) change(deletePadBackward(history.current.present), true);
+          const edit = history.current.present;
+          const image = imageDeletion(edit, true);
+          change(image ? insertNotation(image, '') : deletePadBackward(edit), true);
         }}
         onMove={(direction, count) => {
           remember();
           let edit = history.current.present;
-          for (let step = 0; step < count; step++) edit = movePadCaret(edit, direction);
-          change(edit, true);
-        }}/>
-    </div> : <button className="btn ghost" type="button" disabled={composing} onClick={() => {
-      haptic('snap');
-      compactStart.current = false;
-      if (native) field.current?.blur();
-      setNative(false);
-      setShown(true);
-    }}>Show keyboard</button>}
-  </div>;
-}
-
-interface KeyHold {
-  key: string;
-  pointer: number;
-  x: number;
-  fired: boolean;
-  timer?: ReturnType<typeof setTimeout>;
-}
-
-function TutorKeyboard({view, lastMath, onView, disabled, onInsert, onDelete, onMove}: {
-  view: string; lastMath: string; onView: (view: string) => void; disabled: boolean;
-  onInsert: (text: string, typed?: boolean) => void; onDelete: () => void;
-  onMove: (direction: 'left' | 'right', count: number) => void;
-}) {
-  const [shift, setShift] = useState<'off' | 'once' | 'locked'>('off');
-  const lastShift = useRef(0);
-  const hold = useRef<KeyHold | null>(null);
-  const skipClick = useRef<string | null>(null);
-  const pressTick = useRef<string | null>(null);
-  const actions = useRef({onInsert, onDelete, onMove, disabled});
-  useLayoutEffect(() => {actions.current = {onInsert, onDelete, onMove, disabled};}, [onInsert, onDelete, onMove, disabled]);
-  useEffect(() => () => clearTimeout(hold.current?.timer), [view, disabled]);
-  const activeCategory = useRef<HTMLButtonElement>(null);
-  useLayoutEffect(() => {
-    const selected = activeCategory.current;
-    const categories = selected?.parentElement;
-    if (!selected || !categories) return;
-    const item = selected.getBoundingClientRect();
-    const strip = categories.getBoundingClientRect();
-    if (item.left < strip.left || item.right > strip.right)
-      categories.scrollLeft += (item.left + item.right - strip.left - strip.right) / 2;
-  }, [view]);
-
-  function key(label: string, action: () => void, options: {style?: string; icon?: ReactNode; alt?: string; printable?: boolean} = {}) {
-    const {style = '', icon, alt, printable} = options;
-    const swallowing = (event: PointerEvent<HTMLButtonElement>) => {
-      const current = hold.current;
-      if (!current || current.pointer !== event.pointerId) return;
-      clearTimeout(current.timer);
-      if (current.fired) skipClick.current = current.key;
-      hold.current = null;
-      event.currentTarget.classList.remove('down', 'pressed', 'sliding');
-    };
-    return <button type="button" key={label} className={'k ' + style} aria-label={label} disabled={disabled}
-      aria-pressed={label === 'Shift' || label === 'Caps lock on' ? shift !== 'off' : undefined}
-      data-k={printable ? label : undefined}
-      onPointerDown={event => {
-        if (!event.isPrimary || event.button !== 0) return;
-        keepSelection(event);
-        skipClick.current = null;
-        pressTick.current = haptic('snap') ? label : null;
-        event.currentTarget.classList.add('down');
-        const current: KeyHold = {key: label, pointer: event.pointerId, x: event.clientX, fired: false};
-        hold.current = current;
-        if (printable) event.currentTarget.classList.add('pressed');
-        if (label === 'Space' || label === 'Delete') event.currentTarget.setPointerCapture?.(event.pointerId);
-        if (label === 'Delete') {
-          const started = Date.now();
-          function repeat() {
-            if (actions.current.disabled) return;
-            actions.current.onDelete();
-            current.fired = true;
-            current.timer = setTimeout(repeat, Date.now() - started > 1300 ? 40 : 75);
+          const ranges = imageRanges(edit.text);
+          for (let step = 0; step < count; step++) {
+            edit = movePadCaret(edit, direction);
+            const image = ranges.find(item => item.start < edit.start && edit.start < item.end);
+            if (image) edit = padEdit(edit.text, direction === 'left' ? image.start : image.end);
           }
-          current.timer = setTimeout(repeat, 420);
-          actions.current.onDelete();
-          current.fired = true;
-        } else if (alt) {
-          current.timer = setTimeout(() => {
-            if (actions.current.disabled) return;
-            haptic('reveal');
-            actions.current.onInsert(alt, true);
-            current.fired = true;
-          }, 380);
-        }
-      }}
-      onPointerMove={event => {
-        const current = hold.current;
-        if (label !== 'Space' || current?.pointer !== event.pointerId) return;
-        const steps = Math.trunc((event.clientX - current.x) / 12);
-        if (!steps) return;
-        current.x += steps * 12;
-        current.fired = true;
-        event.currentTarget.classList.add('sliding');
-        haptic('snap');
-        actions.current.onMove(steps > 0 ? 'right' : 'left', Math.abs(steps));
-      }}
-      onPointerUp={swallowing} onPointerCancel={swallowing} onLostPointerCapture={swallowing}
-      onPointerLeave={event => {if (!event.currentTarget.hasPointerCapture?.(event.pointerId)) swallowing(event);}}
-      onClick={event => {
-        if (event.detail && skipClick.current === label) {skipClick.current = null; return;}
-        if (!event.detail || pressTick.current !== label) haptic('snap');
-        pressTick.current = null;
-        action();
-      }}>
-      <span className="kl">{icon ?? label}</span>{alt && <sup>{alt}</sup>}
-    </button>;
-  }
-  function letters(text: string, edges = false) {
-    return [...text].map((char, index) => {
-      const letter = shift === 'off' ? char : char.toUpperCase();
-      const digit = 'qwertyuiop'.indexOf(char);
-      const edge = edges && index === 0 ? ' edgeL' : edges && index === text.length - 1 ? ' edgeR' : '';
-      return key(letter, () => {
-        onInsert(letter, true);
-        if (shift === 'once') setShift('off');
-      }, {style: 'ch' + edge, printable: true, alt: digit < 0 ? undefined : String((digit + 1) % 10)});
-    });
-  }
-  const back = key('Delete', onDelete, {style: 'fn w15 bk', icon: <Delete/>});
-  const chars = (list: string[]) => list.map(char => key(char, () => onInsert(char, true), {style: 'ch sym', printable: true}));
-  const math = notation[view];
-  return <div className="rows" data-view={view}>
-    {math ? <>
-      <div className={'grid' + (view === 'Phrases' ? ' two' : '')} role="group" aria-label={view + ' keys'}>
-        {math.map(([label, text]) => key(label, () => onInsert(text), {
-          style: view === 'Phrases' ? 'txt' : label.length <= 2 ? 'sym' : 'mid',
-          printable: view !== 'Phrases' && label.length <= 2,
-        }))}
-      </div>
-      <div className="row bottom catbar">
-        {key('ABC', () => onView('abc'), {style: 'fn pill lbl abc'})}
-        <div className="cats" role="group" aria-label="Math categories">{Object.keys(notation).map(name =>
-          <button key={name} type="button" className={view === name ? 'cur' : ''} aria-pressed={view === name}
-            ref={view === name ? activeCategory : undefined}
-            onPointerDown={keepSelection} onClick={() => {haptic('snap'); onView(name);}}>{name}</button>)}</div>
-        {back}
-      </div>
-    </> : <>
-      {view === 'abc' ? <>
-        <div className="row">{letters('qwertyuiop')}</div>
-        <div className="row">{letters('asdfghjkl', true)}</div>
-        <div className="row">{key(shift === 'locked' ? 'Caps lock on' : 'Shift', () => {
-          const now = Date.now();
-          setShift(shift === 'off' ? 'once' : shift === 'once' && now - lastShift.current < 350 ? 'locked' : 'off');
-          lastShift.current = now;
-        }, {style: 'fn w15' + (shift === 'off' ? '' : ' lit'), icon: shift === 'locked' ? <ArrowBigUpDash fill="currentColor"/> : <ArrowBigUp fill={shift === 'once' ? 'currentColor' : 'none'}/>})}{letters('zxcvbnm')}{back}</div>
-      </> : view === 'num' ? <>
-        <div className="row">{chars([...'1234567890'])}</div>
-        <div className="row">{chars(['+', '−', '×', '÷', '=', '<', '>', '(', ')', '/'])}</div>
-        <div className="row">{key('=\\<', () => onView('num2'), {style: 'fn w15 lbl'})}{chars(['^', '_', "'", ':', ';', '!', '?'])}{back}</div>
-      </> : <>
-        <div className="row">{chars(['²', '³', 'ⁿ', '⁻¹', '₀', '₁', 'ₙ', '°', '′', '″'])}</div>
-        <div className="row">{chars(['[', ']', '{', '}', '|', '\\', '%', '#', '&', '@'])}</div>
-        <div className="row">{key('?123', () => onView('num'), {style: 'fn w15 lbl'})}{chars(['·', '…', '∘', '≈', '±', '∞', '~'])}{back}</div>
-      </>}
-      <div className="row bottom">
-        {key(view === 'abc' ? '?123' : 'ABC', () => onView(view === 'abc' ? 'num' : 'abc'), {style: 'fn pill w15 lbl'})}
-        {key(',', () => onInsert(',', true), {style: 'ch', printable: true})}
-        {key('Maths symbols', () => onView(lastMath), {style: 'fn sym2', icon: lastMath === 'Phrases' ? 'Aa' : '∀∃'})}
-        {key('Space', () => onInsert(' ', true), {style: 'space', icon: 'Lemma'})}
-        {key('.', () => onInsert('.', true), {style: 'ch', printable: true})}
-        {key('New line', () => onInsert('\n', true), {style: 'go w15', icon: <CornerDownLeft/>})}
-      </div>
-    </>}
+          change(edit, true);
+        }}/></>}
+    </div> : null}
+    {assist.picker && <TutorSymbolPicker recent={assist.recent} onPick={assist.onPick} onClose={assist.closePicker} error={assist.error}/>}
   </div>;
 }

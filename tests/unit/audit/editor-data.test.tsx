@@ -22,6 +22,8 @@ vi.mock('../../../src/ui/v7/components',()=>({
  Picker:({label,value,options,onChange}:any)=><select aria-label={label} value={value} onChange={e=>onChange(e.target.value)}>{options.map((o:string)=><option key={o}>{o}</option>)}</select>,
  DatePicker:({label,value,onChange}:any)=><input aria-label={label} value={value} onChange={e=>onChange(e.target.value)}/>,
  Segmented:({options,onChange}:any)=><div>{options.map((o:string)=><button type="button" key={o} onClick={()=>onChange(o)}>{o}</button>)}</div>,
+ // N220: the block sheet's length presets are kit chips.
+ Chip:({children,onClick,selected}:any)=><button type="button" aria-pressed={!!selected} onClick={onClick}>{children}</button>,
 }));
 
 let host:HTMLDivElement,root:Root;
@@ -63,9 +65,9 @@ it('interprets a task due time in the configured account zone, as the Tasks list
  h.tasks={...h.tasks,createTask:create};
  await act(async()=>root.render(<TaskSheet onDismiss={()=>{}}/>));
  await input('Title','Proof deadline');
- await act(async()=>button('Date & time').click());
+ await input('Due','Date & time');
  await input('Due date','2026-11-16');
- await input('Due time','17:00');
+ await input('Due time','1020');
  await act(async()=>button('Save task').click());
  expect(create).toHaveBeenCalledTimes(1);
  expect(create.mock.calls[0][0].due).toEqual({kind:'instant',at:'2026-11-16T11:30:00.000Z'});

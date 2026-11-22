@@ -541,6 +541,16 @@
           }
         },
         {
+          "name": "viz/easy",
+          "type": "COLOR",
+          "modes": {
+            "day": "#1C64C8",
+            "night": "#58A6FF",
+            "day-hc": "#1C64C8",
+            "night-hc": "#58A6FF"
+          }
+        },
+        {
           "name": "foundation/sans",
           "type": "fontFamily",
           "value": "\"Lemma v7 Instrument Sans\", \"Lemma v7 Sans fallback\", sans-serif"
@@ -789,6 +799,36 @@
           "name": "foundation/hero-alpha",
           "type": "string",
           "value": "10%"
+        },
+        {
+          "name": "foundation/z-base",
+          "type": "number",
+          "value": 0
+        },
+        {
+          "name": "foundation/z-sticky",
+          "type": "number",
+          "value": 8
+        },
+        {
+          "name": "foundation/z-dock",
+          "type": "number",
+          "value": 20
+        },
+        {
+          "name": "foundation/z-sheet",
+          "type": "number",
+          "value": 25
+        },
+        {
+          "name": "foundation/z-toast",
+          "type": "number",
+          "value": 30
+        },
+        {
+          "name": "foundation/z-modal",
+          "type": "number",
+          "value": 40
         },
         {
           "name": "foundation/menu-layer",
@@ -1679,6 +1719,17 @@
           }
         },
         {
+          "name": "viz/easy",
+          "type": "COLOR",
+          "description": "The Easy grade in review charts and legends: a clear blue, distinct from Good (green), Hard (amber) and Again (red).",
+          "modes": {
+            "day": "#1C64C8",
+            "night": "#58A6FF",
+            "day-hc": "#1C64C8",
+            "night-hc": "#58A6FF"
+          }
+        },
+        {
           "name": "foundation/sans",
           "type": "fontFamily",
           "alias": "{foundation.raw.sans}",
@@ -1977,6 +2028,42 @@
           "type": "string",
           "alias": "{foundation.raw.hero-alpha}",
           "description": "Shared hero alpha foundation."
+        },
+        {
+          "name": "foundation/z-base",
+          "type": "number",
+          "alias": "{foundation.raw.z-base}",
+          "description": "Page content."
+        },
+        {
+          "name": "foundation/z-sticky",
+          "type": "number",
+          "alias": "{foundation.raw.z-sticky}",
+          "description": "Sticky page controls."
+        },
+        {
+          "name": "foundation/z-dock",
+          "type": "number",
+          "alias": "{foundation.raw.z-dock}",
+          "description": "Pinned action bars."
+        },
+        {
+          "name": "foundation/z-sheet",
+          "type": "number",
+          "alias": "{foundation.raw.z-sheet}",
+          "description": "Sheets and map details."
+        },
+        {
+          "name": "foundation/z-toast",
+          "type": "number",
+          "alias": "{foundation.raw.z-toast}",
+          "description": "Toast messages."
+        },
+        {
+          "name": "foundation/z-modal",
+          "type": "number",
+          "alias": "{foundation.raw.z-modal}",
+          "description": "Modal overlays."
         },
         {
           "name": "foundation/menu-layer",

@@ -214,6 +214,10 @@
       "viz.neutral": {
         "$type": "color",
         "$value": "#40495C"
+      },
+      "viz.easy": {
+        "$type": "color",
+        "$value": "#1C64C8"
       }
     },
     "night": {
@@ -428,6 +432,10 @@
       "viz.neutral": {
         "$type": "color",
         "$value": "#B1B7C6"
+      },
+      "viz.easy": {
+        "$type": "color",
+        "$value": "#58A6FF"
       }
     }
   },
@@ -1799,6 +1807,33 @@
           }
         ]
       }
+    },
+    "viz.easy": {
+      "$type": "color",
+      "$value": "{raw.day.viz.easy}",
+      "$description": "The Easy grade in review charts and legends: a clear blue, distinct from Good (green), Hard (amber) and Again (red).",
+      "$extensions": {
+        "lemma.contrastWith": [
+          "surface.page",
+          "surface.raised",
+          "border.subtle"
+        ],
+        "lemma.modes": {
+          "night": "{raw.night.viz.easy}"
+        },
+        "lemma.contrastPairs": [
+          {
+            "foreground": "viz.easy",
+            "background": "surface.raised",
+            "minimum": 3
+          },
+          {
+            "foreground": "viz.easy",
+            "background": "border.subtle",
+            "minimum": 3
+          }
+        ]
+      }
     }
   },
   "component": {},
@@ -2015,6 +2050,30 @@
       "hero-alpha": {
         "$type": "string",
         "$value": "10%"
+      },
+      "z-base": {
+        "$type": "number",
+        "$value": 0
+      },
+      "z-sticky": {
+        "$type": "number",
+        "$value": 8
+      },
+      "z-dock": {
+        "$type": "number",
+        "$value": 20
+      },
+      "z-sheet": {
+        "$type": "number",
+        "$value": 25
+      },
+      "z-toast": {
+        "$type": "number",
+        "$value": 30
+      },
+      "z-modal": {
+        "$type": "number",
+        "$value": 40
       },
       "menu-layer": {
         "$type": "number",
@@ -2509,6 +2568,36 @@
         "$type": "string",
         "$value": "{foundation.raw.hero-alpha}",
         "$description": "Shared hero alpha foundation."
+      },
+      "z-base": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-base}",
+        "$description": "Page content."
+      },
+      "z-sticky": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-sticky}",
+        "$description": "Sticky page controls."
+      },
+      "z-dock": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-dock}",
+        "$description": "Pinned action bars."
+      },
+      "z-sheet": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-sheet}",
+        "$description": "Sheets and map details."
+      },
+      "z-toast": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-toast}",
+        "$description": "Toast messages."
+      },
+      "z-modal": {
+        "$type": "number",
+        "$value": "{foundation.raw.z-modal}",
+        "$description": "Modal overlays."
       },
       "menu-layer": {
         "$type": "number",

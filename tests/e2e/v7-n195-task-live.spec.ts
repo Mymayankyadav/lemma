@@ -1,5 +1,6 @@
 import {expect,test,type Page} from '@playwright/test';
 import {at,NOW} from './v7-scenes';
+import {setTimeRuler} from './helpers/time-ruler';
 
 test.use({timezoneId:'Asia/Kolkata',viewport:{width:390,height:844},reducedMotion:'reduce'});
 const owner='11111111-1111-4111-8111-111111111111';
@@ -109,11 +110,9 @@ test('Signed-in task creation recovers a lost acknowledgement using the original
  await page.goto(liveRoute('/tasks?new=1'));
  const editor=page.getByRole('dialog',{name:'New task'});
  await editor.getByLabel('Title',{exact:true}).fill('Owner midnight task');
- await editor.getByRole('radio',{name:'Date & time'}).click();
- await editor.getByRole('button',{name:/^Due time,/}).click();
- const picker=page.getByRole('dialog',{name:'Due time'});
- await picker.getByLabel('Time (HH:MM)').fill('16:10');
- await picker.getByRole('button',{name:'Use time'}).click();
+ await editor.getByRole('button',{name:'Due: None',exact:true}).click();
+ await page.getByRole('dialog',{name:'Due',exact:true}).getByRole('radio',{name:'Date & time',exact:true}).check();
+ await setTimeRuler(editor.getByRole('slider',{name:'Due time',exact:true}),970);
  await editor.getByRole('button',{name:'Save task'}).click();
  await expect(editor.getByRole('alert')).toContainText('Your changes are still here');
  await expect(editor.getByLabel('Title',{exact:true})).toHaveValue('Owner midnight task');

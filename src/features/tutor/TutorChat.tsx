@@ -1,7 +1,11 @@
+import {authGeneration,authOwner} from '../../data/authBoundary';
+import {getDemoProfile,getMode} from '../../data/mode';
 import {useLayoutEffect, useRef, useState, type ReactNode} from 'react';
 import type {SavedTutorTurn} from '../../data/tutor/manual-api';
 import {MathText} from '../../ui/MathText';
 import {Button, Sheet} from '../../ui/v7/components';
+import type {TutorInkState} from './TutorInk';
+import {referencedImageIds} from '../../../supabase/functions/_shared/tutor-answer';
 import {TutorComposer} from './TutorComposer';
 import {TutorLayout, TutorOverview, type TutorPageContext} from './TutorLayout';
 
@@ -27,6 +31,10 @@ type Props = {
   hasContext: boolean;
   status: ReactNode;
   pendingStatus: ReactNode;
+  listenerSeenAt?: string | null;
+  resumePrompt: string;
+  ink?: TutorInkState;
+  canQueueImage?: boolean;
   context: ReactNode;
   connection: ReactNode;
   transcript: ReactNode;
@@ -39,17 +47,23 @@ function questionPreview(body: string) {
 }
 
 export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOnly, pending, offline,
-  status, pendingStatus, context, connection, transcript, hasContext, draftWarning}: Props) {
+  status, pendingStatus, context, connection, transcript, hasContext, draftWarning, listenerSeenAt, resumePrompt, ink, canQueueImage}: Props) {
   const [view, setView] = useState<'overview' | 'chat'>();
-  const [panel, setPanel] = useState<'context' | 'connection' | 'close'>();
+  const [panel, setPanel] = useState<'context' | 'connection' | 'close' | 'question'>();
   const chat = useRef<HTMLDivElement>(null), follow = useRef(true);
   const previousHeight = useRef(0), previousFirst = useRef<string | undefined>(undefined);
   const previousReply = useRef<string | undefined>(undefined);
   const last = turns.at(-1), first = turns.at(0)?.id;
+  const inputScopeKey=JSON.stringify([getMode()==='live'?authOwner():getDemoProfile(),authGeneration(),page.detail.view.id,last?.threadId??'']);
   const hintIndex = Math.min(hints.length - 1, hints.indexOf(last?.snapshot.question ?? '') + 1);
-  const overview = (view ?? (last || draft ? 'chat' : 'overview')) === 'overview';
+  const inkDraft=ink?.draft;
+  const refs=inkDraft?.inlineImages?new Set(referencedImageIds(draft)):undefined;
+  const hasInk=Boolean(inkDraft?.strokes.length||inkDraft?.queuedText!==undefined||
+    (refs?inkDraft?.photos.some(image=>refs.has(image.id))||inkDraft?.editingDrawing&&refs.has(inkDraft.editingDrawing.id)
+      :inkDraft?.photos.length));
+  const overview = (view ?? (last || draft || hasInk ? 'chat' : 'overview')) === 'overview';
   const latestReply = turns.filter(turn => turn.status === 'completed').at(-1);
-  const question = latestReply?.status === 'completed' ? questionPreview(latestReply.finalReply.body) : '';
+  const question = latestReply?.status === 'completed' ? latestReply.finalReply.nextQuestion || questionPreview(latestReply.finalReply.body) : '';
   const step = page.detail.steps[page.detail.view.currentStep] || page.detail.objective;
   useLayoutEffect(() => {
     const element = chat.current;
@@ -85,10 +99,18 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     void onSend(text, options);
   }
   const openConnection = () => setPanel('connection');
-  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline} overview={overview}
+  return <TutorLayout page={page} sequence={latestReply?.sequence ?? 0} offline={offline} overview={overview} listenerSeenAt={listenerSeenAt} resumePrompt={resumePrompt}
+    onContext={()=>setPanel('context')} claimExpiresAt={last?.status==='awaiting-tutor'?last.claimExpiresAt:undefined}
     onOverview={!overview ? () => setView('overview') : undefined}
-    onQuestion={!overview && question ? () => chat.current?.querySelector('[data-latest-reply]')?.scrollIntoView({block:'start'}) : undefined}
+    onQuestion={!overview && question ? () => {
+      const element = chat.current;
+      const reply = element?.querySelector<HTMLElement>('[data-latest-reply]');
+      if (element && reply) element.scrollTop += reply.getBoundingClientRect().top - element.getBoundingClientRect().top;
+    } : undefined}
     onCloseSession={() => setPanel('close')} onConnection={openConnection}>
+    {!overview && question && <button className="tutor-pinned" type="button" aria-haspopup="dialog" onClick={()=>setPanel('question')}>
+      <span>On the table</span><strong>{question}</strong>
+    </button>}
     <div className="chat" ref={chat} role="log" aria-label="Conversation" aria-live="polite"
       onScroll={event => {const node = event.currentTarget; follow.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80;}}>
       {status}
@@ -109,7 +131,7 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
     </div>
     {panel !== 'context' && draftWarning && <p className="composer-status" role="alert">{draftWarning}</p>}
     {!overview &&
-      <TutorComposer value={draft} onChange={onChange} onSend={send} canSend={canSend}
+      <TutorComposer inputScopeKey={inputScopeKey} ink={ink} canQueueImage={canQueueImage} value={draft} onChange={onChange} onSend={send} canSend={canSend}
         hintLevel={hintIndex + 1}
         onAsk={kind => {
           const request = kind === 'hint' ? hints[hintIndex] : kind === 'stuck' ?
@@ -118,13 +140,16 @@ export function TutorChat({page, turns, draft, onChange, onSend, canSend, readOn
           send(request, {keepDraft:true});
         }}
         notationContext={[page.detail.view.title, step, question]} readOnly={readOnly} pending={pending} hasContext={hasContext}
-        onContext={() => setPanel('context')} onConnection={openConnection}/>
+        onContext={() => setPanel('context')}/>
     }
+    <Sheet open={panel === 'question'} title="On the table" onClose={() => setPanel(undefined)}>
+      {panel==='question'&&<MathText source={question}/>}
+    </Sheet>
     <Sheet open={panel === 'context'} title="Context for your tutor" onClose={() => setPanel(undefined)}
       footer={panel === 'context' && draftWarning && <p role="alert">{draftWarning}</p>}>
       {panel === 'context' && context}
     </Sheet>
-    <Sheet open={panel === 'connection'} title="Tutor connection" onClose={() => setPanel(undefined)}>
+    <Sheet open={panel === 'connection'} title="Connection" onClose={() => setPanel(undefined)}>
       {panel === 'connection' && connection}
     </Sheet>
     <Sheet open={panel === 'close'} title="Close the session" onClose={() => setPanel(undefined)}>

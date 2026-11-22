@@ -1,3 +1,4 @@
+import {FirstUseHint} from '../../ui/v7/FirstUseHint';
 import FirstCardPanel from '../../features/cards/v7/FirstCardPanel';
 import {CardEditorSheet} from '../../features/cards/v7/CardEditorSheet';
 import type {EditorValue} from '../../features/cards/Editor';
@@ -34,6 +35,7 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  const home=useHome(),settings=useSettings(),{entry}=useActiveFocus(),navigate=useNavigate(),notify=useToast();
  const zone=settings.data?.timeZone??Intl.DateTimeFormat().resolvedOptions().timeZone??'UTC';
  const [text,setText]=useState(()=>takeCaptureText()??''),voice=useNativeVoice(),[chosen,setChosen]=useState<CaptureKind|null>(initialKind),[ignored,setIgnored]=useState<ReadonlySet<string>>(new Set());
+ const chooseType=picker&&!text&&!chosen;
  const repair=useStudyUi(),[expandedTask,setExpandedTask]=useState<CapturedTaskDraft|null>(null);
  const [blockKind,setBlockKind]=useState<'study'|'busy'>('study');
  const [cardForm,setCardForm]=useState<'first'|'full'|null>(null);
@@ -121,24 +123,25 @@ export default function CaptureSheet({open,onClose,initialKind=null,picker=false
  </Sheet>;
  if(open&&cardForm==='full')return <CardEditorSheet open onClose={()=>setCardForm(null)} draft={cardDraft}
   busy={busy} submitError={error} onSubmit={value=>{void fullCard(value);}}/>;
- return <Sheet open={open} onClose={close} title="Capture" eyebrow="Add something"
+ return <Sheet open={open} onClose={close} title="Capture"
   footer={<><Button variant="ghost" className="v7-action-tertiary" onClick={more} disabled={kind==='thought'||busy||waitingToExpand} title={waitingToExpand?'Waiting for your time zone':undefined}>More options</Button>
-   {reason&&<p id="v7-capture-reason" className="v7-disabled-reason v7-footer-reason">Unavailable · {reason}</p>}
-   <Button variant="primary" disabled={!!reason||busy} aria-describedby={reason?'v7-capture-reason':undefined} onClick={()=>{void save();}}>{addLabel[kind]}</Button></>}>
-  {picker&&!text&&<div className="v7-capture-types" role="group" aria-label="Choose a type">{captureKinds.map(item=>{const Icon=icons[item];
+   {reason&&text.trim()&&<p id="v7-capture-reason" className="v7-disabled-reason v7-footer-reason">{reason}</p>}
+   <Button variant="primary" disabled={!!reason||busy} aria-describedby={reason&&text.trim()?'v7-capture-reason':undefined} onClick={()=>{void save();}}>{addLabel[kind]}</Button></>}>
+  {chooseType&&<div className="v7-capture-types" role="group" aria-label="Choose a type">{captureKinds.map(item=>{const Icon=icons[item];
    return <button key={item} type="button" aria-pressed={chosen===item} onClick={()=>setChosen(item)}><Icon aria-hidden="true"/>{kindLabel[item]}</button>;})}</div>}
   <textarea data-v7-autofocus="true" className="v7-capture-field" rows={3} maxLength={500} aria-label="What do you want to add?" placeholder="What do you want to add?"
    value={text} onChange={event=>{setText(event.target.value);}}
    onKeyDown={event=>{if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();void save();}}}/>
   {voice.available&&<Button small variant="ghost" onClick={()=>{void voice.listen().then(spoken=>{if(spoken)setText(previous=>(previous.trim()?previous.trim()+' ':'')+spoken);}).catch(()=>setError('Voice input is not available right now.'));}}><Mic aria-hidden="true"/>Speak</Button>}
-  {!text&&<p className="v7-capture-hint">Try: Rudin ch 4 tomorrow 4pm 90m #real</p>}
+  {open&&<FirstUseHint name="capture">{!text&&<p className="v7-capture-hint">Try “Rudin ch 4 tomorrow 4pm 90m”</p>}</FirstUseHint>}
+  <p className="v7-sr-only" aria-live="polite">Adds {kind==='block'?'a time block':'a '+kind}</p>
   {tokens.length>0&&<ul className="v7-capture-tokens" aria-label="Recognised">{tokens.map(token=><li key={token.id}>
    <button type="button" aria-label={'Remove '+token.label} onClick={()=>setIgnored(new Set([...ignored,token.id]))}><span>{token.label}</span><X aria-hidden="true"/></button></li>)}</ul>}
-  <div className="v7-capture-kinds"><Segmented label="Type" options={captureKinds.map(item=>kindLabel[item])} value={kindLabel[kind]}
-   onChange={label=>{const next=captureKinds.find(item=>kindLabel[item]===label);if(next)setChosen(next);}}/></div>
+  {!chooseType&&<div className="v7-capture-kinds" data-selected-kind={kind}><Segmented label="Type" options={captureKinds.map(item=>kindLabel[item])} value={kindLabel[kind]}
+   onChange={label=>{const next=captureKinds.find(item=>kindLabel[item]===label);if(next)setChosen(next);}}/></div>}
   {repair&&kind==='block'&&<div className="v7-form-stack">
    <Segmented label="Block kind" options={['Study','Busy']} value={blockKind==='study'?'Study':'Busy'} onChange={value=>setBlockKind(value==='Busy'?'busy':'study')}/>
-   <p className="v7-meta">{blockKind==='busy'?'Reserve time without assigning study work.':'Plan time for studying.'}</p>
+
   </div>}
   {!!error&&<p role="alert" className="v7-alert">{error}</p>}
  </Sheet>;

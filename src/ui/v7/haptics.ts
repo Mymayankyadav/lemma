@@ -5,7 +5,7 @@ import {isNative} from '../../platform/native';
  * click (`check`), an ending (✓ or ∎ lands) `complete`, a pomodoro's end rise, pause, rise; Inbox decisions and drag steps
  * as before.
  */
-export type HapticEvent = 'reveal' | 'grade' | 'gradeAgain' | 'check' | 'decision' | 'snap' | 'sheetThreshold' | 'complete' | 'pomodoro' | 'destructive';
+export type HapticEvent = 'reveal' | 'grade' | 'gradeAgain' | 'check' | 'decision' | 'snap' | 'key' | 'sheetThreshold' | 'complete' | 'pomodoro' | 'destructive';
 
 export const HAPTIC_PATTERNS: Readonly<Record<HapticEvent, number | number[]>> = {
   reveal: 5,
@@ -14,6 +14,8 @@ export const HAPTIC_PATTERNS: Readonly<Record<HapticEvent, number | number[]>> =
   check: 8,
   decision: 8,
   snap: 5,
+  /** N220: a virtual key press. In the app it is the system keyboard tap (the one Gboard plays); elsewhere a 10 ms tick. */
+  key: 10,
   sheetThreshold: 5,
   complete: [12, 40, 20],
   pomodoro: [8, 120, 16],
@@ -30,7 +32,10 @@ export function hapticsEnabled(): boolean {return switchOn;}
 export function haptic(event: HapticEvent, enabled: boolean = switchOn, device: Pick<Navigator, 'vibrate'> | undefined = typeof navigator === 'undefined' ? undefined : navigator): boolean {
   if (!enabled) return false;
   // N123: in the Android app the WebView has no Vibration API; the system haptics engine plays the same pattern.
-  if (isNative()) { void import('../../platform/haptics').then(module => module.nativeHaptic(HAPTIC_PATTERNS[event])); return true; }
+  if (isNative()) {
+    void import('../../platform/haptics').then(module => event === 'key' ? module.nativeKeyTap() : module.nativeHaptic(HAPTIC_PATTERNS[event]));
+    return true;
+  }
   if (typeof device?.vibrate !== 'function') return false;
   try { return device.vibrate(HAPTIC_PATTERNS[event]); } catch { return false; }
 }

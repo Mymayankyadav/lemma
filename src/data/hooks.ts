@@ -2,7 +2,7 @@ import {onAccountChange,authSignedOut} from './authBoundary';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { subscribeOwnerChanges, clearOwnerChangesCursor } from './sync'
-import type { LemmaApi } from './api'
+import {LemmaError,type LemmaApi,type NoteStatusGuard} from './api'
 import { getApi } from './index'
 const queryDefaults = { enabled:()=>!authSignedOut(), staleTime: 30_000, refetchOnWindowFocus: true }
 export function useHome(...args: Parameters<LemmaApi['getHome']>) {
@@ -180,7 +180,12 @@ export function useUpdateNote() {
  return useWrite((api, value: { noteNo: Parameters<LemmaApi['updateNote']>[0]; patch: Parameters<LemmaApi['updateNote']>[1] }) => api.updateNote(value.noteNo, value.patch), ['card', 'cards', 'decks', 'home'])
 }
 export function useSetNoteStatus() {
- return useWrite((api, value: { noteNo: Parameters<LemmaApi['setNoteStatus']>[0]; status: Parameters<LemmaApi['setNoteStatus']>[1] }) => api.setNoteStatus(value.noteNo, value.status), ['card', 'cards', 'decks', 'home'])
+ return useWrite((api, value: {
+  noteNo:number;status:Parameters<LemmaApi['setNoteStatus']>[1];scope?:{adapter:LemmaApi;guard:NoteStatusGuard}
+ }) => {
+  if (value.scope && value.scope.adapter!==api) throw new LemmaError('auth','The card account changed.')
+  return api.setNoteStatus(value.noteNo,value.status,value.scope?.guard)
+ }, ['card','cards','cards-page','v7-cards','decks','home','project','projects'])
 }
 export function useAddComment() {
  return useWrite((api, value: { noteNo: Parameters<LemmaApi['addComment']>[0]; body: Parameters<LemmaApi['addComment']>[1] }) => api.addComment(value.noteNo, value.body), ['card', 'cards', 'card-comments-page'])

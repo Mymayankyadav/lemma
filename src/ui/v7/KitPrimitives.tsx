@@ -4,6 +4,7 @@ import { Check, ChevronRight, Clock3, LockKeyhole, LoaderCircle, Minus } from "l
 import { Emblem } from "./Emblem";
 import { Toast } from "./components";
 import { haptic } from "./haptics";
+import { RulerTime } from "./RulerTime";
 
 import { SubjectMark, subjectClass, type Subject } from "./Subject";
 export { subjects, SubjectMark, subjectClass, type Subject } from "./Subject";
@@ -31,7 +32,7 @@ export function ProofBadge({ state }: { state: ProofState }) {
 }
 export function FilterChip({ children, selected, onChange, disabledReason }: { children: ReactNode; selected: boolean; onChange: (next: boolean) => void; disabledReason?: string }) {
   return <button className="v7-filter-chip" type="button" aria-pressed={selected} disabled={!!disabledReason} title={disabledReason} onClick={() => onChange(!selected)}>
-    {selected && <Check size={16} aria-hidden="true" />}{children}
+    {children}
   </button>;
 }
 export function ToggleButton({ children, selected, onChange, disabledReason }: { children: ReactNode; selected: boolean; onChange: (next: boolean) => void; disabledReason?: string }) {
@@ -80,19 +81,23 @@ function validTime(value:string){return /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value
 /** The kit's Time range field (§7.3): Start and End side by side with an en dash, 25 / 50 / 90 / Custom presets as filter
  *  chips that move End, and a summary line ("50 min session · 09:00–09:50 · 24-hour time"). Controlled when `start`, `end` and
  *  `onChange` are given; the gallery specimen keeps its own state. */
-export function TimeRange({start,end,onChange,legend="Time range",disabled=false,durationControls=true}:{start:string;end:string;onChange:(start:string,end:string)=>void;legend?:string;disabled?:boolean;durationControls?:boolean}){
+export function TimeRange({start,end,onChange,legend="Time range",disabled=false,durationControls=true,ruler=false}:{start:string;end:string;onChange:(start:string,end:string)=>void;legend?:string;disabled?:boolean;durationControls?:boolean;ruler?:boolean}){
  const id=useId(),[draftStart,setDraftStart]=useState(start),[draftEnd,setDraftEnd]=useState(end),[error,setError]=useState("");
  const duration=(timeMinutes(end)-timeMinutes(start)+1440)%1440;
  const [custom,setCustom]=useState(()=>![25,50,90].includes(duration));
  useEffect(()=>{setDraftStart(start);},[start]);
  useEffect(()=>{setDraftEnd(end);},[end]);
  function commitStart(){if(!validTime(draftStart)){setError("Enter a start time in 24-hour HH:MM format.");return;}setError("");onChange(draftStart,toTime(timeMinutes(draftStart)+duration));}
- function commitEnd(){if(!validTime(draftEnd)){setError("Enter an end time in 24-hour HH:MM format.");return;}setError("");onChange(start,draftEnd);setCustom(![25,50,90].includes((timeMinutes(draftEnd)-timeMinutes(start)+1440)%1440));}
- return <fieldset className="v7-time-range" disabled={disabled}><legend>{legend}</legend><div className="v7-time-pair">
+ function chooseEnd(next:string){onChange(start,next);setCustom(![25,50,90].includes((timeMinutes(next)-timeMinutes(start)+1440)%1440));}
+ function commitEnd(){if(!validTime(draftEnd)){setError("Enter an end time in 24-hour HH:MM format.");return;}setError("");chooseEnd(draftEnd);}
+ return <fieldset className="v7-time-range" disabled={disabled}><legend>{legend}</legend>{ruler?<>
+  <RulerTime label="Start" value={start} disabled={disabled} onChange={next=>{onChange(next,end);setCustom(![25,50,90].includes((timeMinutes(end)-timeMinutes(next)+1440)%1440));}}/>
+  <RulerTime label="End" value={end} disabled={disabled} onChange={chooseEnd}/>
+ </>:<div className="v7-time-pair">
   <label>Start<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftStart} placeholder="09:00" aria-describedby={id} aria-invalid={!!error&&!validTime(draftStart)||undefined} onChange={e=>setDraftStart(e.target.value)} onBlur={commitStart}/><Clock3 size={20} aria-hidden="true"/></span></label>
   <span className="v7-range-dash" aria-hidden="true">–</span>
   <label>End<span className="v7-time-input"><input type="text" inputMode="numeric" maxLength={5} value={draftEnd} placeholder="09:50" aria-describedby={id} aria-invalid={!!error&&!validTime(draftEnd)||undefined} onChange={e=>setDraftEnd(e.target.value)} onBlur={commitEnd}/><Clock3 size={20} aria-hidden="true"/></span></label>
- </div>{durationControls&&<div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);onChange(start,toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>}
+ </div>}{durationControls&&<div className="v7-preset-wrap" role="group" aria-label="Session duration presets">{[25,50,90].map(n=><FilterChip key={n} selected={!custom&&duration===n} onChange={()=>{setCustom(false);onChange(start,toTime(timeMinutes(start)+n));}}>{n} min</FilterChip>)}<FilterChip selected={custom} onChange={()=>setCustom(true)}>Custom</FilterChip></div>}
  {durationControls&&custom&&<RangeSlider label="Duration" value={duration} min={5} max={Math.max(180,Math.ceil(duration/5)*5)} unit="min" onChange={n=>onChange(start,toTime(timeMinutes(start)+n))}/>}
  <p id={id} className={error?"v7-field-error":"v7-field-hint"}>{error||`${duration} min session · ${start}–${end}${end<start?" · Ends the next day":""} · 24-hour time`}</p></fieldset>;
 }

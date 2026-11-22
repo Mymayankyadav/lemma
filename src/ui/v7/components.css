@@ -28,6 +28,7 @@
  :where(html[data-v7]) .v7-icon-button {display:inline-flex;align-items:center;justify-content:center;min-width:var(--v7-touch);min-height:var(--v7-touch);padding:var(--v7-space-2);border:var(--v7-hairline) solid transparent;border-radius:var(--v7-radius-1);background:transparent;color:var(--v7-role-text-secondary);}
  :where(html[data-v7]) .v7-icon-button svg {width:var(--v7-space-5);height:var(--v7-space-5);}
  :where(html[data-v7]) .v7-button-progress {width:var(--v7-space-5);height:var(--v7-space-5);flex:none;}
+ :where(html[data-v7]) .v7-button-progress:empty {display:none;}
  :where(html[data-v7]) .v7-spinner {width:var(--v7-space-5);height:var(--v7-space-5);animation:v7-spin var(--v7-skeleton) linear 3;}
  :where(html[data-v7]) .v7-hidden-label {visibility:hidden;}
  :where(html[data-v7]) .v7-proof {font-family:var(--v7-glyph);}
@@ -67,9 +68,9 @@
  :where(html[data-v7]) .v7-grabber {width:var(--v7-space-10);height:var(--v7-space-1);margin:var(--v7-space-2) auto 0;border-radius:var(--v7-round);background:var(--v7-role-border-default);}
  :where(html[data-v7]) .v7-sheet-header {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-3);padding:var(--v7-space-4) var(--v7-space-5);}
  :where(html[data-v7]) .v7-sheet-body {display:grid;gap:var(--v7-space-4);padding:var(--v7-space-2) var(--v7-space-5) var(--v7-space-6);overflow:auto;overscroll-behavior:contain;min-height:0;}
- :where(html[data-v7]) .v7-sheet-footer {padding:var(--v7-space-4) var(--v7-space-5);padding-bottom:max(var(--v7-space-4),env(safe-area-inset-bottom));border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
+ :where(html[data-v7]) .v7-sheet-footer {padding:var(--v7-space-4) var(--v7-space-5);padding-bottom:max(var(--v7-space-4),var(--v7-safe-bottom));border-top:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  /* SE1: Search is a full-height sheet on phones. */
- @media(max-width:699px){:where(html[data-v7]) .v7-sheet.v7-sheet-full {height:calc(100dvh - max(env(safe-area-inset-top),var(--v7-space-3)));max-height:none;}}
+ @media(max-width:699px){:where(html[data-v7]) .v7-sheet.v7-sheet-full {height:calc(100dvh - max(var(--v7-safe-top),var(--v7-space-3)));max-height:none;}}
  :where(html[data-v7]) .v7-sheet .v7-sr-only {position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap;}
  /* PA6: sheet and step-flow footers — secondary or tertiary on the left, the primary on the right, both 48 px, fixed to the bottom. */
  :where(html[data-v7]) .v7-sheet-footer {display:flex;align-items:center;gap:var(--v7-space-3);flex-wrap:wrap;}
@@ -136,12 +137,13 @@
 :where(html[data-v7]) .v7-interval-times {display:grid;grid-template-columns:1fr 1fr;gap:var(--v7-space-3);}
 /* R0 · F04/F13/F40: one toast, docked 12 px above the top-most bottom layer (tab bar, session row or sticky action bar),
    never over a primary action; an ink pill in Day, a raised navy pill in Night. */
-:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom));position:fixed;left:var(--v7-space-4);right:var(--v7-space-4);bottom:calc(var(--v7-toast-dock) + var(--v7-space-3));z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin-inline:auto;display:grid;pointer-events:none;}
-:where(html[data-v7]):has(.v7-shell[data-session="true"]) .v7-toast-host {--v7-toast-dock:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom));}
-:where(html[data-v7]):has(.v7-shell[data-immersive="true"]) .v7-toast-host {--v7-toast-dock:calc(var(--v7-space-6) + env(safe-area-inset-bottom));}
-:where(html[data-v7]):has(.v7-learn-bar,.v7-path-bar,.v7-sticky-actions) .v7-toast-host {--v7-toast-dock:calc(64px + 64px + var(--v7-space-5) + env(safe-area-inset-bottom));}
+:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:calc(64px + var(--v7-space-3) + var(--v7-safe-bottom));position:fixed;left:var(--v7-space-4);right:var(--v7-space-4);bottom:calc(var(--v7-toast-dock) + var(--v7-space-3));z-index:var(--v7-toast-layer);max-width:var(--v7-toast-max);margin-inline:auto;display:grid;pointer-events:none;}
+:where(html[data-v7]):has(.v7-shell[data-session="true"]) .v7-toast-host {--v7-toast-dock:calc(112px + var(--v7-space-3) + var(--v7-safe-bottom));}
+:where(html[data-v7]):has(.v7-shell[data-immersive="true"]) .v7-toast-host {--v7-toast-dock:calc(var(--v7-space-6) + var(--v7-safe-bottom));}
+:where(html[data-v7]):has(.v7-learn-bar,.v7-path-bar,.v7-sticky-actions) .v7-toast-host {--v7-toast-dock:calc(64px + 64px + var(--v7-space-5) + var(--v7-safe-bottom));}
 :where(html[data-v7]):has(dialog[open]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}
 @media(min-width:700px){:where(html[data-v7]) .v7-toast-host {--v7-toast-dock:var(--v7-space-4);}}
+:where(html[data-v7]) .v7-toast-host {--v7-toast-clearance:0px;bottom:calc(max(var(--v7-toast-dock),var(--v7-toast-clearance)) + var(--v7-space-3));}
 :where(html[data-v7]) .v7-app-toast {position:relative;pointer-events:auto;display:flex;align-items:center;gap:var(--v7-space-2);min-height:48px;padding:var(--v7-space-1) var(--v7-space-1) var(--v7-space-1) var(--v7-space-4);border-radius:var(--v7-round);overflow:hidden;
   background:var(--v7-role-text-primary);color:var(--v7-role-surface-page);box-shadow:var(--v7-shadow-3);font:500 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
 :where(html[data-v7][data-theme="graph-night"]) .v7-app-toast {background:var(--v7-role-surface-overlay);color:var(--v7-role-text-primary);border:var(--v7-hairline) solid var(--v7-role-border-subtle);}
@@ -187,5 +189,86 @@
 
 /* E6 (v7 UX audit r3, Owner decision): inside the Android app every touch target is 48 px, Android's guideline; the
    website keeps 44 px. Unlayered, like the width overrides in tokens.css, so it holds at every width. */
-html[data-v7][data-native-app] {--v7-touch:48px;}
 
+
+
+:where(html[data-v7]) .v7-disclosure-trigger {
+  display:flex; align-items:center; justify-content:space-between; gap:var(--v7-space-2);
+  width:100%; min-height:var(--v7-touch); padding:var(--v7-space-2) 0;
+  text-align:start; font-size:var(--v7-type-supporting); font-weight:600;
+}
+:where(html[data-v7]) .v7-disclosure-trigger[aria-expanded="true"] > svg { transform:rotate(180deg); }
+
+.v7-fine-pointer-hint {display:none;}
+@media (pointer:fine) {
+  .v7-fine-pointer-hint {display:block;font-size:var(--v7-type-caption);color:var(--v7-role-text-secondary);}
+}
+:where(html[data-v7]) .v7-first-card-form :is(input,textarea) {inline-size:100%;min-inline-size:0;}
+
+
+@layer v7-reset {
+ /* N220: one type family for the interface. Only a page's title (h1) uses the serif; section, card and sheet headings
+    use the sans at a fixed scale, so hosted forms no longer fall back to serif headings at the browser's sizes. */
+ :where(html[data-v7]) :where(h1) {font-family:var(--v7-serif);}
+ :where(html[data-v7]) :where(h2, h3, h4) {font-family:var(--v7-sans);font-weight:600;}
+}
+
+/* N220: safe-area insets. The Android app injects --safe-area-inset-* (Capacitor SystemBars, insetsHandling "css") because
+   older WebViews report env() as 0; the larger of the two is the real inset. */
+:root {
+ --v7-safe-top:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));
+ --v7-safe-bottom:max(env(safe-area-inset-bottom,0px),var(--safe-area-inset-bottom,0px));
+}
+
+@layer v7-components {
+ /* N220 · sheets. The eyebrow sits 4 px above a 20 px sans title (two lines at most), the close button lines up with the
+    title, and the body and footer keep clear of the gesture bar. */
+ :where(html[data-v7]) .v7-sheet {max-height:min(var(--v7-sheet-max),calc(100dvh - var(--v7-safe-top) - var(--v7-space-6)));}
+ :where(html[data-v7]) .v7-sheet-header {align-items:flex-start;gap:var(--v7-space-2);padding:var(--v7-space-3) var(--v7-space-3) var(--v7-space-2) var(--v7-space-5);}
+ :where(html[data-v7]) .v7-sheet-heading {display:grid;gap:var(--v7-space-1);min-width:0;padding-block:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-sheet-heading > .v7-eyebrow {margin:0;color:var(--v7-role-text-secondary);}
+ :where(html[data-v7]) .v7-sheet-title {margin:0;font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);letter-spacing:-.005em;overflow-wrap:anywhere;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;}
+ :where(html[data-v7]) .v7-sheet-header > .v7-icon-button {flex:none;margin-top:calc(var(--v7-space-1) * -1);}
+ :where(html[data-v7]) .v7-sheet-body {gap:var(--v7-space-4);padding:var(--v7-space-2) var(--v7-space-5) var(--v7-space-5);}
+ :where(html[data-v7]) .v7-sheet:not(:has(> .v7-sheet-footer)) > .v7-sheet-body {padding-bottom:calc(var(--v7-space-5) + var(--v7-safe-bottom));}
+ /* Buttons inside a sheet's body keep their own width and start at the column edge; full-width actions live in the footer. */
+ :where(html[data-v7]) .v7-sheet-body > :is(.v7-button,a.v7-button) {justify-self:start;}
+ :where(html[data-v7]) .v7-sheet-footer {padding:var(--v7-space-3) var(--v7-space-5) calc(var(--v7-space-3) + var(--v7-safe-bottom));flex-wrap:nowrap;}
+ /* The footer's actions are one size: equal widths, 48 px, the secondary as a tonal button rather than a bare link. */
+ :where(html[data-v7]) .v7-sheet-footer > :is(.v7-button,a.v7-button) {flex:1 1 0;min-width:0;margin:0;justify-content:center;text-align:center;}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost {background:var(--v7-role-surface-muted);color:var(--v7-role-text-primary);}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-button.v7-ghost.v7-danger {color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-sheet-footer:has(> .v7-footer-reason) {flex-wrap:wrap;}
+ :where(html[data-v7]) .v7-sheet-footer > .v7-footer-reason {flex:1 0 100%;text-align:start;}
+ @media(min-width:700px){:where(html[data-v7]) .v7-sheet-footer {padding-bottom:var(--v7-space-3);}}
+
+ /* N220 · type. Headlines and subheads use the interface sans; the serif is kept for page titles and long reading. */
+ :where(html[data-v7]) .v7-headline {font:600 var(--v7-type-subhead)/1.3 var(--v7-sans);letter-spacing:-.005em;}
+ :where(html[data-v7]) .v7-subhead {font:600 var(--v7-type-reading)/1.35 var(--v7-sans);}
+ :where(html[data-v7]) .v7-intro {font:400 var(--v7-type-reading)/var(--v7-leading-lead) var(--v7-sans);}
+
+ /* N220 · info tips: a small (i) beside a label opens its explanation, instead of a paragraph under every control. */
+ :where(html[data-v7]) .v7-info {position:relative;display:inline-flex;vertical-align:middle;}
+ :where(html[data-v7]) .v7-info-button {display:inline-grid;place-items:center;width:var(--v7-touch);height:var(--v7-touch);margin:calc((var(--v7-touch) - 20px) / -2);padding:0;border:0;border-radius:var(--v7-round);background:transparent;color:var(--v7-role-text-tertiary);cursor:pointer;}
+ :where(html[data-v7]) .v7-info-button svg {width:16px;height:16px;}
+ :where(html[data-v7]) .v7-info-button[aria-expanded="true"] {color:var(--v7-role-selection-fg);}
+ :where(html[data-v7]) .v7-info-tip {position:absolute;z-index:var(--v7-menu-layer);top:calc(100% + var(--v7-space-1));inset-inline-start:calc(var(--v7-space-3) * -1);width:max-content;max-width:min(280px,calc(100vw - var(--v7-space-8)));
+  padding:var(--v7-space-2) var(--v7-space-3);border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);
+  color:var(--v7-role-text-primary);font:400 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);text-align:start;white-space:normal;}
+ :where(html[data-v7]) .v7-info[data-align="end"] .v7-info-tip {inset-inline-start:auto;inset-inline-end:calc(var(--v7-space-3) * -1);}
+ :where(html[data-v7]) .v7-switch-with-info {cursor:default;}
+ :where(html[data-v7]) .v7-switch-text {display:inline-flex;align-items:center;gap:var(--v7-space-2);min-width:0;}
+ :where(html[data-v7]) .v7-switch-text > label {cursor:pointer;}
+ :where(html[data-v7]) .v7-eyebrow-row {display:flex;align-items:center;gap:var(--v7-space-2);min-height:var(--v7-space-6);}
+ /* N220 · typed times and length presets (time block sheets). */
+ :where(html[data-v7]) .v7-time-field {display:grid;gap:var(--v7-space-2);min-width:0;}
+ :where(html[data-v7]) .v7-time-field > label {font:600 var(--v7-type-supporting)/var(--v7-leading-supporting) var(--v7-sans);}
+ :where(html[data-v7]) .v7-time-field .v7-time-input {padding-inline-start:var(--v7-space-2);}
+ :where(html[data-v7]) .v7-time-field .v7-time-input input {font:500 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+ :where(html[data-v7]) .v7-time-field .v7-time-input[data-invalid] {border-color:var(--v7-role-status-danger);}
+ :where(html[data-v7]) .v7-time-range-row {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--v7-space-3);}
+ :where(html[data-v7]) .v7-length-chips {display:flex;flex-wrap:wrap;align-items:center;gap:var(--v7-space-2);}
+}
+
+html[data-v7][data-native-app] {--v7-touch:48px;}

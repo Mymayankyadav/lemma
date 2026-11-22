@@ -1,0 +1,49 @@
+<!doctype html><html lang="en" data-v7 data-theme="graph-night"><head><meta charset="utf-8"><title>Calendar · day</title>
+<link rel="stylesheet" href="/lemma/fonts/v7/fonts.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"><script src="icons.js"></script>
+<style>
+.datepill{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 10px 0 14px;border-radius:20px;background:var(--v7-role-surface-raised);border:1px solid var(--v7-role-border-subtle);font:600 16px/1 var(--v7-sans)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);padding:4px 12px 6px;text-align:center}
+.week span{display:flex;flex-direction:column;align-items:center;gap:3px;font:500 12px/1 var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.week b{width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;font:600 14px/1 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.week .on b{background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action)}
+.week i{width:4px;height:4px;border-radius:2px;background:var(--v7-role-subject-analysis)}
+.grid{position:absolute;left:0;right:0;top:222px;bottom:88px;overflow:visible}
+.hr{position:absolute;left:0;right:0;height:1px;background:var(--v7-role-border-subtle)}
+.hl{position:absolute;left:10px;font:500 11px/1 var(--v7-sans);color:var(--v7-role-text-tertiary)}
+.blk{position:absolute;left:58px;right:12px;border-radius:10px;padding:6px 10px;font:600 13px/1.25 var(--v7-sans)}
+.ghost{border:1.5px dashed var(--v7-role-link-fg);color:var(--v7-role-link-fg);background:transparent;display:flex;align-items:center;gap:8px}
+.ghost .add{margin-left:auto;height:26px;padding:0 10px;border-radius:13px;background:var(--v7-role-selection-subtle);display:flex;align-items:center;font:600 12px/1 var(--v7-sans)}
+.busy{left:58px;right:12px;background:repeating-linear-gradient(135deg,var(--v7-role-surface-muted) 0 6px,transparent 6px 12px);color:var(--v7-role-text-tertiary);border:1px solid var(--v7-role-border-subtle)}
+.study{background:var(--v7-role-subject-analysis-subtle);border-left:3px solid var(--v7-role-subject-analysis);color:var(--v7-role-text-primary)}
+.now{position:absolute;left:46px;right:0;height:2px;background:var(--v7-role-status-danger)}
+.now:before{content:"13:43";position:absolute;left:-42px;top:-8px;height:16px;padding:0 4px;border-radius:4px;background:var(--v7-role-status-danger);color:var(--v7-role-surface-page);font:600 11px/16px var(--v7-sans)}
+</style></head><body>
+<div class="phone">
+ <div class="hdr" style="padding-left:12px"><span class="datepill">Mon 9 Nov<span class="i s ter" data-i="chevron-down"></span></span><span class="grow"></span>
+  <span class="chip" style="height:36px">Day<span class="i xs" data-i="chevron-down"></span></span><span class="ib"><span class="i" data-i="search"></span></span><span class="ib"><span class="i" data-i="inbox"></span><span class="badge">6</span></span></div>
+ <div class="pad" style="margin-top:4px"><div class="tabs"><span class="on">Schedule</span><span>Tasks 3</span></div></div>
+ <div class="week" style="margin-top:6px">
+  <span class="on">M<b>9</b><i></i></span><span>T<b>10</b><i></i></span><span>W<b>11</b><i style="opacity:0"></i></span><span>T<b>12</b><i style="background:var(--v7-role-status-warning)"></i></span><span>F<b>13</b><i style="opacity:0"></i></span><span>S<b>14</b><i style="opacity:0"></i></span><span>S<b>15</b><i style="opacity:0"></i></span>
+ </div>
+ <div class="pad row" style="gap:6px;margin-top:4px"><span class="chip" style="color:var(--v7-role-status-warning)"><span class="i xs" data-i="circle-alert"></span>1 overdue</span><span class="chip on"><span class="i xs" data-i="sparkles"></span>3 good times · Add all</span></div>
+
+ <div class="grid" style="top:222px">
+  <div class="hr" style="top:0"></div><span class="hl" style="top:-5px">13:00</span>
+  <div class="hr" style="top:96px"></div><span class="hl" style="top:91px">14:00</span>
+  <div class="hr" style="top:192px"></div><span class="hl" style="top:187px">15:00</span>
+  <div class="hr" style="top:288px"></div><span class="hl" style="top:283px">16:00</span>
+  <div class="hr" style="top:384px"></div><span class="hl" style="top:379px">17:00</span>
+  <div class="hr" style="top:480px"></div><span class="hl" style="top:475px">18:00</span>
+  <div class="blk ghost" style="top:76px;height:40px">Prove continuity<span class="t-cap" style="color:var(--v7-role-link-fg)">13:45–14:10</span><span class="add">Add</span></div>
+  <div class="blk ghost" style="top:130px;height:40px">Read topology notes<span class="t-cap" style="color:var(--v7-role-link-fg)">14:20</span><span class="add">Add</span></div>
+  <div class="blk busy" style="top:192px;height:96px;padding-left:150px">Other commitment · busy</div>
+  <div class="blk study" style="top:194px;height:78px;right:180px">Solve analysis problems<div class="t-cap" style="font-weight:400">15:00–15:50 · Real Analysis</div></div>
+  <div class="blk ghost" style="top:290px;height:40px">Sketch a proof<span class="t-cap" style="color:var(--v7-role-link-fg)">16:00</span><span class="add">Add</span></div>
+  <div class="now" style="top:69px"></div>
+ </div>
+
+ <div class="dock"><div class="tabbar">
+  <span class="tab"><span class="i" data-i="house"></span>Today</span><span class="tab"><span class="i" data-i="route"></span>Paths</span>
+  <span class="tab"><span class="i" data-i="layers"></span>Review<span class="badge">23</span></span><span class="tab on"><span class="i" data-i="calendar"></span>Calendar</span><span class="tab"><span class="i" data-i="chart-column"></span>Progress</span>
+ </div><span class="capture"><span class="i" data-i="plus"></span></span></div>
+</div></body></html>

@@ -1,0 +1,66 @@
+.lemma-tutor .tutor-symbol-ink {display:grid;gap:var(--v7-space-1);padding:var(--v7-space-1);}
+.lemma-tutor .tutor-symbol-paper {
+  order:2;width:100%;height:clamp(92px,17dvh,144px);display:block;touch-action:none;user-select:none;
+  overflow:hidden;border:1px solid var(--v7-role-border-default);border-radius:var(--v7-radius-3);
+  background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);
+}
+.lemma-tutor .tutor-symbol-paper text {fill:var(--v7-role-text-secondary);font:var(--v7-type-caption) var(--v7-sans);}
+.lemma-tutor .tutor-symbol-paper polyline {fill:none;stroke:currentColor;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round;}
+.lemma-tutor .tutor-symbol-paper circle {fill:currentColor;}
+.lemma-tutor .tutor-symbol-tools {order:3;display:flex;align-items:center;flex-wrap:wrap;gap:var(--v7-space-1);}
+.lemma-tutor .tutor-symbol-tools .v7-button[aria-pressed=true] {background:var(--v7-role-selection-subtle);color:var(--v7-role-selection-fg);}
+/* Keep room for choices before inference completes so drawing never moves with results. */
+.lemma-tutor .tutor-ink-results {
+  display:flex;align-items:center;gap:var(--v7-space-1);min-width:0;min-height:var(--v7-touch);
+  overflow-x:auto;scrollbar-width:none;
+}
+.lemma-tutor .tutor-ink-candidates {display:flex;flex:none;align-items:center;gap:var(--v7-space-1);}
+.lemma-tutor .tutor-ink-candidates + .tutor-ink-candidates::before {
+  content:"";height:24px;border-inline-start:1px solid var(--v7-role-border-default);margin-inline:var(--v7-space-1);
+}
+.lemma-tutor .tutor-ink-results .tutor-ink-feedback {flex:none;white-space:nowrap;}
+.lemma-tutor .tutor-ink-spinner {
+  width:18px;height:18px;flex:none;margin-inline:var(--v7-space-2);color:var(--v7-role-text-secondary);
+  animation:tutor-ink-spin 900ms linear infinite;
+}
+@keyframes tutor-ink-spin {to {transform:rotate(1turn);}}
+.lemma-tutor .tutor-ink-candidates button:focus-visible {outline-offset:-2px;}
+.lemma-tutor .tutor-ink-candidates button {
+  min-width:var(--v7-touch);height:var(--v7-touch);flex:none;border:0;border-radius:var(--v7-radius-2);
+  background:var(--key);color:var(--v7-role-text-primary);font:400 23px/1 var(--v7-glyph);
+}
+.lemma-tutor .tutor-ink-feedback {margin:0;color:var(--v7-role-text-secondary);font-size:var(--v7-type-caption);}
+.lemma-tutor .tutor-ink-feedback:empty {display:none;}
+.lemma-tutor .tutor-ink-feedback a {color:var(--v7-role-link-fg);}
+.lemma-tutor .tutor-symbol-picker {display:grid;gap:var(--v7-space-3);}
+.lemma-tutor .tutor-symbol-picker input {width:100%;}
+.lemma-tutor .tutor-symbol-categories {display:flex;flex-wrap:wrap;gap:var(--v7-space-1);}
+.lemma-tutor .tutor-symbol-categories button {min-height:var(--v7-touch);}
+.lemma-tutor .tutor-symbol-matches {
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,7rem),1fr));
+  gap:var(--v7-space-1);margin:0;padding:0;list-style:none;
+}
+.lemma-tutor .tutor-symbol-matches button {
+  display:grid;gap:var(--v7-space-1);place-items:center;min-height:var(--v7-touch);width:100%;padding:var(--v7-space-1);
+  border:1px solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);
+  background:var(--v7-role-surface-raised);color:var(--v7-role-text-primary);
+}
+.lemma-tutor .tutor-symbol-matches button > span {font:400 24px/1 var(--v7-glyph);}
+.lemma-tutor :is(.tutor-symbol-matches button > span,.tutor-ink-candidates button,.kb .k.sym,.kb .k.sym2) {font-variant-emoji:text;}
+.lemma-tutor .tutor-symbol-matches button > small {font-size:var(--v7-type-caption);overflow-wrap:anywhere;}
+@media(min-height:560px) {
+  .lemma-tutor:has(.tutor-symbol-ink) .tutor-answer-editor {max-height:76px;}
+  .lemma-tutor:has(.tutor-symbol-ink) .composer-preview {max-height:44px;}
+}
+
+@media (min-width:560px) and (max-height:559px) and (orientation:landscape) {
+  .lemma-tutor .tutor-symbol-paper {height:clamp(64px, 21dvh, 116px);}
+}
+
+/* N220 · candidates are compact chips beside the drawing, not keys: 36 px tall, the symbol at 20 px. */
+.lemma-tutor .tutor-ink-results {min-height:40px;}
+.lemma-tutor .tutor-ink-candidates button {
+  min-width:40px;height:36px;padding-inline:var(--v7-space-2);border-radius:var(--v7-round);
+  background:var(--v7-role-surface-muted);font:400 20px/1 var(--v7-glyph);
+}
+.lemma-tutor .tutor-ink-candidates button:active {background:var(--v7-role-surface-muted-hover);}

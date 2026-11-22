@@ -48,7 +48,7 @@ export function stackColumns(entries:StudyEntryRecord[],groups:string[][],zone:s
  });
 }
 export function changeChip(current:number,previous:number,range:ProgressRange):{text:string;tone:'success'|'info'}|null{
- if(previous<=0&&current<=0)return null;
+ if(previous<=0)return null;
  const delta=Math.round(current-previous);
  if(Math.abs(delta)<1)return {text:'The same as '+previousPhrase(range),tone:'info'};
  return {text:formatDuration(Math.abs(delta))+(delta>0?' more than ':' less than ')+previousPhrase(range),tone:delta>0?'success':'info'};

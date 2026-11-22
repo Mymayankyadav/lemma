@@ -1,3 +1,7 @@
+import {InfoTip} from '../../../ui/v7/InfoTip';
+import {RulerTime} from '../../../ui/v7/RulerTime';
+import {RulerSlider} from '../../../ui/v7/RulerSlider';
+import {WeekdayCapacity} from '../../adaptive/WeekdayCapacity';
 import {lazy,Suspense,useState,type ReactNode} from 'react';
 import {Check,ChevronRight} from 'lucide-react';
 import {useUpdateSettings} from '../../../data/hooks';
@@ -24,8 +28,12 @@ const PhonePlanning=lazy(()=>import('./PhoneSettings').then(module=>({default:mo
  * switch; a value opens a small sheet (a Pick sheet that closes on choice, or a Form sheet with Cancel and Save); every
  * change saves at once with a "Saved · Undo" toast. Numerics live behind an Advanced row. No per-section Save buttons.
  */
-export function Group({title,children,note}:{title:string;children:ReactNode;note?:string}){
- return <section className="v7-set-group" aria-label={title}><h2 className="v7-eyebrow">{title}</h2><ul className="v7-settings-card v7-set-list">{children}</ul>{note&&<p className="v7-set-note">{note}</p>}</section>;
+/** N220 (Owner report): a group's explanation sits behind an (i) beside its title (`info`); only a short fact that changes
+ *  how the rows read stays as a visible note (`note`, such as the time zone). */
+export function Group({title,children,note,info}:{title:string;children:ReactNode;note?:string;info?:ReactNode}){
+ return <section className="v7-set-group" aria-label={title}>
+  <div className="v7-eyebrow-row"><h2 className="v7-eyebrow">{title}</h2>{info&&<InfoTip label={title}>{info}</InfoTip>}</div>
+  <ul className="v7-settings-card v7-set-list">{children}</ul>{note&&<p className="v7-set-note">{note}</p>}</section>;
 }
 export function ValueRow({label,value,onOpen,hint}:{label:string;value:string;onOpen:()=>void;hint?:string}){
  return <li><button type="button" className="v7-set-row" onClick={onOpen} aria-haspopup="dialog">
@@ -73,20 +81,18 @@ export function PickSheet<T extends string|number>({title,eyebrow,options,value,
 const CLOCK=/^(?:[01]\d|2[0-3]):[0-5]\d$/;
 /** Form sheet for one 24-hour time (F51: the app's own field, not a native time input). */
 export function TimeSheet({title,eyebrow,value,onSave,onClose,hint}:{title:string;eyebrow?:string;value:string;onSave:(value:string)=>void;onClose:()=>void;hint?:string}){
- const [draft,setDraft]=useState(value),[error,setError]=useState('');
- const save=()=>{const v=draft.length===4&&/^\d{4}$/.test(draft)?draft.slice(0,2)+':'+draft.slice(2):draft;if(!CLOCK.test(v)){setError('Use 24-hour time, for example 07:30.');return;}onClose();if(v!==value)onSave(v);};
- return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={save}>Save</Button></>}>
-  <form className="v7-form-stack" noValidate onSubmit={event=>{event.preventDefault();save();}}>
-   <Field label={title} inputMode="numeric" maxLength={5} autoFocus value={draft} onChange={event=>{setDraft(event.target.value);setError('');}} error={error||undefined} hint={hint??'24-hour time'}/>
-   <button type="submit" hidden/>
-  </form>
+ const [draft,setDraft]=useState(value);
+ return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow}
+  footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
+  <RulerTime label={title} value={draft} onChange={setDraft}/>
+  {hint&&<p className="v7-meta">{hint}</p>}
  </Sheet>;
 }
 /** Form sheet for one whole number, with the shared stepper (F14) and a typed field for large jumps. */
 export function NumberSheet({title,eyebrow,value,min,max,unit,step=1,onSave,onClose}:{title:string;eyebrow?:string;value:number;min:number;max:number;unit:string|((n:number)=>string);step?:number;onSave:(value:number)=>void;onClose:()=>void}){
  const [draft,setDraft]=useState(value);
  return <Sheet open onClose={onClose} title={title} eyebrow={eyebrow} footer={<><Button variant="ghost" onClick={onClose}>Cancel</Button><Button variant="primary" onClick={()=>{onClose();if(draft!==value)onSave(draft);}}>Save</Button></>}>
-  <div className="v7-form-stack"><Stepper label={title} unit={unit} value={draft} min={min} max={max} onChange={next=>setDraft(Math.round(next/step)*step||next)}/></div>
+  <div className="v7-form-stack"><RulerSlider label={title} value={draft} min={min} max={max} step={step} onChange={setDraft} format={value=>typeof unit==='string'?value+' '+unit:unit(value)} tickFormat={String}/></div>
  </Sheet>;
 }
 
@@ -125,8 +131,8 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
  const attention={drift_prompt:false,urge_prompt:false,...settings.attention};
  return <div className="v7-settings-body">
   <Group title="Memory">
-   <ValueRow label="Target recall" value={retention+'%'} hint="Higher recall means more reviews each day" onOpen={()=>{setRecall(retention);editor.setOpen({kind:'recall'});}}/>
-   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n===1?'card':'cards',onSave:value=>{void save({newPerDay:value},{newPerDay:settings.newPerDay});}})}/>
+   <ValueRow label="Target recall" value={retention+'%'} onOpen={()=>{setRecall(retention);editor.setOpen({kind:'recall'});}}/>
+   <ValueRow label="New cards a day" value={String(settings.newPerDay)} onOpen={()=>editor.setOpen({kind:'number',title:'New cards a day',value:settings.newPerDay,min:0,max:60,unit:n=>n+(n===1?' card':' cards'),onSave:value=>{void save({newPerDay:value},{newPerDay:settings.newPerDay});}})}/>
   </Group>
   <Group title="Focus">
    <ValueRow label="Default mode" value={modeWord[focus.mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Default mode',value:focus.mode,options:[
@@ -139,12 +145,12 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
    <SwitchRow label="Ask about urges to switch" checked={attention.urge_prompt} disabled={busy} onChange={value=>{void save({attention:{...attention,urge_prompt:value}},{attention});}}/>
   </Group>
   <Group title="Review time">
-   <ValueRow label="Cards a day" value={String(budget.cards)} onOpen={()=>editor.setOpen({kind:'number',title:'Review cards a day',value:budget.cards,min:0,max:2000,unit:n=>n===1?'card':'cards',onSave:value=>budgetWith({cards:value})})}/>
+   <ValueRow label="Cards a day" value={String(budget.cards)} onOpen={()=>editor.setOpen({kind:'number',title:'Review cards a day',value:budget.cards,min:0,max:2000,unit:n=>n+(n===1?' card':' cards'),onSave:value=>budgetWith({cards:value})})}/>
    <ValueRow label="Minutes a day" value={formatDuration(budget.minutes)} onOpen={()=>editor.setOpen({kind:'number',title:'Review minutes a day',value:budget.minutes,min:0,max:720,unit:'min',onSave:value=>budgetWith({minutes:value})})}/>
    <SwitchRow label="Keep review time in day plans" checked={budget.reserve_in_plans} disabled={busy} onChange={value=>budgetWith({reserve_in_plans:value})}/>
   </Group>
   <Group title="More">
-   <ValueRow label="Advanced" value="" hint="Cycles, flowtime breaks, long-session guard, math shortcuts, optimiser, activities" onOpen={onAdvanced}/>
+   <ValueRow label="Advanced" value="" onOpen={onAdvanced}/>
   </Group>
   {editor.open?.kind==='recall'?<Sheet open onClose={editor.close} eyebrow="Study and review" title="Target recall"
    footer={<><Button variant="ghost" onClick={editor.close}>Cancel</Button><Button variant="primary" onClick={()=>{const next=recall??retention;editor.close();if(next!==retention)void save({desiredRetention:next/100},{desiredRetention:settings.desiredRetention});}}>Save</Button></>}>
@@ -156,7 +162,7 @@ export function StudyLists({settings,onAdvanced}:{settings:Settings;onAdvanced:(
 
 const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 /** Planning: the day window and calendar as rows; gaps and continuous limits behind Advanced. */
-export function PlanningLists({settings}:{settings:Settings}){
+export function PlanningLists({settings,capacityRequested,onCapacityOpen}:{settings:Settings;capacityRequested?:boolean;onCapacityOpen?:()=>void}){
  const {save,busy}=useSaveSettings(),editor=useEditor('Planning'),notify=useToast();
  const agendaReleased=usePlanRelease('atlasAgendaV1');
  const algorithm=requestedAlgorithm(settings.schedulingAlgorithm,agendaReleased);
@@ -171,6 +177,7 @@ export function PlanningLists({settings}:{settings:Settings}){
  };
  const minimums=[0,10,15,20,30,45,60,90,120,180];
  return <div className="v7-settings-body">
+  <WeekdayCapacity requested={capacityRequested} onOpen={onCapacityOpen}/>
   {agendaReleased&&<Group title="Scheduling">
    <ValueRow label="Scheduling algorithm" value={algorithm==='new'?'New':'Legacy'} onOpen={()=>editor.setOpen({
     kind:'pick',title:'Scheduling algorithm',value:algorithm,
@@ -191,7 +198,7 @@ export function PlanningLists({settings}:{settings:Settings}){
   </Group>
   {isNative()&&<Suspense fallback={null}><PhonePlanning/></Suspense>}
   <Group title="More">
-   <ValueRow label="Advanced" value="" hint="Gaps between blocks and the longest stretch" onOpen={()=>setAdvanced(true)}/>
+   <ValueRow label="Advanced" value="" onOpen={()=>setAdvanced(true)}/>
   </Group>
   {advanced&&<Sheet open onClose={()=>setAdvanced(false)} eyebrow="Planning" title="Advanced">
    <ul className="v7-settings-card v7-set-list">
@@ -217,17 +224,18 @@ export function ReminderLists({settings}:{settings:Settings}){
    <SwitchRow label="Reminders" checked={value.enabled===true} disabled={busy} onChange={enabled=>{put({enabled});if(enabled)void requestNotificationPermission();}}/>
    <ValueRow label="Schedule" value={scheduleWord[mode]} onOpen={()=>editor.setOpen({kind:'pick',title:'Schedule',value:mode,options:(Object.keys(scheduleWord) as (keyof typeof scheduleWord)[]).map(key=>({value:key,label:scheduleWord[key]})),onPick:((next:NotifyPrefs['mode'])=>put({mode:next})) as (value:never)=>void})}/>
    <ValueRow label="Preferred study time" value={value.studyTime??'09:00'} onOpen={()=>editor.setOpen({kind:'time',title:'Preferred study time',value:value.studyTime??'09:00',onSave:studyTime=>put({studyTime})})}/>
-   <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n===1?'reminder':'reminders',onSave:maxPerDay=>put({maxPerDay})})}/>
+   <ValueRow label="At most" value={(value.maxPerDay??5)+' a day'} onOpen={()=>editor.setOpen({kind:'number',title:'Reminders a day, at most',value:value.maxPerDay??5,min:1,max:50,unit:n=>n+(n===1?' reminder':' reminders'),onSave:maxPerDay=>put({maxPerDay})})}/>
   </Group>
   <Group title="Remind me about">
    {rows.switches.map(({key,label})=><SwitchRow key={key} label={label} checked={value.kinds?.[key]??false} disabled={busy} onChange={on=>put({kinds:{[key]:on}})}/>)}
    {rows.proposalsSwitch&&<SwitchRow label="New card proposals" checked={value.approveCards===true} disabled={busy} onChange={approveCards=>put({approveCards})}/>}
    <ValueRow label="When cards due reach" value={(value.dueThreshold??10)+' cards'} onOpen={()=>editor.setOpen({kind:'pick',title:'When cards due reach',value:value.dueThreshold??10,options:[1,10,25,50].map(n=>({value:n,label:n+(n===1?' card':' cards')})),onPick:((dueThreshold:1|10|25|50)=>put({dueThreshold})) as (value:never)=>void})}/>
   </Group>
-  {server&&<Group title="Test"><LinkRow label="Send a test reminder" hint="Arrives on this phone, even with the app closed" onOpen={sendTest}/></Group>}
+  {server&&<Group title="Test"><LinkRow label="Send a test reminder" onOpen={sendTest}/></Group>}
   {app&&<Suspense fallback={null}><PhoneReminders/></Suspense>}
-  {app&&!server&&<Group title="In your Inbox on this phone" note="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">
-   {rows.inbox.map(label=><InfoRow key={label} label={label}/>)}
+  {app&&!server&&<Group title="In your Inbox on this phone" info="Lemma for Android has no push service, so these wait in your Inbox instead of arriving as notifications.">
+   {/* N220 (Owner report): what waits in the Inbox is a set of chips, not a column of rows that look tappable. */}
+   <li className="v7-set-chips">{rows.inbox.map(label=><span key={label} className="v7-meta-chip">{label}</span>)}</li>
   </Group>}
   <Group title="Quiet hours">
    <ValueRow label="Starts" value={quiet.start} onOpen={()=>editor.setOpen({kind:'time',title:'Quiet hours start',value:quiet.start,onSave:start=>put({quiet:{start,end:quiet.end}})})}/>

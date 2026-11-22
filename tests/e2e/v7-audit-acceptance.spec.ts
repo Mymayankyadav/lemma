@@ -9,14 +9,15 @@ for(const scheme of ['light','dark'] as const){
   await openScene(page,shot('review-hub'),scheme,{width:390,height:844});
   const chart=page.locator('.v7-chart').filter({has:page.getByRole('heading',{name:'Due each day'})});
   await expect(chart.locator('[data-chart-point]')).toHaveCount(14);
-  await expect(chart).toContainText('next 14 days');
+  await expect(chart.getByText(/^[1-9][\d,]* due in 14 days$/)).toBeAttached();
   const series=await chart.locator('.v7-chart-direct-label').count();
   expect(series).toBeGreaterThan(1);expect(series).toBeLessThanOrEqual(3);
   await expect(chart.locator('.v7-chart-legend')).toHaveCount(0);
   const points=chart.locator('[data-chart-point]');
   await points.first().focus();await page.keyboard.press('ArrowRight');await expect(points.nth(1)).toBeFocused();
   await expect(chart.getByRole('status')).not.toBeEmpty();
-  await chart.getByRole('button',{name:'Show as table'}).click();
+  // N220 (Owner report): no Table switch; the screen-reader table carries the same fourteen days.
+  await expect(chart.getByRole('button',{name:'Show as table'})).toHaveCount(0);
   await expect(chart.locator('tbody tr')).toHaveCount(14);
   await expect(chart.locator('thead th')).toHaveCount(series+1);
   await expect(chart.locator('tbody tr').first()).toContainText('Today');
@@ -42,7 +43,11 @@ for(const scheme of ['light','dark'] as const)for(const name of ['today','focus'
   await expect(page.locator('html')).toHaveAttribute('data-contrast','high');
   await expect(page.getByRole('main')).toHaveCount(1);
   const nav=page.getByRole('navigation',{name:'Main navigation'});
-  await expect(nav.getByRole('link')).toHaveCount(5);
+  const detail=['focus','review-round','path-map'].includes(name);
+  await expect(nav.getByRole('link')).toHaveCount(detail?0:5);
+  if(name==='focus')await expect(page.getByTestId('focus-clock')).toBeVisible();
+  if(name==='review-round')await expect(page.getByRole('button',{name:'Show answer',exact:true})).toBeVisible();
+  if(name==='path-map')await expect(page.getByRole('button',{name:'Continue with tutor',exact:true})).toBeVisible();
   for(const button of await page.getByRole('button').all()){
    if(!await button.isVisible())continue;
    expect(await button.evaluate(node=>node.getAttribute('aria-label')||node.getAttribute('aria-labelledby')||node.textContent?.trim()||node.getAttribute('title'))).toBeTruthy();
@@ -120,9 +125,12 @@ test('PA11 Review: Undo removes the last coloured segment',async({page})=>{
  await expect(page.getByRole('progressbar',{name:'Review progress'})).toHaveAttribute('aria-valuenow','0');
 });
 
-test('BS2/QA4: title receives focus and the quick-add draft is above the sheet',async({page})=>{
+// N220 (Owner report): the block sheet opens without the keyboard; the title takes focus only when it is tapped.
+test('BS2/QA4: the block sheet opens without focusing the title and the quick-add draft is above the sheet',async({page})=>{
  await openScene(page,shot('calendar-block-sheet'),'dark',{width:390,height:844});
- await expect(page.getByRole('dialog').getByRole('textbox',{name:'Calendar block title',exact:true})).toBeFocused();
+ const title=page.getByRole('dialog').getByRole('textbox',{name:'Calendar block title',exact:true});
+ await expect(title).toBeVisible();
+ await expect(title).not.toBeFocused();
  await openScene(page,shot('calendar-quick-add'),'dark',{width:390,height:844});
  await expect(page.getByRole('dialog')).toHaveCount(1);
  const draft=await page.locator('[data-kind="draft"]').boundingBox(),sheet=await page.getByRole('dialog').boundingBox();

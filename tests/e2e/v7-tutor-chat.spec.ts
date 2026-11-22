@@ -25,11 +25,22 @@ async function openComposer(page:Page) {
  await expect(answer(page)).toBeEditable()
 }
 
+async function undoTyping(page:Page) {
+ await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
+ await tutor(page).getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Undo typing',exact:true}).click()
+}
+
 async function sessionActions(page:Page) {
  await tutor(page).getByRole('button',{name:'Session actions',exact:true}).click()
  const actions=page.getByRole('dialog',{name:'Study session',exact:true})
  await expect(actions).toBeVisible()
  return actions
+}
+
+async function openConnection(page:Page) {
+ const actions=await sessionActions(page)
+ await actions.getByRole('button',{name:'Connection',exact:true}).click()
+ return page.getByRole('dialog',{name:'Connection',exact:true})
 }
 
 test('Continue with tutor opens the current checkpoint and keeps demo turns after reloading',async({page})=>{
@@ -43,8 +54,7 @@ test('Continue with tutor opens the current checkpoint and keeps demo turns afte
  await send(page).click()
  await expect(transcript(page)).toContainText(firstAnswer)
  await expect(send(page)).toBeDisabled()
- await tutor(page).getByRole('button',{name:'Connect',exact:true}).click()
- const dialog=page.getByRole('dialog',{name:'Tutor connection'})
+ const dialog=await openConnection(page)
  await dialog.getByLabel('Paste reply').fill(nextQuestion)
  await dialog.getByRole('button',{name:'Preview import'}).click()
  await dialog.getByRole('button',{name:'Confirm import'}).click()
@@ -68,6 +78,7 @@ test('Tutor hides main navigation and keeps conversation and draft through Back,
  const vibrationCount=()=>page.evaluate(()=>(window as Window & {tutorVibrationPulses:number[]}).tutorVibrationPulses.length)
  await continueFromPath(page,'real-analysis')
  await openComposer(page)
+ await tutor(page).getByRole('button',{name:'Keys',exact:true}).click()
  const q=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true}).getByRole('button',{name:'q',exact:true})
  const beforeFirstKey=await vibrationCount()
  await q.click()
@@ -82,13 +93,14 @@ test('Tutor hides main navigation and keeps conversation and draft through Back,
  await expect(mainNavigation(page)).not.toBeInViewport()
  await tutor(page).getByRole('button',{name:'Back',exact:true}).click()
  await expect(page).toHaveURL(/#\/p\/real-analysis$/)
- await expect(mainNavigation(page)).toBeInViewport()
+ await expect(mainNavigation(page)).toHaveCount(0)
+ await expect(page.getByRole('button',{name:'Continue with tutor',exact:true})).toBeVisible()
  await page.goForward()
  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4\/tutor$/)
  await expect(transcript(page)).toContainText(firstAnswer)
  await expect(answer(page)).toHaveValue(draft)
 
- await tutor(page).getByRole('navigation',{name:'Page actions'}).getByRole('button',{name:'Search',exact:true}).click()
+ await (await sessionActions(page)).getByRole('button',{name:'Search',exact:true}).click()
  const search=page.getByRole('dialog',{name:'Search',exact:true})
  await search.getByRole('combobox',{name:'Search'}).fill('appearance')
  await search.getByRole('option',{name:'Appearance',exact:true}).click()
@@ -122,7 +134,7 @@ test('Back from a direct tutor link opens the checkpoint inside Lemma',async({pa
  await tutor(page).getByRole('button',{name:'Back',exact:true}).click()
  await expect(page).toHaveURL(/#\/p\/real-analysis\/cp\/CP4$/)
  await expect(page.getByRole('heading',{name:'Compactness',exact:true})).toBeVisible()
- await expect(mainNavigation(page).getByRole('link',{name:'Paths',exact:true})).toHaveAttribute('aria-current','page')
+ await expect(mainNavigation(page)).toHaveCount(0)
 })
 
 test('demo chat warns when context or an excerpt cannot be saved with an already saved draft',async({page})=>{
@@ -141,7 +153,8 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  },[draftKey+':context',draftKey+':attached-local'])
  const warning=/draft.*may be lost on reload/i
  await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
- await tutor(page).getByRole('button',{name:'Context',exact:true}).click()
+ await tutor(page).getByRole('button',{name:'Edit answer',exact:true}).click()
+ await page.getByRole('dialog',{name:'Answer actions',exact:true}).getByRole('button',{name:'Context',exact:true}).click()
  const context=page.getByRole('dialog',{name:'Context for your tutor'})
  const alert=context.getByRole('alert').filter({hasText:warning})
  const objective=context.getByRole('checkbox',{name:'Include this checkpoint’s objective'})
@@ -163,8 +176,8 @@ test('demo chat warns when context or an excerpt cannot be saved with an already
  await send(page).click()
  await expect(transcript(page)).toContainText(text)
  await expect(tutor(page).getByRole('alert').filter({hasText:warning})).toHaveCount(0)
- await tutor(page).getByRole('button',{name:'Connect',exact:true}).click()
- await expect(page.getByRole('dialog',{name:'Tutor connection'}).getByLabel('Text for your tutor')).toHaveValue(
+ const connection=await openConnection(page)
+ await expect(connection.getByLabel('Text for your tutor')).toHaveValue(
   text+'\n\nLocal excerpt (learner-provided; not a citation):\n'+excerpt,
  )
 })
@@ -210,14 +223,14 @@ for(const {width,height,minTranscriptHeight} of [
    await expect(timer.getByRole('button',{name:'Resume timer',exact:true})).toBeVisible()
    await timer.getByRole('button',{name:'Close',exact:true}).click()
   }
-  const symbols=tutor(page).getByRole('button',{name:'Symbols',exact:true})
-  await symbols.click()
+  await answer(page).click()
+  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
+  await keyboard.getByRole('button',{name:'Maths symbols',exact:true}).click()
   await expect(tutor(page).getByRole('group',{name:'Math categories'})).toBeInViewport()
   await tutor(page).getByRole('group',{name:'∀∃ keys'}).getByRole('button',{name:'∀',exact:true}).click()
   await expect(answer(page)).toHaveValue('∀')
-  await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
+  await undoTyping(page)
   await expect(answer(page)).toHaveValue('')
-  const keyboard=tutor(page).getByRole('group',{name:'Answer keyboard',exact:true})
   await keyboard.getByRole('button',{name:'ABC',exact:true}).click()
   for(const key of ['q','a','z','Space']){
    await keyboard.getByRole('button',{name:key,exact:true}).click({trial:true})
@@ -233,8 +246,7 @@ for(const {width,height,minTranscriptHeight} of [
   await log.evaluate(node=>{node.scrollTop=node.scrollHeight})
   await expect.poll(()=>log.evaluate(node=>node.scrollTop)).toBeGreaterThan(0)
 
-  await tutor(page).getByRole('button',{name:'Connect',exact:true}).click()
-  const connection=page.getByRole('dialog',{name:'Tutor connection'})
+  const connection=await openConnection(page)
   await connection.getByLabel('Paste reply').fill(nextQuestion)
   await connection.getByRole('button',{name:'Preview import'}).click()
   await connection.getByRole('button',{name:'Confirm import'}).click()
@@ -258,18 +270,22 @@ for(const {width,height,minTranscriptHeight} of [
  })
 }
 
-test('Keyboard autocomplete completes only the text before the caret',async({page})=>{
+test('Keyboard autocomplete applies to newly typed text at the trailing caret',async({page})=>{
  await page.goto(path('real-analysis',true,'/cp/CP4/tutor'),{waitUntil:'domcontentloaded'})
  await openComposer(page)
  const editor=answer(page)
  await editor.fill('prei suffix')
  await editor.press('Home')
  for(let step=0;step<4;step++)await editor.press('ArrowRight')
- const suggestions=tutor(page).getByRole('group',{name:'Suggestions',exact:true})
- await suggestions.getByRole('button',{name:'preimage',exact:true}).click()
- await expect(editor).toHaveValue('preimage suffix')
- await tutor(page).getByRole('button',{name:'Undo',exact:true}).click()
+ const suggestions=tutor(page).getByRole('group',{name:'Word suggestions',exact:true})
+ await expect(suggestions.locator('button:enabled')).toHaveCount(0)
  await expect(editor).toHaveValue('prei suffix')
+ await editor.fill('Read the ')
+ await page.keyboard.type('nota')
+ await suggestions.getByRole('button',{name:'Insert notation',exact:true}).click()
+ await expect(editor).toHaveValue('Read the notation ')
+ await undoTyping(page)
+ await expect(editor).toHaveValue('Read the nota')
 })
 
 test('a signed-in learner can retry connector delivery, receive the next question, and answer it',async({page})=>{
@@ -343,14 +359,16 @@ test('a signed-in learner can retry connector delivery, receive the next questio
  await send(page).click()
  await expect(transcript(page)).toContainText(learnerAnswer)
  await expect.poll(()=>grants.length).toBe(1)
- await tutor(page).getByRole('button',{name:'Send to tutor',exact:true}).click()
- const launcher=tutor(page).getByRole('link',{name:/^Open (Claude|ChatGPT)$/})
+ const connection=await openConnection(page)
+ await connection.getByRole('button',{name:'Send to tutor',exact:true}).click()
+ const launcher=connection.getByRole('link',{name:/^Open (Claude|ChatGPT)$/})
  await expect(launcher).toBeVisible()
  const href=await launcher.getAttribute('href')
  expect(decodeURIComponent(href??'')).toContain(turnIds[0]+'.'+grants[1].operationId)
  expect(href).not.toContain(connectorSecret)
  expect(decodeURIComponent(href??'')).not.toContain(learnerAnswer)
  expect(starts).toHaveLength(1)
+ await connection.getByRole('button',{name:'Close',exact:true}).click()
  await answer(page).fill(secondAnswer)
  await expect(send(page)).toBeDisabled()
  replyAvailable=true

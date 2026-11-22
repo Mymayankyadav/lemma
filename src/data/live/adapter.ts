@@ -820,9 +820,19 @@ export class LiveAdapter implements LemmaApi {
 
  }
  async setNoteStatus(...args: Parameters<LemmaApi['setNoteStatus']>): ReturnType<LemmaApi['setNoteStatus']> {
-  const [no,status]=args,db=liveClient(),uid=await owner(db)
-  const {data,error}=await db.from('notes').update({status}).eq('no',no).eq('user_id',uid).select('id').single()
-  checked({data,error})
+  const [no,status,guard]=args,db=liveClient()
+  const checkAccount=(uid=authOwner())=>{
+   if(guard&&(uid!==guard.ownerId||authOwner()!==guard.ownerId||authGeneration()!==guard.generation))
+    throw new LemmaError('auth','The card account changed.')
+  }
+  checkAccount()
+  const uid=await owner(db)
+  checkAccount(uid)
+  let write=db.from('notes').update({status}).eq('no',no).eq('user_id',uid)
+  if(guard)write=write.eq('id',guard.noteId).eq('status',guard.expectedStatus)
+  const result=await write.select('id').single()
+  checkAccount(uid)
+  checked(result)
  }
  async addComment(...args: Parameters<LemmaApi['addComment']>): ReturnType<LemmaApi['addComment']> {
   const [no,body]=args,db=liveClient(),uid=await owner(db)
@@ -1023,9 +1033,20 @@ export class LiveAdapter implements LemmaApi {
   const checkAccount=()=>{if(authGeneration()!==generation||authOwner()!==uid)throw new LemmaError('auth','The export account changed')}
   if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
   const savedPads=authOwner()===uid?await (await import('../../features/pad/padDraftStore')).exportSavedPadDrafts(uid,checkAccount):[]
+  const tutorImages=[];
+  for(const attachment of tables.tutor_turn_attachments??[]){
+   checkAccount();
+   const downloaded=await db.storage.from('tutor-ink').download(uid+'/'+String(attachment.id));
+   const file=checked(downloaded);
+   if(file.size!==Number(attachment.byte_size))throw new LemmaError('server','Tutor image backup is incomplete');
+   const {imageData}=await import('../tutor/ink-storage');
+   tutorImages.push({id:attachment.id,data:await imageData(file)});
+  }
+  if(authGeneration()!==generation||(authOwner()!==null&&authOwner()!==uid))throw new LemmaError('auth','The export account changed')
   result=new Blob([JSON.stringify({
    format:'lemma-backup-v2',schemaVersion:2,exportedAt:new Date().toISOString(),
    manifest:{registry:'lemma_undo_tables',tables:manifest},tables,
+   ...(tutorImages.length?{tutorImages}:{}),
    ...(savedPads.length?{devicePad:{version:1,checkpoints:savedPads}}:{})
   },null,2)],{type:'application/json'})
   }finally{try{await db.rpc('end_owner_export',{p_snapshot:snapshot})}catch{/* snapshot expires; cleanup retries later */}}

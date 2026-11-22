@@ -18,7 +18,11 @@ import {loggedSessions,sessionCaption,type LoggedSession} from './loggedSessions
 export const HOUR_PX=64;
 const MINUTE=60_000;
 export interface BlockLook{subjectClass:string;path:string;}
-type Drag={id:string;pointerId:number;y:number;delta:number;mode:'move'|'resize';lifted:boolean;touch:boolean;lastStep:number;timer:number|null};
+/** N220: `lastY` is the pointer now and `scroll0` the grid's scroll when the drag began, so the block follows the finger
+ *  while the grid scrolls under it; `frame` drives the edge auto-scroll. */
+type Drag={id:string;pointerId:number;y:number;lastY:number;scroll0:number;delta:number;mode:'move'|'resize';lifted:boolean;touch:boolean;lastStep:number;timer:number|null;frame:number|null};
+/** Edge auto-scroll: within this many pixels of the grid's top or bottom, scroll up to this many pixels a frame. */
+const EDGE_ZONE=56,EDGE_SPEED=9;
 type Props={
  /** A1: entrance marks for blocks added since the day loaded (accepted suggestions, quick-add). */
  enterOf?:(id:string)=>EnterMark;
@@ -53,7 +57,7 @@ export function openingScroll(input:{sameDay:boolean;nowY:number;viewport:number
 }
 export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,lookOf,onCreate,onEdit,onOpenEntry,onAdjust,onDropDay,onSwipe,suggested=[],draft=null,enterOf,scrubTo=null}:Props){
  // Room's one-tap suggestions need room for a full touch target without covering the next suggested interval.
- const HOUR_PX=isFlagOn('v7Room')?96:64;
+ const HOUR_PX=isFlagOn('v7Room')||suggested.some(item=>item.onAccept)?96:64;
  const scroll=useRef<HTMLDivElement>(null),drag=useRef<Drag|null>(null),suppress=useRef(false),swipe=useRef<{x:number;y:number}|null>(null);
  const [preview,setPreview]=useState<{id:string;delta:number;mode:'move'|'resize';lifted:boolean}|null>(null);
  const range=useMemo(()=>calendarRange(date,zone),[date,zone]);
@@ -79,7 +83,10 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   const node=scroll.current;if(!node||scrubTo===null)return;
   node.scrollTop=Math.max(0,(scrubTo-first)*HOUR_PX/60-node.clientHeight/3);
  },[scrubTo,first,HOUR_PX]);
- useEffect(()=>()=>{if(drag.current?.timer)window.clearTimeout(drag.current.timer);},[]);
+ useEffect(()=>()=>{
+  if(drag.current?.timer)window.clearTimeout(drag.current.timer);
+  if(drag.current?.frame!=null)cancelAnimationFrame(drag.current.frame);
+ },[]);
  const draftTop=draft?(Date.parse(draft.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60:null;
  useEffect(()=>{
   const node=scroll.current;if(!node||draftTop===null)return;
@@ -107,7 +114,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   const touch=event.pointerType==='touch',target=event.target as HTMLElement;
   // The bottom handle resizes at once; the body lifts after 300 ms of holding (PLAN §6.5).
   event.currentTarget.setPointerCapture?.(event.pointerId);
-  const active:Drag={id:block.id,pointerId:event.pointerId,y:event.clientY,delta:0,mode,lifted:false,touch,lastStep:0,timer:null};
+  const active:Drag={id:block.id,pointerId:event.pointerId,y:event.clientY,lastY:event.clientY,scroll0:scroll.current?.scrollTop??0,delta:0,mode,lifted:false,touch,lastStep:0,timer:null,frame:null};
   drag.current=active;
   if(target.closest('[data-grid-resize]'))lift(active);
   else if(touch)active.timer=window.setTimeout(()=>{if(drag.current===active)lift(active);},300);
@@ -121,16 +128,41 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
    if(Math.abs(dy)<7)return;
    lift(active);
   }
-  const delta=snapDragMinutes(dy,HOUR_PX);
+  active.lastY=event.clientY;
+  follow(active);
+  if(active.frame===null)active.frame=requestAnimationFrame(()=>edgeScroll(active));
+ }
+ /** N220 (Owner report): the offset counts the pointer's travel and the grid's own scroll since the drag began. Before,
+  *  the grid scrolled 18 px on every move near an edge while the block kept the pointer's screen offset, so the block
+  *  slid away from the finger and out of view. */
+ function follow(active:Drag){
+  const node=scroll.current;
+  const delta=snapDragMinutes(active.lastY-active.y+(node?node.scrollTop-active.scroll0:0),HOUR_PX);
+  if(delta===active.delta)return;
   if(delta!==active.lastStep){active.lastStep=delta;haptic('snap');}
   active.delta=delta;setPreview({id:active.id,delta,mode:active.mode,lifted:true});
-  const rect=scroll.current?.getBoundingClientRect();
-  if(scroll.current&&rect){if(event.clientY>rect.bottom-36)scroll.current.scrollTop+=18;else if(event.clientY<rect.top+36)scroll.current.scrollTop-=18;}
+ }
+ /** Scrolls while the finger rests near the grid's top or bottom edge, faster the closer it is, and keeps the block under it. */
+ function edgeScroll(active:Drag){
+  const node=scroll.current;
+  if(!node||drag.current!==active||!active.lifted){active.frame=null;return;}
+  const rect=node.getBoundingClientRect(),zone=Math.min(EDGE_ZONE,rect.height/4);
+  const depth=active.lastY>rect.bottom-zone?(active.lastY-(rect.bottom-zone))/zone:active.lastY<rect.top+zone?-((rect.top+zone)-active.lastY)/zone:0;
+  if(!depth){active.frame=null;return;}
+  const before=node.scrollTop;
+  node.scrollTop=before+Math.sign(depth)*Math.max(1,Math.round(Math.min(1,Math.abs(depth))*EDGE_SPEED));
+  if(node.scrollTop!==before)follow(active);
+  active.frame=requestAnimationFrame(()=>edgeScroll(active));
  }
  function endDrag(event:PointerEvent<HTMLElement>){
   const active=drag.current;if(!active||event.pointerId!==active.pointerId)return;
   if(active.timer)window.clearTimeout(active.timer);
+  if(active.frame!==null){cancelAnimationFrame(active.frame);active.frame=null;}
   window.removeEventListener('touchmove',blockTouchMove);
+  if(active.lifted){
+   const node=scroll.current;
+   active.delta=snapDragMinutes(event.clientY-active.y+(node?node.scrollTop-active.scroll0:0),HOUR_PX);
+  }
   drag.current=null;setPreview(null);
   if(!active.lifted)return;
   suppress.current=true;window.setTimeout(()=>{suppress.current=false;},0);
@@ -143,6 +175,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
  }
  function cancelDrag(){
   if(drag.current?.timer)window.clearTimeout(drag.current.timer);
+  if(drag.current?.frame!=null)cancelAnimationFrame(drag.current.frame);
   window.removeEventListener('touchmove',blockTouchMove);
   drag.current=null;setPreview(null);
  }
@@ -160,7 +193,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
   const look=block?lookOf(block):entry?lookOf({projectId:entry.projectId} as CalendarBlockRecord):{subjectClass:'',path:''};
   const done=block?.status==='done',past=sameDay&&Date.parse(item.end)<now;
   const kind=block?(block.kind==='busy'?'busy':done?'done':'study'):'logged';
-  const label=block?.title??entry?.intent??'Saved study',lane:CSSProperties={top,height:shown,left:'calc('+item.lane/item.lanes*100+'% + 1px)',width:'calc('+100/item.lanes+'% - 2px)'};
+  const label=block?.title??entry?.intent??'Saved study',lane:CSSProperties={top,height:shown,left:kind==='busy'?1:'calc('+item.lane/item.lanes*100+'% + 1px)',width:kind==='busy'?'calc(100% - 2px)':'calc('+100/item.lanes+'% - 2px)'};
   const range=clock(item.start)+'–'+clock(item.end);
   const body=<>
    {kind==='logged'||done?<Check className="v7-cal-check" aria-hidden="true"/>:null}
@@ -205,7 +238,7 @@ export default function DayGrid({date,zone,clock,entries,blocks,busy=false,now,l
      {ghosts.map(item=><div key={'suggested:'+item.id} className="v7-cal-block v7-cal-suggested" data-kind="suggested" data-accept={item.onAccept?'':undefined} role={item.onAccept?undefined:'img'}
       aria-label={'Suggested block: '+item.title+', '+clock(item.start)+'–'+clock(item.end)}
       style={{top:(Date.parse(item.start)-from)/MINUTE*HOUR_PX/60-first*HOUR_PX/60,height:Math.max(15,(Date.parse(item.end)-Date.parse(item.start))/MINUTE*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>
-      {item.onAccept?<button type="button" disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title+', '+clock(item.start)+'–'+clock(item.end)}><strong>{item.title}</strong><small>{item.busy?'Adding…':'Suggested · Tap to add'}</small></button>
+      {item.onAccept?<button type="button" disabled={item.busy} onClick={item.onAccept} aria-label={'Add suggested block '+item.title+', '+clock(item.start)+'–'+clock(item.end)}><strong>{item.title}</strong><small>{item.busy?'Adding…':'Add'}</small></button>
        :<div><span className="v7-cal-suggested-line"><MetaChip kind="suggested" className="v7-cal-suggested-badge">Suggested</MetaChip><strong>{item.title}</strong></span></div>}</div>)}
      {draft&&draftTop!==null&&<div className="v7-cal-block v7-cal-suggested" data-kind="draft" role="img" aria-label={'New block at '+clock(draft.start)}
       style={{top:draftTop,height:Math.max(15,draft.minutes*HOUR_PX/60),left:1,width:'calc(100% - 2px)'}}>

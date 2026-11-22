@@ -1,0 +1,10 @@
+{
+  "ranker": "corpus",
+  "contextWords": 1,
+  "minStem": 1,
+  "domainStem": 3,
+  "riskStem": 4,
+  "maxChain": 2,
+  "boundary": true,
+  "extraPhrases": true
+}

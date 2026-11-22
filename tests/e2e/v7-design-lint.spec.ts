@@ -1,5 +1,8 @@
 import {test,expect} from "@playwright/test";
-import {openScene,shots} from "./v7-scenes";
+import {readFileSync,readdirSync} from "node:fs";
+import {join} from "node:path";
+import {measureV7Design,UI_BUDGET} from "./helpers/v7-design";
+import {openScene,shots,redesignShots} from "./v7-scenes";
 // PA11 (Night critique v2): the rendered half of the v7 design lint. It opens every v7 scene in Day and Night at 390 and
 // 320 px and fails on what the static check in scripts/v7/check-kit.mjs cannot see:
 //  - a button that is not 48 px (44 px small, 40 px for a fine pointer from 700 px);
@@ -91,3 +94,64 @@ for(const scheme of ["light","dark"] as const){
   }
  }
 }
+
+const redesignScenes = [...shots.filter(shot => [
+  'today', 'focus', 'checkpoint', 'session', 'calendar-day', 'calendar-week', 'calendar-month',
+  'calendar-agenda', 'settings-planning', 'inbox',
+].includes(shot.name)), ...redesignShots];
+
+// Each exception names the scene and the measured selector. Remove entries as defects are fixed.
+const redesignAllowlist: Record<string, readonly string[]> = {};
+
+for (const shot of redesignScenes) {
+  test(`design roles ${shot.name}`, async ({page}) => {
+    await openScene(page, shot, 'dark', {width:390, height:844});
+    const facts = await page.evaluate(measureV7Design);
+    const budget = facts.detail ? UI_BUDGET.detailChrome : UI_BUDGET.hubChrome;
+    const violations = [
+      ...facts.offFonts.map(value => 'font ' + value),
+      ...facts.offSizes.map(value => 'size ' + value),
+      ...facts.native.map(value => 'native ' + value),
+      ...facts.overlaps.map(value => 'overlap ' + value),
+      ...facts.raw.map(value => 'raw ' + value),
+      ...(facts.chrome && facts.chrome.total > budget ? ['chrome ' + facts.chrome.total] : []),
+    ].sort();
+    expect(violations, shot.name).toEqual([...(redesignAllowlist[shot.name] ?? [])].sort());
+  });
+}
+
+function fixedFeatureCSS(css: string) {
+  return /\bposition\s*:\s*fixed\b/.test(css.replace(/\/\*[\s\S]*?\*\//g, ''));
+}
+
+test('feature styles use the dock and sheet for fixed positioning', () => {
+  const root = 'src/features';
+  const files = readdirSync(root, {recursive:true, encoding:'utf8'}).filter(file => file.endsWith('.css'));
+  expect(files.filter(file => fixedFeatureCSS(readFileSync(join(root, file), 'utf8')))).toEqual([]);
+  expect(fixedFeatureCSS('.dock { position: fixed }')).toBe(true);
+  expect(fixedFeatureCSS('/* position:fixed */ .dock { position: sticky }')).toBe(false);
+});
+
+test('design measurements distinguish kit markup from regressions', async ({page}) => {
+  await page.setViewportSize({width:390, height:844});
+  await page.setContent(`<style>
+    :root {--v7-type-body:16px} body {font-family:'Lemma v7 UI';font-size:16px}
+    .text {position:absolute;left:20px;top:80px}
+    header,nav {position:fixed;left:0;right:0;height:70px} header {top:0} nav {bottom:0}
+  </style><main>A clear step</main>`);
+  const clean = await page.evaluate(measureV7Design);
+  expect([clean.offFonts,clean.offSizes,clean.native,clean.overlaps,clean.raw]).toEqual([[],[],[],[],[]]);
+  expect(clean.chrome?.total).toBe(0);
+  await page.locator('main').evaluate(main => {
+    main.innerHTML = '<header>Title</header><nav>Tabs</nav><details><summary>Details</summary></details>'
+      + '<select><option>Choice</option></select><input type="time"><input type="date">'
+      + '<div class="text" style="font:13px Arial">2026-11-20</div><div class="text">Overlapping text</div>';
+  });
+  const broken = await page.evaluate(measureV7Design);
+  expect(broken.offFonts).toContain('div.text Arial');
+  expect(broken.offSizes).toContain('div.text 13px');
+  expect(broken.native).toEqual(['input','select','summary']);
+  expect(broken.overlaps).toContain('div.text / div.text');
+  expect(broken.raw).toContain('div.text');
+  expect(broken.chrome?.total).toBeGreaterThan(UI_BUDGET.hubChrome);
+});

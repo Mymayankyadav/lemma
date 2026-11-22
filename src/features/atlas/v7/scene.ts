@@ -16,6 +16,8 @@ export interface ScenePalette{
 export const MIN_ZOOM=.2,MAX_ZOOM=4;
 /** Below this only constellation names and the largest stars are labelled. */
 export const FAR_ZOOM=.7;
+/** N220: at most this many names around a focused constellation take a leader line; the others wait for the zoom. */
+export const MAX_PACKED_LABELS=6;
 /** At and above this the selected star shows its checkpoints and cards as satellites. */
 export const NEAR_ZOOM=1.6;
 const GRID=24,DUST=120,HIT_SLOP=22;
@@ -84,6 +86,9 @@ export class AtlasScene{
  }
  setPalette(palette:ScenePalette){this.palette=palette;this.sprites.clear();}
  setInsets(insets:Insets){this.insets=insets;}
+ /** N220: screen areas covered by floating controls (the option rail, Back, the concept peek). Labels stay out of them;
+  *  unlike the insets, they never change the camera's framing. */
+ labelMargin:Insets={top:0,right:0,bottom:0,left:0};
  setSize(width:number,height:number,dpr:number){
   this.width=Math.max(1,width);this.height=Math.max(1,height);
   if(dpr!==this.dpr)this.sprites.clear();
@@ -133,6 +138,11 @@ export class AtlasScene{
   const k=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,width/Math.max(1,right-left+24),height/Math.max(1,bottom-top+24)));
   return {x:(left+right)/2+label/2/k,y:(top+bottom)/2,k};
  }
+ drawnExtent() {
+  const top=this.insets.top,bottom=this.height-this.insets.bottom;
+  const ys=this.visible.map(index=>this.toScreen(this.layout.x[index],this.layout.y[index])[1]).filter(y=>y>=top&&y<=bottom);
+  return ys.length>1?(Math.max(...ys)-Math.min(...ys))/Math.max(1,bottom-top):0;
+ }
  /** Zoom around a screen point, keeping that point still. */
  zoomCamera(sx:number,sy:number,factor:number,from:Camera=this.camera):Camera{
   const k=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,from.k*factor));
@@ -143,13 +153,13 @@ export class AtlasScene{
   let best:number|null=null,bestDistance=Infinity;
   for(const i of this.visible){
    const [x,y]=this.toScreen(this.layout.x[i],this.layout.y[i]),d=Math.hypot(x-sx,y-sy);
-   if(d<=Math.max(HIT_SLOP,this.model.stars[i].radius*this.camera.k+8)&&d<bestDistance){best=i;bestDistance=d;}
+   if(d<=Math.max(11,HIT_SLOP,this.model.stars[i].radius*this.camera.k+8)&&d<bestDistance){best=i;bestDistance=d;}
   }
   return best;
  }
  private colour(cluster:number){return this.palette.subjects[cluster]??this.palette.textSecondary;}
  private sprite(i:number):Sprite{
-  const star=this.model.stars[i],colour=this.colour(star.cluster),r=star.radius;
+  const star=this.model.stars[i],colour=this.colour(star.cluster),r=Math.max(star.state==='not_started'?2:3.5,star.radius);
   const key=star.state+'|'+colour+'|'+r.toFixed(2)+'|'+(this.palette.night?1:0);
   let sprite=this.sprites.get(key);
   if(sprite)return sprite;
@@ -258,8 +268,13 @@ export class AtlasScene{
  private drawLabels(visible:number[],scale:number){
   const {ctx,model,layout,palette,camera}=this,placed:[number,number,number,number][]=[];
   const stars=visible.map(i=>{const [x,y]=this.toScreen(layout.x[i],layout.y[i]),r=model.stars[i].radius*1.6*scale+2;return [x-r,y-r,r*2,r*2] as [number,number,number,number];});
-  const fits=(x:number,y:number,w:number,h:number)=>x>=4&&x+w<=this.width-4&&!placed.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py)
+  const margin=this.labelMargin;
+  const fits=(x:number,y:number,w:number,h:number)=>x>=margin.left+4&&x+w<=this.width-margin.right-4&&y>=margin.top&&y+h<=this.height-margin.bottom
+   &&!placed.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py)
    &&!stars.some(([px,py,pw,ph])=>x<px+pw&&x+w>px&&y<py+ph&&y+h>py);
+  // N220 (Owner report): a far-out constellation no longer packs every concept name around itself with leader lines. A
+  // few of the largest concepts may take a leader line once the map is close enough to read; the rest appear on zoom.
+  let packedLeft=camera.k>=FAR_ZOOM?MAX_PACKED_LABELS:0;
   ctx.textBaseline='middle';ctx.textAlign='left';
   const label=(i:number,size:number,weight:number,colour:string,force=false)=>{
    const star=model.stars[i],[sx,sy]=this.toScreen(layout.x[i],layout.y[i]),text=star.label.length>32?star.label.slice(0,31)+'…':star.label;
@@ -267,14 +282,17 @@ export class AtlasScene{
    const w=ctx.measureText(text).width,gap=star.radius*1.6*scale+6;
    // Try right, left, above and below the star before giving up on a label.
    const spots:[number,number,CanvasTextAlign][]=[[sx+gap,sy,'left'],[sx-gap-w,sy,'left'],[sx-w/2,sy-gap-size/2,'left'],[sx-w/2,sy+gap+size/2,'left']];
-   const room=force&&this.labelCluster!==null,bounds={x:this.insets.left+8,y:this.insets.top+12,width:this.width-this.insets.left-this.insets.right-16,height:this.height-this.insets.top-this.insets.bottom-24};
+   const room=force&&this.labelCluster!==null,left=Math.max(this.insets.left,margin.left)+8,top=Math.max(this.insets.top,margin.top)+12;
+   const bounds={x:left,y:top,width:this.width-left-Math.max(this.insets.right,margin.right)-8,height:this.height-top-Math.max(this.insets.bottom,margin.bottom)-12};
    const natural=spots.find(([x,y])=>fits(x,y-size/2-1,w,size+2)&&(!room||(y-size/2>=bounds.y&&y+size/2<=bounds.y+bounds.height)));
-   const packed=!natural&&room?roomLabelSpot(spots.map(([x,y])=>[x,y-size/2-1]),w,size+2,bounds,[...placed,...stars].map(([x,y,width,height])=>({x,y,width,height}))):null;
+   const selectedLabel=i===this.selected;
+   const packed=!natural&&room&&(selectedLabel||packedLeft>0)?roomLabelSpot(spots.map(([x,y])=>[x,y-size/2-1]),w,size+2,bounds,[...placed,...stars].map(([x,y,width,height])=>({x,y,width,height}))):null;
    const spot=natural??(packed?[packed[0],packed[1]+size/2+1] as const:force&&!room?spots[0]:null);
    if(!spot)return;
+   if(packed&&!selectedLabel)packedLeft--;
    const [x,y]=spot;
    if(packed){const alpha=ctx.globalAlpha;ctx.globalAlpha=alpha*.25;ctx.strokeStyle=colour;ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(Math.max(x,Math.min(x+w,sx)),y);ctx.stroke();ctx.globalAlpha=alpha;}
-   placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.fillStyle=colour;ctx.fillText(text,x,y);
+   placed.push([x-2,y-size/2-2,w+4,size+4]);ctx.strokeStyle=palette.sky;ctx.lineWidth=4;ctx.lineJoin='round';ctx.strokeText(text,x,y);ctx.fillStyle=colour;ctx.fillText(text,x,y);
   };
   if(this.selected!==null&&visible.includes(this.selected))label(this.selected,16,600,palette.text,true);
   // Constellation names in wide capitals, above each cluster.
@@ -292,7 +310,7 @@ export class AtlasScene{
   const dim=this.selected!==null;
   const candidates=(this.labelCluster!==null?visible.filter(i=>model.stars[i].cluster===this.labelCluster):camera.k<FAR_ZOOM?visible.filter(i=>this.topLabels.has(i)):visible)
    .filter(i=>i!==this.selected).sort((a,b)=>model.stars[b].radius-model.stars[a].radius||a-b).slice(0,220);
-  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,12,500,palette.textSecondary,this.labelCluster!==null);}
+  for(const i of candidates){ctx.globalAlpha=this.highlighted&&!this.highlighted.has(i)?.2:dim&&!this.neighbourSet.has(i)?.4:1;label(i,13,500,palette.textSecondary,this.labelCluster!==null);}
   ctx.globalAlpha=1;
  }
 }

@@ -1,5 +1,6 @@
 import {expect, test, type Locator} from '@playwright/test';
 import type {TutorThreadView} from '../../src/data/tutor/manual-api';
+import {choosePadCheckpoint} from './helpers/pad-picker';
 
 async function select(notes: Locator, excerpt: string) {
   await notes.evaluate((element, text) => {
@@ -48,22 +49,22 @@ test('full Pad checkpoint navigation preserves unsaved notes and ink until an ex
   await page.mouse.move(box.x + 60, box.y + 60, {steps: 3}); await page.mouse.up();
   await expect(drawing.locator('path')).toHaveCount(1);
   const stroke = await drawing.locator('path').getAttribute('d');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP2');
+  await choosePadCheckpoint(page, 'CP2');
   const leave = page.getByRole('dialog', {name: 'Save your Pad before leaving?'});
   await leave.getByRole('button', {name: 'Keep editing'}).click();
   await expect(notes).toHaveValue('Keep my unsaved proof.');
   await expect(drawing.locator('path')).toHaveAttribute('d', stroke!);
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP2');
+  await choosePadCheckpoint(page, 'CP2');
   await leave.getByRole('button', {name: 'Save and leave'}).click();
   await expect(notes).toHaveValue('');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');
+  await choosePadCheckpoint(page, 'CP4');
   await expect(notes).toHaveValue('Keep my unsaved proof.');
   await expect(drawing.locator('path')).toHaveAttribute('d', stroke!);
   await notes.fill('Discard just this newer edit.');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP2');
+  await choosePadCheckpoint(page, 'CP2');
   await leave.getByRole('button', {name: 'Discard and leave'}).click();
   await expect(notes).toHaveValue('');
-  await page.getByLabel('Checkpoint', {exact: true}).selectOption('CP4');
+  await choosePadCheckpoint(page, 'CP4');
   await expect(notes).toHaveValue('Keep my unsaved proof.');
 });
 

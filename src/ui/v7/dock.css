@@ -1,0 +1,21 @@
+@layer v7-components {
+  :where(html[data-v7]) .v7-pinned-dock {
+    position: fixed;
+    z-index: var(--v7-z-dock);
+    inset: auto var(--v7-page-margin) calc(var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
+    margin-inline: auto;
+    max-width: 656px;
+  }
+
+  :where(html[data-v7]) .v7-pinned-dock[data-inset="edge"] {
+    inset-inline: 0;
+    bottom: 0;
+  }
+
+  :where(html[data-v7]) .v7-pinned-dock:is(.v7-path-bar, .v7-learn-bar) {
+    padding: var(--v7-space-2);
+    background: var(--v7-role-surface-page);
+    border-radius: var(--v7-radius-3);
+    box-shadow: var(--v7-shadow-2);
+  }
+}

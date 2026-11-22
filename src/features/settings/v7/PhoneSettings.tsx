@@ -26,13 +26,13 @@ const permissionWord=(value:PermissionWord|undefined)=>value==='granted'?'Allowe
 export function PhoneReminders(){
  const read=useCallback(async()=>(await lemmaNative()).notificationStatus(),[]);
  const [status,refresh]=useStatus(read);
- return <Group title="On this phone" note="Lemma reminds you from this phone about cards due at your study time and about planned time blocks. Tutor and digest messages stay in the Inbox. Each kind has its own channel in Android settings.">
+ return <Group title="On this phone" info="Lemma reminds you from this phone about cards due at your study time and about planned time blocks. Tutor and digest messages stay in the Inbox. Each kind has its own channel in Android settings.">
   <ValueRow label="Notifications" value={status?permissionWord(status.permission):'…'} hint={status?.channelsBlocked.length?'Some kinds are off in Android settings':undefined}
    onOpen={()=>{void (async()=>{
     if(status?.permission==='prompt'){await requestNotificationPermission();refresh();return;}
     await (await lemmaNative()).openNotificationSettings({});
    })();}}/>
-  <ValueRow label="On-time alarms" value={!status?'…':status.exactAlarms?'On':'Within a minute'} hint="Ends of pomodoros, breaks and blocks"
+  <ValueRow label="On-time alarms" value={!status?'…':status.exactAlarms?'On':'Within a minute'}
    onOpen={()=>{void lemmaNative().then(native=>native.openExactAlarmSettings());}}/>
  </Group>;
 }
@@ -80,7 +80,7 @@ export function PhonePlanning(){
   const next=on?[...new Set([...busy,id])]:busy.filter(item=>item!==id);
   setBusy(next);writeDevicePref('busyCalendars',next);
  }
- return <Group title="On this phone" note="Study mode turns on Do Not Disturb while you focus and off when you pause or finish. Calendar sync writes your Lemma blocks to a “Lemma” calendar here; busy times you choose are read on this phone only and never uploaded.">
+ return <Group title="On this phone" info="Study mode turns on Do Not Disturb while you focus and off when you pause or finish. Calendar sync writes your Lemma blocks to a “Lemma” calendar here; busy times you choose are read on this phone only and never uploaded.">
   <SwitchRow label="Study mode during focus" checked={!!mode?.enabled&&!!mode.access} onChange={on=>{void studyMode(on);}}/>
   <SwitchRow label="Show time blocks in this phone’s calendar" checked={sync} onChange={on=>{void calendarSync(on);}}/>
   {sync&&<ValueRow label="Avoid busy times from" value={busy.length?busy.length+(busy.length===1?' calendar':' calendars'):'None'} onOpen={()=>{void pick();}}/>}
@@ -102,7 +102,7 @@ export function PhoneAbout(){
  const [info]=useStatus(read);
  const links=releaseLinks(info?.version),update=useDevicePrefValue<number|null>('updateAvailable',null);
  const open=(url:string)=>{void import('@capacitor/browser').then(({Browser})=>Browser.open({url})).catch(()=>window.open(url,'_blank','noopener'));};
- return <Group title="About this app" note="Lemma for Android is installed from GitHub Releases. A newer Lemma.apk installs over this one and keeps your data.">
+ return <Group title="About this app" info="Lemma for Android is installed from GitHub Releases. A newer Lemma.apk installs over this one and keeps your data.">
   <InfoRow label="Version" value={info?.version??'…'}/>
   {/* AW3 second stage (E15): the day's quiet check found a newer APK. */}
   <LinkRow label="Check for updates" hint={update?'Lemma 2.0.'+update+' is available':'Opens the newest release'} onOpen={()=>open(links.latest)}/>

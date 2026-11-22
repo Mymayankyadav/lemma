@@ -1,0 +1,2 @@
+# Preserve the pinned recognizer bytes and keep model weights out of text diffs.
+public/models/tutor-symbols/detypify-0.3.0-lemma-v1/model.onnx binary

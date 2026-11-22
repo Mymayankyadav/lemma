@@ -1,0 +1,1040 @@
+{
+  "seeds": [
+    681914,
+    681915,
+    681916
+  ],
+  "usersPerSeed": 12,
+  "intervalMethod": "Paired bootstrap resampling seed clusters, then users within each seed; 10,000 draws, 2.5/97.5 percentiles. Synthetic replicates, not a human population.",
+  "results": {
+    "balanced": {
+      "static": {
+        "beforeShift": {
+          "top1Rate": 0.4027777777777778,
+          "hit3Rate": 0.5708333333333333,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.7673219181494435,
+          "modelledWpmAt30Baseline": 30.388274081109316,
+          "refreshes": 71.66666666666667,
+          "meanVisibleSlots": 1.4437499999999999,
+          "meanPairwiseStringDistance": 0.2630979698601473,
+          "meanUniqueDisplayedPerUser": 19.75
+        },
+        "afterShift": {
+          "top1Rate": 0.3673611111111111,
+          "hit3Rate": 0.5055555555555555,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.772480432379343,
+          "modelledWpmAt30Baseline": 30.288785567484982,
+          "refreshes": 85,
+          "meanVisibleSlots": 1.4201388888888888,
+          "meanPairwiseStringDistance": 0.2658385955258175,
+          "meanUniqueDisplayedPerUser": 19.305555555555557
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 0,
+        "meanRankerMsPerCall": 0.0,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 466,
+          "badAccepts": 6,
+          "retainedBad": 2,
+          "badLogicAccepts": 3,
+          "retainedBadLogic": 1
+        }
+      },
+      "frequency_reference": {
+        "beforeShift": {
+          "top1Rate": 0.525,
+          "hit3Rate": 0.5708333333333333,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.7673219181494435,
+          "modelledWpmAt30Baseline": 30.388274081109316,
+          "refreshes": 71.66666666666667,
+          "meanVisibleSlots": 1.4437499999999999,
+          "meanPairwiseStringDistance": 0.2630979698601473,
+          "meanUniqueDisplayedPerUser": 19.75
+        },
+        "afterShift": {
+          "top1Rate": 0.46249999999999997,
+          "hit3Rate": 0.5055555555555555,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.772480432379343,
+          "modelledWpmAt30Baseline": 30.288785567484982,
+          "refreshes": 85,
+          "meanVisibleSlots": 1.4201388888888888,
+          "meanPairwiseStringDistance": 0.2658385955258175,
+          "meanUniqueDisplayedPerUser": 19.305555555555557
+        },
+        "earlySustainedOpportunities": [
+          50,
+          40,
+          30
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 2165.25,
+        "meanRankerMsPerCall": 0.0017237513113280052,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 466,
+          "badAccepts": 6,
+          "retainedBad": 2,
+          "badLogicAccepts": 3,
+          "retainedBadLogic": 1
+        }
+      },
+      "frequency": {
+        "beforeShift": {
+          "top1Rate": 0.525,
+          "hit3Rate": 0.5708333333333333,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.7673219181494435,
+          "modelledWpmAt30Baseline": 30.388274081109316,
+          "refreshes": 71.66666666666667,
+          "meanVisibleSlots": 1.4437499999999999,
+          "meanPairwiseStringDistance": 0.2630979698601473,
+          "meanUniqueDisplayedPerUser": 19.75
+        },
+        "afterShift": {
+          "top1Rate": 0.46249999999999997,
+          "hit3Rate": 0.5055555555555555,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.772480432379343,
+          "modelledWpmAt30Baseline": 30.288785567484982,
+          "refreshes": 85,
+          "meanVisibleSlots": 1.4201388888888888,
+          "meanPairwiseStringDistance": 0.2658385955258175,
+          "meanUniqueDisplayedPerUser": 19.305555555555557
+        },
+        "earlySustainedOpportunities": [
+          50,
+          40,
+          30
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 12365.805555555555,
+        "meanRankerMsPerCall": 0.01179625607178128,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 466,
+          "badAccepts": 6,
+          "retainedBad": 2,
+          "badLogicAccepts": 3,
+          "retainedBadLogic": 1
+        }
+      },
+      "production": {
+        "beforeShift": {
+          "top1Rate": 0.5305555555555556,
+          "hit3Rate": 0.5708333333333333,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.7673219181494435,
+          "modelledWpmAt30Baseline": 30.388274081109316,
+          "refreshes": 71.66666666666667,
+          "meanVisibleSlots": 1.4437499999999999,
+          "meanPairwiseStringDistance": 0.2630979698601473,
+          "meanUniqueDisplayedPerUser": 19.75
+        },
+        "afterShift": {
+          "top1Rate": 0.47430555555555554,
+          "hit3Rate": 0.5055555555555555,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.772480432379343,
+          "modelledWpmAt30Baseline": 30.288785567484982,
+          "refreshes": 85,
+          "meanVisibleSlots": 1.4201388888888888,
+          "meanPairwiseStringDistance": 0.2658385955258175,
+          "meanUniqueDisplayedPerUser": 19.305555555555557
+        },
+        "earlySustainedOpportunities": [
+          30,
+          20,
+          30
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 12360.583333333332,
+        "meanRankerMsPerCall": 0.010927876468885846,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 466,
+          "badAccepts": 6,
+          "retainedBad": 2,
+          "badLogicAccepts": 3,
+          "retainedBadLogic": 1
+        }
+      },
+      "adapter": {
+        "beforeShift": {
+          "top1Rate": 0.525,
+          "hit3Rate": 0.5708333333333333,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.7673219181494435,
+          "modelledWpmAt30Baseline": 30.388274081109316,
+          "refreshes": 71.66666666666667,
+          "meanVisibleSlots": 1.4437499999999999,
+          "meanPairwiseStringDistance": 0.2630979698601473,
+          "meanUniqueDisplayedPerUser": 19.75
+        },
+        "afterShift": {
+          "top1Rate": 0.46249999999999997,
+          "hit3Rate": 0.5055555555555555,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.772480432379343,
+          "modelledWpmAt30Baseline": 30.288785567484982,
+          "refreshes": 85,
+          "meanVisibleSlots": 1.4201388888888888,
+          "meanPairwiseStringDistance": 0.2658385955258175,
+          "meanUniqueDisplayedPerUser": 19.305555555555557
+        },
+        "earlySustainedOpportunities": [
+          50,
+          40,
+          30
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 2272,
+        "meanRankerMsPerCall": 0.056781192040185134,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 466,
+          "badAccepts": 6,
+          "retainedBad": 2,
+          "badLogicAccepts": 3,
+          "retainedBadLogic": 1
+        }
+      },
+      "pairedAfterShift": {
+        "production-minus-static": {
+          "difference": 0.10694444444444445,
+          "ci95": [
+            0.08055555555555556,
+            0.13194444444444445
+          ],
+          "perSeed": [
+            0.11875000000000002,
+            0.12083333333333335,
+            0.08125
+          ],
+          "perUserMin": 0.024999999999999967,
+          "perUserMax": 0.22500000000000003
+        },
+        "production-minus-frequency": {
+          "difference": 0.01180555555555556,
+          "ci95": [
+            0.003472222222222233,
+            0.022222222222222223
+          ],
+          "perSeed": [
+            0.012500000000000011,
+            0.016666666666666666,
+            0.006250000000000001
+          ],
+          "perUserMin": -0.02499999999999991,
+          "perUserMax": 0.09999999999999998
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.01180555555555556,
+          "ci95": [
+            0.003472222222222233,
+            0.022222222222222223
+          ],
+          "perSeed": [
+            0.012500000000000011,
+            0.016666666666666666,
+            0.006250000000000001
+          ],
+          "perUserMin": -0.02499999999999991,
+          "perUserMax": 0.09999999999999998
+        },
+        "production-minus-adapter": {
+          "difference": 0.01180555555555556,
+          "ci95": [
+            0.003472222222222229,
+            0.022222222222222227
+          ],
+          "perSeed": [
+            0.012500000000000013,
+            0.016666666666666666,
+            0.006250000000000001
+          ],
+          "perUserMin": -0.02499999999999991,
+          "perUserMax": 0.09999999999999998
+        }
+      },
+      "pairedBeforeShift": {
+        "production-minus-static": {
+          "difference": 0.12777777777777777,
+          "ci95": [
+            0.09583333333333333,
+            0.16180555555555556
+          ],
+          "perSeed": [
+            0.14791666666666664,
+            0.12291666666666667,
+            0.11249999999999999
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.35000000000000003
+        },
+        "production-minus-frequency": {
+          "difference": 0.005555555555555551,
+          "ci95": [
+            -0.001388888888888904,
+            0.013194444444444446
+          ],
+          "perSeed": [
+            0.008333333333333323,
+            0.006250000000000001,
+            0.0020833333333333307
+          ],
+          "perUserMin": -0.050000000000000044,
+          "perUserMax": 0.07499999999999996
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.005555555555555551,
+          "ci95": [
+            -0.001388888888888904,
+            0.013194444444444446
+          ],
+          "perSeed": [
+            0.008333333333333323,
+            0.006250000000000001,
+            0.0020833333333333307
+          ],
+          "perUserMin": -0.050000000000000044,
+          "perUserMax": 0.07499999999999996
+        },
+        "production-minus-adapter": {
+          "difference": 0.005555555555555554,
+          "ci95": [
+            -0.0013888888888888933,
+            0.012500000000000004
+          ],
+          "perSeed": [
+            0.006249999999999996,
+            0.008333333333333337,
+            0.0020833333333333307
+          ],
+          "perUserMin": -0.050000000000000044,
+          "perUserMax": 0.050000000000000044
+        }
+      }
+    },
+    "fast": {
+      "static": {
+        "beforeShift": {
+          "top1Rate": 0.22777777777777777,
+          "hit3Rate": 0.43680555555555556,
+          "hit3WhenTargetInPool": 0.7653415212238741,
+          "typedKeystrokesPerWord": 5.783231525144046,
+          "modelledWpmAt30Baseline": 30.28827145916922,
+          "refreshes": 95,
+          "meanVisibleSlots": 1.9597222222222221,
+          "meanPairwiseStringDistance": 0.3788522115259128,
+          "meanUniqueDisplayedPerUser": 28.75
+        },
+        "afterShift": {
+          "top1Rate": 0.23541666666666666,
+          "hit3Rate": 0.41805555555555557,
+          "hit3WhenTargetInPool": 0.8256543492189559,
+          "typedKeystrokesPerWord": 5.784471327747001,
+          "modelledWpmAt30Baseline": 30.219926074817874,
+          "refreshes": 99.33333333333333,
+          "meanVisibleSlots": 1.8333333333333333,
+          "meanPairwiseStringDistance": 0.3810138772076977,
+          "meanUniqueDisplayedPerUser": 27.083333333333332
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 0,
+        "meanRankerMsPerCall": 0.0,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 467,
+          "badAccepts": 5,
+          "retainedBad": 1,
+          "badLogicAccepts": 1,
+          "retainedBadLogic": 0
+        }
+      },
+      "frequency_reference": {
+        "beforeShift": {
+          "top1Rate": 0.46875,
+          "hit3Rate": 0.5138888888888888,
+          "hit3WhenTargetInPool": 0.9002727184388084,
+          "typedKeystrokesPerWord": 5.7727542679669845,
+          "modelledWpmAt30Baseline": 30.34867363833893,
+          "refreshes": 82.66666666666667,
+          "meanVisibleSlots": 1.9597222222222221,
+          "meanPairwiseStringDistance": 0.41087692076931437,
+          "meanUniqueDisplayedPerUser": 33.888888888888886
+        },
+        "afterShift": {
+          "top1Rate": 0.4097222222222222,
+          "hit3Rate": 0.4486111111111111,
+          "hit3WhenTargetInPool": 0.8859890107321947,
+          "typedKeystrokesPerWord": 5.7809517317247225,
+          "modelledWpmAt30Baseline": 30.23948521116932,
+          "refreshes": 95.33333333333333,
+          "meanVisibleSlots": 1.8333333333333333,
+          "meanPairwiseStringDistance": 0.409257388636056,
+          "meanUniqueDisplayedPerUser": 31.63888888888889
+        },
+        "earlySustainedOpportunities": [
+          30,
+          20,
+          20
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 3565.472222222222,
+        "meanRankerMsPerCall": 0.0018228498928145394,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 467,
+          "badAccepts": 4,
+          "retainedBad": 1,
+          "badLogicAccepts": 1,
+          "retainedBadLogic": 0
+        }
+      },
+      "frequency": {
+        "beforeShift": {
+          "top1Rate": 0.46875,
+          "hit3Rate": 0.5138888888888888,
+          "hit3WhenTargetInPool": 0.9002727184388084,
+          "typedKeystrokesPerWord": 5.7727542679669845,
+          "modelledWpmAt30Baseline": 30.34867363833893,
+          "refreshes": 82.66666666666667,
+          "meanVisibleSlots": 1.9597222222222221,
+          "meanPairwiseStringDistance": 0.41087692076931437,
+          "meanUniqueDisplayedPerUser": 33.888888888888886
+        },
+        "afterShift": {
+          "top1Rate": 0.4097222222222222,
+          "hit3Rate": 0.4486111111111111,
+          "hit3WhenTargetInPool": 0.8859890107321947,
+          "typedKeystrokesPerWord": 5.7809517317247225,
+          "modelledWpmAt30Baseline": 30.23948521116932,
+          "refreshes": 95.33333333333333,
+          "meanVisibleSlots": 1.8333333333333333,
+          "meanPairwiseStringDistance": 0.409257388636056,
+          "meanUniqueDisplayedPerUser": 31.63888888888889
+        },
+        "earlySustainedOpportunities": [
+          30,
+          20,
+          20
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 17028.0,
+        "meanRankerMsPerCall": 0.010431451858695524,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 467,
+          "badAccepts": 4,
+          "retainedBad": 1,
+          "badLogicAccepts": 1,
+          "retainedBadLogic": 0
+        }
+      },
+      "production": {
+        "beforeShift": {
+          "top1Rate": 0.49027777777777776,
+          "hit3Rate": 0.5243055555555556,
+          "hit3WhenTargetInPool": 0.9183849407032798,
+          "typedKeystrokesPerWord": 5.7691970828058485,
+          "modelledWpmAt30Baseline": 30.366232755453417,
+          "refreshes": 81.33333333333333,
+          "meanVisibleSlots": 1.9597222222222221,
+          "meanPairwiseStringDistance": 0.41473857125777414,
+          "meanUniqueDisplayedPerUser": 34.08333333333333
+        },
+        "afterShift": {
+          "top1Rate": 0.43333333333333335,
+          "hit3Rate": 0.4638888888888889,
+          "hit3WhenTargetInPool": 0.916633317273275,
+          "typedKeystrokesPerWord": 5.777807235354022,
+          "modelledWpmAt30Baseline": 30.258020548803227,
+          "refreshes": 91.66666666666667,
+          "meanVisibleSlots": 1.8333333333333333,
+          "meanPairwiseStringDistance": 0.41018306481018374,
+          "meanUniqueDisplayedPerUser": 31.5
+        },
+        "earlySustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 16996.194444444445,
+        "meanRankerMsPerCall": 0.010062366068740565,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 3,
+          "retainedBad": 0,
+          "badLogicAccepts": 1,
+          "retainedBadLogic": 0
+        }
+      },
+      "adapter": {
+        "beforeShift": {
+          "top1Rate": 0.47291666666666665,
+          "hit3Rate": 0.5131944444444445,
+          "hit3WhenTargetInPool": 0.8990451685953417,
+          "typedKeystrokesPerWord": 5.771446974842376,
+          "modelledWpmAt30Baseline": 30.354933949256687,
+          "refreshes": 82.33333333333333,
+          "meanVisibleSlots": 1.9597222222222221,
+          "meanPairwiseStringDistance": 0.41161411040685597,
+          "meanUniqueDisplayedPerUser": 33.0
+        },
+        "afterShift": {
+          "top1Rate": 0.41041666666666665,
+          "hit3Rate": 0.45069444444444445,
+          "hit3WhenTargetInPool": 0.8902559569448347,
+          "typedKeystrokesPerWord": 5.782014344116418,
+          "modelledWpmAt30Baseline": 30.236426562580444,
+          "refreshes": 94.33333333333333,
+          "meanVisibleSlots": 1.8333333333333333,
+          "meanPairwiseStringDistance": 0.411183045147401,
+          "meanUniqueDisplayedPerUser": 31.194444444444443
+        },
+        "earlySustainedOpportunities": [
+          30,
+          30,
+          30
+        ],
+        "postShiftSustainedOpportunities": [
+          20,
+          20,
+          20
+        ],
+        "meanModelBytes": 2272,
+        "meanRankerMsPerCall": 0.05047487331104447,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 467,
+          "badAccepts": 5,
+          "retainedBad": 1,
+          "badLogicAccepts": 1,
+          "retainedBadLogic": 0
+        }
+      },
+      "pairedAfterShift": {
+        "production-minus-static": {
+          "difference": 0.19791666666666666,
+          "ci95": [
+            0.17291666666666666,
+            0.2236111111111111
+          ],
+          "perSeed": [
+            0.2,
+            0.19583333333333333,
+            0.19791666666666666
+          ],
+          "perUserMin": 0.04999999999999999,
+          "perUserMax": 0.375
+        },
+        "production-minus-frequency": {
+          "difference": 0.023611111111111114,
+          "ci95": [
+            0.009722222222222224,
+            0.03750000000000001
+          ],
+          "perSeed": [
+            0.012499999999999997,
+            0.025000000000000012,
+            0.03333333333333333
+          ],
+          "perUserMin": -0.025000000000000022,
+          "perUserMax": 0.09999999999999998
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.023611111111111114,
+          "ci95": [
+            0.009722222222222224,
+            0.03750000000000001
+          ],
+          "perSeed": [
+            0.012499999999999997,
+            0.025000000000000012,
+            0.03333333333333333
+          ],
+          "perUserMin": -0.025000000000000022,
+          "perUserMax": 0.09999999999999998
+        },
+        "production-minus-adapter": {
+          "difference": 0.02291666666666667,
+          "ci95": [
+            0.007638888888888889,
+            0.04027777777777779
+          ],
+          "perSeed": [
+            0.02083333333333333,
+            0.020833333333333343,
+            0.027083333333333338
+          ],
+          "perUserMin": -0.1,
+          "perUserMax": 0.15000000000000002
+        }
+      },
+      "pairedBeforeShift": {
+        "production-minus-static": {
+          "difference": 0.2625,
+          "ci95": [
+            0.21875,
+            0.30833333333333335
+          ],
+          "perSeed": [
+            0.23124999999999998,
+            0.2583333333333333,
+            0.29791666666666666
+          ],
+          "perUserMin": 0.05000000000000002,
+          "perUserMax": 0.45
+        },
+        "production-minus-frequency": {
+          "difference": 0.02152777777777777,
+          "ci95": [
+            0.008333333333333323,
+            0.0361111111111111
+          ],
+          "perSeed": [
+            0.02291666666666667,
+            0.027083333333333317,
+            0.014583333333333332
+          ],
+          "perUserMin": -0.025000000000000022,
+          "perUserMax": 0.14999999999999997
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.02152777777777777,
+          "ci95": [
+            0.008333333333333323,
+            0.0361111111111111
+          ],
+          "perSeed": [
+            0.02291666666666667,
+            0.027083333333333317,
+            0.014583333333333332
+          ],
+          "perUserMin": -0.025000000000000022,
+          "perUserMax": 0.14999999999999997
+        },
+        "production-minus-adapter": {
+          "difference": 0.017361111111111105,
+          "ci95": [
+            0.003472222222222216,
+            0.03333333333333333
+          ],
+          "perSeed": [
+            0.012500000000000002,
+            0.02708333333333332,
+            0.012499999999999997
+          ],
+          "perUserMin": -0.025000000000000022,
+          "perUserMax": 0.14999999999999997
+        }
+      }
+    },
+    "strict": {
+      "static": {
+        "beforeShift": {
+          "top1Rate": 0.12152777777777778,
+          "hit3Rate": 0.12152777777777778,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.884904058559288,
+          "modelledWpmAt30Baseline": 30.0730715674653,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.12152777777777778,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 2.1666666666666665
+        },
+        "afterShift": {
+          "top1Rate": 0.11666666666666667,
+          "hit3Rate": 0.11666666666666667,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.868925111368331,
+          "modelledWpmAt30Baseline": 30.08542963916791,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.11666666666666667,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 1.9444444444444444
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 0,
+        "meanRankerMsPerCall": 0.0,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 0,
+          "retainedBad": 0,
+          "badLogicAccepts": 0,
+          "retainedBadLogic": 0
+        }
+      },
+      "frequency_reference": {
+        "beforeShift": {
+          "top1Rate": 0.12152777777777778,
+          "hit3Rate": 0.12152777777777778,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.884904058559288,
+          "modelledWpmAt30Baseline": 30.0730715674653,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.12152777777777778,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 2.1666666666666665
+        },
+        "afterShift": {
+          "top1Rate": 0.11666666666666667,
+          "hit3Rate": 0.11666666666666667,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.868925111368331,
+          "modelledWpmAt30Baseline": 30.08542963916791,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.11666666666666667,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 1.9444444444444444
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 939.0277777777777,
+        "meanRankerMsPerCall": 0.0028835924649939873,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 0,
+          "retainedBad": 0,
+          "badLogicAccepts": 0,
+          "retainedBadLogic": 0
+        }
+      },
+      "frequency": {
+        "beforeShift": {
+          "top1Rate": 0.12152777777777778,
+          "hit3Rate": 0.12152777777777778,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.884904058559288,
+          "modelledWpmAt30Baseline": 30.0730715674653,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.12152777777777778,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 2.1666666666666665
+        },
+        "afterShift": {
+          "top1Rate": 0.11666666666666667,
+          "hit3Rate": 0.11666666666666667,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.868925111368331,
+          "modelledWpmAt30Baseline": 30.08542963916791,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.11666666666666667,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 1.9444444444444444
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 5082.666666666667,
+        "meanRankerMsPerCall": 0.0040405226220953435,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 0,
+          "retainedBad": 0,
+          "badLogicAccepts": 0,
+          "retainedBadLogic": 0
+        }
+      },
+      "production": {
+        "beforeShift": {
+          "top1Rate": 0.12152777777777778,
+          "hit3Rate": 0.12152777777777778,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.884904058559288,
+          "modelledWpmAt30Baseline": 30.0730715674653,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.12152777777777778,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 2.1666666666666665
+        },
+        "afterShift": {
+          "top1Rate": 0.11666666666666667,
+          "hit3Rate": 0.11666666666666667,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.868925111368331,
+          "modelledWpmAt30Baseline": 30.08542963916791,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.11666666666666667,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 1.9444444444444444
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 5082.666666666667,
+        "meanRankerMsPerCall": 0.0039394134973603015,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 0,
+          "retainedBad": 0,
+          "badLogicAccepts": 0,
+          "retainedBadLogic": 0
+        }
+      },
+      "adapter": {
+        "beforeShift": {
+          "top1Rate": 0.12152777777777778,
+          "hit3Rate": 0.12152777777777778,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.884904058559288,
+          "modelledWpmAt30Baseline": 30.0730715674653,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.12152777777777778,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 2.1666666666666665
+        },
+        "afterShift": {
+          "top1Rate": 0.11666666666666667,
+          "hit3Rate": 0.11666666666666667,
+          "hit3WhenTargetInPool": 1.0,
+          "typedKeystrokesPerWord": 5.868925111368331,
+          "modelledWpmAt30Baseline": 30.08542963916791,
+          "refreshes": 0,
+          "meanVisibleSlots": 0.11666666666666667,
+          "meanPairwiseStringDistance": null,
+          "meanUniqueDisplayedPerUser": 1.9444444444444444
+        },
+        "earlySustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "postShiftSustainedOpportunities": [
+          null,
+          null,
+          null
+        ],
+        "meanModelBytes": 2272,
+        "meanRankerMsPerCall": 0.018077613476247534,
+        "safety": {
+          "opportunities": 792,
+          "invalidProofs": 468,
+          "invalidProofsPreserved": 468,
+          "badAccepts": 0,
+          "retainedBad": 0,
+          "badLogicAccepts": 0,
+          "retainedBadLogic": 0
+        }
+      },
+      "pairedAfterShift": {
+        "production-minus-static": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-frequency": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-adapter": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        }
+      },
+      "pairedBeforeShift": {
+        "production-minus-static": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-frequency": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-frequency_reference": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        },
+        "production-minus-adapter": {
+          "difference": 0.0,
+          "ci95": [
+            0.0,
+            0.0
+          ],
+          "perSeed": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "perUserMin": 0.0,
+          "perUserMax": 0.0
+        }
+      }
+    }
+  }
+}

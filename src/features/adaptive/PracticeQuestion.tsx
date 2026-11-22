@@ -2,10 +2,10 @@ import {useEffect,useRef,useState} from 'react';
 import {openPracticeQuestion,savePracticeResult} from '../../data/adaptive/agenda-api';
 import {authGeneration,onAccountChange} from '../../data/authBoundary';
 import {PracticeScoreRejectedError,type PracticeDelivery,type PracticeOutcome,type PracticeScoreRequest} from '../../../supabase/functions/_shared/practice/delivery';
-import {Button} from '../../ui/v7/components';
+import {Button,Picker} from '../../ui/v7/components';
 
 /** A delivered question only becomes evidence after the learner explicitly saves their assessment. */
-export function PracticeQuestion({canOpen=true,sessions=[],onSaved}:{canOpen?:boolean;
+export function PracticeQuestion({canOpen=true,sessions=[],onSaved,kit=false}:{canOpen?:boolean;kit?:boolean;
   sessions?:{id:string;number:number;project_id:string;state:string}[];onSaved?:()=>void}){
   const [request,setRequest]=useState(()=>crypto.randomUUID());
   const [delivery,setDelivery]=useState<Extract<PracticeDelivery,{status:'available'}>|null>(null);
@@ -69,19 +69,25 @@ export function PracticeQuestion({canOpen=true,sessions=[],onSaved}:{canOpen?:bo
       <Button small disabled={busy||!canOpen} onClick={next}>Next question</Button>
     </>:<form aria-label="Practice result" onSubmit={e=>{e.preventDefault();void save();}}>
       <fieldset disabled={busy||!!pending}><legend>Your assessment</legend>
-        <label>Result<select aria-label="Practice result" value={result} onChange={e=>setResult(e.target.value as typeof result)}>
-          <option value="">Choose a result</option><option value="ok">I solved it</option><option value="fail">Not yet</option></select></label>
-        <label>Hints used<select aria-label="Practice hints used" value={hint} onChange={e=>setHint(e.target.value)}>
-          <option value="">Choose help used</option><option value="0">No hints</option><option value="1">A nudge</option>
-          <option value="2">A key idea</option><option value="3">One worked step</option><option value="4">A worked solution</option></select></label>
-        <label>Question familiarity<select aria-label="Practice question familiarity" value={novelty} onChange={e=>setNovelty(e.target.value as typeof novelty)}>
-          <option value="">Choose familiarity</option><option value="novel">New to me</option><option value="familiar">I have tried it before</option>
-          <option value="seen_solution">I have seen its solution</option></select></label>
-        <label>Study session<select aria-label="Practice study session" value={session} onChange={e=>setSession(e.target.value)}>
-          <option value="">Practice outside a session</option>{deliveredSessions.map(s=><option key={s.id} value={s.id}>Session {s.number}</option>)}</select></label>
+        <PracticeChoice kit={kit} disabled={busy||!!pending} label="Practice result" value={result} onChange={value=>setResult(value as typeof result)}
+          options={[["","Choose a result"],["ok","I solved it"],["fail","Not yet"]]}/>
+        <PracticeChoice kit={kit} disabled={busy||!!pending} label="Practice hints used" value={hint} onChange={setHint}
+          options={[["","Choose help used"],["0","No hints"],["1","A nudge"],["2","A key idea"],["3","One worked step"],["4","A worked solution"]]}/>
+        <PracticeChoice kit={kit} disabled={busy||!!pending} label="Practice question familiarity" value={novelty} onChange={value=>setNovelty(value as typeof novelty)}
+          options={[["","Choose familiarity"],["novel","New to me"],["familiar","I have tried it before"],["seen_solution","I have seen its solution"]]}/>
+        <PracticeChoice kit={kit} disabled={busy||!!pending} label="Practice study session" value={session} onChange={setSession}
+          options={[["","Practice outside a session"],...deliveredSessions.map(item=>[item.id,"Session "+item.number] as [string,string])]}/>
+
       </fieldset>
       <Button small type="submit" disabled={busy}>{busy?'Saving…':pending?'Retry save':'Save my result'}</Button>
     </form>}
   </>:canOpen?<Button small disabled={busy} onClick={()=>void open()}>{busy?'Opening…':'Open practice question'}</Button>:null}
   {error&&<p role="alert">{error}</p>}</div>;
+}
+
+function PracticeChoice({kit,label,value,onChange,options,disabled}:{kit:boolean;label:string;value:string;onChange:(value:string)=>void;options:[string,string][];disabled:boolean}) {
+ if(kit)return <Picker label={label} value={options.find(([id])=>id===value)?.[1]??options[0][1]} disabled={disabled}
+   options={options.map(([,name])=>name)} onChange={name=>onChange(options.find(([,label])=>label===name)![0])}/>;
+ return <label>{label}<select aria-label={label} value={value} disabled={disabled} onChange={event=>onChange(event.target.value)}>
+   {options.map(([id,name])=><option key={id} value={id}>{name}</option>)}</select></label>;
 }

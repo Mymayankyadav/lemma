@@ -1,0 +1,6656 @@
+{
+  "browser": "156.0.8078.79",
+  "captureBuild": "separate preview",
+  "assumptions": {
+    "baselineWpm": 30,
+    "charactersPerWord": 5,
+    "manualMsPerCharacter": 400,
+    "uptake": 0.75,
+    "fixedSelectionScanMs": 75,
+    "addedReorientationMs": [
+      0,
+      25,
+      75,
+      125
+    ],
+    "ignoredListScanMs": [
+      0,
+      15,
+      40
+    ],
+    "wrongTapFraction": [
+      0,
+      0.02,
+      0.05
+    ],
+    "pointingInterceptMs": 130,
+    "pointingSlopeMs": 65,
+    "overlayGapPx": 4,
+    "overlayMaxWidthPx": 120
+  },
+  "drafts": 16,
+  "deliberatelyIncorrect": 8,
+  "typedCharacters": 1307,
+  "profiles": [
+    {
+      "id": "narrow-day",
+      "width": 320,
+      "height": 640,
+      "scale": 160,
+      "scheme": "light",
+      "touch": true,
+      "geometry": {
+        "keyboard": {
+          "x": 0,
+          "y": 414,
+          "width": 320,
+          "height": 226
+        },
+        "keys": {
+          "q": {
+            "x": 4,
+            "y": 458,
+            "width": 31.1875,
+            "height": 44
+          },
+          "w": {
+            "x": 35.1875,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "e": {
+            "x": 66.390625,
+            "y": 458,
+            "width": 31.1875,
+            "height": 44
+          },
+          "r": {
+            "x": 97.578125,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "t": {
+            "x": 128.78125,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "y": {
+            "x": 159.984375,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "u": {
+            "x": 191.1875,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "i": {
+            "x": 222.390625,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "o": {
+            "x": 253.59375,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "p": {
+            "x": 284.796875,
+            "y": 458,
+            "width": 31.203125,
+            "height": 44
+          },
+          "a": {
+            "x": 4,
+            "y": 502,
+            "width": 46.796875,
+            "height": 44
+          },
+          "s": {
+            "x": 50.796875,
+            "y": 502,
+            "width": 31.1875,
+            "height": 44
+          },
+          "d": {
+            "x": 81.984375,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "f": {
+            "x": 113.1875,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "g": {
+            "x": 144.390625,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "h": {
+            "x": 175.59375,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "j": {
+            "x": 206.796875,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "k": {
+            "x": 238,
+            "y": 502,
+            "width": 31.203125,
+            "height": 44
+          },
+          "l": {
+            "x": 269.203125,
+            "y": 502,
+            "width": 46.796875,
+            "height": 44
+          },
+          "Shift": {
+            "x": 4,
+            "y": 546,
+            "width": 46.796875,
+            "height": 44
+          },
+          "z": {
+            "x": 50.796875,
+            "y": 546,
+            "width": 31.1875,
+            "height": 44
+          },
+          "x": {
+            "x": 81.984375,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "c": {
+            "x": 113.1875,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "v": {
+            "x": 144.390625,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "b": {
+            "x": 175.59375,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "n": {
+            "x": 206.796875,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "m": {
+            "x": 238,
+            "y": 546,
+            "width": 31.203125,
+            "height": 44
+          },
+          "Delete": {
+            "x": 269.203125,
+            "y": 546,
+            "width": 46.796875,
+            "height": 44
+          },
+          "?123": {
+            "x": 4,
+            "y": 590,
+            "width": 37.75,
+            "height": 44
+          },
+          ",": {
+            "x": 41.75,
+            "y": 590,
+            "width": 25.15625,
+            "height": 44
+          },
+          "Maths symbols": {
+            "x": 66.90625,
+            "y": 590,
+            "width": 25.171875,
+            "height": 44
+          },
+          "Space": {
+            "x": 92.078125,
+            "y": 590,
+            "width": 85.546875,
+            "height": 44
+          },
+          "∀": {
+            "x": 177.625,
+            "y": 590,
+            "width": 25.15625,
+            "height": 44
+          },
+          "∈": {
+            "x": 202.78125,
+            "y": 590,
+            "width": 25.171875,
+            "height": 44
+          },
+          "⇒": {
+            "x": 227.953125,
+            "y": 590,
+            "width": 25.15625,
+            "height": 44
+          },
+          ".": {
+            "x": 253.109375,
+            "y": 590,
+            "width": 25.15625,
+            "height": 44
+          },
+          "New line": {
+            "x": 278.265625,
+            "y": 590,
+            "width": 37.734375,
+            "height": 44
+          }
+        },
+        "slots": [
+          {
+            "x": 4,
+            "y": 414,
+            "width": 73.328125,
+            "height": 44
+          },
+          {
+            "x": 77.328125,
+            "y": 414,
+            "width": 73.328125,
+            "height": 44
+          },
+          {
+            "x": 150.65625,
+            "y": 414,
+            "width": 73.34375,
+            "height": 44
+          }
+        ],
+        "header": {
+          "x": 16,
+          "y": 0,
+          "width": 288,
+          "height": 52
+        },
+        "transcript": {
+          "x": 16,
+          "y": 55,
+          "width": 288,
+          "height": 232.171875
+        },
+        "answer": {
+          "x": 13,
+          "y": 294.171875,
+          "width": 294,
+          "height": 65.828125
+        },
+        "theme": "graph",
+        "horizontalOverflow": 0,
+        "reducedMotion": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "travelPx": 53.48,
+          "modeledMs": 270,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 77.328125,
+              "y": 414,
+              "width": 73.328125,
+              "height": 44
+            }
+          ]
+        },
+        "differentWordThenUndo": {
+          "taps": 2,
+          "travelPx": 221.74,
+          "modeledMs": 566.79,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 4,
+              "y": 414,
+              "width": 73.328125,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 361,
+              "width": 230,
+              "height": 44
+            }
+          ]
+        },
+        "wordFromMore": {
+          "taps": 2,
+          "travelPx": 400.9,
+          "modeledMs": 679.92,
+          "boxes": [
+            {
+              "x": 128.78125,
+              "y": 458,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 255,
+              "y": 361,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 31,
+              "y": 205.625,
+              "width": 134.171875,
+              "height": 45.125
+            }
+          ]
+        },
+        "spelling": {
+          "taps": 1,
+          "travelPx": 151.42,
+          "modeledMs": 339.68,
+          "boxes": [
+            {
+              "x": 175.59375,
+              "y": 502,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 361,
+              "width": 230,
+              "height": 44
+            }
+          ]
+        },
+        "keepTyped": {
+          "taps": 2,
+          "travelPx": 321.39,
+          "modeledMs": 656.57,
+          "boxes": [
+            {
+              "x": 175.59375,
+              "y": 502,
+              "width": 31.203125,
+              "height": 44
+            },
+            {
+              "x": 255,
+              "y": 361,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 27,
+              "y": 256.75,
+              "width": 266,
+              "height": 45.125
+            }
+          ]
+        },
+        "notation": {
+          "taps": 1,
+          "travelPx": 157.25,
+          "modeledMs": 339.68,
+          "boxes": [
+            {
+              "x": 50.796875,
+              "y": 502,
+              "width": 31.1875,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 361,
+              "width": 230,
+              "height": 44
+            }
+          ]
+        },
+        "continuation": {
+          "taps": 1,
+          "travelPx": 111.03,
+          "modeledMs": 314.21,
+          "boxes": [
+            {
+              "x": 66.390625,
+              "y": 458,
+              "width": 31.1875,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 361,
+              "width": 230,
+              "height": 44
+            }
+          ]
+        }
+      },
+      "modes": {
+        "balanced": {
+          "sameWordSuccessiveKeystrokes": 73,
+          "nearestPrimarySlotMoves": 42,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 118.27,
+              "p90TravelPx": 191.53,
+              "averagePointingMs": 223.86,
+              "averageReturnChangeMs": 3.52,
+              "averageMotorMs": 227.38,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 471162.26,
+                  "timeSavedPercent": 9.88,
+                  "modeledWpm": 33.29
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 479187.26,
+                  "timeSavedPercent": 8.34,
+                  "modeledWpm": 32.73
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 466347.26,
+                  "timeSavedPercent": 10.8,
+                  "modeledWpm": 33.63
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467703.28,
+                  "timeSavedPercent": 10.54,
+                  "modeledWpm": 33.53
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469737.32,
+                  "timeSavedPercent": 10.15,
+                  "modeledWpm": 33.39
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 92.9,
+              "p90TravelPx": 177.23,
+              "averagePointingMs": 215.7,
+              "averageReturnChangeMs": 4.75,
+              "averageMotorMs": 220.45,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 35,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465917.63,
+                  "timeSavedPercent": 10.88,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 467467.63,
+                  "timeSavedPercent": 10.58,
+                  "modeledWpm": 33.55
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 470567.63,
+                  "timeSavedPercent": 9.99,
+                  "modeledWpm": 33.33
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 473667.63,
+                  "timeSavedPercent": 9.4,
+                  "modeledWpm": 33.11
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465917.63,
+                  "timeSavedPercent": 10.88,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470732.63,
+                  "timeSavedPercent": 9.96,
+                  "modeledWpm": 33.32
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478757.63,
+                  "timeSavedPercent": 8.42,
+                  "modeledWpm": 32.76
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465917.63,
+                  "timeSavedPercent": 10.88,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467277.35,
+                  "timeSavedPercent": 10.62,
+                  "modeledWpm": 33.56
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469316.94,
+                  "timeSavedPercent": 10.23,
+                  "modeledWpm": 33.42
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 62.94,
+              "p90TravelPx": 155.88,
+              "averagePointingMs": 202.78,
+              "averageReturnChangeMs": 7.17,
+              "averageMotorMs": 209.95,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 54,
+              "primaryTargetsCoveringKeys": 18,
+              "primaryTargetsCoveringStrip": 35,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465266.89,
+                  "timeSavedPercent": 11,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466816.89,
+                  "timeSavedPercent": 10.71,
+                  "modeledWpm": 33.6
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 469916.89,
+                  "timeSavedPercent": 10.12,
+                  "modeledWpm": 33.38
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 473016.89,
+                  "timeSavedPercent": 9.52,
+                  "modeledWpm": 33.16
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465266.89,
+                  "timeSavedPercent": 11,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470081.89,
+                  "timeSavedPercent": 10.08,
+                  "modeledWpm": 33.36
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478106.89,
+                  "timeSavedPercent": 8.55,
+                  "modeledWpm": 32.8
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465266.89,
+                  "timeSavedPercent": 11,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 466636,
+                  "timeSavedPercent": 10.74,
+                  "modeledWpm": 33.61
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 468689.67,
+                  "timeSavedPercent": 10.35,
+                  "modeledWpm": 33.46
+                }
+              ]
+            }
+          }
+        },
+        "fast": {
+          "sameWordSuccessiveKeystrokes": 140,
+          "nearestPrimarySlotMoves": 75,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 123.82,
+              "p90TravelPx": 199.62,
+              "averagePointingMs": 229.75,
+              "averageReturnChangeMs": 6.23,
+              "averageMotorMs": 235.98,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 421417.18,
+                  "timeSavedPercent": 19.39,
+                  "modeledWpm": 37.22
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 434317.18,
+                  "timeSavedPercent": 16.92,
+                  "modeledWpm": 36.11
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413677.18,
+                  "timeSavedPercent": 20.87,
+                  "modeledWpm": 37.91
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 416353.54,
+                  "timeSavedPercent": 20.36,
+                  "modeledWpm": 37.67
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 420368.09,
+                  "timeSavedPercent": 19.59,
+                  "modeledWpm": 37.31
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 114.31,
+              "p90TravelPx": 199.62,
+              "averagePointingMs": 226.95,
+              "averageReturnChangeMs": 5.92,
+              "averageMotorMs": 232.87,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 33,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413400.51,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 415625.51,
+                  "timeSavedPercent": 20.5,
+                  "modeledWpm": 37.74
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 420075.51,
+                  "timeSavedPercent": 19.65,
+                  "modeledWpm": 37.34
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 424525.51,
+                  "timeSavedPercent": 18.8,
+                  "modeledWpm": 36.94
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413400.51,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 421140.51,
+                  "timeSavedPercent": 19.45,
+                  "modeledWpm": 37.24
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 434040.51,
+                  "timeSavedPercent": 16.98,
+                  "modeledWpm": 36.13
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413400.51,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 416079.07,
+                  "timeSavedPercent": 20.41,
+                  "modeledWpm": 37.69
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 420096.91,
+                  "timeSavedPercent": 19.64,
+                  "modeledWpm": 37.33
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 89.76,
+              "p90TravelPx": 200.21,
+              "averagePointingMs": 213.19,
+              "averageReturnChangeMs": 4.05,
+              "averageMotorMs": 217.24,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 52,
+              "primaryTargetsCoveringKeys": 25,
+              "primaryTargetsCoveringStrip": 31,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 412009.09,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 414234.09,
+                  "timeSavedPercent": 20.77,
+                  "modeledWpm": 37.86
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 418684.09,
+                  "timeSavedPercent": 19.92,
+                  "modeledWpm": 37.46
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 423134.09,
+                  "timeSavedPercent": 19.06,
+                  "modeledWpm": 37.07
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 412009.09,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 419749.09,
+                  "timeSavedPercent": 19.71,
+                  "modeledWpm": 37.37
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 432649.09,
+                  "timeSavedPercent": 17.24,
+                  "modeledWpm": 36.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 412009.09,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 414705.44,
+                  "timeSavedPercent": 20.68,
+                  "modeledWpm": 37.82
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 418749.96,
+                  "timeSavedPercent": 19.9,
+                  "modeledWpm": 37.45
+                }
+              ]
+            }
+          }
+        },
+        "strict": {
+          "sameWordSuccessiveKeystrokes": 5,
+          "nearestPrimarySlotMoves": 4,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 108.06,
+              "p90TravelPx": 131.58,
+              "averagePointingMs": 221.34,
+              "averageReturnChangeMs": 17.98,
+              "averageMotorMs": 239.32,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518461.6,
+                  "timeSavedPercent": 0.83,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518611.6,
+                  "timeSavedPercent": 0.8,
+                  "modeledWpm": 30.24
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518371.6,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 73.95,
+              "p90TravelPx": 92.15,
+              "averagePointingMs": 210.21,
+              "averageReturnChangeMs": 14.76,
+              "averageMotorMs": 224.97,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 4,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518299.84,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518424.84,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518674.84,
+                  "timeSavedPercent": 0.79,
+                  "modeledWpm": 30.24
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518924.84,
+                  "timeSavedPercent": 0.74,
+                  "modeledWpm": 30.22
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518299.84,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518389.84,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518539.84,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518299.84,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518299.84,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518299.84,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 48.18,
+              "p90TravelPx": 48.89,
+              "averagePointingMs": 199.17,
+              "averageReturnChangeMs": 1.22,
+              "averageMotorMs": 200.39,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 5,
+              "primaryTargetsCoveringKeys": 2,
+              "primaryTargetsCoveringStrip": 5,
+              "maximumCoveredKeys": 4,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518176.95,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518301.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518551.95,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518801.95,
+                  "timeSavedPercent": 0.76,
+                  "modeledWpm": 30.23
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518176.95,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518266.95,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518416.95,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518176.95,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518176.95,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518176.95,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "phone-night",
+      "width": 390,
+      "height": 844,
+      "scale": 100,
+      "scheme": "dark",
+      "touch": true,
+      "geometry": {
+        "keyboard": {
+          "x": 0,
+          "y": 618,
+          "width": 390,
+          "height": 226
+        },
+        "keys": {
+          "q": {
+            "x": 4,
+            "y": 662,
+            "width": 38.1875,
+            "height": 44
+          },
+          "w": {
+            "x": 42.1875,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "e": {
+            "x": 80.390625,
+            "y": 662,
+            "width": 38.1875,
+            "height": 44
+          },
+          "r": {
+            "x": 118.578125,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "t": {
+            "x": 156.78125,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "y": {
+            "x": 194.984375,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "u": {
+            "x": 233.1875,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "i": {
+            "x": 271.390625,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "o": {
+            "x": 309.59375,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "p": {
+            "x": 347.796875,
+            "y": 662,
+            "width": 38.203125,
+            "height": 44
+          },
+          "a": {
+            "x": 4,
+            "y": 706,
+            "width": 57.296875,
+            "height": 44
+          },
+          "s": {
+            "x": 61.296875,
+            "y": 706,
+            "width": 38.1875,
+            "height": 44
+          },
+          "d": {
+            "x": 99.484375,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "f": {
+            "x": 137.6875,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "g": {
+            "x": 175.890625,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "h": {
+            "x": 214.09375,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "j": {
+            "x": 252.296875,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "k": {
+            "x": 290.5,
+            "y": 706,
+            "width": 38.203125,
+            "height": 44
+          },
+          "l": {
+            "x": 328.703125,
+            "y": 706,
+            "width": 57.296875,
+            "height": 44
+          },
+          "Shift": {
+            "x": 4,
+            "y": 750,
+            "width": 57.296875,
+            "height": 44
+          },
+          "z": {
+            "x": 61.296875,
+            "y": 750,
+            "width": 38.1875,
+            "height": 44
+          },
+          "x": {
+            "x": 99.484375,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "c": {
+            "x": 137.6875,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "v": {
+            "x": 175.890625,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "b": {
+            "x": 214.09375,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "n": {
+            "x": 252.296875,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "m": {
+            "x": 290.5,
+            "y": 750,
+            "width": 38.203125,
+            "height": 44
+          },
+          "Delete": {
+            "x": 328.703125,
+            "y": 750,
+            "width": 57.296875,
+            "height": 44
+          },
+          "?123": {
+            "x": 4,
+            "y": 794,
+            "width": 46.203125,
+            "height": 44
+          },
+          ",": {
+            "x": 50.203125,
+            "y": 794,
+            "width": 30.8125,
+            "height": 44
+          },
+          "Maths symbols": {
+            "x": 81.015625,
+            "y": 794,
+            "width": 30.8125,
+            "height": 44
+          },
+          "Space": {
+            "x": 111.828125,
+            "y": 794,
+            "width": 104.734375,
+            "height": 44
+          },
+          "∀": {
+            "x": 216.5625,
+            "y": 794,
+            "width": 30.796875,
+            "height": 44
+          },
+          "∈": {
+            "x": 247.359375,
+            "y": 794,
+            "width": 30.8125,
+            "height": 44
+          },
+          "⇒": {
+            "x": 278.171875,
+            "y": 794,
+            "width": 30.8125,
+            "height": 44
+          },
+          ".": {
+            "x": 308.984375,
+            "y": 794,
+            "width": 30.8125,
+            "height": 44
+          },
+          "New line": {
+            "x": 339.796875,
+            "y": 794,
+            "width": 46.203125,
+            "height": 44
+          }
+        },
+        "slots": [
+          {
+            "x": 4,
+            "y": 618,
+            "width": 96.65625,
+            "height": 44
+          },
+          {
+            "x": 100.65625,
+            "y": 618,
+            "width": 96.671875,
+            "height": 44
+          },
+          {
+            "x": 197.328125,
+            "y": 618,
+            "width": 96.65625,
+            "height": 44
+          }
+        ],
+        "header": {
+          "x": 16,
+          "y": 0,
+          "width": 358,
+          "height": 52
+        },
+        "transcript": {
+          "x": 16,
+          "y": 55,
+          "width": 358,
+          "height": 446
+        },
+        "answer": {
+          "x": 13,
+          "y": 508,
+          "width": 364,
+          "height": 56
+        },
+        "theme": "graph-night",
+        "horizontalOverflow": 0,
+        "reducedMotion": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "travelPx": 51.57,
+          "modeledMs": 270,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 100.65625,
+              "y": 618,
+              "width": 96.671875,
+              "height": 44
+            }
+          ]
+        },
+        "differentWordThenUndo": {
+          "taps": 2,
+          "travelPx": 261.12,
+          "modeledMs": 561.35,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 4,
+              "y": 618,
+              "width": 96.65625,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 565,
+              "width": 300,
+              "height": 44
+            }
+          ]
+        },
+        "wordFromMore": {
+          "taps": 2,
+          "travelPx": 502.07,
+          "modeledMs": 698.43,
+          "boxes": [
+            {
+              "x": 156.78125,
+              "y": 662,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 325,
+              "y": 565,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 31,
+              "y": 414,
+              "width": 101.140625,
+              "height": 44
+            }
+          ]
+        },
+        "spelling": {
+          "taps": 1,
+          "travelPx": 154.11,
+          "modeledMs": 339.68,
+          "boxes": [
+            {
+              "x": 214.09375,
+              "y": 706,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 565,
+              "width": 300,
+              "height": 44
+            }
+          ]
+        },
+        "keepTyped": {
+          "taps": 2,
+          "travelPx": 363.69,
+          "modeledMs": 656.51,
+          "boxes": [
+            {
+              "x": 214.09375,
+              "y": 706,
+              "width": 38.203125,
+              "height": 44
+            },
+            {
+              "x": 325,
+              "y": 565,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 27,
+              "y": 464,
+              "width": 336,
+              "height": 44
+            }
+          ]
+        },
+        "notation": {
+          "taps": 1,
+          "travelPx": 167.6,
+          "modeledMs": 339.68,
+          "boxes": [
+            {
+              "x": 61.296875,
+              "y": 706,
+              "width": 38.1875,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 565,
+              "width": 300,
+              "height": 44
+            }
+          ]
+        },
+        "continuation": {
+          "taps": 1,
+          "travelPx": 120.51,
+          "modeledMs": 314.21,
+          "boxes": [
+            {
+              "x": 80.390625,
+              "y": 662,
+              "width": 38.1875,
+              "height": 44
+            },
+            {
+              "x": 21,
+              "y": 565,
+              "width": 300,
+              "height": 44
+            }
+          ]
+        }
+      },
+      "modes": {
+        "balanced": {
+          "sameWordSuccessiveKeystrokes": 73,
+          "nearestPrimarySlotMoves": 45,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 131.11,
+              "p90TravelPx": 208.54,
+              "averagePointingMs": 220.88,
+              "averageReturnChangeMs": 2.48,
+              "averageMotorMs": 223.36,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470913.23,
+                  "timeSavedPercent": 9.92,
+                  "modeledWpm": 33.31
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478938.23,
+                  "timeSavedPercent": 8.39,
+                  "modeledWpm": 32.75
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 466098.23,
+                  "timeSavedPercent": 10.85,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467452.25,
+                  "timeSavedPercent": 10.59,
+                  "modeledWpm": 33.55
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469483.28,
+                  "timeSavedPercent": 10.2,
+                  "modeledWpm": 33.41
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 96.65,
+              "p90TravelPx": 193.33,
+              "averagePointingMs": 214.82,
+              "averageReturnChangeMs": 8.7,
+              "averageMotorMs": 223.52,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 41,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 466108.37,
+                  "timeSavedPercent": 10.84,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 467658.37,
+                  "timeSavedPercent": 10.55,
+                  "modeledWpm": 33.54
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 470758.37,
+                  "timeSavedPercent": 9.95,
+                  "modeledWpm": 33.32
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 473858.37,
+                  "timeSavedPercent": 9.36,
+                  "modeledWpm": 33.1
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 466108.37,
+                  "timeSavedPercent": 10.84,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470923.37,
+                  "timeSavedPercent": 9.92,
+                  "modeledWpm": 33.3
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478948.37,
+                  "timeSavedPercent": 8.39,
+                  "modeledWpm": 32.75
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 466108.37,
+                  "timeSavedPercent": 10.84,
+                  "modeledWpm": 33.65
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467460.45,
+                  "timeSavedPercent": 10.59,
+                  "modeledWpm": 33.55
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469488.58,
+                  "timeSavedPercent": 10.2,
+                  "modeledWpm": 33.41
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 66.12,
+              "p90TravelPx": 193.94,
+              "averagePointingMs": 202.59,
+              "averageReturnChangeMs": 6.79,
+              "averageMotorMs": 209.37,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 54,
+              "primaryTargetsCoveringKeys": 18,
+              "primaryTargetsCoveringStrip": 47,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465231.21,
+                  "timeSavedPercent": 11.01,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466781.21,
+                  "timeSavedPercent": 10.72,
+                  "modeledWpm": 33.6
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 469881.21,
+                  "timeSavedPercent": 10.12,
+                  "modeledWpm": 33.38
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 472981.21,
+                  "timeSavedPercent": 9.53,
+                  "modeledWpm": 33.16
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465231.21,
+                  "timeSavedPercent": 11.01,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470046.21,
+                  "timeSavedPercent": 10.09,
+                  "modeledWpm": 33.37
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478071.21,
+                  "timeSavedPercent": 8.56,
+                  "modeledWpm": 32.81
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465231.21,
+                  "timeSavedPercent": 11.01,
+                  "modeledWpm": 33.71
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 466595.94,
+                  "timeSavedPercent": 10.75,
+                  "modeledWpm": 33.61
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 468643.02,
+                  "timeSavedPercent": 10.36,
+                  "modeledWpm": 33.47
+                }
+              ]
+            }
+          }
+        },
+        "fast": {
+          "sameWordSuccessiveKeystrokes": 140,
+          "nearestPrimarySlotMoves": 93,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 137.94,
+              "p90TravelPx": 222.3,
+              "averagePointingMs": 228.17,
+              "averageReturnChangeMs": 4.73,
+              "averageMotorMs": 232.9,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 421142.81,
+                  "timeSavedPercent": 19.44,
+                  "modeledWpm": 37.24
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 434042.81,
+                  "timeSavedPercent": 16.98,
+                  "modeledWpm": 36.13
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413402.81,
+                  "timeSavedPercent": 20.93,
+                  "modeledWpm": 37.94
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 416075.27,
+                  "timeSavedPercent": 20.41,
+                  "modeledWpm": 37.7
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 420083.98,
+                  "timeSavedPercent": 19.65,
+                  "modeledWpm": 37.34
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 125.07,
+              "p90TravelPx": 208.54,
+              "averagePointingMs": 226.11,
+              "averageReturnChangeMs": 6.01,
+              "averageMotorMs": 232.11,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 37,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413333,
+                  "timeSavedPercent": 20.94,
+                  "modeledWpm": 37.95
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 415558,
+                  "timeSavedPercent": 20.51,
+                  "modeledWpm": 37.74
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 420008,
+                  "timeSavedPercent": 19.66,
+                  "modeledWpm": 37.34
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 424458,
+                  "timeSavedPercent": 18.81,
+                  "modeledWpm": 36.95
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413333,
+                  "timeSavedPercent": 20.94,
+                  "modeledWpm": 37.95
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 421073,
+                  "timeSavedPercent": 19.46,
+                  "modeledWpm": 37.25
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 433973,
+                  "timeSavedPercent": 16.99,
+                  "modeledWpm": 36.14
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413333,
+                  "timeSavedPercent": 20.94,
+                  "modeledWpm": 37.95
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 416004.34,
+                  "timeSavedPercent": 20.43,
+                  "modeledWpm": 37.7
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 420011.34,
+                  "timeSavedPercent": 19.66,
+                  "modeledWpm": 37.34
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 99.71,
+              "p90TravelPx": 223.91,
+              "averagePointingMs": 212.58,
+              "averageReturnChangeMs": 3.23,
+              "averageMotorMs": 215.81,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 52,
+              "primaryTargetsCoveringKeys": 25,
+              "primaryTargetsCoveringStrip": 38,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 411881.85,
+                  "timeSavedPercent": 21.22,
+                  "modeledWpm": 38.08
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 414106.85,
+                  "timeSavedPercent": 20.79,
+                  "modeledWpm": 37.87
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 418556.85,
+                  "timeSavedPercent": 19.94,
+                  "modeledWpm": 37.47
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 423006.85,
+                  "timeSavedPercent": 19.09,
+                  "modeledWpm": 37.08
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 411881.85,
+                  "timeSavedPercent": 21.22,
+                  "modeledWpm": 38.08
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 419621.85,
+                  "timeSavedPercent": 19.74,
+                  "modeledWpm": 37.38
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 432521.85,
+                  "timeSavedPercent": 17.27,
+                  "modeledWpm": 36.26
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 411881.85,
+                  "timeSavedPercent": 21.22,
+                  "modeledWpm": 38.08
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 414572.91,
+                  "timeSavedPercent": 20.7,
+                  "modeledWpm": 37.83
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 418609.49,
+                  "timeSavedPercent": 19.93,
+                  "modeledWpm": 37.47
+                }
+              ]
+            }
+          }
+        },
+        "strict": {
+          "sameWordSuccessiveKeystrokes": 5,
+          "nearestPrimarySlotMoves": 4,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 121.55,
+              "p90TravelPx": 148.18,
+              "averagePointingMs": 218.03,
+              "averageReturnChangeMs": 15.59,
+              "averageMotorMs": 233.62,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518433.11,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518583.11,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.24
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518343.11,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 75.92,
+              "p90TravelPx": 99.3,
+              "averagePointingMs": 210.21,
+              "averageReturnChangeMs": 16.02,
+              "averageMotorMs": 226.23,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 4,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518306.17,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518431.17,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518681.17,
+                  "timeSavedPercent": 0.79,
+                  "modeledWpm": 30.24
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518931.17,
+                  "timeSavedPercent": 0.74,
+                  "modeledWpm": 30.22
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518306.17,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518396.17,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518546.17,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518306.17,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518306.17,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518306.17,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 48.5,
+              "p90TravelPx": 50.5,
+              "averagePointingMs": 199.17,
+              "averageReturnChangeMs": 0.79,
+              "averageMotorMs": 199.95,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 5,
+              "primaryTargetsCoveringKeys": 2,
+              "primaryTargetsCoveringStrip": 5,
+              "maximumCoveredKeys": 4,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518174.77,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518299.77,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518549.77,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518799.77,
+                  "timeSavedPercent": 0.77,
+                  "modeledWpm": 30.23
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518174.77,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518264.77,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518414.77,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518174.77,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518174.77,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518174.77,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "landscape-day",
+      "width": 844,
+      "height": 390,
+      "scale": 100,
+      "scheme": "light",
+      "touch": true,
+      "geometry": {
+        "keyboard": {
+          "x": 362.96875,
+          "y": 184,
+          "width": 419.03125,
+          "height": 206
+        },
+        "keys": {
+          "q": {
+            "x": 366.96875,
+            "y": 228,
+            "width": 41.09375,
+            "height": 39
+          },
+          "w": {
+            "x": 408.0625,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "e": {
+            "x": 449.171875,
+            "y": 228,
+            "width": 41.09375,
+            "height": 39
+          },
+          "r": {
+            "x": 490.265625,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "t": {
+            "x": 531.375,
+            "y": 228,
+            "width": 41.09375,
+            "height": 39
+          },
+          "y": {
+            "x": 572.46875,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "u": {
+            "x": 613.578125,
+            "y": 228,
+            "width": 41.09375,
+            "height": 39
+          },
+          "i": {
+            "x": 654.671875,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "o": {
+            "x": 695.78125,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "p": {
+            "x": 736.890625,
+            "y": 228,
+            "width": 41.109375,
+            "height": 39
+          },
+          "a": {
+            "x": 366.96875,
+            "y": 267,
+            "width": 61.65625,
+            "height": 39
+          },
+          "s": {
+            "x": 428.625,
+            "y": 267,
+            "width": 41.09375,
+            "height": 39
+          },
+          "d": {
+            "x": 469.71875,
+            "y": 267,
+            "width": 41.109375,
+            "height": 39
+          },
+          "f": {
+            "x": 510.828125,
+            "y": 267,
+            "width": 41.09375,
+            "height": 39
+          },
+          "g": {
+            "x": 551.921875,
+            "y": 267,
+            "width": 41.109375,
+            "height": 39
+          },
+          "h": {
+            "x": 593.03125,
+            "y": 267,
+            "width": 41.09375,
+            "height": 39
+          },
+          "j": {
+            "x": 634.125,
+            "y": 267,
+            "width": 41.109375,
+            "height": 39
+          },
+          "k": {
+            "x": 675.234375,
+            "y": 267,
+            "width": 41.109375,
+            "height": 39
+          },
+          "l": {
+            "x": 716.34375,
+            "y": 267,
+            "width": 61.65625,
+            "height": 39
+          },
+          "Shift": {
+            "x": 366.96875,
+            "y": 306,
+            "width": 61.65625,
+            "height": 39
+          },
+          "z": {
+            "x": 428.625,
+            "y": 306,
+            "width": 41.09375,
+            "height": 39
+          },
+          "x": {
+            "x": 469.71875,
+            "y": 306,
+            "width": 41.109375,
+            "height": 39
+          },
+          "c": {
+            "x": 510.828125,
+            "y": 306,
+            "width": 41.09375,
+            "height": 39
+          },
+          "v": {
+            "x": 551.921875,
+            "y": 306,
+            "width": 41.109375,
+            "height": 39
+          },
+          "b": {
+            "x": 593.03125,
+            "y": 306,
+            "width": 41.09375,
+            "height": 39
+          },
+          "n": {
+            "x": 634.125,
+            "y": 306,
+            "width": 41.109375,
+            "height": 39
+          },
+          "m": {
+            "x": 675.234375,
+            "y": 306,
+            "width": 41.109375,
+            "height": 39
+          },
+          "Delete": {
+            "x": 716.34375,
+            "y": 306,
+            "width": 61.65625,
+            "height": 39
+          },
+          "?123": {
+            "x": 366.96875,
+            "y": 345,
+            "width": 49.71875,
+            "height": 39
+          },
+          ",": {
+            "x": 416.6875,
+            "y": 345,
+            "width": 33.15625,
+            "height": 39
+          },
+          "Maths symbols": {
+            "x": 449.84375,
+            "y": 345,
+            "width": 33.140625,
+            "height": 39
+          },
+          "Space": {
+            "x": 482.984375,
+            "y": 345,
+            "width": 112.703125,
+            "height": 39
+          },
+          "∀": {
+            "x": 595.6875,
+            "y": 345,
+            "width": 33.140625,
+            "height": 39
+          },
+          "∈": {
+            "x": 628.828125,
+            "y": 345,
+            "width": 33.15625,
+            "height": 39
+          },
+          "⇒": {
+            "x": 661.984375,
+            "y": 345,
+            "width": 33.15625,
+            "height": 39
+          },
+          ".": {
+            "x": 695.140625,
+            "y": 345,
+            "width": 33.140625,
+            "height": 39
+          },
+          "New line": {
+            "x": 728.28125,
+            "y": 345,
+            "width": 49.71875,
+            "height": 39
+          }
+        },
+        "slots": [
+          {
+            "x": 366.96875,
+            "y": 184,
+            "width": 106.34375,
+            "height": 44
+          },
+          {
+            "x": 473.3125,
+            "y": 184,
+            "width": 106.34375,
+            "height": 44
+          },
+          {
+            "x": 579.65625,
+            "y": 184,
+            "width": 106.34375,
+            "height": 44
+          }
+        ],
+        "header": {
+          "x": 62,
+          "y": 0,
+          "width": 720,
+          "height": 52
+        },
+        "transcript": {
+          "x": 62,
+          "y": 55,
+          "width": 288.96875,
+          "height": 335
+        },
+        "answer": {
+          "x": 363.96875,
+          "y": 82,
+          "width": 417.03125,
+          "height": 56
+        },
+        "theme": "graph",
+        "horizontalOverflow": 0,
+        "reducedMotion": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "travelPx": 48.68,
+          "modeledMs": 267.3,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 473.3125,
+              "y": 184,
+              "width": 106.34375,
+              "height": 44
+            }
+          ]
+        },
+        "differentWordThenUndo": {
+          "taps": 2,
+          "travelPx": 275.54,
+          "modeledMs": 566.16,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 366.96875,
+              "y": 184,
+              "width": 106.34375,
+              "height": 44
+            },
+            {
+              "x": 371.96875,
+              "y": 139,
+              "width": 353.03125,
+              "height": 36
+            }
+          ]
+        },
+        "wordFromMore": {
+          "taps": 2,
+          "travelPx": 437.22,
+          "modeledMs": 677.87,
+          "boxes": [
+            {
+              "x": 531.375,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 729,
+              "y": 139,
+              "width": 44,
+              "height": 36
+            },
+            {
+              "x": 483,
+              "y": 113,
+              "width": 101.140625,
+              "height": 44
+            }
+          ]
+        },
+        "spelling": {
+          "taps": 1,
+          "travelPx": 144.94,
+          "modeledMs": 348.05,
+          "boxes": [
+            {
+              "x": 593.03125,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 371.96875,
+              "y": 139,
+              "width": 353.03125,
+              "height": 36
+            }
+          ]
+        },
+        "keepTyped": {
+          "taps": 2,
+          "travelPx": 291.71,
+          "modeledMs": 599.23,
+          "boxes": [
+            {
+              "x": 593.03125,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 729,
+              "y": 139,
+              "width": 44,
+              "height": 36
+            },
+            {
+              "x": 479,
+              "y": 163,
+              "width": 346,
+              "height": 44
+            }
+          ]
+        },
+        "notation": {
+          "taps": 1,
+          "travelPx": 163.2,
+          "modeledMs": 348.05,
+          "boxes": [
+            {
+              "x": 428.625,
+              "y": 267,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 371.96875,
+              "y": 139,
+              "width": 353.03125,
+              "height": 36
+            }
+          ]
+        },
+        "continuation": {
+          "taps": 1,
+          "travelPx": 119.98,
+          "modeledMs": 322.85,
+          "boxes": [
+            {
+              "x": 449.171875,
+              "y": 228,
+              "width": 41.09375,
+              "height": 39
+            },
+            {
+              "x": 371.96875,
+              "y": 139,
+              "width": 353.03125,
+              "height": 36
+            }
+          ]
+        }
+      },
+      "modes": {
+        "balanced": {
+          "sameWordSuccessiveKeystrokes": 73,
+          "nearestPrimarySlotMoves": 45,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 132.59,
+              "p90TravelPx": 198.32,
+              "averagePointingMs": 217.17,
+              "averageReturnChangeMs": 2.81,
+              "averageMotorMs": 219.98,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470704.06,
+                  "timeSavedPercent": 9.96,
+                  "modeledWpm": 33.32
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478729.06,
+                  "timeSavedPercent": 8.43,
+                  "modeledWpm": 32.76
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465889.06,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467250.65,
+                  "timeSavedPercent": 10.63,
+                  "modeledWpm": 33.57
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469293.04,
+                  "timeSavedPercent": 10.23,
+                  "modeledWpm": 33.42
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 93.19,
+              "p90TravelPx": 184.02,
+              "averagePointingMs": 210.93,
+              "averageReturnChangeMs": 8.99,
+              "averageMotorMs": 219.93,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 41,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465885.43,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 467435.43,
+                  "timeSavedPercent": 10.59,
+                  "modeledWpm": 33.55
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 470535.43,
+                  "timeSavedPercent": 10,
+                  "modeledWpm": 33.33
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 473635.43,
+                  "timeSavedPercent": 9.4,
+                  "modeledWpm": 33.11
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465885.43,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470700.43,
+                  "timeSavedPercent": 9.97,
+                  "modeledWpm": 33.32
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478725.43,
+                  "timeSavedPercent": 8.43,
+                  "modeledWpm": 32.76
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465885.43,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.66
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467245.14,
+                  "timeSavedPercent": 10.63,
+                  "modeledWpm": 33.57
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469284.71,
+                  "timeSavedPercent": 10.24,
+                  "modeledWpm": 33.42
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 64.46,
+              "p90TravelPx": 184.02,
+              "averagePointingMs": 199.83,
+              "averageReturnChangeMs": 7.11,
+              "averageMotorMs": 206.94,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 54,
+              "primaryTargetsCoveringKeys": 18,
+              "primaryTargetsCoveringStrip": 47,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465080.43,
+                  "timeSavedPercent": 11.04,
+                  "modeledWpm": 33.72
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466630.43,
+                  "timeSavedPercent": 10.74,
+                  "modeledWpm": 33.61
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 469730.43,
+                  "timeSavedPercent": 10.15,
+                  "modeledWpm": 33.39
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 472830.43,
+                  "timeSavedPercent": 9.56,
+                  "modeledWpm": 33.17
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465080.43,
+                  "timeSavedPercent": 11.04,
+                  "modeledWpm": 33.72
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 469895.43,
+                  "timeSavedPercent": 10.12,
+                  "modeledWpm": 33.38
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 477920.43,
+                  "timeSavedPercent": 8.58,
+                  "modeledWpm": 32.82
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465080.43,
+                  "timeSavedPercent": 11.04,
+                  "modeledWpm": 33.72
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 466451.98,
+                  "timeSavedPercent": 10.78,
+                  "modeledWpm": 33.62
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 468509.31,
+                  "timeSavedPercent": 10.38,
+                  "modeledWpm": 33.48
+                }
+              ]
+            }
+          }
+        },
+        "fast": {
+          "sameWordSuccessiveKeystrokes": 140,
+          "nearestPrimarySlotMoves": 93,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 139.28,
+              "p90TravelPx": 227.37,
+              "averagePointingMs": 224.1,
+              "averageReturnChangeMs": 5.04,
+              "averageMotorMs": 229.13,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 420807.9,
+                  "timeSavedPercent": 19.51,
+                  "modeledWpm": 37.27
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 433707.9,
+                  "timeSavedPercent": 17.04,
+                  "modeledWpm": 36.16
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413067.9,
+                  "timeSavedPercent": 20.99,
+                  "modeledWpm": 37.97
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 415752.66,
+                  "timeSavedPercent": 20.48,
+                  "modeledWpm": 37.72
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 419779.79,
+                  "timeSavedPercent": 19.71,
+                  "modeledWpm": 37.36
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 124.41,
+              "p90TravelPx": 217.97,
+              "averagePointingMs": 221.99,
+              "averageReturnChangeMs": 6.32,
+              "averageMotorMs": 228.31,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 37,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 412994.55,
+                  "timeSavedPercent": 21,
+                  "modeledWpm": 37.98
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 415219.55,
+                  "timeSavedPercent": 20.58,
+                  "modeledWpm": 37.77
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 419669.55,
+                  "timeSavedPercent": 19.73,
+                  "modeledWpm": 37.37
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 424119.55,
+                  "timeSavedPercent": 18.88,
+                  "modeledWpm": 36.98
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 412994.55,
+                  "timeSavedPercent": 21,
+                  "modeledWpm": 37.98
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 420734.55,
+                  "timeSavedPercent": 19.52,
+                  "modeledWpm": 37.28
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 433634.55,
+                  "timeSavedPercent": 17.06,
+                  "modeledWpm": 36.17
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 412994.55,
+                  "timeSavedPercent": 21,
+                  "modeledWpm": 37.98
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 415678.22,
+                  "timeSavedPercent": 20.49,
+                  "modeledWpm": 37.73
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 419703.71,
+                  "timeSavedPercent": 19.72,
+                  "modeledWpm": 37.37
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 100.9,
+              "p90TravelPx": 227.37,
+              "averagePointingMs": 209.56,
+              "averageReturnChangeMs": 3.69,
+              "averageMotorMs": 213.25,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 52,
+              "primaryTargetsCoveringKeys": 25,
+              "primaryTargetsCoveringStrip": 38,
+              "maximumCoveredKeys": 7,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 411654.56,
+                  "timeSavedPercent": 21.26,
+                  "modeledWpm": 38.1
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 413879.56,
+                  "timeSavedPercent": 20.83,
+                  "modeledWpm": 37.9
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 418329.56,
+                  "timeSavedPercent": 19.98,
+                  "modeledWpm": 37.49
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 422779.56,
+                  "timeSavedPercent": 19.13,
+                  "modeledWpm": 37.1
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 411654.56,
+                  "timeSavedPercent": 21.26,
+                  "modeledWpm": 38.1
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 419394.56,
+                  "timeSavedPercent": 19.78,
+                  "modeledWpm": 37.4
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 432294.56,
+                  "timeSavedPercent": 17.31,
+                  "modeledWpm": 36.28
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 411654.56,
+                  "timeSavedPercent": 21.26,
+                  "modeledWpm": 38.1
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 414356.63,
+                  "timeSavedPercent": 20.74,
+                  "modeledWpm": 37.85
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 418409.72,
+                  "timeSavedPercent": 19.97,
+                  "modeledWpm": 37.48
+                }
+              ]
+            }
+          }
+        },
+        "strict": {
+          "sameWordSuccessiveKeystrokes": 5,
+          "nearestPrimarySlotMoves": 4,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 124.73,
+              "p90TravelPx": 154.42,
+              "averagePointingMs": 214.29,
+              "averageReturnChangeMs": 15.9,
+              "averageMotorMs": 230.19,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518415.95,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518565.95,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.24
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518325.95,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 71.91,
+              "p90TravelPx": 92.71,
+              "averagePointingMs": 206.39,
+              "averageReturnChangeMs": 15.61,
+              "averageMotorMs": 222,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 4,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518285,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518410,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518660,
+                  "timeSavedPercent": 0.79,
+                  "modeledWpm": 30.24
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518910,
+                  "timeSavedPercent": 0.74,
+                  "modeledWpm": 30.22
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518285,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518375,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518525,
+                  "timeSavedPercent": 0.82,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518285,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518285,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518285,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 46.21,
+              "p90TravelPx": 49.06,
+              "averagePointingMs": 196.58,
+              "averageReturnChangeMs": 2.68,
+              "averageMotorMs": 199.26,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 5,
+              "primaryTargetsCoveringKeys": 2,
+              "primaryTargetsCoveringStrip": 5,
+              "maximumCoveredKeys": 4,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518171.31,
+                  "timeSavedPercent": 0.89,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518296.31,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518546.31,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518796.31,
+                  "timeSavedPercent": 0.77,
+                  "modeledWpm": 30.23
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518171.31,
+                  "timeSavedPercent": 0.89,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518261.31,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518411.31,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518171.31,
+                  "timeSavedPercent": 0.89,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518171.31,
+                  "timeSavedPercent": 0.89,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518171.31,
+                  "timeSavedPercent": 0.89,
+                  "modeledWpm": 30.27
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "desktop-night",
+      "width": 1280,
+      "height": 800,
+      "scale": 100,
+      "scheme": "dark",
+      "touch": false,
+      "geometry": {
+        "keyboard": {
+          "x": 280,
+          "y": 558,
+          "width": 720,
+          "height": 242
+        },
+        "keys": {
+          "q": {
+            "x": 284,
+            "y": 602,
+            "width": 71.1875,
+            "height": 48
+          },
+          "w": {
+            "x": 355.1875,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "e": {
+            "x": 426.390625,
+            "y": 602,
+            "width": 71.1875,
+            "height": 48
+          },
+          "r": {
+            "x": 497.578125,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "t": {
+            "x": 568.78125,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "y": {
+            "x": 639.984375,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "u": {
+            "x": 711.1875,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "i": {
+            "x": 782.390625,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "o": {
+            "x": 853.59375,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "p": {
+            "x": 924.796875,
+            "y": 602,
+            "width": 71.203125,
+            "height": 48
+          },
+          "a": {
+            "x": 284,
+            "y": 650,
+            "width": 106.796875,
+            "height": 48
+          },
+          "s": {
+            "x": 390.796875,
+            "y": 650,
+            "width": 71.1875,
+            "height": 48
+          },
+          "d": {
+            "x": 461.984375,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "f": {
+            "x": 533.1875,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "g": {
+            "x": 604.390625,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "h": {
+            "x": 675.59375,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "j": {
+            "x": 746.796875,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "k": {
+            "x": 818,
+            "y": 650,
+            "width": 71.203125,
+            "height": 48
+          },
+          "l": {
+            "x": 889.203125,
+            "y": 650,
+            "width": 106.796875,
+            "height": 48
+          },
+          "Shift": {
+            "x": 284,
+            "y": 698,
+            "width": 106.796875,
+            "height": 48
+          },
+          "z": {
+            "x": 390.796875,
+            "y": 698,
+            "width": 71.1875,
+            "height": 48
+          },
+          "x": {
+            "x": 461.984375,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "c": {
+            "x": 533.1875,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "v": {
+            "x": 604.390625,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "b": {
+            "x": 675.59375,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "n": {
+            "x": 746.796875,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "m": {
+            "x": 818,
+            "y": 698,
+            "width": 71.203125,
+            "height": 48
+          },
+          "Delete": {
+            "x": 889.203125,
+            "y": 698,
+            "width": 106.796875,
+            "height": 48
+          },
+          "?123": {
+            "x": 284,
+            "y": 746,
+            "width": 86.125,
+            "height": 48
+          },
+          ",": {
+            "x": 370.125,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          "Maths symbols": {
+            "x": 427.546875,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          "Space": {
+            "x": 484.96875,
+            "y": 746,
+            "width": 195.21875,
+            "height": 48
+          },
+          "∀": {
+            "x": 680.1875,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          "∈": {
+            "x": 737.609375,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          "⇒": {
+            "x": 795.03125,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          ".": {
+            "x": 852.453125,
+            "y": 746,
+            "width": 57.421875,
+            "height": 48
+          },
+          "New line": {
+            "x": 909.875,
+            "y": 746,
+            "width": 86.125,
+            "height": 48
+          }
+        },
+        "slots": [
+          {
+            "x": 284,
+            "y": 558,
+            "width": 206.65625,
+            "height": 44
+          },
+          {
+            "x": 490.65625,
+            "y": 558,
+            "width": 206.671875,
+            "height": 44
+          },
+          {
+            "x": 697.328125,
+            "y": 558,
+            "width": 206.671875,
+            "height": 44
+          }
+        ],
+        "header": {
+          "x": 280,
+          "y": 0,
+          "width": 720,
+          "height": 52
+        },
+        "transcript": {
+          "x": 280,
+          "y": 55,
+          "width": 720,
+          "height": 386
+        },
+        "answer": {
+          "x": 281,
+          "y": 448,
+          "width": 718,
+          "height": 56
+        },
+        "theme": "graph-night",
+        "horizontalOverflow": 0,
+        "reducedMotion": true
+      },
+      "paths": {
+        "word": {
+          "taps": 1,
+          "travelPx": 47.16,
+          "modeledMs": 272.11,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 490.65625,
+              "y": 558,
+              "width": 206.671875,
+              "height": 44
+            }
+          ]
+        },
+        "differentWordThenUndo": {
+          "taps": 2,
+          "travelPx": 456.61,
+          "modeledMs": 551.46,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 284,
+              "y": 558,
+              "width": 206.65625,
+              "height": 44
+            },
+            {
+              "x": 289,
+              "y": 505,
+              "width": 654,
+              "height": 44
+            }
+          ]
+        },
+        "wordFromMore": {
+          "taps": 2,
+          "travelPx": 1015.39,
+          "modeledMs": 803.12,
+          "boxes": [
+            {
+              "x": 568.78125,
+              "y": 602,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 947,
+              "y": 505,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 299,
+              "y": 354,
+              "width": 101.140625,
+              "height": 44
+            }
+          ]
+        },
+        "spelling": {
+          "taps": 1,
+          "travelPx": 175.13,
+          "modeledMs": 342.67,
+          "boxes": [
+            {
+              "x": 675.59375,
+              "y": 650,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 289,
+              "y": 505,
+              "width": 654,
+              "height": 44
+            }
+          ]
+        },
+        "keepTyped": {
+          "taps": 2,
+          "travelPx": 640.92,
+          "modeledMs": 702.4,
+          "boxes": [
+            {
+              "x": 675.59375,
+              "y": 650,
+              "width": 71.203125,
+              "height": 48
+            },
+            {
+              "x": 947,
+              "y": 505,
+              "width": 44,
+              "height": 44
+            },
+            {
+              "x": 295,
+              "y": 404,
+              "width": 690,
+              "height": 44
+            }
+          ]
+        },
+        "notation": {
+          "taps": 1,
+          "travelPx": 239.92,
+          "modeledMs": 342.67,
+          "boxes": [
+            {
+              "x": 390.796875,
+              "y": 650,
+              "width": 71.1875,
+              "height": 48
+            },
+            {
+              "x": 289,
+              "y": 505,
+              "width": 654,
+              "height": 44
+            }
+          ]
+        },
+        "continuation": {
+          "taps": 1,
+          "travelPx": 183.09,
+          "modeledMs": 315.53,
+          "boxes": [
+            {
+              "x": 426.390625,
+              "y": 602,
+              "width": 71.1875,
+              "height": 48
+            },
+            {
+              "x": 289,
+              "y": 505,
+              "width": 654,
+              "height": 44
+            }
+          ]
+        }
+      },
+      "modes": {
+        "balanced": {
+          "sameWordSuccessiveKeystrokes": 73,
+          "nearestPrimarySlotMoves": 45,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 202.13,
+              "p90TravelPx": 298.77,
+              "averagePointingMs": 218.84,
+              "averageReturnChangeMs": 0.56,
+              "averageMotorMs": 219.4,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470667.88,
+                  "timeSavedPercent": 9.97,
+                  "modeledWpm": 33.32
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478692.88,
+                  "timeSavedPercent": 8.44,
+                  "modeledWpm": 32.76
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465852.88,
+                  "timeSavedPercent": 10.89,
+                  "modeledWpm": 33.67
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467200.47,
+                  "timeSavedPercent": 10.63,
+                  "modeledWpm": 33.57
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469221.86,
+                  "timeSavedPercent": 10.25,
+                  "modeledWpm": 33.43
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 122.45,
+              "p90TravelPx": 272.44,
+              "averagePointingMs": 217.21,
+              "averageReturnChangeMs": 9.13,
+              "averageMotorMs": 226.34,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 41,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 466282.85,
+                  "timeSavedPercent": 10.81,
+                  "modeledWpm": 33.64
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 467832.85,
+                  "timeSavedPercent": 10.51,
+                  "modeledWpm": 33.52
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 470932.85,
+                  "timeSavedPercent": 9.92,
+                  "modeledWpm": 33.3
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 474032.85,
+                  "timeSavedPercent": 9.33,
+                  "modeledWpm": 33.09
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 466282.85,
+                  "timeSavedPercent": 10.81,
+                  "modeledWpm": 33.64
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 471097.85,
+                  "timeSavedPercent": 9.89,
+                  "modeledWpm": 33.29
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 479122.85,
+                  "timeSavedPercent": 8.35,
+                  "modeledWpm": 32.73
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 466282.85,
+                  "timeSavedPercent": 10.81,
+                  "modeledWpm": 33.64
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 467623.45,
+                  "timeSavedPercent": 10.55,
+                  "modeledWpm": 33.54
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 469634.34,
+                  "timeSavedPercent": 10.17,
+                  "modeledWpm": 33.4
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 84.46,
+              "p90TravelPx": 272.44,
+              "averagePointingMs": 204.42,
+              "averageReturnChangeMs": 7.67,
+              "averageMotorMs": 212.09,
+              "accepts": 62,
+              "acceptsWithAlternative": 46,
+              "ignoredLists": 321,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 54,
+              "primaryTargetsCoveringKeys": 18,
+              "primaryTargetsCoveringStrip": 31,
+              "maximumCoveredKeys": 3,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 465399.47,
+                  "timeSavedPercent": 10.98,
+                  "modeledWpm": 33.7
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 466949.47,
+                  "timeSavedPercent": 10.68,
+                  "modeledWpm": 33.59
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 470049.47,
+                  "timeSavedPercent": 10.09,
+                  "modeledWpm": 33.37
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 473149.47,
+                  "timeSavedPercent": 9.5,
+                  "modeledWpm": 33.15
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 465399.47,
+                  "timeSavedPercent": 10.98,
+                  "modeledWpm": 33.7
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 470214.47,
+                  "timeSavedPercent": 10.06,
+                  "modeledWpm": 33.35
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 478239.47,
+                  "timeSavedPercent": 8.52,
+                  "modeledWpm": 32.8
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 465399.47,
+                  "timeSavedPercent": 10.98,
+                  "modeledWpm": 33.7
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 466752.53,
+                  "timeSavedPercent": 10.72,
+                  "modeledWpm": 33.6
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 468782.11,
+                  "timeSavedPercent": 10.33,
+                  "modeledWpm": 33.46
+                }
+              ]
+            }
+          }
+        },
+        "fast": {
+          "sameWordSuccessiveKeystrokes": 140,
+          "nearestPrimarySlotMoves": 93,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 217.12,
+              "p90TravelPx": 369.28,
+              "averagePointingMs": 228.26,
+              "averageReturnChangeMs": 2.59,
+              "averageMotorMs": 230.85,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 420960.69,
+                  "timeSavedPercent": 19.48,
+                  "modeledWpm": 37.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 433860.69,
+                  "timeSavedPercent": 17.01,
+                  "modeledWpm": 36.15
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413220.69,
+                  "timeSavedPercent": 20.96,
+                  "modeledWpm": 37.96
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 415880.79,
+                  "timeSavedPercent": 20.45,
+                  "modeledWpm": 37.71
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 419870.94,
+                  "timeSavedPercent": 19.69,
+                  "modeledWpm": 37.35
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 186.26,
+              "p90TravelPx": 385.9,
+              "averagePointingMs": 228,
+              "averageReturnChangeMs": 5.45,
+              "averageMotorMs": 233.45,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 37,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 413452.24,
+                  "timeSavedPercent": 20.92,
+                  "modeledWpm": 37.93
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 415677.24,
+                  "timeSavedPercent": 20.49,
+                  "modeledWpm": 37.73
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 420127.24,
+                  "timeSavedPercent": 19.64,
+                  "modeledWpm": 37.33
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 424577.24,
+                  "timeSavedPercent": 18.79,
+                  "modeledWpm": 36.94
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 413452.24,
+                  "timeSavedPercent": 20.92,
+                  "modeledWpm": 37.93
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 421192.24,
+                  "timeSavedPercent": 19.44,
+                  "modeledWpm": 37.24
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 434092.24,
+                  "timeSavedPercent": 16.97,
+                  "modeledWpm": 36.13
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 413452.24,
+                  "timeSavedPercent": 20.92,
+                  "modeledWpm": 37.93
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 416107.1,
+                  "timeSavedPercent": 20.41,
+                  "modeledWpm": 37.69
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 420089.4,
+                  "timeSavedPercent": 19.65,
+                  "modeledWpm": 37.33
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 152.34,
+              "p90TravelPx": 385.9,
+              "averagePointingMs": 214.52,
+              "averageReturnChangeMs": 2.77,
+              "averageMotorMs": 217.3,
+              "accepts": 89,
+              "acceptsWithAlternative": 72,
+              "ignoredLists": 516,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 52,
+              "primaryTargetsCoveringKeys": 25,
+              "primaryTargetsCoveringStrip": 24,
+              "maximumCoveredKeys": 3,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 412014.52,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 414239.52,
+                  "timeSavedPercent": 20.77,
+                  "modeledWpm": 37.86
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 418689.52,
+                  "timeSavedPercent": 19.91,
+                  "modeledWpm": 37.46
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 423139.52,
+                  "timeSavedPercent": 19.06,
+                  "modeledWpm": 37.07
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 412014.52,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 419754.52,
+                  "timeSavedPercent": 19.71,
+                  "modeledWpm": 37.36
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 432654.52,
+                  "timeSavedPercent": 17.24,
+                  "modeledWpm": 36.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 412014.52,
+                  "timeSavedPercent": 21.19,
+                  "modeledWpm": 38.07
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 414689.09,
+                  "timeSavedPercent": 20.68,
+                  "modeledWpm": 37.82
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 418700.94,
+                  "timeSavedPercent": 19.91,
+                  "modeledWpm": 37.46
+                }
+              ]
+            }
+          }
+        },
+        "strict": {
+          "sameWordSuccessiveKeystrokes": 5,
+          "nearestPrimarySlotMoves": 4,
+          "placement": {
+            "fixed": {
+              "averageTravelPx": 195.01,
+              "p90TravelPx": 273.27,
+              "averagePointingMs": 213.84,
+              "averageReturnChangeMs": 11.44,
+              "averageMotorMs": 225.28,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518391.4,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518541.4,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518301.4,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "nearest-slot": {
+              "averageTravelPx": 79.42,
+              "p90TravelPx": 106.44,
+              "averagePointingMs": 213.14,
+              "averageReturnChangeMs": 7.35,
+              "averageMotorMs": 220.49,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 4,
+              "floatingPrimaryTargets": 0,
+              "primaryTargetsCoveringKeys": 0,
+              "primaryTargetsCoveringStrip": 0,
+              "maximumCoveredKeys": 0,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518277.45,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518402.45,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518652.45,
+                  "timeSavedPercent": 0.79,
+                  "modeledWpm": 30.24
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518902.45,
+                  "timeSavedPercent": 0.75,
+                  "modeledWpm": 30.23
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518277.45,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518367.45,
+                  "timeSavedPercent": 0.85,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518517.45,
+                  "timeSavedPercent": 0.82,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518277.45,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518277.45,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518277.45,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                }
+              ]
+            },
+            "floating": {
+              "averageTravelPx": 50.01,
+              "p90TravelPx": 50.07,
+              "averagePointingMs": 201.19,
+              "averageReturnChangeMs": 0.83,
+              "averageMotorMs": 202.02,
+              "accepts": 5,
+              "acceptsWithAlternative": 0,
+              "ignoredLists": 6,
+              "movedAcceptTargets": 0,
+              "floatingPrimaryTargets": 5,
+              "primaryTargetsCoveringKeys": 2,
+              "primaryTargetsCoveringStrip": 3,
+              "maximumCoveredKeys": 2,
+              "sensitivity": [
+                {
+                  "extraMs": 0,
+                  "totalMs": 518185.08,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "extraMs": 25,
+                  "totalMs": 518310.08,
+                  "timeSavedPercent": 0.86,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "extraMs": 75,
+                  "totalMs": 518560.08,
+                  "timeSavedPercent": 0.81,
+                  "modeledWpm": 30.25
+                },
+                {
+                  "extraMs": 125,
+                  "totalMs": 518810.08,
+                  "timeSavedPercent": 0.76,
+                  "modeledWpm": 30.23
+                }
+              ],
+              "glanceSensitivity": [
+                {
+                  "scanMs": 0,
+                  "totalMs": 518185.08,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "scanMs": 15,
+                  "totalMs": 518275.08,
+                  "timeSavedPercent": 0.87,
+                  "modeledWpm": 30.26
+                },
+                {
+                  "scanMs": 40,
+                  "totalMs": 518425.08,
+                  "timeSavedPercent": 0.84,
+                  "modeledWpm": 30.25
+                }
+              ],
+              "wrongTapSensitivity": [
+                {
+                  "wrongTapFraction": 0,
+                  "totalMs": 518185.08,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.02,
+                  "totalMs": 518185.08,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                },
+                {
+                  "wrongTapFraction": 0.05,
+                  "totalMs": 518185.08,
+                  "timeSavedPercent": 0.88,
+                  "modeledWpm": 30.27
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "replay": {
+    "balanced": [
+      {
+        "id": "m-n00",
+        "truth": true,
+        "eligible": 5,
+        "ignoredLists": 22,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 41,
+            "rank": 1,
+            "word": "integer",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 59,
+            "rank": 1,
+            "word": "written",
+            "skipped": 5,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 77,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 5
+      },
+      {
+        "id": "m-n01",
+        "truth": false,
+        "eligible": 6,
+        "ignoredLists": 22,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 8,
+            "rank": 1,
+            "word": "square",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 29,
+            "rank": 1,
+            "word": "because",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 44,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 57,
+            "rank": 1,
+            "word": "number",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 60,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 2
+      },
+      {
+        "id": "m-n02",
+        "truth": true,
+        "eligible": 6,
+        "ignoredLists": 27,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 13,
+            "rank": 1,
+            "word": "derivative",
+            "skipped": 5,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 27,
+            "rank": 1,
+            "word": "positive",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 42,
+            "rank": 0,
+            "word": "on",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 68,
+            "rank": 1,
+            "word": "function",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 6
+      },
+      {
+        "id": "m-n03",
+        "truth": false,
+        "eligible": 8,
+        "ignoredLists": 20,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 14,
+            "rank": 0,
+            "word": "alone",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 32,
+            "rank": 1,
+            "word": "function",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 53,
+            "rank": 1,
+            "word": "local",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 61,
+            "rank": 1,
+            "word": "minimum",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 66,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 3
+      },
+      {
+        "id": "m-n04",
+        "truth": true,
+        "eligible": 7,
+        "ignoredLists": 16,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "Their",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 10,
+            "rank": 1,
+            "word": "union",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 21,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 49,
+            "rank": 1,
+            "word": "property",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 1,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 5
+      },
+      {
+        "id": "m-n05",
+        "truth": false,
+        "eligible": 4,
+        "ignoredLists": 23,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 43,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 51,
+            "rank": 1,
+            "word": "family",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 5
+      },
+      {
+        "id": "m-n06",
+        "truth": true,
+        "eligible": 3,
+        "ignoredLists": 23,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "Their",
+            "skipped": 2,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 9
+      },
+      {
+        "id": "m-n07",
+        "truth": false,
+        "eligible": 6,
+        "ignoredLists": 22,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 57,
+            "rank": 1,
+            "word": "positive",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 66,
+            "rank": 1,
+            "word": "portion",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 69,
+            "rank": 1,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 71,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 3
+      },
+      {
+        "id": "m-n08",
+        "truth": true,
+        "eligible": 4,
+        "ignoredLists": 14,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 26,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 49,
+            "rank": 1,
+            "word": "property",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 1,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 3
+      },
+      {
+        "id": "m-n09",
+        "truth": false,
+        "eligible": 5,
+        "ignoredLists": 14,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 6,
+            "rank": 1,
+            "word": "Therefore",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 26,
+            "rank": 1,
+            "word": "the",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 33,
+            "rank": 1,
+            "word": "matrix",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 4
+      },
+      {
+        "id": "m-n10",
+        "truth": true,
+        "eligible": 9,
+        "ignoredLists": 13,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 2,
+            "rank": 1,
+            "word": "Please",
+            "skipped": 5,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 21,
+            "rank": 1,
+            "word": "moment",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 35,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 43,
+            "rank": 1,
+            "word": "notation",
+            "skipped": 5,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 51,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 62,
+            "rank": 1,
+            "word": "with",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 1
+      },
+      {
+        "id": "m-n11",
+        "truth": false,
+        "eligible": 3,
+        "ignoredLists": 17,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 6,
+            "rank": 1,
+            "word": "Therefore",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 21,
+            "rank": 1,
+            "word": "possible",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 7
+      },
+      {
+        "id": "m-n12",
+        "truth": true,
+        "eligible": 5,
+        "ignoredLists": 21,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 29,
+            "rank": 0,
+            "word": "to",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 38,
+            "rank": 0,
+            "word": "a",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 52,
+            "rank": 1,
+            "word": "element",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 4
+      },
+      {
+        "id": "m-n13",
+        "truth": false,
+        "eligible": 8,
+        "ignoredLists": 25,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 26,
+            "rank": 1,
+            "word": "because",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 1,
+            "word": "remain",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 55,
+            "rank": 0,
+            "word": "a",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 61,
+            "rank": 1,
+            "word": "fixed",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 69,
+            "rank": 1,
+            "word": "bounded",
+            "skipped": 2,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 4
+      },
+      {
+        "id": "m-n14",
+        "truth": true,
+        "eligible": 7,
+        "ignoredLists": 22,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 46,
+            "rank": 1,
+            "word": "could",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 1,
+            "word": "violate",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 9
+      },
+      {
+        "id": "m-n15",
+        "truth": false,
+        "eligible": 7,
+        "ignoredLists": 20,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 13,
+            "rank": 1,
+            "word": "contain",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 16,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 29,
+            "rank": 1,
+            "word": "because",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 38,
+            "rank": 1,
+            "word": "graph",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 57,
+            "rank": 1,
+            "word": "vertices",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 66,
+            "rank": 1,
+            "word": "without",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 3
+      }
+    ],
+    "fast": [
+      {
+        "id": "m-n00",
+        "truth": true,
+        "eligible": 8,
+        "ignoredLists": 31,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 18,
+            "rank": 1,
+            "word": "since",
+            "skipped": 4,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 41,
+            "rank": 1,
+            "word": "integer",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 0,
+            "word": "can",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 51,
+            "rank": 1,
+            "word": "also",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 0,
+            "word": "be",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 59,
+            "rank": 1,
+            "word": "written",
+            "skipped": 5,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 77,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 6
+      },
+      {
+        "id": "m-n01",
+        "truth": false,
+        "eligible": 9,
+        "ignoredLists": 31,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 7,
+            "rank": 1,
+            "word": "square",
+            "skipped": 4,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 14,
+            "rank": 1,
+            "word": "must",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 17,
+            "rank": 0,
+            "word": "be",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 25,
+            "rank": 2,
+            "word": "because",
+            "skipped": 7,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 44,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 50,
+            "rank": 1,
+            "word": "even",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 53,
+            "rank": 1,
+            "word": "number",
+            "skipped": 6,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 60,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 4
+      },
+      {
+        "id": "m-n02",
+        "truth": true,
+        "eligible": 7,
+        "ignoredLists": 38,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 9,
+            "rank": 0,
+            "word": "derivative",
+            "skipped": 9,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 42,
+            "rank": 0,
+            "word": "on",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 65,
+            "rank": 1,
+            "word": "function",
+            "skipped": 7,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 77,
+            "rank": 1,
+            "word": "strictly",
+            "skipped": 7,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 10
+      },
+      {
+        "id": "m-n03",
+        "truth": false,
+        "eligible": 11,
+        "ignoredLists": 31,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 1,
+            "rank": 0,
+            "word": "That",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 8,
+            "rank": 1,
+            "word": "fact",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 14,
+            "rank": 0,
+            "word": "alone",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 37,
+            "rank": 1,
+            "word": "has",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 2,
+            "word": "strict",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 52,
+            "rank": 1,
+            "word": "local",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 58,
+            "rank": 0,
+            "word": "minimum",
+            "skipped": 5,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 66,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 10
+      },
+      {
+        "id": "m-n04",
+        "truth": true,
+        "eligible": 7,
+        "ignoredLists": 27,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "Their",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 21,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 46,
+            "rank": 0,
+            "word": "property",
+            "skipped": 7,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 0,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 16
+      },
+      {
+        "id": "m-n05",
+        "truth": false,
+        "eligible": 9,
+        "ignoredLists": 39,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 10,
+            "rank": 2,
+            "word": "intersection",
+            "skipped": 9,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 22,
+            "rank": 1,
+            "word": "must",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 25,
+            "rank": 0,
+            "word": "be",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 36,
+            "rank": 1,
+            "word": "even",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 43,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 50,
+            "rank": 1,
+            "word": "family",
+            "skipped": 4,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 9
+      },
+      {
+        "id": "m-n06",
+        "truth": true,
+        "eligible": 4,
+        "ignoredLists": 28,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "Their",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 10,
+            "rank": 2,
+            "word": "intersection",
+            "skipped": 9,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 30,
+            "rank": 2,
+            "word": "so",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 67,
+            "rank": 1,
+            "word": "probability",
+            "skipped": 11,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 8
+      },
+      {
+        "id": "m-n07",
+        "truth": false,
+        "eligible": 7,
+        "ignoredLists": 45,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 8,
+            "rank": 1,
+            "word": "must",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 23,
+            "rank": 1,
+            "word": "since",
+            "skipped": 4,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 66,
+            "rank": 1,
+            "word": "portion",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 69,
+            "rank": 0,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 71,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 9
+      },
+      {
+        "id": "m-n08",
+        "truth": true,
+        "eligible": 4,
+        "ignoredLists": 27,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 26,
+            "rank": 1,
+            "word": "by",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 54,
+            "rank": 1,
+            "word": "of",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 7
+      },
+      {
+        "id": "m-n09",
+        "truth": false,
+        "eligible": 6,
+        "ignoredLists": 26,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 0,
+            "word": "Therefore",
+            "skipped": 6,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 19,
+            "rank": 1,
+            "word": "entry",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 26,
+            "rank": 1,
+            "word": "the",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 31,
+            "rank": 0,
+            "word": "matrix",
+            "skipped": 5,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 8
+      },
+      {
+        "id": "m-n10",
+        "truth": true,
+        "eligible": 11,
+        "ignoredLists": 28,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 1,
+            "rank": 1,
+            "word": "Please",
+            "skipped": 6,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 10,
+            "rank": 0,
+            "word": "give",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 21,
+            "rank": 1,
+            "word": "moment",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 35,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 43,
+            "rank": 1,
+            "word": "notation",
+            "skipped": 5,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 51,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 59,
+            "rank": 1,
+            "word": "board",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 63,
+            "rank": 1,
+            "word": "with",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 4
+      },
+      {
+        "id": "m-n11",
+        "truth": false,
+        "eligible": 4,
+        "ignoredLists": 30,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 0,
+            "word": "Therefore",
+            "skipped": 6,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 19,
+            "rank": 1,
+            "word": "possible",
+            "skipped": 6,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 28,
+            "rank": 0,
+            "word": "output",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 7
+      },
+      {
+        "id": "m-n12",
+        "truth": true,
+        "eligible": 9,
+        "ignoredLists": 31,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "There",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 8,
+            "rank": 1,
+            "word": "are",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 29,
+            "rank": 0,
+            "word": "to",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 38,
+            "rank": 0,
+            "word": "a",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 48,
+            "rank": 1,
+            "word": "element",
+            "skipped": 7,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 0,
+            "word": "from",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 61,
+            "rank": 2,
+            "word": "this",
+            "skipped": 4,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 9
+      },
+      {
+        "id": "m-n13",
+        "truth": false,
+        "eligible": 8,
+        "ignoredLists": 32,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 22,
+            "rank": 2,
+            "word": "because",
+            "skipped": 7,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 1,
+            "word": "remain",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 51,
+            "rank": 0,
+            "word": "within",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 55,
+            "rank": 0,
+            "word": "a",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 60,
+            "rank": 1,
+            "word": "fixed",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 68,
+            "rank": 1,
+            "word": "bounded",
+            "skipped": 3,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 10
+      },
+      {
+        "id": "m-n14",
+        "truth": true,
+        "eligible": 10,
+        "ignoredLists": 31,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "There",
+            "skipped": 2,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 13,
+            "rank": 1,
+            "word": "element",
+            "skipped": 7,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 0,
+            "word": "could",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 56,
+            "rank": 1,
+            "word": "the",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 63,
+            "rank": 1,
+            "word": "inclusion",
+            "skipped": 7,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 10
+      },
+      {
+        "id": "m-n15",
+        "truth": false,
+        "eligible": 10,
+        "ignoredLists": 41,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 12,
+            "rank": 0,
+            "word": "contain",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 16,
+            "rank": 2,
+            "word": "an",
+            "skipped": 3,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 22,
+            "rank": 1,
+            "word": "edge",
+            "skipped": 2,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 48,
+            "rank": 0,
+            "word": "have",
+            "skipped": 4,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 55,
+            "rank": 0,
+            "word": "vertices",
+            "skipped": 6,
+            "hasAlternative": true
+          },
+          {
+            "kind": "accept",
+            "offset": 64,
+            "rank": 2,
+            "word": "without",
+            "skipped": 5,
+            "hasAlternative": true
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 13
+      }
+    ],
+    "strict": [
+      {
+        "id": "m-n00",
+        "truth": true,
+        "eligible": 1,
+        "ignoredLists": 1,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 41,
+            "rank": 1,
+            "word": "integer",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 1
+      },
+      {
+        "id": "m-n01",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n02",
+        "truth": true,
+        "eligible": 1,
+        "ignoredLists": 2,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 2
+      },
+      {
+        "id": "m-n03",
+        "truth": false,
+        "eligible": 1,
+        "ignoredLists": 0,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 33,
+            "rank": 1,
+            "word": "function",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n04",
+        "truth": true,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n05",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n06",
+        "truth": true,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n07",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n08",
+        "truth": true,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n09",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n10",
+        "truth": true,
+        "eligible": 2,
+        "ignoredLists": 0,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 4,
+            "rank": 1,
+            "word": "Please",
+            "skipped": 3,
+            "hasAlternative": false
+          },
+          {
+            "kind": "accept",
+            "offset": 45,
+            "rank": 1,
+            "word": "notation",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n11",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n12",
+        "truth": true,
+        "eligible": 1,
+        "ignoredLists": 0,
+        "accepts": [
+          {
+            "kind": "accept",
+            "offset": 52,
+            "rank": 1,
+            "word": "element",
+            "skipped": 3,
+            "hasAlternative": false
+          }
+        ],
+        "sameWordSuccessiveKeystrokes": 0
+      },
+      {
+        "id": "m-n13",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 2,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 1
+      },
+      {
+        "id": "m-n14",
+        "truth": true,
+        "eligible": 1,
+        "ignoredLists": 1,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 1
+      },
+      {
+        "id": "m-n15",
+        "truth": false,
+        "eligible": 0,
+        "ignoredLists": 0,
+        "accepts": [],
+        "sameWordSuccessiveKeystrokes": 0
+      }
+    ]
+  },
+  "inputToNextFrame": {
+    "observations": [
+      {
+        "cpuRate": 1,
+        "surface": "word",
+        "round": 1,
+        "ms": 49
+      },
+      {
+        "cpuRate": 1,
+        "surface": "spelling",
+        "round": 1,
+        "ms": 50.1
+      },
+      {
+        "cpuRate": 1,
+        "surface": "notation",
+        "round": 1,
+        "ms": 50.4
+      },
+      {
+        "cpuRate": 1,
+        "surface": "continuation",
+        "round": 1,
+        "ms": 45.9
+      },
+      {
+        "cpuRate": 1,
+        "surface": "spelling",
+        "round": 2,
+        "ms": 49.9
+      },
+      {
+        "cpuRate": 1,
+        "surface": "notation",
+        "round": 2,
+        "ms": 50.7
+      },
+      {
+        "cpuRate": 1,
+        "surface": "continuation",
+        "round": 2,
+        "ms": 49.9
+      },
+      {
+        "cpuRate": 1,
+        "surface": "word",
+        "round": 2,
+        "ms": 49.7
+      },
+      {
+        "cpuRate": 1,
+        "surface": "notation",
+        "round": 3,
+        "ms": 50.2
+      },
+      {
+        "cpuRate": 1,
+        "surface": "continuation",
+        "round": 3,
+        "ms": 47.7
+      },
+      {
+        "cpuRate": 1,
+        "surface": "word",
+        "round": 3,
+        "ms": 50.2
+      },
+      {
+        "cpuRate": 1,
+        "surface": "spelling",
+        "round": 3,
+        "ms": 49
+      },
+      {
+        "cpuRate": 1,
+        "surface": "continuation",
+        "round": 4,
+        "ms": 50
+      },
+      {
+        "cpuRate": 1,
+        "surface": "word",
+        "round": 4,
+        "ms": 49.8
+      },
+      {
+        "cpuRate": 1,
+        "surface": "spelling",
+        "round": 4,
+        "ms": 49.9
+      },
+      {
+        "cpuRate": 1,
+        "surface": "notation",
+        "round": 4,
+        "ms": 48.3
+      },
+      {
+        "cpuRate": 6,
+        "surface": "word",
+        "round": 1,
+        "ms": 111.2
+      },
+      {
+        "cpuRate": 6,
+        "surface": "spelling",
+        "round": 1,
+        "ms": 115.4
+      },
+      {
+        "cpuRate": 6,
+        "surface": "notation",
+        "round": 1,
+        "ms": 89.4
+      },
+      {
+        "cpuRate": 6,
+        "surface": "continuation",
+        "round": 1,
+        "ms": 96.8
+      },
+      {
+        "cpuRate": 6,
+        "surface": "spelling",
+        "round": 2,
+        "ms": 90.4
+      },
+      {
+        "cpuRate": 6,
+        "surface": "notation",
+        "round": 2,
+        "ms": 82
+      },
+      {
+        "cpuRate": 6,
+        "surface": "continuation",
+        "round": 2,
+        "ms": 117.9
+      },
+      {
+        "cpuRate": 6,
+        "surface": "word",
+        "round": 2,
+        "ms": 78.9
+      },
+      {
+        "cpuRate": 6,
+        "surface": "notation",
+        "round": 3,
+        "ms": 73.7
+      },
+      {
+        "cpuRate": 6,
+        "surface": "continuation",
+        "round": 3,
+        "ms": 109.7
+      },
+      {
+        "cpuRate": 6,
+        "surface": "word",
+        "round": 3,
+        "ms": 76.9
+      },
+      {
+        "cpuRate": 6,
+        "surface": "spelling",
+        "round": 3,
+        "ms": 76.9
+      },
+      {
+        "cpuRate": 6,
+        "surface": "continuation",
+        "round": 4,
+        "ms": 112.2
+      },
+      {
+        "cpuRate": 6,
+        "surface": "word",
+        "round": 4,
+        "ms": 78.2
+      },
+      {
+        "cpuRate": 6,
+        "surface": "spelling",
+        "round": 4,
+        "ms": 83.8
+      },
+      {
+        "cpuRate": 6,
+        "surface": "notation",
+        "round": 4,
+        "ms": 68
+      }
+    ],
+    "summary": [
+      {
+        "cpuRate": 1,
+        "samples": 16,
+        "p50Ms": 49.9,
+        "p95Ms": 50.7,
+        "within30WpmInterval": 16
+      },
+      {
+        "cpuRate": 6,
+        "samples": 16,
+        "p50Ms": 83.8,
+        "p95Ms": 117.9,
+        "within30WpmInterval": 16
+      }
+    ]
+  }
+}

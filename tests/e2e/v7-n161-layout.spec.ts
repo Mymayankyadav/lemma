@@ -1,7 +1,7 @@
 import {test,expect,type Page} from "@playwright/test";
-// N161 (Owner phone screenshots, 13 Nov 2026): Today's Continue cards line up at the bottom; the Atlas concept
-// sheet never shows half-hidden buttons; the Calendar ruler is part of the dock instead of lying over the day.
-// Each check runs at 360 and 390 px and with large text; each fails on the code before N161.
+// N161 (Owner phone screenshots, 13 Nov 2026): Today's Continue cards line up at the bottom and the Atlas
+// concept sheet keeps actions within reach. The Calendar ruler now opens in Browse day (N209 and N214).
+// Each check runs at 360 and 390 px and with large text.
 test.use({locale:"en-IN",timezoneId:"Asia/Kolkata"});
 const base="/lemma/?demo=1&flags=v7Shell,v6Shell";
 const sizes=[[390,1],[360,1],[360,1.3],[390,1.6]] as const;
@@ -28,7 +28,7 @@ for(const [width,scale] of sizes){
   expect(new Set(rows.map(row=>row.meterBottom)).size,JSON.stringify(rows)).toBe(1);
  });
 
- test("the Atlas sheet peeks with whole rows only, and shows both buttons when pulled up, at "+width+" px, text x"+scale,async({page})=>{
+ test("the Atlas sheet keeps the peek and expanded actions reachable at "+width+" px, text x"+scale,async({page})=>{
   await open(page,"&theme=graph-night#/atlas",width,scale);
   await expect(page.locator(".v7-atlas-sky")).toHaveAttribute("data-stars","82");
   await page.getByRole("button",{name:"Search concepts"}).click();
@@ -36,54 +36,64 @@ for(const [width,scale] of sizes){
   await page.getByRole("list",{name:"Matching concepts"}).getByRole("listitem").filter({hasText:/^Compactness\s*Analysis$/}).getByRole("button").click();
   const sheet=page.getByRole("region",{name:"Compactness"});
   await expect(sheet).toBeVisible();
-  // Peek: no button is drawn, nothing inside is cut off, and the sheet rests on the tab bar.
+  await sheet.getByRole("button",{name:"Show less"}).click();
+  // The peek offers the two main actions and keeps the extra checkpoint link for the expanded sheet.
   const checkpoint=sheet.getByRole("link",{name:"Open Checkpoint 4",exact:true});
   const review=sheet.getByRole("link",{name:"Review 9",exact:true});
+  const tutor=sheet.getByRole("link",{name:"Continue with tutor",exact:true});
   await expect(checkpoint).toHaveCount(0);
-  await expect(review).toHaveCount(0);
   const clipped=await sheet.evaluate(node=>node.scrollHeight>node.clientHeight+1);
   expect(clipped,"the peek cuts off its own content").toBe(false);
-  let dock=await dockBox(page),box=(await sheet.boundingBox())!;
-  // The sheet tucks under the dock's rounded top edge by its border (2 px), as before N161.
-  expect(box.y+box.height).toBeLessThanOrEqual(dock.y+2);
+  await expect(page.getByRole("navigation",{name:"Main navigation"})).toBeHidden();
+  const box=(await sheet.boundingBox())!;
+  expect(box.height).toBeLessThanOrEqual(150);
+  expect(box.y+box.height).toBeLessThanOrEqual(845);
   const controls=(await page.locator(".v7-atlas-controls").boundingBox())!;
   expect(controls.y+controls.height,"the map controls sit above the sheet").toBeLessThanOrEqual(box.y+1);
-  // Pulled up: both buttons are inside the sheet, above the tab bar, and a tap at their centre reaches them.
+  const reachable=async(button:typeof review)=>{
+   await expect(button).toBeVisible();
+   const b=(await button.boundingBox())!;
+   expect(b.y+b.height).toBeLessThanOrEqual(845);
+   const hit=await page.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest("a.v7-button"),{x:b.x+b.width/2,y:b.y+b.height/2});
+   expect(hit,(await button.textContent())+" is covered").toBe(true);
+  };
+  for(const button of [tutor,review])await reachable(button);
   await sheet.getByRole("button",{name:"Show neighbours and actions"}).click();
-  dock=await dockBox(page);box=(await sheet.boundingBox())!;
   await expect(review).toHaveAttribute("href","#/review/run?target=concept&id=concept-compactness");
   for(const button of [checkpoint,review]){
    await button.scrollIntoViewIfNeeded();
-   const b=(await button.boundingBox())!;
-   expect(b.y+b.height).toBeLessThanOrEqual(dock.y+1);
-   const hit=await page.evaluate(({x,y})=>!!document.elementFromPoint(x,y)?.closest("a.v7-button"),{x:b.x+b.width/2,y:b.y+b.height/2});
-   expect(hit,(await button.textContent())+" is covered").toBe(true);
+   await reachable(button);
   }
+  await sheet.getByRole("button",{name:"Close details"}).click();
+  await expect(page.getByRole("navigation",{name:"Main navigation"})).toBeVisible();
  });
 
- test("the Calendar ruler is part of the dock and leaves the day's last hour clear at "+width+" px, text x"+scale,async({page})=>{
+ test("the Calendar ruler opens on demand and leaves the day's last hour clear at "+width+" px, text x"+scale,async({page})=>{
   await page.clock.setFixedTime(new Date("2026-11-09T23:35:00+05:30"));
   await open(page,"#/calendar?view=day&date=2026-11-09",width,scale);
-  const ruler=page.locator(".v7-cal-scrubber");
-  await expect(ruler).toBeVisible();
-  const dock=await dockBox(page),r=(await ruler.boundingBox())!;
-  // Joined to the tab bar: it ends where the bar starts, and both are equally wide.
-  expect(Math.abs(r.y+r.height-dock.y),"gap between ruler and tab bar").toBeLessThanOrEqual(1);
-  expect(Math.abs(r.x-dock.x)).toBeLessThanOrEqual(1);
-  expect(Math.abs(r.width-dock.width)).toBeLessThanOrEqual(1);
-  // Its time labels are whole, not cut off by the tab bar.
-  const labels=await ruler.locator(".v7-ruler-label").evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().bottom));
+  const browse=page.getByRole("button",{name:"Browse day",exact:true});
+  const sheet=page.getByRole("dialog",{name:"Browse day",exact:true}),slider=sheet.getByRole("slider",{name:"Time"});
+  await expect(slider).toHaveCount(0);
+  await expect(browse).toBeVisible();
+  expect((await browse.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await browse.click();
+  await expect(slider).toHaveAttribute("aria-valuetext","23:35");
+  expect((await slider.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const bounds=(await sheet.boundingBox())!;
+  const labels=await sheet.locator(".v7-ruler-label").evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().bottom));
   expect(labels.length).toBeGreaterThan(0);
-  expect(Math.max(...labels)).toBeLessThanOrEqual(r.y+r.height+0.5);
-  // Compact: at most 72 px tall at normal text, and the slider keeps a 44 px touch area.
-  if(scale===1)expect(r.height).toBeLessThanOrEqual(72);
-  expect((await page.getByRole("slider",{name:"Browse day"}).boundingBox())!.height).toBeGreaterThanOrEqual(44);
-  // It opens on now.
-  await expect(page.getByRole("slider",{name:"Browse day"})).toHaveAttribute("aria-valuetext","23:35");
-  // Scrolled to the end, the whole day grid is above the ruler.
+  expect(Math.max(...labels)).toBeLessThanOrEqual(bounds.y+bounds.height+0.5);
+  await slider.press("End");
+  await expect(slider).toHaveAttribute("aria-valuetext","23:55");
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(browse).toBeFocused();
   await page.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
-  const grid=(await page.locator(".v7-cal-grid").boundingBox())!,after=(await ruler.boundingBox())!;
-  expect(grid.y+grid.height).toBeLessThanOrEqual(after.y+1);
+  const grid=page.getByRole("region",{name:"Day time grid"}),last=grid.locator(".v7-cal-gutter time").last();
+  await expect(last).toHaveText("23:00");
+  await expect(last).toBeInViewport();
+  const hour=(await last.boundingBox())!,dock=await dockBox(page);
+  expect(hour.y+hour.height).toBeLessThanOrEqual(dock.y+1);
  });
 }
 
@@ -103,13 +113,23 @@ for(const [width,scale] of sizes){
 }
 
 for(const [width,scale] of sizes){
- test("Calendar's view choice is a header menu on a phone, which frees the row the segments took, at "+width+" px, text x"+scale,async({page})=>{
+ // N220 (Owner report): the hub header matches every other hub (title and page actions only); the view menu leads the
+ // Calendar toolbar under the tabs, beside the period arrows.
+ test("Calendar's view choice is a compact menu in the Calendar toolbar on a phone, which frees the row the segments took, at "+width+" px, text x"+scale,async({page})=>{
   await open(page,"#/calendar?view=day&date=2026-11-09",width,scale);
   const button=page.getByRole("button",{name:"Calendar view: Day"});
   await expect(button).toBeVisible();
-  // It sits in the title row, beside the title, and the segmented control is gone from the page.
-  const title=(await page.getByRole("heading",{name:"Calendar",level:1}).boundingBox())!,b=(await button.boundingBox())!;
-  expect(Math.abs((b.y+b.height/2)-(title.y+title.height/2))).toBeLessThanOrEqual(12);
+  // The week strip carries the dates; date picking is available as the fourth action rather than a duplicate pill.
+  const title=page.getByRole("heading",{name:"Calendar",exact:true});
+  await expect(title).toBeVisible();
+  await expect(page.getByRole("button",{name:/^Calendar date:/})).toHaveCount(0);
+  const toolbar=page.getByRole("group",{name:"Calendar navigation"});
+  await expect(toolbar.getByRole("button",{name:"Calendar view: Day"})).toBeVisible();
+  await expect(page.locator(".v7-hub-bar").getByRole("button",{name:/^Calendar view:/})).toHaveCount(0);
+  const titleBox=(await title.boundingBox())!,b=(await button.boundingBox())!,tabs=(await page.getByRole("navigation",{name:"Calendar sections"}).boundingBox())!;
+  expect(b.y).toBeGreaterThanOrEqual(titleBox.y+titleBox.height);
+  expect(b.y).toBeGreaterThanOrEqual(tabs.y+tabs.height-1);
+  expect(b.x+b.width).toBeLessThanOrEqual(width);
   expect(b.height).toBeGreaterThanOrEqual(44);
   await expect(page.getByRole("radiogroup",{name:"Calendar view"})).toHaveCount(0);
   // The menu lists the four views, with the current one checked, and switching works by tap and by keyboard.

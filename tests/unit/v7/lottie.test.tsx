@@ -77,9 +77,9 @@ describe('N129 Lottie files', () => {
     expect(moment).not.toMatch(/^import .*(dotlottie|lottiePlayer)/m);
     expect(moment).toContain("import('./lottiePlayer')");
   });
-  it('the three moments use it, each over its A2 still', () => {
+  it('Inbox and Close use their A2 animations and Review uses the shared proof mark', () => {
     expect(readFileSync('src/features/proposals/v7/InboxV7.tsx', 'utf8')).toContain('<LottieMoment name="inbox" animation="inbox-zero"');
-    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('<LottieMoment name="round" animation="round-complete"');
+    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('run?.progress.done?<ProofEnd large/>');
     expect(readFileSync('src/features/ritual/v7/CloseDayV7.tsx', 'utf8')).toContain('<LottieMoment name="closed" animation="day-closed"');
   });
 });

@@ -25,8 +25,9 @@ describe('IL6 · ✓ means nothing is waiting, ∎ means you finished something'
     expect(art.round.replace(/<rect class="w"[^>]*>/, '')).toBe(art.review.replace(/<path class="w"[^>]*>/, ''));
     expect(css).toContain('.v7-il rect.w {fill:var(--v7-role-surface-page);}');
   });
-  it('the review round ends on it, and its animation draws a ∎ on the same frame, in the same place', () => {
-    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('<LottieMoment name="round" animation="round-complete" width={160}');
+  it('Review results use the 64 px kit mark and the earlier motion asset preserves its proof mark', () => {
+    expect(readFileSync('src/features/review-done/v7/RoundCompleteV7.tsx', 'utf8')).toContain('run?.progress.done?<ProofEnd large/>');
+    expect(readFileSync('src/features/review/v7/review-hub.css', 'utf8')).toContain('.v7-rc .v7-proof-end-large {width:64px;height:64px;');
     const data = JSON.parse(readFileSync('src/ui/v7/lottie/round-complete.json', 'utf8')) as {layers: {nm: string; shapes: unknown[]}[]};
     const badge = JSON.stringify(data.layers.find(layer => layer.nm === 'badge')!.shapes);
     // The ∎: one straight stroke as wide as the square (9 units), with square ends, centred where the still's ∎ is.
@@ -56,6 +57,7 @@ describe('IL7 · two sizes', () => {
     for (const path of files('src/features')) {
       const text = readFileSync(path, 'utf8');
       for (const match of text.matchAll(/<(?:Illustration|LottieMoment)\b[^>]*?\bwidth=\{(\d+)\}/g)) widths.push(path + ' ' + match[1]);
+      for (const match of text.matchAll(/<EmptyMoment\b[^>]*?\bart="[a-z]+"/g)) widths.push(path + ' 160');
     }
     expect(widths.length).toBeGreaterThan(3);
     for (const entry of widths) expect(['120', '160'], entry).toContain(entry.split(' ').at(-1));
@@ -68,13 +70,13 @@ describe('IL7 · two sizes', () => {
 describe('IL5 · empty states in the first viewport', () => {
   it('Progress shows one empty state in place of the hero, the chart and the stats when nothing was studied', () => {
     const progress = readFileSync('src/features/insights/v7/ProgressV7.tsx', 'utf8');
-    expect(progress).toContain("tab==='overview'&&total<=0&&<>{nothing}");
+    expect(progress).toContain("tab==='overview'&&total<=0&&nothing");
     expect(progress).toContain("tab==='overview'&&total>0&&<>");
-    expect(progress).toContain('{total<=0?nothing:<>{hero}');
-    expect(progress).toContain('<Illustration name="progress" width={160} className="v7-progress-art"/>');
+    expect(progress).toContain('<EmptyMoment art="progress" title="No study time yet"');
+    expect(progress).toContain('summary.exactParts.length>0&&<HorizontalBars');
   });
   it('Calendar Day lays its empty state over the grid, and taps pass through to the grid', () => {
-    expect(readFileSync('src/features/calendar/v7/V7CalendarDay.tsx', 'utf8')).toContain('<div className="v7-cal-day-stack">');
-    expect(readFileSync('src/features/calendar/v7/calendar.css', 'utf8')).toContain('.v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);padding:0;pointer-events:none;}');
+    expect(readFileSync('src/features/calendar/v7/V7CalendarDay.tsx', 'utf8')).toContain('<div className="v7-cal-day-stack"');
+    expect(readFileSync('src/features/calendar/v7/calendar.css', 'utf8')).toContain('.v7-cal-day-stack > .v7-cal-empty-state {position:absolute;left:0;right:0;top:50%;z-index:4;transform:translateY(-50%);padding:0;pointer-events:none;}');
   });
 });

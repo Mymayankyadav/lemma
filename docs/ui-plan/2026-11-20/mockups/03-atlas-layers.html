@@ -1,0 +1,36 @@
+<!doctype html><html lang="en" data-v7 data-theme="graph-night"><head><meta charset="utf-8"><title>Atlas · layers</title>
+<link rel="stylesheet" href="/lemma/fonts/v7/fonts.css"><link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="mock.css"><script src="icons.js"></script>
+<style>
+.type{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.type>div{display:flex;flex-direction:column;gap:8px;align-items:center;font:500 13px/1.2 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.thumb{width:100%;height:72px;border-radius:var(--v7-radius-3);border:1px solid var(--v7-role-border-subtle);background:var(--v7-role-surface-sunken);position:relative;overflow:hidden}
+.type .on .thumb{border:2px solid var(--v7-role-link-fg)}.type .on{color:var(--v7-role-link-fg)}
+.key{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font:400 14px/1.2 var(--v7-sans);color:var(--v7-role-text-secondary)}
+.key span{display:flex;align-items:center;gap:8px}.g{width:18px;text-align:center;font:500 15px/1 var(--v7-glyph);color:var(--v7-role-subject-analysis)}
+</style></head><body>
+<div class="phone">
+ <iframe src="02-atlas-map.html" style="position:absolute;inset:0;width:390px;height:844px;border:0"></iframe>
+ <div class="scrim"></div>
+ <section class="sheet" aria-label="Layers" style="padding:0 16px 24px">
+  <div class="grab"></div>
+  <div class="row between" style="margin:2px 0 12px"><div class="t-subhead">Layers</div><span class="ib"><span class="i" data-i="x"></span></span></div>
+  <div class="t-eyebrow" style="margin-bottom:8px">Map type</div>
+  <div class="type">
+   <div class="on"><div class="thumb"><svg width="100%" height="72" viewBox="0 0 100 72"><g fill="var(--v7-role-subject-analysis)"><circle cx="30" cy="30" r="3"/><circle cx="48" cy="20" r="3"/><circle cx="55" cy="42" r="3.5"/></g><g fill="var(--v7-role-subject-topology)"><circle cx="78" cy="50" r="2.5"/><circle cx="70" cy="58" r="2.5"/></g><path d="M30 30L48 20L55 42" stroke="var(--v7-role-border-default)" fill="none"/></svg></div>Constellations</div>
+   <div><div class="thumb"><svg width="100%" height="72" viewBox="0 0 100 72"><ellipse cx="38" cy="34" rx="24" ry="18" fill="var(--v7-role-subject-analysis-subtle)"/><ellipse cx="66" cy="44" rx="22" ry="16" fill="var(--v7-role-subject-topology-subtle)"/></svg></div>Themes</div>
+   <div><div class="thumb"><svg width="100%" height="72" viewBox="0 0 100 72"><circle cx="24" cy="36" r="10" fill="var(--v7-role-subject-analysis-subtle)"/><circle cx="76" cy="36" r="10" fill="var(--v7-role-subject-algebra-subtle)"/><path d="M34 36 C 50 14, 50 58, 66 36" stroke="var(--v7-role-link-fg)" stroke-dasharray="3 3" fill="none"/></svg></div>Bridges</div>
+  </div>
+  <div class="t-eyebrow" style="margin:18px 0 8px">Show</div>
+  <div class="seg"><span class="on">All</span><span>Uncertain</span><span>Gaps</span><span>Certified</span></div>
+  <div class="t-eyebrow" style="margin:18px 0 8px">Kind</div>
+  <div class="row" style="flex-wrap:wrap;gap:6px"><span class="chip on">Any</span><span class="chip">Definition</span><span class="chip">Theorem</span><span class="chip">Technique</span><span class="chip">Example</span></div>
+  <div class="row between" style="margin:16px 0 4px"><div><div class="t-body">Only stale concepts</div><div class="t-cap">Not revisited for 30 days</div></div><span class="toggle"></span></div>
+  <div class="divider" style="margin:12px 0"></div>
+  <div class="t-eyebrow" style="margin-bottom:10px">Key</div>
+  <div class="key">
+   <span><span class="g">★</span>Demonstrated</span><span><span class="g">◐</span>In progress</span>
+   <span><span class="g">☆</span>Up next</span><span><span class="g" style="color:var(--v7-role-status-warning)">↻</span>Review due</span>
+   <span><span class="g" style="color:var(--v7-role-text-tertiary)">○</span>Not started</span><span><span class="g" style="color:var(--v7-role-text-tertiary)">→</span>Needs</span>
+  </div>
+ </section>
+</div></body></html>

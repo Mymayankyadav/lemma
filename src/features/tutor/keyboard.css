@@ -1,0 +1,123 @@
+.lemma-tutor .keyboard-composer .field {padding-inline-start: 6px;}
+
+/* The key cells stay contiguous. Inset caps leave a visual gap without losing taps. */
+.lemma-tutor .kb {overflow: visible;}
+.lemma-tutor .kb .rows {position: relative;}
+.lemma-tutor .kb .sugg {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: visible;
+}
+.lemma-tutor .kb .sugg button {
+  width: 100%;
+  min-width: 0;
+  padding-inline: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--v7-type-supporting);
+}
+.lemma-tutor .kb .sugg button.kit::after {content: none;}
+.lemma-tutor .kb .sugg button.keep {color: var(--v7-role-text-secondary);}
+.lemma-tutor .kb .sugg button:nth-child(2) {
+  background: var(--key);
+  font-weight: 600;
+}
+.lemma-tutor .kb .sugg button:active {background: var(--key-down);}
+.lemma-tutor .kb .k {font-size: clamp(15px, 5.8vw, 24px);}
+.lemma-tutor .kb .k.lbl {font-size: clamp(10px, 3.5vw, 15px);}
+.lemma-tutor .kb .k.mid {font-size: clamp(10px, 3.3vw, 16px);}
+.lemma-tutor .kb .k sup {top: 6px; right: calc(var(--capr) + 3px); font-size: 9px;}
+.lemma-tutor .kb .k.sliding::before {background: var(--v7-role-selection-subtle);}
+/* N220 · Gboard's bottom row: ?123 and Enter a key and a half, comma, maths and full stop one key, the space bar four. */
+.lemma-tutor .kb .row.bottom .k {flex-grow: 1;}
+.lemma-tutor .kb .row.bottom .k.w15 {flex-grow: 1.5;}
+.lemma-tutor .kb .row.bottom .k.space {flex-grow: 4;}
+/* The one-tap maths symbols lead the suggestion strip. */
+.lemma-tutor .kb .strip {gap: 0; padding-inline: 2px;}
+.lemma-tutor .kb .strip .tutor-quick-math {display: flex; flex: none; align-items: center; padding-inline-end: 4px; margin-inline-end: 2px; border-inline-end: 1px solid color-mix(in srgb, var(--v7-role-border-default) 40%, transparent);}
+.lemma-tutor .kb .strip .sbtn.qsym {width: 36px; border-radius: 10px; color: var(--v7-role-selection-fg); font: 400 20px/1 var(--v7-glyph);}
+.lemma-tutor .kb .strip .sbtn.qsym svg {width: 18px; height: 18px;}
+.lemma-tutor .kb .strip .sugg {flex: 1 1 0; min-width: 0;}
+/* While a word is typed the symbols step aside (the hidden attribute), so its suggestions have the strip. */
+.lemma-tutor .kb .strip .tutor-quick-math[hidden], .lemma-tutor .kb .strip .sbtn[hidden] {display: none;}
+@media (max-width: 359px) {.lemma-tutor .kb .strip .sbtn.qsym {width: 32px;}}
+/* N220: the pressed key grows above the finger, as in Gboard, and stays a moment after a quick tap. */
+.lemma-tutor .kb .tutor-key-preview {
+  position: absolute;
+  z-index: 6;
+  min-width: 52px;
+  height: max(56px, calc(var(--cell) * 1.3));
+  padding: 0 6px 6px;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -100%);
+  border: 1px solid var(--v7-role-border-subtle);
+  border-radius: 12px;
+  background: var(--key, var(--v7-role-surface-overlay));
+  color: var(--v7-role-text-primary);
+  box-shadow: var(--v7-shadow-2);
+  font: 400 32px/1 var(--v7-sans);
+  pointer-events: none;
+}
+.lemma-tutor .kb .tutor-key-preview[data-glyph] {font-family: var(--v7-glyph);}
+.lemma-tutor .kb .tutor-key-preview[data-leaving] {animation: tutor-key-preview-out 110ms var(--v7-ease-in, ease-in) forwards;}
+@keyframes tutor-key-preview-out {from {opacity: 1;} to {opacity: 0; transform: translate(-50%, calc(-100% + 4px));}}
+.lemma-tutor .kb .grid {
+  height: auto;
+  overflow: visible;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.lemma-tutor .kb .rows[data-view="Greek"] .grid {grid-template-columns: repeat(11, minmax(0, 1fr));}
+.lemma-tutor .kb .rows[data-view="Analysis"] .grid {grid-template-columns: repeat(8, minmax(0, 1fr));}
+.lemma-tutor .kb .phrase-page {flex: 0 0 44px;}
+.lemma-tutor .kb .grid.two {grid-template-columns: repeat(3, minmax(0, 1fr));}
+.lemma-tutor .kb .grid .k.txt {
+  min-height: var(--cell);
+  height: auto;
+  font-size: var(--v7-type-caption);
+  text-align: center;
+}
+.lemma-tutor .kb .grid .k.txt .kl {
+  position: static;
+  width: 100%;
+  display: block;
+  padding: 6px;
+  overflow-wrap: anywhere;
+}
+.lemma-tutor .kb .row.catbar {flex-wrap: wrap;}
+.lemma-tutor .kb .cats {
+  flex: none;
+  height: auto;
+  display: flex;
+  flex-wrap: wrap;
+  overflow: visible;
+  mask-image: none;
+}
+.lemma-tutor .kb .cats button {
+  height: auto;
+  min-height: 36px;
+  padding-inline: 6px;
+  font: 600 var(--v7-type-caption)/1.15 var(--v7-sans);
+}
+.lemma-tutor .kb .row.catbar :is(.abc, .bk) {flex: 1 1 0;}
+/* Allocate the remaining height to the conversation. */
+.lemma-tutor .kb {--cell: 48px;}
+@media (max-width: 699px) {
+  .lemma-tutor .kb {--cell: 44px;}
+}
+
+@media (min-width: 560px) and (max-height: 559px) and (orientation: landscape) {
+  .lemma-tutor .kb {--cell: clamp(31px, 10dvh, 44px);margin-inline:0;}
+  .lemma-tutor .kb .cats {flex-wrap:nowrap;overflow-x:auto;}
+  .lemma-tutor .kb .cats button {min-height:30px;}
+}
+@media (min-width: 560px) and (max-height: 359px) and (orientation: landscape) {
+  .lemma-tutor .kb {--cell:28px;}
+  .lemma-tutor .keyboard-composer[data-keyboard="math"] .composer {padding-block:2px 4px;}
+}
+
+@media (min-height: 560px) {
+  .lemma-tutor:has(.keyboard-composer[data-symbols]) .chat {min-height: 0;}
+  .lemma-tutor .keyboard-composer[data-symbols] .composer textarea {max-height: 76px;}
+  .lemma-tutor .keyboard-composer[data-symbols] .composer-preview {max-height: 44px;}
+}

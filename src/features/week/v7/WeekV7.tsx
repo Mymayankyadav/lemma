@@ -1,3 +1,5 @@
+import {Chart} from '../../../ui/v7/Chart';
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
 import {useEffect, useMemo, useState} from 'react';
 import {Navigate} from 'react-router';
 import {isFlagOn} from '../../../flags';
@@ -38,18 +40,18 @@ export default function WeekV7() {
   const checkpoints = (insight.data?.checkpointEvents ?? []).filter(event => event.kind === 'demonstrated' && Date.parse(event.at) >= Date.parse(period.span.start) && Date.parse(event.at) < Date.parse(period.span.end)).length;
   if (!isFlagOn('v7Week')) return <Navigate to="/insights" replace/>;
   const minutes = summary?.daily.map(day => day.minutes) ?? [];
-  const stars = weekStars(minutes);
   const range = formatShortDate(period.days[0], {zone}) + ' – ' + formatShortDate(period.days[period.days.length - 1], {zone});
   return <main id="main-content" className="v7-page v7-week" aria-label="The week">
     <DetailHeader title="The week" back="/insights"/>
     <header className="v7-week-head"><p className="v7-eyebrow">{range}</p><h1 className="v7-hub-title">Your week</h1></header>
     {failed && <div role="alert" className="v7-progress-error"><p>Erratum: the week didn’t load. Try again.</p><Button onClick={() => setReload(value => value + 1)}>Try again</Button></div>}
     {!failed && !summary && <Skeleton/>}
-    {summary && <>
-      <svg className="v7-week-sky" viewBox="0 0 280 80" role="img" aria-label={'The week as a constellation: ' + minutes.filter(value => value > 0).length + ' of 7 days with study'}>
-        <polyline points={stars.filter(star => star.lit).map(star => star.x + ',' + star.y).join(' ')} className="v7-week-line"/>
-        {stars.map((star, index) => <circle key={index} cx={star.x} cy={star.y} r={star.r} className="v7-week-star" data-lit={star.lit || undefined}/>)}
-      </svg>
+    {summary&&!minutes.some(Boolean)&&!(learn?.reviews??0)&&!checkpoints&&
+      <EmptyMoment title="Nothing logged this week" action={{label:'Start focus',to:'/?quick=1'}}/>}
+    {summary&&(minutes.some(Boolean)||!!learn?.reviews||checkpoints>0) && <>
+      {minutes.some(Boolean)&&<Chart title="Focus by day" kind="bars" compact
+        data={summary.daily.map(day=>({label:formatShortDate(day.day,{zone}),tickLabel:formatShortDate(day.day,{zone}).split(' ')[0],values:[day.minutes]}))}
+        series={[{label:'Focus'}]} format={formatDuration}/>}
       <div className="v7-progress-stats">
         <StatTile label="Hours" value={formatDuration(summary.daily.reduce((total, day) => total + day.minutes, 0))}/>
         <StatTile label="Cards" value={learn ? String(learn.reviews) : '—'}/>

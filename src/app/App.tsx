@@ -8,7 +8,6 @@ import AuthGate from './AuthGate'
 import ErrorBoundary from './ErrorBoundary'
 import RouteError,{RouteFallback} from './RouteError'
 import ToastHost from './ToastHost'
-import OfflineBanner from './OfflineBanner'
 import PwaStatus from './PwaStatus'
 import { screenRoutes } from './routes'
 import { calendarRoute } from './calendarRoute'
@@ -54,6 +53,6 @@ const router = createHashRouter([{element: <AuthGate><StudyUiRelease><AppShell /
   <Suspense fallback={<RouteFallback/>}><OfflinePadPage/></Suspense>, errorElement: <RouteError/>}] : [])])
 export default function App() {
  return <ErrorBoundary><QueryClientProvider client={queryClient}>
-  <RouterProvider router={router} /><ToastHost /><OfflineBanner /><PwaStatus />
+  <RouterProvider router={router} /><ToastHost /><PwaStatus />
  </QueryClientProvider></ErrorBoundary>
 }

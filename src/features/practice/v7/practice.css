@@ -23,3 +23,16 @@
  :where(html[data-v7]) .v7-pr-timer output {font:600 var(--v7-type-subhead)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
  :where(html[data-v7]) .v7-pr-cadence {display:grid;gap:var(--v7-space-2);}
 }
+
+/* N220 (Owner report) · the four ratings share the row equally, and the time row lines up on one centre line. */
+:where(html[data-v7]) .v7-pr-ratings {display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-pr-ratings .v7-filter-chip {justify-content:center;min-width:0;padding-inline:var(--v7-space-2);}
+:where(html[data-v7]) .v7-pr-timer {display:flex;align-items:center;gap:var(--v7-space-2);flex-wrap:nowrap;}
+:where(html[data-v7]) .v7-pr-timer output {flex:none;min-width:4ch;font:600 var(--v7-type-subhead)/1 var(--v7-sans);font-variant-numeric:tabular-nums;}
+:where(html[data-v7]) .v7-pr-timer > .v7-button {flex:none;}
+:where(html[data-v7]) .v7-pr-minutes {display:flex;align-items:center;gap:var(--v7-space-2);flex:1;min-width:0;height:var(--v7-touch);margin-inline-start:auto;padding:0 var(--v7-space-3);
+ border:var(--v7-hairline) solid var(--v7-role-border-default);border-radius:var(--v7-radius-2);background:var(--v7-role-surface-sunken);
+ color:var(--v7-role-text-secondary);font:500 var(--v7-type-supporting)/1 var(--v7-sans);}
+:where(html[data-v7]) .v7-pr-minutes:focus-within {border-color:var(--v7-role-focus-ring);}
+:where(html[data-v7]) .v7-pr-minutes input {flex:1;width:100%;min-width:0;height:100%;padding:0;border:0;outline:none;background:transparent;color:var(--v7-role-text-primary);
+ font:500 var(--v7-type-body)/1 var(--v7-sans);font-variant-numeric:tabular-nums;text-align:end;}

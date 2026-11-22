@@ -42,6 +42,11 @@ export async function checkRegularTutorConnector({db,owner,other,as,one,ownerCmd
  assert.deepEqual(fresh.snapshot,{question:'17',selectedContext:[]});
  assert.deepEqual(fresh.checkpoint,{code:'CP1',title:'Logic'});
  assert.equal(fresh.previousTutorQuestion,'What is the value?');
+ await as('authenticated',owner);
+ assert.ok(Date.parse((await state()).listenerSeenAt)>0);
+ await as('authenticated',other);
+ await denied(state(owner));
+ await as('service_role');
  assert.deepEqual(Object.keys(fresh).sort(),['checkpoint','generation','previousTutorQuestion','snapshot','status','turnId','version']);
 
  await as('authenticated',owner);

@@ -81,13 +81,16 @@ it('lets the current lease owner finish and save the same running timer', async 
 }, 30_000);
 
 it('applies a real SQL exclusion to the app Progress total', async () => {
-  const api = createLiveStudyApi(), now = Date.now();
+  const api = createLiveStudyApi(), end = new Date();
+  // Keep the entire fixture inside one completed UTC day, even when CI runs near midnight.
+  end.setUTCDate(end.getUTCDate() - 1);
+  end.setUTCHours(12, 0, 0, 0);
   const manual = await api.createManualStudyEntry({intent: 'Exclusion verification', intervals: [{
-    kind: 'focus', start: new Date(now - 25 * 60_000).toISOString(), end: new Date(now).toISOString(),
+    kind: 'focus', start: new Date(end.getTime() - 25 * 60_000).toISOString(), end: end.toISOString(),
   }]});
   const excluded = await api.excludeMinutes(manual.record.id, manual.record.version, 10, 'Distracted');
   expect(excluded.record.excludedIntervals).toHaveLength(1);
-  const summary = effortSummary([excluded.record], periodFor('day', new Date(), 'UTC'), 'UTC', new Date().toISOString());
+  const summary = effortSummary([excluded.record], periodFor('day', end, 'UTC'), 'UTC', end.toISOString());
   expect(summary.minutes).toBe(15);
 }, 30_000);
 

@@ -1,0 +1,361 @@
+{
+  "assetSetVersion": "detypify-0.3.0-lemma-v1",
+  "preprocessing": "detypify-canvas-9px-v1",
+  "modelHash": "ce4c35a43cf18fa1ca4bf530699393005152bc50e3911a5b6e8e55d8f1599149",
+  "worker": "inkRecognizer.worker-Da3wQltq.js",
+  "workerSha256": "658d359a1cf54be01bfba7524351715afc12313c8bc6afe7aa59cc620801fc1e",
+  "chromium": "153.0.8010.12",
+  "classCount": 411,
+  "mappedClasses": 136,
+  "seeds": {
+    "tuning": 617128485,
+    "test": 2553972862
+  },
+  "counts": {
+    "tuning": {
+      "attempts": 490,
+      "byKind": {
+        "complete": 240,
+        "partial": 100,
+        "ambiguous": 40,
+        "unsupported": 50,
+        "wrong-intent": 30,
+        "invalid": 30
+      },
+      "modelSupportedCompleted": 200,
+      "modelTop1": 192,
+      "candidateBudget": [
+        {
+          "k": 1,
+          "modelOnlyRecalled": 192,
+          "geometryFirstSimulationRecalled": 194,
+          "meanSimulatedMatches": 0.9916666666666667
+        },
+        {
+          "k": 3,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 202,
+          "meanSimulatedMatches": 2.975
+        },
+        {
+          "k": 5,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 202,
+          "meanSimulatedMatches": 4.958333333333333
+        },
+        {
+          "k": 7,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 202,
+          "meanSimulatedMatches": 6.941666666666666
+        }
+      ],
+      "partialExtensionIntended": 41,
+      "partialAnyValidExtension": 49,
+      "partialWithShorter": 80,
+      "partialShorterShown": 41,
+      "completeShorterCouldBecome": 31,
+      "completeShorter": 60,
+      "completionStates": {
+        "finished": 11,
+        "extendable": 100,
+        "unknown": 379
+      },
+      "emittedModelScores": 470,
+      "policyRecall": 202,
+      "extensionBudget": [
+        {
+          "k": 1,
+          "intended": 34,
+          "proposals": 53,
+          "unannotated": 16
+        },
+        {
+          "k": 2,
+          "intended": 38,
+          "proposals": 76,
+          "unannotated": 35
+        },
+        {
+          "k": 3,
+          "intended": 41,
+          "proposals": 91,
+          "unannotated": 46
+        },
+        {
+          "k": 5,
+          "intended": 41,
+          "proposals": 109,
+          "unannotated": 63
+        }
+      ],
+      "partialByFixture": {
+        "less-than-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "greater-than-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "not-element-of-before-last-stroke": {
+          "attempts": 10,
+          "intended": 5
+        },
+        "not-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 7
+        },
+        "subset-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 3
+        },
+        "superset-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "left-angle-halfway": {
+          "attempts": 10,
+          "intended": 5
+        },
+        "member-without-midbar": {
+          "attempts": 10,
+          "intended": 3
+        },
+        "short-stroke-before-equals": {
+          "attempts": 10,
+          "intended": 0
+        },
+        "less-or-equal-incomplete-bar": {
+          "attempts": 10,
+          "intended": 6
+        }
+      }
+    },
+    "test": {
+      "attempts": 490,
+      "byKind": {
+        "complete": 240,
+        "partial": 100,
+        "ambiguous": 40,
+        "unsupported": 50,
+        "wrong-intent": 30,
+        "invalid": 30
+      },
+      "modelSupportedCompleted": 200,
+      "modelTop1": 192,
+      "candidateBudget": [
+        {
+          "k": 1,
+          "modelOnlyRecalled": 192,
+          "geometryFirstSimulationRecalled": 196,
+          "meanSimulatedMatches": 0.9958333333333333
+        },
+        {
+          "k": 3,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 204,
+          "meanSimulatedMatches": 2.9875
+        },
+        {
+          "k": 5,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 204,
+          "meanSimulatedMatches": 4.979166666666667
+        },
+        {
+          "k": 7,
+          "modelOnlyRecalled": 200,
+          "geometryFirstSimulationRecalled": 204,
+          "meanSimulatedMatches": 6.970833333333333
+        }
+      ],
+      "partialExtensionIntended": 53,
+      "partialAnyValidExtension": 63,
+      "partialWithShorter": 80,
+      "partialShorterShown": 41,
+      "completeShorterCouldBecome": 31,
+      "completeShorter": 60,
+      "completionStates": {
+        "finished": 12,
+        "extendable": 114,
+        "unknown": 364
+      },
+      "emittedModelScores": 470,
+      "policyRecall": 204,
+      "extensionBudget": [
+        {
+          "k": 1,
+          "intended": 45,
+          "proposals": 64,
+          "unannotated": 17
+        },
+        {
+          "k": 2,
+          "intended": 49,
+          "proposals": 93,
+          "unannotated": 42
+        },
+        {
+          "k": 3,
+          "intended": 53,
+          "proposals": 112,
+          "unannotated": 57
+        },
+        {
+          "k": 5,
+          "intended": 53,
+          "proposals": 132,
+          "unannotated": 72
+        }
+      ],
+      "partialByFixture": {
+        "less-than-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 3
+        },
+        "greater-than-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "not-element-of-before-last-stroke": {
+          "attempts": 10,
+          "intended": 7
+        },
+        "not-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 10
+        },
+        "subset-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "superset-or-equal-before-last-stroke": {
+          "attempts": 10,
+          "intended": 4
+        },
+        "left-angle-halfway": {
+          "attempts": 10,
+          "intended": 8
+        },
+        "member-without-midbar": {
+          "attempts": 10,
+          "intended": 5
+        },
+        "short-stroke-before-equals": {
+          "attempts": 10,
+          "intended": 0
+        },
+        "less-or-equal-incomplete-bar": {
+          "attempts": 10,
+          "intended": 8
+        }
+      }
+    }
+  },
+  "frozenOperatingPoint": {
+    "tuning": {
+      "split": "tuning",
+      "gate": "identity-and-completion",
+      "confidence": 0.97,
+      "margin": 0.35,
+      "unknownLimit": 0.05,
+      "attempts": 490,
+      "eligible": 192,
+      "ineligible": 298,
+      "accepted": 10,
+      "correct": 10,
+      "incorrect": 0,
+      "wrongCompleted": 0,
+      "partial": 0,
+      "ambiguous": 0,
+      "unsupported": 0,
+      "wrongIntent": 0,
+      "invalid": 0,
+      "tpr": 0.052083333333333336,
+      "fpr": 0,
+      "precision": 1,
+      "coverage": 0.02040816326530612,
+      "correctCoverage": 0.041666666666666664,
+      "netTapsSavedExample": 10
+    },
+    "test": {
+      "split": "test",
+      "gate": "identity-and-completion",
+      "confidence": 0.97,
+      "margin": 0.35,
+      "unknownLimit": 0.05,
+      "attempts": 490,
+      "eligible": 192,
+      "ineligible": 298,
+      "accepted": 10,
+      "correct": 10,
+      "incorrect": 0,
+      "wrongCompleted": 0,
+      "partial": 0,
+      "ambiguous": 0,
+      "unsupported": 0,
+      "wrongIntent": 0,
+      "invalid": 0,
+      "tpr": 0.052083333333333336,
+      "fpr": 0,
+      "precision": 1,
+      "coverage": 0.02040816326530612,
+      "correctCoverage": 0.041666666666666664,
+      "netTapsSavedExample": 10
+    }
+  },
+  "fixedTestComparison": [
+    {
+      "split": "test",
+      "gate": "identity",
+      "confidence": 0.75,
+      "margin": 0.15,
+      "unknownLimit": 0.2,
+      "attempts": 490,
+      "eligible": 192,
+      "ineligible": 298,
+      "accepted": 294,
+      "correct": 178,
+      "incorrect": 116,
+      "wrongCompleted": 7,
+      "partial": 60,
+      "ambiguous": 18,
+      "unsupported": 0,
+      "wrongIntent": 29,
+      "invalid": 2,
+      "tpr": 0.9270833333333334,
+      "fpr": 0.38926174496644295,
+      "precision": 0.6054421768707483,
+      "coverage": 0.6,
+      "correctCoverage": 0.7416666666666667,
+      "netTapsSavedExample": -402
+    },
+    {
+      "split": "test",
+      "gate": "identity-and-completion",
+      "confidence": 0.75,
+      "margin": 0.15,
+      "unknownLimit": 0.2,
+      "attempts": 490,
+      "eligible": 192,
+      "ineligible": 298,
+      "accepted": 11,
+      "correct": 11,
+      "incorrect": 0,
+      "wrongCompleted": 0,
+      "partial": 0,
+      "ambiguous": 0,
+      "unsupported": 0,
+      "wrongIntent": 0,
+      "invalid": 0,
+      "tpr": 0.057291666666666664,
+      "fpr": 0,
+      "precision": 1,
+      "coverage": 0.022448979591836733,
+      "correctCoverage": 0.04583333333333333,
+      "netTapsSavedExample": 11
+    }
+  ],
+  "setupMsDiagnostic": 887.6000000014901
+}

@@ -1,0 +1,6 @@
+:where(html[data-v7]) .v7-ink-canvas {
+ display:block;width:100%;touch-action:none;color:var(--v7-role-text-primary);
+ background:radial-gradient(circle,var(--v7-role-border-subtle) 1px,transparent 1px) 0 0/12px 12px,var(--v7-role-surface-sunken);
+ border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-2);
+}
+:where(html[data-v7]) .v7-ink-canvas[data-mode="hand"] {touch-action:pan-y;}

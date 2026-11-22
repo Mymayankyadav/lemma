@@ -169,21 +169,25 @@ export default function Activities(){
      <button type="button" className={action} disabled={busy}
       onClick={()=>void run(()=>getPresetApi().archivePreset(row.id,row.version),'Activity archived')}
       aria-label={'Archive '+row.label}>Archive</button>
-     <label className="text-label">Order for {row.label}
-      <input className={field+' w-20'} type="number" min={0} max={2147483647}
-       step={1} aria-label={'Order '+row.label}
-       value={positions[row.id]??String(row.position)}
-       onChange={event=>setPositions(prev=>({...prev,[row.id]:event.target.value}))}/>
-     </label>
-     <button type="button" className={action} disabled={busy}
-      aria-label={'Save order '+row.label}
-      onClick={()=>{
-       const raw=positions[row.id];
-       if(raw===undefined||!/^(0|[1-9][0-9]*)$/.test(raw)||
-        Number(raw)>2147483647){setError('Order must be a non-negative integer');return}
-       void run(()=>getPresetApi().reorderPreset(row.id,row.version,Number(raw)),
-        'Activity order saved');
-      }}>Save order</button>
+     {/* N220 (Owner report): the order field and its Save sit together on their own line, instead of wrapping apart;
+         the input's own label names the activity, which the card already shows. */}
+     <div className="activity-order flex basis-full items-center gap-2">
+      <label className="flex items-center gap-2 text-label">Order
+       <input className={field+' w-20'} type="number" min={0} max={2147483647}
+        step={1} aria-label={'Order '+row.label}
+        value={positions[row.id]??String(row.position)}
+        onChange={event=>setPositions(prev=>({...prev,[row.id]:event.target.value}))}/>
+      </label>
+      <button type="button" className={action} disabled={busy}
+       aria-label={'Save order '+row.label}
+       onClick={()=>{
+        const raw=positions[row.id];
+        if(raw===undefined||!/^(0|[1-9][0-9]*)$/.test(raw)||
+         Number(raw)>2147483647){setError('Order must be a non-negative integer');return}
+        void run(()=>getPresetApi().reorderPreset(row.id,row.version,Number(raw)),
+         'Activity order saved');
+       }}>Save order</button>
+     </div>
     </div>
    </article>)}
   </section>}

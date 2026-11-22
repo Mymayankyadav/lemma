@@ -1,18 +1,16 @@
 @layer theme, base, components, utilities, lemma-app, v7-tokens, v7-reset, v7-components, v7-gallery, v7-states, v7-accessibility;
 /* PLAN §6.1: the v7 shell. Role tokens only. */
 @layer v7-components {
- :where(html[data-v7]) .v7-shell {--v7-dock-height:calc(64px + var(--v7-space-3) + env(safe-area-inset-bottom));min-height:100dvh;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
- :where(html[data-v7]) .v7-shell[data-session="true"] {--v7-dock-height:calc(112px + var(--v7-space-3) + env(safe-area-inset-bottom));}
+ :where(html[data-v7]) .v7-shell {--v7-dock-height:calc(64px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));min-height:100dvh;background:var(--v7-role-surface-page);color:var(--v7-role-text-primary);font:400 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
+ :where(html[data-v7]) .v7-shell[data-session="true"] {--v7-dock-height:calc(112px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));}
  :where(html[data-v7]) .v7-shell[data-immersive="true"] {--v7-dock-height:0px;}
  /* Page content clears the floating dock. */
 :where(html[data-v7]) .v7-page {grid-template-columns:minmax(0,1fr);width:100%;max-width:calc(var(--v7-space-20) * 8);margin-inline:auto;padding:0 var(--v7-page-margin) calc(var(--v7-dock-height) + 72px);}
 
  /* D. Tab bar and E. session row: one floating container on solid surface.overlay (KC12: nothing in the kit is see-through). */
- :where(html[data-v7]) .v7-dock {position:fixed;left:var(--v7-space-3);right:var(--v7-space-3);bottom:calc(var(--v7-space-3) + env(safe-area-inset-bottom));z-index:20;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;
+ :where(html[data-v7]) .v7-dock {position:fixed;left:var(--v7-space-3);right:var(--v7-space-3);bottom:calc(var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));z-index:20;max-width:calc(var(--v7-space-20) * 6);margin-inline:auto;
   border:var(--v7-hairline) solid var(--v7-role-border-subtle);border-radius:var(--v7-radius-4);overflow:hidden;
   background:var(--v7-role-surface-overlay);box-shadow:var(--v7-shadow-2);}
- /* Immersive screens keep the landmark for keyboard users only. */
- :where(html[data-v7]) .v7-shell[data-immersive="true"] .v7-dock:not(:focus-within) {clip-path:inset(50%);width:1px;height:1px;overflow:hidden;border:0;box-shadow:none;}
  :where(html[data-v7]) .v7-tabbar {position:relative;display:grid;grid-template-columns:repeat(5,1fr);height:64px;padding:var(--v7-space-1) var(--v7-space-2);}
  :where(html[data-v7]) .v7-dock-row {display:flex;align-items:center;}
  :where(html[data-v7]) .v7-dock-row > .v7-tabbar {flex:1;min-width:0;}
@@ -25,10 +23,7 @@
  :where(html[data-v7]) .v7-tab[aria-current="page"] {color:var(--v7-role-text-primary);}
  :where(html[data-v7]) .v7-tab[aria-current="page"] svg {color:var(--v7-role-selection-fg);}
  :where(html[data-v7]) .v7-tab-icon {position:relative;display:grid;place-items:center;}
- /* V11 (v7 UX audit r3): names never wrap; when one does not fit its slot the dock keeps only the selected tab's name
-    (useTabLabelsFit), the others are for assistive technology only. */
  :where(html[data-v7]) .v7-tab-label {white-space:nowrap;}
- :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab:not([aria-current="page"]) .v7-tab-label {position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);}
  :where(html[data-v7]) .v7-tab-icon svg {width:22px;height:22px;}
  :where(html[data-v7]) .v7-tab-pip {position:absolute;top:-6px;left:calc(100% - 6px);min-width:18px;height:18px;padding-inline:4px;display:grid;place-items:center;border-radius:var(--v7-round);
   background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:0 0 0 2px var(--v7-role-surface-overlay);font:600 var(--v7-type-caption)/1 var(--v7-sans);}
@@ -57,9 +52,9 @@
  :where(html[data-v7]) .v7-page-actions svg {width:20px;height:20px;}
  :where(html[data-v7]) .v7-count-badge {position:absolute;top:4px;right:2px;min-width:18px;height:18px;padding-inline:4px;display:grid;place-items:center;border-radius:var(--v7-round);
   background:var(--v7-role-action-bg);color:var(--v7-role-text-on-action);box-shadow:0 0 0 2px var(--v7-role-surface-page);font:600 var(--v7-type-caption)/1 var(--v7-sans);}
-:where(html[data-v7]) .v7-hub-header {display:grid;gap:var(--v7-space-2);padding-top:max(env(safe-area-inset-top),var(--v7-space-2));}
+:where(html[data-v7]) .v7-hub-header {display:grid;gap:var(--v7-space-2);padding-top:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-2));}
 :where(html[data-v7]) .v7-hub-row {display:flex;align-items:center;justify-content:space-between;gap:var(--v7-space-2);min-height:56px;}
- :where(html[data-v7]) .v7-hub-bar {position:sticky;top:0;z-index:8;margin-inline:calc(var(--v7-page-margin) * -1);padding:max(env(safe-area-inset-top),var(--v7-space-1)) var(--v7-page-margin) 0;background:var(--v7-role-surface-page);}
+ :where(html[data-v7]) .v7-hub-bar {position:sticky;top:0;z-index:8;margin-inline:calc(var(--v7-page-margin) * -1);padding:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1)) var(--v7-page-margin) 0;background:var(--v7-role-surface-page);}
  :where(html[data-v7]) .v7-hub-bar .v7-hub-row {min-height:48px;}
  :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] {border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  :where(html[data-v7]) .v7-hub-bar[data-collapsed="true"] .v7-hub-title {font-size:var(--v7-type-subhead);}
@@ -78,7 +73,7 @@
 :where(html[data-v7]) .v7-hub-title {min-width:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;}
  :where(html[data-v7]) .v7-hub-title.v7-display {font-size:var(--v7-type-display);line-height:1.1;}
  :where(html[data-v7]) .v7-detail-header,:where(html[data-v7]) .v7-immersive-header {min-width:0;position:sticky;top:0;z-index:10;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:var(--v7-space-2);
-  min-height:52px;padding:max(env(safe-area-inset-top),var(--v7-space-1)) var(--v7-space-2) var(--v7-space-1);margin-inline:calc(var(--v7-page-margin) * -1);
+  min-height:52px;padding:max(var(--v7-safe-top,env(safe-area-inset-top)),var(--v7-space-1)) var(--v7-space-2) var(--v7-space-1);margin-inline:calc(var(--v7-page-margin) * -1);
   background:var(--v7-role-surface-page);border-bottom:var(--v7-hairline) solid var(--v7-role-border-subtle);}
  :where(html[data-v7]) .v7-detail-title {min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;text-align:center;font:600 var(--v7-type-body)/var(--v7-leading-body) var(--v7-sans);}
  :where(html[data-v7]) .v7-immersive-header {background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;}
@@ -190,7 +185,6 @@
  }
 }
 @layer v7-components {
- :where(html[data-v7]) .v7-shell[data-immersive="true"] :is(.v7-rail-head,.v7-rail-library,.v7-rail-settings) {display:none;}
 /* R0 · F04 stacking contract: a sheet sits above everything and the tab bar and Capture hide while it is open; content
    clears the tab bar plus any sticky action bar plus 16 px. */
 @media (max-width:699px){:where(html[data-v7]):has(dialog.v7-sheet[open]) .v7-dock,:where(html[data-v7]):has(dialog.v7-sheet[open]) .v7-capture {visibility:hidden;}}
@@ -207,3 +201,60 @@
 /* N157 · AW3: a newer Lemma.apk exists (the app's daily check). */
 :where(html[data-v7]) .v7-page-actions a {position:relative;}
 :where(html[data-v7]) .v7-update-dot {position:absolute;top:8px;right:8px;width:8px;height:8px;border-radius:var(--v7-round);background:var(--v7-role-selection-fg);box-shadow:0 0 0 2px var(--v7-role-surface-page);}
+
+:where(html[data-v7]) .v7-offline-notice {
+ color: var(--v7-role-status-warning);
+ font-size: var(--v7-type-supporting);
+ background: var(--v7-role-surface-sunken);
+}
+@media (max-width:699px) {
+ :where(html[data-v7]) .v7-shell[data-session="true"]:not([data-immersive="true"]) {
+  --v7-dock-height:calc(64px + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
+ }
+ :where(html[data-v7]) .v7-dock-row .v7-session-row { padding:0; border:0; }
+ :where(html[data-v7]) .v7-dock-row .v7-session-open { padding:0; width:44px; justify-content:center; }
+ :where(html[data-v7]) .v7-dock-row :is(.v7-session-title,.v7-session-word,.v7-session-time,.v7-session-toggle) { display:none; }
+ /* Compact dock: one icon row and a separate baseline for the active name. */
+ :where(html[data-v7]) .v7-shell:has(.v7-tabbar[data-labels="selected"]) {
+  --v7-compact-dock-row:max(64px,calc(36px + var(--v7-leading-caption)));
+  --v7-dock-height:calc(var(--v7-compact-dock-row) + 2 * var(--v7-hairline) + var(--v7-space-3) + var(--v7-safe-bottom,env(safe-area-inset-bottom)));
+ }
+ :where(html[data-v7]) .v7-dock:has(.v7-tabbar[data-labels="selected"]) {inset-inline:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-dock-row:has(> .v7-tabbar[data-labels="selected"]) {padding-inline:0;}
+ :where(html[data-v7]) .v7-dock-row:has(> .v7-tabbar[data-labels="selected"]) > .v7-capture {width:var(--v7-touch);}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] {
+  grid-template-columns:repeat(5,minmax(0,1fr));height:var(--v7-compact-dock-row);padding-inline:0;
+ }
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab {align-content:start;padding-block-start:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab-pill {left:0;width:20%;}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab-label {position:absolute;bottom:0;}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab:first-of-type .v7-tab-label {inset-inline-start:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab:last-of-type .v7-tab-label {inset-inline-end:var(--v7-space-1);}
+ :where(html[data-v7]) .v7-tabbar[data-labels="selected"] .v7-tab:not([aria-current="page"]) .v7-tab-label {
+  width:1px;height:1px;overflow:hidden;clip-path:inset(50%);
+ }
+
+}
+
+:where(html[data-v7]) .v7-search-create {display:grid;justify-items:start;gap:var(--v7-space-2);}
+:where(html[data-v7]) .v7-task-sentence {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,10rem),1fr));align-items:end;gap:var(--v7-space-3);}
+:where(html[data-v7]) .v7-task-sentence > :last-child:nth-child(3) {grid-column:1/-1;}
+:where(html[data-v7]) .v7-paths-filters button,
+:where(html[data-v7]) :is(.v7-cards-filters,.v7-tk-filters) .v7-filter-chip {min-height:44px;}
+
+/* Atlas layers and idea panels use the screen without the global navigation. */
+:where(html[data-v7]) .v7-shell:has(> .v7-atlas[data-atlas-layer]) {
+ --v7-dock-height:0px;padding-inline-start:0;
+}
+:where(html[data-v7]) .v7-shell:has(> .v7-atlas[data-atlas-layer]) > .v7-dock {display:none;}
+
+/* N220 (Owner report) · Capture's type control sizes each segment to its word, so "Time block" no longer covers "Task";
+   Speak starts at the column edge with the field. */
+:where(html[data-v7]) .v7-capture-kinds .v7-segmented {display:flex;}
+:where(html[data-v7]) .v7-capture-kinds .v7-segmented button {flex:1 1 auto;min-width:0;padding-inline:var(--v7-space-2);overflow:hidden;text-overflow:ellipsis;}
+
+/* N220 · a page's large title (Settings sections, learning detail screens) in the shell, so it no longer depends on
+   whether the learning screens' styles happen to have loaded (a direct Settings visit showed it as body-size serif). */
+@layer v7-components {
+ :where(html[data-v7]) .v7-learn-title {margin:0;font:400 var(--v7-type-title)/1.15 var(--v7-serif);letter-spacing:-.015em;overflow-wrap:anywhere;}
+}

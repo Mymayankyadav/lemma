@@ -1,0 +1,16 @@
+{"id": "m-n00", "initial": "Let n be a multiple of four. ", "target": "Then n is even, since four times an integer can also be written as two times an integer.", "kind": "natural", "truth": true}
+{"id": "m-n01", "initial": "Suppose a whole number is even. ", "target": "Its square must be odd, because multiplying an even number by itself changes its parity.", "kind": "natural", "truth": false}
+{"id": "m-n02", "initial": "Consider a differentiable function on an interval. ", "target": "If its derivative is positive everywhere on that interval, the function is strictly increasing there.", "kind": "natural", "truth": true}
+{"id": "m-n03", "initial": "The derivative vanishes at this point. ", "target": "That fact alone proves the function has a strict local minimum at the point.", "kind": "natural", "truth": false}
+{"id": "m-n04", "initial": "Take two open sets in a topological space. ", "target": "Their union is open by the defining closure property of the topology.", "kind": "natural", "truth": true}
+{"id": "m-n05", "initial": "Take an arbitrary family of open sets. ", "target": "Their intersection must be open, even when the family contains infinitely many sets.", "kind": "natural", "truth": false}
+{"id": "m-n06", "initial": "Let the two events be disjoint. ", "target": "Their intersection is empty, so its probability is zero under any probability measure.", "kind": "natural", "truth": true}
+{"id": "m-n07", "initial": "Two events have positive probability. ", "target": "They must intersect, since both events occupy some positive portion of the sample space.", "kind": "natural", "truth": false}
+{"id": "m-n08", "initial": "Suppose the matrix has two equal rows. ", "target": "Its determinant is zero, by the alternating property of the determinant.", "kind": "natural", "truth": true}
+{"id": "m-n09", "initial": "The determinant of this square matrix is zero. ", "target": "Therefore every entry in the matrix must equal zero, including all diagonal entries.", "kind": "natural", "truth": false}
+{"id": "m-n10", "initial": "I am copying the definitions before starting. ", "target": "Please give me a moment to compare the notation on the board with my notes.", "kind": "natural", "truth": true}
+{"id": "m-n11", "initial": "An injective map sends distinct inputs to distinct outputs. ", "target": "Therefore every possible output must occur, and the map is necessarily surjective.", "kind": "natural", "truth": false}
+{"id": "m-n12", "initial": "Let S be a finite set with five elements. ", "target": "There are exactly five ways to select a single element from this set.", "kind": "natural", "truth": true}
+{"id": "m-n13", "initial": "The sequence alternates between minus one and one. ", "target": "It converges to zero because both values remain within a fixed bounded interval.", "kind": "natural", "truth": false}
+{"id": "m-n14", "initial": "The empty set is a subset of every set. ", "target": "There is no element in the empty set that could violate the inclusion condition.", "kind": "natural", "truth": true}
+{"id": "m-n15", "initial": "Assume a graph has six vertices. ", "target": "It must contain an edge because a graph cannot have vertices without connecting them.", "kind": "natural", "truth": false}

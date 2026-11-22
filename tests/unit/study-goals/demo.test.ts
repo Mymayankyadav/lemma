@@ -2,7 +2,7 @@ import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import {createDemoGoalApi} from '../../../src/data/study-goals/demo';
 import {getGoalApi,setGoalApiForTests} from '../../../src/data/study-goals';
 import type {GoalApi,NewGoal} from '../../../src/data/study-goals/contract';
-vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo'}));
+vi.mock('../../../src/data/mode',()=>({getMode:()=> 'demo',getDemoProfile:()=> 'default'}));
 
 const now='2026-11-06T11:00:00.000Z';
 const input:NewGoal={

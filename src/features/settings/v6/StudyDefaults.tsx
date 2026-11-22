@@ -128,12 +128,12 @@ export default function StudyDefaults({ settings, part = 'all' }: { settings: Se
   return <section aria-labelledby="v6-study-title" className="flex flex-col gap-4 pb-8">
     <h2 id="v6-study-title" className="text-title-s font-semibold text-ink">{part === 'tutor' ? 'Teaching style' : 'Study defaults'}</h2>
     {part !== 'study' && <section className="rounded-slab border border-edge bg-[var(--paper)] p-4">
-      <h3 className="mb-2 text-body font-semibold text-ink">Teaching style</h3>
+      {part==='all'&&<h3 className="mb-2 text-body font-semibold text-ink">Teaching style</h3>}
       {styles.isPending ? <p role="status">Loading teaching styles…</p> :
         styles.isError ? <div role="alert">Teaching styles unavailable.
           <button type="button" className={button} onClick={() => void styles.refetch()}>Retry styles</button>
         </div> : !styles.data?.length ? <p>No teaching styles available.</p> :
-        <div role="radiogroup" aria-label="Teaching style" className="flex flex-col gap-2">
+        <div role="radiogroup" aria-label="Teaching style" data-teaching-styles className="flex flex-col gap-2">
           {styles.data.map((style, index) => <button key={style.key} type="button" role="radio"
             aria-checked={settings.defaultStyle === style.key} disabled={busy}
             className="flex min-h-11 w-full items-center gap-3 rounded-[8px] px-2 text-left text-body text-ink hover:bg-[var(--paper-2)] focus-visible:outline-2 focus-visible:outline-[var(--link)] disabled:opacity-50"

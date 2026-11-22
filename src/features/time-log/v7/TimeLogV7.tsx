@@ -89,7 +89,7 @@ export default function TimeLogV7(){
     <RowMenu label="More time log actions" title="Time log" items={[{label:'Export CSV',icon:<Download aria-hidden="true"/>,onClick:exportCsv}]}/></span></div>
   {status==='loading'&&<Skeleton/>}
   {status==='error'&&<div role="alert" className="v7-progress-error"><p>Erratum: the time log didn’t load. Try again.</p><Button onClick={()=>setReload(value=>value+1)}>Retry</Button></div>}
-  {status==='ready'&&(rows.length?days.slice().reverse().filter(item=>byDay.has(item)).map(item=><section key={item} id={'log-'+item} className="v7-log-group" aria-label={formatLongDate(item,{zone})}>
+  {status==='ready'&&(rows.length?days.slice().reverse().filter(item=>byDay.has(item)).map(item=><section key={item} id={'log-'+item} className="v7-log-group" data-selected={item===selected||undefined} aria-label={formatLongDate(item,{zone})}>
    <h2 className="v7-eyebrow">{formatLongDate(item,{zone})}</h2>
    <ul>{byDay.get(item)!.map(entry=>{const span=spanOf(entry),{klass,path}=look(entry);return <li key={entry.id} className={'v7-log-row '+klass} data-voided={entry.voidedAt?'true':undefined}>
     <span className="v7-log-bar" aria-hidden="true"/>
@@ -113,7 +113,7 @@ export default function TimeLogV7(){
    <div className="v7-log-add">
     <Field label="What you studied" value={intent} onChange={event=>setIntent(event.target.value)} placeholder="e.g. Read Rudin ch. 2"/>
     <DatePicker label="Day" value={day} onChange={setDay}/>
-    <TimeRange start={start} end={end} onChange={(from,to)=>{setStart(from);setEnd(to);}}/>
+    <TimeRange ruler start={start} end={end} onChange={(from,to)=>{setStart(from);setEnd(to);}}/>
     {problem&&<p role="alert" className="v7-error">{problem}</p>}
    </div>
   </Sheet>

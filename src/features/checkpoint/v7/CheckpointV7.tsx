@@ -1,9 +1,13 @@
+import {CheckpointReadiness} from '../../adaptive/panels/LearningDetails';
+import {LemmaError} from '../../../data/api';
+import {EmptyMoment} from '../../../ui/v7/EmptyMoment';
+import {Dock} from '../../../ui/v7/Dock';
 import {useStudyUi} from '../../../data/StudyUiRelease';
 import {getApi} from '../../../data';
 import {useQuery} from '@tanstack/react-query';
 import {reviewHref} from '../../../data/review-target';
 import {currentStudyStep} from '../../project/v7/pathModel';
-import {CheckpointReady} from '../../adaptive/AtlasPanels';
+import {useAtlasModel} from '../../../data/adaptive/atlas-api';
 import {PlanDisposition,DeferredStep,checkpointLabel,stepDisposition} from '../../adaptive/Views';
 import {useMemo,useState} from 'react';
 import {Link,useNavigate,useParams} from 'react-router';
@@ -35,6 +39,7 @@ const stateText=(ui:CheckpointView['ui'])=>ui==='revisit'?'Recheck due':nodeWord
 /** PLAN §6.9 Checkpoint: the statement, the steps as a stepper, prerequisites and sources, evidence by session, and the
  *  primary "Work on this with your tutor" in a sticky bar with Demonstrate and Defer behind ⋯. */
 export default function CheckpointV7(){
+ const atlas=useAtlasModel();
  const studyRepair=useStudyUi();
  const {slug:rawSlug,code:rawCode}=useParams(),slug=rawSlug??'',code=rawCode??'';
  const query=useCheckpoint(slug,code),project=useProject(slug),settings=useSettings(),notify=useToast();
@@ -54,8 +59,10 @@ export default function CheckpointV7(){
   queryFn:async()=>await getApi().getStudyTargetDue?.({kind:'checkpoint',id:view!.id})??0});
  if(query.isPending)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/><Skeleton/><Skeleton/></main>;
  if(query.error||!detail||!view)return <main id="main-content" className="v7-page v7-learn" aria-label="Checkpoint"><DetailHeader title="Checkpoint" back={back}/>
-  <div role="alert" className="v7-learn-empty"><p>Checkpoint unavailable. Check your connection or try again.</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div></main>;
- const step=studyRepair?currentStudyStep(view).index:Math.max(0,view.currentStep);
+  {query.error instanceof LemmaError&&query.error.code==='not_found'?<EmptyMoment title="This checkpoint doesn't exist." action={{label:'Back to the path',to:back}}/>
+   :<div role="alert" className="v7-learn-empty"><p>{navigator.onLine?'Could not open this checkpoint.':'You’re offline.'}</p><Button onClick={()=>{void query.refetch();}}>Try again</Button></div>}</main>;
+ const step=currentStudyStep(view).index;
+ const lockedAfter=detail.prereqs.map(code=>project.data?.checkpoints.find(cp=>cp.code===code)).find(cp=>cp&&cp.ui!=='done'&&cp.ui!=='revisit');
  return <main id="main-content" className={'v7-page v7-learn '+klass} aria-label="Checkpoint">
   {/* V18: the collapsed header names the checkpoint, not its code ("CP4"). */}
   <DetailHeader title={view.title} back={back}/>
@@ -73,9 +80,9 @@ export default function CheckpointV7(){
   </header>
   <PlanDisposition view={view}/>
   <section className="v7-statement" aria-label="Statement">
-   <p className="v7-eyebrow">To demonstrate</p>
+   <p className="v7-eyebrow">Goal</p>
    <div className="v7-statement-text"><MathText source={detail.objective}/></div>
-   {detail.criterion&&<details className="v7-statement-criterion"><summary>What counts</summary><MathText source={detail.criterion}/></details>}
+   {detail.criterion&&<p className="v7-statement-criterion"><strong>What counts</strong> · <Tex source={detail.criterion}/></p>}
   </section>
   {detail.steps.length>0&&<section aria-label="Steps"><h2 className="v7-learn-h2">Steps</h2>
    <ol className="v7-steps">{detail.steps.map((text,index)=>{
@@ -87,25 +94,27 @@ export default function CheckpointV7(){
      {state==='current'&&<MetaChip kind="next">Next</MetaChip>}
      <span className="v7-sr-only">{state==='deferred'?'Deferred':state==='done'?'Done':state==='current'?'Current step':'Later'}</span>
     </li>;})}</ol></section>}
-  {(detail.prereqs.length>0||detail.sourceShort||detail.pages)&&<section aria-label="Prerequisites and sources"><h2 className="v7-learn-h2">Prerequisites and sources</h2>
+  {(detail.prereqs.length>0||detail.sourceShort||detail.pages)&&<section aria-label="Prerequisites and sources"><h2 className="v7-learn-h2">Prerequisites</h2>
    <div className="v7-learn-chiprow">
     {detail.prereqs.map(code=>{const cp=project.data?.checkpoints.find(item=>item.code===code);
      return <Link key={code} className="v7-learn-chip v7-learn-link" to={back+'/cp/'+encodeURIComponent(code)}>{cp?nodeWord[nodeStateOf(cp.ui)]+' · ':''}{cp?.title??code}</Link>;})}
     {(detail.sourceShort||detail.pages)&&<Link className="v7-learn-chip v7-learn-link" to={back+'?tab=sources'}><BookOpen aria-hidden="true"/>{detail.sourceShort??'Source'}{detail.pages?' · p. '+detail.pages:''}</Link>}
    </div></section>}
   {!settings.data?.flags?.recheck_v2&&detail.recheckPrompt&&<section className="v7-learn-card" aria-label="Recheck"><p className="v7-eyebrow">{view.ui==='revisit'?'Recheck due':'Next recheck'}</p><MathText source={detail.recheckPrompt}/></section>}
-  <CheckpointReady checkpointId={detail.view.id}/>
+  {view.ui!=='locked'&&atlas.data&&<p className="v7-learn-empty">Recheck: {view.ui==='revisit'?'due':view.ui==='done'?'not due yet':'not ready yet'}</p>}
+  <CheckpointReadiness checkpointId={view.id}/>
   <section aria-label="Evidence"><h2 className="v7-learn-h2">Evidence</h2>
    {evidence.length?<ol className="v7-evidence">{evidence.map(group=><li key={group.key} className="v7-evidence-group">
     <h3 className="v7-evidence-label">{group.label}</h3><ol>{group.events.slice(0,12).map(event=><EvidenceEntry key={event.id} event={event}/>)}</ol></li>)}</ol>
-   :<p className="v7-learn-empty">No evidence yet. Work on it with your tutor and the attempts appear here.</p>}
+   :<p className="v7-learn-empty">No evidence yet.</p>}
   </section>
   <Link className="v7-learn-row" to={studyRepair?reviewHref({kind:'checkpoint',id:view.id}):'/review?path='+encodeURIComponent(slug)}><span>{studyRepair?(due.isSuccess?due.data+' due · Review '+view.title:'Review '+view.title):detail.cardsCount+' '+(detail.cardsCount===1?'card':'cards')+' · Review'}</span><ChevronRight aria-hidden="true"/></Link>
-  <div className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
+  <Dock className="v7-learn-bar" role="group" aria-label="Checkpoint actions">
    {view.ui==='proposed'?<Link className="v7-button v7-primary" to="/proposals?tab=plan"><span>Review this proposal</span></Link>
-    :<Button variant="primary" onClick={()=>navigate(tutorHref(slug,code))}>Work on this with your tutor</Button>}
+    :view.ui==='locked'?<p>{lockedAfter?'Unlocks after '+lockedAfter.title:'Complete the preceding checkpoint'}</p>
+    :<Button variant="primary" onClick={()=>navigate(tutorHref(slug,code))}>Continue with tutor</Button>}
    <IconButton label="More checkpoint actions" aria-haspopup="dialog" onClick={()=>setMore(true)}><MoreHorizontal aria-hidden="true"/></IconButton>
-  </div>
+  </Dock>
   <ActionSheet open={more} onClose={()=>setMore(false)} title={view.title} label="Checkpoint actions" items={[
    ...(view.ui!=='done'&&view.ui!=='locked'?[{label:'Demonstrate',hint:'Show your proof; your tutor records it if it holds up.',icon:<CircleCheck aria-hidden="true"/>,onClick:()=>launch('Please assess my proof for checkpoint '+view.code+' and record a demonstration only when supported by evidence.')}]:[]),
    ...(view.ui!=='done'?[{label:'Defer',hint:'Move it later in your plan, with your approval.',icon:<CalendarClock aria-hidden="true"/>,onClick:()=>launch('Please help me defer checkpoint '+view.code+' and update the study plan only with my approval.')}]:[]),
