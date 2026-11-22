@@ -1,0 +1,795 @@
+{
+ "errors": {},
+ "measures": {
+  "today": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-day": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    294,
+    358,
+    523
+   ],
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-week": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    100,
+    358,
+    44
+   ],
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-month": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-agenda": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-view-menu": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    294,
+    358,
+    523
+   ],
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-actions": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    294,
+    358,
+    523
+   ],
+   "sheet": [
+    0,
+    500,
+    390,
+    344
+   ],
+   "sheetTitle": [
+    21,
+    533,
+    84,
+    26
+   ],
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-block-sheet": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    53
+   ],
+   "toolbar": [
+    16,
+    -12,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    176,
+    358,
+    523
+   ],
+   "sheet": [
+    0,
+    304,
+    390,
+    540
+   ],
+   "sheetTitle": [
+    21,
+    355,
+    143,
+    26
+   ],
+   "footer": [
+    1,
+    770,
+    388,
+    73
+   ],
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-quick": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    53
+   ],
+   "toolbar": [
+    16,
+    -12,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    176,
+    358,
+    523
+   ],
+   "sheet": [
+    0,
+    304,
+    390,
+    540
+   ],
+   "sheetTitle": [
+    21,
+    355,
+    143,
+    26
+   ],
+   "footer": [
+    1,
+    770,
+    388,
+    73
+   ],
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "calendar-planner": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": [
+    16,
+    106,
+    358,
+    44
+   ],
+   "grid": [
+    16,
+    294,
+    358,
+    523
+   ],
+   "sheet": [
+    0,
+    127,
+    390,
+    717
+   ],
+   "sheetTitle": [
+    21,
+    179,
+    150,
+    26
+   ],
+   "footer": [
+    1,
+    770,
+    388,
+    73
+   ],
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "atlas": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 3,
+   "peek": null,
+   "tooltip": null
+  },
+  "atlas-peek": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 3,
+   "peek": [
+    8,
+    714,
+    374,
+    130
+   ],
+   "tooltip": null
+  },
+  "path": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "path-goal-open": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "path-menu": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": [
+    0,
+    458,
+    390,
+    386
+   ],
+   "sheetTitle": [
+    21,
+    491,
+    121,
+    26
+   ],
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "path-sources": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "practice-record": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": null,
+   "grid": null,
+   "sheet": [
+    0,
+    479,
+    390,
+    365
+   ],
+   "sheetTitle": [
+    21,
+    532,
+    245,
+    26
+   ],
+   "footer": [
+    1,
+    770,
+    388,
+    73
+   ],
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "progress": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": [
+    -5,
+    355,
+    197,
+    26
+   ]
+  },
+  "progress-learning": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "capture": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": [
+    0,
+    441,
+    390,
+    403
+   ],
+   "sheetTitle": [
+    21,
+    474,
+    76,
+    26
+   ],
+   "footer": [
+    1,
+    770,
+    388,
+    73
+   ],
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings": {
+   "scrollWidth": 390,
+   "hubBar": [
+    0,
+    0,
+    390,
+    52
+   ],
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-study": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-study-advanced": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-reminders": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-data": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-tutor": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-planning": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "settings-tip": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "tutor-keys": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": [
+    0,
+    618,
+    390,
+    226
+   ],
+   "space": [
+    138,
+    794,
+    153,
+    44
+   ],
+   "strip": [
+    4,
+    618,
+    382,
+    44
+   ],
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "tutor-typing": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": [
+    0,
+    618,
+    390,
+    226
+   ],
+   "space": [
+    138,
+    794,
+    153,
+    44
+   ],
+   "strip": [
+    4,
+    618,
+    382,
+    44
+   ],
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "tutor-math": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": [
+    0,
+    582,
+    390,
+    262
+   ],
+   "space": null,
+   "strip": [
+    4,
+    582,
+    382,
+    44
+   ],
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "tutor-actions": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": [
+    0,
+    380,
+    390,
+    464
+   ],
+   "sheetTitle": [
+    21,
+    413,
+    144,
+    26
+   ],
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  },
+  "review-answer": {
+   "scrollWidth": 390,
+   "hubBar": null,
+   "toolbar": null,
+   "grid": null,
+   "sheet": null,
+   "sheetTitle": null,
+   "footer": null,
+   "keyboard": null,
+   "space": null,
+   "strip": null,
+   "compass": 0,
+   "peek": null,
+   "tooltip": null
+  }
+ }
+}
