@@ -121,3 +121,11 @@
   .lemma-tutor .keyboard-composer[data-symbols] .composer textarea {max-height: 76px;}
   .lemma-tutor .keyboard-composer[data-symbols] .composer-preview {max-height: 44px;}
 }
+
+/* N222 (Owner) · equation mode: √ in the strip turns it on (marked like a pressed key). Its slots show both readings of
+   an ambiguous equation (x²+y²=1 · x₂+y₂=1), Keep after a change, or the usual next pieces, in the glyph face. */
+.lemma-tutor .kb .strip .eq-toggle[aria-pressed="true"] {color: var(--v7-role-selection-fg); background: var(--v7-role-selection-subtle);}
+.lemma-tutor .kb .strip .equation-words button {font: 400 1.25rem/1 var(--v7-glyph); color: var(--v7-role-text-primary); background: transparent;}
+.lemma-tutor .kb .strip .equation-words button.preferred {color: var(--v7-role-selection-fg);}
+.lemma-tutor .kb .strip .equation-words button.keep {font: 400 1rem/1.1 var(--v7-sans); color: var(--v7-role-text-secondary);}
+.lemma-tutor .kb .strip .equation-words .equation-label {display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}

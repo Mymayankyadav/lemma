@@ -6,6 +6,14 @@ This is the **working queue**, ranked for future chats. The 44-entry previous qu
 
 **Picking:** obey `AGENTS.md` incident/review/own-PR order first. An **existing open PR is its claim**; continue or take it over only under the lease-expired rule. Choose the highest **open** item whose `Needs` are done. An unverified provider/asset entry condition keeps a conditional item **blocked**. If an existing PR is already claimed, independent fixes on that same PR can proceed before its final integration dependency, but may not be called complete. Agents must not open replacement PRs for N191/N192/N193/N195/N196.
 
+## N222 Equation mode with auto-equation in the answer keyboard
+
+Owner task: "Use n222 for taking auto eq and ship this auto eq, close the pr and also add the handwriting recognition in this same pr which is n221. Use optimal usage of suggestions and with auto eq working as x2+y2=1 can be quadratic thing or just linear equation, both suggestion appear in the autoeq model. Don't break the layout of Keyboard."
+Stage: Harden · Status: done · Needs: — · Assigned: chat-683106#krtq
+Done = √ in the answer keyboard's strip turns on equation mode without moving the keyboard. Typed maths becomes its symbols as each piece is finished (root 2 → √2, sqrt(x+1) → √(x+1), x^2 → x², a_n → aₙ, <= → ≤, ... → …, 1/2 → ½, alpha → α, in → ∈, RR → ℝ), only in prose, and a Backspace straight after or Keep puts the typed text back. An ambiguous equation such as x2+y2=1 is never changed by itself: the strip offers both readings (x²+y²=1 and x₂+y₂=1, the likelier first). The strip otherwise offers the usual next pieces of an equation.
+Tests: tests/unit/tutor/auto-equation.test.ts; tests/e2e/v7-tutor-equation-mode.spec.ts; the existing keyboard, writing-aid, Tutor layout and symbol tests.
+Scope: src/features/tutor/{TutorComposer.tsx,WritingAidBar.tsx,keyboard.css,input/autoEquation.ts}; tests/unit/tutor/auto-equation.test.ts; tests/e2e/v7-tutor-equation-mode.spec.ts; docs/current/N222.md.
+
 ## N220 Make the v7 interface consistent across sheets, Calendar, Atlas, Path, Progress, Settings and the answer keyboard
 
 Owner task: "Please fix all the issues in just one pr."

@@ -18,10 +18,10 @@ export interface WritingAidBarProps {
   onRefresh: (surface: 'edit' | 'ghost', displayed: readonly WritingAidProposal[]) => void;
 }
 
-export function WritingAidWords({words, disabled, onAccept}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'>) {
+export function WritingAidWords({words, disabled, onAccept, hidden}: Pick<WritingAidBarProps, 'words' | 'disabled' | 'onAccept'> & {hidden?: boolean}) {
   const pressed = useRef<WritingAidProposal | null>(null);
   const slots = [words[1], words[0], words[2]];
-  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions">
+  return <div className="sugg writing-aid-words" role="group" aria-label="Word suggestions" hidden={hidden}>
     {slots.map((proposal, index) => <button type="button" key={index} data-writing-aid-word={index}
       disabled={disabled || !proposal} aria-label={proposal ? 'Insert ' + proposal.label : 'No suggestion'}
       onPointerDown={event => {holdCaret(event); pressed.current = proposal ?? null;}}
@@ -29,6 +29,32 @@ export function WritingAidWords({words, disabled, onAccept}: Pick<WritingAidBarP
       onClick={event => {const chosen = event.detail ? pressed.current : proposal; pressed.current = null; if (chosen) onAccept(chosen);}}
       title={proposal?.label} className={index === 1 && proposal ? 'preferred' : ''}>
       {proposal ? <span className="writing-aid-word-label">{proposal.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
+    </button>)}
+  </div>;
+}
+
+/** N222: one of the equation strip's pieces; `keep` puts back what equation mode just changed. */
+export interface EquationChoice {
+  readonly label: string;
+  readonly start: number;
+  readonly end: number;
+  readonly insert: string;
+  /** The text [start, end) held when the choice was offered. */
+  readonly from: string;
+  readonly keep?: boolean;
+}
+
+/** N222: equation mode's strip: both readings of an ambiguous equation, the usual next pieces, or Keep after a change. */
+export function EquationWords({choices, disabled, onAccept}: {
+  choices: readonly EquationChoice[]; disabled: boolean; onAccept: (choice: EquationChoice) => void;
+}) {
+  const slots = [choices[1], choices[0], choices[2]];
+  return <div className="sugg equation-words" role="group" aria-label="Equation suggestions">
+    {slots.map((choice, index) => <button type="button" key={index} disabled={disabled || !choice}
+      aria-label={!choice ? 'No suggestion' : choice.keep ? 'Keep ' + choice.label : 'Insert ' + choice.label}
+      className={(index === 1 && choice ? 'preferred' : '') + (choice?.keep ? ' keep' : '')} title={choice?.label}
+      onPointerDown={holdCaret} onClick={() => {if (choice) onAccept(choice);}}>
+      {choice ? <span className="equation-label">{choice.label}</span> : <span aria-hidden="true" className="writing-aid-empty">·</span>}
     </button>)}
   </div>;
 }
