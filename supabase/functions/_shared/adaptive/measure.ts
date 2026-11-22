@@ -70,8 +70,12 @@ function features(h:Hypothesis,s:MeasurementState,k:string,f:Facet,t:number,hour
  let cross=s.ix.cross.get(k);if(!cross){cross=new Map();s.ix.cross.set(k,cross);}let crossKey=cross.get(f);if(!crossKey){crossKey='cross:'+key(k,f);cross.set(f,crossKey);}
  out.push({c:get(memo(s.ix.kc,'kc:',k),t,.71,.01),x:1},{c:get(crossKey,t,.5,.01),x:1},
   {c:get('learning',t,.32,0,.3),x:Math.log1p(h.counts[k]??0)},{c:get('fatigue',t,.2,0,.2),x:-hours});
+ const seenLinks=new Set<string>();
  for(const l of s.facts.links??[])if(l.status==='approved'&&['equivalent','generalises','instance_of'].includes(l.kind)&&(l.from_id===k||l.to_id===k)){
-  const id=l.kind==='instance_of'?'theme:'+l.to_id:'link:'+l.id;out.push({c:get(id,t,l.kind==='equivalent'?.4:.3,.005),x:1});
+  const id=l.kind==='instance_of'?'theme:'+l.to_id:'link:'+l.id;
+  if(seenLinks.has(id))continue;
+  seenLinks.add(id);
+  out.push({c:get(id,t,l.kind==='equivalent'?.4:.3,.005),x:1});
  }
  if(item)out.push({c:get('item:'+item,t,bSd,0,b),x:-1});
  return out;

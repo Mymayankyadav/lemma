@@ -54,14 +54,20 @@ describe('API-key-free Atlas MCP worker reads',()=>{
   });
 });
 describe('aliases in Atlas V3 model',()=>{
-  it('add one shared component but do not duplicate an approved equivalent relation',()=>{
-    const r=rowsFor([{slug:'a',cps:2,done:0,target:'2026-11-24'}]);
-    const [a,b]=r.concepts;
-    r.aliases=[{id:'alias-one',concept_a:a.id,concept_b:b.id}];
-    const first=factsForAtlas(r);
-    expect(first.links).toEqual([{id:'alias:alias-one',from_id:a.id,to_id:b.id,kind:'equivalent',status:'approved'}]);
-    r.atlasLinks=[{id:'typed-one',from_id:a.id,to_id:b.id,kind:'equivalent',status:'approved'}];
-    const second=factsForAtlas(r);
-    expect(second.links).toEqual(r.atlasLinks);
-  });
+ it('shares one component for a transitive alias class without double-counting approved equivalent links',()=>{
+  const r=rowsFor([{slug:'a',cps:3,done:0,target:'2026-11-24'}]);
+  const [a,b,c]=r.concepts,canonical=[a.id,b.id,c.id].sort()[0];
+  r.aliases=[{id:'alias-one',concept_a:a.id,concept_b:b.id},{id:'alias-two',concept_a:b.id,concept_b:c.id}];
+  const first=factsForAtlas(r);
+  expect(first.links).toHaveLength(3);
+  expect(new Set(first.links!.map(x=>x.id))).toEqual(new Set(['alias-class:'+canonical]));
+  expect(new Set(first.links!.flatMap(x=>[x.from_id,x.to_id]))).toEqual(new Set([a.id,b.id,c.id]));
+  r.atlasLinks=[{id:'typed-one',from_id:a.id,to_id:b.id,kind:'equivalent',status:'approved'}];
+  const second=factsForAtlas(r);
+  expect(second.links).toHaveLength(3);
+  expect(second.links?.every(x=>x.id==='alias-class:'+canonical)).toBe(true);
+  r.aliases=[];
+  const third=factsForAtlas(r);
+  expect(third.links).toEqual(r.atlasLinks);
+ });
 });
